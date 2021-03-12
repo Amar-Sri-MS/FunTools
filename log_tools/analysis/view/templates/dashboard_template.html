@@ -89,8 +89,9 @@
                         <!-- Displaying log entries for a source and each log levels in % with rounded off to 2 decimals -->
                         {% for level, stat in log_level_stats.items() %}
                             {% set log_distribution = calculatePercentage(stat.count, total_entries) %}
+                            {% set log_level_obj = {"level": level} %}
                             <div class="level_stat" title="{{stat.keywords}}">
-                                <div><a href="{{stat.kibana_url}}" target="_blank">{{level}}</a></div>:
+                                <div><a href="{{stat.kibana_url}}" target="_blank" onclick="trackWebEvent('LOG_LEVEL_CLICKED', {{log_level_obj}})">{{level}}</a></div>:
                                 <div class="fixed-font">{{stat.count}}({{log_distribution}})</div>
                             </div>
                         {% endfor %}
@@ -213,7 +214,27 @@
         // Update anchors when the DOM is available
         updateAnchors();
         updateDuplicates();
+
+        trackWebEvent('PAGE_VIEWED');
     })();
+
+    // Registering click event handler to track web events
+    document.addEventListener('click', function(element) {
+        // Only track elements with the data attribute "web_event"
+        if (element.target.dataset['web_event']) {
+            trackWebEvent(element.target.dataset['web_event']);
+        }
+    });
+
+    // Registering click event to track clicks on hyperlinks of duplicate logs
+    document.getElementById('duplicates').addEventListener('click', function(element) {
+        trackClickOnLogEntries(element, 'DUPLICATE_LOG_CLICKED');
+    });
+
+    // Registering click event to track clicks on hyperlinks of recent logs
+    document.getElementById('recent_logs').addEventListener('click', function(element) {
+        trackClickOnLogEntries(element, 'RECENT_LOG_CLICKED');
+    });
 
 
     function toggleSystemTypeSelection(systemTypeElement) {
@@ -367,6 +388,7 @@
 
         const kibana_url = KIBANA_BASE_URL.replace("KIBANA_QUERY", query);
         window.open(kibana_url, "_blank");
+        trackWebEvent("EXPLORE_LOGS", data={filters: selectedFilters})
     }
 
 
@@ -391,6 +413,7 @@
 
         xhttp.open('GET', uri);
         xhttp.send();
+        trackWebEvent("LOG_LEVEL_DIST_SOURCE_UPDATED", data=sourceElement.value);
     }
 
     function updateLogLevelStats(stats) {
@@ -442,6 +465,10 @@
 
         xhttp.open('GET', uri);
         xhttp.send();
+        trackWebEvent("RECENT_LOGS_UPDATED", {
+            level: selectedLevelForRecentLogs,
+            source: selectedSourceForRecentLogs
+        });
     }
 
     function updateRecentLogs(logs) {
@@ -451,6 +478,7 @@
     function toggleShowOnlyFailedAnchors(element) {
         showOnlyFailedAnchors = element.checked;
         updateAnchors();
+        trackWebEvent("TOGGLE_SHOW_FAILED_ANCHORS", element.checked);
     }
 
     function updateAnchors() {
@@ -466,7 +494,7 @@
                     <td>${anchor['source']}</td>
                     <td>${anchor['system_id']}</td>
                     <td>${anchor['datetime']}</td>
-                    <td><a href="${anchor['link']}" target="_blank">${anchor['description']}</a></td>
+                    <td><a href="${anchor['link']}" target="_blank" data-web_event="ANCHOR_CLICKED">${anchor['description']}</a></td>
                 </tr>`
             );
         }
@@ -534,15 +562,43 @@
         // Toggling the display of filter box
         const filterBoxElement = document.getElementById(filterBoxId);
         if (filterBoxElement.style.display === "none" || filterBoxElement.style.display === "") {
+            // Filter box is open
             filterBoxElement.style.display = "block";
             arrowElement.firstElementChild.classList.remove('down');
             arrowElement.firstElementChild.classList.add('up');
+            trackWebEvent("FILTER_BOX_OPENED");
         }
         else {
+            // Filter box is closed
             filterBoxElement.style.display = "none";
             arrowElement.firstElementChild.classList.remove('up');
             arrowElement.firstElementChild.classList.add('down');
+            trackWebEvent("FILTER_BOX_CLOSED");
         }
+    }
+
+    function trackClickOnLogEntries(element, eventName) {
+        // track event only if an anchor link is clicked
+        if (element.target.tagName.toUpperCase() === 'A') {
+            trackWebEvent(eventName, { link: element.target.href });
+        }
+    }
+
+    function trackWebEvent(eventName, data=null) {
+        // Create an event object with event name and
+        // timestamp
+        const eventData = {
+            event: eventName,
+            data,
+            timestamp: Date.now(),
+            logID: logId
+        }
+
+        const xhttp = new XMLHttpRequest();
+        const TRACK_WEB_EVENT_API = `${window.location.origin}/events/track`;
+        xhttp.open('POST', TRACK_WEB_EVENT_API);
+        xhttp.setRequestHeader('Content-Type', 'application/json');
+        xhttp.send(JSON.stringify(eventData));
     }
 
 </script>

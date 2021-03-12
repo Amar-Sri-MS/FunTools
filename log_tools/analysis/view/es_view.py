@@ -16,12 +16,14 @@ import time
 import jinja2
 
 from elasticsearch7 import Elasticsearch
-from ingester import ingester_page
 from flask import Flask
 from flask import request
 from pathlib import Path
 from requests.exceptions import HTTPError
 from urllib.parse import quote_plus
+
+from ingester import ingester_page
+from web_usage import web_usage
 
 sys.path.append('..')
 
@@ -30,6 +32,7 @@ import config_loader
 
 app = Flask(__name__)
 app.register_blueprint(ingester_page)
+app.register_blueprint(web_usage, url_prefix='/events')
 
 
 @app.errorhandler(Exception)
