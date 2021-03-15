@@ -112,9 +112,16 @@ pwd=$PWD
 
 funos_sdk_version=$(sed -ne 's/^funsdk=\(.*\)/\1/p' .version || echo latest)
 
-log_msg "Upgrading DPU firmware"
+log_msg "Upgrading DPU firmware to $funos_sdk_version"
 
 FW_UPGRADE_ARGS="--offline --ws `pwd`"
+
+# run once to dump current fw information
+./run_fwupgrade.py ${FW_UPGRADE_ARGS} --dry-run
+
+# silence version checks for future runs of the script, as that
+# makes the output logs hard to read
+FW_UPGRADE_ARGS="$FW_UPGRADE_ARGS --no-version-check"
 
 if [[ $ccfg_only != 'true' ]]; then
 	if [[ $downgrade == 'true' ]]; then
@@ -180,12 +187,41 @@ log_msg "Upgrading CCLinux"
 ./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file fgpt=fgpt.signed
 # Update partition information
 partprobe
+
+install_and_verify_image() {
+	local ifile=$1
+	local ofile=$2
+	local extra_flags=$3
+	local isize=$(stat --printf="%s" $ifile)
+
+	# calculate checksum of the installed image
+	local isum=$(sha256sum $ifile | head -c 64)
+
+	for retry in `seq 1 5`; do
+		# program the image
+		dd status=none if=$ifile of=$ofile $extra_flags
+
+		# calculate checksum of the programmed image
+		local osum=$(dd status=none if=$ofile count=1 bs=$isize | sha256sum | head -c 64)
+
+		if [ "$isum" != "$osum" ]; then
+			echo "$ifile -> $ofile: Programmed image checksum verification failed ($retry)"
+		else
+			echo "$ifile -> $ofile: Image programmed and verified ($retry)"
+			return 0
+		fi
+	done
+	return 1
+}
+
 # Install OS image
-dd if=fvos.signed of=/dev/vdb1
+install_and_verify_image fvos.signed /dev/vdb1
+
 # Install rootfs image
-dd if=${ROOTFS_NAME} of=/dev/vdb2 bs=4096
+install_and_verify_image ${ROOTFS_NAME} /dev/vdb2 bs=4096
+
 # Install rootfs hashtable
-dd if=${ROOTFS_NAME}.fvht.bin of=/dev/vdb4
+install_and_verify_image ${ROOTFS_NAME}.fvht.bin /dev/vdb4
 
 # when executing via platform agent, STATUS_DIR will be set
 # to a folder where the bundle can store data persistently
