@@ -478,7 +478,7 @@
     function toggleShowOnlyFailedAnchors(element) {
         showOnlyFailedAnchors = element.checked;
         updateAnchors();
-        trackWebEvent("TOGGLE_SHOW_FAILED_ANCHORS", element.checked);
+        trackWebEvent("TOGGLE_SHOW_FAILED_ANCHORS", { flag: element.checked });
     }
 
     function updateAnchors() {
