@@ -19,7 +19,7 @@ start_dpc_proxy()
 	echo "Starting a proxy for DPC proxy"
 
 	OPTS="--background --make-pidfile --pidfile ${DPC_DEBUG_PID_FILE} --startas socat"
-	CMD="--start -- TCP-LISTEN:${DPC_PORT_LISTEN} UNIX-CONNECT:${DPC_SOCKET_CONNECT}"
+	CMD="--start -- TCP-LISTEN:${DPC_PORT_LISTEN},fork UNIX-CONNECT:${DPC_SOCKET_CONNECT}"
 
 	${ST_STP_D} ${OPTS} ${CMD}
 }
