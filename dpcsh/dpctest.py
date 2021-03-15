@@ -153,6 +153,7 @@ def get_dpc_host_and_port(style):
     f = open('./env.json', 'r')
     env_dict = json.load(f)
 
+    # TODO(ridrisov): remove separate check once fun-on-demand support DPC proxy on CC Linux
     if style == 'fun-on-demand-cc':
         if len(env_dict['cclinux_hosts']) != 1:
             raise RuntimeError("configuration error")
