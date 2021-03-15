@@ -187,7 +187,7 @@ detach_volumes() {
 	for i in $(seq 1 $numvols);
 	do
 		volname="$voltype-vol-$i"
-		fab -f flib.py cluster_setup:"$setup" detach_vol_to_host:vol_name="$volname",host_name="ccab08-qa-03",via="rds",rno=$i,cno=1,nsid=$i
+		fab -f flib.py cluster_setup:"$setup" detach_vol_to_host:vol_name="$volname",host_name="cab08-qa-03",via="rds",rno=$i,cno=1,nsid=$i
 	done
 	fab -f flib.py cluster_setup:"$setup" rds_delete_controller:cno=1
 }
