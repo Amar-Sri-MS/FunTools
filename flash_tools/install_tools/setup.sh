@@ -201,6 +201,8 @@ install_and_verify_image() {
 		# program the image
 		dd status=none if=$ifile of=$ofile $extra_flags
 
+		sync $ofile; echo 3 > /proc/sys/vm/drop_caches
+
 		# calculate checksum of the programmed image
 		local osum=$(dd status=none if=$ofile count=1 bs=$isize | sha256sum | head -c 64)
 
