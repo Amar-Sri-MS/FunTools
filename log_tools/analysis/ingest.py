@@ -6,6 +6,7 @@
 
 import argparse
 import datetime
+import glob
 import os
 import sys
 import time
@@ -122,7 +123,7 @@ def parse_manifest(path, parent_frn={}):
             content_path = os.path.join(path, frn_info['prefix_path'], frn_info['sub_path'])
 
             # The content path does not exist
-            if not os.path.exists(content_path):
+            if not glob.glob(content_path):
                 print('WARNING: Path does not exist:', content_path)
                 continue
 

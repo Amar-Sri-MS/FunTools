@@ -149,17 +149,28 @@ def run_dpc_test(args, unix_sock, delay):
             pid.terminate()
 
 
-def run_using_env(exclude):
-    """ Initializes DPC client from env.json, runs standard tests """
+def get_dpc_host_and_port(style):
     f = open('./env.json', 'r')
     env_dict = json.load(f)
-    
+
+    # TODO(ridrisov): remove separate check once fun-on-demand support DPC proxy on CC Linux
+    if style == 'fun-on-demand-cc':
+        if len(env_dict['cclinux_hosts']) != 1:
+            raise RuntimeError("configuration error")
+        return env_dict['cclinux_hosts'][0], 4221
+
     if len(env_dict['dpc_hosts']) != 1:
         raise RuntimeError("configuration error")
 
     dpc_host = env_dict['dpc_hosts'][0]
-    host = dpc_host['host']
-    port = dpc_host['tcp_port']
+    return dpc_host['host'], dpc_host['tcp_port']
+
+
+def run_using_env(style, exclude):
+    """ Initializes DPC client from env.json, runs standard tests """
+
+    host, port = get_dpc_host_and_port(style)
+
     print 'Connecting to dpc host at %s:%s' % (host, port)
     client = dpc_client.DpcClient(server_address=(host, port))
 
@@ -185,7 +196,7 @@ def run_style(manual, style):
 
 
 def usage():
-    print "usage: %s [tcp, unix, qemu, fun-on-demand, fun-on-demand-reduced]" % sys.argv[0]
+    print "usage: %s [tcp, unix, qemu, fun-on-demand, fun-on-demand-cc, fun-on-demand-reduced]" % sys.argv[0]
     sys.exit(1)
 
 
@@ -200,10 +211,11 @@ def main():
 
     tests_passed = True
 
-    if style == 'fun-on-demand' or style == 'fun-on-demand-reduced':
+    if style == 'fun-on-demand' or style == 'fun-on-demand-cc' \
+        or style == 'fun-on-demand-reduced':
         exclude = ['testVeryLargeCommands', 'testAsync', 'testJumbo'] \
             if style == 'fun-on-demand-reduced' else []
-        tests_passed = run_using_env(exclude)
+        tests_passed = run_using_env(style, exclude)
 
     elif style is not None:
         tests_passed = run_style(True, style)

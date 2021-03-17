@@ -62,3 +62,12 @@ chmod 0444 $DEPLOY_ROOT/etc/cron/crontabs/root
 
 cp bin/mips64/Linux/uboot_mpg_update.sh $DEPLOY_ROOT/usr/bin/uboot_mpg_update
 chmod 0555 $DEPLOY_ROOT/usr/bin/uboot_mpg_update
+
+# rootfs boot-time verification
+cp bin/mips64/Linux/ro-verify-emmc/verify_ro_root.sh $DEPLOY_ROOT/etc/init.d/verify_ro_root
+chmod 0555 $DEPLOY_ROOT/etc/init.d/verify_ro_root
+ln -s ../init.d/verify_ro_root $DEPLOY_ROOT/etc/rc5.d/S25verify_ro_root
+
+mkdir -p $DEPLOY_ROOT/etc/boot-success-hooks.d
+cp bin/mips64/Linux/ro-verify-emmc/verify_ro_root_hook.sh $DEPLOY_ROOT/etc/boot-success-hooks.d
+chmod 0555 $DEPLOY_ROOT/etc/boot-success-hooks.d/verify_ro_root_hook.sh
