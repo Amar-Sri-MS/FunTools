@@ -99,12 +99,12 @@
                 </div>
             </div>
             <div class="separator"></div>
-            <div>
+            <div id="anchors_container">
                 <h3>Interesting events from FunOS logs</h3>
-                <div>
+                <!-- <div>
                     <input type="checkbox" id="failedAnchors" value="showFailedAnchors" onchange="toggleShowOnlyFailedAnchors(this)" checked>
                     <label for="failedAnchors">Show only failed events?</label><br>
-                </div>
+                </div> -->
                 <div class="log_entries scrollable">
                     <table>
                         <thead>
@@ -118,6 +118,17 @@
                         <tbody id="anchors">
                         </tbody>
                     </table>
+                </div>
+                <div class="anchors_button_container">
+                    <div>
+                        <button class="btn" id="anchors_first" onclick="onPaginateAnchors(this)">First</button>
+                        <button class="btn" id="anchors_prev" onclick="onPaginateAnchors(this)">Previous</button>
+                    </div>
+                    <div id="anchors_page"></div>
+                    <div>
+                        <button class="btn" id="anchors_next" onclick="onPaginateAnchors(this)">Next</button>
+                        <button class="btn" id="anchors_last" onclick="onPaginateAnchors(this)">Last</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -204,10 +215,17 @@
     let selectedSourceForLogLevelStats = "all";
     let selectedSourceForRecentLogs = "all", selectedLevelForRecentLogs = "{{log_level_for_recent_logs}}";
 
-    const analyticsData = {{analytics_data}};
-    let selectedSourceForAnchors = "all", showOnlyFailedAnchors = true;
+    let analyticsData = {{analytics_data}};
+    let selectedSourceForAnchors = "all", showOnlyFailedAnchors = false;
     const anchorTableBodyElement = document.getElementById('anchors');
     const duplicateTableBodyElement = document.getElementById('duplicates');
+
+    let anchorsPage = 0;
+    const anchorsPrev = document.getElementById("anchors_prev");
+    const anchorsNext = document.getElementById("anchors_next");
+    const anchorsFirst = document.getElementById("anchors_first");
+    const anchorsLast = document.getElementById("anchors_last");
+    const anchorsPageEl = document.getElementById("anchors_page");
 
     // Self invocation function
     (function () {
@@ -481,6 +499,29 @@
         trackWebEvent("TOGGLE_SHOW_FAILED_ANCHORS", element.checked);
     }
 
+    function onPaginateAnchors(buttonEl) {
+        anchorsPage = parseInt(buttonEl.dataset.page);
+        // Fetch recent logs for the selected level source
+        let xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                const data = xhttp.responseText;
+                if (data) {
+                    analyticsData = {
+                        ...analyticsData,
+                        ...JSON.parse(data)
+                    }
+                    updateAnchors();
+                }
+            }
+        }
+
+        let uri = `${window.location.href}/anchors?page=${anchorsPage}`;
+        xhttp.open('GET', uri);
+        xhttp.send();
+        trackWebEvent("ANCHORS_PAGINATE", { page: anchorsPage });
+    }
+
     function updateAnchors() {
         let tableRows = [];
         for (const anchor of analyticsData['anchors']) {
@@ -498,6 +539,24 @@
                 </tr>`
             );
         }
+
+        const total_pages = analyticsData["anchors_meta"]["total_pages"];
+
+        // Updating the pagination buttons of anchors panel
+        anchorsPrev.style.visibility = analyticsData["previous_anchors"] ? "visible" : "hidden";
+        anchorsPrev.dataset.page = anchorsPage - 1;
+        anchorsNext.style.visibility = analyticsData["next_anchors"] ? "visible" : "hidden";
+        anchorsNext.dataset.page = anchorsPage + 1;
+        anchorsFirst.style.visibility = anchorsPage > 0 ? "visible" : "hidden";
+        anchorsFirst.dataset.page = 0;
+        anchorsLast.style.visibility = total_pages > 1 && anchorsPage != total_pages
+                                       ? "visible" : "hidden";
+        anchorsLast.dataset.page = total_pages;
+
+        if (analyticsData["anchors"].length > 0) {
+            anchorsPageEl.innerText = `Page ${anchorsPage+1}/${total_pages >= 0 ? total_pages+1 : ''}`;
+        }
+
         if (tableRows.length === 0) {
             anchorTableBodyElement.innerHTML = `<div>No results</div>`;
             return;
