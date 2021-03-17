@@ -103,6 +103,7 @@ ul {
 }
 .anchors_button_container {
     display: flex;
+    align-items: center;
     justify-content: space-around;
     padding-top: 25px;
     padding-bottom: 10px;

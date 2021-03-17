@@ -554,7 +554,7 @@
         anchorsLast.dataset.page = total_pages;
 
         if (analyticsData["anchors"].length > 0) {
-            anchorsPageEl.innerText = `Page ${anchorsPage+1}/${total_pages >= 0 ? total_pages+1 : ''}`;
+            anchorsPageEl.innerText = `Page ${anchorsPage+1} out of ${total_pages >= 0 ? total_pages+1 : 'NULL'}`;
         }
 
         if (tableRows.length === 0) {
