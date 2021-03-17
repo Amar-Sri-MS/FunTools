@@ -234,10 +234,10 @@ class AnalyticsOutput(Block):
 
     def generate_most_duplicates_entries(self):
         """
-        Get the top 10 most duplicated log entries.
+        Get the top 50 most duplicated log entries.
         Generate HTML page with analyzed data for the build_id.
         """
-        most_duplicated_entries = self.get_most_duplicated_entries()
+        most_duplicated_entries = self.get_most_duplicated_entries(entries=50)
         most_duplicated_entries_list = []
 
         for entry in most_duplicated_entries:

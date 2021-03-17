@@ -43,8 +43,9 @@ def handle_exception(error):
     is raised.
     """
     # TODO(Sourabh): Maybe redirect to a template with an error message instead
-    # of just displaying a message
-    return str(error)
+    # of just displaying a message. Also print error stacktrace.
+    print('ERROR:', str(error))
+    return str(error), 500
 
 
 def main():

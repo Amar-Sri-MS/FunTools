@@ -146,7 +146,7 @@
             </div>
         </div>
         <div class="container">
-            <h3>Top 10 duplicated logs (all sources)</h3>
+            <h3>Top 50 duplicated logs (all sources)</h3>
             <div class="log_entries">
                 <!-- {% include 'analytics/'+log_id+'/duplicates.html' ignore missing %} -->
                 <table>
@@ -478,7 +478,7 @@
     function toggleShowOnlyFailedAnchors(element) {
         showOnlyFailedAnchors = element.checked;
         updateAnchors();
-        trackWebEvent("TOGGLE_SHOW_FAILED_ANCHORS", element.checked);
+        trackWebEvent("TOGGLE_SHOW_FAILED_ANCHORS", { flag: element.checked });
     }
 
     function updateAnchors() {
