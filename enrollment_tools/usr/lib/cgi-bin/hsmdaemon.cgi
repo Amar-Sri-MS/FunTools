@@ -6,7 +6,9 @@
 # simple cgi-script that extract a message from the request and
 # sends it
 #
-#  Copyright (c) 2018-2020. Fungible, inc. All Rights Reserved.
+# only used by the HSM crypto officer client: funkey.py
+#
+# Copyright (c) 2018-2020. Fungible, inc. All Rights Reserved.
 #
 ##############################################################################
 
