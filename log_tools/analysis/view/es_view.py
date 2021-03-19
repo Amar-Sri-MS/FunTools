@@ -789,7 +789,6 @@ def _get_analytics_data(log_id):
     Get all the analytics data
     Returns a dict containing duplicates and anchors
     """
-
     # Reading metadata of detected anchors file
     anchors_meta = _read_file(log_id, 'anchors_meta.json', default={})
     # Reading detected anchors from the JSON file
@@ -803,6 +802,7 @@ def _get_analytics_data(log_id):
         'anchors_meta': anchors_meta,
         'duplicates': duplicates
     }
+
 
 def _render_dashboard_page(log_id, jinja_env, template):
 

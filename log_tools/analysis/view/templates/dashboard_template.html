@@ -549,12 +549,12 @@
         anchorsNext.dataset.page = anchorsPage + 1;
         anchorsFirst.style.visibility = anchorsPage > 0 ? "visible" : "hidden";
         anchorsFirst.dataset.page = 0;
-        anchorsLast.style.visibility = total_pages > 1 && anchorsPage != total_pages
+        anchorsLast.style.visibility = total_pages > 1 && anchorsPage != (total_pages-1)
                                        ? "visible" : "hidden";
-        anchorsLast.dataset.page = total_pages;
+        anchorsLast.dataset.page = total_pages-1;
 
         if (analyticsData["anchors"].length > 0) {
-            anchorsPageEl.innerText = `Page ${anchorsPage+1} out of ${total_pages >= 0 ? total_pages+1 : 'NULL'}`;
+            anchorsPageEl.innerText = `Page ${anchorsPage+1} out of ${total_pages > 0 ? total_pages : 'NULL'}`;
         }
 
         if (tableRows.length === 0) {
