@@ -59,7 +59,11 @@ def hsmd_rpc_call(json_payload, hsm_id):
     to_send = json_payload.encode('utf-8')
 
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    sock.connect(SERVER_ADDRESS + HSM_ID_TO_SUFFIX[hsm_id])
+    try:
+        sock.connect(SERVER_ADDRESS + HSM_ID_TO_SUFFIX[hsm_id])
+    except FileNotFoundError as ex:
+        ex.filename=SERVER_ADDRESS + HSM_ID_TO_SUFFIX[hsm_id]
+        raise ex
 
     sock.sendall(make_daemon_msg(to_send))
 
