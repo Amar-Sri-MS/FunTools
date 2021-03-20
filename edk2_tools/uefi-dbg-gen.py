@@ -76,6 +76,10 @@ def main() -> int:
 
     args = parse_args()
 
+    if (args.output):
+        print('python __uefi_dbg_gen_prev_pagination=gdb.parameter("pagination")', file=args.output)
+        print('python gdb.execute("set pagination off")', file=args.output)
+
     f = args.logfile
 
     for line in f:
@@ -87,6 +91,9 @@ def main() -> int:
         if (m_dxecore):
             print("File %s -> %s" % (m_dxecore.group(1), m_dxecore.group(2)))
             gen_one_cmd(args, m_dxecore.group(1), m_dxecore.group(2))
+
+    if (args.output):
+        print('python if __uefi_dbg_gen_prev_pagination: gdb.execute("set pagination on")', file=args.output)
 
     return 0
 
