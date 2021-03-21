@@ -3,7 +3,10 @@ MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 fun_image="fun-image-mips64r6hv-mips64r6.tar.xz"
 
-
+if [ -z "$WORKSPACE" ] ; then
+    echo "Error: WORKSPACE not set."
+    exit 1
+fi
 
 for i in "$@" ; do
     if [ "$i" = "--developer" ]; then
@@ -74,6 +77,11 @@ chmod 0444 $DEPLOY_ROOT/etc/modprobe.d/vfio.conf
 # details in the rootfs
 
 if [ ! -z "${JENKINS_URL}" -a ! -z "${JOB_NAME}" ]; then
+    if [ ! -e $WORKSPACE/dev_line.txt]; then
+        echo "Build running in Jenkins node but dev_line.txt file wasn't found ..."
+        exit 1
+    fi
+    source $WORKSPACE/dev_line.txt
     if [ -z ${BLD_NUM} ]; then
         echo "Build running in Jenkins node but BLD_NUM wasn't set. Does this script need fixing?"
         exit 1
@@ -82,10 +90,16 @@ if [ ! -z "${JENKINS_URL}" -a ! -z "${JOB_NAME}" ]; then
         echo "Build running in Jenkins node but DEV_LINE wasn't set. Does this script need fixing?"
         exit 1
     fi
+    if [ -z ${RELEASE} ]; then
+        echo "Build running in Jenkins node but RELEASE wasn't set. Does this script need fixing?"
+        exit 1
+    fi
 else
     BLD_NUM="non-Jenkins"
     DEV_LINE="unknown"
+    RELEASE="unknown"
 fi
 
 echo """devline=${DEV_LINE}
-bldnum=${BLD_NUM}""" > $DEPLOY_ROOT/etc/version.build
+bldnum=${BLD_NUM}
+release=${RELEASE}""" > $DEPLOY_ROOT/etc/version.build
