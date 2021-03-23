@@ -47,6 +47,12 @@
         loader = document.getElementById("loader");
         prev_button = document.getElementById("prev_button");
         next_button = document.getElementById("next_button");
+
+        // Check if an anchor link is present
+        const anchor_link = document.getElementById("anchor_link");
+        if (location.hash === "#0") {
+            anchor_link.style.display = "block";
+        }
     }
 
     function handleSearch(search) {
@@ -223,14 +229,15 @@
     {% set total_entries = sources.values()|sum() %}
     <div class="content">
         <h2 id="top" class="center-align">Logs for {{log_id}}</h2>
+        <div id="quicklinks">
+            <a id="anchor_link" style="display: none;" href="#0">Link to the selected log</a>
+        </div>
         <div class="container">
             <h3>Filter logs</h3>
             <div>Total log entries: <b>{{total_entries}}</b></div>
             <div class="filters_container">
                 <input id="search" type="search" placeholder="Search..."/>
                 <button class="btn" onclick="handleSearch(document.getElementById('search').value)">Search</button>
-            </div>
-            <div class="search_results" id="search_results">
             </div>
             <div class="filters_container" style="display: flex;">
                 {% include 'source_filters.html' %}

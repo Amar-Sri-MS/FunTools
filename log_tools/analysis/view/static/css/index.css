@@ -143,3 +143,12 @@ ul {
     list-style: none;
     padding-inline-start: 25px;
 }
+
+
+#quicklinks {
+    display: flex;
+    justify-content: flex-end;
+}
+#quicklinks > a {
+    padding: 5px;
+}

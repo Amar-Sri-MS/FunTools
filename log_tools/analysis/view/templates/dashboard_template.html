@@ -14,6 +14,10 @@
     {%- endmacro %}
     <div class="content">
         <h2 class="center-align">Dashboard for <b>{{log_id}}</b></h2>
+        <div id="quicklinks">
+            <a href="#recent">Recent Logs</a>
+            <a href="#duplicates">Duplicate Logs</a>
+        </div>
         <div class="container">
             <h3>Explore logs by source</h3>
             {% set total_entries = sources.values()|sum() %}
@@ -87,7 +91,7 @@
             </div>
         </div>
         <div class="container">
-            <h3>Recent
+            <h3 id="recent">Recent
                 <select name="level" id="level" onchange="onSelectLevelForRecentLogs(this)">
                     {% for level, stat in log_level_stats.items() %}
                         {% if level == log_level_for_recent_logs %}
@@ -111,7 +115,7 @@
             </div>
         </div>
         <div class="container">
-            <h3>Top 50 duplicated logs (all sources)</h3>
+            <h3 id="duplicates">Top 50 duplicated logs (all sources)</h3>
             <div class="log_entries">
                 <!-- {% include 'analytics/'+log_id+'/duplicates.html' ignore missing %} -->
                 <table>
@@ -124,7 +128,7 @@
                             <th style="text-align: left">Description</th>
                         </tr>
                     </thead>
-                    <tbody id="duplicates">
+                    <tbody id="duplicates_body">
                     </tbody>
                 </table>
             </div>
@@ -152,7 +156,7 @@
     let analyticsData = {{analytics_data}};
     let selectedSourceForAnchors = "all", showOnlyFailedAnchors = false;
     const anchorTableBodyElement = document.getElementById('anchors');
-    const duplicateTableBodyElement = document.getElementById('duplicates');
+    const duplicateTableBodyElement = document.getElementById('duplicates_body');
 
     let anchorsPage = 0;
     const anchorsPrev = document.getElementById("anchors_prev");
