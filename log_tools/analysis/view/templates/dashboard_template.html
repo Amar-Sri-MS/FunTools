@@ -19,54 +19,7 @@
             {% set total_entries = sources.values()|sum() %}
             <div>Total log entries: <b>{{total_entries}}</b></div>
             <div class="filters_container">
-                <div class="filter_box_container">
-                    {% for system_type in unique_entries %}
-                        {% set total_entries = system_type['doc_count'] %}
-                        {% set system_type_index = loop.index0 %}
-                        <div class="filter_box">
-                            <div class="filter_box_header">
-                                <div>
-                                    <input type="checkbox" id="{{system_type['key']}}" name="system_type" data-system_type_index="{{system_type_index}}"
-                                    value="{{system_type['key']}}" onclick="toggleSystemTypeSelection(this)" checked />
-                                    <label for="{{system_type['key']}}">
-                                        System Type: {{system_type['key']}} ({{total_entries}})
-                                    </label>
-                                </div>
-                                <div style="padding: 0px 5px; cursor: pointer;" onclick="toggleShowFilterBox(this, `filter-box-content-{{system_type['key']}}`)">
-                                    <span class="arrow down"></span>
-                                </div>
-                            </div>
-                            <div class="filter_box_content" id="filter-box-content-{{system_type['key']}}">
-                                <ul>
-                                {% for system_id in system_type['system_id']['buckets'] %}
-                                    {% set system_id_distribution = calculatePercentage(system_id['doc_count'], total_entries) %}
-                                    <!-- Unique system id using system type and system id to handle same systemID names -->
-                                    {% set unique_system_id = system_type_index ~ system_type['key'] ~ system_id['key'] %}
-                                    <li>
-                                        <div class="filter_header">
-                                            <input type="checkbox" id="{{unique_system_id}}" name="system_id" value="{{system_id['key']}}"
-                                                data-system_type="{{system_type['key']}}" onclick="toggleSystemIDSelection(this)" checked
-                                            />
-                                            <label for="{{unique_system_id}}">System ID: {{system_id['key']}} ({{system_id_distribution}})</label>
-                                        </div>
-                                        <ul>
-                                        {% for source in system_id['src']['buckets'] %}
-                                            {% set source_distribution = calculatePercentage(source['doc_count'], total_entries) %}
-                                            <li class="filter_box_item">
-                                                <input type="checkbox" id="{{unique_system_id}}_{{source['key']}}" name="source" value="{{source['key']}}"
-                                                    data-system_id="{{system_id['key']}}" data-system_type="{{system_type['key']}}" onclick="toggleSourceSelection(this)" checked
-                                                />
-                                                <label for="{{unique_system_id}}_{{source['key']}}">{{source['key']}} ({{source_distribution}})</label>
-                                            </li>
-                                        {% endfor %}
-                                        </ul>
-                                    </li>
-                                {% endfor %}
-                                </ul>
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
+                {% include 'source_filters.html' %}
                 <div id="explore_button">
                     <button class="btn" onclick="onClickExploreLogs()">Explore Logs <span class="arrow right"></span></button>
                 </div>
@@ -172,31 +125,11 @@
     // URL String contains a term 'KIBANA_QUERY' which should be replaced
     // with a given query
     const KIBANA_BASE_URL = "{{kibana_base_url}}";
-    const systemTypeInputElements = Array.from(document.getElementsByName('system_type'));
     const logLevelStatsElement = document.getElementById('log_level_stats');
     const recentLogsElement = document.getElementById('recent_logs');
 
     const logId = "{{log_id}}";
     const sources = {{sources}};
-    const uniqueEntries = {{unique_entries}};
-    let selectedFilters = {};
-
-    const filterComponents = uniqueEntries.reduce((filterComponents, entries, systemTypeIndex) => {
-        const systemType = entries['key'];
-        selectedFilters[systemType] = {};
-        const systemTypeElements = Array.from(document.querySelectorAll(`input[name="system_id"][data-system_type="${systemType}"]`));
-
-        entries['system_id']['buckets'].forEach(systemIDEntry => {
-            const systemID = systemIDEntry["key"];
-            const uniqueKeyForSystemID = `${systemTypeIndex}_${systemType}_${systemID}`;
-            const systemIDElements = Array.from(document.querySelectorAll(`[data-system_type="${systemType}"][data-system_id="${systemID}"]`));
-            filterComponents["system_id"][uniqueKeyForSystemID] = systemIDElements;
-            selectedFilters[systemType][systemID] = systemIDElements.map(element => element.value);
-        });
-
-        filterComponents["system_type"][systemType] = systemTypeElements;
-        return filterComponents;
-    }, {"system_type": {}, "system_id": {}});
 
     // Total log entries indexed in ES
     const totalEntries = Object.keys(sources).reduce((total, source) => (total + sources[source]), 0);
@@ -230,158 +163,19 @@
     });
 
 
-    function toggleSystemTypeSelection(systemTypeElement) {
-        // Toggle the state of input checkbox of system_type
-        // States: checked, indeterminate and unchecked
-        const systemType = systemTypeElement.value;
-        const isChecked = systemTypeElement.checked;
-        filterComponents["system_type"][systemType].forEach(systemIDElement => {
-            // Toggles the system_id elements within the system_type
-            systemIDElement.checked = isChecked;
-            toggleSystemIDSelection(systemIDElement);
-        });
-        if (!isChecked) {
-            selectedFilters[systemType] = {};
-        }
-    }
-
-
-    function toggleSystemIDSelection(systemIDElement) {
-        // Toggle the state of input checkbox of system_type, system_id
-        // States: checked, indeterminate and unchecked
-        const systemID = systemIDElement.value;
-        const isChecked = systemIDElement.checked;
-
-        const dataset = systemIDElement.dataset;
-        const systemType = dataset.system_type;
-
-        const systemTypeElement = systemTypeInputElements.find(type => type.value === systemType);
-        const systemTypeIndex = systemTypeElement.dataset.system_type_index;
-        const uniqueKeyForSystemID = `${systemTypeIndex}_${systemType}_${systemID}`;
-        const systemIDElements = filterComponents["system_id"][uniqueKeyForSystemID];
-
-        systemIDElements.forEach(component => {
-            // Selects all the sources within the system_id
-            component.checked = isChecked;
-        });
-        if (isChecked) {
-            selectedFilters[systemType][systemID] = systemIDElements.map(component => component.value);
-        }
-        else {
-            delete selectedFilters[systemType][systemID];
-        }
-
-        const selectedSystemIDs = Object.keys(selectedFilters[systemType]);
-        if (selectedSystemIDs.length === 0) {
-            // All the system ids under a system_type are not selected
-            systemTypeElement.checked = false;
-            systemTypeElement.indeterminate = false;
-        }
-        else if(filterComponents["system_type"][systemType].every(component => component.checked)) {
-            // All the system ids under a system_type are selected
-            systemTypeElement.checked = true;
-            systemTypeElement.indeterminate = false;
-        }
-        else {
-            systemTypeElement.indeterminate = true;
-        }
-    }
-
-
-    function toggleSourceSelection(sourceElement) {
-        // Toggle the state of input checkbox of system_type, system_id, source
-        // States: checked, indeterminate and unchecked
-        const isChecked = sourceElement.checked;
-        const dataset = sourceElement.dataset;
-        const systemType = dataset.system_type;
-        const systemID = dataset.system_id;
-
-        const systemTypeElement = systemTypeInputElements.find(type => type.value === systemType);
-        const systemTypeIndex = systemTypeElement.dataset.system_type_index;
-        const uniqueKeyForSystemID = `${systemTypeIndex}_${systemType}_${systemID}`;
-
-        const systemIDElement = filterComponents["system_type"][systemType].find(ids => ids.value === systemID);
-        const totalSystemIDs = filterComponents["system_type"][systemType].length;
-        const totalSources = filterComponents["system_id"][uniqueKeyForSystemID].length;
-
-        if (isChecked) {
-            // Adding the source to the selected filters
-            if (!(systemID in selectedFilters[systemType])) {
-                // If the source is the first selected item in the selectedFilters object
-                selectedFilters[systemType][systemID] = [];
-            }
-            selectedFilters[systemType][systemID].push(sourceElement.value);
-
-            // Toggling the state of system_id
-            const selectedSources = selectedFilters[systemType][systemID];
-            if (selectedSources.length === 1) {
-                // First source checked for the system_id
-                systemIDElement.indeterminate = true;
-            }
-            else if (selectedSources.length == totalSources) {
-                // All the sources checked within the system_id
-                systemIDElement.checked = true;
-                systemIDElement.indeterminate = false;
-            }
-
-            // Toggling the state of system_type
-            const selectedSystemIDs = Object.keys(selectedFilters[systemType]);
-            if (selectedSystemIDs.length === 1) {
-                // First system_id for the system_type
-                systemTypeElement.checked = false;
-                systemTypeElement.indeterminate = true;
-            }
-            if(filterComponents["system_type"][systemType].every(component => component.checked)) {
-                // All the system_ids checked within the system_type
-                systemTypeElement.checked = true;
-                systemTypeElement.indeterminate = false;
-            }
-        }
-        else {
-            // Removing source from the selected filters
-            selectedFilters[systemType][systemID] = selectedFilters[systemType][systemID].filter(values => values != sourceElement.value);
-            if (selectedFilters[systemType][systemID].length === 0) {
-                // All the sources unchecked within the system_id
-                systemIDElement.checked = false;
-                systemIDElement.indeterminate = false;
-                delete selectedFilters[systemType][systemID];
-            }
-            else {
-                systemIDElement.indeterminate = true;
-            }
-            const selectedSystemIDs = Object.keys(selectedFilters[systemType]);
-            if (selectedSystemIDs.length === 0) {
-                // All the system_ids unchecked within the system_type
-                systemTypeElement.indeterminate = false;
-                systemTypeElement.checked = false;
-            }
-            else {
-                systemTypeElement.indeterminate = true;
-            }
-        }
-    }
-
-
     function onClickExploreLogs() {
-        // Builds query based on the selected filters and redirects to Kibana
-        let queries = [];
-        for (const [systemType, systemIDs] of Object.entries(selectedFilters)) {
-            for (const [systemID, sources] of Object.entries(systemIDs)) {
-                const systemTypeQuery = `system_type:"${systemType}" and`;
-                const systemIDQuery =`system_id:"${systemID}" and`;
-                queries.push(`(${systemTypeQuery} ${systemIDQuery} src:(${sources.join(' or ')}))`);
-            }
-        }
-        if (queries.length === 0) {
-            // Show error message that no source is being selected
-            alert("Select any filter to explore logs");
-            return;
-        }
-        let query = encodeURI(queries.join(' or '));
+        const filters = {
+            "text": buildSourceFilterQuery()
+        };
+        const filterString = JSON.stringify(filters);
 
-        const kibana_url = KIBANA_BASE_URL.replace("KIBANA_QUERY", query);
-        window.open(kibana_url, "_blank");
-        trackWebEvent("EXPLORE_LOGS", data={filters: selectedFilters})
+        let search_url = LOG_VIEW_BASE_URL + location.search;
+        if (filterString != "") {
+            search_url += (location.search === "" ? "?filter=" : "&filter=") + filterString;
+        }
+        search_url += location.hash;
+        window.open(search_url, "_blank");
+        trackWebEvent("EXPLORE_LOGS", data={filters: selectedFilters});
     }
 
 
@@ -549,25 +343,6 @@
         encodedQuery = encodeURI(`${filterKey}:(${filters.join(" or ")})`);
         query = `${query} ${encodedQuery}`;
         return query;
-    }
-
-    function toggleShowFilterBox(arrowElement, filterBoxId) {
-        // Toggling the display of filter box
-        const filterBoxElement = document.getElementById(filterBoxId);
-        if (filterBoxElement.style.display === "none" || filterBoxElement.style.display === "") {
-            // Filter box is open
-            filterBoxElement.style.display = "block";
-            arrowElement.firstElementChild.classList.remove('down');
-            arrowElement.firstElementChild.classList.add('up');
-            trackWebEvent("FILTER_BOX_OPENED");
-        }
-        else {
-            // Filter box is closed
-            filterBoxElement.style.display = "none";
-            arrowElement.firstElementChild.classList.remove('up');
-            arrowElement.firstElementChild.classList.add('down');
-            trackWebEvent("FILTER_BOX_CLOSED");
-        }
     }
 
     function trackClickOnLogEntries(element, eventName) {
