@@ -265,9 +265,9 @@
                 {% include 'source_filters.html' %}
                 <div class="filters">
                     <label for="dt_start">Enter start time</label>
-                    <input type="datetime-local" id="dt_start" onchange="handleTimeFilters(this, 'start')"/>
+                    <input type="datetime-local" id="dt_start" placeholder="yyyy-mm-ddTHH:MM:SS.ss" onchange="handleTimeFilters(this, 'start')"/>
                     <label for="dt_end">Enter end time</label>
-                    <input type="datetime-local" id="dt_end" onchange="handleTimeFilters(this, 'end')"/>
+                    <input type="datetime-local" id="dt_end" placeholder="yyyy-mm-ddTHH:MM:SS.ss" onchange="handleTimeFilters(this, 'end')"/>
                 </div>
             </div>
             <div id="explore_button">
