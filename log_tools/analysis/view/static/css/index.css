@@ -63,6 +63,12 @@ h3 {
 .btn:hover {
     background-color: #3B7FC440;
 }
+.btn:disabled,
+.btn[disabled]{
+    border: 2px solid #999999;
+    background-color: #cccccc;
+    color: #666666;
+}
 .arrow {
     border: solid;
     border-width: 0 3px 3px 0;
