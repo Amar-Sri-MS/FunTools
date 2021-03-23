@@ -718,6 +718,19 @@ def _get_log_view_base_url(log_id):
     log_view_base_url = ("/log/{}").format(log_id)
     return log_view_base_url
 
+
+@app.route('/log/<log_id>/dashboard/anchors', methods=['GET'])
+def get_anchors(log_id):
+    """
+    Returns current, previous and next anchor files
+    for the given page number.
+    page number is zero indexed.
+    """
+    page_num = int(request.args.get('page', 0))
+    anchors = _read_paginated_anchor_file(log_id, page_num)
+    return anchors
+
+
 def _get_kibana_base_url(log_id):
     """
     Creates a Kibana Base URL which could be used to create kibana urls
@@ -765,22 +778,40 @@ def _read_file(log_id, file_name, default={}):
 
     return data
 
+def _read_paginated_anchor_file(log_id, page_num=0):
+    """
+    Returns current, previous and next anchor files
+    for the given page number
+    """
+    previous_anchors = _read_file(log_id, f'anchors_{page_num-1}.json', default=None)
+    anchors = _read_file(log_id, f'anchors_{page_num}.json', default=[])
+    next_anchors = _read_file(log_id, f'anchors_{page_num+1}.json', default=None)
+
+    return {
+        'previous_anchors': previous_anchors,
+        'anchors': anchors,
+        'next_anchors': next_anchors
+    }
+
 def _get_analytics_data(log_id):
     """
     Get all the analytics data
     Returns a dict containing duplicates and anchors
     """
-
+    # Reading metadata of detected anchors file
+    anchors_meta = _read_file(log_id, 'anchors_meta.json', default={})
     # Reading detected anchors from the JSON file
-    anchors = _read_file(log_id, 'anchors.json', default=[])
+    anchors = _read_paginated_anchor_file(log_id)
 
     # Reading detected duplicates from the JSON file
     duplicates = _read_file(log_id, 'duplicates.json', default=[])
 
     return {
-        'anchors': anchors,
+        **anchors,
+        'anchors_meta': anchors_meta,
         'duplicates': duplicates
     }
+
 
 def _render_dashboard_page(log_id, jinja_env, template):
 

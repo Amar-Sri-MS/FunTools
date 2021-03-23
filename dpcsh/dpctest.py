@@ -157,7 +157,7 @@ def get_dpc_host_and_port(style):
     if style == 'fun-on-demand-cc':
         if len(env_dict['cclinux_hosts']) != 1:
             raise RuntimeError("configuration error")
-        return env_dict['cclinux_hosts'][0], 4221
+        return env_dict['cclinux_hosts'][0]['host'], 4221
 
     if len(env_dict['dpc_hosts']) != 1:
         raise RuntimeError("configuration error")

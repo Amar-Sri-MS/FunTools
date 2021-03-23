@@ -272,6 +272,12 @@ class AnalyticsOutput(Block):
         # Sort the anchor matches by timestamp
         matches = sorted(self.anchor_matches)
 
+        file_num = 0
+        line_num = 0
+        MAX_LINES_PER_PAGE = 50
+
+        failure_line_count = 0
+
         for match in matches:
             is_failure = match.anchor.get('is_failure', False)
             source = match.msg_dict.get('uid', 'N/A')
@@ -296,7 +302,31 @@ class AnalyticsOutput(Block):
                 'doc_id': es_doc_id
             })
 
-        self._save_json('anchors.json', anchors_list)
+            line_num += 1
+
+            # Paginate when max file count reached
+            if line_num == MAX_LINES_PER_PAGE:
+                # Save the anchors in a file
+                self._save_json(f'anchors_{file_num}.json', anchors_list)
+                # Reset counters and anchors list
+                line_num = 0
+                file_num += 1
+                anchors_list = []
+
+            if is_failure:
+                failure_line_count += 1
+
+        # Save the remaining anchors
+        if line_num != 0:
+            self._save_json(f'anchors_{file_num}.json', anchors_list)
+            file_num += 1
+
+        # Save anchors metadata
+        self._save_json('anchors_meta.json', {
+            'total_pages': file_num,
+            'lines_per_page': MAX_LINES_PER_PAGE,
+            'total_failures': failure_line_count
+        })
 
     def _create_template(self, path, template_dict):
         """ Creates a template in the specified path using the template_dict """
