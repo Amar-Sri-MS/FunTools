@@ -45,7 +45,7 @@
                             {% set log_distribution = calculatePercentage(stat.count, total_entries) %}
                             {% set log_level_obj = {"level": level} %}
                             <div class="level_stat" title="{{stat.keywords}}">
-                                <div><a href="{{stat.kibana_url}}" target="_blank" onclick="trackWebEvent('LOG_LEVEL_CLICKED', {{log_level_obj}})">{{level}}</a></div>:
+                                <div><a href="{{stat.log_view_url}}" target="_blank" onclick="trackWebEvent('LOG_LEVEL_CLICKED', {{log_level_obj}})">{{level}}</a></div>:
                                 <div class="fixed-font">{{stat.count}}({{log_distribution}})</div>
                             </div>
                         {% endfor %}
@@ -124,7 +124,7 @@
     // Kibana URL for redirecting to Kibana with given query.
     // URL String contains a term 'KIBANA_QUERY' which should be replaced
     // with a given query
-    const KIBANA_BASE_URL = "{{kibana_base_url}}";
+    const LOG_VIEW_BASE_URL = "{{log_view_base_url}}";
     const logLevelStatsElement = document.getElementById('log_level_stats');
     const recentLogsElement = document.getElementById('recent_logs');
 
@@ -208,17 +208,17 @@
         let totalEntriesForSource = selectedSourceForLogLevelStats === "all" ?
                                     totalEntries :
                                     sources[selectedSourceForLogLevelStats];
-        const kibanaUrlForSource = getKibanaURLForSources([selectedSourceForLogLevelStats]);
+        const logViewUrlForSource = getLogViewURLForSources([selectedSourceForLogLevelStats]);
 
         // Sorting log levels by severity order
         const logLevels = Object.keys(stats).sort((level1, level2) => stats[level1]['order'] - stats[level2]['order']);
 
-        let divs = [`<div class="level_stat"><div><a href="${kibanaUrlForSource}" target="_blank">Total</a></div>: <div class="fixed-font">${totalEntriesForSource}(${Math.round((totalEntriesForSource/totalEntries)*100)}%)</div></div>`];
+        let divs = [`<div class="level_stat"><div><a href="${logViewUrlForSource}" target="_blank">Total</a></div>: <div class="fixed-font">${totalEntriesForSource}(${Math.round((totalEntriesForSource/totalEntries)*100)}%)</div></div>`];
         for (const level of logLevels) {
             const stat = stats[level];
             // let logDistribution = Math.round((stat.count/totalEntriesForSource)*100);
             let logDistribution = ((stat.count/totalEntriesForSource)*100).toFixed(2);
-            divs.push(`<div class="level_stat" title="${stat.keywords}"><div><a href="${stat.kibana_url}" target="_blank">${level}</a></div>: <div class="fixed-font">${stat.count}(${logDistribution}%)</div></div>`);
+            divs.push(`<div class="level_stat" title="${stat.keywords}"><div><a href="${stat.log_view_url}" target="_blank">${level}</a></div>: <div class="fixed-font">${stat.count}(${logDistribution}%)</div></div>`);
         }
         logLevelStatsElement.innerHTML = divs.join('\n');
     }
@@ -312,13 +312,13 @@
         duplicateTableBodyElement.innerHTML = tableRows.join('\n');
     }
 
-    function getKibanaURLForSources(sources) {
+    function getLogViewURLForSources(sources) {
         // Creates a Kibana URL for the given sources
         let query = "";
         if (!sources.includes("all"))
             query = encodeURI(`src:(${sources.join(" or ")})`);
-        const kibana_url = KIBANA_BASE_URL.replace("KIBANA_QUERY", query);
-        return kibana_url;
+        const log_view_url = `${LOG_VIEW_BASE_URL}/search?query=${query}`;
+        return log_view_url;
     }
 
     function appendQueryForFilter(query, filterKey, filters=[], operation="and") {

@@ -54,7 +54,8 @@ class ElasticsearchOutput(Block):
     def process(self, iters):
         """ Writes contents from all iterables to elasticsearch """
         # Creating an index pattern for Kibana
-        self.create_kibana_index_pattern()
+        # Not required since we are using homegrown view
+        # self.create_kibana_index_pattern()
 
         for it in iters:
             # Copying the iterator to send to the next output block.
