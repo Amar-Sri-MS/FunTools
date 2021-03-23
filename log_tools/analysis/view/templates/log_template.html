@@ -48,11 +48,33 @@
         prev_button = document.getElementById("prev_button");
         next_button = document.getElementById("next_button");
 
+        //Get the button:
+        const top_button = document.getElementById("top_button");
+
+        // When the user scrolls down 50px from the top of the document, show the button
+        window.onscroll = () => scrollFunction()
+
+        function scrollFunction() {
+            if (document.body.scrollTop > 50 || document.documentElement.scrollTop > 50) {
+                top_button.style.display = "block";
+            } else {
+                top_button.style.display = "none";
+            }
+        }
+
         // Check if an anchor link is present
         const anchor_link = document.getElementById("anchor_link");
         if (location.hash === "#0") {
             anchor_link.style.display = "block";
         }
+
+
+    }
+
+    // When the user clicks on the button, scroll to the top of the document
+    function onClickTopButton() {
+        document.body.scrollTop = 0; // For Safari
+        document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
     }
 
     function handleSearch(search) {
@@ -282,9 +304,7 @@
             </div>
         </div>
     </div>
-    <div id="top_button">
-        <a href="#top">Jump to top of page</a>
-    </div>
+    <button onclick="onClickTopButton()" id="top_button" title="Go to top">Jump to top</button>
     <div id="loader">
         <svg version="1.1" id="L6" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
             viewBox="0 0 100 100" enable-background="new 0 0 100 100" xml:space="preserve">
