@@ -441,9 +441,6 @@ def get_log_page(log_id):
     """
     state, table_body = _get_requested_log_lines(log_id)
 
-    es = ElasticLogSearcher(log_id)
-    sources = es.get_unique_entries('src')
-
     # Assume our template is right next door to us.
     dir = os.path.join(_get_script_dir(), 'templates')
 
@@ -452,8 +449,8 @@ def get_log_page(log_id):
                              lstrip_blocks=True)
     template = jinja_env.get_template('log_template.html')
 
-    return _render_log_page(table_body, sources, state,
-                            log_id, jinja_env, template)
+    return _render_log_page(table_body, state, log_id,
+                            jinja_env, template)
 
 
 @app.route('/log/<log_id>/content', methods=['POST'])
@@ -591,13 +588,19 @@ def get_temporally_close_hits(es, state, size, filters, next, prev):
     return before, after, state
 
 
-def _render_log_page(table_body, sources, state,
-                     log_id, jinja_env, template):
+def _render_log_page(table_body, state, log_id,
+                     jinja_env, template):
     """ Renders the log page """
+    es = ElasticLogSearcher(log_id)
+    sources = es.get_unique_entries('src')
+    unique_entries = es.get_aggregated_unique_entries(['system_type', 'system_id'], ['src'])
+
     template_dict = {}
     template_dict['body'] = ''.join(table_body)
     template_dict['log_id'] = log_id
     template_dict['sources'] = sources
+    template_dict['unique_entries'] = unique_entries
+    template_dict['log_view_base_url'] = _get_log_view_base_url(log_id)
     template_dict['state'] = state.to_json_str()
 
     result = template.render(template_dict, env=jinja_env)

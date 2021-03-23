@@ -1,13 +1,7 @@
-.navbar {
-}
 .pagination {
     margin: auto;
     text-align: center;
-}
-.file_contents {
-    display: block;
-    font-family: monospace;
-    white-space: pre;
+    padding: 10px 0px;
 }
 .search_highlight {
     background-color: yellow;
@@ -21,7 +15,12 @@ td {
     padding-right: 5px
 }
 .filters {
-    padding: 10px 0px;
+    padding: 10px;
+    height: max-content;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
 }
 .filters_button {
     display: flex;
