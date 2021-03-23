@@ -51,10 +51,8 @@
 
         //Get the button:
         const top_button = document.getElementById("top_button");
-
         // When the user scrolls down 50px from the top of the document, show the button
         window.onscroll = () => scrollFunction()
-
         function scrollFunction() {
             if (document.body.scrollTop > 50 || document.documentElement.scrollTop > 50) {
                 top_button.style.display = "block";
@@ -69,6 +67,21 @@
             anchor_link.style.display = "block";
         }
 
+        // Check if time is present in the url
+        const dt_start = document.getElementById("dt_start");
+        const dt_end = document.getElementById("dt_end");
+        const queryParams = new URLSearchParams(location.search.substring(1));
+        if (queryParams.get('filter')) {
+            const filters = JSON.parse(queryParams.get('filter'));
+            const timeFilter = filters['time'];
+            if (timeFilter && timeFilter.length === 2) {
+                startTime = timeFilter[0];
+                endTime = timeFilter[1];
+                // Setting values of date picker
+                dt_start.value = startTime;
+                dt_end.value = endTime;
+            }
+        }
 
     }
 
@@ -268,8 +281,11 @@
                 <div class="filters">
                     <label for="dt_start">Enter start time</label>
                     <input type="datetime-local" id="dt_start" placeholder="yyyy-mm-ddTHH:MM:SS.ss" onchange="handleTimeFilters(this, 'start')"/>
+                    <button onclick="javascript:dt_start.value=''">X</button>
+
                     <label for="dt_end">Enter end time</label>
                     <input type="datetime-local" id="dt_end" placeholder="yyyy-mm-ddTHH:MM:SS.ss" onchange="handleTimeFilters(this, 'end')"/>
+                    <button onclick="javascript:dt_end.value=''">X</button>
                 </div>
             </div>
             <div id="explore_button">

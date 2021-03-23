@@ -22,6 +22,10 @@ td {
     justify-content: space-between;
     flex-wrap: wrap;
 }
+.filters > label {
+    padding-left: 20px;
+    padding-right: 10px;
+}
 .filters_button {
     display: flex;
     width: 100%;
