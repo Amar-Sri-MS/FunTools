@@ -3,6 +3,7 @@
 <head>
     <link rel="stylesheet" type="text/css" href="/static/css/index.css">
     <link rel="stylesheet" type="text/css" href="/static/css/dashboard.css">
+    <script type="text/javascript" src="/static/js/tracker.js"></script>
     <title>Log Analyzer Dashboard: {{log_id}}</title>
 </head>
 <body>
@@ -217,14 +218,6 @@
 
         trackWebEvent('PAGE_VIEWED');
     })();
-
-    // Registering click event handler to track web events
-    document.addEventListener('click', function(element) {
-        // Only track elements with the data attribute "web_event"
-        if (element.target.dataset['web_event']) {
-            trackWebEvent(element.target.dataset['web_event']);
-        }
-    });
 
     // Registering click event to track clicks on hyperlinks of duplicate logs
     document.getElementById('duplicates').addEventListener('click', function(element) {
@@ -582,23 +575,6 @@
         if (element.target.tagName.toUpperCase() === 'A') {
             trackWebEvent(eventName, { link: element.target.href });
         }
-    }
-
-    function trackWebEvent(eventName, data=null) {
-        // Create an event object with event name and
-        // timestamp
-        const eventData = {
-            event: eventName,
-            data,
-            timestamp: Date.now(),
-            logID: logId
-        }
-
-        const xhttp = new XMLHttpRequest();
-        const TRACK_WEB_EVENT_API = `${window.location.origin}/events/track`;
-        xhttp.open('POST', TRACK_WEB_EVENT_API);
-        xhttp.setRequestHeader('Content-Type', 'application/json');
-        xhttp.send(JSON.stringify(eventData));
     }
 
 </script>
