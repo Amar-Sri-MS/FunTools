@@ -218,7 +218,8 @@ class ElasticLogSearcher(object):
                     "msg": log content
                 }, ...
             ],
-            "state" { opaque state object holding search state }
+            "state" { opaque state object holding search state },
+            "total_search_hits" { "value": 10000, "relation": "gte" }
         }
 
         All results are returned in ascending timestamp order.
@@ -233,12 +234,15 @@ class ElasticLogSearcher(object):
                                 index=self.index,
                                 size=query_size,
                                 sort='@timestamp:asc')
+        # A dict with value (upto 10k) and relation if
+        # the actual hits is exact or greater than
+        total_search_hits = result['hits']['total']
         result = result['hits']['hits']
 
         new_state = ElasticLogState.clone(state)
-        _, new_state.after_sort_val = self._get_delimiting_sort_values(result)
+        new_state.before_sort_val, new_state.after_sort_val = self._get_delimiting_sort_values(result)
 
-        return {'hits': result, 'state': new_state}
+        return {'hits': result, 'state': new_state, 'total_search_hits': total_search_hits}
 
     def _build_query_body(self, query_term,
                           source_filters, time_filters):
@@ -309,13 +313,16 @@ class ElasticLogSearcher(object):
                                 index=self.index,
                                 size=query_size,
                                 sort='@timestamp:desc')
+        # A dict with value (upto 10k) and relation if
+        # the actual hits is exact or greater than
+        total_search_hits = result['hits']['total']
         result = result['hits']['hits']
         result.reverse()
 
         new_state = ElasticLogState.clone(state)
         new_state.before_sort_val, _ = self._get_delimiting_sort_values(result)
 
-        return {'hits': result, 'state': new_state}
+        return {'hits': result, 'state': new_state, 'total_search_hits': total_search_hits}
 
     @staticmethod
     def _get_delimiting_sort_values(result):
@@ -439,7 +446,7 @@ def get_log_page(log_id):
 
     Subsequent updates to the page are handled via POST requests.
     """
-    state, table_body = _get_requested_log_lines(log_id)
+    state, total_search_hits, table_body = _get_requested_log_lines(log_id)
 
     # Assume our template is right next door to us.
     dir = os.path.join(_get_script_dir(), 'templates')
@@ -449,8 +456,8 @@ def get_log_page(log_id):
                              lstrip_blocks=True)
     template = jinja_env.get_template('log_template.html')
 
-    return _render_log_page(table_body, state, log_id,
-                            jinja_env, template)
+    return _render_log_page(table_body, total_search_hits, state,
+                            log_id, jinja_env, template)
 
 
 @app.route('/log/<log_id>/content', methods=['POST'])
@@ -458,9 +465,10 @@ def get_log_contents(log_id):
     """
     Obtains log contents which can be used to update a page.
     """
-    state, page_body = _get_requested_log_lines(log_id)
+    state, total_search_hits, page_body = _get_requested_log_lines(log_id)
 
     return {'content': ''.join(page_body),
+            'total_search_hits': total_search_hits,
             'state': state.to_dict()}
 
 
@@ -480,6 +488,7 @@ def _get_requested_log_lines(log_id):
 
     Returns a tuple containing: (
         state: next state object for future searches
+        total_search_hits: object containing total hits value
         body: log lines formatted as HTML table body
     )
     """
@@ -499,7 +508,7 @@ def _get_requested_log_lines(log_id):
     # Elasticsearch has a limit of 10K results, so pagination is required
     size = 1000
     es = ElasticLogSearcher(log_id)
-    before, after, state = get_temporally_close_hits(es, state, size,
+    before, after, state, total_search_hits = get_temporally_close_hits(es, state, size,
                                                      filters, next, prev)
 
     # Before and after are not inclusive searches, so we have to include
@@ -525,7 +534,7 @@ def _get_requested_log_lines(log_id):
         line = _convert_to_table_row(hit)
         page_body.append(line)
 
-    return state, page_body
+    return state, total_search_hits, page_body
 
 
 def _convert_to_table_row(hit):
@@ -562,11 +571,12 @@ def get_temporally_close_hits(es, state, size, filters, next, prev):
 
     The prev and next booleans control whether to return before, after or both.
 
-    The returned tuple is (before_list, after_list, next_state).
+    The returned tuple is (before_list, after_list, next_state, total_search_hits).
     Both lists are ordered by timestamp. We only return empty lists, never None.
     """
     before = []
     after = []
+    total_search_hits = 0
 
     query_string = filters.get('text')
     source_filters = filters.get('sources', [])
@@ -578,18 +588,20 @@ def get_temporally_close_hits(es, state, size, filters, next, prev):
                             source_filters, time_filters, query_size=size)
         after = results['hits']
         state = results['state']
+        total_search_hits = results['total_search_hits']
     if prev:
         results = es.search_backwards(state, query_string,
                                       source_filters, time_filters,
                                       query_size=size)
         before = results['hits']
         state = results['state']
+        total_search_hits = results['total_search_hits']
 
-    return before, after, state
+    return before, after, state, total_search_hits
 
 
-def _render_log_page(table_body, state, log_id,
-                     jinja_env, template):
+def _render_log_page(table_body, total_search_hits, state,
+                     log_id, jinja_env, template):
     """ Renders the log page """
     es = ElasticLogSearcher(log_id)
     sources = es.get_unique_entries('src')
@@ -598,6 +610,7 @@ def _render_log_page(table_body, state, log_id,
     template_dict = {}
     template_dict['body'] = ''.join(table_body)
     template_dict['log_id'] = log_id
+    template_dict['total_search_hits'] = total_search_hits
     template_dict['sources'] = sources
     template_dict['unique_entries'] = unique_entries
     template_dict['log_view_base_url'] = _get_log_view_base_url(log_id)

@@ -246,6 +246,14 @@
             </div>
         </div>
         <div class="container">
+            <div class="content">
+                {% if total_search_hits.relation == "gte" %}
+                    {% set total_hits = total_search_hits.value|string+'+' %}
+                {% else %}
+                    {% set total_hits = total_search_hits.value %}
+                {% endif %}
+                <b>{{total_hits}} results</b> sorted from earliest to latest timestamp
+            </div>
             <div class="pagination" id="prev_button">
                 <button class="btn" onclick="loadPrev()">Load previous logs</button>
             </div>
