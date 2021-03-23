@@ -7,8 +7,6 @@ document.addEventListener('click', function(element) {
 });
 
 function trackWebEvent(eventName, data=null) {
-    console.log(eventName, data);
-    return;
     // Create an event object with event name and
     // timestamp
     const eventData = {
