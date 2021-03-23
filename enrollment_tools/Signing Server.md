@@ -20,7 +20,11 @@ Specify the label of the key in the HSM. The modulus of this key is returned in 
 
 ##### production (optional argument, default value: 0)
 
-Use the production HSM if the value is not zero.
+0: development HSM
+
+1: DPU HSM
+
+2: AST2600 HSM
 
 ##### format (optional argument, default value: 'binary')
 
@@ -86,7 +90,7 @@ Possible values are:
 
 ## POST
 
-The post request is used to sign a single digest.
+The post request is used to sign a single digest with the development keys.
 
 ### Hash signing (development builds only)
 

@@ -1,20 +1,24 @@
 #! /usr/bin/env python3
 
 ##############################################################################
-#  hsmdaemon.py
+#  hsmdaemon.cgi
 #
 # simple cgi-script that extract a message from the request and
 # sends it
 #
-#  Copyright (c) 2018-2020. Fungible, inc. All Rights Reserved.
+# only used by the HSM crypto officer client: funkey.py
+#
+# Copyright (c) 2018-2020. Fungible, inc. All Rights Reserved.
 #
 ##############################################################################
 
 import os
 import sys
+import cgi
+
 import traceback
 
-from common import log
+from common import log, safe_form_get
 from hsmd_common import hsmd_rpc_call
 
 RESTRICTED_PORT = 4443
@@ -36,7 +40,11 @@ def handle_post():
     ''' just package the content into a RPC message '''
     len = int(os.environ['CONTENT_LENGTH'])
     request = sys.stdin.read(len)
-    response = hsmd_rpc_call(request)
+
+    form = cgi.FieldStorage()
+    hsm_id = int(safe_form_get(form, "hsm_id", 1))
+
+    response = hsmd_rpc_call(request, hsm_id)
     send_json(response)
 
 
@@ -75,6 +83,17 @@ def main_program():
         err_msg = str(err) + "\n" + traceback.format_exc()
         print("Content-Length: %d\n" % len(err_msg))
         print(err_msg)
+
+    except FileNotFoundError as err:
+        err_str = "%s: file: %s" % (err, err.filename)
+        log("Exception: %s" % err_str)
+        traceback.print_exc()
+        # Response
+        print("Status: 503 Service Unavailable")
+        err_msg = err_str + "\n" + traceback.format_exc()
+        print("Content-Length: %d\n" % len(err_msg))
+        print(err_msg)
+
 
         # all other errors are reported as 500 Internal Server Error
     except Exception as err:
