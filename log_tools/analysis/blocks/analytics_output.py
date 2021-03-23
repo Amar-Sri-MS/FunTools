@@ -172,17 +172,6 @@ class AnalyticsOutput(Block):
 
         KIBANA_HOST = self.config['KIBANA']['host']
         KIBANA_PORT = self.config['KIBANA']['port']
-        # KIBANA defaults.
-        # TODO(Sourabh): Would be better to have this in config files
-        # kibana_time_filter = "from:'1970-01-01T00:00:00.000Z',to:now"
-        # kibana_selected_columns = 'src,level,msg'
-        # self.kibana_base_url = ("http://{}:{}/app/kibana#/discover/?_g=(time:({}))&_a=(columns:!({}),index:log_{},"
-        #                         "query:(language:kuery,query:'KIBANA_QUERY'))").format(KIBANA_HOST,
-        #                                                                                 KIBANA_PORT,
-        #                                                                                 kibana_time_filter,
-        #                                                                                 kibana_selected_columns,
-        #                                                                                 build_id)
-
         self.log_view_base_url = self.config['LOG_VIEW_BASE_URL'].replace('LOG_ID', self.log_id)
 
         # Check for anchors in log lines with timestamps
