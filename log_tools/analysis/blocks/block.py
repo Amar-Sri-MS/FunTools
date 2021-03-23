@@ -41,5 +41,6 @@ class Block(object):
                 'uid': tuple[4],
                 'display_time': tuple[5],
                 'level': tuple[6],
-                'line': tuple[7]
+                'line': tuple[7],
+                'doc_id': tuple[8]
                 }

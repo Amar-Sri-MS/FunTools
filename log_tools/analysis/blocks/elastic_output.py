@@ -71,7 +71,12 @@ class ElasticsearchOutput(Block):
             for success, info in parallel_bulk(self.es, self.generate_es_doc(it), chunk_size=10000):
                 if not success:
                     print('Failed to index a document', info)
-            yield from it_copy
+                else:
+                    yield from self._add_doc_id_in_iters(next(it_copy), info)
+
+    def _add_doc_id_in_iters(self, tuple, info):
+        """ Adding ES doc id to the message tuple """
+        yield (*tuple, info['index']['_id'])
 
     def generate_es_doc(self, it):
         """ Maps iterable contents to elasticsearch document """
