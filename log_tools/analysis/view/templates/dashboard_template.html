@@ -340,7 +340,7 @@
         anchorsNext.dataset.page = anchorsPage + 1;
         anchorsFirst.disabled = anchorsPage === 0;
         anchorsFirst.dataset.page = 0;
-        anchorsLast.disabled = total_pages > 1 && anchorsPage === (total_pages-1);
+        anchorsLast.disabled = anchorsPage === (total_pages-1);
         anchorsLast.dataset.page = total_pages-1;
 
         if (analyticsData["anchors"].length > 0) {
