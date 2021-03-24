@@ -53,9 +53,6 @@ class ElasticsearchOutput(Block):
 
     def process(self, iters):
         """ Writes contents from all iterables to elasticsearch """
-        # Creating an index pattern for Kibana
-        self.create_kibana_index_pattern()
-
         for it in iters:
             # Copying the iterator to send to the next output block.
             # Might have performance implications because of copying.
@@ -70,7 +67,12 @@ class ElasticsearchOutput(Block):
             for success, info in parallel_bulk(self.es, self.generate_es_doc(it), chunk_size=10000):
                 if not success:
                     print('Failed to index a document', info)
-            yield from it_copy
+                else:
+                    yield from self._add_doc_id_in_iters(next(it_copy), info)
+
+    def _add_doc_id_in_iters(self, tuple, info):
+        """ Adding ES doc id to the message tuple """
+        yield (*tuple, info['index']['_id'])
 
     def generate_es_doc(self, it):
         """ Maps iterable contents to elasticsearch document """

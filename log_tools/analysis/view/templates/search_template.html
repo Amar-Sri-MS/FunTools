@@ -21,8 +21,7 @@
     }
     </style>
 
-    <script>
-    </script>
+    <script type="text/javascript" src="/static/js/tracker.js"></script>
 </head>
 <body>
     <h2>Search results for "{{query}}"</h2>
@@ -44,7 +43,7 @@
     <div class="pagination">
         {% if page_entry_count == max_page_entries %}
         {% set next_page = (page + 1) %}
-        <a href='/log/{{log_id}}/search?query={{query}}&next=true&page={{next_page}}&state={{state}}')>Next</a>
+        <a data-web_event="NEXT_SEARCH_PAGE" href='/log/{{log_id}}/search?query={{query}}&next=true&page={{next_page}}&state={{state}}')>Next</a>
         {% endif %}
     </div>
 </body>

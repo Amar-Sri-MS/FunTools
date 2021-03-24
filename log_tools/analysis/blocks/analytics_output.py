@@ -172,16 +172,7 @@ class AnalyticsOutput(Block):
 
         KIBANA_HOST = self.config['KIBANA']['host']
         KIBANA_PORT = self.config['KIBANA']['port']
-        # KIBANA defaults.
-        # TODO(Sourabh): Would be better to have this in config files
-        kibana_time_filter = "from:'1970-01-01T00:00:00.000Z',to:now"
-        kibana_selected_columns = 'src,level,msg'
-        self.kibana_base_url = ("http://{}:{}/app/kibana#/discover/?_g=(time:({}))&_a=(columns:!({}),index:log_{},"
-                                "query:(language:kuery,query:'KIBANA_QUERY'))").format(KIBANA_HOST,
-                                                                                        KIBANA_PORT,
-                                                                                        kibana_time_filter,
-                                                                                        kibana_selected_columns,
-                                                                                        build_id)
+        self.log_view_base_url = self.config['LOG_VIEW_BASE_URL'].replace('LOG_ID', self.log_id)
 
         # Check for anchors in log lines with timestamps
         timestamped_only = True
@@ -246,12 +237,12 @@ class AnalyticsOutput(Block):
             # Removing special characters
             # TODO(Sourabh): Better approach for handling special characters
             query = '"{}"'.format(msg['line'].replace('\\','').replace('"',' ').replace('\'', '!\'')).replace('!', '!!')
-            kibana_url = self.kibana_base_url.replace('KIBANA_QUERY', quote_plus(query))
+            log_view_url = f'{self.log_view_base_url}/search?query={quote_plus(query)}'
 
             most_duplicated_entries_list.append({
                 'count': entry['count'],
                 'system_id': msg.get('system_id', 'N/A'),
-                'link': kibana_url,
+                'link': log_view_url,
                 'datetime': str(msg['datetime']),
                 'source': msg.get('uid', 'N/A'),
                 'level': msg.get('level'),
@@ -282,21 +273,22 @@ class AnalyticsOutput(Block):
             system_id = match.msg_dict.get('system_id', 'N/A')
             msg = match.msg_dict['line']
             datetime = match.msg_dict['datetime']
-            # Kibana query should be enclosed within quotations for exact match
-            # Removing special characters
-            # TODO(Sourabh): Better approach for handling special characters
-            query = '"{}"'.format(msg.replace('\\','').replace('"',' ').replace('\'', '!\'')).replace('!', '!!')
-            kibana_url = self.kibana_base_url.replace('KIBANA_QUERY', quote_plus(query))
+            es_doc_id = match.msg_dict['doc_id']
+            es_time = datetime.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+            state = f'"before":"{es_time}","after":"{es_time}"'
+            log_view_url = ('{}?state={{{}}}&next=true&prev=true&include={}#0').format(self.log_view_base_url, quote_plus(state), es_doc_id)
 
             anchors_list.append({
                 'source': source,
                 'system_id': system_id,
                 'is_failure': is_failure,
-                'link': kibana_url,
+                'link': log_view_url,
                 'datetime': str(datetime),
                 'level': match.msg_dict['level'],
                 'msg': match.msg_dict['line'],
-                'description': match.short_desc
+                'description': match.short_desc,
+                'doc_id': es_doc_id
             })
 
             line_num += 1

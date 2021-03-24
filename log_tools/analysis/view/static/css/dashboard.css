@@ -1,25 +1,3 @@
-.filters_container {
-    padding: 10px;
-}
-.filter_container {
-    margin-bottom: 15px;
-}
-.filter_header {
-    font-weight: bold;
-}
-.left-arrow::before {
-    content: " >> ";
-    font-family: 'Times';
-    color: #3B7FC4;
-}
-.filters {
-    display: flex;
-    flex-wrap: wrap;
-}
-.filter {
-    width: 250px;
-    padding: 5px 0px;
-}
 .filter_button {
     cursor: pointer;
     text-decoration: underline;
@@ -27,49 +5,15 @@
 .filter_button:hover {
     color: #3B7FC4;
 }
-.filter_box_container {
-    display: flex;
-}
-.filter_box {
-    min-width: 350px;
-    max-width: 500px;
-    margin: 10px;
-    border: 1px solid black;
-    align-self: flex-start;
-}
-.filter_box_header {
-    border-bottom: 1px solid black;
-    padding: 5px;
-    background-color: beige;
-    font-weight: bold;
-    display: flex;
-    justify-content: space-between;
-}
-.filter_box_content {
-    padding: 5px;
-    display: none;
-}
-.filter_box_item {
-    padding: 2px 0px;
-    font-size: 14px;
-}
 .separator {
     border: 1px dashed #a2a2a2;
     margin: 0px 10px;
     font-weight: bold;
 }
-.log_entries {
-    display: block;
-    font-family: monospace;
-}
 td {
     border-collapse: collapse;
     padding-right: 5px;
     white-space: pre;
-}
-#explore_button {
-    display: flex;
-    justify-content: center;
 }
 .distribution_stats {
     min-width: 15%;
@@ -88,10 +32,6 @@ td {
 .level_stat > div:last-child {
     min-width: calc(100% - 90px);
     max-width: calc(100% - 90px);
-}
-ul {
-    list-style: none;
-    padding-inline-start: 25px;
 }
 .scrollable {
     min-height: 250px;

@@ -3,6 +3,7 @@
 <head>
     <link rel="stylesheet" type="text/css" href="/static/css/index.css">
     <link rel="stylesheet" type="text/css" href="/static/css/logs.css">
+    <script type="text/javascript" src="/static/js/tracker.js"></script>
     <script>
     /*
      * If you're reading this, Fungible is interested in talking to you
@@ -35,27 +36,63 @@
     var textFilter = "";
 
     /*
-     * Holds current message sources.
-     */
-    var allSources = {{sources}};
-    var currentSources = Object.keys({{sources}});
-
-    /*
      * Holds current time filters.
      */
     var startTime = "";
     var endTime = "";
-    var loader, selectedFilters, prev_button, next_button;
-    var showingSelectedFilters = false;
+    var loader, prev_button, next_button;
+
+    const LOG_VIEW_BASE_URL = "{{log_view_base_url}}";
 
     window.onload = function() {
         loader = document.getElementById("loader");
-        selectedFilters = document.getElementById("selectedFilters");
         prev_button = document.getElementById("prev_button");
         next_button = document.getElementById("next_button");
+
+        //Get the button:
+        const top_button = document.getElementById("top_button");
+        // When the user scrolls down 50px from the top of the document, show the button
+        window.onscroll = () => scrollFunction()
+        function scrollFunction() {
+            if (document.body.scrollTop > 50 || document.documentElement.scrollTop > 50) {
+                top_button.style.display = "block";
+            } else {
+                top_button.style.display = "none";
+            }
+        }
+
+        // Check if an anchor link is present
+        const anchor_link = document.getElementById("anchor_link");
+        if (location.hash === "#0") {
+            anchor_link.style.display = "block";
+        }
+
+        // Check if time is present in the url
+        const dt_start = document.getElementById("dt_start");
+        const dt_end = document.getElementById("dt_end");
+        const queryParams = new URLSearchParams(location.search.substring(1));
+        if (queryParams.get('filter')) {
+            const filters = JSON.parse(queryParams.get('filter'));
+            const timeFilter = filters['time'];
+            if (timeFilter && timeFilter.length === 2) {
+                startTime = timeFilter[0];
+                endTime = timeFilter[1];
+                // Setting values of date picker
+                dt_start.value = startTime;
+                dt_end.value = endTime;
+            }
+        }
+
+    }
+
+    // When the user clicks on the button, scroll to the top of the document
+    function onClickTopButton() {
+        document.body.scrollTop = 0; // For Safari
+        document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
     }
 
     function handleSearch(search) {
+        trackWebEvent("SEARCH_CLICKED", { "query": search, startTime, endTime });
         window.location.href = `/log/{{log_id}}/search?query=${search}&time_start=${startTime}&time_end=${endTime}`;
     }
 
@@ -109,15 +146,6 @@
         toggleElementDisplay(next_button, showNextButton);
     }
 
-    function handleSourceFilters(element) {
-        if (element.checked) {
-            currentSources.push(element.value);
-        }
-        else {
-            currentSources = currentSources.filter(source => source !== element.value);
-        }
-    }
-
     function handleTimeFilters(element, type="start") {
         if (type === "start") {
             startTime = element.value;
@@ -144,15 +172,6 @@
         var uri = buildContentRequest("next");
         xhttp.open('POST', uri);
         xhttp.send();
-    }
-
-    // Toggle viewing the selected filters
-    function toggleSelectedFilters() {
-        showingSelectedFilters = !showingSelectedFilters;
-        if (showingSelectedFilters) {
-            selectedFilters.innerHTML = buildFilterOption();
-        }
-        toggleElementDisplay(selectedFilters, showingSelectedFilters);
     }
 
     // Generic function to toggle any HTML element's display property
@@ -189,19 +208,21 @@
      */
     function buildFilterOption() {
         var allFilters = {};
+        allFilters["text"] = buildSourceFilterQuery();
         if (textFilter != "") {
-            allFilters["text"] = textFilter;
+            allFilters["text"] = `(${allFilters["text"]}) AND (${textFilter})`;
         }
 
-        allFilters["sources"] = currentSources;
+        // We are treating the source filter as query
+        // filter because of it's hierarchical structure.
+        allFilters["sources"] = "";
 
         datetimeFilters = [];
         datetimeFilters.push(startTime);
         datetimeFilters.push(endTime);
         allFilters["time"] = datetimeFilters;
 
-        // Returns a string of a JSON with indentation
-        return JSON.stringify(allFilters, null, 4);
+        return JSON.stringify(allFilters);
     }
 
     function loadPrev() {
@@ -223,71 +244,85 @@
         xhttp.send();
     }
 
+    function onClickFilterLogs() {
+        const filterString = buildFilterOption();
+        let search_url = LOG_VIEW_BASE_URL;
+        let params = new URLSearchParams(location.search);
+        if (filterString != "") {
+            params.delete('filter');
+            params.append('filter', filterString);
+            search_url += `?${params.toString()}`;
+        }
+        search_url += location.hash;
+        window.open(search_url, "_self");
+        trackWebEvent("FILTER_LOGS", data={filters: selectedFilters, startTime, endTime});
+    }
+
     </script>
 </head>
 <body>
     {% include 'nav_bar.html' ignore missing %}
     <!-- Calculating total log entries -->
-    {% set totalEntries = sources.values()|sum() %}
-    <h2 id="top">Logs for {{log_id}} ({{totalEntries}} log entries)</h2>
-    <div class="navbar">
-        <div class="search_box">
-            <input id="search" type="search" placeholder="Search..."/>
-            <button onclick="handleSearch(document.getElementById('search').value)">Search</button>
+    {% set total_entries = sources.values()|sum() %}
+    <div class="content">
+        <h2 id="top" class="center-align">Logs for {{log_id}}</h2>
+        <div id="quicklinks">
+            <a id="anchor_link" data-web_event="ANCHOR_LINK" style="display: none;" href="#0">Link to the selected log</a>
         </div>
-        <div class="search_results" id="search_results">
-        </div>
-    
-        <div class="filters">
-            <label for="text_filter">Enter text to filter logs</label>
-            <input id="text_filter" type="search" placeholder="Filter..." onkeypress="handleMessageFilter(this)" />
-        </div>
+        <div class="container">
+            <h3>Filter logs</h3>
+            <div>Total log entries: <b>{{total_entries}}</b></div>
+            <div class="filters_container">
+                <input id="search" type="search" placeholder="Search..."/>
+                <button class="btn" onclick="handleSearch(document.getElementById('search').value)">Search</button>
+            </div>
+            <div class="filters_container" style="display: flex;">
+                {% include 'source_filters.html' %}
+                <div class="filters">
+                    <label for="dt_start">Enter start time</label>
+                    <input type="datetime-local" id="dt_start" placeholder="yyyy-mm-ddTHH:MM:SS.ss" onchange="handleTimeFilters(this, 'start')"/>
+                    <button onclick="javascript:dt_start.value=''">X</button>
 
-        <div class="filters">
-            {% for source in sources %}
-            <input type="checkbox" id="src_{{source}}" value="{{source}}" checked onchange="handleSourceFilters(this)"/>
-            <!-- Displaying log entries (along with the name of source) in % with rounded off to 2 decimals -->
-            <label class="checkbox_label" for="src_{{source}}">{{source}} ({{((sources[source]/totalEntries)*100)|round(2)}}% entries)</label>
-            {% endfor %}
+                    <label for="dt_end">Enter end time</label>
+                    <input type="datetime-local" id="dt_end" placeholder="yyyy-mm-ddTHH:MM:SS.ss" onchange="handleTimeFilters(this, 'end')"/>
+                    <button onclick="javascript:dt_end.value=''">X</button>
+                </div>
+            </div>
+            <div id="explore_button">
+                <button class="btn" onclick="onClickFilterLogs()">Filter logs</button>
+            </div>
         </div>
-
-        <div class="filters">
-            <label for="dt_start">Enter start time</label>
-            <input type="datetime-local" id="dt_start" onchange="handleTimeFilters(this, 'start')"/>
-            <label for="dt_end">Enter end time</label>
-            <input type="datetime-local" id="dt_end" onchange="handleTimeFilters(this, 'end')"/>
-        </div>
-        <div class="filters_button">
-            <button onclick="handleMessageTableFilterUpdates()">Filter logs</button>
+        <div class="container">
+            <div class="content">
+                {% if total_search_hits.relation == "gte" %}
+                    {% set total_hits = total_search_hits.value|string+'+' %}
+                {% else %}
+                    {% set total_hits = total_search_hits.value %}
+                {% endif %}
+                <b>{{total_hits}} results</b> sorted from earliest to latest timestamp
+            </div>
+            <div class="pagination" id="prev_button">
+                <button class="btn" data-web_event="PREVIOUS_LOGS" onclick="loadPrev()">Load previous logs</button>
+            </div>
+            <table class="log_entries">
+                <thead>
+                    <tr>
+                        <th>Source</th>
+                        <th>Timestamp</th>
+                        <th>Level</th>
+                        <th>Log message</th>
+                    </tr>
+                </thead>
+                <tbody id="line_table">
+                    {{body}}
+                </tbody>
+            </table>
+            <div class="pagination" id="next_button">
+                <button class="btn" data-web_event="NEXT_LOGS" onclick="loadNext()">Load next logs</button>
+            </div>
         </div>
     </div>
-
-    <button onclick="toggleSelectedFilters()">Show/Hide selected filters</button>
-    <div id="selectedFilters">No filters selected</div>
-
-    <div class="file_contents">
-        <div class="pagination" id="prev_button">
-            <button onclick="loadPrev()">Load previous logs</button>
-        </div>
-        <table>
-            <thead>
-                <tr>
-                    <th>Source</th>
-                    <th>Timestamp</th>
-                    <th>Log message</th>
-                </tr>
-            </thead>
-            <tbody id="line_table">
-                {{body}}
-            </tbody>
-        </table>
-        <div class="pagination" id="next_button">
-            <button onclick="loadNext()">Load next logs</button>
-        </div>
-    </div>
-    <div id="top_button">
-        <a href="#top">Jump to top of page</a>
-    </div>
+    <button onclick="onClickTopButton()" data-web_event="TOP_BUTTON" id="top_button" title="Go to top">Jump to top</button>
     <div id="loader">
         <svg version="1.1" id="L6" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
             viewBox="0 0 100 100" enable-background="new 0 0 100 100" xml:space="preserve">

@@ -95,10 +95,7 @@ def _render_root_page(log_ids, jinja_env, template):
 
     for log in log_ids:
         id = log['index']
-        kibana_base_url = _get_kibana_base_url(id)
-        # Replacing KIBANA_QUERY with empty string since we do not
-        # want to query and want only the URL to the Kibana Dashboard
-        kibana_url = kibana_base_url.replace('KIBANA_QUERY', '')
+        log_view_base_url = _get_log_view_base_url(id)
         creation_date_epoch = int(log['creation.date'])
         # Separting out seconds and milliseconds from epoch
         creation_date_s, creation_date_ms = divmod(creation_date_epoch, 1000)
@@ -108,7 +105,7 @@ def _render_root_page(log_ids, jinja_env, template):
 
         template_dict['logs'].append({
             'name': id,
-            'link': kibana_url,
+            'link': log_view_base_url,
             'creation_date': creation_date,
             'health': log['health'],
             'doc_count': log['docs.count'],
@@ -221,7 +218,8 @@ class ElasticLogSearcher(object):
                     "msg": log content
                 }, ...
             ],
-            "state" { opaque state object holding search state }
+            "state" { opaque state object holding search state },
+            "total_search_hits" { "value": 10000, "relation": "gte" }
         }
 
         All results are returned in ascending timestamp order.
@@ -236,12 +234,15 @@ class ElasticLogSearcher(object):
                                 index=self.index,
                                 size=query_size,
                                 sort='@timestamp:asc')
+        # A dict with value (upto 10k) and relation if
+        # the actual hits is exact or greater than
+        total_search_hits = result['hits']['total']
         result = result['hits']['hits']
 
         new_state = ElasticLogState.clone(state)
-        _, new_state.after_sort_val = self._get_delimiting_sort_values(result)
+        new_state.before_sort_val, new_state.after_sort_val = self._get_delimiting_sort_values(result)
 
-        return {'hits': result, 'state': new_state}
+        return {'hits': result, 'state': new_state, 'total_search_hits': total_search_hits}
 
     def _build_query_body(self, query_term,
                           source_filters, time_filters):
@@ -312,13 +313,16 @@ class ElasticLogSearcher(object):
                                 index=self.index,
                                 size=query_size,
                                 sort='@timestamp:desc')
+        # A dict with value (upto 10k) and relation if
+        # the actual hits is exact or greater than
+        total_search_hits = result['hits']['total']
         result = result['hits']['hits']
         result.reverse()
 
         new_state = ElasticLogState.clone(state)
         new_state.before_sort_val, _ = self._get_delimiting_sort_values(result)
 
-        return {'hits': result, 'state': new_state}
+        return {'hits': result, 'state': new_state, 'total_search_hits': total_search_hits}
 
     @staticmethod
     def _get_delimiting_sort_values(result):
@@ -442,10 +446,10 @@ def get_log_page(log_id):
 
     Subsequent updates to the page are handled via POST requests.
     """
-    state, table_body = _get_requested_log_lines(log_id)
-
-    es = ElasticLogSearcher(log_id)
-    sources = es.get_unique_entries('src')
+    state, total_search_hits, table_body = _get_requested_log_lines(
+                                                log_id,
+                                                include_hyperlinks=False
+                                            )
 
     # Assume our template is right next door to us.
     dir = os.path.join(_get_script_dir(), 'templates')
@@ -455,7 +459,7 @@ def get_log_page(log_id):
                              lstrip_blocks=True)
     template = jinja_env.get_template('log_template.html')
 
-    return _render_log_page(table_body, sources, state,
+    return _render_log_page(table_body, total_search_hits, state,
                             log_id, jinja_env, template)
 
 
@@ -464,13 +468,14 @@ def get_log_contents(log_id):
     """
     Obtains log contents which can be used to update a page.
     """
-    state, page_body = _get_requested_log_lines(log_id)
+    state, total_search_hits, page_body = _get_requested_log_lines(log_id)
 
     return {'content': ''.join(page_body),
+            'total_search_hits': total_search_hits,
             'state': state.to_dict()}
 
 
-def _get_requested_log_lines(log_id):
+def _get_requested_log_lines(log_id, include_hyperlinks=True):
     """
     Obtains the requested log lines.
 
@@ -486,6 +491,7 @@ def _get_requested_log_lines(log_id):
 
     Returns a tuple containing: (
         state: next state object for future searches
+        total_search_hits: object containing total hits value
         body: log lines formatted as HTML table body
     )
     """
@@ -505,7 +511,7 @@ def _get_requested_log_lines(log_id):
     # Elasticsearch has a limit of 10K results, so pagination is required
     size = 1000
     es = ElasticLogSearcher(log_id)
-    before, after, state = get_temporally_close_hits(es, state, size,
+    before, after, state, total_search_hits = get_temporally_close_hits(es, state, size,
                                                      filters, next, prev)
 
     # Before and after are not inclusive searches, so we have to include
@@ -528,22 +534,20 @@ def _get_requested_log_lines(log_id):
     # This quirky magic is how we get paging in search queries. We determine
     # the sort value for the first and last entry in this query.
     for hit in result:
-        line = _convert_to_table_row(hit)
+        line = _convert_to_table_row(hit, include_hyperlinks)
         page_body.append(line)
 
-    return state, page_body
+    return state, total_search_hits, page_body
 
 
-def _convert_to_table_row(hit):
+def _convert_to_table_row(hit, include_hyperlinks=True):
     """ Converts a search hit into an HTML table row """
     s = hit['_source']
     log_id = hit['_index']
-    kibana_base_url = _get_kibana_base_url(log_id)
+    log_view_base_url = _get_log_view_base_url(log_id)
 
     msg = s['msg']
-    query = '"{}"'.format(msg.replace('\\','').replace('"',' ').replace('\'', '!\'')).replace('!', '!!')
-    # This will be used to link Kibana dashboard from the log message
-    kibana_url = kibana_base_url.replace('KIBANA_QUERY', quote_plus(query))
+    timestamp = s['@timestamp']
 
     # The log lines are organized as table rows in the template
     line = '<tr style="vertical-align: baseline">'
@@ -552,10 +556,18 @@ def _convert_to_table_row(hit):
                                             hit.get('anchor_link'))
 
     line += '<td>{}</td> <td>{}</td> <td>{}</td>'.format(s['src'],
-                                                         s['@timestamp'],
+                                                         timestamp,
                                                          s.get('level'))
-    line += '<td><a href="{}" target="_blank">{}</a></td>'.format(kibana_url,
-                                                                  s['msg'])
+    if include_hyperlinks:
+        state = f'"before":"{timestamp}","after":"{timestamp}"'
+        log_view_url = ('{}?state={{{}}}&next=true&prev=true&include={}#0').format(
+                            log_view_base_url,
+                            quote_plus(state),
+                            hit['_id'])
+        line += '<td><a href="{}" target="_blank">{}</a></td>'.format(log_view_url,
+                                                                    s['msg'])
+    else:
+        line += '<td>{}</td>'.format(s['msg'])
     line += '</tr>'
     return line
 
@@ -567,11 +579,12 @@ def get_temporally_close_hits(es, state, size, filters, next, prev):
 
     The prev and next booleans control whether to return before, after or both.
 
-    The returned tuple is (before_list, after_list, next_state).
+    The returned tuple is (before_list, after_list, next_state, total_search_hits).
     Both lists are ordered by timestamp. We only return empty lists, never None.
     """
     before = []
     after = []
+    total_search_hits = 0
 
     query_string = filters.get('text')
     source_filters = filters.get('sources', [])
@@ -583,23 +596,32 @@ def get_temporally_close_hits(es, state, size, filters, next, prev):
                             source_filters, time_filters, query_size=size)
         after = results['hits']
         state = results['state']
+        total_search_hits = results['total_search_hits']
     if prev:
         results = es.search_backwards(state, query_string,
                                       source_filters, time_filters,
                                       query_size=size)
         before = results['hits']
         state = results['state']
+        total_search_hits = results['total_search_hits']
 
-    return before, after, state
+    return before, after, state, total_search_hits
 
 
-def _render_log_page(table_body, sources, state,
+def _render_log_page(table_body, total_search_hits, state,
                      log_id, jinja_env, template):
     """ Renders the log page """
+    es = ElasticLogSearcher(log_id)
+    sources = es.get_unique_entries('src')
+    unique_entries = es.get_aggregated_unique_entries(['system_type', 'system_id'], ['src'])
+
     template_dict = {}
     template_dict['body'] = ''.join(table_body)
     template_dict['log_id'] = log_id
+    template_dict['total_search_hits'] = total_search_hits
     template_dict['sources'] = sources
+    template_dict['unique_entries'] = unique_entries
+    template_dict['log_view_base_url'] = _get_log_view_base_url(log_id)
     template_dict['state'] = state.to_json_str()
 
     result = template.render(template_dict, env=jinja_env)
@@ -710,6 +732,14 @@ def dashboard(log_id):
     return _render_dashboard_page(log_id, jinja_env, template)
 
 
+def _get_log_view_base_url(log_id):
+    """
+    Base URL of home grown log viewer
+    """
+    log_view_base_url = ("/log/{}").format(log_id)
+    return log_view_base_url
+
+
 @app.route('/log/<log_id>/dashboard/anchors', methods=['GET'])
 def get_anchors(log_id):
     """
@@ -807,7 +837,7 @@ def _get_analytics_data(log_id):
 def _render_dashboard_page(log_id, jinja_env, template):
 
     es = ElasticLogSearcher(log_id)
-    kibana_base_url = _get_kibana_base_url(log_id)
+    log_view_base_url = _get_log_view_base_url(log_id)
     keyword_for_level = app.config.get('LEVEL_KEYWORDS')
 
     default_log_levels = list(keyword_for_level.keys())
@@ -833,7 +863,7 @@ def _render_dashboard_page(log_id, jinja_env, template):
     template_dict['system_types'] = system_types
     template_dict['system_ids'] = system_ids
     template_dict['unique_entries'] = unique_entries
-    template_dict['kibana_base_url'] = kibana_base_url
+    template_dict['log_view_base_url'] = log_view_base_url
     template_dict['log_level_stats'] = log_level_stats
     template_dict['log_level_for_recent_logs'] = nonzero_log_levels[0]
     template_dict['recent_logs'] = _render_log_entries(recent_logs)
@@ -852,7 +882,7 @@ def log_level_stats(log_id):
 
 def _get_log_level_stats(log_id, sources=[], log_levels=None, time_filters=None):
     es = ElasticLogSearcher(log_id)
-    kibana_base_url = _get_kibana_base_url(log_id)
+    log_view_base_url = _get_log_view_base_url(log_id)
     query = ''
     if len(sources) > 0:
         query = f'src:({" OR ".join(sources)}) AND'
@@ -867,11 +897,12 @@ def _get_log_level_stats(log_id, sources=[], log_levels=None, time_filters=None)
     for idx, level in enumerate(log_levels):
         keywords = [f'"{keyword}"' for keyword in keyword_for_level[level]]
         keyword_query_terms = ' OR '.join(keywords)
-        kibana_query = f'{query} (level:({keyword_query_terms}) OR msg:({keyword_query_terms}))'
+        log_level_query = f'{query} (level:({keyword_query_terms}) OR msg:({keyword_query_terms}))'
+        log_view_url = f'{log_view_base_url}/search?query={quote_plus(log_level_query)}'
         document_counts[level] = {
             'order': idx,
             'count': es.get_document_count(keyword_query_terms, sources, time_filters),
-            'kibana_url': kibana_base_url.replace('KIBANA_QUERY', quote_plus(kibana_query)),
+            'log_view_url': log_view_url,
             'keywords': ', '.join(keyword_for_level[level])
         }
 

@@ -63,6 +63,12 @@ h3 {
 .btn:hover {
     background-color: #3B7FC440;
 }
+.btn:disabled,
+.btn[disabled]{
+    border: 2px solid #999999;
+    background-color: #cccccc;
+    color: #666666;
+}
 .arrow {
     border: solid;
     border-width: 0 3px 3px 0;
@@ -91,4 +97,64 @@ h3 {
 .fixed-font {
     font-family: monospace;
     font-size: 14px;
+}
+
+.log_entries {
+    font-family: monospace;
+}
+
+/* Source Filters */
+.filters_container {
+    padding: 10px;
+    align-items: center;
+}
+.filter_header {
+    font-weight: bold;
+}
+.filter {
+    width: 250px;
+    padding: 5px 0px;
+}
+.filter_box_container {
+    display: flex;
+}
+.filter_box {
+    min-width: 350px;
+    max-width: 500px;
+    margin: 10px;
+    border: 1px solid black;
+    align-self: flex-start;
+}
+.filter_box_header {
+    border-bottom: 1px solid black;
+    padding: 5px;
+    background-color: beige;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+}
+.filter_box_content {
+    padding: 5px;
+    display: none;
+}
+.filter_box_item {
+    padding: 2px 0px;
+    font-size: 14px;
+}
+#explore_button {
+    display: flex;
+    justify-content: center;
+}
+ul {
+    list-style: none;
+    padding-inline-start: 25px;
+}
+
+
+#quicklinks {
+    display: flex;
+    justify-content: flex-end;
+}
+#quicklinks > a {
+    padding: 5px;
 }
