@@ -446,7 +446,10 @@ def get_log_page(log_id):
 
     Subsequent updates to the page are handled via POST requests.
     """
-    state, total_search_hits, table_body = _get_requested_log_lines(log_id)
+    state, total_search_hits, table_body = _get_requested_log_lines(
+                                                log_id,
+                                                include_hyperlinks=False
+                                            )
 
     # Assume our template is right next door to us.
     dir = os.path.join(_get_script_dir(), 'templates')
@@ -472,7 +475,7 @@ def get_log_contents(log_id):
             'state': state.to_dict()}
 
 
-def _get_requested_log_lines(log_id):
+def _get_requested_log_lines(log_id, include_hyperlinks=True):
     """
     Obtains the requested log lines.
 
@@ -531,13 +534,13 @@ def _get_requested_log_lines(log_id):
     # This quirky magic is how we get paging in search queries. We determine
     # the sort value for the first and last entry in this query.
     for hit in result:
-        line = _convert_to_table_row(hit)
+        line = _convert_to_table_row(hit, include_hyperlinks)
         page_body.append(line)
 
     return state, total_search_hits, page_body
 
 
-def _convert_to_table_row(hit):
+def _convert_to_table_row(hit, include_hyperlinks=True):
     """ Converts a search hit into an HTML table row """
     s = hit['_source']
     log_id = hit['_index']
@@ -545,9 +548,6 @@ def _convert_to_table_row(hit):
 
     msg = s['msg']
     timestamp = s['@timestamp']
-    query = '"{}"'.format(msg.replace('\\','').replace('"',' ').replace('\'', '!\'')).replace('!', '!!')
-    state = f'"before":"{timestamp}","after":"{timestamp}"'
-    log_view_url = ('{}?state={{{}}}&next=true&prev=true&include={}#0').format(log_view_base_url, quote_plus(state), hit['_id'])
 
     # The log lines are organized as table rows in the template
     line = '<tr style="vertical-align: baseline">'
@@ -558,8 +558,16 @@ def _convert_to_table_row(hit):
     line += '<td>{}</td> <td>{}</td> <td>{}</td>'.format(s['src'],
                                                          timestamp,
                                                          s.get('level'))
-    line += '<td><a href="{}" target="_blank">{}</a></td>'.format(log_view_url,
-                                                                  s['msg'])
+    if include_hyperlinks:
+        state = f'"before":"{timestamp}","after":"{timestamp}"'
+        log_view_url = ('{}?state={{{}}}&next=true&prev=true&include={}#0').format(
+                            log_view_base_url,
+                            quote_plus(state),
+                            hit['_id'])
+        line += '<td><a href="{}" target="_blank">{}</a></td>'.format(log_view_url,
+                                                                    s['msg'])
+    else:
+        line += '<td>{}</td>'.format(s['msg'])
     line += '</tr>'
     return line
 
