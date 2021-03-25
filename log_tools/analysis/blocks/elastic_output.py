@@ -64,9 +64,14 @@ class ElasticsearchOutput(Block):
             # chunk_size of 10k works best based on tests on existing logs on single ES node
             # running with 4GB heap.
             # TODO(Sourabh): Need to test again if there's any change in resources of the ES node
-            for success, info in parallel_bulk(self.es, self.generate_es_doc(it), chunk_size=10000):
+            for success, info in parallel_bulk(
+                                        self.es,
+                                        self.generate_es_doc(it),
+                                        raise_on_error=False,
+                                        raise_on_exception=False,
+                                        chunk_size=10000):
                 if not success:
-                    print('Failed to index a document', info)
+                    print('ERROR: Failed to index a document', info)
                 else:
                     yield from self._add_doc_id_in_iters(next(it_copy), info)
 
