@@ -41,11 +41,7 @@ class FunOSInput(Block):
                     ts, vp = self.split_ts_vp(ts_vp)
 
                     date_time, usecs = self.normalize_ts(ts)
-                    # Some logs don't have vp.
-                    if vp:
-                        line = '[{}] {}'.format(vp, line[ts_vp_sep + 1:])
-                    else:
-                        line = line[ts_vp_sep + 1:]
+                    line = '[{}] {}'.format(vp, line[ts_vp_sep + 1:])
 
                     yield (date_time, usecs, system_type, system_id, uid, None, None, line)
                 except:
@@ -68,7 +64,7 @@ class FunOSInput(Block):
     @staticmethod
     def split_ts_vp(ts_vp):
         ts_vp_parts = ts_vp.split(' ')
-        return (ts_vp_parts[0], ts_vp_parts[1] if len(ts_vp_parts) > 1 else None)
+        return (ts_vp_parts[0], ts_vp_parts[1])
 
     @staticmethod
     def normalize_ts(ts):
