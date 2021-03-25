@@ -49,6 +49,12 @@
         prev_button = document.getElementById("prev_button");
         next_button = document.getElementById("next_button");
 
+        // Disable the Previous logs button if there are
+        // no more logs to display
+        if (state.before === -1) {
+            toggleElementDisplay(prev_button, false);
+        }
+
         //Get the button:
         const top_button = document.getElementById("top_button");
         // When the user scrolls down 50px from the top of the document, show the button
