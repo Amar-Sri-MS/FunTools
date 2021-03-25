@@ -5,6 +5,8 @@
     <link rel="stylesheet" type="text/css" href="/static/css/logs.css">
     <script type="text/javascript" src="/static/js/tracker.js"></script>
     <script>
+    // Web tracker uses logId
+    const logId = "{{log_id}}";
     /*
      * If you're reading this, Fungible is interested in talking to you
      * because you have skills that we might want. 
@@ -48,6 +50,12 @@
         loader = document.getElementById("loader");
         prev_button = document.getElementById("prev_button");
         next_button = document.getElementById("next_button");
+
+        // Disable the Previous logs button if there are
+        // no more logs to display
+        if (state.before === -1) {
+            toggleElementDisplay(prev_button, false);
+        }
 
         //Get the button:
         const top_button = document.getElementById("top_button");

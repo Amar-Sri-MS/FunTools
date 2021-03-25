@@ -240,7 +240,7 @@ class ElasticLogSearcher(object):
         result = result['hits']['hits']
 
         new_state = ElasticLogState.clone(state)
-        new_state.before_sort_val, new_state.after_sort_val = self._get_delimiting_sort_values(result)
+        _, new_state.after_sort_val = self._get_delimiting_sort_values(result)
 
         return {'hits': result, 'state': new_state, 'total_search_hits': total_search_hits}
 
@@ -468,7 +468,8 @@ def get_log_contents(log_id):
     """
     Obtains log contents which can be used to update a page.
     """
-    state, total_search_hits, page_body = _get_requested_log_lines(log_id)
+    state, total_search_hits, page_body = _get_requested_log_lines(log_id,
+                                                                   include_hyperlinks=False)
 
     return {'content': ''.join(page_body),
             'total_search_hits': total_search_hits,
@@ -641,9 +642,6 @@ def search(log_id):
     time_end = request.args.get('time_end', '')
     time_filters = [time_start, time_end]
 
-    # TODO (jimmy): we ought to do this only once
-    total_search_hits = _get_total_hit_count(log_id, search_term, time_filters)
-
     state_str = request.args.get('state', None)
     state = ElasticLogState()
     state.from_json_str(state_str)
@@ -654,6 +652,7 @@ def search(log_id):
     results = es.search(state, search_term, time_filters=time_filters, query_size=size)
     hits = results['hits']
     state = results['state']
+    total_search_hits = results['total_search_hits']
 
     links = []
     for hit in hits:
