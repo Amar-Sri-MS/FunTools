@@ -158,3 +158,18 @@ ul {
 #quicklinks > a {
     padding: 5px;
 }
+
+.info {
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+}
+.info:before {
+    content: "";
+    display: block;
+    background: url("/static/images/info-icon.png") no-repeat;
+    width: 24px;
+    height: 24px;
+    float: left;
+    margin-right: 4px;
+}

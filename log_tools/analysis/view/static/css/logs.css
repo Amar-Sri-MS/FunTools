@@ -19,12 +19,14 @@ td {
     height: max-content;
     display: flex;
     align-items: center;
-    justify-content: space-between;
     flex-wrap: wrap;
 }
-.filters > label {
+.filters > div {
     padding-left: 20px;
     padding-right: 10px;
+}
+.filters input {
+    width: 200px;
 }
 .filters_button {
     display: flex;
