@@ -289,15 +289,21 @@
             </div>
             <div class="filters_container" style="display: flex;">
                 {% include 'source_filters.html' %}
+                <div style="display: flex; flex-direction: column;">
+                    <div class="separator"></div>
+                </div>
                 <div class="filters">
+                    <b>Search by time range</b>
                     <div>
-                        <label for="dt_start">Enter start time</label>
-                        <input type="text" id="dt_start" placeholder="yyyy-mm-ddTHH:MM:SS.ss" onchange="handleTimeFilters(this, 'start')"/>
-                    </div>
+                        <div class="time_filters">
+                            <label for="dt_start">Start time</label>
+                            <input type="text" id="dt_start" placeholder="yyyy-mm-ddTHH:MM:SS.ss" onchange="handleTimeFilters(this, 'start')"/>
+                        </div>
 
-                    <div>
-                        <label for="dt_end">Enter end time</label>
-                        <input type="text" id="dt_end" placeholder="yyyy-mm-ddTHH:MM:SS.ss" onchange="handleTimeFilters(this, 'end')"/>
+                        <div class="time_filters">
+                            <label for="dt_end">End time</label>
+                            <input type="text" id="dt_end" placeholder="yyyy-mm-ddTHH:MM:SS.ss" onchange="handleTimeFilters(this, 'end')"/>
+                        </div>
                     </div>
                     <div class="info">Timestamp can be copied from log line</div>
                 </div>

@@ -20,10 +20,13 @@ td {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
+    flex-direction: column;
 }
-.filters > div {
-    padding-left: 20px;
-    padding-right: 10px;
+.filters label {
+    width: 100px !important;
+}
+.time_filters {
+    padding-top: 10px;
 }
 .filters input {
     width: 200px;
