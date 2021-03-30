@@ -107,6 +107,25 @@ trap "setup_err" HUP INT QUIT TERM ABRT EXIT
 
 echo "started" > $PROGRESS
 
+boot_status=$(dpcsh -nQ peek "config/chip_info/boot_complete" | jq -Mr .result)
+case $boot_status in
+	null)
+		: # boot status reporting not supported, assume complete
+		;;
+	true)
+		: # boot complete, continue
+		;;
+	false)
+		# booting still in progress
+		log_msg "DPU has not finished booting, cannot start upgrade"
+		exit 3
+		;;
+	*)
+		: # unexpected status, assume complete for future compatibility
+		log_msg "Unexpected boot complete status: $boot_status"
+		;;
+esac
+
 log_msg "Installing and configuring cclinux software and DPU firmware"
 pwd=$PWD
 
