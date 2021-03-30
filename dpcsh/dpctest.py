@@ -229,7 +229,7 @@ def main():
     if style == 'fun-on-demand' or style == 'fun-on-demand-cc' \
         or style == 'fun-on-demand-reduced':
         exclude = ['testVeryLargeCommands', 'testAsync', 'testJumbo'] \
-            if style == 'fun-on-demand-reduced' else []
+            if style == 'fun-on-demand-reduced' or style == 'fun-on-demand-cc' else []
         tests_passed = run_using_env(style, exclude)
 
     elif style is not None:
