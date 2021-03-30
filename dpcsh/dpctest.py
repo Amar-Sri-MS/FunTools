@@ -9,6 +9,7 @@
 import json
 import os
 import sys
+import socket
 import subprocess
 import dpc_client
 import time
@@ -166,10 +167,24 @@ def get_dpc_host_and_port(style):
     return dpc_host['host'], dpc_host['tcp_port']
 
 
+def wait_for_port(host, port, timeout):
+    start_time = time.time()
+    while True:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect((host, int(port)))
+            break
+        except:
+            time.sleep(0.5)
+            if time.time() - start_time >= timeout:
+                raise Exception('Timeout while waiting for the port to open')
+
+
 def run_using_env(style, exclude):
     """ Initializes DPC client from env.json, runs standard tests """
 
     host, port = get_dpc_host_and_port(style)
+    wait_for_port(host, port, 60)
 
     print 'Connecting to dpc host at %s:%s' % (host, port)
     client = dpc_client.DpcClient(server_address=(host, port))
@@ -214,7 +229,7 @@ def main():
     if style == 'fun-on-demand' or style == 'fun-on-demand-cc' \
         or style == 'fun-on-demand-reduced':
         exclude = ['testVeryLargeCommands', 'testAsync', 'testJumbo'] \
-            if style == 'fun-on-demand-reduced' else []
+            if style == 'fun-on-demand-reduced' or style == 'fun-on-demand-cc' else []
         tests_passed = run_using_env(style, exclude)
 
     elif style is not None:
