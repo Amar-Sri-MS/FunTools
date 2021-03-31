@@ -35,6 +35,11 @@ IGNORE_VERSION_IMAGES = {'nvdm', 'scap'}
 # as existant, if not reported then they are not supported
 # properly in FunOS
 UPGRADE_IF_PRESENT_IMAGES = {'nvdm', 'scap'}
+# these upgrades sometimes randomly fail, their upgrade
+# success is not critical, so only log the error but do not
+# report the whole upgrade as failing. A failure can be later
+# noticed during upgrade success verification
+IGNORE_ERRORS_IMAGES = {'nvdm', 'scap'}
 
 EXIT_CODE_ERROR = 1
 EXIT_CODE_DOWNGRADE_ATTEMPT = 2
@@ -387,8 +392,9 @@ def run_upgrade(args, release_images):
                    fourcc in ('pufr', 'frmw', 'sbpf') and \
                    (('Error in upgrade handling: 2' in e.output.decode()) or \
                         ('Error in upgrade handling: 33554432' in e.output.decode())):
-                    print('If you see this error message, do not report it, \
-                           it is expected')
+                    print('If you see this error message, do not report it, it is expected')
+                elif fourcc in IGNORE_ERRORS_IMAGES:
+                    print('Upgrade of {} failed, ignoring this error'.format(fourcc))
                 else:
                     res |= e.returncode
           else:
