@@ -16,6 +16,8 @@ sys.path.append('.')
 from pathlib import Path
 
 import pipeline
+
+from elastic_metadata import ElasticsearchMetadata
 from utils import archive_extractor
 from utils import manifest_parser
 
@@ -37,7 +39,7 @@ def main():
     start_pipeline(args.path, build_id, args.output)
 
 
-def start_pipeline(base_path, build_id, output_block='ElasticOutput'):
+def start_pipeline(base_path, build_id, metadata={}, output_block='ElasticOutput'):
     """
     Start ingestion pipeline.
     base_path - path to the log directory/archive
@@ -72,6 +74,11 @@ def start_pipeline(base_path, build_id, output_block='ElasticOutput'):
             'success': False,
             'msg': str(e)
         }
+
+    es_metadata = ElasticsearchMetadata()
+    print(f'INFO: Storing metadata for log_{build_id}')
+    metadata_store_resp = es_metadata.store(f'log_{build_id}', metadata)
+    print(f'Response: {metadata_store_resp}')
 
     end = time.time()
     time_taken = end - start

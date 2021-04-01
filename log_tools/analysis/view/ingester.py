@@ -42,6 +42,9 @@ def ingest():
     """
     try:
         job_id = request.form.get('job_id')
+        tags = request.form.get('tags')
+        tags_list = [tag.strip() for tag in tags.split(',')]
+
         if not job_id:
             return render_template('ingester.html', feedback={
                 'success': False,
@@ -54,19 +57,25 @@ def ingest():
         job_info = fetch_qa_job_info(job_id)
         log_files = fetch_qa_logs(job_id)
 
+        metadata = {
+            'tags': tags_list
+        }
+
         # Start ingestion
-        ingestion_status = ingest_logs(job_id, job_info, log_files)
+        ingestion_status = ingest_logs(job_id, job_info, log_files, metadata)
 
         if not ingestion_status['success']:
             return render_template('ingester.html', feedback={
                 'success': False,
                 'job_id': job_id,
+                'tags': tags,
                 'msg': ingestion_status['msg'] if 'msg' in ingestion_status else 'Ingestion failed.'
             })
 
         return render_template('ingester.html', feedback={
             'success': True,
             'job_id': job_id,
+            'tags': tags,
             'dashboard_link': f'{request.host_url}log/log_qa-{job_id}/dashboard',
             'time_taken': ingestion_status['time_taken']
         })
@@ -75,6 +84,7 @@ def ingest():
         return render_template('ingester.html', feedback={
             'success': False,
             'job_id': job_id,
+            'tags': tags,
             'msg': str(e)
         })
     finally:
@@ -144,7 +154,7 @@ def _get_valid_files(path):
             ]
 
 
-def ingest_logs(job_id, job_info, log_files):
+def ingest_logs(job_id, job_info, log_files, metadata):
     """
     Ingesting logs using "job_id" and "log_files"
 
@@ -252,7 +262,9 @@ def ingest_logs(job_id, job_info, log_files):
 
     _create_manifest(path, contents=manifest_contents)
     # Start the ingestion
-    return ingest_handler.start_pipeline(path, f'qa-{job_id}')
+    return ingest_handler.start_pipeline(path,
+                                         f'qa-{job_id}',
+                                         metadata=metadata)
 
 
 def _create_manifest(path, metadata={}, contents=[]):
