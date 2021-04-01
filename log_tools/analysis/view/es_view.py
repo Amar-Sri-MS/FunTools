@@ -22,6 +22,7 @@ from pathlib import Path
 from requests.exceptions import HTTPError
 from urllib.parse import quote_plus
 
+from elastic_metadata import ElasticsearchMetadata
 from ingester import ingester_page
 from web_usage import web_usage
 
@@ -61,6 +62,9 @@ def root():
     """ Serves the root page, which shows a list of logs """
     ELASTICSEARCH_HOSTS = app.config['ELASTICSEARCH']['hosts']
     es = Elasticsearch(ELASTICSEARCH_HOSTS)
+    es_metadata = ElasticsearchMetadata()
+
+    tags = request.args.get('tags', '')
 
     # Using the ES CAT API to get indices
     # CAT API supports sorting and returns more data
@@ -71,6 +75,17 @@ def root():
         s='creation.date:desc'
     )
 
+    if len(tags) > 0:
+        tags_list = [tag.strip() for tag in tags.split(',')]
+        metadata = es_metadata.get_by_tags(tags_list)
+
+        # Sadly indicies API does not let us select the indicies to filter
+        # Filtering out the indices
+        indices = [index for index in indices if index['index'] in metadata]
+    else:
+        log_ids = [index['index'] for index in indices]
+        metadata = es_metadata.get_by_log_ids(log_ids)
+
     # Assume our template is right next door to us.
     dir = os.path.join(_get_script_dir(), 'templates')
 
@@ -79,7 +94,7 @@ def root():
                              lstrip_blocks=True)
     template = jinja_env.get_template('root_template.html')
 
-    return _render_root_page(indices, jinja_env, template)
+    return _render_root_page(indices, metadata, jinja_env, template)
 
 
 def _get_script_dir():
@@ -88,7 +103,7 @@ def _get_script_dir():
     return os.path.dirname(module_path)
 
 
-def _render_root_page(log_ids, jinja_env, template):
+def _render_root_page(log_ids, metadata, jinja_env, template):
     """ Renders the root page from a template """
     template_dict = {}
     template_dict['logs'] = list()
@@ -103,13 +118,16 @@ def _render_root_page(log_ids, jinja_env, template):
                             time.strftime('%B %d, %Y %H:%M:%S', time.gmtime(creation_date_s)),
                             )
 
+        tags = metadata.get(id, {}).get('tags', [])
+
         template_dict['logs'].append({
             'name': id,
             'link': log_view_base_url,
             'creation_date': creation_date,
             'health': log['health'],
             'doc_count': log['docs.count'],
-            'es_size': log['store.size']
+            'es_size': log['store.size'],
+            'tags': tags
         })
 
     result = template.render(template_dict, env=jinja_env)
@@ -613,6 +631,10 @@ def _render_log_page(table_body, total_search_hits, state,
                      log_id, jinja_env, template):
     """ Renders the log page """
     es = ElasticLogSearcher(log_id)
+    es_metadata = ElasticsearchMetadata()
+
+    metadata = es_metadata.get(log_id)
+
     sources = es.get_unique_entries('src')
     unique_entries = es.get_aggregated_unique_entries(['system_type', 'system_id'], ['src'])
 
@@ -624,6 +646,7 @@ def _render_log_page(table_body, total_search_hits, state,
     template_dict['unique_entries'] = unique_entries
     template_dict['log_view_base_url'] = _get_log_view_base_url(log_id)
     template_dict['state'] = state.to_json_str()
+    template_dict['metadata'] = metadata
 
     result = template.render(template_dict, env=jinja_env)
     return result
@@ -836,6 +859,8 @@ def _get_analytics_data(log_id):
 def _render_dashboard_page(log_id, jinja_env, template):
 
     es = ElasticLogSearcher(log_id)
+    es_metadata = ElasticsearchMetadata()
+
     log_view_base_url = _get_log_view_base_url(log_id)
     keyword_for_level = app.config.get('LEVEL_KEYWORDS')
 
@@ -856,6 +881,8 @@ def _render_dashboard_page(log_id, jinja_env, template):
 
     analytics_data = _get_analytics_data(log_id)
 
+    metadata = es_metadata.get(log_id)
+
     template_dict = {}
     template_dict['log_id'] = log_id
     template_dict['sources'] = sources
@@ -867,6 +894,7 @@ def _render_dashboard_page(log_id, jinja_env, template):
     template_dict['log_level_for_recent_logs'] = nonzero_log_levels[0]
     template_dict['recent_logs'] = _render_log_entries(recent_logs)
     template_dict['analytics_data'] = json.dumps(analytics_data)
+    template_dict['metadata'] = metadata
 
     result = template.render(template_dict, env=jinja_env)
     return result

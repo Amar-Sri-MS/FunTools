@@ -273,7 +273,14 @@
     <!-- Calculating total log entries -->
     {% set total_entries = sources.values()|sum() %}
     <div class="content">
-        <h2 id="top" class="center-align">Logs for {{log_id}}</h2>
+        <h2 class="center-align">Logs for {{log_id}}</h2>
+        {% if metadata.tags is defined %}
+            <div class="center-align">Tags:
+                {% for tag in metadata.tags %}
+                    <a href="/?tags={{tag}}">{{tag}}</a>
+                {% endfor %}
+            </div>
+        {% endif %}
         <div id="quicklinks">
             <a id="anchor_link" data-web_event="ANCHOR_LINK" style="display: none;" href="#0">Link to the selected log</a>
         </div>
