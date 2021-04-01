@@ -13,10 +13,10 @@
     <div class="content">
         <h3>Ingested Logs</h3>
         <div>
-            <input type="checkbox" id="qa" name="job_filter" value="log_qa-" checked onclick="onSelectFilter(this);">
+            <input type="checkbox" id="qa" name="job_filter" value="qa" checked onclick="onSelectFilter(this);">
             <label for="qa">QA jobs</label>
 
-            <input type="checkbox" id="fod" name="job_filter" value="log_fond-job" onclick="onSelectFilter(this);">
+            <input type="checkbox" id="fod" name="job_filter" value="fod" onclick="onSelectFilter(this);">
             <label for="fod">Fun-on-demand jobs</label>
         </div>
         <table class="index">
@@ -43,21 +43,31 @@
 </body>
 <script type="text/javascript">
     const logRows = Array.from(document.getElementsByClassName("log-row"));
-    const checkedFilters = Array.from(document.getElementsByName("job_filter")).filter(element => element.checked);
+    const filters = Array.from(document.getElementsByName("job_filter"));
     let selectedFilters = [];
 
-    // Self invocation function called when the page loads
-    (function() {
-        selectedFilters = checkedFilters.map(element => element.value);
+    // filter to log id pattern mapping
+    const filterMapping = {
+        "qa": ["log_qa-"],
+        "fod": ["log_fond-job", "log_fod-"]
+    };
+
+    window.onload = function() {
+        const checkedFilters = filters.filter(element => element.checked);
+        checkedFilters.forEach(element => {
+            const patterns = filterMapping[element.value];
+            selectedFilters.push(...patterns);
+        });
         updateJobs();
-    })();
+    }
 
     function onSelectFilter(element) {
+        const patterns = filterMapping[element.value];
         if (element.checked) {
-            selectedFilters.push(element.value);
+            selectedFilters.push(...patterns);
         }
         else {
-            selectedFilters = selectedFilters.filter(filter => filter !== element.value);
+            selectedFilters = selectedFilters.filter(filter => !patterns.includes(filter));
         }
         updateJobs();
     }
