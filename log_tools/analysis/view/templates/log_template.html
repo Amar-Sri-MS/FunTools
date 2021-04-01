@@ -273,7 +273,13 @@
     <!-- Calculating total log entries -->
     {% set total_entries = sources.values()|sum() %}
     <div class="content">
-        <h2 id="top" class="center-align">Logs for {{log_id}}</h2>
+        <h2 id="top" class="center-align">Logs for
+            {% if job_link is not none %}
+                <a target="_blank" href="{{job_link}}">{{log_id}}</a>
+            {% else %}
+                {{log_id}}
+            {% endif %}
+        </h2>
         <div id="quicklinks">
             <a id="anchor_link" data-web_event="ANCHOR_LINK" style="display: none;" href="#0">Link to the selected log</a>
         </div>
