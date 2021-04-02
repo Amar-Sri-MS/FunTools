@@ -31,7 +31,7 @@ class CMD(object):
     SET_ENROLL_INFO = 0xFF060000
 
 # Chip must report being in this boot step for enrollment
-BOOT_STEP_PUF_INIT = (0x16<<2)
+BOOT_STEP_PUF_INIT = (0x1A<<2)
 
 ###########################################################################
 #
