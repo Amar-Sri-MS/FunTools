@@ -13,7 +13,13 @@
         {{((count/total)*100)|round(precision)}}%
     {%- endmacro %}
     <div class="content">
-        <h2 class="center-align">Dashboard for <b>{{log_id}}</b></h2>
+        <h2 class="center-align">Dashboard for
+            {% if job_link is not none %}
+                <a target="_blank" href="{{job_link}}">{{log_id}}</a>
+            {% else %}
+                {{log_id}}
+            {% endif %}
+        </h2>
         <div id="quicklinks">
             <a data-web_event="RECENT_LINK" href="#recent">Recent Logs</a>
             <a data-web_event="DUPLICATES_LINK" href="#duplicates">Duplicate Logs</a>

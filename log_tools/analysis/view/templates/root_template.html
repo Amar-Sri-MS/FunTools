@@ -12,6 +12,13 @@
     </div>
     <div class="content">
         <h3>Ingested Logs</h3>
+        <div>
+            <input type="checkbox" id="qa" name="job_filter" value="qa" checked onclick="onSelectFilter(this);">
+            <label for="qa">QA jobs</label>
+
+            <input type="checkbox" id="fod" name="job_filter" value="fod" onclick="onSelectFilter(this);">
+            <label for="fod">Fun-on-demand jobs</label>
+        </div>
         <table class="index">
             <thead>
                 <tr>
@@ -23,7 +30,7 @@
             </thead>
             <tbody>
             {% for log in logs %}
-                <tr>
+                <tr class="log-row" data-job_name="{{log.name}}">
                     <td><a href="/log/{{log.name}}/dashboard">{{log.name}}</a></td>
                     <td class="fixed-font">{{log.creation_date}}</td>
                     <td class="right-align fixed-font">{{log.doc_count}}</td>
@@ -34,4 +41,51 @@
         </table>
     </div>
 </body>
+<script type="text/javascript">
+    const logRows = Array.from(document.getElementsByClassName("log-row"));
+    const filters = Array.from(document.getElementsByName("job_filter"));
+    let selectedFilters = [];
+
+    // filter to log id pattern mapping
+    const filterMapping = {
+        "qa": ["log_qa-"],
+        "fod": ["log_fond-job", "log_fod-"]
+    };
+
+    window.onload = function() {
+        const checkedFilters = filters.filter(element => element.checked);
+        checkedFilters.forEach(element => {
+            const patterns = filterMapping[element.value];
+            selectedFilters.push(...patterns);
+        });
+        updateJobs();
+    }
+
+    function onSelectFilter(element) {
+        const patterns = filterMapping[element.value];
+        if (element.checked) {
+            selectedFilters.push(...patterns);
+        }
+        else {
+            selectedFilters = selectedFilters.filter(filter => !patterns.includes(filter));
+        }
+        updateJobs();
+    }
+
+    function updateJobs() {
+        // Loop over all the rows and hide
+        // the ones which not selected
+        logRows.forEach(row => {
+            const job_name = row.dataset.job_name;
+            if (selectedFilters.length === 0 ||
+                selectedFilters.some(filter => job_name.startsWith(filter))
+            ) {
+                row.style.display = "";
+                return;
+            }
+            row.style.display = "none";
+        });
+    }
+
+</script>
 </html>

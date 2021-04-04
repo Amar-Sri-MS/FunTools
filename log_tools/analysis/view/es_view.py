@@ -624,6 +624,7 @@ def _render_log_page(table_body, total_search_hits, state,
     template_dict['unique_entries'] = unique_entries
     template_dict['log_view_base_url'] = _get_log_view_base_url(log_id)
     template_dict['state'] = state.to_json_str()
+    template_dict['job_link'] = _get_actual_job_link(log_id)
 
     result = template.render(template_dict, env=jinja_env)
     return result
@@ -832,6 +833,18 @@ def _get_analytics_data(log_id):
         'duplicates': duplicates
     }
 
+def _get_actual_job_link(log_id):
+    """ Returns the link to the job which generated the logs """
+    ids = log_id.split('-')
+    # QA jobs: log_qa-JOBID
+    if log_id.startswith('log_qa-'):
+        job_id = ids[1]
+        return f'http://integration.fungible.local/regression/suite_detail/{job_id}'
+
+    # Fun-on-demand jobs: log_fod-JOBID_JOBDIR
+    if log_id.startswith('log_fod-'):
+        job_id = ids[1]
+        return f'http://palladium-jobs.fungible.local:8080/job/{job_id}'
 
 def _render_dashboard_page(log_id, jinja_env, template):
 
@@ -867,6 +880,7 @@ def _render_dashboard_page(log_id, jinja_env, template):
     template_dict['log_level_for_recent_logs'] = nonzero_log_levels[0]
     template_dict['recent_logs'] = _render_log_entries(recent_logs)
     template_dict['analytics_data'] = json.dumps(analytics_data)
+    template_dict['job_link'] = _get_actual_job_link(log_id)
 
     result = template.render(template_dict, env=jinja_env)
     return result
