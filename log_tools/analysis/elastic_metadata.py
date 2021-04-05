@@ -141,6 +141,13 @@ class ElasticsearchMetadata(object):
 
     def update_notes(self, log_id, note):
         """ Updating the notes in metadata document of "log_id" """
+        # If the metadata doc does not already exists
+        if not self.es.exists(self.index, log_id):
+            value = note if type(note) == list else [note]
+            return self.es.create(self.index,
+                                  log_id,
+                                  {'notes': value})
+
         body = self._build_query_to_append_to_array('notes', note)
 
         result = self.es.update(self.index,
@@ -150,6 +157,12 @@ class ElasticsearchMetadata(object):
 
     def update_tags(self, log_id, tags):
         """ Updating the tags in metadata document of "log_id" """
+        if not self.es.exists(self.index, log_id):
+            value = tags if type(tags) == list else [tags]
+            return self.es.create(self.index,
+                                  log_id,
+                                  {'tags': value})
+
         body = self._build_query_to_append_to_array('tags', tags)
 
         result = self.es.update(self.index,
@@ -161,16 +174,16 @@ class ElasticsearchMetadata(object):
         # Sadly no easier way to append to arrays.
         # ES uses painless script.
         body = {
-            "script": {
-                "source": f"""
+            'script': {
+                'source': f"""
                             if (ctx._source.containsKey(\"{field}\"))
                                 {{ ctx._source.{field}.add(params.value); }}
                             else
                                 {{ ctx._source.{field} = [params.value]; }}
                             """,
-                "lang": "painless",
-                "params": {
-                    "value": value
+                'lang': 'painless',
+                'params': {
+                    'value': value
                 }
             }
         }
