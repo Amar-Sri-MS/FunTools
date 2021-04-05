@@ -11,6 +11,7 @@ import os
 import re
 import subprocess
 import sys
+import json
 
 from csrutils.csrutils import dbgprobe
 from csrutils.csrutils import csr_get_field
@@ -60,16 +61,40 @@ class Register(object):
             s.append(str(f))
         return '\n'.join(s)
 
+    def as_json(self):
+        js = {
+            # keep the output similar to that for CSR1 register dump
+            # it's not the same as a lot of information doesn't exist
+            # in this structure, but keep matching fields to make them
+            # as compatible as possible
+            'an_addr':hex(self.addr),
+            'fld_list': [
+                { 'fld_width':f.width(),
+                  'fld_name':f.name(),
+                  'fld_offset':f.offset() } for f in self.fields
+            ]
+        }
+        return json.dumps(js, indent=4)
+
 
 class Field(object):
     """ Bitfield in a register """
     def __init__(self, name, lsb, msb):
-        self.name = name
-        self.lsb = lsb
-        self.msb = msb
+        self.__name = name
+        self.__lsb = lsb
+        self.__msb = msb
 
     def __str__(self):
-        return '%s [%d:%d]' % (self.name, self.msb, self.lsb)
+        return '%s [%d:%d]' % (self.__name, self.__msb, self.__lsb)
+
+    def width(self):
+        return self.__msb - self.__lsb + 1
+
+    def offset(self):
+        return self.__lsb
+
+    def name(self):
+        return self.__name
 
 
 class RegisterValue(object):
@@ -669,3 +694,18 @@ def csr2_find(args):
     else:
         print('Invalid argument! args:{0}'.format(args))
         return
+
+def csr2_list(args):
+    if not init_bundle_lazily():
+        return
+
+    csr_name = args.csr[0]
+
+    finder = RegisterFinder(bundle)
+
+    reg, error = finder.find_reg(csr_name)
+    if error:
+        logger.error('csr_path: {0} Error: {1}'.format(path, error))
+        return None
+
+    print(reg.as_json())

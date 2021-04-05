@@ -205,12 +205,15 @@ class dbgsh(cmd2.Cmd):
 
     parser_list = subparsers.add_parser('list',
                 help="List maching csr instances", formatter_class=ArgFormatter)
-    parser_list.set_defaults(func=csr_list)
     parser_list.add_argument('csr', nargs=1, type=str, help="csr name")
-    parser_list.add_argument('-a', nargs=1,
-                metavar=('anode_name'), dest='anode', help="anode name")
-    parser_list.add_argument('-r', nargs=1,
-                metavar=('ring_name'), dest='ring', type=str, help="ring name")
+    if not csr2_mode:
+        parser_list.set_defaults(func=csr_list)
+        parser_list.add_argument('-a', nargs=1,
+                    metavar=('anode_name'), dest='anode', help="anode name")
+        parser_list.add_argument('-r', nargs=1,
+                    metavar=('ring_name'), dest='ring', type=str, help="ring name")
+    else:
+        parser_list.set_defaults(func=csr2utils.csr2_list)
 
     if not csr2_mode:
         parser_find = subparsers.add_parser('find',

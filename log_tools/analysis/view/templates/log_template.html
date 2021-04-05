@@ -273,7 +273,13 @@
     <!-- Calculating total log entries -->
     {% set total_entries = sources.values()|sum() %}
     <div class="content">
-        <h2 class="center-align">Logs for {{log_id}}</h2>
+        <h2 id="top" class="center-align">Logs for
+            {% if job_link is not none %}
+                <a target="_blank" href="{{job_link}}">{{log_id}}</a>
+            {% else %}
+                {{log_id}}
+            {% endif %}
+        </h2>
         {% if metadata.tags is defined %}
             <div class="center-align">Tags:
                 {% for tag in metadata.tags %}
@@ -288,19 +294,31 @@
             <h3>Filter logs</h3>
             <div>Total log entries: <b>{{total_entries}}</b></div>
             <div class="filters_container">
-                <input id="search" type="search" placeholder="Search..."/>
-                <button class="btn" onclick="handleSearch(document.getElementById('search').value)">Search</button>
+                <div>
+                    <input id="search" type="search" placeholder="Search..."/>
+                    <button class="btn" onclick="handleSearch(document.getElementById('search').value)">Search</button>
+                </div>
+                <span class="info">Enclose the search string with quotes if it contains special characters.</span>
             </div>
             <div class="filters_container" style="display: flex;">
                 {% include 'source_filters.html' %}
+                <div style="display: flex; flex-direction: column;">
+                    <div class="separator"></div>
+                </div>
                 <div class="filters">
-                    <label for="dt_start">Enter start time</label>
-                    <input type="datetime-local" id="dt_start" placeholder="yyyy-mm-ddTHH:MM:SS.ss" onchange="handleTimeFilters(this, 'start')"/>
-                    <button onclick="javascript:dt_start.value=''">X</button>
+                    <b>Search by time range</b>
+                    <div>
+                        <div class="time_filters">
+                            <label for="dt_start">Start time</label>
+                            <input type="text" id="dt_start" placeholder="yyyy-mm-ddTHH:MM:SS.ss" onchange="handleTimeFilters(this, 'start')"/>
+                        </div>
 
-                    <label for="dt_end">Enter end time</label>
-                    <input type="datetime-local" id="dt_end" placeholder="yyyy-mm-ddTHH:MM:SS.ss" onchange="handleTimeFilters(this, 'end')"/>
-                    <button onclick="javascript:dt_end.value=''">X</button>
+                        <div class="time_filters">
+                            <label for="dt_end">End time</label>
+                            <input type="text" id="dt_end" placeholder="yyyy-mm-ddTHH:MM:SS.ss" onchange="handleTimeFilters(this, 'end')"/>
+                        </div>
+                    </div>
+                    <div class="info">Timestamp can be copied from log line</div>
                 </div>
             </div>
             <div id="explore_button">

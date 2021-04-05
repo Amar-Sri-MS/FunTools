@@ -103,6 +103,13 @@ h3 {
     font-family: monospace;
 }
 
+.separator {
+    border: 1px dashed #a2a2a2;
+    margin: 0px 10px;
+    font-weight: bold;
+    min-height: 100px;
+}
+
 /* Source Filters */
 .filters_container {
     padding: 10px;
@@ -205,4 +212,19 @@ ul {
 }
 #note_input {
     width: calc(100% - 100px);
+}
+
+.info {
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+}
+.info:before {
+    content: "";
+    display: block;
+    background: url("/static/images/info-icon.png") no-repeat;
+    width: 24px;
+    height: 24px;
+    float: left;
+    margin-right: 4px;
 }

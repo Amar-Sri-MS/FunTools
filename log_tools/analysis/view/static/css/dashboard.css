@@ -5,11 +5,6 @@
 .filter_button:hover {
     color: #3B7FC4;
 }
-.separator {
-    border: 1px dashed #a2a2a2;
-    margin: 0px 10px;
-    font-weight: bold;
-}
 td {
     border-collapse: collapse;
     padding-right: 5px;
