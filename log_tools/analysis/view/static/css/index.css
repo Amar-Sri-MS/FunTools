@@ -153,8 +153,12 @@ ul {
 
 #quicklinks {
     display: flex;
+    align-items: center;
     justify-content: flex-end;
 }
-#quicklinks > a {
+#quicklinks > div {
+    width: calc(100% - 160px);
+}
+#quicklinks a {
     padding: 5px;
 }
