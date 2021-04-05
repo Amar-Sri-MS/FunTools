@@ -23,10 +23,11 @@ td {
     flex-direction: column;
 }
 .filters label {
-    width: 100px !important;
+    min-width: 75px;
 }
 .time_filters {
     padding-top: 10px;
+    display: flex;
 }
 .filters input {
     width: 200px;
