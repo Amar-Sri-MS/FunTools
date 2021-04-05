@@ -37,9 +37,11 @@
                     <td class="right-align fixed-font">{{log.doc_count}}</td>
                     <td class="right-align fixed-font caps">{{log.es_size}}</td>
                     <td class="center-align tags">
-                        {% for tag in log.tags %}
-                            <a href="?tags={{tag}}">{{tag}}</a>
-                        {% endfor %}
+                        {% if log.tags is defined and log.tags is not none %}
+                            {% for tag in log.tags %}
+                                <a href="?tags={{tag}}">{{tag}}</a>
+                            {% endfor %}
+                        {% endif %}
                     </td>
                 </tr>
             {% endfor %}

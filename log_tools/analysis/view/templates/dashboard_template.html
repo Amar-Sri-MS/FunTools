@@ -20,7 +20,7 @@
                 {{log_id}}
             {% endif %}
         </h2>
-        {% if metadata.tags is defined %}
+        {% if metadata.tags is defined and metadata.tags is not none %}
             <div class="center-align">Tags:
                 {% for tag in metadata.tags %}
                     <a href="/?tags={{tag}}">{{tag}}</a>

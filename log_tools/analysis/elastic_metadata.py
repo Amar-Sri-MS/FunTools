@@ -118,7 +118,7 @@ class ElasticsearchMetadata(object):
         if not doc.get('found', True):
             return {}
 
-        tags = doc['_source'].get('tags', '')
+        tags = doc['_source'].get('tags', None)
         return {
             **doc['_source'],
             'tags': [tags] if type(tags) == str else tags
