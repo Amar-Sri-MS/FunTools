@@ -7,6 +7,7 @@
 # navigation. Still a work in progress.
 #
 
+import datetime
 import json
 import os
 import requests
@@ -476,6 +477,7 @@ def get_log_page(log_id):
                              trim_blocks=True,
                              lstrip_blocks=True)
     template = jinja_env.get_template('log_template.html')
+    jinja_env.filters['formatdatetime'] = _format_datetime
 
     return _render_log_page(table_body, total_search_hits, state,
                             log_id, jinja_env, template)
@@ -750,6 +752,7 @@ def dashboard(log_id):
                              trim_blocks=True,
                              lstrip_blocks=True)
     template = jinja_env.get_template('dashboard_template.html')
+    jinja_env.filters['formatdatetime'] = _format_datetime
 
     return _render_dashboard_page(log_id, jinja_env, template)
 
@@ -1005,6 +1008,24 @@ def _render_log_entries(entries):
     template_dict['body'] = '\n'.join(entries)
 
     result = template.render(template_dict, env=jinja_env)
+    return result
+
+
+def _format_datetime(timestamp, format="%a, %d %b %Y %I:%M:%S %Z"):
+    """Format a date time to (Default): Weekday, Day Mon YYYY HH:MM:SS TZ"""
+    if timestamp is None:
+        return ''
+
+    return datetime.datetime.fromtimestamp(timestamp/1000).strftime(format)
+
+
+@app.route('/log/<log_id>/dashboard/notes', methods=['POST'])
+def save_notes(log_id):
+    note = request.get_json()
+
+    es_metadata = ElasticsearchMetadata()
+    result = es_metadata.update_notes(log_id, note)
+
     return result
 
 

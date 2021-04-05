@@ -139,9 +139,39 @@ class ElasticsearchMetadata(object):
 
         return result
 
-    def update(self, log_id, metadata):
-        """ Updating the metadata document of "log_id" """
+    def update_notes(self, log_id, note):
+        """ Updating the notes in metadata document of "log_id" """
+        body = self._build_query_to_append_to_array('notes', note)
+
         result = self.es.update(self.index,
                                 id=log_id,
-                                body=metadata)
+                                body=body)
         return result
+
+    def update_tags(self, log_id, tags):
+        """ Updating the tags in metadata document of "log_id" """
+        body = self._build_query_to_append_to_array('tags', tags)
+
+        result = self.es.update(self.index,
+                                id=log_id,
+                                body=body)
+        return result
+
+    def _build_query_to_append_to_array(self, field, value):
+        # Sadly no easier way to append to arrays.
+        # ES uses painless script.
+        body = {
+            "script": {
+                "source": f"""
+                            if (ctx._source.containsKey(\"{field}\"))
+                                {{ ctx._source.{field}.add(params.value); }}
+                            else
+                                {{ ctx._source.{field} = [params.value]; }}
+                            """,
+                "lang": "painless",
+                "params": {
+                    "value": value
+                }
+            }
+        }
+        return body

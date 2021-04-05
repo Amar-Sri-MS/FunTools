@@ -26,6 +26,9 @@
                 <a data-web_event="RECENT_LINK" href="#recent">Recent Logs</a>
                 <a data-web_event="DUPLICATES_LINK" href="#duplicates">Duplicate Logs</a>
             </div>
+            <button class="btn" onclick="toggleNotesOverlay()">
+                Add/Show notes({{ metadata.notes|length }})
+            </button>
         </div>
         <div class="container">
             <h3>Explore logs by source</h3>
@@ -143,6 +146,7 @@
             </div>
         </div>
     </div>
+    {% include 'notes_overlay.html' %}
 </body>
 <script type="text/javascript">
     // Kibana URL for redirecting to Kibana with given query.
