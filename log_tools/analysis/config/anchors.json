@@ -42,6 +42,7 @@
 {"key": "end_emulation", "short": "RTL Timeout", "rematch": "END_EMULATION [0-9]+ ([-0-9]+) ([:0-9]+)", "color": "red"}
 {"key": "funtcp_connection_abort", "short": "FunTCP connection aborted State: <STATE> Remote: <REMOTE> Local <LOCAL> Reason: <REASON>", "rematch": "aborting: (?P<STATE>TCP.*),.*(?P<REMOTE>\\d+\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}:(\\d+)*).* (?P<LOCAL>\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}:(\\d+)*).*reason (?P<REASON>\\d+)?", "is_failure": true}
 {"key": "rcnvme_is_ready", "short": "RCNVMe #<ID> is ready for IO", "rematch": "INFO rcnvme \"(?P<ID>[0-9]+): rcnvme is ready for IOs\"", "color": "green"}
+{"key": "rcnvme_no_controller", "short": "RCNVMe no controllers found", "match": "ERR rcnvme_test \"No controllers online\"", "color": "red"}
 {"key": "boot_args", "short": "Boot Args -- <BOOT>", "rematch": "## Starting application at 0x[0-9a-f]+, bootargs = (?P<BOOT>.*) \\.\\.\\."}
 {"key": "unsigned", "short": "FunOS binary not signed - Fun-on-demand can only run signed binaries. Build with SIGN=1  &#x1f631", "match": "Image not authorised", "is_failure": true}
 {"key": "flow_is_proper", "short": "Magic mismatch on flow: <FLOW>", "rematch": "flow_is_proper: magic mismatch.*from (?P<FLOW>0x[a-z0-9]+)", "is_failure": true}
@@ -82,3 +83,4 @@
 {"key": "fun_malloc_leaks_fail", "short": "fatal error: fun_malloc: <COUNT> leaks", "rematch": "CRIT fun_malloc \"\\*\\*\\*\\*\\*\\*\\* (?P<COUNT>[0-9]+) leak", "color": "red", "is_failure": true}
 {"key": "fpc_error", "short": "machine problems: FPC may be locked up", "match": "Bus active timeout"}
 {"key": "funos_fail_to_idle", "short": "Lingering WUs: FunOS failed to idle", "match": "FunOS failed to idle after app return", "is_failure": "true"}
+{"key": "dpu_temperature_breached", "short": "DPU temperature sensor breached critical threshold", "match": "DPU temperature breached for sensor", "is_failure": "true"}

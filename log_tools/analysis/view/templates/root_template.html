@@ -26,6 +26,7 @@
                     <th>Ingested Time (in UTC)</th>
                     <th>Log Lines</th>
                     <th>Log Analyzer Storage</th>
+                    <th>Tags</th>
                 </tr>
             </thead>
             <tbody>
@@ -35,6 +36,13 @@
                     <td class="fixed-font">{{log.creation_date}}</td>
                     <td class="right-align fixed-font">{{log.doc_count}}</td>
                     <td class="right-align fixed-font caps">{{log.es_size}}</td>
+                    <td class="center-align tags">
+                        {% if log.tags is defined and log.tags is not none %}
+                            {% for tag in log.tags %}
+                                <a href="?tags={{tag}}">{{tag}}</a>
+                            {% endfor %}
+                        {% endif %}
+                    </td>
                 </tr>
             {% endfor %}
             </tbody>

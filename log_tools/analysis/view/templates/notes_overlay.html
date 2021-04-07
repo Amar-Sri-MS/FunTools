@@ -1,0 +1,75 @@
+<div id="notes_overlay">
+    <div id="notes_header">
+        <div style="width: 100%;" class="center-align">Notes ({{metadata.notes|length}})</div>
+        <button onclick="toggleNotesOverlay()">Close</button>
+    </div>
+    <div id="notes_container" class="content" style="height: calc(100% - 70px); overflow: auto;">
+        {% for note in metadata.notes %}
+            <div class="note">
+                <div class="note_item">
+                    <div class="note_title">Time:</div>
+                    <div class="note_time">{{note.timestamp|formatdatetime()}}</div>
+                </div>
+                <div class="note_item">
+                    <div class="note_title">Note:</div>
+                    <div class="note_text">{{note.note}}</div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+    <div>
+        <input type="textarea" id="note_input" placeholder="Enter note">
+        <button type="button" class="btn" onclick="onSaveNote(document.getElementById('note_input').value)">Save</button>
+    </div>
+</div>
+
+<script type="text/javascript">
+    const notesOverlay = document.getElementById("notes_overlay");
+    const notesContainer = document.getElementById("notes_container");
+
+    function onSaveNote(note) {
+        if (note === "") {
+            alert("Cannot add an empty note");
+            return;
+        }
+
+        const timestamp = Date.now();
+        const payload = {
+            "timestamp": timestamp,
+            "note": note
+        };
+
+        const url = `${location.origin}/log/${logId}/dashboard/notes`;
+
+        const xhttp = new XMLHttpRequest();
+        xhttp.open("POST", url);
+        xhttp.setRequestHeader("Content-type", "application/json");
+        xhttp.send(JSON.stringify(payload));
+
+        xhttp.onload = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                notesContainer.innerHTML += `
+                    <div class="note">
+                        <div class="note_item">
+                            <div class="note_title">Time:</div>
+                            <div class="note_time">${new Date(timestamp).toGMTString()}</div>
+                        </div>
+                        <div class="note_item">
+                            <div class="note_title">Note:</div>
+                            <div class="note_text">${note}</div>
+                        </div>
+                    </div>
+                `;
+            }
+            else {
+                const response = xhttp.responseText;
+                alert(`There was an error while adding a note. ${response}`);
+            }
+        }
+    }
+
+    function toggleNotesOverlay() {
+        const currentDisplay = notesOverlay.style.display;
+        notesOverlay.style.display = currentDisplay === "block" ? "none" : "block";
+    }
+</script>

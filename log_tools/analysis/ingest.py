@@ -16,6 +16,8 @@ sys.path.append('.')
 from pathlib import Path
 
 import pipeline
+
+from elastic_metadata import ElasticsearchMetadata
 from utils import archive_extractor
 from utils import manifest_parser
 
@@ -34,10 +36,10 @@ def main():
     # index names.
     build_id = args.build_id.lower()
 
-    start_pipeline(args.path, build_id, args.output)
+    start_pipeline(args.path, build_id, output_block=args.output)
 
 
-def start_pipeline(base_path, build_id, output_block='ElasticOutput'):
+def start_pipeline(base_path, build_id, metadata={}, output_block='ElasticOutput'):
     """
     Start ingestion pipeline.
     base_path - path to the log directory/archive
@@ -60,6 +62,14 @@ def start_pipeline(base_path, build_id, output_block='ElasticOutput'):
         env['build_id'] = build_id
 
         cfg = build_pipeline_cfg(base_path, output_block)
+        metadata = {
+            **metadata,
+            **cfg['metadata']
+        }
+
+        # Check if tags exists and split it by comma
+        if 'tags' in metadata and type(metadata['tags']) == str:
+            metadata['tags'] = [tag.strip() for tag in metadata['tags'].split(',')]
 
         block_factory = pipeline.BlockFactory()
 
@@ -72,6 +82,11 @@ def start_pipeline(base_path, build_id, output_block='ElasticOutput'):
             'success': False,
             'msg': str(e)
         }
+
+    es_metadata = ElasticsearchMetadata()
+    print(f'INFO: Storing metadata for log_{build_id}')
+    metadata_store_resp = es_metadata.store(f'log_{build_id}', metadata)
+    print(f'Response: {metadata_store_resp}')
 
     end = time.time()
     time_taken = end - start

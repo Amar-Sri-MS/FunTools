@@ -160,10 +160,58 @@ ul {
 
 #quicklinks {
     display: flex;
+    align-items: center;
     justify-content: flex-end;
 }
-#quicklinks > a {
+#quicklinks > div {
+    width: calc(100% - 160px);
+}
+#quicklinks a {
     padding: 5px;
+}
+
+
+/* Notes overlay */
+#notes_overlay {
+    position: fixed;
+    display: none;
+    width: 500px;
+    height: 500px;
+    top: 10px;
+    right: 0;
+    bottom: 0;
+    background-color: white;
+    border: 1px solid #4d4d4d80;
+    z-index: 2;
+    padding: 15px;
+    box-sizing: border-box;
+}
+#notes_header {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    padding: 5px;
+    border-bottom: 1px solid #4d4d4d80;
+}
+.note {
+    padding: 5px 0px;
+    border-bottom: 0.5px solid #4d4d4d80;
+}
+.note_item {
+    display: flex;
+}
+.note_title {
+    margin-right: 2px;
+    font-weight: bold;
+}
+.note_time {
+
+}
+.note_text {
+
+}
+#note_input {
+    width: calc(100% - 100px);
 }
 
 .info {
