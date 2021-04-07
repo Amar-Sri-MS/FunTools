@@ -75,6 +75,10 @@
 #include "endian.h"
 #include "pcieproxy.h"
 
+#define PCIEPROXY_API __attribute__((visibility("default")))
+
+#include "libpcieproxy.h"
+
 /*
  * CCU Server TCP Port.
  */
@@ -108,7 +112,7 @@ static struct ccu_ops *ccu;
 
 
 uint32_t
-ccu_read_id(ccu_info_t *ccu_info)
+ccu_read_id(struct ccu_info_t *ccu_info)
 {
 	uint32_t *ccu32 = (uint32_t *)ccu_info->mmap;;
 
@@ -119,7 +123,7 @@ ccu_read_id(ccu_info_t *ccu_info)
  * Return a pointer to the CCU Spinlock to use for this CCU mapping.
  */
 uint64_t *
-ccu_spinlock(ccu_info_t *ccu_info)
+ccu_spinlock(struct ccu_info_t *ccu_info)
 {
 	uint64_t *ccu64 = (uint64_t *)ccu_info->mmap;
 	uint64_t null_token = htobe64(CCU_SPINLOCK_ID_PUT(CCU_SPINLOCK_NULL_ID) |
@@ -154,7 +158,7 @@ ccu_spinlock(ccu_info_t *ccu_info)
  * others' register accesses.
  */
 void
-ccu_lock(ccu_info_t *ccu_info)
+ccu_lock(struct ccu_info_t *ccu_info)
 {
 	if (ccu_info == NULL)
 		return;
@@ -168,7 +172,7 @@ ccu_lock(ccu_info_t *ccu_info)
 }
 
 void
-ccu_unlock(ccu_info_t *ccu_info)
+ccu_unlock(struct ccu_info_t *ccu_info)
 {
 	if (ccu_info == NULL)
 		return;
@@ -182,7 +186,7 @@ ccu_unlock(ccu_info_t *ccu_info)
  * Read a specified register into a provided buffer.
  */
 int
-csr_read(ccu_info_t *ccu_info,
+pcie_csr_read(struct ccu_info_t *ccu_info,
 	 uint64_t base_addr,
 	 uint64_t csr_addr,
 	 uint64_t *data,
@@ -198,7 +202,7 @@ csr_read(ccu_info_t *ccu_info,
  * Write a specified register from a provided buffer.
  */
 int
-csr_write(ccu_info_t *ccu_info,
+pcie_csr_write(struct ccu_info_t *ccu_info,
 	  uint64_t base_addr,
 	  uint64_t csr_addr,
 	  uint64_t *data,
@@ -210,6 +214,62 @@ csr_write(ccu_info_t *ccu_info,
 	return 0;
 }
 
+#ifdef BUILD_LIBRARY
+struct ccu_info_t *pcie_csr_init(const char *name, uint64_t offset)
+{
+	struct ccu_info_t *ccu_info = calloc(1, sizeof(*ccu_info));
+
+	ccu_info->fd = open(name, O_RDWR);
+	if (ccu_info->fd < 0) {
+		fprintf(stderr, "Can't open %s: %s\n", name, strerror(errno));
+		goto err;
+	}
+
+	ccu_info->mmap = mmap(NULL, CCU_MAP_SIZE,
+					PROT_READ|PROT_WRITE,
+					MAP_SHARED|MAP_LOCKED,
+					ccu_info->fd, offset);
+	if (ccu_info->mmap == MAP_FAILED) {
+		fprintf(stderr, "Can't mmap %s: %s\n",
+				name, strerror(errno));
+		goto err_fd;
+	}
+
+	ccu_info->spinlock_token = getpid();
+	ccu_info->spinlock = ccu_spinlock(ccu_info);
+	uint32_t ccu_id = ccu_read_id(ccu_info);
+	ccu = CCU_ID_CSRTYPE_GET(ccu_id) == 0 ?
+		&csr1_ops : &csr2_ops;
+
+	return ccu_info;
+err_fd:
+	close(ccu_info->fd);
+err:
+	free(ccu_info);
+	return NULL;
+}
+
+void pcie_csr_close(struct ccu_info_t *ccu_info)
+{
+	if (!ccu_info)
+		return;
+
+	if (ccu_info->mmap)
+		munmap(ccu_info->mmap, CCU_MAP_SIZE);
+
+	if (ccu_info->fd >= 0)
+		close(ccu_info->fd);
+
+	free(ccu_info);
+}
+
+void pcie_csr_enable_debug(bool enable)
+{
+	debug = enable;
+}
+#endif
+
+#ifdef BUILD_SERVER
 
 /*
  * ============
@@ -256,7 +316,7 @@ response(int fd, int priority, const char *format, ...)
 int
 server(int client_fd)
 {
-	ccu_info_t ccu_info;
+	struct ccu_info_t ccu_info;
 	int err = 0;
 
 	ccu_info.fd = -1;
@@ -465,7 +525,7 @@ server(int client_fd)
 				continue;
 			}
 
-			csr_read(&ccu_info, 0, csr_addr, csr_buf, csr_size);
+			pcie_csr_read(&ccu_info, 0, csr_addr, csr_buf, csr_size);
 
 			response_fp = fmemopen(response_msg,
 					       sizeof response_msg,
@@ -528,7 +588,7 @@ server(int client_fd)
 				csr_buf[vidx] = strtoull(argv[vidx+3],
 							 NULL, 0);
 
-			csr_write(&ccu_info, 0, csr_addr, csr_buf, csr_size);
+			pcie_csr_write(&ccu_info, 0, csr_addr, csr_buf, csr_size);
 			response(client_fd, LOG_DEBUG, "OKAY WRITE\n");
 			continue;
 		}
@@ -560,7 +620,6 @@ server(int client_fd)
 
 	return err;
 }
-
 
 /*
  * =============
@@ -769,3 +828,5 @@ main(int argc, char *const argv[])
 	exit(EXIT_SUCCESS);
 	/*NOTREACHED*/
 }
+
+#endif  /* BUILD_SERVER */

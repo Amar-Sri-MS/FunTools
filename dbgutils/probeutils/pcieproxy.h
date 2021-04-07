@@ -57,28 +57,28 @@
 /*
  * Client Global Variables and Types.
  */
-typedef struct {
+struct ccu_info_t {
 	int		fd;
 	void		*mmap;
 	pid_t		spinlock_token;
 	uint64_t	*spinlock;
-} ccu_info_t;
+};
 
 extern int debug;
 
-void ccu_lock(ccu_info_t *ccu_info);
-void ccu_unlock(ccu_info_t *ccu_info);
+void ccu_lock(struct ccu_info_t *ccu_info);
+void ccu_unlock(struct ccu_info_t *ccu_info);
 
 struct ccu_ops {
-	void (*csr_wide_write)(ccu_info_t *ccu_info,
+	void (*csr_wide_write)(struct ccu_info_t *ccu_info,
 			uint64_t addr,
 			uint64_t *data,
 			uint32_t size);
-	void (*csr_wide_read)(ccu_info_t *ccu_info,
+	void (*csr_wide_read)(struct ccu_info_t *ccu_info,
 			uint64_t addr,
 			uint64_t *data,
 			uint32_t size);
-	void (*ccu_dump)(ccu_info_t *ccu_info);
+	void (*ccu_dump)(struct ccu_info_t *ccu_info);
 	void (*decode_ccucmd)(uint64_t cmd, const char *description);
 };
 
