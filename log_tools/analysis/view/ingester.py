@@ -25,6 +25,7 @@ DOWNLOAD_DIRECTORY = 'downloads'
 QA_REGRESSION_BASE_ENDPOINT = 'http://integration.fungible.local/api/v1/regression'
 QA_JOB_INFO_ENDPOINT = f'{QA_REGRESSION_BASE_ENDPOINT}/suite_executions'
 QA_LOGS_ENDPOINT = f'{QA_REGRESSION_BASE_ENDPOINT}/test_case_time_series'
+QA_SUITE_ENDPOINT = f'{QA_REGRESSION_BASE_ENDPOINT}/suites'
 QA_STATIC_ENDPOINT = 'http://integration.fungible.local/static/logs'
 
 
@@ -42,6 +43,7 @@ def ingest():
     """
     try:
         job_id = request.form.get('job_id')
+        test_index = int(request.form.get('test_index', 0))
         tags = request.form.get('tags')
         tags_list = [tag.strip() for tag in tags.split(',')]
 
@@ -55,19 +57,21 @@ def ingest():
         job_id = job_id.strip()
 
         job_info = fetch_qa_job_info(job_id)
-        log_files = fetch_qa_logs(job_id)
+        suite_info = fetch_qa_suite_info(job_info['data']['suite_id'])
+        log_files = fetch_qa_logs(job_id, suite_info, test_index)
 
         metadata = {
             'tags': tags_list
         }
 
         # Start ingestion
-        ingestion_status = ingest_logs(job_id, job_info, log_files, metadata)
+        ingestion_status = ingest_logs(job_id, test_index, job_info, log_files, metadata)
 
         if not ingestion_status['success']:
             return render_template('ingester.html', feedback={
                 'success': False,
                 'job_id': job_id,
+                'test_index': test_index,
                 'tags': tags,
                 'msg': ingestion_status['msg'] if 'msg' in ingestion_status else 'Ingestion failed.'
             })
@@ -75,8 +79,9 @@ def ingest():
         return render_template('ingester.html', feedback={
             'success': True,
             'job_id': job_id,
+            'test_index': test_index,
             'tags': tags,
-            'dashboard_link': f'{request.host_url}log/log_qa-{job_id}/dashboard',
+            'dashboard_link': f'{request.host_url}log/log_qa-{job_id}-{test_index}/dashboard',
             'time_taken': ingestion_status['time_taken']
         })
     except Exception as e:
@@ -84,6 +89,7 @@ def ingest():
         return render_template('ingester.html', feedback={
             'success': False,
             'job_id': job_id,
+            'test_index': test_index,
             'tags': tags,
             'msg': str(e)
         })
@@ -106,7 +112,21 @@ def fetch_qa_job_info(job_id):
     return job_info
 
 
-def fetch_qa_logs(job_id):
+def fetch_qa_suite_info(suite_id):
+    """
+    Fetching QA job info using QA endpoint
+    Returns response (dict)
+    Raises Exception if Job not found
+    """
+    url = f'{QA_SUITE_ENDPOINT}/{suite_id}'
+    response = requests.get(url)
+    suite_info = response.json()
+    if not (suite_info and suite_info['data']):
+        raise Exception(f'QA suite ({suite_id}) not found')
+    return suite_info['data']
+
+
+def fetch_qa_logs(job_id, suite_info, test_index=None):
     """
     Fetches a list of QA log filenames
     QA API returns a list of log info containing data
@@ -125,12 +145,18 @@ def fetch_qa_logs(job_id):
     job_logs = response.json()
     if not (job_logs and job_logs['data']):
         raise Exception('Logs not found')
-    return _filter_qa_log_files(job_logs)
+    return _filter_qa_log_files(job_logs, suite_info, test_index)
 
 
-def _filter_qa_log_files(job_logs):
+def _filter_qa_log_files(job_logs, suite_info, test_index=None):
     """ Filters out only required QA log files """
     # FC log archives for single node and HA
+    log_filename_starts = ''
+    if test_index and len(suite_info.get('entries', [])) > test_index:
+        # Example: _13failures_mgmt_flap_multi.py_180878_1871693_fcs_log.tgz
+        test_script_name = suite_info['entries'][test_index]['script_path'].split('/')[-1]
+        log_filename_starts = f'_{test_index}{test_script_name}'
+
     log_filenames_to_ingest = ('fc_log.tgz', 'fcs_log.tgz')
     log_files = list()
     for job_log in job_logs['data']:
@@ -140,7 +166,13 @@ def _filter_qa_log_files(job_logs):
         if log['category'] != 'Diagnostics':
             continue
 
-        if log['filename'].endswith(log_filenames_to_ingest):
+        filename = log['filename'].split('/')[-1]
+
+        # Only interested for a specific test in the test suite
+        if test_index and not filename.startswith(log_filename_starts):
+            continue
+
+        if filename.endswith(log_filenames_to_ingest):
             log_files.append(log['filename'])
 
     return log_files
@@ -154,7 +186,7 @@ def _get_valid_files(path):
             ]
 
 
-def ingest_logs(job_id, job_info, log_files, metadata):
+def ingest_logs(job_id, test_index, job_info, log_files, metadata):
     """
     Ingesting logs using "job_id" and "log_files"
 
@@ -263,7 +295,7 @@ def ingest_logs(job_id, job_info, log_files, metadata):
     _create_manifest(path, contents=manifest_contents)
     # Start the ingestion
     return ingest_handler.start_pipeline(path,
-                                         f'qa-{job_id}',
+                                         f'qa-{job_id}-{test_index}',
                                          metadata=metadata)
 
 
