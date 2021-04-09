@@ -121,11 +121,11 @@ def merge_file(infile_name, outfile_name):
                     break
 
 
-def gen_hex_file(infile_name, outfile_name, append):
+def gen_hex_file(infile_name, outfile_name, append, width):
     mode = 'ab' if append else 'wb'
     cmd = ['hexdump',
            '-v',
-           '-e', '64/1 "%02X"',
+           '-e', '{}/1 "%02X"'.format(width),
            '-e', '"\n"']
     with open(outfile_name, mode) as outfile:
         with open(infile_name, 'rb') as infile:
@@ -292,6 +292,10 @@ def run():
     parser.add_argument(
         '--hex', help='Generate output in hex format (for Palladium)', action='store_true')
     parser.add_argument(
+        '--hex-width', help='Hex output width in bytes (F1,S1 need 64, F1D1 needs 32)',
+        type=int, default=32
+    )
+    parser.add_argument(
         '--signed', help='Input images are signed', action='store_true')
     parser.add_argument(
         '--fsfile', help='File(s) to put in the filesystem', action='append')
@@ -346,7 +350,7 @@ def run():
 
     if g.hex:
         for f in enumerate(files):
-            gen_hex_file(f[1], outfile_hex, bool(f[0]))
+            gen_hex_file(f[1], outfile_hex, bool(f[0]), g.hex_width)
 
     output_descr = {
         'emmc_image.bin' : 'complete eMMC image',
