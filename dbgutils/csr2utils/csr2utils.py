@@ -36,6 +36,7 @@ import csr2
 logger = logging.getLogger("csr2utils")
 logger.setLevel(logging.ERROR)
 
+csr2_chip_types = ['s1', 'f1d1']
 
 class Register(object):
     """
@@ -498,32 +499,29 @@ class RawValuesFormatter(object):
 bundle = None
 csr_names = None
 
-
-def init_bundle_lazily():
+def load_csr_spec(chip_type):
     """
-    Initialize a bundle.
-
-    This generates the bundle at the moment. At some point in the future,
-    a bundle will be part of the FunHW/FunSDK repo and should be consumed
-    from that location.
+    load csr2 metadata spec.
     """
+
+    if chip_type not in csr2_chip_types:
+        logger.err('Invalid chip type: {}'.format(chip_type))
+        sys.exit(1)
+
     global bundle
     global csr_names
 
-    if bundle is not None:
-        return True
-
     csr2_dir = os.path.join(WS, 'FunHW', 'csr2api', 'v2')
     bin_path = os.path.join(csr2_dir, 'csr2bundle.py')
-    bundle_path = os.path.join(csr2_dir, 's1_bundle.json')
+    bundle_path = os.path.join(csr2_dir, 'bundle.json')
 
     logger.info('Creating CSR2 bundle at %s' % bundle_path)
 
-    json_dir = os.path.join(WS, 'FunHW', 'chip', 's1', 'csr2')
-    bundle_cmd = [bin_path, 'chip_s1::root',
+    json_dir = os.path.join(WS, 'FunSDK', 'FunSDK', 'chip', chip_type, 'csr')
+    bundle_cmd = [bin_path, 'chip_{}::root'.format(chip_type),
                   '-I', json_dir,
                   '-o', bundle_path,
-                  '-n', 's1']
+                  '-n', chip_type]
     try:
         subprocess.check_output(bundle_cmd)
     except subprocess.CalledProcessError as e:
@@ -535,7 +533,6 @@ def init_bundle_lazily():
     csr_names = RegisterNames(bundle)
     return True
 
-
 def csr2_peek(csr_path):
     """
     Handles the csr peek comand.
@@ -543,9 +540,6 @@ def csr2_peek(csr_path):
     Paths correspond to the hierarchy as described in fundamental docs,
     separated by dots, e.g. pc0.soc_clk_ring.cfg.pc_cfg_scratchpad.
     """
-
-    if not init_bundle_lazily():
-        return
 
     if not csr_path:
         logger.err('Invalid(Null) csr path argument!')
@@ -567,9 +561,6 @@ def csr2_peek_args(args):
     Paths correspond to the hierarchy as described in fundamental docs,
     separated by dots, e.g. pc0.soc_clk_ring.cfg.pc_cfg_scratchpad.
     """
-    if not init_bundle_lazily():
-        return
-
     csr_path = args.csr[0]
 
     if '*' in csr_path:
@@ -622,9 +613,6 @@ def csr2_poke(csr_path, values):
         logger.err('Invalid(Null or empty list) csr value argument argument!')
         return
 
-    if not init_bundle_lazily():
-        return
-
     finder = RegisterFinder(bundle)
     accessor = CSRAccessor(dbgprobe(), finder)
     accessor.poke(csr_path, values)
@@ -639,9 +627,6 @@ def csr2_poke_args(args):
     Paths correspond to the hierarchy as described in fundamental docs,
     separated by dots, e.g. root.pc0.soc_clk_ring.cfg.pc_cfg_scratchpad.
     """
-
-    if not init_bundle_lazily():
-        return
 
     csr_path = args.csr[0]
 
@@ -684,9 +669,6 @@ def csr2_find(args):
     Paths correspond to the hierarchy as described in fundamental docs,
     separated by dots, e.g. root.pc0.soc_clk_ring.cfg.pc_cfg_scratchpad.
     """
-    if not init_bundle_lazily():
-        return
-
     csr_path = args.substring[0] if args.substring else None
 
     if csr_path:
