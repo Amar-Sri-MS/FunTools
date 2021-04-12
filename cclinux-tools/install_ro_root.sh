@@ -32,6 +32,7 @@ install -t $runtime_target_dir -m 0755 uboot_mpg_update.sh
 
 install -t $runtime_target_dir/ro-verify-emmc -m 0755 ro-verify-emmc/verify_ro_root.sh
 install -t $runtime_target_dir/ro-verify-emmc -m 0755 ro-verify-emmc/verify_ro_root_hook.sh
+install -t $runtime_target_dir/ro-verify-emmc -m 0755 ro-verify-emmc/verify_root_version_hook.sh
 
 patches_dir=$target_dir/patches
 mkdir -p $patches_dir

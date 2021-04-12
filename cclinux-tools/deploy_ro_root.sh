@@ -71,3 +71,6 @@ ln -s ../init.d/verify_ro_root $DEPLOY_ROOT/etc/rc5.d/S25verify_ro_root
 mkdir -p $DEPLOY_ROOT/etc/boot-success-hooks.d
 cp bin/mips64/Linux/ro-verify-emmc/verify_ro_root_hook.sh $DEPLOY_ROOT/etc/boot-success-hooks.d
 chmod 0555 $DEPLOY_ROOT/etc/boot-success-hooks.d/verify_ro_root_hook.sh
+
+cp bin/mips64/Linux/ro-verify-emmc/verify_root_version_hook.sh $DEPLOY_ROOT/etc/boot-success-hooks.d
+chmod 0555 $DEPLOY_ROOT/etc/boot-success-hooks.d/verify_root_version_hook.sh
