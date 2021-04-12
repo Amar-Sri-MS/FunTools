@@ -1,5 +1,9 @@
 #!/bin/sh
 
+build_version=$(cat /etc/version.build | tr "\n" " ")
+rootfs_version=$(grep "cc-linux-rootfs-ro" /etc/version.sdk)
+echo "RootFS build details: $build_version $rootfs_version"
+
 state_file="/tmp/.verify_ro_root.state"
 
 echo IN_PROGRESS > $state_file
