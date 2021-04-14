@@ -152,7 +152,7 @@ def _filter_qa_log_files(job_logs, suite_info, test_index=None):
     """ Filters out only required QA log files """
     # FC log archives for single node and HA
     log_filename_starts = ''
-    if test_index and len(suite_info.get('entries', [])) > test_index:
+    if test_index is not None and len(suite_info.get('entries', [])) > test_index:
         # Example: _13failures_mgmt_flap_multi.py_180878_1871693_fcs_log.tgz
         test_script_name = suite_info['entries'][test_index]['script_path'].split('/')[-1]
         log_filename_starts = f'_{test_index}{test_script_name}'
@@ -169,7 +169,7 @@ def _filter_qa_log_files(job_logs, suite_info, test_index=None):
         filename = log['filename'].split('/')[-1]
 
         # Only interested for a specific test in the test suite
-        if test_index and not filename.startswith(log_filename_starts):
+        if test_index is not None and not filename.startswith(log_filename_starts):
             continue
 
         if filename.endswith(log_filenames_to_ingest):
