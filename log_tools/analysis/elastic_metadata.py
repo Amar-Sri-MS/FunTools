@@ -139,14 +139,32 @@ class ElasticsearchMetadata(object):
 
         return result
 
+    def update(self, log_id, metadata):
+        """
+        Updates the existing metadata with the given
+        "metadata" (object).
+        """
+        # If the metadata doc does not already exists
+        if not self.es.exists(self.index, log_id):
+            return self.store(log_id,
+                              metadata)
+
+        body = {
+            'doc': metadata
+        }
+        result = self.es.update(self.index,
+                                log_id,
+                                body)
+
+        return result
+
     def update_notes(self, log_id, note):
         """ Updating the notes in metadata document of "log_id" """
         # If the metadata doc does not already exists
         if not self.es.exists(self.index, log_id):
             value = note if type(note) == list else [note]
-            return self.es.create(self.index,
-                                  log_id,
-                                  {'notes': value})
+            return self.store(log_id,
+                              {'notes': value})
 
         body = self._build_query_to_append_to_array('notes', note)
 
@@ -159,9 +177,8 @@ class ElasticsearchMetadata(object):
         """ Updating the tags in metadata document of "log_id" """
         if not self.es.exists(self.index, log_id):
             value = tags if type(tags) == list else [tags]
-            return self.es.create(self.index,
-                                  log_id,
-                                  {'tags': value})
+            return self.store(log_id,
+                              {'tags': value})
 
         body = self._build_query_to_append_to_array('tags', tags)
 
