@@ -46,6 +46,13 @@ def start_pipeline(base_path, build_id, metadata={}, output_block='ElasticOutput
     build_id - Unique identfier for the ingestion
     output_block (defaults to ES)
     """
+    LOG_ID = f'log_{build_id}'
+    es_metadata = ElasticsearchMetadata()
+    es_metadata.update(LOG_ID, {
+        'ingestion_status': 'INGESTION_STARTED',
+        **metadata
+    })
+
     start = time.time()
     try:
         # If the base_path is an archive then extract it
@@ -78,19 +85,21 @@ def start_pipeline(base_path, build_id, metadata={}, output_block='ElasticOutput
 
     except Exception as e:
         print(f'ERROR: Ingestion for {build_id} - {str(e)}')
+        es_metadata.update(LOG_ID, {
+            'ingestion_status': 'FAILED',
+            'ingestion_error': str(e)
+        })
         return {
             'success': False,
             'msg': str(e)
         }
 
-    es_metadata = ElasticsearchMetadata()
-    print(f'INFO: Storing metadata for log_{build_id}')
-    metadata_store_resp = es_metadata.store(f'log_{build_id}', metadata)
-    print(f'Response: {metadata_store_resp}')
-
     end = time.time()
     time_taken = end - start
-    print(f'COMPLETED: Time spent processing: {time_taken}s')
+    es_metadata.update(LOG_ID, {
+        'ingestion_status': 'COMPLETED',
+        'ingestion_time': time_taken
+    })
 
     return {
         'success': True,
