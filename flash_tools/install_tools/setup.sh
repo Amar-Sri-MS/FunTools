@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 
 # .setup is generated as part of bundle generation to contain
 # bundle-specific config variables
@@ -142,26 +142,48 @@ FW_UPGRADE_ARGS="--offline --ws `pwd`"
 # makes the output logs hard to read
 FW_UPGRADE_ARGS="$FW_UPGRADE_ARGS --no-version-check"
 
+EXIT_STATUS=0
+
 if [[ $ccfg_only != 'true' ]]; then
 	if [[ $downgrade == 'true' ]]; then
 		./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version latest --force --downgrade
+		RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
+
 		./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version latest --force --downgrade --active
+		RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
+
 		# a small hack until proper downgrade is supported; as we're only going to update
 		# the inactive partition of funvisor data, erase enough of active funos image to make
 		# it unbootable from uboot's perspective to force booing into (current) inactive.
 		dd if=/dev/zero of=emmc_wipe.bin bs=1024 count=1024
+		RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
+
 		./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file mmc1=emmc_wipe.bin --active
+		RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
 
 		if [ -n "$host_sku" ]; then
 			log_msg "Downgrading eepr \"$host_sku\""
 			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u eepr --version latest --force --downgrade --select-by-image-type "$host_sku"
+			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
+
 			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u eepr --version latest --force --downgrade --active --select-by-image-type "$host_sku"
+			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
 		fi
 	else
 		./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version $funos_sdk_version
+		RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
+
+		if [ $EXIT_STATUS -eq 2 ]; then
+			log_msg "Aborting ... downgrade argument required"
+			# exit early here, as this error code means no upgrade
+			# was performed by run_fwupgrade script
+			exit $EXIT_STATUS
+		fi
+
 		if [ -n "$host_sku" ]; then
 			log_msg "Updating eepr \"$host_sku\""
 			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u eepr --select-by-image-type "$host_sku"
+			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
 		fi
 
 	fi
@@ -171,7 +193,10 @@ fi # ccfg_only
 
 if [[ $ccfg_install ]]; then
 	./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file ccfg=$ccfg_install
+	RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
+
 	./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file ccfg=$ccfg_install --active
+	RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
 else
 	feature_set_resp=`dpcsh -nQ peek "config/boot_defaults/feature_set" || true`
 	if echo -n "$feature_set_resp" | jq -Mre .result; then
@@ -179,26 +204,28 @@ else
 		if [ ! -z "$feature_set" ]; then
 			log_msg "Updating ccfg \"$feature_set\""
 			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u ccfg --select-by-image-type "$feature_set"
+			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
 		fi
 	else
 		log_msg "Missing feature set"
 	fi
 fi
 
+if [[ $ccfg_only == 'true' ]]; then
+	exit $EXIT_STATUS
+fi
+
 # sku-specific upgrades
 case "${host_sku}" in
 	fc50* | fc100* | fc200* )
 		./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file dcc0=composer-boot-services-emmc.img --active
+		RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
 		;;
 
 	*) : ;; # nothing to do
 esac
 
 echo "DPU done" >> $PROGRESS
-
-if [[ $ccfg_only == 'true' ]]; then
-	exit 0
-fi
 
 log_msg "Upgrading CCLinux"
 
@@ -237,12 +264,15 @@ install_and_verify_image() {
 
 # Install OS image
 install_and_verify_image fvos.signed /dev/vdb1
+RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
 
 # Install rootfs image
 install_and_verify_image ${ROOTFS_NAME} /dev/vdb2 bs=4096
+RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
 
 # Install rootfs hashtable
 install_and_verify_image ${ROOTFS_NAME}.fvht.bin /dev/vdb4
+RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
 
 # when executing via platform agent, STATUS_DIR will be set
 # to a folder where the bundle can store data persistently
@@ -280,4 +310,4 @@ fi
 echo "CCLinux done" >> $PROGRESS
 
 sync
-exit 0
+exit $EXIT_STATUS
