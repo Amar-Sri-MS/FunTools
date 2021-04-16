@@ -36,7 +36,11 @@ def main():
     # index names.
     build_id = args.build_id.lower()
 
-    start_pipeline(args.path, build_id, output_block=args.output)
+    status = start_pipeline(args.path, build_id, output_block=args.output)
+
+    # Sends an exit status if the ingestion fails
+    if not status.get('success', False):
+        sys.exit(1)
 
 
 def start_pipeline(base_path, build_id, metadata={}, output_block='ElasticOutput'):
