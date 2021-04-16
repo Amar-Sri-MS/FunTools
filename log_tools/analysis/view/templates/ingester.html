@@ -89,7 +89,7 @@
         }
 
         function handleStatusUpdate(metadata) {
-            const status = "ingestion_status" in metadata ? metadata["ingestion_status"] : "Unknown";
+            const status = "ingestion_status" in metadata ? metadata["ingestion_status"] : "STARTING";
             statusElement.innerHTML = `
                 <p>Status: ${status}</p>
                 <p>Last checked: ${new Date()}</p>
