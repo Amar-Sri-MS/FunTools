@@ -212,6 +212,14 @@ else
 fi
 
 if [[ $ccfg_only == 'true' ]]; then
+	# when executing via platform agent, STATUS_DIR will be set
+	# to a folder where the bundle can store data persistently
+	# Add a special stamp file for the upgrade verification to indicate
+	# that the upgrade verification does not need to be performed
+	# in this upgrade job
+	if [[ -n "$STATUS_DIR" ]]; then
+		echo "ccfg-only upgrade" > "$STATUS_DIR"/.no_upgrade_verify
+	fi
 	exit $EXIT_STATUS
 fi
 
