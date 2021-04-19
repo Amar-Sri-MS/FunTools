@@ -65,7 +65,7 @@ def main():
         # Start ingestion
         ingestion_status = ingest_logs(job_id, test_index, job_info, log_files, metadata)
 
-        if not ingestion_status['success']:
+        if ingestion_status and not ingestion_status['success']:
             _update_metadata(es_metadata, LOG_ID, 'FAILED', {
                 'ingestion_error': ingestion_status.get('msg')
             })
@@ -113,7 +113,7 @@ def ingest():
 
         # If metadata exists then either ingestion for this job
         # is already done or in progress
-        if not metadata:
+        if not metadata or metadata['ingestion_status'] == 'FAILED':
             cmd = ['./ingester.py', job_id, '-test_index', str(test_index)]
             if len(tags_list) > 0:
                 cmd.append('-tags')
@@ -369,7 +369,8 @@ def ingest_logs(job_id, test_index, job_info, log_files, metadata):
                                          f'qa-{job_id}-{test_index}',
                                          metadata=metadata)
     except Exception as e:
-        _update_metadata(es_metadata, 'FAILED', {
+        logging.exception('Error while ingesting the logs')
+        _update_metadata(es_metadata, LOG_ID, 'FAILED', {
             'ingestion_error': str(e)
         })
 

@@ -53,7 +53,7 @@ def start_pipeline(base_path, build_id, metadata={}, output_block='ElasticOutput
     LOG_ID = f'log_{build_id}'
     es_metadata = ElasticsearchMetadata()
     es_metadata.update(LOG_ID, {
-        'ingestion_status': 'INGESTION_STARTED',
+        'ingestion_status': 'INGESTION_IN_PROGRESS',
         **metadata
     })
 
