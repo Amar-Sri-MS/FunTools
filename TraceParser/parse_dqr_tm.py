@@ -10,6 +10,7 @@
 #
 # Copyright (c) 2019 Fungible Inc.  All rights reserved.
 #
+from __future__ import print_function
 
 import argparse
 import json
@@ -18,7 +19,9 @@ import platform
 import re
 import subprocess
 import select
+
 import tr_formats
+
 
 MAX_VPS_PER_CORE = 4
 MAX_VPS_PER_CLUSTER = 24
@@ -56,8 +59,8 @@ def _run_addr2line(funos_binary_path):
                                 stdin=subprocess.PIPE,
                                 stdout=subprocess.PIPE)
     except subprocess.CalledProcessError as e:
-        print 'Failed to run addr2line: code %d msg %s' % (e.returncode,
-                                                           e.message)
+        print('Failed to run addr2line: code %d msg %s' % (e.returncode,
+                                                           e.message))
         proc = None
 
     return proc
@@ -586,11 +589,17 @@ class CacheMissParser(object):
     # as they are part of a different "stream". If we need to identify the
     # VP where the miss occurred we'll have to track the instruction stream.
     #
+    # TF5 occurs during overflow. However, unlike perf tracing, we don't get
+    # reliable TMOAS-TPC pairs on restart - sometimes we see TMOAS, sometimes
+    # we see TPC, and sometimes we see nothing which is bizarre. For now, we
+    # use a heuristic to attempt a restart after overflow.
+    #
     # TODO (jimmy): handle the fact that we may lose TMOAS, but not its
     #               partner TPC at the start
     STATE_CM_TPC_OR_TMOAS = 1
     STATE_TMOAS_TPC = 2
     STATE_CM_TA = 3
+    STATE_OVERFLOW = 4
 
     def __init__(self):
         self.entries = []
@@ -605,7 +614,12 @@ class CacheMissParser(object):
         frames = parse_and_group_trace_formats(fh)
         for frame in frames:
             for tf in frame.tfs:
-                self.process_tf(tf, frame.frame_index)
+                if frame.overflow:
+                    # ignore the overflow frame, it will be garbage
+                    self.state = self.STATE_CM_TPC_OR_TMOAS
+                    self.current_entry = None
+                else:
+                    self.process_tf(tf, frame.frame_index)
 
     def process_tf(self, tf, frame_index):
         next_state = self.state
@@ -626,8 +640,16 @@ class CacheMissParser(object):
             elif tr_formats.is_tsa(tf):
                 self.current_entry.set_store_addr(tf.addr)
             else:
-                raise RuntimeError('frame %d: should have either TLA or TSA '
-                                   'after TPC: %s' % (frame_index, tf))
+                # Tolerate malformed TPC-TA pairs because overflow doesn't
+                # provide a reliable restart indication. We'll just keep
+                # going until we find the pairs again, which seems to work
+                # in practice.
+                print('warning: frame %d: should have either TLA or TSA '
+                      'after TPC: %s' % (frame_index, tf))
+                self.current_entry = None
+                self.state = self.STATE_CM_TPC_OR_TMOAS
+                return
+
             self.entries.append(self.current_entry)
             next_state = self.STATE_CM_TPC_OR_TMOAS
 
@@ -693,7 +715,7 @@ def run_perf_parser(args):
         trace_parser.parse_trace_messages(fh)
         perfmon_samples = trace_parser.get_perfmon_samples()
     if not perfmon_samples:
-        print 'No samples'
+        print('No samples')
         return
     out_file = 'put_%s_%s_perfmon.txt' % (str(args.cluster),
                                           str(args.core))
@@ -728,7 +750,7 @@ def run_cache_miss_parser(args):
     this was a load/store instruction.
     """
     parser = CacheMissParser()
-    print 'Running cache miss parser on %s' % args.input_file
+    print('Running cache miss parser on %s' % args.input_file)
     with open(args.input_file, 'r') as fh:
         parser.parse_trace_messages(fh)
 
