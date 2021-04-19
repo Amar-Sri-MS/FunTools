@@ -58,7 +58,7 @@ def main():
         LOG_ID = f'log_qa-{job_id}-{test_index}'
         es_metadata = ElasticsearchMetadata()
 
-        custom_logging = logger.get_logger(filename=f'{job_id}.log')
+        custom_logging = logger.get_logger(filename=f'{LOG_ID}.log')
         custom_logging.propagate = False
 
         job_info = fetch_qa_job_info(job_id)
