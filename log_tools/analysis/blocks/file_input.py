@@ -12,6 +12,7 @@
 import glob
 import gzip
 import io
+import logging
 import os
 import re
 
@@ -47,7 +48,7 @@ class TextFileInput(Block):
         file_size = 0
 
         for file in input_files:
-            print('INFO: Parsing', file)
+            logging.info(f'Parsing {file}')
             if file.endswith('.gz'):
                 with gzip.open(file, mode='rt', encoding='ascii', errors='replace') as f:
                     yield from self.read_logs(f)
@@ -58,7 +59,7 @@ class TextFileInput(Block):
                     yield from self.read_logs(f)
                     f.seek(0,2)
                     file_size += f.tell()
-        print('INFO: Uncompressed file size (in bytes):', file_size)
+        logging.info('Uncompressed file size (in bytes): {file_size}')
 
     def read_logs(self, f):
         multiline_logs = []

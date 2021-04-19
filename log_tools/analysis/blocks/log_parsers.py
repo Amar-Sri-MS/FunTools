@@ -4,6 +4,7 @@
 
 import datetime
 import io
+import logging
 import math
 import os
 import re
@@ -45,7 +46,7 @@ class FunOSInput(Block):
 
                     yield (date_time, usecs, system_type, system_id, uid, None, None, line)
                 except:
-                    print(f'WARNING: Malformed line in FUNOS logs: {line}')
+                    logging.warning(f'Malformed line in FUNOS logs: {line}')
                     continue
 
     @staticmethod
@@ -142,7 +143,7 @@ class GenericInput(Block):
                     msg = filename.strip() + ' ' + msg.strip()
                 yield (date_time, usecs, system_type, system_id, uid, None, None, msg)
             else:
-                print(f'WARNING: Malformed line in {uid}: {line}')
+                logging.warning(f'Malformed line in {uid}: {line}')
 
     @staticmethod
     def extract_timestamp(day_str, time_str, secs_str):

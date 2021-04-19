@@ -8,6 +8,7 @@
 
 
 import json
+import logging
 import os
 
 
@@ -24,7 +25,7 @@ def get_config():
         with open(config_path, 'r') as f:
             config = json.load(f)
     except IOError:
-        print('Config file not found! Checking for default config file..')
+        logging.warning('Config file not found! Checking for default config file..')
 
     try:
         default_config_path = os.path.join(file_path, 'default_config.json')
@@ -33,6 +34,7 @@ def get_config():
         # Overriding default config with custom config
         config = { **default_config, **config }
     except IOError:
+        logging.error('Default config file not found!')
         sys.exit('Default config file not found! Exiting..')
 
     return config

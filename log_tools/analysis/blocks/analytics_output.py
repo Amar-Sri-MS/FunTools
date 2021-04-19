@@ -6,6 +6,7 @@ import datetime
 import hashlib
 import jinja2
 import json
+import logging
 import os
 import re
 import requests
@@ -73,7 +74,7 @@ class AnchorMatcher:
 
         anchors = []
         for anchor_file in anchor_files:
-            print('INFO: Reading Anchor file from:', anchor_file)
+            logging.info(f'Reading Anchor file from: {anchor_file}')
 
             with open(os.path.expandvars(anchor_file)) as f:
                 for line in f:
@@ -335,7 +336,7 @@ class AnalyticsOutput(Block):
             with open(path, 'w+') as f:
                 f.write(result)
         except IOError as e:
-            print('I/O error', e)
+            logging.exception('I/O error')
 
     def _save_json(self, filename, data):
         """ Sends the file to the file server """
@@ -349,6 +350,6 @@ class AnalyticsOutput(Block):
 
             response = requests.post(url, files=files)
             response.raise_for_status()
-            print(f'INFO: File {filename} uploaded!')
+            logging.info(f'File {filename} uploaded!')
         except Exception as e:
-            print(f'ERROR: Uploading file {filename} - {str(e)}')
+            logging.exception(f'Uploading file {filename} failed.')
