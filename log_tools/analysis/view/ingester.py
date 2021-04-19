@@ -26,6 +26,7 @@ sys.path.insert(0, '.')
 
 from elastic_metadata import ElasticsearchMetadata
 from flask import Blueprint, jsonify, request, render_template
+from flask import current_app
 from utils import archive_extractor
 import ingest as ingest_handler
 
@@ -129,7 +130,7 @@ def ingest():
             'metadata': metadata
         })
     except Exception as e:
-        print('ERROR:', e)
+        current_app.logger.exception(f'Error when starting ingestion for job: {job_id}')
         return render_template('ingester.html', feedback={
             'started': False,
             'success': False,
@@ -137,7 +138,7 @@ def ingest():
             'test_index': test_index,
             'tags': tags,
             'msg': str(e)
-        })
+        }), 500
 
 
 @ingester_page.route('/ingest/<log_id>/status', methods=['GET'])

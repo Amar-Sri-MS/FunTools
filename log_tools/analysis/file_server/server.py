@@ -17,6 +17,7 @@
 
 import argparse
 import json
+import logging
 import os
 import shutil
 
@@ -24,6 +25,8 @@ from flask import Flask
 from flask import request, jsonify, send_file
 from pathlib import Path
 from werkzeug.utils import secure_filename
+
+import logger
 
 
 ALLOWED_EXTENSIONS = {'json'}
@@ -42,6 +45,14 @@ def main():
     args = parser.parse_args()
     port = args.port
 
+    log_handler = logger.get_logger(filename='file_server.log')
+
+    # Get the flask logger and add our custom handler
+    flask_logger = logging.getLogger('werkzeug')
+    flask_logger.setLevel(logging.INFO)
+    flask_logger.addHandler(log_handler)
+    flask_logger.propagate = False
+
     app.config.update({
         'UPLOAD_DIRECTORY': args.dir
     })
@@ -57,12 +68,12 @@ def _allowed_file(filename):
 @app.route('/<log_id>/file/<file_name>', methods=['GET'])
 def get_file(log_id, file_name):
     """ Fetches file with 'file_name' within the 'log_id' directory """
-    path = os.path.join(app.config['UPLOAD_DIRECTORY'], log_id, file_name)
-
     try:
+        path = os.path.join(app.config['UPLOAD_DIRECTORY'], log_id, file_name)
+
         return send_file(path, as_attachment=False)
     except Exception as e:
-        print('ERROR: Could not find file:', e)
+        app.logger.exception('Could not find file')
         return jsonify({
             'success': False,
             'error': 'Could not find file'
@@ -98,9 +109,9 @@ def save_file(log_id):
             path = os.path.join(BASE_PATH, filename)
 
             file.save(path)
-            print('INFO: File saved at ', path)
+            app.logger.info(f'File saved at {path}')
         except Exception as e:
-            print('ERROR:', e)
+            app.logger.exception(f'Error while saving file: {file.filename}')
             errors.append(f'error while saving file: {file.filename} - {str(e)}')
 
     if len(errors) != 0:
@@ -121,9 +132,9 @@ def save_file(log_id):
 
 #     try:
 #         os.remove(path)
-#         print('INFO: File deleted at ', path)
+#         app.logger.info(f'File deleted at {path}')
 #     except Exception as e:
-#         print(f'ERROR: Deleting file: {file_name} - {e}')
+#         app.logger.exception(f'Error while deleting file: {file_name}')
 #         return jsonify({
 #             'success': False,
 #             'error': str(e)
@@ -139,9 +150,9 @@ def save_file(log_id):
 
 #     try:
 #         shutil.rmtree(path)
-#         print('INFO: All files deleted under directory: ', log_id)
+#         app.logger.info(f'All files deleted under directory: {path}')
 #     except Exception as e:
-#         print(f'ERROR: Deleting directory: {log_id} - {e}')
+#         app.logger.exception(f'Error while deleting directory: {path}')
 #         return jsonify({
 #             'success': False,
 #             'error': str(e)

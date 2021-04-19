@@ -9,6 +9,7 @@
 
 import datetime
 import json
+import logging
 import os
 import requests
 import sys
@@ -30,6 +31,7 @@ from web_usage import web_usage
 sys.path.append('..')
 
 import config_loader
+import logger
 
 
 app = Flask(__name__)
@@ -37,21 +39,29 @@ app.register_blueprint(ingester_page)
 app.register_blueprint(web_usage, url_prefix='/events')
 
 
-@app.errorhandler(Exception)
-def handle_exception(error):
-    """
-    Handling exceptions by sending only the error message.
-    This function is called whenever an unhandled Exception
-    is raised.
-    """
-    # TODO(Sourabh): Maybe redirect to a template with an error message instead
-    # of just displaying a message. Also print error stacktrace.
-    print('ERROR:', str(error))
-    return str(error), 500
+# @app.errorhandler(Exception)
+# def handle_exception(error):
+#     """
+#     Handling exceptions by sending only the error message.
+#     This function is called whenever an unhandled Exception
+#     is raised.
+#     """
+#     # TODO(Sourabh): Maybe redirect to a template with an error message instead
+#     # of just displaying a message. Also print error stacktrace.
+#     print('ERROR:', str(error))
+#     return str(error), 500
 
 
 def main():
     config = config_loader.get_config()
+
+    log_handler = logger.get_logger(filename='es_view.log')
+
+    # Get the flask logger and add our custom handler
+    flask_logger = logging.getLogger('werkzeug')
+    flask_logger.setLevel(logging.INFO)
+    flask_logger.addHandler(log_handler)
+    flask_logger.propagate = False
 
     # Updating Flask's config with the configs from file
     app.config.update(config)
@@ -817,11 +827,11 @@ def _read_file(log_id, file_name, default={}):
         data = response.json()
 
     except HTTPError as http_err:
-        print(f'HTTP error occurred: {http_err}')  # Python 3.6
+        app.logger.error(f'HTTP error occurred: {http_err}')  # Python 3.6
     except Exception as err:
-        print(f'Other error occurred: {err}')  # Python 3.6
+        app.logger.error(f'Other error occurred: {err}')  # Python 3.6
     except Exception as e:
-        print('Could not find file', e)
+        app.logger.exception('Could not find file')
 
     return data
 
