@@ -7,6 +7,7 @@
 # navigation. Still a work in progress.
 #
 
+import argparse
 import datetime
 import json
 import logging
@@ -53,6 +54,13 @@ app.register_blueprint(web_usage, url_prefix='/events')
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-p', '--port', type=int, default=5000,
+                        help='port for HTTP file server')
+
+    args = parser.parse_args()
+    port = args.port
+
     config = config_loader.get_config()
 
     log_handler = logger.get_logger(filename='es_view.log')
@@ -65,7 +73,7 @@ def main():
 
     # Updating Flask's config with the configs from file
     app.config.update(config)
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0', port=port)
 
 
 @app.route('/')
