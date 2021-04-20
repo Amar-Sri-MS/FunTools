@@ -206,12 +206,10 @@ static void _pretty_print_cid_flags(uint64_t flags)
 	 * finally forced to take in because we have to set the RX Credits on
 	 * a per-Port Type basis before the Link is brought up.
 	 */
-	if(flags & HW_HSU_API_LINK_CONFIG_CID_FLAGS_PORTTYPE_MASK) {
-		unsigned int porttype =
-			HW_HSU_API_LINK_CONFIG_CID_FLAGS_PORTTYPE_GET(flags);
-		printf("PORT_TYPE=%u ", porttype);
-		flags &= ~HW_HSU_API_LINK_CONFIG_CID_FLAGS_PORTTYPE_MASK;
-	}
+	unsigned int porttype =
+		HW_HSU_API_LINK_CONFIG_CID_FLAGS_PORTTYPE_GET(flags);
+	printf("PORT_TYPE=%u ", porttype);
+	flags &= ~HW_HSU_API_LINK_CONFIG_CID_FLAGS_PORTTYPE_MASK;
 
 	__pretty_print_flags(_cid_flagtab, flags);
 }
