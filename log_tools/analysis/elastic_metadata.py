@@ -139,15 +139,26 @@ class ElasticsearchMetadata(object):
 
         return result
 
+    def update(self, log_id, metadata):
+        """
+        Updates the existing metadata with the given
+        "metadata" (object).
+        """
+        body = {
+            'doc': {
+                **metadata,
+                'logID': log_id
+            },
+            'doc_as_upsert': True
+        }
+        result = self.es.update(self.index,
+                                log_id,
+                                body)
+
+        return result
+
     def update_notes(self, log_id, note):
         """ Updating the notes in metadata document of "log_id" """
-        # If the metadata doc does not already exists
-        if not self.es.exists(self.index, log_id):
-            value = note if type(note) == list else [note]
-            return self.es.create(self.index,
-                                  log_id,
-                                  {'notes': value})
-
         body = self._build_query_to_append_to_array('notes', note)
 
         result = self.es.update(self.index,
@@ -157,20 +168,14 @@ class ElasticsearchMetadata(object):
 
     def update_tags(self, log_id, tags):
         """ Updating the tags in metadata document of "log_id" """
-        if not self.es.exists(self.index, log_id):
-            value = tags if type(tags) == list else [tags]
-            return self.es.create(self.index,
-                                  log_id,
-                                  {'tags': value})
-
-        body = self._build_query_to_append_to_array('tags', tags)
+        body = self._build_query_to_append_to_array(log_id, 'tags', tags)
 
         result = self.es.update(self.index,
                                 id=log_id,
                                 body=body)
         return result
 
-    def _build_query_to_append_to_array(self, field, value):
+    def _build_query_to_append_to_array(self, log_id, field, value):
         # Sadly no easier way to append to arrays.
         # ES uses painless script.
         body = {
@@ -185,6 +190,10 @@ class ElasticsearchMetadata(object):
                 'params': {
                     'value': value
                 }
+            },
+            'upsert': {
+                'logID': log_id,
+                field: [value]
             }
         }
         return body
