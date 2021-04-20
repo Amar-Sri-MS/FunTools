@@ -207,8 +207,9 @@ static void _pretty_print_cid_flags(uint64_t flags)
 	 * a per-Port Type basis before the Link is brought up.
 	 */
 	if(flags & HW_HSU_API_LINK_CONFIG_CID_FLAGS_PORTTYPE_MASK) {
-		printf("PORT_TYPE=%"PRId64" ",
-		       HW_HSU_API_LINK_CONFIG_CID_FLAGS_PORTTYPE_GET(flags));
+		unsigned int porttype =
+			HW_HSU_API_LINK_CONFIG_CID_FLAGS_PORTTYPE_GET(flags);
+		printf("PORT_TYPE=%u ", porttype);
 		flags &= ~HW_HSU_API_LINK_CONFIG_CID_FLAGS_PORTTYPE_MASK;
 	}
 
