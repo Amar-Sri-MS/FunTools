@@ -199,6 +199,19 @@ static void _pretty_print_flags(uint64_t flags)
 
 static void _pretty_print_cid_flags(uint64_t flags)
 {
+	/*
+	 * Deal with multi-bit fields first.  If this turns into a "thing",
+	 * then we can fix this more generally, but Port Type was a field we
+	 * never wanted in the (struct hw_hsu_api_link_config) and were
+	 * finally forced to take in because we have to set the RX Credits on
+	 * a per-Port Type basis before the Link is brought up.
+	 */
+	if(flags & HW_HSU_API_LINK_CONFIG_CID_FLAGS_PORTTYPE_MASK) {
+		printf("PORT_TYPE=%"PRId64" ",
+		       HW_HSU_API_LINK_CONFIG_CID_FLAGS_PORTTYPE_GET(flags));
+		flags &= ~HW_HSU_API_LINK_CONFIG_CID_FLAGS_PORTTYPE_MASK;
+	}
+
 	__pretty_print_flags(_cid_flagtab, flags);
 }
 
@@ -531,6 +544,27 @@ static bool _parse_hostunitcontroller(struct hw_hsu_api_link_config *cfg,
 		/* take a direct pointer */
 		pcid = &cfg->ring_config[ring].cid_config[cid];
 		
+		/* embed Port Type */
+		if (fun_json_lookup_string(chu, "mode", &str)) {
+			unsigned int porttype = 0;
+			if (strcmp(str, "EP") == 0)
+				porttype = HW_HSU_API_LINK_CONFIG_CID_FLAGS_PORTTYPE_EP;
+			else if (strcmp(str, "RC") == 0)
+				porttype = HW_HSU_API_LINK_CONFIG_CID_FLAGS_PORTTYPE_RC;
+			else if (strcmp(str, "UPSW") == 0)
+				porttype = HW_HSU_API_LINK_CONFIG_CID_FLAGS_PORTTYPE_UPSW;
+			else if (strcmp(str, "DNSW") == 0)
+				porttype = HW_HSU_API_LINK_CONFIG_CID_FLAGS_PORTTYPE_DNSW;
+			else
+				fprintf(stderr, "ERROR: (%u:%u) unknown 'mode'=%s",
+				       ring, cid, str);
+			pcid->cid_flags |=
+				HW_HSU_API_LINK_CONFIG_CID_FLAGS_PORTTYPE_PUT(porttype);
+		} else
+			fprintf(stderr,
+				"WARNING: (%u:%u) Controller 'mode' not found!",
+				ring, cid);
+
 		/* check for link on/off */
 		if (fun_json_lookup_string(chu, "link", &str)) {
 			en = HW_HSU_API_LINK_CONFIG_CID_FLAGS_LINK_ENABLE;
