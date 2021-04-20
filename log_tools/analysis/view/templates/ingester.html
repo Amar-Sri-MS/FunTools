@@ -7,31 +7,35 @@
         {% include "nav_bar.html" ignore missing %}
         <div class="center-align">
             <h3>Ingest logs from QA dashboard</h3>
-            <div class="container">
-                <form action="/ingest" method="POST">
-                    <div class="form-group">
-                        <label>QA Job ID</label>
-                        <input type="text" class="form-control" id="job_id" name="job_id" placeholder="Enter the JOB ID" value="{{feedback.job_id if feedback else null}}">
-                    </div>
-                    <div class="form-group">
-                        <label>QA Test Index (Default is 0)</label>
-                        <input type="text" class="form-control" id="test_index" name="test_index" placeholder="Enter the Test Index" value="{{feedback.test_index if feedback else 0}}">
-                    </div>
-                    <div class="form-group">
-                        <label>Enter tags (comma separated)</label>
-                        <input type="text" class="form-control" id="tags" name="tags" placeholder="Enter tags" value="{{feedback.tags if feedback else null}}">
-                    </div>
-                    <button type="submit" class="btn btn-primary" onclick="onSubmit()">Ingest</button>
-                </form>
-                {% if feedback %}
-                    {% if feedback.started %}
-                        <button class="btn btn-primary" onclick="checkStatus()">Check progress</button>
-                    {% elif not feedback.success %}
-                        <p class="text-danger float-right">ERROR: {{ feedback.msg }}</p>
+            <div class="container row">
+                <div style="width: 100%; min-width: 60%;">
+                    <form action="/ingest" method="POST">
+                        <div class="form-group">
+                            <label>QA Job ID</label>
+                            <input type="text" class="form-control" id="job_id" name="job_id" placeholder="Enter the JOB ID" value="{{feedback.job_id if feedback else null}}">
+                        </div>
+                        <div class="form-group">
+                            <label>QA Test Index (Default is 0)</label>
+                            <input type="text" class="form-control" id="test_index" name="test_index" placeholder="Enter the Test Index" value="{{feedback.test_index if feedback else 0}}">
+                        </div>
+                        <div class="form-group">
+                            <label>Enter tags (comma separated)</label>
+                            <input type="text" class="form-control" id="tags" name="tags" placeholder="Enter tags" value="{{feedback.tags if feedback else null}}">
+                        </div>
+                        <button type="submit" class="btn btn-primary" onclick="onSubmit()">Ingest</button>
+                    </form>
+                </div>
+                <div class="separator"></div>
+                <div id="status-container">
+                    {% if feedback %}
+                        {% if feedback.started %}
+                            <button class="btn btn-primary" onclick="checkStatus()">Check Status</button>
+                        {% elif not feedback.success %}
+                            <p class="text-danger float-right">ERROR: {{ feedback.msg }}</p>
+                        {% endif %}
                     {% endif %}
-                {% endif %}
-                <div id="status"></div>
-                <div id="feedback">
+                    <div id="status"></div>
+                    <div id="feedback"></div>
                 </div>
             </div>
         </div>
@@ -44,6 +48,7 @@
         }
 
         const feedback = {{feedback|tojson}};
+        const statusContainer = document.getElementById("status-container");
         const statusElement = document.getElementById("status");
         const feedbackElement = document.getElementById("feedback");
 
@@ -53,9 +58,9 @@
         let logID = '', statusInterval = null;
         if (feedback && Object.keys(feedback).length !== 0 && feedback.constructor === Object) {
             logID = `log_qa-${feedback["job_id"]}-${feedback["test_index"]}`;
-            console.log(feedback);
 
             if (feedback.started) {
+                statusContainer.style = "width: 40%;";
                 if (feedback.success) {
                     handleStatusUpdate(feedback.metadata);
                 }
@@ -106,7 +111,9 @@
                 `;
                 clearInterval(statusInterval);
             }
-            else if (status == "DOWNLOAD_COMPLETED" || status == "INGESTION_STARTED") {
+            else if ("download_time" in metadata &&
+                (status == "DOWNLOAD_COMPLETED" || status == "INGESTION_IN_PROGRESS")
+            ) {
                 const downloadTime = +metadata["download_time"].toFixed(2);
                 feedbackElement.innerHTML = `
                     <p>Time taken to download log archive: ${downloadTime}s</p>

@@ -5,7 +5,7 @@ import sys
 import textwrap
 
 def print_b(name, byte_val):
-    print("\nuint8_t %s[] =\n{" % name)
+    print("\nstatic const uint8_t %s[] =\n{" % name)
     c_bytes = ", ".join("0x%02X" % b for b in byte_val)
     print(textwrap.fill(c_bytes, 60))
     print("};")
@@ -15,7 +15,7 @@ def print_struct(name, p, q):
     q_name = name + "_q"
     print_b(p_name, p)
     print_b(q_name, q)
-    print("\nstruct safe_prime %s = { sizeof(%s), %s, %s};" %
+    print("\nconst struct safe_prime %s = { sizeof(%s), %s, %s};" %
           (name, p_name, p_name, q_name))
 
 for fname in sys.argv[1:]:
