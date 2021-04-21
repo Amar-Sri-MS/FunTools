@@ -254,7 +254,7 @@ def generate_tar_file(args, built_images_dir):
 
         return None
 
-    TGZ_FORMAT = "build_{chip}_{emulation}{_debug}_{version}"
+    TGZ_FORMAT = "build_{chip}_{emulation}{debug}_{version}"
     tar_root = TGZ_FORMAT.format(**vars(args))
     tar_file_name = os.path.join(built_images_dir, tar_root) + ".tgz"
 
@@ -301,8 +301,13 @@ def parse_args():
     arg_parser.add_argument("-n", "--enrollment-certificate", action='store',
                             metavar='FILE',
                             help="enrollment certificate to add to the image")
-    arg_parser.add_argument("-p", "--production", action='store_true',
-                            help="Production build: very few log messages")
+    bld_type = arg_parser.add_mutually_exclusive_group(required=True)
+    bld_type.add_argument("-p", "--production", action='store_const', const='', dest='debug',
+                            help="Production build")
+    bld_type.add_argument("-V", "--verbose", action='store_const', const='_verbose', dest='debug',
+                            help="Production build with verbose logging")
+    bld_type.add_argument("--debug", action='store_const', const='_debug',
+                            help="Debug build")
     arg_parser.add_argument("--customer", action='store_true',
                             help="Customer build: sign with customer keys")
     arg_parser.add_argument("-s", "--sbp", action='store',
@@ -326,7 +331,6 @@ def parse_args():
     dest_grp.add_argument("-l", "--local", action='store_true',
                           help='''create a tgz file locally for use with run_fwupgrade.py
                           as /var/www/sbp_images''')
-
 
     return arg_parser.parse_args()
 
@@ -400,9 +404,6 @@ def sanitize_args(args, eeproms_dir):
         os.write(file_no, enrollment_cert)
         os.close(file_no)
 
-    # args.production translates to a _debug
-    args._debug = "" if args.production else "_debug"
-
     return args
 
 
@@ -415,11 +416,11 @@ def main():
 
     args = sanitize_args(parse_args(), eeproms_dir)
 
-    BUILD_DIR_FORMAT = "{sbp}/{build_dir}_{chip}_{emulation}{_debug}"
+    BUILD_DIR_FORMAT = "{sbp}/{build_dir}_{chip}_{emulation}{debug}"
 
     # the target is like "build_debug_target_f1_0" or "build_target_s1_0"
     # the final 0 is for normal builds, 1 for emulation builds
-    MAKE_CMD_FORMAT = 'BUILD_BASE_DIR={build_dir} make -C {sbp} build{_debug}_target_{chip}_{emulation}'
+    MAKE_CMD_FORMAT = 'BUILD_BASE_DIR={build_dir} make -C {sbp} build{debug}_target_{chip}_{emulation}'
 
     build_dir = BUILD_DIR_FORMAT.format(**vars(args))
     make_cmd = MAKE_CMD_FORMAT.format(**vars(args))
