@@ -59,7 +59,7 @@ class TextFileInput(Block):
                     yield from self.read_logs(f)
                     f.seek(0,2)
                     file_size += f.tell()
-        logging.info('Uncompressed file size (in bytes): {file_size}')
+        logging.info(f'Uncompressed file size (in bytes): {file_size}')
 
     def read_logs(self, f):
         multiline_logs = []

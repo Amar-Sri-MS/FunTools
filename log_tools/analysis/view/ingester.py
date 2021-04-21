@@ -129,7 +129,7 @@ def ingest():
 
         return render_template('ingester.html', feedback={
             'started': True,
-            'success': metadata and metadata.get('ingestion_status') == 'COMPLETED',
+            'success': metadata.get('ingestion_status') == 'COMPLETED',
             'job_id': job_id,
             'test_index': test_index,
             'tags': tags,

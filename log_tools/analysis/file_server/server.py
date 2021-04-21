@@ -115,6 +115,7 @@ def save_file(log_id):
             errors.append(f'error while saving file: {file.filename} - {str(e)}')
 
     if len(errors) != 0:
+        logging.error(errors)
         return jsonify({
             'success': False,
             'errors': errors
