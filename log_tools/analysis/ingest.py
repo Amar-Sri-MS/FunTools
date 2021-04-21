@@ -107,7 +107,8 @@ def start_pipeline(base_path, build_id, metadata={}, output_block='ElasticOutput
     time_taken = end - start
     es_metadata.update(LOG_ID, {
         'ingestion_status': 'COMPLETED',
-        'ingestion_time': time_taken
+        'ingestion_time': time_taken,
+        **metadata
     })
 
     return {
