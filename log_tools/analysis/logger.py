@@ -6,7 +6,9 @@
 # This lets us add handlers and filters at one place.
 #
 # Usage:
-# logger.setup(FILE_NAME)
+# logger.get_logger(NAME, FILE_NAME)
+# Where, NAME is to unique identify the logger
+# FILE_NAME is the name of file to store the logs
 #
 # Owner: Sourabh Jain (sourabh.jain@fungible.com)
 # Copyright (c) 2021 Fungible Inc.  All rights reserved.
