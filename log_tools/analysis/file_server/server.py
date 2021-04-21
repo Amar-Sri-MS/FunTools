@@ -99,7 +99,7 @@ def save_file(log_id):
                 errors.append('File name not set')
                 continue
 
-            if not (file and _allowed_file(file.filename)):
+            if not file:
                 errors.append(f'Unsupported file format: {file.filename}')
                 continue
 
