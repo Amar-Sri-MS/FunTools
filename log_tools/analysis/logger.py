@@ -85,5 +85,10 @@ def backup_ingestion_logs(log_id):
             response = requests.post(url, files=files)
             response.raise_for_status()
             logging.info(f'Log files for {log_id} uploaded!')
+
+            # Removing the collected log files
+            for file in log_files:
+                os.remove(file)
+
     except Exception as e:
         logging.exception(f'Uploading log files for {log_id} failed.')
