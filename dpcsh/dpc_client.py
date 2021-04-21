@@ -123,7 +123,7 @@ class DpcClient(object):
         result = self.__recv_json(custom_timeout, timeout_seconds)
         self.__print(result)
 
-        if ((result is None) or (result == "")):
+        if not result:
             return None
 
         # decode the raw json and return
