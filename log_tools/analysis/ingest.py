@@ -38,10 +38,14 @@ def main():
     # index names.
     build_id = args.build_id.lower()
 
-    custom_logging = logger.get_logger(filename=f'log_{build_id}.log')
+    LOG_ID = f'log_{build_id}'
+    custom_logging = logger.get_logger(filename=f'{LOG_ID}.log')
     custom_logging.propagate = False
 
     status = start_pipeline(args.path, build_id, output_block=args.output)
+
+    # Backing up the logs generated during ingestion
+    logger.backup_ingestion_logs(LOG_ID)
 
     # Sends an exit status if the ingestion fails
     if not status.get('success', False):

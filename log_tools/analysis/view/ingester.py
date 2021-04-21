@@ -86,6 +86,9 @@ def main():
         # Clean up the downloaded files
         clean_up(job_id)
 
+        # Backing up the logs generated during ingestion
+        logger.backup_ingestion_logs(LOG_ID)
+
 
 @ingester_page.route('/ingest', methods=['GET'])
 def render_ingest_page():
