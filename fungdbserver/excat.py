@@ -218,11 +218,13 @@ def nfs_get(uuid):
     mdblob = os.path.join(nfspath, suuid + ".json")
 
     if (not os.path.exists(bzblob)):
-        raise RuntimeError("file not found: %s" % bzblob)
+        LOG("file not found: %s" % bzblob)
+        return None
 
     if (opts.metadata):
         if (not os.path.exists(mdblob)):
-            raise RuntimeError("file not found: %s" % bzblob)
+            LOG("file not found: %s" % mdblob)
+            return None
         LOG(open(mdblob).readlines())
 
     return bzblob
@@ -331,6 +333,11 @@ def do_get(uuid, fname):
     method = choose_get_method()
     if (method == "nfs"):
         bzfname = nfs_get(uuid)
+
+        # fall back to http if it's not found
+        if (bzfname is None):
+            bzfname = http_get(uuid, HTTP_ROOT)
+
     elif (method == "http"):
         bzfname = http_get(uuid, HTTP_ROOT)
 
