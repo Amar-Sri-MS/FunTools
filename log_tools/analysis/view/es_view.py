@@ -925,7 +925,7 @@ def _render_dashboard_page(log_id, jinja_env, template):
     template_dict['unique_entries'] = unique_entries
     template_dict['log_view_base_url'] = log_view_base_url
     template_dict['log_level_stats'] = log_level_stats
-    template_dict['log_level_for_recent_logs'] = nonzero_log_levels[0]
+    template_dict['log_level_for_recent_logs'] = nonzero_log_levels[0] if len(nonzero_log_levels) > 0 else None
     template_dict['recent_logs'] = _render_log_entries(recent_logs)
     template_dict['analytics_data'] = json.dumps(analytics_data)
     template_dict['metadata'] = metadata
