@@ -6,6 +6,7 @@ BIN_PATH="/usr/bin"
 ST_STP_D=/sbin/start-stop-daemon
 DPC_SOCKET=/tmp/dpc.sock
 DPC_PID_FILE=/tmp/dpc.pid
+DEVICE_ID="1dad:0108:ff00"
 
 if [[ ! -f ${ST_STP_D} ]]; then
 	echo "${ST_STP_D} not found"
@@ -15,10 +16,16 @@ fi
 start_dpc_proxy()
 {
 	echo "Starting dpc proxy"
-	DEVICE_ID=`lspci -d 1dad: -n | grep ff00 | grep 0108 | awk '{print $1}'`
+	DEVICE_SLOT=`lspci -d ${DEVICE_ID} | awk '{print $1}'`
+
+	if lspci -k -d ${DEVICE_ID} | grep "in use"; then
+		echo "Device is already in use, no need for bind"
+	else
+		/usr/bin/funq-setup bind funq ${DEVICE_SLOT}
+	fi
 
 	OPTS="--background --make-pidfile --pidfile ${DPC_PID_FILE} --startas ${BIN_PATH}/dpcsh"
-	CMD="--start -- -q${DEVICE_ID} --unix_proxy=${DPC_SOCKET}"
+	CMD="--start -- -q${DEVICE_SLOT} --unix_proxy=${DPC_SOCKET}"
 
 	${ST_STP_D} ${OPTS} ${CMD}
 
