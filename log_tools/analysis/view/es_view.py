@@ -594,9 +594,10 @@ def _convert_to_table_row(hit, include_hyperlinks=True):
         line = '<tr class={} id={}>'.format('search_highlight',
                                             hit.get('anchor_link'))
 
-    line += '<td>{}</td> <td>{}</td> <td>{}</td>'.format(s['src'],
-                                                         timestamp,
-                                                         s.get('level'))
+    line += '<td>{}</td> <td>{}</td> <td>{}</td> <td>{}</td>'.format(s['src'],
+                                                                     s.get('system_id'),
+                                                                     timestamp,
+                                                                     s.get('level'))
     if include_hyperlinks:
         state = f'"before":"{timestamp}","after":"{timestamp}"'
         log_view_url = ('{}?state={{{}}}&next=true&prev=true&include={}#0').format(
@@ -1034,7 +1035,7 @@ def _render_log_entries(entries):
                                 lstrip_blocks=True)
     template = jinja_env.get_template('log_entries.html')
 
-    header = ['Source', 'Timestamp', 'Level', 'Log Message']
+    header = ['Source', 'System ID', 'Timestamp', 'Level', 'Log Message']
     template_dict = {}
     template_dict['head'] = header
     template_dict['body'] = '\n'.join(entries)
