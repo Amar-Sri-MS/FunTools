@@ -61,7 +61,10 @@
                 </div>
                 <div class="content">
                     <div id="log_level_stats">
-                        <div class="level_stat"><div>Total</div>: <div class="fixed-font">{{total_entries}}(100%)</div></div>
+                        <div class="level_stat">
+                            <div><a href="{{log_view_base_url}}" target="_blank" onclick="trackWebEvent('LOG_LEVEL_CLICKED', 'Total')">Total</a></div>:
+                            <div class="fixed-font">{{total_entries}}(100%)</div>
+                        </div>
                         <!-- Displaying log entries for a source and each log levels in % with rounded off to 2 decimals -->
                         {% for level, stat in log_level_stats.items() %}
                             {% set log_distribution = calculatePercentage(stat.count, total_entries) %}
@@ -155,9 +158,7 @@
     {% include 'notes_overlay.html' %}
 </body>
 <script type="text/javascript">
-    // Kibana URL for redirecting to Kibana with given query.
-    // URL String contains a term 'KIBANA_QUERY' which should be replaced
-    // with a given query
+    // LOG VIEW URL for redirecting to the view with given query.
     const LOG_VIEW_BASE_URL = "{{log_view_base_url}}";
     const logLevelStatsElement = document.getElementById('log_level_stats');
     const recentLogsElement = document.getElementById('recent_logs');
@@ -394,10 +395,13 @@
     }
 
     function getLogViewURLForSources(sources) {
-        // Creates a Kibana URL for the given sources
-        let query = "";
-        if (!sources.includes("all"))
-            query = encodeURI(`src:(${sources.join(" or ")})`);
+        // Creates a LOG VIEW URL for the given sources
+        if (sources.includes("all")) {
+            // If no source is selected
+            return LOG_VIEW_BASE_URL;
+        }
+
+        let query = encodeURI(`src:(${sources.join(" or ")})`);;
         const log_view_url = `${LOG_VIEW_BASE_URL}/search?query=${query}`;
         return log_view_url;
     }
