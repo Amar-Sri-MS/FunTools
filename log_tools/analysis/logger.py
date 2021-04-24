@@ -18,6 +18,7 @@ import logging
 import logging.handlers
 import os
 import requests
+import time
 
 import config_loader
 
@@ -41,6 +42,8 @@ def get_logger(name=None, filename=None):
     # Always register a stderr handler.
     handler = logging.StreamHandler()
     formatter = logging.Formatter(fmt=DEFAULT_LOG_FORMAT)
+    # Timestamps to be GMT
+    formatter.converter = time.gmtime
 
     handler.setFormatter(formatter)
     custom_logger.addHandler(handler)
