@@ -744,13 +744,14 @@ def _render_search_page(search_results, log_id, search_term, state, page,
                         total_search_hits):
     """ Renders the search results page """
     template_dict = {}
-    template_dict['body'] = '<br><br>'.join(search_results)
+    template_dict['body'] = ''.join(search_results)
     template_dict['log_id'] = log_id
     template_dict['query'] = search_term
     template_dict['state'] = state.to_json_str()
     template_dict['page'] = page
     template_dict['page_entry_count'] = len(search_results)
     template_dict['search_hits'] = total_search_hits
+    template_dict['job_link'] = _get_actual_job_link(log_id)
 
     dir = os.path.join(_get_script_dir(), 'templates')
     jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(dir),
