@@ -7,6 +7,7 @@
 import argparse
 import datetime
 import glob
+import logging
 import os
 import sys
 import time
@@ -16,6 +17,7 @@ sys.path.append('.')
 from pathlib import Path
 
 import pipeline
+import logger
 
 from elastic_metadata import ElasticsearchMetadata
 from utils import archive_extractor
@@ -36,7 +38,14 @@ def main():
     # index names.
     build_id = args.build_id.lower()
 
+    LOG_ID = f'log_{build_id}'
+    custom_logging = logger.get_logger(filename=f'{LOG_ID}.log')
+    custom_logging.propagate = False
+
     status = start_pipeline(args.path, build_id, output_block=args.output)
+
+    # Backing up the logs generated during ingestion
+    logger.backup_ingestion_logs(LOG_ID)
 
     # Sends an exit status if the ingestion fails
     if not status.get('success', False):
@@ -88,7 +97,7 @@ def start_pipeline(base_path, build_id, metadata={}, output_block='ElasticOutput
         p.process()
 
     except Exception as e:
-        print(f'ERROR: Ingestion for {build_id} - {str(e)}')
+        logging.exception(f'Ingestion failed for {build_id}')
         es_metadata.update(LOG_ID, {
             'ingestion_status': 'FAILED',
             'ingestion_error': str(e)
@@ -102,7 +111,8 @@ def start_pipeline(base_path, build_id, metadata={}, output_block='ElasticOutput
     time_taken = end - start
     es_metadata.update(LOG_ID, {
         'ingestion_status': 'COMPLETED',
-        'ingestion_time': time_taken
+        'ingestion_time': time_taken,
+        **metadata
     })
 
     return {
@@ -152,7 +162,7 @@ def parse_manifest(path, parent_frn={}):
 
             # The content path does not exist
             if not glob.glob(content_path):
-                print('WARNING: Path does not exist:', content_path)
+                logging.warning(f'Path does not exist: {content_path}')
                 continue
 
             # Extract archive and check for manifest file
@@ -182,11 +192,11 @@ def parse_manifest(path, parent_frn={}):
 
             # Check for logs in the folder or textfile based on the source
             if frn_info['resource_type'] == 'folder' or frn_info['resource_type'] == 'textfile':
-                print('INFO: Checking for logs in', content_path)
+                logging.info(f'Checking for logs in {content_path}')
                 pipeline_cfg.extend(build_input_pipeline(content_path, frn_info))
 
         else:
-            print('WARNING: Unknown FRN', content)
+            logging.warning(f'Unknown FRN: {content}')
 
     return pipeline_cfg, metadata
 
@@ -295,7 +305,7 @@ def build_input_pipeline(path, frn_info):
             )
 
     else:
-        print(f'WARNING: Unknown source: {source}!')
+        logging.warning(f'Unknown source: {source}!')
 
     return blocks
 

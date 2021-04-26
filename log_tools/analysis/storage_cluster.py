@@ -5,7 +5,6 @@
 #
 
 import argparse
-import time
 
 import pipeline
 
@@ -27,12 +26,8 @@ def main():
 
     block_factory = pipeline.BlockFactory()
 
-    start = time.time()
     p = pipeline.Pipeline(block_factory, cfg, env)
     p.process()
-    end = time.time()
-
-    print('Time spent processing: {}s'.format(end - start))
 
 
 def build_pipeline(machines, output_block):

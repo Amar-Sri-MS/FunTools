@@ -3,6 +3,7 @@
 #
 import datetime
 import json
+import logging
 import os
 import requests
 import sys
@@ -71,7 +72,7 @@ class ElasticsearchOutput(Block):
                                         raise_on_exception=False,
                                         chunk_size=10000):
                 if not success:
-                    print('ERROR: Failed to index a document', info)
+                    logging.error(f'Failed to index a document: {info}')
                 else:
                     yield from self._add_doc_id_in_iters(next(it_copy), info)
 

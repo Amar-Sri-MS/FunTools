@@ -7,8 +7,10 @@
 # navigation. Still a work in progress.
 #
 
+import argparse
 import datetime
 import json
+import logging
 import os
 import requests
 import sys
@@ -30,6 +32,7 @@ from web_usage import web_usage
 sys.path.append('..')
 
 import config_loader
+import logger
 
 
 app = Flask(__name__)
@@ -37,25 +40,40 @@ app.register_blueprint(ingester_page)
 app.register_blueprint(web_usage, url_prefix='/events')
 
 
-@app.errorhandler(Exception)
-def handle_exception(error):
-    """
-    Handling exceptions by sending only the error message.
-    This function is called whenever an unhandled Exception
-    is raised.
-    """
-    # TODO(Sourabh): Maybe redirect to a template with an error message instead
-    # of just displaying a message. Also print error stacktrace.
-    print('ERROR:', str(error))
-    return str(error), 500
+# @app.errorhandler(Exception)
+# def handle_exception(error):
+#     """
+#     Handling exceptions by sending only the error message.
+#     This function is called whenever an unhandled Exception
+#     is raised.
+#     """
+#     # TODO(Sourabh): Maybe redirect to a template with an error message instead
+#     # of just displaying a message. Also print error stacktrace.
+#     print('ERROR:', str(error))
+#     return str(error), 500
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-p', '--port', type=int, default=5000,
+                        help='port for HTTP file server')
+
+    args = parser.parse_args()
+    port = args.port
+
     config = config_loader.get_config()
+
+    log_handler = logger.get_logger(filename='es_view.log')
+
+    # Get the flask logger and add our custom handler
+    flask_logger = logging.getLogger('werkzeug')
+    flask_logger.setLevel(logging.INFO)
+    flask_logger.addHandler(log_handler)
+    flask_logger.propagate = False
 
     # Updating Flask's config with the configs from file
     app.config.update(config)
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0', port=port)
 
 
 @app.route('/')
@@ -576,9 +594,10 @@ def _convert_to_table_row(hit, include_hyperlinks=True):
         line = '<tr class={} id={}>'.format('search_highlight',
                                             hit.get('anchor_link'))
 
-    line += '<td>{}</td> <td>{}</td> <td>{}</td>'.format(s['src'],
-                                                         timestamp,
-                                                         s.get('level'))
+    line += '<td>{}</td> <td>{}</td> <td>{}</td> <td>{}</td>'.format(s['src'],
+                                                                     s.get('system_id'),
+                                                                     timestamp,
+                                                                     s.get('level'))
     if include_hyperlinks:
         state = f'"before":"{timestamp}","after":"{timestamp}"'
         log_view_url = ('{}?state={{{}}}&next=true&prev=true&include={}#0').format(
@@ -725,13 +744,14 @@ def _render_search_page(search_results, log_id, search_term, state, page,
                         total_search_hits):
     """ Renders the search results page """
     template_dict = {}
-    template_dict['body'] = '<br><br>'.join(search_results)
+    template_dict['body'] = ''.join(search_results)
     template_dict['log_id'] = log_id
     template_dict['query'] = search_term
     template_dict['state'] = state.to_json_str()
     template_dict['page'] = page
     template_dict['page_entry_count'] = len(search_results)
     template_dict['search_hits'] = total_search_hits
+    template_dict['job_link'] = _get_actual_job_link(log_id)
 
     dir = os.path.join(_get_script_dir(), 'templates')
     jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(dir),
@@ -817,11 +837,11 @@ def _read_file(log_id, file_name, default={}):
         data = response.json()
 
     except HTTPError as http_err:
-        print(f'HTTP error occurred: {http_err}')  # Python 3.6
+        app.logger.error(f'HTTP error occurred: {http_err}')  # Python 3.6
     except Exception as err:
-        print(f'Other error occurred: {err}')  # Python 3.6
+        app.logger.error(f'Other error occurred: {err}')  # Python 3.6
     except Exception as e:
-        print('Could not find file', e)
+        app.logger.exception('Could not find file')
 
     return data
 
@@ -907,7 +927,7 @@ def _render_dashboard_page(log_id, jinja_env, template):
     template_dict['unique_entries'] = unique_entries
     template_dict['log_view_base_url'] = log_view_base_url
     template_dict['log_level_stats'] = log_level_stats
-    template_dict['log_level_for_recent_logs'] = nonzero_log_levels[0]
+    template_dict['log_level_for_recent_logs'] = nonzero_log_levels[0] if len(nonzero_log_levels) > 0 else None
     template_dict['recent_logs'] = _render_log_entries(recent_logs)
     template_dict['analytics_data'] = json.dumps(analytics_data)
     template_dict['metadata'] = metadata
@@ -1016,7 +1036,7 @@ def _render_log_entries(entries):
                                 lstrip_blocks=True)
     template = jinja_env.get_template('log_entries.html')
 
-    header = ['Source', 'Timestamp', 'Level', 'Log Message']
+    header = ['Source', 'System ID', 'Timestamp', 'Level', 'Log Message']
     template_dict = {}
     template_dict['head'] = header
     template_dict['body'] = '\n'.join(entries)

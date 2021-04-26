@@ -14,6 +14,7 @@
 # Copyright (c) 2021 Fungible Inc.  All rights reserved.
 
 import argparse
+import logging
 import os
 import requests
 import shutil
@@ -26,8 +27,11 @@ sys.path.insert(0, '.')
 
 from elastic_metadata import ElasticsearchMetadata
 from flask import Blueprint, jsonify, request, render_template
+from flask import current_app
 from utils import archive_extractor
 import ingest as ingest_handler
+import logger
+
 
 ingester_page = Blueprint('ingester_page', __name__)
 
@@ -45,14 +49,17 @@ def main():
     parser.add_argument('-test_index', type=int, help='Test index of the QA job', default=0)
     parser.add_argument('-tags', nargs='*', help='Tags for the ingestion', default=[])
 
-    args = parser.parse_args()
-    job_id = args.job_id
-    test_index = args.test_index
-    tags = args.tags
-
     try:
-        es_metadata = ElasticsearchMetadata()
+        args = parser.parse_args()
+        job_id = args.job_id
+        test_index = args.test_index
+        tags = args.tags
+
         LOG_ID = f'log_qa-{job_id}-{test_index}'
+        es_metadata = ElasticsearchMetadata()
+
+        custom_logging = logger.get_logger(filename=f'{LOG_ID}.log')
+        custom_logging.propagate = False
 
         job_info = fetch_qa_job_info(job_id)
         suite_info = fetch_qa_suite_info(job_info['data']['suite_id'])
@@ -71,13 +78,16 @@ def main():
             })
 
     except Exception as e:
-        print('ERROR:', e)
+        logging.exception(f'Error when starting ingestion for job: {job_id}')
         _update_metadata(es_metadata, LOG_ID, 'FAILED', {
             'ingestion_error': str(e)
         })
     finally:
         # Clean up the downloaded files
         clean_up(job_id)
+
+        # Backing up the logs generated during ingestion
+        logger.backup_ingestion_logs(LOG_ID)
 
 
 @ingester_page.route('/ingest', methods=['GET'])
@@ -122,14 +132,14 @@ def ingest():
 
         return render_template('ingester.html', feedback={
             'started': True,
-            'success': metadata and metadata.get('ingestion_status') == 'COMPLETED',
+            'success': metadata.get('ingestion_status') == 'COMPLETED',
             'job_id': job_id,
             'test_index': test_index,
             'tags': tags,
             'metadata': metadata
         })
     except Exception as e:
-        print('ERROR:', e)
+        current_app.logger.exception(f'Error when starting ingestion for job: {job_id}')
         return render_template('ingester.html', feedback={
             'started': False,
             'success': False,
@@ -137,7 +147,7 @@ def ingest():
             'test_index': test_index,
             'tags': tags,
             'msg': str(e)
-        })
+        }), 500
 
 
 @ingester_page.route('/ingest/<log_id>/status', methods=['GET'])
@@ -394,7 +404,7 @@ def check_and_download_logs(url, path):
     response = requests.get(url, allow_redirects=True, stream=True)
     if response.ok:
         os.makedirs(path, exist_ok=True)
-        print('INFO: Saving log archive to', os.path.abspath(file_path))
+        logging.info(f'Saving log archive to {os.path.abspath(file_path)}')
         with open(file_path, 'wb') as f:
             # Chunk size of 1GB
             for chunk in response.iter_content(chunk_size=1024 * 100000):
@@ -417,7 +427,7 @@ def clean_up(job_id):
     """ Deleting the downloaded directory for the job_id """
     path = os.path.join(DOWNLOAD_DIRECTORY, job_id)
     if os.path.exists(path):
-        print('INFO: Cleaning up downloaded files from:', path)
+        logging.info(f'Cleaning up downloaded files from: {path}')
         # Deletes the entire directory with its children
         shutil.rmtree(path)
 
