@@ -289,19 +289,28 @@ def build_input_pipeline(path, frn_info):
             # platform agent logs
             file_pattern = f'{path}/archives/other/*platformagent.log*'
             blocks.extend(
-                fun_agent_input_pipeline(frn_info, 'platform_agent', file_pattern)
+                fun_agent_input_pipeline(frn_info,
+                    'platform_agent',
+                    file_pattern,
+                    file_info_match='PA(?P<system_id>([0-9a-fA-F]:?){12})-')
             )
 
             # storage agent logs
             file_pattern = f'{path}/archives/other/*storageagent.log*'
             blocks.extend(
-                fun_agent_input_pipeline(frn_info, 'storage_agent', file_pattern)
+                fun_agent_input_pipeline(frn_info,
+                    'storage_agent',
+                    file_pattern,
+                    file_info_match='SA(?P<system_id>([0-9a-fA-F]:?){12})-')
             )
 
             # funos logs
             file_pattern = f'{path}/archives/other/*funos.log*'
             blocks.extend(
-                funos_input(frn_info, 'funos', file_pattern)
+                funos_input(frn_info,
+                    'funos',
+                    file_pattern,
+                    file_info_match='FOS(?P<system_id>([0-9a-fA-F]:?){12})-')
             )
 
     else:
@@ -351,7 +360,7 @@ def funos_input_pipeline(frn_info, path):
     return blocks
 
 
-def funos_input(frn_info, source, file_pattern):
+def funos_input(frn_info, source, file_pattern, file_info_match=None):
     cfg = _get_cfg_from_frn(frn_info)
     id = _generate_unique_id(source, cfg['system_id'])
 
@@ -363,7 +372,9 @@ def funos_input(frn_info, source, file_pattern):
         'cfg': {
             **cfg,
             'file_pattern': file_pattern,
-            'src': source
+            'src': source,
+            # Regex pattern to pick information from the filename
+            'file_info_match': file_info_match
         },
         'out': parse_id
     }
@@ -405,7 +416,7 @@ def controller_input_pipeline(frn_info, source, file_pattern, multiline_settings
     return [input, parse]
 
 
-def fun_agent_input_pipeline(frn_info, source, file_pattern):
+def fun_agent_input_pipeline(frn_info, source, file_pattern, file_info_match=None):
     """ Input pipeline for Fun agent source """
     cfg = _get_cfg_from_frn(frn_info)
     id = _generate_unique_id(source, cfg['system_id'])
@@ -419,7 +430,9 @@ def fun_agent_input_pipeline(frn_info, source, file_pattern):
             **cfg,
             'file_pattern': file_pattern,
             'src': source,
-            'pattern': r'([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+)(?:.|,)([0-9]{3,9})'
+            'pattern': r'([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+)(?:.|,)([0-9]{3,9})',
+            # Regex pattern to pick information from the filename
+            'file_info_match': file_info_match
         },
         'out': fun_agent_parse_id
     }

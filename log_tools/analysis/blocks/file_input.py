@@ -48,6 +48,10 @@ class TextFileInput(Block):
         file_size = 0
 
         for file in input_files:
+
+            # Extracting info from filename using the regex pattern
+            self._set_info_from_filename(file, self.cfg.get('file_info_match'))
+
             logging.info(f'Parsing {file}')
             if file.endswith('.gz'):
                 with gzip.open(file, mode='rt', encoding='ascii', errors='replace') as f:
@@ -97,3 +101,19 @@ class TextFileInput(Block):
     def _replace_file_vars(self):
         logdir = self.env['logdir']
         return self.file_pattern.replace('${logdir}', logdir)
+
+    def _set_info_from_filename(self, filename, pattern):
+        """
+        Sets the config with the info extracted from the "filename"
+        using the given regex "pattern".
+
+        The regex pattern should contain named groups to search for
+        information.
+        """
+        if pattern:
+            match = re.search(pattern, filename)
+
+            self.cfg = {
+                **self.cfg,
+                **match.groupdict()
+            }
