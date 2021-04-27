@@ -15,8 +15,10 @@
 }
 
 .index td, .index th {
+    font-family: monospace;
     padding: 5px 10px;
     border: 1px solid #4d4d4d;
+    font-size: 13px;
 }
 
 .index th {
@@ -26,5 +28,5 @@
 }
 
 .tags {
-    max-width: 250px;
+    max-width: 400px;
 }
