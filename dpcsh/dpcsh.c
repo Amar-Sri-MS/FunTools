@@ -1378,26 +1378,33 @@ static void _do_interactive(struct dpcsock *funos_socket,
 	_wait_finalize_threads(workers, MAX_CLIENTS_THREADS);
 }
 
-#define LINE_MAX_DPC_CLI	(100 * 1024)
-
 // Return true if execution proceeded normally, false on any error
 static bool _do_cli(int argc, char *argv[],
 		    struct dpcsock *funos_socket,
 		    struct dpcsock *cmd_socket, int startIndex)
 {
-	char *buf = malloc(LINE_MAX_DPC_CLI);
-	int n = 0;
 	bool ok = false;
+	size_t bufsize = 1; // 1 for the terminating zero
+	for (int i = startIndex; i < argc; i++) {
+		bufsize += strlen(argv[i]) + 1; // +1 for the separator space
+	}
+	char *buf = malloc(bufsize);
+	if (!buf) {
+		printf("Failed to allocate command buffer of size %zu", bufsize);
+		goto malloc_fail;
+	}
+
+	int n = 0;
 	struct dpcsock_connection *funos, *cmd;
 	open_connections(funos_socket, cmd_socket, &funos, &cmd);
 
 	if (!funos || !cmd || cmd->fd < 0) {
 		printf("Can't open connections\n");
-		goto fail;
+		goto connect_fail;
 	}
 
 	for (int i = startIndex; i < argc; i++) {
-		n += snprintf(buf + n, LINE_MAX_DPC_CLI - n, "%s ", argv[i]);
+		n += snprintf(buf + n, bufsize - n, "%s ", argv[i]);
 		dprintf("buf=%s n=%d\n", buf, n);
 	}
 
@@ -1409,9 +1416,10 @@ static bool _do_cli(int argc, char *argv[],
 		ok = _do_recv_cmd(funos, cmd, true);
 	}
 
-fail:
-	free(buf);
+connect_fail:
 	close_connections(funos, cmd);
+	free(buf);
+malloc_fail:
 	return ok;
 }
 
