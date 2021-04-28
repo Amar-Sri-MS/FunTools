@@ -1,7 +1,11 @@
 # Signing Server
 
 The signing server is a HTTPS server running on port 4443.
-The URL is "https://f1reg.fungible.com:4443/cgi-bin/signing_server.cgi"
+
+
+The URL is "[https://f1reg.fungible.com:4443/cgi-bin/signing_server.cgi](https://f1reg.fungible.com:4443/cgi-bin/signing_server.cgi)"
+
+
 It implements the following commands:
 
 ## GET
@@ -34,6 +38,17 @@ Possible values are:
 
 * binary: raw bytes of the modulus
 
+* public_key: a PUBLIC KEY PEM file compatible with OpenSSL
+
+		-----BEGIN PUBLIC_KEY-----
+		MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6AXllROlNJL+kxUl/Jen
+		Qf3elTQkclTCJwi22l6nhzYNsz11b2kxzsKdXA9TfqrzJB64pqTb+cJEIMYtSoIc
+		iw7zGbic4ByLaT82pIbf8BiFvh9dwhhPYfHWd5NUtoa7bQWPWJVhaTjzsNo7WQvK
+		YV3TFM9zXu5913nV+gKNSs/ZaZ1E+ymyM7ijxCJOrU9xH5XIAGSh4o3EpXFmw7j5
+		JzjqetOX+eBLnXQoK5iOAIQEXKOlph+EmNTI4vBnB+kKALa99g7dLT/QB+hcih5G
+		rNe0nmmmKobvlAOTOVRM5V0PK7ruZCKfvBdPuFnPvUbC1OteB6ojOS2vG7nAuh7Q
+		hwIDAQAB
+		-----END PUBLIC_KEY-----
 
 * hex: hexadecimal encoding of the bytes of the modulus
 
