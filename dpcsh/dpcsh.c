@@ -731,7 +731,7 @@ bool dpcsocket_init(struct dpcsock *sock)
 		/* setup the server socket*/
 		printf("connecting server socket\n");
 		_listen_sock_init(sock);
-	} 
+	}
 
 	if(sock->mode == SOCKMODE_FUNQ) {
 		sock->funq_connection = malloc(sizeof(struct dpc_funq_connection));
@@ -824,7 +824,7 @@ static struct fun_json *_read_from_sock(struct dpcsock_connection *connection, b
 
 	if (socket->mode == SOCKMODE_NVME) {
 		data_size = _read_from_nvme(&data, &deallocate_ptr, connection);
-	} else if (socket->base64) {		
+	} else if (socket->base64) {
 		data = _base64_get_buffer(connection, &data_size, retry);
 		deallocate_ptr = data;
 	} else {
@@ -1331,6 +1331,7 @@ static void _add_thread(struct dpc_thread *workers, size_t max_workers,
 			// using this as an indicator of thread got terminated,
 			// may give false-negatives, that are fine, but no false-positives
 				workers[i].used = false;
+				pthread_join(workers[i].thread, NULL);
 				close_connections(workers[i].args[0], workers[i].args[1]);
 				if (_debug_log) printf("Garbage-collected thread #%zu\n", i);
 			}
