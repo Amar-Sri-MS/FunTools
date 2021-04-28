@@ -120,6 +120,7 @@ def main():
     if args.release:
         funos_suffixes.append('release')
 
+    args.sdkdir = os.path.abspath(args.sdkdir) # later processing fails if relative path is given
     funos_appname = "funos{}.stripped".format('-'.join(funos_suffixes))
     rootfs_files = ALL_ROOTFS_FILES[args.chip]
     chip_specific_files = CHIP_SPECIFIC_FILES.get(args.chip, ())
