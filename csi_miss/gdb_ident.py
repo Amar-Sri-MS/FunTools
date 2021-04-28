@@ -268,7 +268,11 @@ def mksymlist(block):
             if (debug):
                 print "const!"
             continue
-        
+
+        if (sym.addr_class == gdb.SYMBOL_LOC_CONST_BYTES):
+            print "const bytes!: ", sym.name
+            continue
+
         if (debug):
             print sym, sym.value()
             print sym.value().address
