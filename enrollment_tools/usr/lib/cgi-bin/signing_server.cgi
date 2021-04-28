@@ -15,7 +15,7 @@ import cgi
 
 import traceback
 
-from asn1crypto import core, algos
+from asn1crypto import core, algos, keys, pem
 
 from common import *
 from hsmd_common import (remote_hsm_get_modulus,
@@ -50,7 +50,10 @@ MAGIC_NUMBER_ENROLL_CERT = 0xB1005C1E
 #
 ########################################################################
 
-def send_binary(binary_buffer):
+def send_binary(binary_buffer, filename = None):
+    if filename:
+        print("Content-Disposition: attachment; filename = %s" %
+              filename)
     print("Content-type: application/octet-stream")
     print("Status: 200 OK")
     print("Content-length: %d\n" % len(binary_buffer))
@@ -59,7 +62,7 @@ def send_binary(binary_buffer):
 
 #######################################################################
 #
-# DER operations: digest_info
+# DER operations: digest_info, rsapublickey
 #
 #######################################################################
 
@@ -72,6 +75,13 @@ def gen_digest_info(algo_name, algo_digest):
     digest_info['digest_algorithm'] = digest_algorithm
     digest_info['digest'] = digest
     return digest_info.dump()
+
+
+def gen_rsa_pub_key_info(modulus, exponent=0x10001):
+    rsa = keys.RSAPublicKey()
+    rsa['modulus'] = int.from_bytes(modulus, byteorder='big')
+    rsa['public_exponent'] = exponent
+    return keys.PublicKeyInfo.wrap(rsa, "rsa")
 
 
 ########################################################################
@@ -121,7 +131,11 @@ def cmd_modulus(form):
 
     out_format = safe_form_get(form, "format", "binary")
     if out_format == "binary":
-        send_binary(modulus)
+        send_binary(modulus, "%s_%d_modulus.bin" % (key_label, hsm_id))
+    elif out_format == "public_key":
+        pub_key_info = gen_rsa_pub_key_info(modulus)
+        pub_key_info_pem = pem.armor('PUBLIC_KEY', pub_key_info.dump())
+        send_binary(pub_key_info_pem, "%s_%d.pem" % (key_label, hsm_id))
     else:
         print("Content-type: text/plain")
         send_binary_buffer(modulus, form)
