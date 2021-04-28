@@ -238,12 +238,6 @@ def build_input_pipeline(path, frn_info):
             fun_agent_input_pipeline(frn_info, source, file_pattern)
         )
 
-    elif source == 'apigateway':
-        file_pattern = f'{path}/info*' if resource_type == 'folder' else path
-        blocks.extend(
-            controller_input_pipeline(frn_info, source, file_pattern)
-        )
-
     elif source == 'dataplacement':
         file_pattern = f'{path}/info*' if resource_type == 'folder' else path
         blocks.extend(
@@ -253,13 +247,7 @@ def build_input_pipeline(path, frn_info):
                 })
         )
 
-    elif source in ['discovery', 'metrics_manager']:
-        file_pattern = f'{path}/info*' if resource_type == 'folder' else path
-        blocks.extend(
-            controller_input_pipeline(frn_info, source, file_pattern)
-        )
-
-    elif source == 'scmscv':
+    elif source in ['discovery', 'metrics_manager', 'scmscv']:
         file_pattern = f'{path}/info*' if resource_type == 'folder' else path
         blocks.extend(
             controller_input_pipeline(frn_info, source, file_pattern,
@@ -268,7 +256,19 @@ def build_input_pipeline(path, frn_info):
                 })
         )
 
-    elif source in ['kafka', 'storage_consumer', 'lrm_consumer', 'setup_db', 'metrics_server']:
+    elif source in ['apigateway', 'storage_consumer', 'lrm_consumer', 'setup_db', 'metrics_server']:
+        file_pattern = f'{path}/info*' if resource_type == 'folder' else path
+        blocks.extend(
+            controller_input_pipeline(
+                frn_info,
+                source,
+                file_pattern,
+                multiline_settings={
+                    'pattern': r'^([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+).([0-9]+)'
+                })
+        )
+
+    elif source in ['kafka']:
         file_pattern = f'{path}/info*' if resource_type == 'folder' else path
         blocks.extend(
             controller_input_pipeline(frn_info, source, file_pattern)
