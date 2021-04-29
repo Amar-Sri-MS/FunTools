@@ -41,7 +41,7 @@ class FunOSInputTest(unittest.TestCase):
         self.assertEqual(1, len(output))
 
         timestamp = msg_tuple_to_dict(output[0])['datetime']
-        expected = datetime.datetime.fromtimestamp(1596621622.940236)
+        expected = datetime.datetime.utcfromtimestamp(1596621622.940236)
         self.assertEqual(expected, timestamp)
 
     def test_sets_usec(self):

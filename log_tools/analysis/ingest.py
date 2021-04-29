@@ -269,9 +269,16 @@ def build_input_pipeline(path, frn_info):
         )
 
     elif source in ['kafka']:
-        file_pattern = f'{path}/info*' if resource_type == 'folder' else path
+        file_pattern = f'{path}/server.log*' if resource_type == 'folder' else path
         blocks.extend(
-            controller_input_pipeline(frn_info, source, file_pattern)
+            controller_input_pipeline(
+                frn_info,
+                source,
+                file_pattern,
+                multiline_settings={
+                    'pattern': r'^\[([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+).([0-9]+)\]'
+                }
+            )
         )
 
     elif source == 'sns':
