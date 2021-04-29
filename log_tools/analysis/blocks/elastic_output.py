@@ -68,8 +68,8 @@ class ElasticsearchOutput(Block):
             for success, info in parallel_bulk(
                                         self.es,
                                         self.generate_es_doc(it),
-                                        raise_on_error=False,
-                                        raise_on_exception=False,
+                                        raise_on_error=True,
+                                        raise_on_exception=True,
                                         chunk_size=10000):
                 if not success:
                     logging.error(f'Failed to index a document: {info}')

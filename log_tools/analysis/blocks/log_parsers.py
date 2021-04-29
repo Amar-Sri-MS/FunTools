@@ -127,8 +127,9 @@ class GenericInput(Block):
             # [simple_ctx_scheduler.go:128] 2020-08-05 02:20:16.863085 -0700 PDT XXX
             # simple_ctx_scheduler.go:128 2020-08-05 02:20:16.863085 XXX
             # 2021-02-11T12:08:00.951926Z DBG XXX
+            # [2021-04-29 04:20:32,492] INFO shutting down (kafka.server.KafkaServer)
             m = re.match(
-                r'^(\[[\S]+\]\s|[\S]+\s|)([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+).([0-9]+)\s?((?:-|\+|)[0-9]{4}|Z|)([\s\S]*)',
+                r'^(\[[\S]+\]\s|[\S]+\s|)(?:\[|)([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+).([0-9]+)(?:\]|)\s?((?:-|\+|)[0-9]{4}|Z|)([\s\S]*)',
                 line)
 
             if m:

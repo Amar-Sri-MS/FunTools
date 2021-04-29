@@ -292,7 +292,7 @@ def ingest_logs(job_id, test_index, job_info, log_files, metadata):
                     # Path to the extracted log files
                     LOG_DIR = f'{path}/{archive_name}'
 
-                    if release_train in ('master', '2.0', '2.0.1', '2.1'):
+                    if release_train in ('master', '2.0', '2.0.1', '2.0.2', '2.1', '2.2'):
                         # Copying FUNLOG_MANIFEST file
                         template_path = os.path.join(file_path, '../config/templates/fc/FUNLOG_MANIFEST')
                         shutil.copy(template_path, LOG_DIR)
@@ -313,7 +313,7 @@ def ingest_logs(job_id, test_index, job_info, log_files, metadata):
                     LOG_DIR = f'{path}/{archive_name}/tmp/debug_logs'
 
                     # master release
-                    if release_train in ('master', '2.1'):
+                    if release_train in ('master', '2.1', '2.2'):
                         files = _get_valid_files(LOG_DIR)
                         # TODO(Sourabh): This is an assumption that there will not be
                         # other files in this directory
@@ -323,7 +323,7 @@ def ingest_logs(job_id, test_index, job_info, log_files, metadata):
                         ingest_path = f'{LOG_DIR}/{files[0]}'
 
                         manifest_contents.append(f'frn::::::archive:{archive_name}/tmp/debug_logs:{files[0]}')
-                    elif release_train in ('2.0', '2.0.1'):
+                    elif release_train in ('2.0', '2.0.1', '2.0.2'):
                         folders = next(os.walk(os.path.join(LOG_DIR,'.')))[1]
 
                         # TODO(Sourabh): This is an assumption that there will not be

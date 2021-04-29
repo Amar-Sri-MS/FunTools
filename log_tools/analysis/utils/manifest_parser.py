@@ -55,7 +55,12 @@ def parse_FRN(frn_str):
         'source': frn[5],
         'resource_type': frn[6],
         'prefix_path': frn[7],
-        'sub_path': frn[8]
+        # TODO(Sourabh): Need a better way to handle such cases.
+        # What if the other fields contain ":" in their text?
+        #
+        # The file names of some log archives are of the format:
+        # cs-logs-2021-04-28-11:25:20.tgz
+        'sub_path': ':'.join(frn[8:])
     }
 
 
