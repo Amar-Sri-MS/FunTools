@@ -21,6 +21,10 @@
 # permitted.
 
 {"key": "welcome", "short": "Welcome to FunOS", "match": "[kernel] Welcome to FunOS!", "color": "green"}
+{"key": "version", "short": "FunSDK Release <RELEASE_VERSION> Version=<BUILD_ID>, ref=<REF>", "rematch": "FunSDK Release (?P<RELEASE_VERSION>[a-z0-9.]+), Version=(?P<BUILD_ID>bld_[0-9]+), ref=(?P<REF>[a-z0-9]+)"}
+{"key": "build_id", "short": "Build ID=<BUILD_ID>", "rematch": "[kernel] Build ID=(?P<BUILD_ID>[a-z0-9-]+)"}
+{"key": "build_on", "short": "Built on=<BUILD_DATE>", "rematch": "[kernel] Built on=(?P<BUILD_DATE>.+)"}
+{"key": "funos_initialized", "short": "FUNOS_INITIALIZED", "match": "FUNOS_INITIALIZED", "color": "green"}
 {"key": "ready", "short": "System Ready Notification", "match": "System event posted: system_event_ready_to_start", "color": "green"}
 {"key": "freeze", "short": "crash started", "match": ">>> FunOS entering bug_check handler <<<", "is_failure": true}
 # face screaming in fear emoji
@@ -49,6 +53,7 @@
 {"key": "wp_fail", "short": "Worker pool policy constraint failure", "match": "[workerpool] ERROR: force-shared policy failed to find any available VPs. Retrying without private pools.", "is_failure": true}
 
 # FunOS unit tests
+{"key": "unit_test_status", "short": "Test: <NAME>, STATUS: <STATUS>", "rematch": "\\[\\s*(?P<STATUS>[A-Z]*)\\s*\\] '(?P<NAME>[A-Za-z0-9_\\./\\-]+)'"}
 {"key": "unit_test_fail_check_eq", "short": "Unit test assertion failure: CHECK_EQ", "match": "CHECK_EQ:", "is_failure": true}
 {"key": "unit_test_fail_demand_eq", "short": "Unit test assertion failure: DEMAND_EQ", "match": "DEMAND_EQ:", "is_failure": true}
 {"key": "unit_test_fail_check_ne", "short": "Unit test assertion failure: CHECK_NE", "match": "CHECK_NE:", "is_failure": true}
