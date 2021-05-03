@@ -159,7 +159,7 @@ class ElasticsearchMetadata(object):
 
     def update_notes(self, log_id, note):
         """ Updating the notes in metadata document of "log_id" """
-        body = self._build_query_to_append_to_array('notes', note)
+        body = self._build_query_to_append_to_array(log_id, 'notes', note)
 
         result = self.es.update(self.index,
                                 id=log_id,
