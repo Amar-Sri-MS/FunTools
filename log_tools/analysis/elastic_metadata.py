@@ -7,6 +7,8 @@
 # Owner: Sourabh Jain (sourabh.jain@fungible.com)
 # Copyright (c) 2021 Fungible Inc.  All rights reserved.
 
+import datetime
+
 import config_loader
 
 from elasticsearch7 import Elasticsearch
@@ -131,7 +133,8 @@ class ElasticsearchMetadata(object):
         """
         data = {
             **metadata,
-            'logID': log_id
+            'logID': log_id,
+            '@timestamp': datetime.datetime.utcnow()
         }
         result = self.es.index(self.index,
                                data,
@@ -147,7 +150,8 @@ class ElasticsearchMetadata(object):
         body = {
             'doc': {
                 **metadata,
-                'logID': log_id
+                'logID': log_id,
+                '@timestamp': datetime.datetime.utcnow()
             },
             'doc_as_upsert': True
         }
@@ -185,15 +189,19 @@ class ElasticsearchMetadata(object):
                                 {{ ctx._source.{field}.add(params.value); }}
                             else
                                 {{ ctx._source.{field} = [params.value]; }}
+
+                            ctx._source['@timestamp'] = params['@timestamp'];
                             """,
                 'lang': 'painless',
                 'params': {
-                    'value': value
+                    'value': value,
+                    '@timestamp': datetime.datetime.utcnow()
                 }
             },
             'upsert': {
                 'logID': log_id,
-                field: [value]
+                field: [value],
+                '@timestamp': datetime.datetime.utcnow()
             }
         }
         return body
