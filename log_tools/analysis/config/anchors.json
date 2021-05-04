@@ -53,7 +53,6 @@
 {"key": "wp_fail", "short": "Worker pool policy constraint failure", "match": "[workerpool] ERROR: force-shared policy failed to find any available VPs. Retrying without private pools.", "is_failure": true}
 
 # FunOS unit tests
-{"key": "unit_test_status", "short": "Test: <NAME>, STATUS: <STATUS>", "rematch": "\\[\\s*(?P<STATUS>[A-Z]*)\\s*\\] '(?P<NAME>[A-Za-z0-9_\\./\\-]+)'"}
 {"key": "unit_test_fail_check_eq", "short": "Unit test assertion failure: CHECK_EQ", "match": "CHECK_EQ:", "is_failure": true}
 {"key": "unit_test_fail_demand_eq", "short": "Unit test assertion failure: DEMAND_EQ", "match": "DEMAND_EQ:", "is_failure": true}
 {"key": "unit_test_fail_check_ne", "short": "Unit test assertion failure: CHECK_NE", "match": "CHECK_NE:", "is_failure": true}
