@@ -18,6 +18,9 @@ curl -X PUT "localhost:9200/_index_template/metadata_template" -H 'Content-Type:
                 "logID": {
                     "type": "keyword"
                 },
+                "@timestamp": {
+                    "type": "date"
+                },
                 "tags": {
                     "type": "keyword",
                     "index_options": "docs",

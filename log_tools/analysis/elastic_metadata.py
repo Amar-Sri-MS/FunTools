@@ -7,6 +7,8 @@
 # Owner: Sourabh Jain (sourabh.jain@fungible.com)
 # Copyright (c) 2021 Fungible Inc.  All rights reserved.
 
+import datetime
+
 import config_loader
 
 from elasticsearch7 import Elasticsearch
@@ -131,7 +133,8 @@ class ElasticsearchMetadata(object):
         """
         data = {
             **metadata,
-            'logID': log_id
+            'logID': log_id,
+            '@timestamp': datetime.datetime.utcnow()
         }
         result = self.es.index(self.index,
                                data,
@@ -147,7 +150,8 @@ class ElasticsearchMetadata(object):
         body = {
             'doc': {
                 **metadata,
-                'logID': log_id
+                'logID': log_id,
+                '@timestamp': datetime.datetime.utcnow()
             },
             'doc_as_upsert': True
         }
@@ -159,7 +163,7 @@ class ElasticsearchMetadata(object):
 
     def update_notes(self, log_id, note):
         """ Updating the notes in metadata document of "log_id" """
-        body = self._build_query_to_append_to_array('notes', note)
+        body = self._build_query_to_append_to_array(log_id, 'notes', note)
 
         result = self.es.update(self.index,
                                 id=log_id,
@@ -185,15 +189,19 @@ class ElasticsearchMetadata(object):
                                 {{ ctx._source.{field}.add(params.value); }}
                             else
                                 {{ ctx._source.{field} = [params.value]; }}
+
+                            ctx._source['@timestamp'] = params['@timestamp'];
                             """,
                 'lang': 'painless',
                 'params': {
-                    'value': value
+                    'value': value,
+                    '@timestamp': datetime.datetime.utcnow()
                 }
             },
             'upsert': {
                 'logID': log_id,
-                field: [value]
+                field: [value],
+                '@timestamp': datetime.datetime.utcnow()
             }
         }
         return body

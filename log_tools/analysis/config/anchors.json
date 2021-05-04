@@ -21,6 +21,10 @@
 # permitted.
 
 {"key": "welcome", "short": "Welcome to FunOS", "match": "[kernel] Welcome to FunOS!", "color": "green"}
+{"key": "version", "short": "FunSDK Release <RELEASE_VERSION> Version=<BUILD_ID>, ref=<REF>", "rematch": "FunSDK Release (?P<RELEASE_VERSION>[a-z0-9.]+), Version=(?P<BUILD_ID>bld_[0-9]+), ref=(?P<REF>[a-z0-9]+)"}
+{"key": "build_id", "short": "Build ID=<BUILD_ID>", "rematch": "[kernel] Build ID=(?P<BUILD_ID>[a-z0-9-]+)"}
+{"key": "build_on", "short": "Built on=<BUILD_DATE>", "rematch": "[kernel] Built on=(?P<BUILD_DATE>.+)"}
+{"key": "funos_initialized", "short": "FUNOS_INITIALIZED", "match": "FUNOS_INITIALIZED", "color": "green"}
 {"key": "ready", "short": "System Ready Notification", "match": "System event posted: system_event_ready_to_start", "color": "green"}
 {"key": "freeze", "short": "crash started", "match": ">>> FunOS entering bug_check handler <<<", "is_failure": true}
 # face screaming in fear emoji
