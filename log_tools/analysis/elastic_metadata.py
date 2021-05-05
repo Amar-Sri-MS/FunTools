@@ -41,7 +41,8 @@ class ElasticsearchMetadata(object):
         """
         Fetches all the stored metadata in the index.
         """
-        results = self._search()
+        # Setting a high size to fetch all metadata
+        results = self._search(size=10000)
 
         return self._format_results(results)
 

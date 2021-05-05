@@ -80,7 +80,8 @@ def main():
     except Exception as e:
         logging.exception(f'Error when starting ingestion for job: {job_id}')
         _update_metadata(es_metadata, LOG_ID, 'FAILED', {
-            'ingestion_error': str(e)
+            'ingestion_error': str(e),
+            **metadata
         })
     finally:
         # Clean up the downloaded files
@@ -222,7 +223,9 @@ def _filter_qa_log_files(job_logs, suite_info, test_index=None):
     if test_index is not None and len(suite_info.get('entries', [])) > test_index:
         # Example: _13failures_mgmt_flap_multi.py_180878_1871693_fcs_log.tgz
         test_script_name = suite_info['entries'][test_index]['script_path'].split('/')[-1]
-        log_filename_starts = f'_{test_index}{test_script_name}'
+        # File names either start with _{test_index}{test_script_name} or
+        # _{test_index}script_helper.py
+        log_filename_starts = (f'_{test_index}{test_script_name}', f'_{test_index}script_helper.py')
 
     log_filenames_to_ingest = ('fc_log.tgz', 'fcs_log.tgz')
     log_files = list()
