@@ -144,23 +144,29 @@ def save_file(log_id):
 #     return jsonify({'success': True})
 
 
-# @app.route('/<log_id>', methods=['DELETE'])
-# def delete_dir(log_id):
-#     """ Delete all the files within the 'log_id' directory """
-#     path = os.path.join(app.config['UPLOAD_DIRECTORY'], log_id)
+@app.route('/<log_id>', methods=['DELETE'])
+def delete_dir(log_id):
+    """ Delete all the files within the 'log_id' directory """
+    path = os.path.join(app.config['UPLOAD_DIRECTORY'], log_id)
 
-#     try:
-#         shutil.rmtree(path)
-#         app.logger.info(f'All files deleted under directory: {path}')
-#     except Exception as e:
-#         app.logger.exception(f'Error while deleting directory: {path}')
-#         return jsonify({
-#             'success': False,
-#             'error': str(e)
-#         }), 500
+    try:
+        shutil.rmtree(path)
+        app.logger.info(f'All files deleted under directory: {path}')
+    except FileNotFoundError as e:
+        app.logger.info(f'Files not found under directory: {path}')
+        return jsonify({
+            'success': False,
+            'error': f'Files not found under directory: {path}'
+        }), 404
+    except Exception as e:
+        app.logger.exception(f'Error while deleting directory: {path}')
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
-#     return jsonify({'success': True})
-#
+    return jsonify({'success': True})
+
 
 if __name__ == '__main__':
     main()
