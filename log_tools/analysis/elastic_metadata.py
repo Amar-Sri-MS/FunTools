@@ -205,3 +205,9 @@ class ElasticsearchMetadata(object):
             }
         }
         return body
+
+    def remove(self, log_id):
+        """ Deleting the metadata for the given log_id """
+        result = self.es.delete(self.index, log_id)
+
+        return result
