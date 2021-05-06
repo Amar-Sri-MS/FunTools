@@ -337,8 +337,8 @@
         }
         if (queries.length === 0) {
             // Show error message that no source is being selected
-            alert("Select any filter to explore logs");
-            return;
+            alert("You have not selected any log source.");
+            return null;
         }
         let query = queries.join(' OR ');
         return query;

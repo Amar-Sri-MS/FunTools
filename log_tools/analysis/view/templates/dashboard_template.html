@@ -206,8 +206,12 @@
 
 
     function onClickExploreLogs() {
+        const filterQuery = buildSourceFilterQuery();
+        if (filterQuery === null) {
+            return;
+        }
         const filters = {
-            "text": buildSourceFilterQuery()
+            "text": filterQuery
         };
         const filterString = JSON.stringify(filters);
 

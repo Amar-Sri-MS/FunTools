@@ -127,6 +127,10 @@
         var uri = "/log/{{log_id}}/content";
 
         var filterString = buildFilterOption();
+        if (filterString === null) {
+            toggleElementDisplay(loader, false);
+            return;
+        }
         if (filterString != "") {
             uri += "?filter=" + filterString;
         }
@@ -178,6 +182,10 @@
         }
 
         var uri = buildContentRequest("next");
+        if (uri === null) {
+            toggleElementDisplay(loader, false);
+            return;
+        }
         xhttp.open('POST', uri);
         xhttp.send();
     }
@@ -203,6 +211,9 @@
 
         var filterString = buildFilterOption();
 
+        if (filterString === null) {
+            return null;
+        }
         if (filterString != "") {
             uri += "&filter=" + filterString;
         }
@@ -216,7 +227,12 @@
      */
     function buildFilterOption() {
         var allFilters = {};
-        allFilters["text"] = buildSourceFilterQuery();
+        const filterQuery = buildSourceFilterQuery()
+        if (filterQuery === null) {
+            return null;
+        }
+
+        allFilters["text"] = filterQuery;
         if (textFilter != "") {
             allFilters["text"] = `(${allFilters["text"]}) AND (${textFilter})`;
         }
@@ -248,12 +264,21 @@
         }
 
         var uri = buildContentRequest("prev");
+        if (uri === null) {
+            toggleElementDisplay(loader, false);
+            return;
+        }
         xhttp.open('POST', uri);
         xhttp.send();
     }
 
     function onClickFilterLogs() {
         const filterString = buildFilterOption();
+        // Filters not selected
+        if (filterString === null) {
+            return;
+        }
+
         let search_url = LOG_VIEW_BASE_URL;
         let params = new URLSearchParams(location.search);
         if (filterString != "") {
