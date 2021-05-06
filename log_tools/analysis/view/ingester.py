@@ -302,7 +302,7 @@ def ingest_logs(job_id, test_index, job_info, log_files, metadata):
                     else:
                         raise Exception('Unsupported release train')
 
-                    manifest_contents.append(f'frn::::::bundle::{archive_name}')
+                    manifest_contents.append(f'frn::::::bundle::"{archive_name}"')
 
                 # HA FC
                 elif log_file.endswith('_fcs_log.tgz'):
@@ -325,7 +325,7 @@ def ingest_logs(job_id, test_index, job_info, log_files, metadata):
                         # file, which needs to be ingested
                         ingest_path = f'{LOG_DIR}/{files[0]}'
 
-                        manifest_contents.append(f'frn::::::archive:{archive_name}/tmp/debug_logs:{files[0]}')
+                        manifest_contents.append(f'frn::::::archive:"{archive_name}/tmp/debug_logs":"{files[0]}"')
                     elif release_train in ('2.0', '2.0.1', '2.0.2'):
                         folders = next(os.walk(os.path.join(LOG_DIR,'.')))[1]
 
@@ -342,7 +342,7 @@ def ingest_logs(job_id, test_index, job_info, log_files, metadata):
                                 for line in fin:
                                     fout.write(line.replace('<TIMESTAMP>', log_folder_name))
 
-                        manifest_contents.append(f'frn::::::bundle:{archive_name}/tmp/debug_logs:{log_folder_name}')
+                        manifest_contents.append(f'frn::::::bundle:"{archive_name}/tmp/debug_logs":"{log_folder_name}"')
                     else:
                         raise Exception('Unsupported release train')
 
@@ -361,7 +361,7 @@ def ingest_logs(job_id, test_index, job_info, log_files, metadata):
                         template_path = os.path.join(file_path, '../config/templates/system/FUNLOG_MANIFEST')
                         shutil.copy(template_path, LOG_DIR)
 
-                        manifest_contents.append(f'frn::::::bundle::{archive_name}')
+                        manifest_contents.append(f'frn::::::bundle::"{archive_name}"')
                     else:
                         raise Exception('Unsupported release train')
 
