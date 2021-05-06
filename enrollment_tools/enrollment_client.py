@@ -316,4 +316,7 @@ def main():
     print("Error getting the enrollment certificate")
     return False
 
-main()
+
+
+if __name__ == '__main__':
+    main()
