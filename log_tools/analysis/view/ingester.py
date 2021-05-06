@@ -275,6 +275,13 @@ def ingest_logs(job_id, test_index, job_info, log_files, metadata):
     QA_LOGS_DIRECTORY = '/regression/Integration/fun_test/web/static/logs'
     found_logs = False
 
+    tags = metadata.get('tags') if metadata.get('tags') else []
+    # Adding the release train to the tags
+    metadata = {
+        **metadata,
+        'tags': tags + [release_train]
+    }
+
     manifest_contents = list()
 
     _update_metadata(es_metadata, LOG_ID, 'DOWNLOAD_STARTED')
