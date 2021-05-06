@@ -52,8 +52,7 @@ def parse_FRN(frn_str):
 
     def get_frn_component(index):
         frn = frn_match[index]
-        frn_value = frn[0] if frn[0] and frn[0] != '' else frn[1]
-        return frn_value if frn_value != '' else None
+        return frn[0] if frn[0] and frn[0] != '' else frn[1]
 
     return {
         'namespace': get_frn_component(1),
