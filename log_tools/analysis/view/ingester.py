@@ -80,7 +80,8 @@ def main():
     except Exception as e:
         logging.exception(f'Error when starting ingestion for job: {job_id}')
         _update_metadata(es_metadata, LOG_ID, 'FAILED', {
-            'ingestion_error': str(e)
+            'ingestion_error': str(e),
+            **metadata
         })
     finally:
         # Clean up the downloaded files
@@ -222,7 +223,9 @@ def _filter_qa_log_files(job_logs, suite_info, test_index=None):
     if test_index is not None and len(suite_info.get('entries', [])) > test_index:
         # Example: _13failures_mgmt_flap_multi.py_180878_1871693_fcs_log.tgz
         test_script_name = suite_info['entries'][test_index]['script_path'].split('/')[-1]
-        log_filename_starts = f'_{test_index}{test_script_name}'
+        # File names either start with _{test_index}{test_script_name} or
+        # _{test_index}script_helper.py
+        log_filename_starts = (f'_{test_index}{test_script_name}', f'_{test_index}script_helper.py')
 
     log_filenames_to_ingest = ('fc_log.tgz', 'fcs_log.tgz')
     log_files = list()
@@ -272,6 +275,13 @@ def ingest_logs(job_id, test_index, job_info, log_files, metadata):
     QA_LOGS_DIRECTORY = '/regression/Integration/fun_test/web/static/logs'
     found_logs = False
 
+    tags = metadata.get('tags') if metadata.get('tags') else []
+    # Adding the release train to the tags
+    metadata = {
+        **metadata,
+        'tags': tags + [release_train]
+    }
+
     manifest_contents = list()
 
     _update_metadata(es_metadata, LOG_ID, 'DOWNLOAD_STARTED')
@@ -299,7 +309,7 @@ def ingest_logs(job_id, test_index, job_info, log_files, metadata):
                     else:
                         raise Exception('Unsupported release train')
 
-                    manifest_contents.append(f'frn::::::bundle::{archive_name}')
+                    manifest_contents.append(f'frn::::::bundle::"{archive_name}"')
 
                 # HA FC
                 elif log_file.endswith('_fcs_log.tgz'):
@@ -322,7 +332,7 @@ def ingest_logs(job_id, test_index, job_info, log_files, metadata):
                         # file, which needs to be ingested
                         ingest_path = f'{LOG_DIR}/{files[0]}'
 
-                        manifest_contents.append(f'frn::::::archive:{archive_name}/tmp/debug_logs:{files[0]}')
+                        manifest_contents.append(f'frn::::::archive:"{archive_name}/tmp/debug_logs":"{files[0]}"')
                     elif release_train in ('2.0', '2.0.1', '2.0.2'):
                         folders = next(os.walk(os.path.join(LOG_DIR,'.')))[1]
 
@@ -339,7 +349,7 @@ def ingest_logs(job_id, test_index, job_info, log_files, metadata):
                                 for line in fin:
                                     fout.write(line.replace('<TIMESTAMP>', log_folder_name))
 
-                        manifest_contents.append(f'frn::::::bundle:{archive_name}/tmp/debug_logs:{log_folder_name}')
+                        manifest_contents.append(f'frn::::::bundle:"{archive_name}/tmp/debug_logs":"{log_folder_name}"')
                     else:
                         raise Exception('Unsupported release train')
 
@@ -358,7 +368,7 @@ def ingest_logs(job_id, test_index, job_info, log_files, metadata):
                         template_path = os.path.join(file_path, '../config/templates/system/FUNLOG_MANIFEST')
                         shutil.copy(template_path, LOG_DIR)
 
-                        manifest_contents.append(f'frn::::::bundle::{archive_name}')
+                        manifest_contents.append(f'frn::::::bundle::"{archive_name}"')
                     else:
                         raise Exception('Unsupported release train')
 

@@ -6,6 +6,7 @@
 
 import logging
 import os
+import re
 import sys
 import yaml
 
@@ -46,21 +47,32 @@ def _format_manifest(manifest):
 
 def parse_FRN(frn_str):
     """ Parse FRN (Fungible Resource Name) into usable information """
-    frn = frn_str.split(':')
+    frn_pattern = r'(?:\"(.*?)\"(?::|\Z)|(.*?)(?::|\Z))'
+    frn_match = re.findall(frn_pattern, frn_str)
+
+    def get_frn_component(index):
+        frn = frn_match[index]
+        return frn[0] if frn[0] and frn[0] != '' else frn[1]
+
     return {
-        'namespace': frn[1],
-        'system_type': frn[2],
-        'system_id': frn[3],
-        'component': frn[4],
-        'source': frn[5],
-        'resource_type': frn[6],
-        'prefix_path': frn[7],
-        # TODO(Sourabh): Need a better way to handle such cases.
-        # What if the other fields contain ":" in their text?
+        'namespace': get_frn_component(1),
+        'system_type': get_frn_component(2),
+        'system_id': get_frn_component(3),
+        'component': get_frn_component(4),
+        'source': get_frn_component(5),
+        'resource_type': get_frn_component(6),
+        'prefix_path': get_frn_component(7),
+        # TODO(Sourabh): Need to enusure all the values are enclosed
+        # with quotes so to avoid this issue. Left the fallback for
+        # now.
         #
         # The file names of some log archives are of the format:
         # cs-logs-2021-04-28-11:25:20.tgz
-        'sub_path': ':'.join(frn[8:])
+        'sub_path': get_frn_component(8)
+                    # Regex finds 10 matches for the frn string
+                    if len(frn_match) == 10
+                    else ':'.join([get_frn_component(index)
+                                    for index in range(8, len(frn_match)-1)])
     }
 
 
