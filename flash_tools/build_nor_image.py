@@ -301,13 +301,16 @@ def parse_args():
     arg_parser.add_argument("-n", "--enrollment-certificate", action='store',
                             metavar='FILE',
                             help="enrollment certificate to add to the image")
-    bld_type = arg_parser.add_mutually_exclusive_group(required=True)
+    bld_type = arg_parser.add_mutually_exclusive_group()
     bld_type.add_argument("-p", "--production", action='store_const', const='', dest='debug',
                             help="Production build")
     bld_type.add_argument("-V", "--verbose", action='store_const', const='_verbose', dest='debug',
                             help="Production build with verbose logging")
     bld_type.add_argument("--debug", action='store_const', const='_debug',
                             help="Debug build")
+    # default to --debug
+    arg_parser.set_defaults(debug='_debug')
+
     arg_parser.add_argument("--customer", action='store_true',
                             help="Customer build: sign with customer keys")
     arg_parser.add_argument("-s", "--sbp", action='store',
