@@ -22,20 +22,18 @@ FUNOS_TGZS = [
     "funos.mips64-extra.tgz",
 ]
 
-FUNOS_BINARIES = [
-"funos-f1",
-"funos-f1-release",
-"funos-f1-emu",
-"funos-f1-emu-release",
-"funos-f1-qemu",
-"funos-f1-qemu-release",
-"funos-s1",
-"funos-s1-release",
-"funos-s1-emu",
-"funos-s1-emu-release",
-"funos-s1-qemu",
-"funos-s1-qemu-release"
+CHIPS = ["f1", "s1", "f1d1", "s2"]
+
+FUNOS_FLAVOURS = [
+    "funos-%s",
+    "funos-%s-release",
+    "funos-%s-emu",
+    "funos-%s-emu-release",
+    "funos-%s-qemu",
+    "funos-%s-qemu-release",
 ]
+
+FUNOS_BINARIES = sum([[flav % chip for chip in CHIPS] for flav in FUNOS_FLAVOURS], [])
 
 PATHS = [ "./",
           os.path.dirname(os.path.abspath(__file__))
