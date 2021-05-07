@@ -8,7 +8,7 @@
 #
 # This script can be called by any cron job to
 # periodically check and remove files and metadata
-# after the retetion period.
+# after the retention period.
 #
 # Usage:
 # python cleanup.py
@@ -17,6 +17,7 @@
 # Owner: Sourabh Jain (sourabh.jain@fungible.com)
 # Copyright (c) 2021 Fungible Inc.  All rights reserved.
 
+import datetime
 import os
 
 from elasticsearch7 import Elasticsearch
@@ -49,16 +50,19 @@ def main():
     # List of the subdirectories inside the files directory
     dirs = next(os.walk(FILES_DIRECTORY))[1]
 
+    # Current epoch time in UTC
+    current_time = datetime.datetime.utcnow().timestamp()
+
     for dirname in dirs:
         # Only the logs which are deleted from Elasticsearch after
         # the retension policy
         if dirname not in log_ids:
             metadata = es_metadata.get(dirname)
             # We would want to keep the files for failed ingestion
-            # and archived logs
+            # and archived logs until a set time based on retention.
             if (metadata and
                 metadata.get('ingestion_status') == 'COMPLETED' and
-                not metadata.get('is_archived', True)):
+                metadata.get('archived_until') < current_time):
 
                 logging.info(f'Cleaning files and metadata for job: {dirname}')
                 status = clean(dirname, ['files', 'metadata'])
