@@ -409,7 +409,7 @@ class ElasticLogSearcher(object):
                                 ignore_throttled=False,
                                 size=0)  # we're not really searching
 
-        buckets = result['aggregations']['unique_vals']['buckets']
+        buckets = result.get('aggregations', {}).get('unique_vals',{}).get('buckets', [])
         return {bucket['key']: bucket['doc_count'] for bucket in buckets}
 
     def get_aggregated_unique_entries(self, parent_fields, child_fields=[]):
@@ -461,7 +461,7 @@ class ElasticLogSearcher(object):
                                 ignore_throttled=False,
                                 size=0)  # we're not really searching
 
-        buckets = result['aggregations'][parent_fields[0]]['buckets']
+        buckets = result.get('aggregations', {}).get(parent_fields[0], {}).get('buckets', [])
         return buckets
 
     def get_document_by_id(self, doc_id):
