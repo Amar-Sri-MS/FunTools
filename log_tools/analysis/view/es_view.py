@@ -270,7 +270,8 @@ class ElasticLogSearcher(object):
         result = self.es.search(body=body,
                                 index=self.index,
                                 size=query_size,
-                                sort='@timestamp:asc')
+                                sort='@timestamp:asc',
+                                ignore_throttled=False)
         # A dict with value (upto 10k) and relation if
         # the actual hits is exact or greater than
         total_search_hits = result['hits']['total']
@@ -349,7 +350,8 @@ class ElasticLogSearcher(object):
         result = self.es.search(body=body,
                                 index=self.index,
                                 size=query_size,
-                                sort='@timestamp:desc')
+                                sort='@timestamp:desc',
+                                ignore_throttled=False)
         # A dict with value (upto 10k) and relation if
         # the actual hits is exact or greater than
         total_search_hits = result['hits']['total']
@@ -404,6 +406,7 @@ class ElasticLogSearcher(object):
 
         result = self.es.search(body=body,
                                 index=self.index,
+                                ignore_throttled=False,
                                 size=0)  # we're not really searching
 
         buckets = result['aggregations']['unique_vals']['buckets']
@@ -455,6 +458,7 @@ class ElasticLogSearcher(object):
 
         result = self.es.search(body=body,
                                 index=self.index,
+                                ignore_throttled=False,
                                 size=0)  # we're not really searching
 
         buckets = result['aggregations'][parent_fields[0]]['buckets']
@@ -472,7 +476,7 @@ class ElasticLogSearcher(object):
     def get_document_count(self, query_terms=None, source_filters=None, time_filters=None):
         """ Returns count of documents for the given search query and filters """
         body = self._build_query_body(query_terms, source_filters, time_filters)
-        result = self.es.count(index=self.index, body=body)
+        result = self.es.count(index=self.index, body=body, ignore_throttled=False)
         count = result['count']
         return count
 
