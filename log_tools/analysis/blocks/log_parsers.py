@@ -129,7 +129,7 @@ class GenericInput(Block):
             # 2021-02-11T12:08:00.951926Z DBG XXX
             # [2021-04-29 04:20:32,492] INFO shutting down (kafka.server.KafkaServer)
             m = re.match(
-                r'^(\[[\S]+\]\s|[\S]+\s|)(?:\[|)([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+).([0-9]+)(?:\]|)\s?((?:-|\+|)[0-9]{4}|Z|)([\s\S]*)',
+                r'^(\[[\S]+\]\s|[\S]+\s|)(?:\[|)([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+)[\.|\,]{0,1}([0-9]+)(?:\]|)\s?((?:-|\+|)[0-9]{2}[:]{0,1}[0-9]{2}|Z|)([\s\S]*)',
                 line)
 
             if m:
@@ -153,7 +153,7 @@ class GenericInput(Block):
         usecs_str = secs_str[0:6] if len(secs_str) > 6 else secs_str
 
         day_str = day_str.replace('-', '/')
-        log_time = day_str + ' ' + time_str + '.' + usecs_str
+        log_time = f"{day_str} {time_str}.{usecs_str}" if usecs_str else f"{day_str} {time_str}.0"
         d = datetime.datetime.strptime(log_time, '%Y/%m/%d %H:%M:%S.%f')
 
         return d, d.microsecond
@@ -195,7 +195,7 @@ class KeyValueInput(Block):
 
         # 2020-08-04T23:09:14.705144973-07:00 OR 2020-08-04 23:09:14.705144973-07:00
         # OR 2020/08/04 23:09:14.705144973
-        m = re.match(r'^([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+).([0-9]+)([\s\S]*)', time_str)
+        m = re.match(r'^([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+)[.]{0,1}([0-9]*)([\s\S]*)', time_str)
         day_str, time_str, secs_str, tz_offset = m.group(1), m.group(2), m.group(3), m.group(4)
 
         # Converting nanoseconds to microseconds because Python datetime only supports upto microseconds
@@ -203,7 +203,7 @@ class KeyValueInput(Block):
         usecs_str = secs_str[0:6] if len(secs_str) > 6 else secs_str
 
         day_str = day_str.replace('-', '/')
-        log_time = f"{day_str} {time_str}.{usecs_str}"
+        log_time = f"{day_str} {time_str}.{usecs_str}" if usecs_str else f"{day_str} {time_str}.0"
         log_time_format = '%Y/%m/%d %H:%M:%S.%f'
 
         d = datetime.datetime.strptime(log_time, log_time_format)
