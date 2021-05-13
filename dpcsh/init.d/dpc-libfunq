@@ -4,8 +4,8 @@
 
 BIN_PATH="/usr/bin"
 ST_STP_D=/sbin/start-stop-daemon
-DPC_SOCKET=/tmp/dpc.sock
-DPC_PID_FILE=/tmp/dpc.pid
+DPC_SOCKET=/tmp/dpc-funq.sock
+DPC_PID_FILE=/tmp/dpc-funq.pid
 DEVICE_ID="1dad:0108:ff00"
 
 if [[ ! -f ${ST_STP_D} ]]; then
