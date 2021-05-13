@@ -320,6 +320,19 @@ def build_input_pipeline(path, frn_info):
                     file_info_match='FOS(?P<system_id>([0-9a-fA-F]:?){12})-')
             )
 
+    elif source.startswith('cclinux_'):
+        if resource_type == 'textfile':
+            # TODO(Sourabh) Logs under /var/log does have year in the
+            # timestamp which makes it harder to parse them.
+            if not 'var/log' in path:
+                updated_source = source.split('cclinux_')[1]
+                blocks.extend(
+                    fun_agent_input_pipeline(frn_info,
+                        updated_source,
+                        path
+                    )
+                )
+
     else:
         logging.warning(f'Unknown source: {source}!')
 
