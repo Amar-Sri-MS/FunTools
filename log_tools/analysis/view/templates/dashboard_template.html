@@ -15,7 +15,7 @@
     <div class="content">
         <h2 class="center-align">Dashboard for
             {% if job_link is not none %}
-                <a target="_blank" href="{{job_link}}">{{log_id}}</a>
+                <a target="_blank" data-web_event="JOB_LINK_CLICKED" href="{{job_link}}">{{log_id}}</a>
             {% else %}
                 {{log_id}}
             {% endif %}
