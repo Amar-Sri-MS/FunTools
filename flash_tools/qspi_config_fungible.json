@@ -55,8 +55,8 @@
             "B": "key_bag.bin",
             "index": "2500"
         },
-        "BOOT_SRC": {
-            "A": "reserve(2000, 'bsrc')",
+        "SBP_DATA" : {
+            "A": "reserve(2000, 'sdat')",
             "B": "",
             "index": "3500"
         }
