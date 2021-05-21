@@ -44,7 +44,7 @@
     var endTime = "";
     var loader, prev_button, next_button;
     let search_results_container, search_results_body;
-    let search_box, clear_search_box;
+    let search_box, clear_search_box, search_page_info;
     // Toggle to show/hide search results box
     let showSearchResultsTable = true;
 
@@ -71,6 +71,7 @@
         clear_search_box = document.getElementById("clear_search_results");
         search_results_container = document.getElementById("search_results");
         search_results_body = document.getElementById("search_table_body");
+        search_page_info = document.getElementById("search_page_info")
         search_prev_button = document.getElementById("search_prev_button");;
         search_next_button = document.getElementById("search_next_button");;
 
@@ -384,12 +385,6 @@
     }
 
     function updateSearchResults(searchPayload) {
-        if (searchPayload.results.length === 0) {
-            toggleElementDisplay(search_results_container.parentElement, false);
-            clear_search_box.style.display = "none";
-            return;
-        }
-
         toggleElementDisplay(search_results_container.parentElement, true);
         clear_search_box.style.display = "inline-block";
         const results = searchPayload.results.map(result => {
@@ -407,10 +402,18 @@
         });
         search_results_body.innerHTML = results.join("\n");
 
-        // Conditionally rendering pagination buttons
         const currentPage = searchPayload["page"];
         const totalSearchResults = searchPayload["total_search_hits"]["value"];
         const maxPages = Math.ceil(totalSearchResults/searchPayload["size"]);
+
+        let resultCountStr = totalSearchResults;
+        if (searchPayload["total_search_hits"]["eq"] === "gte") {
+            resultCountStr += "+";
+        }
+
+        search_page_info.innerHTML = `Page ${currentPage} out of ${maxPages} (${resultCountStr} results)`;
+
+        // Conditionally rendering pagination buttons
         const searchBefore = searchPayload["state"] && "before" in searchPayload["state"] ? searchPayload["state"].before : -1;
         const showNextButton = currentPage < maxPages;
         const showPrevButton = searchBefore != -1 && currentPage > 1;
@@ -609,6 +612,7 @@
                     <div class="pagination_button" id="search_prev_button">
                         <button class="btn" data-web_event="PREVIOUS_SEARCH" onclick="onPaginateSearchResults(false)">Previous</button>
                     </div>
+                    <div id="search_page_info"></div>
                     <div class="pagination_button" id="search_next_button">
                         <button class="btn" data-web_event="NEXT_SEARCH" onclick="onPaginateSearchResults()">Next</button>
                     </div>
