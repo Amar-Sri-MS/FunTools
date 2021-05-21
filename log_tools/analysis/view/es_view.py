@@ -40,19 +40,6 @@ app.register_blueprint(ingester_page)
 app.register_blueprint(web_usage, url_prefix='/events')
 
 
-# @app.errorhandler(Exception)
-# def handle_exception(error):
-#     """
-#     Handling exceptions by sending only the error message.
-#     This function is called whenever an unhandled Exception
-#     is raised.
-#     """
-#     # TODO(Sourabh): Maybe redirect to a template with an error message instead
-#     # of just displaying a message. Also print error stacktrace.
-#     print('ERROR:', str(error))
-#     return str(error), 500
-
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--port', type=int, default=5000,
@@ -528,11 +515,6 @@ def get_log_page(log_id):
 
     Subsequent updates to the page are handled via POST requests.
     """
-    state, total_search_hits, table_body = _get_requested_log_lines(
-                                                log_id,
-                                                include_hyperlinks=False
-                                            )
-
     # Assume our template is right next door to us.
     dir = os.path.join(_get_script_dir(), 'templates')
 
@@ -542,8 +524,7 @@ def get_log_page(log_id):
     template = jinja_env.get_template('log_template.html')
     jinja_env.filters['formatdatetime'] = _format_datetime
 
-    return _render_log_page(table_body, total_search_hits, state,
-                            log_id, jinja_env, template)
+    return _render_log_page(log_id, jinja_env, template)
 
 
 @app.route('/log/<log_id>/content', methods=['POST'])
@@ -693,12 +674,15 @@ def get_temporally_close_hits(es, state, size, filters, next, prev):
     return before, after, state, total_search_hits
 
 
-def _render_log_page(table_body, total_search_hits, state,
-                     log_id, jinja_env, template):
+def _render_log_page(log_id, jinja_env, template):
     """ Renders the log page """
     es = ElasticLogSearcher(log_id)
     es_metadata = ElasticsearchMetadata()
 
+    state, total_search_hits, table_body = _get_requested_log_lines(
+                                                log_id,
+                                                include_hyperlinks=False
+                                            )
     metadata = es_metadata.get(log_id)
 
     sources = es.get_unique_entries('src')
@@ -775,15 +759,6 @@ def search(log_id):
                                total_search_hits)
 
 
-def _get_total_hit_count(log_id, search_term, time_filters):
-    """ Obtains the search hit count, up to a maximum of 1000 """
-    es = ElasticLogSearcher(log_id)
-    state = ElasticLogState()
-    size = 1000
-
-    results = es.search(state, search_term, time_filters=time_filters, query_size=size)
-    return len(results['hits'])
-
 
 def _render_search_page(search_results, log_id, search_term, state, page,
                         total_search_hits):
@@ -842,30 +817,6 @@ def get_anchors(log_id):
     anchors = _read_paginated_anchor_file(log_id, page_num)
     return anchors
 
-
-def _get_kibana_base_url(log_id):
-    """
-    Creates a Kibana Base URL which could be used to create kibana urls
-    with any given query.
-    URL contains a term 'KIBANA_QUERY' which should be replaced with
-    the given search query.
-    URL contains defaults for selected columns to show in Kibana dashboard
-    and time filter to be within last 90 days.
-    """
-
-    KIBANA_HOST = app.config['KIBANA']['host']
-    KIBANA_PORT = app.config['KIBANA']['port']
-    # KIBANA defaults.
-    # TODO(Sourabh): Would be better to have this in config files
-    kibana_time_filter = "from:'1970-01-01T00:00:00.000Z',to:now"
-    kibana_selected_columns = 'src,level,msg'
-    kibana_base_url = ("http://{}:{}/app/kibana#/discover/?_g=(time:({}))&_a=(columns:!({}),index:{},"
-                  "query:(language:kuery,query:'KIBANA_QUERY'))").format(KIBANA_HOST,
-                                                                         KIBANA_PORT,
-                                                                         kibana_time_filter,
-                                                                         kibana_selected_columns,
-                                                                         log_id)
-    return kibana_base_url
 
 def _read_file(log_id, file_name, default={}):
     """

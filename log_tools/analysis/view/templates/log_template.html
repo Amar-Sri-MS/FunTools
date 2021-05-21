@@ -48,6 +48,7 @@
 
     window.onload = function() {
         loader = document.getElementById("loader");
+        log_table = document.getElementById("line_table");
         prev_button = document.getElementById("prev_button");
         next_button = document.getElementById("next_button");
 
@@ -57,11 +58,10 @@
             toggleElementDisplay(prev_button, false);
         }
 
-        //Get the button:
+        // Top button element
         const top_button = document.getElementById("top_button");
         // When the user scrolls down 50px from the top of the document, show the button
-        window.onscroll = () => scrollFunction()
-        function scrollFunction() {
+        window.onscroll = () => {
             if (document.body.scrollTop > 50 || document.documentElement.scrollTop > 50) {
                 top_button.style.display = "block";
             } else {
@@ -140,16 +140,14 @@
     }
 
     function clearMessageTable() {
-        var table = document.getElementById("line_table");
-        table.innerHTML = ""
+        log_table.innerHTML = "";
     }
 
     function updateMessageTable(filterData, isAppend) {
-        var table = document.getElementById("line_table");
         if (isAppend) {
-            table.innerHTML = table.innerHTML + filterData["content"];
+            log_table.innerHTML = log_table.innerHTML + filterData["content"];
         } else {
-            table.innerHTML = filterData["content"] + table.innerHTML;
+            log_table.innerHTML = filterData["content"] + log_table.innerHTML;
         }
         // Conditionally rendering pagination buttons
         var showPrevButton = filterData["state"].before != -1;
