@@ -43,14 +43,36 @@
     var startTime = "";
     var endTime = "";
     var loader, prev_button, next_button;
+    let search_results_container, search_results_body;
+    let search_box, clear_search_box;
+    // Toggle to show/hide search results box
+    let showSearchResultsTable = true;
 
     const LOG_VIEW_BASE_URL = "{{log_view_base_url}}";
+
+    /*
+        Maintians the state of the search request.
+        Contains the following fields:
+        query: search query
+        next: true to search next page and false for searching prev page
+        state: ES state of search results
+        results: list of search results
+        total_search_results: object containing total count of results
+    */
+    let searchPayload = {{search_results}};
+    searchPayload = searchPayload ? searchPayload : {};
 
     window.onload = function() {
         loader = document.getElementById("loader");
         log_table = document.getElementById("line_table");
         prev_button = document.getElementById("prev_button");
         next_button = document.getElementById("next_button");
+        search_box = document.getElementById("search");
+        clear_search_box = document.getElementById("clear_search_results");
+        search_results_container = document.getElementById("search_results");
+        search_results_body = document.getElementById("search_table_body");
+        search_prev_button = document.getElementById("search_prev_button");;
+        search_next_button = document.getElementById("search_next_button");;
 
         // Disable the Previous logs button if there are
         // no more logs to display
@@ -91,17 +113,17 @@
             }
         }
 
+        if (queryParams.get("search") && searchPayload.results && searchPayload.results.length > 0) {
+            const query = JSON.parse(searchPayload["query"]);
+            search_box.value = query;
+            updateSearchResults(searchPayload);
+        }
     }
 
     // When the user clicks on the button, scroll to the top of the document
     function onClickTopButton() {
         document.body.scrollTop = 0; // For Safari
         document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
-    }
-
-    function handleSearch(search) {
-        trackWebEvent("SEARCH_CLICKED", { "query": search, startTime, endTime });
-        window.location.href = `/log/{{log_id}}/search?query=${search}&time_start=${startTime}&time_end=${endTime}`;
     }
 
     function handleMessageFilter(element) {
@@ -241,6 +263,22 @@
         return JSON.stringify(allFilters);
     }
 
+    /*
+        Constructs a search string, for use in a request,
+        from search query and search state.
+    */
+    function buildSearchOption(searchPayload) {
+        if (searchPayload == null || (Object.keys(searchPayload).length === 0 && searchPayload.constructor === Object)) {
+            return null;
+        }
+        return JSON.stringify({
+            "query": JSON.stringify(search_box.value),
+            "page": searchPayload["page"],
+            "state": JSON.stringify(searchPayload["state"]),
+            "next": "next" in searchPayload ? searchPayload["next"] : true
+        });
+    }
+
     function loadPrev() {
         toggleElementDisplay(loader, true);
         var xhttp = new XMLHttpRequest();
@@ -266,21 +304,222 @@
 
     function onClickFilterLogs() {
         const filterString = buildFilterOption();
+        resetSearchState();
+        const searchString = buildSearchOption(searchPayload);
         // Filters not selected
         if (filterString === null) {
             return;
         }
 
-        let search_url = LOG_VIEW_BASE_URL;
         let params = new URLSearchParams(location.search);
         if (filterString != "") {
-            params.delete('filter');
-            params.append('filter', filterString);
-            search_url += `?${params.toString()}`;
+            params.set('filter', filterString);
         }
-        search_url += location.hash;
+        if (searchString != null && searchString != "") {
+            params.set("search", searchString);
+        }
+        params.delete("include");
+
+        const search_url = `${LOG_VIEW_BASE_URL}?${params.toString()}`;
         window.open(search_url, "_self");
-        trackWebEvent("FILTER_LOGS", data={filters: selectedFilters, startTime, endTime});
+        trackWebEvent("FILTER_LOGS");
+    }
+
+    function handleSearch() {
+        const searchText = search_box.value;
+        if (!searchText || searchText === "") {
+            alert("Search box is empty");
+            return;
+        }
+
+        toggleElementDisplay(loader, true);
+
+        // Updating the search term on searchPayload
+        searchPayload["query"] = searchText;
+
+        // Storing the prev state of search results in the
+        // url so that on refresh we get the same results.
+        const prevSearchState = searchPayload["state"];
+
+        const filterString = buildFilterOption();
+        const searchString = buildSearchOption(searchPayload);
+
+        // Filters not selected
+        if (filterString === null) {
+            return;
+        }
+
+        let params = new URLSearchParams(location.search);
+        if (filterString != "") {
+            params.set("filter", filterString);
+        }
+        if (searchString != "") {
+            params.set("search", searchString);
+        }
+
+        const search_url = `${LOG_VIEW_BASE_URL}/search?${params.toString()}${location.hash}`;
+
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                var data = JSON.parse(xhttp.responseText);
+                if (data) {
+                    searchPayload = data;
+                    updateSearchResults(data);
+                    const searchString = buildSearchOption({
+                        ...searchPayload,
+                        "state": prevSearchState
+                    });
+                    params.set("search", searchString);
+                    window.history.pushState(null, null, `?${params.toString()}#0`);
+                }
+                toggleElementDisplay(loader, false);
+            }
+        }
+
+        xhttp.open("GET", search_url);
+        xhttp.send();
+
+        trackWebEvent("SEARCH_CLICKED", { "payload": searchPayload });
+    }
+
+    function updateSearchResults(searchPayload) {
+        if (searchPayload.results.length === 0) {
+            toggleElementDisplay(search_results_container.parentElement, false);
+            clear_search_box.style.display = "none";
+            return;
+        }
+
+        toggleElementDisplay(search_results_container.parentElement, true);
+        clear_search_box.style.display = "inline-block";
+        const results = searchPayload.results.map(result => {
+            const source = result["_source"];
+            const timestamp = source["@timestamp"];
+
+            return `
+                <tr style="vertical-align: baseline" onclick="onClickSearchResult('${result["_id"]}', '${timestamp}')">
+                    <td>${source["src"]}</td>
+                    <td>${source["system_id"]}</td>
+                    <td>${timestamp}</td>
+                    <td>${source["level"]}</td>
+                    <td class="search_result">${source["msg"]}</td>
+                </tr>`;
+        });
+        search_results_body.innerHTML = results.join("\n");
+
+        // Conditionally rendering pagination buttons
+        const currentPage = searchPayload["page"];
+        const totalSearchResults = searchPayload["total_search_hits"]["value"];
+        const maxPages = Math.ceil(totalSearchResults/searchPayload["size"]);
+        const searchBefore = searchPayload["state"] && "before" in searchPayload["state"] ? searchPayload["state"].before : -1;
+        const showNextButton = currentPage < maxPages;
+        const showPrevButton = searchBefore != -1 && currentPage > 1;
+        search_next_button.firstElementChild.disabled = !showNextButton;
+        search_prev_button.firstElementChild.disabled = !showPrevButton;
+    }
+
+    /*
+        Getting logs surrounding to the clicked search result
+        and displaying them on the log_table.
+    */
+    function onClickSearchResult(docId, timestamp) {
+        const current_state = {
+            "before": timestamp,
+            "after": timestamp
+        };
+        let uri = `/log/{{log_id}}/content?next=true&prev=true&state=${JSON.stringify(current_state)}&include=${docId}`;
+        const filterString = buildFilterOption();
+
+        if (filterString === null) {
+            return null;
+        }
+        if (filterString != "") {
+            uri += "&filter=" + filterString;
+        }
+
+        toggleElementDisplay(loader, true);
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                const data = JSON.parse(xhttp.responseText);
+                if (data) {
+                    clearMessageTable();
+                    updateMessageTable(data, true);
+                    document.getElementById("0").scrollIntoView();
+                    state = data["state"];
+
+                    let params = new URLSearchParams(location.search);
+                    params.set("state", JSON.stringify(current_state));
+                    params.set("next", true);
+                    params.set("prev", true);
+                    params.set("include", docId);
+
+                    window.history.pushState(null, null, `?${params.toString()}#0`);
+                }
+                toggleElementDisplay(loader, false);
+            }
+        }
+
+        xhttp.open('POST', uri);
+        xhttp.send();
+    }
+
+    function onPaginateSearchResults(next=true) {
+        const currentPage = searchPayload["page"];
+        const updatedPage = next ? currentPage+1 : currentPage-1;
+        searchPayload["page"] = updatedPage;
+        searchPayload["next"] = next;
+
+        handleSearch();
+    }
+
+    function toggleClosingSearchResultsTable(element) {
+        showSearchResultsTable = !showSearchResultsTable;
+        toggleElementDisplay(search_results_container, showSearchResultsTable);
+
+        const arrowElement = element.firstElementChild;
+        if (showSearchResultsTable) {
+            arrowElement.firstElementChild.classList.remove("down");
+            arrowElement.firstElementChild.classList.add("up");
+        }
+        else {
+            arrowElement.firstElementChild.classList.remove("up");
+            arrowElement.firstElementChild.classList.add("down");
+        }
+    }
+
+    function onSubmitSearch() {
+        resetSearchState();
+        handleSearch();
+    }
+
+    function onKeyDownSearchText(event) {
+        // Enter clicked
+        if (event.keyCode === 13) {
+            onSubmitSearch();
+        }
+    }
+
+    function resetSearchState() {
+        if (!searchPayload) searchPayload = {};
+
+        searchPayload["page"] = 1;
+        searchPayload["next"] = true;
+        delete searchPayload["state"];
+    }
+
+    function clearSearchResults() {
+        resetSearchState();
+        search_box.value = "";
+        search_results_body.innerHTML = "";
+
+        toggleElementDisplay(search_results_container.parentElement, false);
+        clear_search_box.style.display = "none";
+
+        let params = new URLSearchParams(location.search);
+        params.delete("search");
+
+        window.history.pushState(null, null, `?${params.toString()}${location.hash}`);
     }
 
     </script>
@@ -313,13 +552,6 @@
         <div class="container">
             <h3>Filter logs</h3>
             <div>Total log entries: <b>{{total_entries}}</b></div>
-            <div class="filters_container">
-                <div>
-                    <input id="search" type="search" placeholder="Search..."/>
-                    <button class="btn" onclick="handleSearch(document.getElementById('search').value)">Search</button>
-                </div>
-                <span class="info">Enclose the search string with quotes if it contains special characters.</span>
-            </div>
             <div class="filters_container" style="display: flex;">
                 {% include 'source_filters.html' %}
                 <div style="display: flex; flex-direction: column;">
@@ -343,6 +575,44 @@
             </div>
             <div id="explore_button">
                 <button class="btn" onclick="onClickFilterLogs()">Filter logs</button>
+            </div>
+            <div class="filters_container">
+                <div>
+                    <input id="search" type="search" placeholder="Search..." onkeydown="onKeyDownSearchText(event)" />
+                    <button class="btn" onclick="onSubmitSearch();">Search</button>
+                    <button style="display: none;" id="clear_search_results" class="btn btn-warning" onclick="clearSearchResults();">Clear Results</button>
+                </div>
+                <span class="info">Enclose the search string with quotes if it contains special characters.</span>
+            </div>
+        </div>
+        <div class="container" style="display: none;">
+            <h3 style="display: flex; cursor: pointer;" onclick="toggleClosingSearchResultsTable(this)">Search results
+                <div id="arrow" style="padding: 0px 5px;">
+                    <span class="arrow up"></span>
+                </div>
+            </h3>
+            <div id="search_results">
+                <table class="log_entries">
+                    <thead>
+                        <tr>
+                            <th>Source</th>
+                            <th>System ID</th>
+                            <th>Timestamp</th>
+                            <th>Level</th>
+                            <th>Log message</th>
+                        </tr>
+                    </thead>
+                    <tbody id="search_table_body">
+                    </tbody>
+                </table>
+                <div style="display: flex; justify-content: space-evenly; padding: 10px;">
+                    <div class="pagination_button" id="search_prev_button">
+                        <button class="btn" data-web_event="PREVIOUS_SEARCH" onclick="onPaginateSearchResults(false)">Previous</button>
+                    </div>
+                    <div class="pagination_button" id="search_next_button">
+                        <button class="btn" data-web_event="NEXT_SEARCH" onclick="onPaginateSearchResults()">Next</button>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="container">

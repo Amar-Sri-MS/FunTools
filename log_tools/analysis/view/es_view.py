@@ -20,6 +20,7 @@ import jinja2
 
 from elasticsearch7 import Elasticsearch
 from flask import Flask
+from flask import jsonify
 from flask import request
 from pathlib import Path
 from requests.exceptions import HTTPError
@@ -309,7 +310,7 @@ class ElasticLogSearcher(object):
         must_queries = []
         if query_term is not None:
             must_queries.append({'query_string': {
-                'query': query_term
+                'query': f'"{query_term}"'
             }})
 
         # Source filters are treated as "terms" queries, which try to
@@ -683,6 +684,8 @@ def _render_log_page(log_id, jinja_env, template):
                                                 log_id,
                                                 include_hyperlinks=False
                                             )
+    search_payload = get_search_results(log_id)
+
     metadata = es_metadata.get(log_id)
 
     sources = es.get_unique_entries('src')
@@ -698,6 +701,7 @@ def _render_log_page(log_id, jinja_env, template):
     template_dict['state'] = state.to_json_str()
     template_dict['metadata'] = metadata
     template_dict['job_link'] = _get_actual_job_link(log_id)
+    template_dict['search_results'] = json.dumps(search_payload)
 
     result = template.render(template_dict, env=jinja_env)
     return result
@@ -706,81 +710,93 @@ def _render_log_page(log_id, jinja_env, template):
 @app.route('/log/<log_id>/search', methods=['GET'])
 def search(log_id):
     """
-    Returns an HTML snippet containing links to log entries matching
-    the search term.
+    Returns a JSON payload containing search results and search state.
     """
-    search_term = request.args.get('query')
-    page = request.args.get('page', 1)
-    page = int(page)
-    time_start = request.args.get('time_start', '')
-    time_end = request.args.get('time_end', '')
-    time_filters = [time_start, time_end]
+    search_str = request.args.get('search', None)
+    search_payload = {}
+    if not search_str:
+        return jsonify({
+            'error': 'Could not find the search query parameter'
+        }), 400
 
-    state_str = request.args.get('state', None)
+    search_payload = get_search_results(log_id)
+    return jsonify(search_payload)
+
+
+def get_search_results(log_id):
+    """
+    Returns a dict payload containing search results and search state.
+
+    Parameters on the flask request object control which lines are returned.
+    Request parameters includes search which contains:
+
+        next=true: Get up to 20 log lines with timestamps greater than the
+                   current state.
+        prev=true: Get up to 20 log lines with timestamps smaller than the
+                   current state.
+        state=dict: state object for searching
+
+    Returns a dict containing:
+        query: searched query
+        state: next state object for future searches
+        total_search_hits: object containing total hits value
+        results: list of log lines returned by ES
+        page: page number
+        size: count of results per page
+    """
+    es = ElasticLogSearcher(log_id)
+
+    search_str = request.args.get('search', None)
+    search_payload = {}
+    if not search_str:
+        return None
+
+    filters = {}
+    filter_str = request.args.get('filter', None)
+    if filter_str:
+        filters = json.loads(filter_str)
+
+    search_payload = json.loads(search_str)
+    query = search_payload.get('query')
+    page = int(search_payload.get('page', 1))
+    size = int(search_payload.get('size', 20))
+    next = search_payload.get('next', True)
+
+    if filters.get('text'):
+        if query:
+            query = f'{filters.get("text")} AND (msg:"{query}")'
+        else:
+            query = f'{filters.get("text")}'
+
+    source_filters = filters.get('sources', None)
+    time_filters = filters.get('time')
+
+    state_str = search_payload.get('state', None)
     state = ElasticLogState()
     state.from_json_str(state_str)
 
-    es = ElasticLogSearcher(log_id)
-    size = 20
+    if next:
+        results = es.search(state, query,
+                        source_filters, time_filters,
+                        query_size=size)
+    else:
+        results = es.search_backwards(state, query,
+                        source_filters, time_filters,
+                        query_size=size)
 
-    results = es.search(state, search_term, time_filters=time_filters, query_size=size)
-    hits = results['hits']
-    state = results['state']
+    search_results = results['hits']
+    state.before_sort_val, state.after_sort_val = es._get_delimiting_sort_values(search_results)
     total_search_hits = results['total_search_hits']
 
-    links = []
-    for hit in hits:
-        s = hit['_source']
-
-        # TODO (jimmy): urgh, we exposed the elastic state here.
-        hit_state = ElasticLogState()
-        hit_state.before_sort_val = hit['sort'][0]
-        hit_state.after_sort_val = hit['sort'][0]
-
-        # The #0 anchor is how we jump to the searched-for line when the link
-        # is selected.
-        #
-        # Also note that we use double quotes here in python and single quotes
-        # in the link HTML to avoid escape magic because of the state JSON
-        # string.
-        hit_state_str = hit_state.to_json_str()
-        link = ("<a href='/log/{}?"
-                "state={}&"
-                "next=true&"
-                "prev=true&"
-                "include={}#0'>{} {}</a>".format(log_id,
-                                                 hit_state_str,
-                                                 hit['_id'],
-                                                 s['@timestamp'],
-                                                 s['msg']))
-        links.append(link)
-
-    return _render_search_page(links, log_id, search_term, state, page,
-                               total_search_hits)
-
-
-
-def _render_search_page(search_results, log_id, search_term, state, page,
-                        total_search_hits):
-    """ Renders the search results page """
-    template_dict = {}
-    template_dict['body'] = ''.join(search_results)
-    template_dict['log_id'] = log_id
-    template_dict['query'] = search_term
-    template_dict['state'] = state.to_json_str()
-    template_dict['page'] = page
-    template_dict['page_entry_count'] = len(search_results)
-    template_dict['search_hits'] = total_search_hits
-    template_dict['job_link'] = _get_actual_job_link(log_id)
-
-    dir = os.path.join(_get_script_dir(), 'templates')
-    jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(dir),
-                             trim_blocks=True,
-                             lstrip_blocks=True)
-    template = jinja_env.get_template('search_template.html')
-
-    result = template.render(template_dict, env=jinja_env)
-    return result
+    return {
+        **search_payload,
+        'results': search_results,
+        'total_search_hits': total_search_hits,
+        'state': state.to_dict(),
+        'page': page,
+        'size': size,
+        'next': next
+    }
 
 
 @app.route('/log/<log_id>/dashboard', methods=['GET'])
