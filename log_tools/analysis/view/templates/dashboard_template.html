@@ -206,12 +206,12 @@
 
 
     function onClickExploreLogs() {
-        const filterQuery = buildSourceFilterQuery();
-        if (filterQuery === null) {
-            return;
+        const selectedSources = getSelectedSources();
+        if (Object.keys(selectedSources).length === 0) {
+            return null;
         }
         const filters = {
-            "text": filterQuery
+            "sources": selectedSources
         };
         const filterString = JSON.stringify(filters);
 

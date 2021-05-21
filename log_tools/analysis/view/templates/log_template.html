@@ -226,24 +226,18 @@
      * from current filter values.
      */
     function buildFilterOption() {
-        var allFilters = {};
-        const filterQuery = buildSourceFilterQuery()
-        if (filterQuery === null) {
+        let allFilters = {};
+        allFilters["sources"] = getSelectedSources();
+
+        if (Object.keys(allFilters["sources"]).length === 0) {
             return null;
         }
 
-        allFilters["text"] = filterQuery;
         if (textFilter != "") {
-            allFilters["text"] = `(${allFilters["text"]}) AND (${textFilter})`;
+            allFilters["text"] = `(${textFilter})`;
         }
 
-        // We are treating the source filter as query
-        // filter because of it's hierarchical structure.
-        allFilters["sources"] = "";
-
-        datetimeFilters = [];
-        datetimeFilters.push(startTime);
-        datetimeFilters.push(endTime);
+        datetimeFilters = [startTime, endTime];
         allFilters["time"] = datetimeFilters;
 
         return JSON.stringify(allFilters);

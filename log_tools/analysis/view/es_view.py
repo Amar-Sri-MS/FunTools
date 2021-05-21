@@ -235,9 +235,10 @@ class ElasticLogSearcher(object):
         If the query_term is unspecified (None), this will match against any
         log entry.
 
-        The source_filters parameter is a list of sources to filter on. If a
-        message source does not match any of the values in the list then
-        the message will be omitted.
+        The source_filters parameter is an object containing hierarchical data of
+        system_type, system_id and sources to filter on. If system_type, system_id
+        and source of the message does not match any of the values in the object
+        then the message will be omitted from the result.
 
         The time_filters parameter is a two-element list containing a lower and
         upper bound (both inclusive). Time is specified in ISO8601 format
@@ -289,6 +290,32 @@ class ElasticLogSearcher(object):
         the filters.
         """
 
+        def _generate_match_query(field, value):
+            return {
+                'match': {
+                    field: value
+                }
+            }
+
+        def _generate_must_query(must_list):
+            if not must_list or len(must_list) == 0:
+                return {}
+            return {
+                'bool': {
+                    'must': must_list
+                }
+            }
+
+        def _generate_should_query(should_list):
+            if not should_list or len(should_list) == 0:
+                return {}
+            return {
+                'bool': {
+                    'should': should_list,
+                    'minimum_should_match': 1
+                }
+            }
+
         # We treat the text filter as a query string, which is Lucerne
         # query DSL. The text filter is capable of complex filtering and
         # search (this will double up as our "advanced" search function)
@@ -301,11 +328,29 @@ class ElasticLogSearcher(object):
         # Source filters are treated as "terms" queries, which try to
         # match exactly against all provided values.
         filter_queries = []
-        if source_filters:
-            term = {'terms': {
-                'src': source_filters
-            }}
-            filter_queries.append(term)
+        if source_filters and len(source_filters) > 0:
+            system_type_list = []
+            for system_type, system_ids in source_filters.items():
+                system_id_list = []
+                for system_id, sources in system_ids.items():
+                    source_list = [_generate_match_query('src', source)
+                                   for source in sources]
+                    source_query = _generate_should_query(source_list)
+
+                    system_id_query = _generate_must_query([
+                        _generate_match_query('system_id', system_id),
+                        source_query
+                    ])
+                    system_id_list.append(system_id_query)
+
+                system_type_query = _generate_must_query([
+                    _generate_match_query('system_type', system_type),
+                    _generate_should_query(system_id_list)
+                ])
+                system_type_list.append(system_type_query)
+
+            compound_source_queries = _generate_should_query(system_type_list)
+            filter_queries.append(compound_source_queries)
 
         # Time filters are range filters
         if time_filters:
@@ -627,7 +672,7 @@ def get_temporally_close_hits(es, state, size, filters, next, prev):
     total_search_hits = 0
 
     query_string = filters.get('text')
-    source_filters = filters.get('sources', [])
+    source_filters = filters.get('sources', {})
     time_filters = filters.get('time')
 
     # The default is to return "next" results if both are unspecified
@@ -985,7 +1030,7 @@ def recent_logs(log_id):
     return result
 
 
-def _get_recent_logs(log_id, size, sources=[], log_levels=None, time_filters=None):
+def _get_recent_logs(log_id, size, sources={}, log_levels=None, time_filters=None):
     """
     Returns table body of recent log entries.
 
