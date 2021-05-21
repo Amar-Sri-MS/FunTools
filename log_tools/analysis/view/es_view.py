@@ -310,7 +310,7 @@ class ElasticLogSearcher(object):
         must_queries = []
         if query_term is not None:
             must_queries.append({'query_string': {
-                'query': f'"{query_term}"'
+                'query': query_term
             }})
 
         # Source filters are treated as "terms" queries, which try to
