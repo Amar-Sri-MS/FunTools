@@ -286,7 +286,7 @@ class ElasticLogSearcher(object):
             }
 
         def _generate_must_query(must_list):
-            if not must_list or len(must_list) == 0:
+            if not must_list:
                 return {}
             return {
                 'bool': {
@@ -295,7 +295,7 @@ class ElasticLogSearcher(object):
             }
 
         def _generate_should_query(should_list):
-            if not should_list or len(should_list) == 0:
+            if not should_list:
                 return {}
             return {
                 'bool': {
@@ -313,8 +313,54 @@ class ElasticLogSearcher(object):
                 'query': query_term
             }})
 
-        # Source filters are treated as "terms" queries, which try to
-        # match exactly against all provided values.
+        # Source filters are hierarchical (system_type -> system_id -> src).
+        # In ES, should queries are equivalent to performing OR query and
+        # must queries are for performing AND queries.
+        #
+        # The given source filters is a dict which looks liks this:
+        # {
+        #   system_type: {
+        #       system_id: {
+        #           [src]
+        #       }
+        #   }
+        # }
+        #
+        # The query is: [(system_type) AND [(sytem_id) AND ([src])]]
+        # which gets converted into the following filter query:
+        # {
+        # 'bool': {
+        #   'should': [{
+        #       'bool': {
+        #           'must': [{
+        #               'match': {'system_type': 'cluster'}
+        #           },{
+        #               'bool': {
+        #                   'should': [{
+        #                       'bool': {
+        #                           'must': [{
+        #                               'match': {'system_id': 'node-1-cab18-fc-04'}
+        #                           },{
+        #                           'bool': {
+        #                               'should': [
+        #                                   {'match': {'src': 'apigateway'}},
+        #                                   {'match': {'src': 'dataplacement'}},
+        #                                   {'match': {'src': 'discovery'}}
+        #                               ]
+        #                           }
+        #                       }
+        #                   ]}
+        #               },{
+        #                   'bool': {
+        #                       'must': [{
+        #                           'match': {'system_id': 'node-3-cab18-fc-06'}
+        #                       },{
+        #                       'bool': {
+        #                           'should': [{'match': {'src': 'apigateway'}}]
+        #                       }
+        #                   }]}
+        # }]}}]}}]}}
+
         filter_queries = []
         if source_filters and len(source_filters) > 0:
             system_type_list = []
