@@ -114,7 +114,7 @@
             }
         }
 
-        if (queryParams.get("search") && searchPayload.results && searchPayload.results.length > 0) {
+        if (queryParams.get("search")) {
             const query = decodeURIComponent(searchPayload["query"]);
             search_box.value = query;
             updateSearchResults(searchPayload);
@@ -404,15 +404,15 @@
 
         const currentPage = searchPayload["page"];
         const totalSearchResults = searchPayload["total_search_hits"]["value"];
-        let maxPages = Math.ceil(totalSearchResults/searchPayload["size"]);
-
+        const maxPages = Math.ceil(totalSearchResults/searchPayload["size"]);
+        let maxPagesStr = maxPages;
         let resultCountStr = totalSearchResults;
         if (searchPayload["total_search_hits"]["relation"] === "gte") {
             resultCountStr += "+";
-            maxPages += "+";
+            maxPagesStr += "+";
         }
 
-        search_page_info.innerHTML = `Page ${currentPage} out of ${maxPages} (${resultCountStr} results)`;
+        search_page_info.innerHTML = `Page ${currentPage} out of ${maxPagesStr} (${resultCountStr} results)`;
 
         // Conditionally rendering pagination buttons
         const searchBefore = searchPayload["state"] && "before" in searchPayload["state"] ? searchPayload["state"].before : -1;
