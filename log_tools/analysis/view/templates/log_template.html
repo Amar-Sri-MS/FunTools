@@ -554,7 +554,7 @@
             </button>
         </div>
         <div class="container">
-            <h3>Filter logs</h3>
+            <h3>Apply Filters</h3>
             <div>Total log entries: <b>{{total_entries}}</b></div>
             <div class="filters_container" style="display: flex;">
                 {% include 'source_filters.html' %}
@@ -580,6 +580,9 @@
             <div id="explore_button">
                 <button class="btn" onclick="onClickFilterLogs()">Filter logs</button>
             </div>
+        </div>
+        <div class="container">
+            <h3>Perform Search</h3>
             <div class="filters_container">
                 <div>
                     <input id="search" type="search" placeholder="Search..." onkeydown="onKeyDownSearchText(event)" />
@@ -588,39 +591,40 @@
                 </div>
                 <span class="info">Enclose the search string with quotes if it contains special characters.</span>
             </div>
-        </div>
-        <div class="container" style="display: none;">
-            <h3 style="display: flex; cursor: pointer;" onclick="toggleClosingSearchResultsTable(this)">Search results
-                <div id="arrow" style="padding: 0px 5px;">
-                    <span class="arrow up"></span>
-                </div>
-            </h3>
-            <div id="search_results">
-                <table class="log_entries">
-                    <thead>
-                        <tr>
-                            <th>Source</th>
-                            <th>System ID</th>
-                            <th>Timestamp</th>
-                            <th>Level</th>
-                            <th>Log message</th>
-                        </tr>
-                    </thead>
-                    <tbody id="search_table_body">
-                    </tbody>
-                </table>
-                <div style="display: flex; justify-content: space-evenly; padding: 10px;">
-                    <div class="pagination_button" id="search_prev_button">
-                        <button class="btn" data-web_event="PREVIOUS_SEARCH" onclick="onPaginateSearchResults(false)">Previous</button>
+            <div style="display: none;">
+                <h3 style="display: flex; cursor: pointer;" onclick="toggleClosingSearchResultsTable(this)">Search results
+                    <div id="arrow" style="padding: 0px 5px;">
+                        <span class="arrow up"></span>
                     </div>
-                    <div id="search_page_info"></div>
-                    <div class="pagination_button" id="search_next_button">
-                        <button class="btn" data-web_event="NEXT_SEARCH" onclick="onPaginateSearchResults()">Next</button>
+                </h3>
+                <div id="search_results">
+                    <table class="log_entries">
+                        <thead>
+                            <tr>
+                                <th>Source</th>
+                                <th>System ID</th>
+                                <th>Timestamp</th>
+                                <th>Level</th>
+                                <th>Log message</th>
+                            </tr>
+                        </thead>
+                        <tbody id="search_table_body">
+                        </tbody>
+                    </table>
+                    <div style="display: flex; justify-content: space-evenly; padding: 10px;">
+                        <div class="pagination_button" id="search_prev_button">
+                            <button class="btn" data-web_event="PREVIOUS_SEARCH" onclick="onPaginateSearchResults(false)">Previous</button>
+                        </div>
+                        <div id="search_page_info"></div>
+                        <div class="pagination_button" id="search_next_button">
+                            <button class="btn" data-web_event="NEXT_SEARCH" onclick="onPaginateSearchResults()">Next</button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="container">
+            <h3>View Logs</h3>
             <div class="content">
                 {% if total_search_hits.relation == "gte" %}
                     {% set total_hits = total_search_hits.value|string+'+' %}
