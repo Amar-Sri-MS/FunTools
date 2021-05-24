@@ -1044,7 +1044,8 @@ def _get_log_level_stats(log_id, sources=[], log_levels=None, time_filters=None)
         keywords = [f'"{keyword}"' for keyword in keyword_for_level[level]]
         keyword_query_terms = ' OR '.join(keywords)
         log_level_query = f'{query} (level:({keyword_query_terms}) OR msg:({keyword_query_terms}))'
-        log_view_url = f'{log_view_base_url}/search?query={quote_plus(log_level_query)}'
+        search_query = { 'query': log_level_query.strip() }
+        log_view_url = f'{log_view_base_url}?search={quote(json.dumps(search_query))}'
         document_counts[level] = {
             'order': idx,
             'count': es.get_document_count(keyword_query_terms, sources, time_filters),
