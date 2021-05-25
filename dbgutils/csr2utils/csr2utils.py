@@ -94,9 +94,11 @@ class Field(object):
     def offset(self):
         return self.__lsb
 
+    def msb(self):
+        return self.__msb
+
     def name(self):
         return self.__name
-
 
 class RegisterValue(object):
     """
@@ -138,11 +140,11 @@ class RegisterValue(object):
     def _list_field_vals(self):
         fields_and_vals = []
         for fld in self.reg.fields:
-            fld_offset = fld.lsb
-            fld_width = fld.msb - fld.lsb + 1
+            fld_offset = fld.offset()
+            fld_width = fld.msb() - fld.offset() + 1
             val_array = csr_get_field(fld_offset, fld_width, self.word_array)
             val = hex_word_dump(val_array)
-            fields_and_vals.append((fld.name, val))
+            fields_and_vals.append((fld.name(), val))
 
         return fields_and_vals
 
@@ -505,7 +507,7 @@ def load_csr_spec(chip_type):
     """
 
     if chip_type not in csr2_chip_types:
-        logger.err('Invalid chip type: {}'.format(chip_type))
+        logger.error('Invalid chip type: {}'.format(chip_type))
         sys.exit(1)
 
     global bundle
@@ -542,7 +544,7 @@ def csr2_peek(csr_path):
     """
 
     if not csr_path:
-        logger.err('Invalid(Null) csr path argument!')
+        logger.error('Invalid(Null) csr path argument!')
         return
 
     finder = RegisterFinder(bundle)
@@ -606,11 +608,11 @@ def csr2_poke(csr_path, values):
     """
 
     if not csr_path:
-        logger.err('Invalid(Null) csr path argument!')
+        logger.error('Invalid(Null) csr path argument!')
         return
 
     if not values or len(values) == 0:
-        logger.err('Invalid(Null or empty list) csr value argument argument!')
+        logger.error('Invalid(Null or empty list) csr value argument argument!')
         return
 
     finder = RegisterFinder(bundle)
@@ -678,9 +680,6 @@ def csr2_find(args):
         return
 
 def csr2_list(args):
-    if not init_bundle_lazily():
-        return
-
     csr_name = args.csr[0]
 
     finder = RegisterFinder(bundle)
