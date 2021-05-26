@@ -79,11 +79,24 @@
             </div>
             <div class="separator"></div>
             <div id="anchors_container">
-                <h3>Interesting events from FunOS logs</h3>
-                <!-- <div>
-                    <input type="checkbox" id="failedAnchors" value="showFailedAnchors" onchange="toggleShowOnlyFailedAnchors(this)" checked>
-                    <label for="failedAnchors">Show only failed events?</label><br>
-                </div> -->
+                <h3>Interesting events from
+                    <select name="sources" id="anchor_sources" onchange="onSelectSourceForAnchors(this)">
+                        <option value="all" selected>All</option>
+                        {% for source in sources %}
+                            <option value="{{source}}">{{source}}</option>
+                        {% endfor %}
+                    </select>
+                logs</h3>
+                <div style="display: flex; align-items: center;">
+                    <div>
+                        <input id="search" type="search" placeholder="Search..." onkeydown="onKeyDownSearchText(event)" />
+                        <button class="btn" onclick="onSubmitSearch();">Search</button>
+                    </div>
+                    <div style="margin: 0px 20px;">
+                        <input type="checkbox" id="failedAnchors" value="showFailedAnchors" onchange="toggleShowOnlyFailedAnchors(this)" checked>
+                        <label for="failedAnchors">Show only failed events?</label><br>
+                    </div>
+                </div>
                 <div class="log_entries scrollable">
                     <table>
                         <thead>
@@ -98,7 +111,7 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="anchors_button_container">
+                <div id="anchors_button_container">
                     <div>
                         <button class="btn" disabled id="anchors_first" onclick="onPaginateAnchors(this)">First</button>
                         <button class="btn" disabled id="anchors_prev" onclick="onPaginateAnchors(this)">Previous</button>
@@ -174,11 +187,13 @@
     let selectedSourceForRecentLogs = "all", selectedLevelForRecentLogs = "{{log_level_for_recent_logs}}";
 
     let analyticsData = {{analytics_data}};
-    let selectedSourceForAnchors = "all", showOnlyFailedAnchors = false;
-    const anchorTableBodyElement = document.getElementById('anchors');
-    const duplicateTableBodyElement = document.getElementById('duplicates_body');
+    let selectedSourceForAnchors = "all", showOnlyFailedAnchors = true, searchQueryForAnchor = "";
+    const anchorTableBodyElement = document.getElementById("anchors");
+    const searchBoxForAnchors = document.getElementById("search");
+    const duplicateTableBodyElement = document.getElementById("duplicates_body");
 
-    let anchorsPage = 0;
+    let anchorsPage = 0, fetchNextAnchors = true;
+    const anchorsButtonContainer = document.getElementById("anchors_button_container");
     const anchorsPrev = document.getElementById("anchors_prev");
     const anchorsNext = document.getElementById("anchors_next");
     const anchorsFirst = document.getElementById("anchors_first");
@@ -308,15 +323,47 @@
         recentLogsElement.innerHTML = logs;
     }
 
+    function onSelectSourceForAnchors(sourceElement) {
+        selectedSourceForAnchors = sourceElement.value;
+        resetAnchorState();
+        fetchAnchors();
+    }
+
     function toggleShowOnlyFailedAnchors(element) {
         showOnlyFailedAnchors = element.checked;
-        updateAnchors();
+        resetAnchorState();
+        fetchAnchors();
         trackWebEvent("TOGGLE_SHOW_FAILED_ANCHORS", { flag: element.checked });
+    }
+
+    function onKeyDownSearchText(event) {
+        // Enter clicked
+        if (event.keyCode === 13) {
+            onSubmitSearch();
+        }
+    }
+
+    function onSubmitSearch() {
+        searchQueryForAnchor = searchBoxForAnchors.value;
+        resetAnchorState();
+        fetchAnchors();
     }
 
     function onPaginateAnchors(buttonEl) {
         anchorsPage = parseInt(buttonEl.dataset.page);
-        // Fetch recent logs for the selected level source
+        fetchNextAnchors = buttonEl.id === "anchors_next";
+        fetchAnchors();
+        trackWebEvent("ANCHORS_PAGINATE", { page: anchorsPage });
+    }
+
+    function resetAnchorState() {
+        anchorsPage = 0;
+        searchBoxForAnchors.value = "";
+        delete analyticsData["state"];
+    }
+
+    function fetchAnchors() {
+        // Fetch anchors for the selected source or query or page
         let xhttp = new XMLHttpRequest();
         xhttp.onreadystatechange = function() {
             if (this.readyState == 4 && this.status == 200) {
@@ -326,56 +373,109 @@
                         ...analyticsData,
                         ...JSON.parse(data)
                     }
+                    searchBoxForAnchors.value = analyticsData["query"] ? "query" in analyticsData : "";
                     updateAnchors();
                 }
             }
         }
 
-        let uri = `${window.location.href}/anchors?page=${anchorsPage}`;
+        let params = new URLSearchParams();
+        params.set("page", anchorsPage);
+        params.set("next", true);
+        params.set("source", selectedSourceForAnchors);
+        params.set("failed", showOnlyFailedAnchors);
+
+        if (searchQueryForAnchor !== "") {
+            params.set("query", searchQueryForAnchor);
+        }
+
+        // Add state for fetching anchors from ES
+        if (Object.keys(analyticsData["anchors_meta"]).length === 0 && anchorsPage !== 0) {
+            params.set("next", fetchNextAnchors);
+            params.set("prev", !fetchNextAnchors);
+            params.set("state", JSON.stringify(analyticsData["state"]));
+        }
+        const uri = `${window.location.href}/anchors?${params.toString()}`;
         xhttp.open('GET', uri);
         xhttp.send();
-        trackWebEvent("ANCHORS_PAGINATE", { page: anchorsPage });
     }
 
     function updateAnchors() {
         let tableRows = [];
-        for (const anchor of analyticsData['anchors']) {
-            if ((showOnlyFailedAnchors && !anchor['is_failure'])
-                || (selectedSourceForAnchors !== "all" && anchor['source'] !== selectedSourceForAnchors)) {
-                continue;
+        let totalPages, totalResults, totalResultsStr;
+        let showPrevButton = false, showNextButton = false, showLastButton = false;
+        // Anchors fetched from files
+        if (Object.keys(analyticsData["anchors_meta"]).length !== 0) {
+            for (const anchor of analyticsData["anchors"]) {
+                if ((showOnlyFailedAnchors && !anchor["is_failure"])
+                    || (selectedSourceForAnchors !== "all" && anchor["source"] !== selectedSourceForAnchors)) {
+                    continue;
+                }
+
+                tableRows.push(
+                    `<tr>
+                        <td>${anchor["source"]}</td>
+                        <td>${anchor["system_id"]}</td>
+                        <td>${anchor["datetime"]}</td>
+                        <td><a href="${anchor['link']}" target="_blank" data-web_event="ANCHOR_CLICKED">${anchor["description"]}</a></td>
+                    </tr>`
+                );
             }
 
-            tableRows.push(
-                `<tr>
-                    <td>${anchor['source']}</td>
-                    <td>${anchor['system_id']}</td>
-                    <td>${anchor['datetime']}</td>
-                    <td><a href="${anchor['link']}" target="_blank" data-web_event="ANCHOR_CLICKED">${anchor['description']}</a></td>
-                </tr>`
-            );
+            totalPages = analyticsData["anchors_meta"]["total_pages"];
+            showPrevButton = analyticsData["previous_anchors"];
+            showNextButton = analyticsData["next_anchors"];
+            showLastButton = true;
+            searchBoxForAnchors.parentElement.parentElement.style.display = "none";
+        }
+        // Anchors fetched from ES
+        else {
+            for (const anchor of analyticsData["anchors"]) {
+                tableRows.push(
+                    `<tr>
+                        <td>${anchor["src"]}</td>
+                        <td>${anchor["system_id"]}</td>
+                        <td>${anchor["@timestamp"]}</td>
+                        <td><a href="${anchor['link']}" target="_blank" data-web_event="ANCHOR_CLICKED">${anchor["anchor_text"]}</a></td>
+                    </tr>`
+                );
+
+                totalResults = "value" in analyticsData["total_anchors"] ? analyticsData["total_anchors"]["value"] : 0;
+                totalResultsStr = totalResults ? analyticsData["total_anchors"]["relation"] === "eq" : `${totalResults}+`;
+                const sizePerPage = "size" in analyticsData ? analyticsData["size"] : 50;
+                totalPages = Math.ceil(totalResults/sizePerPage);
+                const searchBefore = analyticsData["state"] && "before" in analyticsData["state"] ? analyticsData["state"].before : -1;
+                showNextButton = (anchorsPage+1) < totalPages;
+                showPrevButton = searchBefore != -1 && (anchorsPage+1) > 1;
+            }
         }
 
-        const total_pages = analyticsData["anchors_meta"]["total_pages"];
-
         // Updating the pagination buttons of anchors panel
-        anchorsPrev.disabled = !analyticsData["previous_anchors"];
+        anchorsPrev.disabled = !showPrevButton;
         anchorsPrev.dataset.page = anchorsPage - 1;
-        anchorsNext.disabled = !analyticsData["next_anchors"];
+        anchorsNext.disabled = !showNextButton;
         anchorsNext.dataset.page = anchorsPage + 1;
         anchorsFirst.disabled = anchorsPage === 0;
         anchorsFirst.dataset.page = 0;
-        anchorsLast.disabled = anchorsPage === (total_pages-1);
-        anchorsLast.dataset.page = total_pages-1;
+        anchorsLast.disabled = anchorsPage === (totalPages-1);
+        anchorsLast.style.display = showLastButton ? "inline-block" : "none";
+        anchorsLast.dataset.page = totalPages-1;
 
+        let anchorPageInfo;
         if (analyticsData["anchors"].length > 0) {
-            anchorsPageEl.innerText = `Page ${anchorsPage+1} out of ${total_pages > 0 ? total_pages : 'NULL'}`;
+            anchorPageInfo = `Page ${anchorsPage+1} out of ${totalPages > 0 ? totalPages : 'NULL'}`;
         }
+        if (totalResults) {
+            anchorPageInfo += `(${totalResults} results)`;
+        }
+        anchorsPageEl.innerText = anchorPageInfo;
+        anchorsButtonContainer.style.display = "flex";
 
         if (tableRows.length === 0) {
-            anchorTableBodyElement.innerHTML = `<div>No results</div>`;
+            anchorTableBodyElement.innerHTML = "<div>No results</div>";
             return;
         }
-        anchorTableBodyElement.innerHTML = tableRows.join('\n');
+        anchorTableBodyElement.innerHTML = tableRows.join("\n");
     }
 
     function updateDuplicates() {
