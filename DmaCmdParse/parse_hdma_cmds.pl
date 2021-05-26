@@ -385,7 +385,7 @@ while (1) {
             if ($cmd_opc == 0) {
                 if ($cmd_tgt == 0) {
                     my $bm_flags = bit_slice(1, 16, 8, @cmdlist_qword);
-                    my $len = bit_slice(1, 0, 8, @cmdlist_qword);
+                    my $len = bit_slice(1, 0, 16, @cmdlist_qword);
                     my $addr = (bit_slice(2, 0, 16, @cmdlist_qword) << 32) + (bit_slice(3, 0, 32, @cmdlist_qword));
                     my $ins_str = ins2str($cmd_ins);
                     printf("CMD %0d: GTR F1 read\n", $cmd_num);
