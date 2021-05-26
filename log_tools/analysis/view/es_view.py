@@ -980,7 +980,7 @@ def _search_anchors(log_id, size=50):
     sources = request.args.getlist('source')
     page = int(request.args.get('page', 0))
     next = json.loads(request.args.get('next', 'true'))
-    only_failed = json.loads(request.args.get('failed', 'true'))
+    only_failed = json.loads(request.args.get('failed', 'false'))
 
     state_str = request.args.get('state', None)
     state = ElasticLogState()
