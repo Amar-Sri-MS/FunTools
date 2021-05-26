@@ -24,7 +24,8 @@ from flask import jsonify
 from flask import request
 from pathlib import Path
 from requests.exceptions import HTTPError
-from urllib.parse import quote_plus
+from urllib.parse import quote, quote_plus
+from urllib.parse import unquote, unquote_plus
 
 from elastic_metadata import ElasticsearchMetadata
 from ingester import ingester_page
@@ -286,7 +287,7 @@ class ElasticLogSearcher(object):
             }
 
         def _generate_must_query(must_list):
-            if not must_list or len(must_list) == 0:
+            if not must_list:
                 return {}
             return {
                 'bool': {
@@ -295,7 +296,7 @@ class ElasticLogSearcher(object):
             }
 
         def _generate_should_query(should_list):
-            if not should_list or len(should_list) == 0:
+            if not should_list:
                 return {}
             return {
                 'bool': {
@@ -313,32 +314,101 @@ class ElasticLogSearcher(object):
                 'query': query_term
             }})
 
-        # Source filters are treated as "terms" queries, which try to
-        # match exactly against all provided values.
+        # Source filters are either simple (list of src) or
+        # hierarchical (system_type -> system_id -> src).
+        # In ES, should queries are equivalent to performing OR query and
+        # must queries are for performing AND queries.
+        #
+        # The hierarchical source filters is a dict which looks liks this:
+        # {
+        #   system_type: {
+        #       system_id: {
+        #           [src]
+        #       }
+        #   }
+        # }
+        #
+        # The query is: [(system_type) AND [(sytem_id) AND ([src])]]
+        # which gets converted into the following filter query:
+        # {
+        # 'bool': {
+        #   'should': [{
+        #       'bool': {
+        #           'must': [{
+        #               'match': {'system_type': 'cluster'}
+        #           },{
+        #               'bool': {
+        #                   'should': [{
+        #                       'bool': {
+        #                           'must': [{
+        #                               'match': {'system_id': 'node-1-cab18-fc-04'}
+        #                           },{
+        #                           'bool': {
+        #                               'should': [
+        #                                   {'match': {'src': 'apigateway'}},
+        #                                   {'match': {'src': 'dataplacement'}},
+        #                                   {'match': {'src': 'discovery'}}
+        #                               ]
+        #                           }
+        #                       }
+        #                   ]}
+        #               },{
+        #                   'bool': {
+        #                       'must': [{
+        #                           'match': {'system_id': 'node-3-cab18-fc-06'}
+        #                       },{
+        #                       'bool': {
+        #                           'should': [{'match': {'src': 'apigateway'}}]
+        #                       }
+        #                   }]}
+        # }]}}]}}]}}
+        #
+        # A simple source filter is a list of src which looks liks this:
+        # ['funos']
+        #
+        # The query is: src:('funos' OR 'storage_agent')
+        # which gets converted into the following filter query:
+        # {
+        #  'bool': {
+        #       'should': [
+        #           {'match': {'src': 'funos'}},
+        #           {'match': {'src': 'apigateway'}}
+        #       ]
+        #   }
+        # }
+
         filter_queries = []
         if source_filters and len(source_filters) > 0:
-            system_type_list = []
-            for system_type, system_ids in source_filters.items():
-                system_id_list = []
-                for system_id, sources in system_ids.items():
-                    source_list = [_generate_match_query('src', source)
-                                   for source in sources]
-                    source_query = _generate_should_query(source_list)
+            if type(source_filters) == dict:
+                system_type_list = []
+                for system_type, system_ids in source_filters.items():
+                    system_id_list = []
+                    for system_id, sources in system_ids.items():
+                        source_list = [_generate_match_query('src', source)
+                                    for source in sources]
+                        source_query = _generate_should_query(source_list)
 
-                    system_id_query = _generate_must_query([
-                        _generate_match_query('system_id', system_id),
-                        source_query
+                        system_id_query = _generate_must_query([
+                            _generate_match_query('system_id', system_id),
+                            source_query
+                        ])
+                        system_id_list.append(system_id_query)
+
+                    system_type_query = _generate_must_query([
+                        _generate_match_query('system_type', system_type),
+                        _generate_should_query(system_id_list)
                     ])
-                    system_id_list.append(system_id_query)
+                    system_type_list.append(system_type_query)
 
-                system_type_query = _generate_must_query([
-                    _generate_match_query('system_type', system_type),
-                    _generate_should_query(system_id_list)
-                ])
-                system_type_list.append(system_type_query)
+                compound_source_queries = _generate_should_query(system_type_list)
+                filter_queries.append(compound_source_queries)
 
-            compound_source_queries = _generate_should_query(system_type_list)
-            filter_queries.append(compound_source_queries)
+            elif type(source_filters) == list:
+                source_query_list = [_generate_match_query('src', source)
+                                     for source in source_filters]
+                source_query = _generate_should_query(source_query_list)
+                print(source_query)
+                filter_queries.append(source_query)
 
         # Time filters are range filters
         if time_filters:
@@ -757,7 +827,7 @@ def get_search_results(log_id):
         filters = json.loads(filter_str)
 
     search_payload = json.loads(search_str)
-    query = search_payload.get('query')
+    query = unquote_plus(search_payload.get('query'))
     page = int(search_payload.get('page', 1))
     size = int(search_payload.get('size', 20))
     next = search_payload.get('next', True)
@@ -1072,7 +1142,8 @@ def _get_log_level_stats(log_id, sources=[], log_levels=None, time_filters=None)
         keywords = [f'"{keyword}"' for keyword in keyword_for_level[level]]
         keyword_query_terms = ' OR '.join(keywords)
         log_level_query = f'{query} (level:({keyword_query_terms}) OR msg:({keyword_query_terms}))'
-        log_view_url = f'{log_view_base_url}/search?query={quote_plus(log_level_query)}'
+        search_query = { 'query': log_level_query.strip() }
+        log_view_url = f'{log_view_base_url}?search={quote(json.dumps(search_query))}'
         document_counts[level] = {
             'order': idx,
             'count': es.get_document_count(keyword_query_terms, sources, time_filters),

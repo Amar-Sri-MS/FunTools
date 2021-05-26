@@ -505,8 +505,8 @@
             return LOG_VIEW_BASE_URL;
         }
 
-        let query = encodeURI(`src:(${sources.join(" or ")})`);;
-        const log_view_url = `${LOG_VIEW_BASE_URL}/search?query=${query}`;
+        const query = JSON.stringify({"query": `src: ${sources.join(" OR ")}`});
+        const log_view_url = `${LOG_VIEW_BASE_URL}?search=${encodeURI(query)}`;
         return log_view_url;
     }
 
