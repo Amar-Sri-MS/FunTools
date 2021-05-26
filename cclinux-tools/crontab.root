@@ -1,0 +1,2 @@
+*/15 * * * * /usr/sbin/logrotate /etc/logrotate.conf
+*/10 * * * * /usr/bin/uboot_mpg_update

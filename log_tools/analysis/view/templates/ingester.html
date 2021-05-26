@@ -1,0 +1,131 @@
+<html>
+    <head>
+        <title>Log Analyzer: Ingester</title>
+        <link rel="stylesheet" type="text/css" href="/static/css/index.css">
+    </head>
+    <body>
+        {% include "nav_bar.html" ignore missing %}
+        <div class="center-align">
+            <h3>Ingest logs from QA dashboard</h3>
+            <div class="container row">
+                <div style="width: 100%; min-width: 60%;">
+                    <form action="/ingest" method="POST">
+                        <div class="form-group">
+                            <label>QA Job ID</label>
+                            <input type="text" class="form-control" id="job_id" name="job_id" placeholder="Enter the JOB ID" value="{{feedback.job_id if feedback else null}}">
+                        </div>
+                        <div class="form-group">
+                            <label>QA Test Index (Default is 0)</label>
+                            <input type="text" class="form-control" id="test_index" name="test_index" placeholder="Enter the Test Index" value="{{feedback.test_index if feedback else 0}}">
+                        </div>
+                        <div class="form-group">
+                            <label>Enter tags (comma separated)</label>
+                            <input type="text" class="form-control" id="tags" name="tags" placeholder="Enter tags" value="{{feedback.tags if feedback else null}}">
+                        </div>
+                        <button type="submit" class="btn btn-primary" onclick="onSubmit()">Ingest</button>
+                    </form>
+                </div>
+                <div class="separator"></div>
+                <div id="status-container">
+                    {% if feedback %}
+                        {% if feedback.started %}
+                            <button class="btn btn-primary" onclick="checkStatus()">Check Status</button>
+                        {% elif not feedback.success %}
+                            <p class="text-danger float-right">ERROR: {{ feedback.msg }}</p>
+                        {% endif %}
+                    {% endif %}
+                    <div id="status"></div>
+                    <div id="feedback"></div>
+                </div>
+            </div>
+        </div>
+    </body>
+    <script type="text/javascript">
+
+        // Avoid resubmitting POST from form on refresh or page navigation
+        if (window.history.replaceState) {
+            window.history.replaceState(null, null, window.location.href);
+        }
+
+        const feedback = {{feedback|tojson}};
+        const statusContainer = document.getElementById("status-container");
+        const statusElement = document.getElementById("status");
+        const feedbackElement = document.getElementById("feedback");
+
+        // Time is in milliseconds
+        const WAIT_TIME_TO_CHECK_STATUS = 30 * 1000;
+
+        let logID = '', statusInterval = null;
+        if (feedback && Object.keys(feedback).length !== 0 && feedback.constructor === Object) {
+            logID = `log_qa-${feedback["job_id"]}-${feedback["test_index"]}`;
+
+            if (feedback.started) {
+                statusContainer.style = "width: 40%;";
+                if (feedback.success) {
+                    handleStatusUpdate(feedback.metadata);
+                }
+                else {
+                    statusElement.innerHTML = "<p>Ingesting.. Please wait.</p>";
+                    statusInterval = setInterval(checkStatus, WAIT_TIME_TO_CHECK_STATUS);
+                }
+            }
+        }
+
+        function onSubmit() {
+            statusElement.innerHTML = "<p>Ingesting.. Please wait.</p>";
+            feedbackElement.innerHTML = "";
+            return;
+        }
+
+        function checkStatus() {
+            let xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    let data = JSON.parse(xhttp.responseText);
+                    if (data && "ingestion_status" in data) {
+                        handleStatusUpdate(data);
+                    }
+                }
+            }
+
+            const uri = `${window.location.href}/${logID}/status`;
+            xhttp.open('GET', uri);
+            xhttp.send();
+        }
+
+        function handleStatusUpdate(metadata) {
+            const status = "ingestion_status" in metadata ? metadata["ingestion_status"] : "STARTING";
+            statusElement.innerHTML = `
+                <p>Status: ${status}</p>
+                <p>Last checked: ${new Date()}</p>
+            `;
+            if (status == "COMPLETED") {
+                const logID = metadata["logID"];
+                const dashboardLink = `${window.location.origin}/log/${logID}/dashboard`;
+                const downloadTime = "download_time" in metadata ? +metadata["download_time"].toFixed(2) : "Unknown";
+                const ingestionTime = "ingestion_time" in metadata ? +metadata["ingestion_time"].toFixed(2) : "Unknown";
+                feedbackElement.innerHTML = `
+                    <p>SUCCESS! <a href="${dashboardLink}">Click to explore the logs</a></p>
+                    <p>Time taken to download log archive: ${downloadTime}s</p>
+                    <p>Time taken to ingest: ${ingestionTime}s</p>
+                `;
+                clearInterval(statusInterval);
+            }
+            else if ("download_time" in metadata &&
+                (status == "DOWNLOAD_COMPLETED" || status == "INGESTION_IN_PROGRESS")
+            ) {
+                const downloadTime = +metadata["download_time"].toFixed(2);
+                feedbackElement.innerHTML = `
+                    <p>Time taken to download log archive: ${downloadTime}s</p>
+                `;
+            }
+            else if (status == "FAILED") {
+                feedbackElement.innerHTML = `
+                    <p class="text-danger float-right">ERROR: ${metadata["ingestion_error"]}</p>
+                `;
+                clearInterval(statusInterval);
+            }
+        }
+
+    </script>
+</html>

@@ -1,11 +1,8 @@
-#! /bin/sh
-set -e
+#!/bin/bash -e
 
-PID_DPC=/var/run/dpc-funtail.pid
-PID_FUNTAIL=/var/run/funtail.pid
-
-# source function library
-. /etc/init.d/functions
+PID_DPC=/tmp/dpc-funtail.pid
+PID_FUNTAIL=/tmp/funtail.pid
+DPCSH_SOCKET=/tmp/funtail_dpcsh.sock
 
 # /etc/init.d/funtail: start and stop the Fungible "funtail" logger
 
@@ -14,23 +11,23 @@ export PATH="${PATH:+$PATH:}/usr/sbin:/sbin:/usr/bin"
 DPCSH=/usr/bin/dpcsh
 FUNTAIL=/usr/bin/funtail
 
-if [! -e $DPCSH ]; then
+if [[ ! -e $DPCSH ]]; then
     DPCSH=/opt/fungible/FunSDK/bin/Linux/dpcsh
 fi
-if [! -e $FUNTAIL]; then
+if [[ ! -e $FUNTAIL ]]; then
     FUNTAIL=/opt/fungible/FunSDK/bin/Linux/funtail
 fi
     
 case "$1" in
   start)
 	echo "Starting FunOS log streamer: funtail"
-	start-stop-daemon -S -b -p $PID_DPC -x $DPCSH -- --unix_proxy
-	start-stop-daemon -S -b -p $PID_FUNTAIL -x $FUNTAIL -- -u -f -s0
+	start-stop-daemon -S --background --make-pidfile --pidfile $PID_DPC --startas $DPCSH -- --pcie_nvme_sock=/dev/nvme0 --nvme_cmd_timeout=10000 --unix_proxy=$DPCSH_SOCKET
+	start-stop-daemon -S --background --make-pidfile --pidfile $PID_FUNTAIL --startas $FUNTAIL -- -u -f -s0 -a $DPCSH_SOCKET
 	echo "done."
 	;;
   stop)
 	echo "Stopping FunOS log streamer: funtail"
-	start-stop-daemon -K -p $PID_DPC -x $DPCSH
+	start-stop-daemon -K -p $PID_DPC
 	start-stop-daemon -K -p $PID_FUNTAIL
 	echo "."
 	;;

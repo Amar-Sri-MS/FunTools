@@ -1,0 +1,23 @@
+{
+    "ELASTICSEARCH": {
+        "hosts": [
+            {"host": "10.1.22.206", "port": 9200},
+            {"host": "10.1.80.252", "port": 9200}
+        ],
+        "timeout": 20,
+        "max_retries": 3
+    },
+    "KIBANA": {
+        "host": "10.1.22.206",
+        "port": 5601
+    },
+    "LEVEL_KEYWORDS": {
+        "critical": ["crit"],
+        "error": ["error", "err"],
+        "assert": ["Assertion failed:"],
+        "warning": ["warning", "warn"],
+        "info": ["info"]
+    },
+    "FILE_SERVER_URL": "http://funlogs.fungible.local:11000",
+    "LOG_VIEW_BASE_URL": "http://funlogs.fungible.local:5000/log/LOG_ID"
+}

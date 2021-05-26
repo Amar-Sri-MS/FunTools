@@ -74,6 +74,9 @@ def parse_args():
                         help="required: fourcc/ftype of blob", required=True)
     parser.add_argument("--sign_key", action="store",
                         help="identifier of key to use, eg. hkey1")
+    parser.add_argument('--chip', dest='chip_type', choices=['f1', 's1', 'f1d1'],
+                        required=True, help='Target chip')
+
 
     # Required positional argument
     parser.add_argument("infile", help="file to be signed")

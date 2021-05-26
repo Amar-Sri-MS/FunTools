@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="/static/css/index.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/logs.css">
+    <script type="text/javascript" src="/static/js/tracker.js"></script>
+    <script>
+    // Web tracker uses logId
+    const logId = "{{log_id}}";
+    /*
+     * If you're reading this, Fungible is interested in talking to you
+     * because you have skills that we might want. 
+     *
+     * But if you're reading this, you're already an esteemed colleague so
+     * never mind.... 
+     */
+
+    /*
+     * Client state.
+     *
+     * The state is opaque to the client. The before and after page markers
+     * are hidden in a state object, and the post requests say
+     * "next" or "prev" while sending the state object. This allows easier
+     * changes if we decide to change our storage/search layer.
+     *
+     * The internal "before" and "after" variables hold the sort values of
+     * the first and last document on the page. These sort values are
+     * determined by elasticsearch, and are single integers at the moment
+     * because we only sort by timestamp.
+     */
+    var state = {{state}};
+
+    /*
+     * Current message text filter.
+     *
+     * Value is used as a filter of message contents.
+     */
+    var textFilter = "";
+
+    /*
+     * Holds current time filters.
+     */
+    var startTime = "";
+    var endTime = "";
+    var loader, prev_button, next_button;
+
+    const LOG_VIEW_BASE_URL = "{{log_view_base_url}}";
+
+    window.onload = function() {
+        loader = document.getElementById("loader");
+        prev_button = document.getElementById("prev_button");
+        next_button = document.getElementById("next_button");
+
+        // Disable the Previous logs button if there are
+        // no more logs to display
+        if (state.before === -1) {
+            toggleElementDisplay(prev_button, false);
+        }
+
+        //Get the button:
+        const top_button = document.getElementById("top_button");
+        // When the user scrolls down 50px from the top of the document, show the button
+        window.onscroll = () => scrollFunction()
+        function scrollFunction() {
+            if (document.body.scrollTop > 50 || document.documentElement.scrollTop > 50) {
+                top_button.style.display = "block";
+            } else {
+                top_button.style.display = "none";
+            }
+        }
+
+        // Check if an anchor link is present
+        const anchor_link = document.getElementById("anchor_link");
+        if (location.hash === "#0") {
+            anchor_link.style.display = "block";
+        }
+
+        // Check if time is present in the url
+        const dt_start = document.getElementById("dt_start");
+        const dt_end = document.getElementById("dt_end");
+        const queryParams = new URLSearchParams(location.search.substring(1));
+        if (queryParams.get('filter')) {
+            const filters = JSON.parse(queryParams.get('filter'));
+            const timeFilter = filters['time'];
+            if (timeFilter && timeFilter.length === 2) {
+                startTime = timeFilter[0];
+                endTime = timeFilter[1];
+                // Setting values of date picker
+                dt_start.value = startTime;
+                dt_end.value = endTime;
+            }
+        }
+
+    }
+
+    // When the user clicks on the button, scroll to the top of the document
+    function onClickTopButton() {
+        document.body.scrollTop = 0; // For Safari
+        document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
+    }
+
+    function handleSearch(search) {
+        trackWebEvent("SEARCH_CLICKED", { "query": search, startTime, endTime });
+        window.location.href = `/log/{{log_id}}/search?query=${search}&time_start=${startTime}&time_end=${endTime}`;
+    }
+
+    function handleMessageFilter(element) {
+        textFilter = element.value;
+    }
+
+    function handleMessageTableFilterUpdates() {
+        toggleElementDisplay(loader, true);
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                var data = JSON.parse(xhttp.responseText);
+                if (data) {
+                    clearMessageTable();
+                    updateMessageTable(data, true);
+
+                    state = data["state"];
+                }
+                toggleElementDisplay(loader, false);
+            }
+        }
+
+        var uri = "/log/{{log_id}}/content";
+
+        var filterString = buildFilterOption();
+        if (filterString === null) {
+            toggleElementDisplay(loader, false);
+            return;
+        }
+        if (filterString != "") {
+            uri += "?filter=" + filterString;
+        }
+
+        xhttp.open('POST', uri);
+        xhttp.send();
+    }
+
+    function clearMessageTable() {
+        var table = document.getElementById("line_table");
+        table.innerHTML = ""
+    }
+
+    function updateMessageTable(filterData, isAppend) {
+        var table = document.getElementById("line_table");
+        if (isAppend) {
+            table.innerHTML = table.innerHTML + filterData["content"];
+        } else {
+            table.innerHTML = filterData["content"] + table.innerHTML;
+        }
+        // Conditionally rendering pagination buttons
+        var showPrevButton = filterData["state"].before != -1;
+        var showNextButton = filterData["state"].after != -1;
+        toggleElementDisplay(prev_button, showPrevButton);
+        toggleElementDisplay(next_button, showNextButton);
+    }
+
+    function handleTimeFilters(element, type="start") {
+        if (type === "start") {
+            startTime = element.value;
+        }
+        else {
+            endTime = element.value;
+        }
+    }
+
+    function loadNext() {
+        toggleElementDisplay(loader, true);
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                var data = JSON.parse(xhttp.responseText);
+                if (data) {
+                    updateMessageTable(data, true);
+                    state = data["state"];
+                }
+                toggleElementDisplay(loader, false);
+            }
+        }
+
+        var uri = buildContentRequest("next");
+        if (uri === null) {
+            toggleElementDisplay(loader, false);
+            return;
+        }
+        xhttp.open('POST', uri);
+        xhttp.send();
+    }
+
+    // Generic function to toggle any HTML element's display property
+    function toggleElementDisplay(element, flag) {
+        if (flag) {
+            element.style = "display: block";
+        }
+        else {
+            element.style = "display: none";
+        }
+    }
+
+    /*
+     * Constructs a POST request to fetch more content.
+     *
+     * direction is either "next" to fetch content after the last message
+     * on the page, or "prev" to fetch content before the first message.
+     */
+    function buildContentRequest(direction) {
+        var uri = "/log/{{log_id}}/content?" + direction + "=true&state=" + JSON.stringify(state);
+
+        var filterString = buildFilterOption();
+
+        if (filterString === null) {
+            return null;
+        }
+        if (filterString != "") {
+            uri += "&filter=" + filterString;
+        }
+
+        return uri;
+    }
+
+    /*
+     * Constructs a filter string, for use in a request,
+     * from current filter values.
+     */
+    function buildFilterOption() {
+        var allFilters = {};
+        const filterQuery = buildSourceFilterQuery()
+        if (filterQuery === null) {
+            return null;
+        }
+
+        allFilters["text"] = filterQuery;
+        if (textFilter != "") {
+            allFilters["text"] = `(${allFilters["text"]}) AND (${textFilter})`;
+        }
+
+        // We are treating the source filter as query
+        // filter because of it's hierarchical structure.
+        allFilters["sources"] = "";
+
+        datetimeFilters = [];
+        datetimeFilters.push(startTime);
+        datetimeFilters.push(endTime);
+        allFilters["time"] = datetimeFilters;
+
+        return JSON.stringify(allFilters);
+    }
+
+    function loadPrev() {
+        toggleElementDisplay(loader, true);
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                var data = JSON.parse(xhttp.responseText);
+                if (data) {
+                    updateMessageTable(data, false);
+                    state = data["state"];
+                }
+                toggleElementDisplay(loader, false);
+            }
+        }
+
+        var uri = buildContentRequest("prev");
+        if (uri === null) {
+            toggleElementDisplay(loader, false);
+            return;
+        }
+        xhttp.open('POST', uri);
+        xhttp.send();
+    }
+
+    function onClickFilterLogs() {
+        const filterString = buildFilterOption();
+        // Filters not selected
+        if (filterString === null) {
+            return;
+        }
+
+        let search_url = LOG_VIEW_BASE_URL;
+        let params = new URLSearchParams(location.search);
+        if (filterString != "") {
+            params.delete('filter');
+            params.append('filter', filterString);
+            search_url += `?${params.toString()}`;
+        }
+        search_url += location.hash;
+        window.open(search_url, "_self");
+        trackWebEvent("FILTER_LOGS", data={filters: selectedFilters, startTime, endTime});
+    }
+
+    </script>
+</head>
+<body>
+    {% include 'nav_bar.html' ignore missing %}
+    <!-- Calculating total log entries -->
+    {% set total_entries = sources.values()|sum() %}
+    <div class="content">
+        <h2 id="top" class="center-align">Logs for
+            {% if job_link is not none %}
+                <a target="_blank" href="{{job_link}}">{{log_id}}</a>
+            {% else %}
+                {{log_id}}
+            {% endif %}
+        </h2>
+        {% if metadata.tags is defined and metadata.tags is not none %}
+            <div class="center-align">Tags:
+                {% for tag in metadata.tags %}
+                    <a href="/?tags={{tag}}">{{tag}}</a>
+                {% endfor %}
+            </div>
+        {% endif %}
+        <div id="quicklinks">
+            <a id="anchor_link" data-web_event="ANCHOR_LINK" style="display: none;" href="#0">Link to the selected log</a>
+            <button class="btn" onclick="toggleNotesOverlay()">
+                Add/Show notes({{ metadata.notes|length }})
+            </button>
+        </div>
+        <div class="container">
+            <h3>Filter logs</h3>
+            <div>Total log entries: <b>{{total_entries}}</b></div>
+            <div class="filters_container">
+                <div>
+                    <input id="search" type="search" placeholder="Search..."/>
+                    <button class="btn" onclick="handleSearch(document.getElementById('search').value)">Search</button>
+                </div>
+                <span class="info">Enclose the search string with quotes if it contains special characters.</span>
+            </div>
+            <div class="filters_container" style="display: flex;">
+                {% include 'source_filters.html' %}
+                <div style="display: flex; flex-direction: column;">
+                    <div class="separator"></div>
+                </div>
+                <div class="filters">
+                    <b>Search by time range</b>
+                    <div>
+                        <div class="time_filters">
+                            <label for="dt_start">Start time</label>
+                            <input type="text" id="dt_start" placeholder="yyyy-mm-ddTHH:MM:SS.ss" onchange="handleTimeFilters(this, 'start')"/>
+                        </div>
+
+                        <div class="time_filters">
+                            <label for="dt_end">End time</label>
+                            <input type="text" id="dt_end" placeholder="yyyy-mm-ddTHH:MM:SS.ss" onchange="handleTimeFilters(this, 'end')"/>
+                        </div>
+                    </div>
+                    <div class="info">Timestamp can be copied from log line</div>
+                </div>
+            </div>
+            <div id="explore_button">
+                <button class="btn" onclick="onClickFilterLogs()">Filter logs</button>
+            </div>
+        </div>
+        <div class="container">
+            <div class="content">
+                {% if total_search_hits.relation == "gte" %}
+                    {% set total_hits = total_search_hits.value|string+'+' %}
+                {% else %}
+                    {% set total_hits = total_search_hits.value %}
+                {% endif %}
+                <b>{{total_hits}} results</b> sorted from earliest to latest timestamp
+            </div>
+            <div class="pagination" id="prev_button">
+                <button class="btn" data-web_event="PREVIOUS_LOGS" onclick="loadPrev()">Load previous logs</button>
+            </div>
+            <table class="log_entries">
+                <thead>
+                    <tr>
+                        <th>Source</th>
+                        <th>System ID</th>
+                        <th>Timestamp</th>
+                        <th>Level</th>
+                        <th>Log message</th>
+                    </tr>
+                </thead>
+                <tbody id="line_table">
+                    {{body}}
+                </tbody>
+            </table>
+            <div class="pagination" id="next_button">
+                <button class="btn" data-web_event="NEXT_LOGS" onclick="loadNext()">Load next logs</button>
+            </div>
+        </div>
+    </div>
+    <button onclick="onClickTopButton()" data-web_event="TOP_BUTTON" id="top_button" title="Go to top">Jump to top</button>
+    <div id="loader">
+        <svg version="1.1" id="L6" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+            viewBox="0 0 100 100" enable-background="new 0 0 100 100" xml:space="preserve">
+            <rect fill="none" stroke="#000" stroke-width="4" x="25" y="25" width="50" height="50">
+            <animateTransform
+                attributeName="transform"
+                dur="0.5s"
+                from="0 50 50"
+                to="180 50 50"
+                type="rotate"
+                id="strokeBox"
+                attributeType="XML"
+                begin="rectBox.end"/>
+            </rect>
+            <rect x="27" y="27" fill="#000" width="46" height="50">
+            <animate
+                attributeName="height"
+                dur="1.3s"
+                attributeType="XML"
+                from="50"
+                to="0"
+                id="rectBox"
+                fill="freeze"
+                begin="0s;strokeBox.end"/>
+            </rect>
+        </svg>
+    </div>
+    {% include 'notes_overlay.html' %}
+</body>
+</html>

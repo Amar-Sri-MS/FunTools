@@ -1,0 +1,7 @@
+config.json
+view/analytics/*
+file_server/files/*
+.DS_Store
+Log_Analyzer.egg-info*
+downloads*
+logs/*

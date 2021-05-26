@@ -123,7 +123,7 @@ class DpcClient(object):
         result = self.__recv_json(custom_timeout, timeout_seconds)
         self.__print(result)
 
-        if ((result is None) or (result == "")):
+        if not result:
             return None
 
         # decode the raw json and return
@@ -181,7 +181,7 @@ class DpcClient(object):
         try:
             return self.__sock_file.readline().rstrip()
         except socket.timeout:
-            raise DpcTimeoutError('readline() timeout')
+            raise DpcTimeoutError('readline() timeout(cur timeout: {}(custom {}, new to {}))'.format(old_timeout, custom_timeout, timeout_seconds))
         finally:
             if custom_timeout:
                 self.__sock.settimeout(old_timeout)
@@ -196,7 +196,7 @@ class DpcClient(object):
         try:
             self.__sock.sendall((line + '\n').encode())
         except socket.timeout:
-            raise DpcTimeoutError('sendall() timeout')
+            raise DpcTimeoutError('sendall() timeout(cur timeout: {}(custom {}, new to {}))'.format(old_timeout, custom_timeout, timeout_seconds))
         finally:
             if custom_timeout:
                 self.__sock.settimeout(old_timeout)

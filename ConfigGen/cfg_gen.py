@@ -60,10 +60,10 @@ def _generate_nu_csr_replay_config(config_root_dir, output_dir, target_chip, tar
     return nu_csr_replay_cfg
 
 # Creates nu config
-def _generate_sku_config(config_root_dir, output_dir, target_chip, target_machine):
+def _generate_sku_config(config_root_dir, sdk_dir, output_dir, target_chip, target_machine):
     logger.info('Processing per sku config:')
 
-    sku_cfg_gen = SKUCfgGen(config_root_dir, output_dir, target_chip, target_machine)
+    sku_cfg_gen = SKUCfgGen(config_root_dir, sdk_dir, output_dir, target_chip, target_machine)
 
     return sku_cfg_gen._get_sku_config()
 
@@ -116,10 +116,8 @@ def _generate_modules_config(config_root_dir):
     # Python 2.7 glob does not support a recursive glob. We want to allow
     # nesting within the modules path. So, search using os.walk.
     def _find_modules_configs():
-        modules_path = os.path.join(config_root_dir, 'modules')
-
         matches = []
-        for root, dirs, files in os.walk(modules_path):
+        for root, dirs, files in os.walk(config_root_dir):
             for match in fnmatch.filter(files, '*.cfg'):
                 matches.append(os.path.join(root, match))
 
@@ -137,11 +135,11 @@ def _generate_modules_config(config_root_dir):
             cfg_json = json.loads(cfg_json)
 
         # Gets the path relative to the config root, e.g.
-        #   'modules/tcp/tcp.cfg'
+        #   'tcp/tcp.cfg'
         cfg_path = os.path.relpath(cfg, config_root_dir)
 
         # Gets the parent paths as a list, e.g.
-        #   ['modules', 'tcp']
+        #   ['tcp']
         parents = cfg_path.split(os.path.sep)[:-1]
 
         # Builds the heirarchy outwards from the inside, returns something
@@ -149,6 +147,7 @@ def _generate_modules_config(config_root_dir):
         #   {'modules': {'tcp': {cfg_json}}}
         for parent in reversed(parents):
             cfg_json = {parent: cfg_json}
+        cfg_json = {"modules": cfg_json}
 
         # Merge recursively. Merges subpaths so hierarchies are possible.
         out_cfg = jsonutils.merge_dicts_recursive(out_cfg, cfg_json)
@@ -167,6 +166,222 @@ def _generate_storage_config(config_root_dir, output_dir,
 
     return storage_cfg
 
+# filename -> arbitrary json
+def _read_json_file(fname):
+    try:
+        sjs=None
+        fl = open(fname)
+        fls = fl.read()
+        sjs = jsonutils.standardize_json(fls)
+        js = json.loads(sjs)
+    except:
+        print("Exception occurred reading/parsing json file %s" % fname)
+        print(sjs)
+        raise
+
+    return js
+
+# filename -> dict, or die trying
+def _read_json_file_as_dict(fname):
+    js = _read_json_file(fname)
+    try:
+        assert(isinstance(js, dict))
+    except:
+        print("JSON file %s is not a dict" % fname)
+        raise
+
+    return js
+
+# TODO: add more validations as necessary
+def _validate_profile_cfg(fname, js):
+    assert(isinstance(js, dict))
+    if ("subprofiles" not in js):
+        raise RuntimeError("subprofile %s is missing subprofiles key" % fname)
+    assert(isinstance(js["subprofiles"], dict))
+
+
+# TODO: add more validations as necessary
+def _validate_subprofile_cfg(fname, js):
+
+    assert(isinstance(js, dict))
+    if ("key_path" not in js):
+        raise RuntimeError("subprofile %s is missing key_path" % fname)
+    print(js)
+    print(js["key_path"])
+    print(type(js["key_path"]))
+    
+    assert(isinstance(js["key_path"], basestring))
+
+    if ("weight" in js):
+        assert(isinstance(js["weight"], int))
+    if ("replace" in js):
+        assert(isinstance(js["replace"], bool))
+
+# load all the .cfg options for a subprofile from a directory.  called
+# for global, chip and board paths. "global_path" is True if we expect
+# to skip the "subprofile-xyz.cfg" file when we encounter it. If this
+# is not the global_path, that file should not exist.
+def _load_subprofile_fragments(subdir, global_path):
+    
+    fragments = {}
+    
+    cfgglob = os.path.join(subdir, "*.cfg")
+    for fname in glob.glob(cfgglob):
+
+        # base filename and subprofile fragment name used, eg:
+        # foo_profile = fragment
+        bname = os.path.basename(fname)
+        pname = os.path.splitext(bname)[0]
+
+        # remove "-foo" suffix
+        if ("-" in pname):
+            pname = pname.split("-")[0]
+        assert(len(pname) > 0) # "-foo.cfg" is nonsense
+        
+        # see if this is a subprofile descriptor
+        if (fnmatch.fnmatch(bname, "subprofile-*.cfg")):
+            if (not global_path):
+                raise RuntimeError("Found subprofile descriptor found outside subprofile global path: %s" % fname)
+
+            # otherwise, ignore it
+            continue
+
+        # read the json file -- any json is valid
+        js = _read_json_file(fname)
+
+        # append it to the list
+        if (pname in fragments):
+            raise RuntimeError("Error: duplicate json fragment: %s (%s)" % (pname, fname))
+        fragments[pname] = js
+
+    return fragments
+        
+def _load_subprofiles_and_fragments(spglob, subprofiles, stype, sval):
+
+    sglob = os.path.join(spglob, "*_profile")
+    for subprof in glob.glob(sglob):
+        if (not os.path.isdir(subprof)):
+            print("WARNING: %s is not a directory, ignoring" % subprof)
+            continue
+        
+        # get the name
+        subname = os.path.basename(subprof)
+
+        # make sure it's valid
+        assert(subname in subprofiles)
+        
+        sub_fragments = _load_subprofile_fragments(subprof, False)
+        subprofiles[subname][stype][sval] = sub_fragments
+    
+# boot-time configuration profiles. see profiles_config/HOWTO.md
+def _generate_profiles_config(config_root_dir, target_chip, target_boards):
+ 
+    ## root of the profile configs
+    pdir = os.path.join(config_root_dir, "profiles_config")
+
+    ## read the subprofile descriptions
+    
+    # subprofiles are described in  "subprofiles/foo_subprofile" directories
+    subprofiles = {}
+    sglob = os.path.join(pdir, "subprofiles", "*_profile")
+    for subdir in glob.glob(sglob):
+        if (not os.path.isdir(subdir)):
+            print("WARNING: %s is not a directory, ignoring" % subdir)
+            continue
+
+        # get the name
+        subname = os.path.basename(subdir)
+        
+        # the definition of a subprofile is in
+        # "subprofile-whatever.cfg" in the "foo_subprofile" directory.
+        # the "whatever" is ignored, just there to disambiguate many
+        # files otherwise named "subprofile.cfg".
+        cfgglob = os.path.join(subdir, "subprofile-*.cfg")
+        cfgs = glob.glob(cfgglob)
+
+        if (len(cfgs) == 0):
+            # no descriptor fail
+            raise RuntimeError("error: subprofile %s is missing a subprofile-XYZ.cfg descriptor" % subdir)
+
+        if (len(cfgs) > 1):
+            # multi descriptor fail
+            raise RuntimeError("error: subprofile %s has multiple descriptor files: %s" %s (subdir, cfgs))
+
+        descfilename = cfgs[0]
+        print("subprofile %s using descriptor %s" % (subdir, descfilename))
+
+        # parse it
+        js = _read_json_file_as_dict(descfilename)
+
+        # make sure it meets static minimum requirements. other
+        # validations come later
+        _validate_subprofile_cfg(descfilename, js)
+
+        # setup the skeleton dict with the descriptor
+        subprofiles[subname] = {"descriptor": js,
+                                "global":{},
+                                "chip":{},
+                                "board":{}}
+
+        # load all the global fragments, if any, and append to the descriptor
+        sub_fragments = _load_subprofile_fragments(subdir, True)
+        subprofiles[subname]["global"] = sub_fragments
+
+    # read all the fragments for the chip
+    chipdir = os.path.join(pdir, "chip", target_chip)
+    _load_subprofiles_and_fragments(chipdir, subprofiles, "chip", target_chip)
+        
+    # read all the fragments for all the boards
+    bglob = os.path.join(pdir, "board", "*")
+    for boarddir in glob.glob(bglob):
+        if (not os.path.isdir(boarddir)):
+            print("WARNING: %s is not a directory, ignoring" % boarddir)
+            continue
+        
+        # get the name
+        boardname = os.path.basename(boarddir)
+
+        # FIXME: only include the ones we know we need
+        # if (boardname not in target_boards):
+        #      continue
+
+        _load_subprofiles_and_fragments(boarddir, subprofiles,
+                                        "board", boardname)
+        
+    # parse the list of profiles
+    profiles = {}
+    pglob = os.path.join(pdir, "profiles", "*.cfg")
+    for cfg in glob.glob(pglob):
+        # extract the name
+        bname = os.path.basename(cfg)
+        pname = os.path.splitext(bname)[0]
+
+        # read it
+        js = _read_json_file_as_dict(cfg)
+
+        # make sure all the subprofiles exist
+        subs = js.get("subprofiles")
+        if (subs is None):
+            raise RuntimeError("profiles %s missing required subprofiles" % pname)
+
+        # validate all the keys & values that we can do statically
+        print("found profile %s" % pname)
+        _validate_profile_cfg(pname, js)
+        
+        # add it to the list
+        profiles[pname] = js
+    
+
+    # make the big dict and return that
+    profiles_config = {"profiles_config":
+                       {
+                           "profiles": profiles,
+                           "subprofiles": subprofiles,
+                       }
+    }
+
+    return profiles_config
+        
 def build_target_is_posix(target_machine):
     if 'posix' in target_machine:
         return True
@@ -183,7 +398,7 @@ def build_target_is_qemu(target_machine):
     return False
 
 # Generate funos config
-def _generate_funos_default_config(config_root_dir, output_dir,
+def _generate_funos_default_config(config_root_dir, sdk_dir, output_dir,
                                    target_chip, target_machine):
     logger.info('Generating funos default config')
     funos_default_config = dict()
@@ -198,21 +413,40 @@ def _generate_funos_default_config(config_root_dir, output_dir,
                                            target_chip, target_machine)
     funos_default_config = jsonutils.merge_dicts(funos_default_config, storage_cfg)
 
-    sku_cfg = _generate_sku_config(config_root_dir, output_dir, target_chip, target_machine)
+    sku_cfg = _generate_sku_config(config_root_dir, sdk_dir, output_dir, target_chip, target_machine)
     funos_default_config = jsonutils.merge_dicts(funos_default_config, sku_cfg)
 
     stats_cfg = _generate_stats_config(config_root_dir)
     funos_default_config = jsonutils.merge_dicts(funos_default_config, stats_cfg)
 
-    modules_cfg = _generate_modules_config(config_root_dir)
+    ## process module config -- global and per-chip
+    config_module_dir = os.path.join(config_root_dir,
+                                     "modules_config", "modules")
+    modules_cfg = _generate_modules_config(config_module_dir)
 
-    config_chip_dir = os.path.join(config_root_dir, target_chip)
+    config_chip_dir = os.path.join(config_root_dir,
+                                   "modules_config", "chip", target_chip)
     if os.path.exists(config_chip_dir):
         chip_modules_cfg = _generate_modules_config(config_chip_dir)
-        modules_cfg = jsonutils.merge_dicts_recursive(modules_cfg, chip_modules_cfg)
+        modules_cfg = jsonutils.merge_dicts_recursive(modules_cfg,
+                                                      chip_modules_cfg)
 
-    funos_default_config = jsonutils.merge_dicts(funos_default_config, modules_cfg)
+    ## assemble into main config
+    funos_default_config = jsonutils.merge_dicts(funos_default_config,
+                                                 modules_cfg)
 
+    ## process profile configs
+    
+    ## FIXME: generate the list of valid boards from the existing
+    ## config and pass them through
+    target_boards = []
+    profiles_cfg = _generate_profiles_config(config_root_dir,
+                                             target_chip, target_boards)
+    
+    ## assemble into main config
+    funos_default_config = jsonutils.merge_dicts(funos_default_config,
+                                                 profiles_cfg)
+    
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
@@ -222,7 +456,7 @@ def _generate_funos_default_config(config_root_dir, output_dir,
 
     header = '// AUTOGENERATED FILE - DO NOT EDIT\n'
     date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-    header = header + "// Generated by " + os.path.basename(__file__) + " on " + date + " \n";
+    header = header + "// Generated by " + os.path.basename(__file__) + " on " + date + " \n"
     _f.write(header)
 
     # indent=4 does pretty printing for us
@@ -231,11 +465,11 @@ def _generate_funos_default_config(config_root_dir, output_dir,
     _f.close()
 
 #Generates sku config source code
-def _generate_sku_config_code(config_root_dir, output_dir,
+def _generate_sku_config_code(config_root_dir, sdk_dir, output_dir,
                               target_chip, target_machine):
     logger.info('Generating sku config c code')
 
-    sku_cfg_gen = SKUCfgGen(config_root_dir, output_dir,
+    sku_cfg_gen = SKUCfgGen(config_root_dir, sdk_dir, output_dir,
                             target_chip, target_machine)
     sku_cfg_gen.generate_code()
     include_files = sku_cfg_gen.get_header_file_list()
@@ -247,11 +481,12 @@ def _generate_sku_config_code(config_root_dir, output_dir,
 
 #Generates sku eeprom files for the fungible boards and emulation build with sbp
 def _generate_sku_eeprom_files(config_root_dir,
+                               sdk_dir,
                                output_dir,
                                target_chip,
                                target_machine):
     logger.info('Generating eeprom files')
-    sku_cfg_gen = SKUCfgGen(config_root_dir, output_dir,
+    sku_cfg_gen = SKUCfgGen(config_root_dir, sdk_dir, output_dir,
                             target_chip, target_machine)
     sku_cfg_gen.generate_eeprom()
     sku_cfg_gen.generate_chip_eeprom_lists()
@@ -281,11 +516,13 @@ def main():
     # without the other mandatory arguments added later on
     args, _ = arg_parser.parse_known_args()
     if args.print_build_deps:
-        print (' '.join(SKUCfgGen.get_build_deplist() + HWCAPCodeGen.get_build_deplist()))
+        print(' '.join(SKUCfgGen.get_build_deplist() + HWCAPCodeGen.get_build_deplist()))
         return 0
 
     arg_parser.add_argument("--in-dir", required=True, nargs=1,
                             type=dir_path, help="input config source directory path")
+
+    arg_parser.add_argument("--sdk-dir", type=dir_path, help="sdk directory path")
 
     arg_parser.add_argument("--out-dir", required=True, nargs=1, type=dir_path, help="output dir path")
 
@@ -304,23 +541,23 @@ def main():
                         help="Generate sku id's & hwcap config c code from board & hwcap sku json config files")
 
     parser.add_argument("--hucfg", action='store_true',
-                         help="Generate hu config c code from hu json config files")
+                        help="Generate hu config c code from hu json config files")
 
     parser.add_argument("--nucsr-replaycfg", action='store_true',
                         help="Generates merged nu csr replay config json")
 
     parser.add_argument("--eeprom", action='store_true',
-                      help=("Generate eeprom sku id files from board config"
-                      " json files & hwcap json config files"))
+                        help=("Generate eeprom sku id files from board config"
+                              " json files & hwcap json config files"))
 
     # Now parse all args once again
     args = arg_parser.parse_args()
     logger.debug('Command line args: {}'.format(args))
 
     if args.funoscfg:
-        _generate_funos_default_config(args.in_dir[0], args.out_dir[0],
+        _generate_funos_default_config(args.in_dir[0], args.sdk_dir, args.out_dir[0],
                                        args.chip[0], args.machine[0])
-        _generate_sku_config_code(args.in_dir[0], args.out_dir[0],
+        _generate_sku_config_code(args.in_dir[0], args.sdk_dir, args.out_dir[0],
                                   args.chip[0], args.machine[0])
         _generate_hu_config_code(args.in_dir[0], args.out_dir[0])
 
@@ -328,7 +565,7 @@ def main():
         _generate_hu_config_code(args.in_dir[0], args.out_dir[0])
 
     if args.skucfg:
-        _generate_sku_config_code(args.in_dir[0], args.out_dir[0],
+        _generate_sku_config_code(args.in_dir[0], args.sdk_dir, args.out_dir[0],
                                   args.chip[0], args.machine[0])
 
     if args.nucsr_replaycfg:
@@ -336,7 +573,7 @@ def main():
                                        args.chip[0], args.machine[0])
 
     if args.eeprom:
-        _generate_sku_eeprom_files(args.in_dir[0], args.out_dir[0],
+        _generate_sku_eeprom_files(args.in_dir[0], args.sdk_dir, args.out_dir[0],
                                    args.chip[0], args.machine[0])
 
 if __name__ == "__main__":

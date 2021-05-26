@@ -1,0 +1,88 @@
+#!/bin/sh -e
+
+PATH="/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
+
+CONFIG_DIR=/persist/config
+INTERFACES_DIR=$CONFIG_DIR/interfaces
+
+case "$1" in
+    start)
+        mkdir -p /tmp/interfaces.d
+        ln -s /etc/network/eth0-dhcp.iface /tmp/interfaces.d/eth0
+
+        fsck_code=0
+        e2fsck -y /dev/vda3 || fsck_code=$?
+        if [ $fsck_code -ge 4 ] ; then
+            echo 'Filesystem on /dev/vda3 unusable, reformatting...'
+            mkfs.ext4 -q -F /dev/vda3
+        fi
+        mount /persist
+        mount /b-persist || true
+
+        mkdir -p $INTERFACES_DIR
+        (
+            cd $INTERFACES_DIR
+            for file in *.iface ; do
+                if [ -e $file ] ; then
+                    link_name=$(echo $file | sed -e 's/\.iface$//')
+                    ln -f -s $INTERFACES_DIR/$file /tmp/interfaces.d/$link_name
+                fi
+            done
+        )
+        # $CONFIG_DIR is parent of $INTERFACES_DIR, make sure non-root
+        # users can create files there (e.g. NTP)
+        chmod 0777 $CONFIG_DIR
+        if [ -e $INTERFACES_DIR/resolv.conf ] ; then
+            ln -f -s $INTERFACES_DIR/resolv.conf /tmp/resolv.conf
+        fi
+        if [ -e $CONFIG_DIR/timezone ] ; then
+            ln -f -s $CONFIG_DIR/timezone /tmp/timezone
+        else
+            echo 'Universal' > /tmp/timezone
+        fi
+        if [ -e $CONFIG_DIR/localtime ] ; then
+            ln -f -s $CONFIG_DIR/localtime /tmp/localtime
+        else
+            ln -f -s /usr/share/zoneinfo/Universal /tmp/localtime
+        fi
+	#
+	# If persistent NTP config, install a link to it
+	#
+	if [ -e $CONFIG_DIR/ntp.conf ] ; then
+	    ln -f -s $CONFIG_DIR/ntp.conf /tmp/ntp.conf
+	fi
+
+	# Allow any user to leave core files
+	if [ ! -d /persist/cores ] ; then
+	    mkdir -p /persist/cores
+	    chmod 0777 /persist/cores
+	fi
+
+	# Default S1 to allow unauthenticated SSH access
+	my_dpu=unknown
+	if [ -e /sys/firmware/devicetree/base/fungible,dpu ] ; then
+	    read -d $'\0' my_dpu rest_of_line < /sys/firmware/devicetree/base/fungible,dpu
+	fi
+	if [ "$my_dpu" = "S1" ] ; then
+		mkdir -p /tmp/sshd_config.d
+		chmod 0700 /tmp/sshd_config.d
+		sshd_file=/tmp/sshd_config.d/s1.conf
+		echo 'Match Address 10.0.0.0/8,192.168.0.0/16,172.16.0.0/12' > $sshd_file
+		echo '   PasswordAuthentication yes' >> $sshd_file
+		echo '   PermitEmptyPasswords yes' >> $sshd_file
+		chmod 0400 $sshd_file
+	fi
+	#
+	# Place to keep transient keys.  Must be mode 0700.
+	# All path components must not set mode bit 0002, so /tmp can't be used
+	#
+	mkdir -p /run/ssh
+	chmod 0700 /run/ssh
+
+        ;;
+    *)
+        :
+        ;;
+esac
+
+exit 0

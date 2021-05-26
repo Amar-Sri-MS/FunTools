@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="/static/css/index.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/dashboard.css">
+    <script type="text/javascript" src="/static/js/tracker.js"></script>
+    <title>Log Analyzer Dashboard: {{log_id}}</title>
+</head>
+<body>
+    {% include 'nav_bar.html' ignore missing %}
+    <!-- Macro for calculating percentage and rounding it off to a given precision -->
+    {% macro calculatePercentage(count, total, precision=2) -%}
+        {{((count/total)*100)|round(precision)}}%
+    {%- endmacro %}
+    <div class="content">
+        <h2 class="center-align">Dashboard for
+            {% if job_link is not none %}
+                <a target="_blank" href="{{job_link}}">{{log_id}}</a>
+            {% else %}
+                {{log_id}}
+            {% endif %}
+        </h2>
+        {% if metadata.tags is defined and metadata.tags is not none %}
+            <div class="center-align">Tags:
+                {% for tag in metadata.tags %}
+                    <a href="/?tags={{tag}}">{{tag}}</a>
+                {% endfor %}
+            </div>
+        {% endif %}
+        <div id="quicklinks">
+            <div>
+                <a data-web_event="RECENT_LINK" href="#recent">Recent Logs</a>
+                <a data-web_event="DUPLICATES_LINK" href="#duplicates">Duplicate Logs</a>
+            </div>
+            <button class="btn" onclick="toggleNotesOverlay()">
+                Add/Show notes({{ metadata.notes|length }})
+            </button>
+        </div>
+        <div class="container">
+            <h3>Explore logs by source</h3>
+            {% set total_entries = sources.values()|sum() %}
+            <div>Total log entries: <b>{{total_entries}}</b></div>
+            <div class="filters_container">
+                {% include 'source_filters.html' %}
+                <div id="explore_button">
+                    <button class="btn" onclick="onClickExploreLogs()">Explore Logs <span class="arrow right"></span></button>
+                </div>
+            </div>
+        </div>
+        <div class="container row">
+            <div class="distribution_stats">
+                <h3>Log Distribution</h3>
+                <div>
+                    Sources:
+                    <select name="sources" id="sources" onchange="onSelectSourceForLogLevelStats(this)">
+                        <option value="all" selected>All</option>
+                        {% for source in sources %}
+                            <option value="{{source}}">{{source}}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="content">
+                    <div id="log_level_stats">
+                        <div class="level_stat">
+                            <div><a href="{{log_view_base_url}}" target="_blank" onclick="trackWebEvent('LOG_LEVEL_CLICKED', 'Total')">Total</a></div>:
+                            <div class="fixed-font">{{total_entries}}(100%)</div>
+                        </div>
+                        <!-- Displaying log entries for a source and each log levels in % with rounded off to 2 decimals -->
+                        {% for level, stat in log_level_stats.items() %}
+                            {% set log_distribution = calculatePercentage(stat.count, total_entries) %}
+                            {% set log_level_obj = {"level": level} %}
+                            <div class="level_stat" title="{{stat.keywords}}">
+                                <div><a href="{{stat.log_view_url}}" target="_blank" onclick="trackWebEvent('LOG_LEVEL_CLICKED', {{log_level_obj}})">{{level}}</a></div>:
+                                <div class="fixed-font">{{stat.count}}({{log_distribution}})</div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <div class="separator"></div>
+            <div id="anchors_container">
+                <h3>Interesting events from FunOS logs</h3>
+                <!-- <div>
+                    <input type="checkbox" id="failedAnchors" value="showFailedAnchors" onchange="toggleShowOnlyFailedAnchors(this)" checked>
+                    <label for="failedAnchors">Show only failed events?</label><br>
+                </div> -->
+                <div class="log_entries scrollable">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="text-align: left">Source</th>
+                                <th style="text-align: left">System ID</th>
+                                <th style="text-align: left">Timestamp</th>
+                                <th style="text-align: left">Description</th>
+                            </tr>
+                        </thead>
+                        <tbody id="anchors">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="anchors_button_container">
+                    <div>
+                        <button class="btn" disabled id="anchors_first" onclick="onPaginateAnchors(this)">First</button>
+                        <button class="btn" disabled id="anchors_prev" onclick="onPaginateAnchors(this)">Previous</button>
+                    </div>
+                    <div id="anchors_page"></div>
+                    <div>
+                        <button class="btn" disabled id="anchors_next" onclick="onPaginateAnchors(this)">Next</button>
+                        <button class="btn" disabled id="anchors_last" onclick="onPaginateAnchors(this)">Last</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="container">
+            <h3 id="recent">Recent
+                <select name="level" id="level" onchange="onSelectLevelForRecentLogs(this)">
+                    {% for level, stat in log_level_stats.items() %}
+                        {% if level == log_level_for_recent_logs %}
+                            <option value="{{level}}" selected>{{level}}</option>
+                        {% else %}
+                            <option value="{{level}}">{{level}}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+                logs for
+                <select name="sources" id="recent_source" onchange="onSelectSourceForRecentLogs(this)">
+                    <option value="all" selected>All</option>
+                    {% for source in sources %}
+                        <option value="{{source}}">{{source}}</option>
+                    {% endfor %}
+                </select> source(s)</h3>
+            <div class="content">
+                <div class="log_entries" id="recent_logs">
+                    {{recent_logs}}
+                </div>
+            </div>
+        </div>
+        <div class="container">
+            <h3 id="duplicates">Top 50 duplicated logs (all sources)</h3>
+            <div class="log_entries">
+                <!-- {% include 'analytics/'+log_id+'/duplicates.html' ignore missing %} -->
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="text-align: left">Duplicates</th>
+                            <th style="text-align: left">Source</th>
+                            <th style="text-align: left">System ID</th>
+                            <th style="text-align: left">Timestamp</th>
+                            <th style="text-align: left">Description</th>
+                        </tr>
+                    </thead>
+                    <tbody id="duplicates_body">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% include 'notes_overlay.html' %}
+</body>
+<script type="text/javascript">
+    // LOG VIEW URL for redirecting to the view with given query.
+    const LOG_VIEW_BASE_URL = "{{log_view_base_url}}";
+    const logLevelStatsElement = document.getElementById('log_level_stats');
+    const recentLogsElement = document.getElementById('recent_logs');
+
+    const logId = "{{log_id}}";
+    const sources = {{sources}};
+
+    // Total log entries indexed in ES
+    const totalEntries = Object.keys(sources).reduce((total, source) => (total + sources[source]), 0);
+    let logLevelStats = {{log_level_stats}};
+    const sortedLogLevel = Object.keys(logLevelStats).sort((level1, level2) => logLevelStats[level1]['order'] - logLevelStats[level2]['order']);
+    let selectedSourceForLogLevelStats = "all";
+    let selectedSourceForRecentLogs = "all", selectedLevelForRecentLogs = "{{log_level_for_recent_logs}}";
+
+    let analyticsData = {{analytics_data}};
+    let selectedSourceForAnchors = "all", showOnlyFailedAnchors = false;
+    const anchorTableBodyElement = document.getElementById('anchors');
+    const duplicateTableBodyElement = document.getElementById('duplicates_body');
+
+    let anchorsPage = 0;
+    const anchorsPrev = document.getElementById("anchors_prev");
+    const anchorsNext = document.getElementById("anchors_next");
+    const anchorsFirst = document.getElementById("anchors_first");
+    const anchorsLast = document.getElementById("anchors_last");
+    const anchorsPageEl = document.getElementById("anchors_page");
+
+    // Self invocation function
+    (function () {
+        // Update anchors when the DOM is available
+        updateAnchors();
+        updateDuplicates();
+
+        trackWebEvent('PAGE_VIEWED');
+    })();
+
+    // Registering click event to track clicks on hyperlinks of duplicate logs
+    document.getElementById('duplicates').addEventListener('click', function(element) {
+        trackClickOnLogEntries(element, 'DUPLICATE_LOG_CLICKED');
+    });
+
+    // Registering click event to track clicks on hyperlinks of recent logs
+    document.getElementById('recent_logs').addEventListener('click', function(element) {
+        trackClickOnLogEntries(element, 'RECENT_LOG_CLICKED');
+    });
+
+
+    function onClickExploreLogs() {
+        const filterQuery = buildSourceFilterQuery();
+        if (filterQuery === null) {
+            return;
+        }
+        const filters = {
+            "text": filterQuery
+        };
+        const filterString = JSON.stringify(filters);
+
+        let search_url = LOG_VIEW_BASE_URL + location.search;
+        if (filterString != "") {
+            search_url += (location.search === "" ? "?filter=" : "&filter=") + filterString;
+        }
+        search_url += location.hash;
+        window.open(search_url, "_blank");
+        trackWebEvent("EXPLORE_LOGS", data={filters: selectedFilters});
+    }
+
+
+    function onSelectSourceForLogLevelStats(sourceElement) {
+        // Fetch log level stats for the selected source
+        let xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                let data = JSON.parse(xhttp.responseText);
+                if (data) {
+                    selectedSourceForLogLevelStats = sourceElement.value;
+                    updateLogLevelStats(data);
+                }
+            }
+        }
+
+        let uri = `${window.location.href}/level-stats`;
+        if (sourceElement.value !== 'all') {
+            source = sourceElement.value;
+            uri = `${uri}?source=${source}`;
+        }
+
+        xhttp.open('GET', uri);
+        xhttp.send();
+        trackWebEvent("LOG_LEVEL_DIST_SOURCE_UPDATED", data=sourceElement.value);
+    }
+
+    function updateLogLevelStats(stats) {
+        // Updates the Log Level distribution
+        let totalEntriesForSource = selectedSourceForLogLevelStats === "all" ?
+                                    totalEntries :
+                                    sources[selectedSourceForLogLevelStats];
+        const logViewUrlForSource = getLogViewURLForSources([selectedSourceForLogLevelStats]);
+
+        // Sorting log levels by severity order
+        const logLevels = Object.keys(stats).sort((level1, level2) => stats[level1]['order'] - stats[level2]['order']);
+
+        let divs = [`<div class="level_stat"><div><a href="${logViewUrlForSource}" target="_blank">Total</a></div>: <div class="fixed-font">${totalEntriesForSource}(${Math.round((totalEntriesForSource/totalEntries)*100)}%)</div></div>`];
+        for (const level of logLevels) {
+            const stat = stats[level];
+            // let logDistribution = Math.round((stat.count/totalEntriesForSource)*100);
+            let logDistribution = ((stat.count/totalEntriesForSource)*100).toFixed(2);
+            divs.push(`<div class="level_stat" title="${stat.keywords}"><div><a href="${stat.log_view_url}" target="_blank">${level}</a></div>: <div class="fixed-font">${stat.count}(${logDistribution}%)</div></div>`);
+        }
+        logLevelStatsElement.innerHTML = divs.join('\n');
+    }
+
+    function onSelectLevelForRecentLogs(levelElement) {
+        selectedLevelForRecentLogs = levelElement.value;
+        fetchRecentLogs();
+    }
+
+    function onSelectSourceForRecentLogs(sourceElement) {
+        selectedSourceForRecentLogs = sourceElement.value;
+        fetchRecentLogs();
+    }
+
+    function fetchRecentLogs() {
+        // Fetch recent logs for the selected level source
+        let xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                const data = xhttp.responseText;
+                if (data) {
+                    updateRecentLogs(data);
+                }
+            }
+        }
+
+        let uri = `${window.location.href}/recent?level=${selectedLevelForRecentLogs}`;
+        if (selectedSourceForRecentLogs !== 'all') {
+            uri = `${uri}&source=${selectedSourceForRecentLogs}`;
+        }
+
+        xhttp.open('GET', uri);
+        xhttp.send();
+        trackWebEvent("RECENT_LOGS_UPDATED", {
+            level: selectedLevelForRecentLogs,
+            source: selectedSourceForRecentLogs
+        });
+    }
+
+    function updateRecentLogs(logs) {
+        recentLogsElement.innerHTML = logs;
+    }
+
+    function toggleShowOnlyFailedAnchors(element) {
+        showOnlyFailedAnchors = element.checked;
+        updateAnchors();
+        trackWebEvent("TOGGLE_SHOW_FAILED_ANCHORS", { flag: element.checked });
+    }
+
+    function onPaginateAnchors(buttonEl) {
+        anchorsPage = parseInt(buttonEl.dataset.page);
+        // Fetch recent logs for the selected level source
+        let xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                const data = xhttp.responseText;
+                if (data) {
+                    analyticsData = {
+                        ...analyticsData,
+                        ...JSON.parse(data)
+                    }
+                    updateAnchors();
+                }
+            }
+        }
+
+        let uri = `${window.location.href}/anchors?page=${anchorsPage}`;
+        xhttp.open('GET', uri);
+        xhttp.send();
+        trackWebEvent("ANCHORS_PAGINATE", { page: anchorsPage });
+    }
+
+    function updateAnchors() {
+        let tableRows = [];
+        for (const anchor of analyticsData['anchors']) {
+            if ((showOnlyFailedAnchors && !anchor['is_failure'])
+                || (selectedSourceForAnchors !== "all" && anchor['source'] !== selectedSourceForAnchors)) {
+                continue;
+            }
+
+            tableRows.push(
+                `<tr>
+                    <td>${anchor['source']}</td>
+                    <td>${anchor['system_id']}</td>
+                    <td>${anchor['datetime']}</td>
+                    <td><a href="${anchor['link']}" target="_blank" data-web_event="ANCHOR_CLICKED">${anchor['description']}</a></td>
+                </tr>`
+            );
+        }
+
+        const total_pages = analyticsData["anchors_meta"]["total_pages"];
+
+        // Updating the pagination buttons of anchors panel
+        anchorsPrev.disabled = !analyticsData["previous_anchors"];
+        anchorsPrev.dataset.page = anchorsPage - 1;
+        anchorsNext.disabled = !analyticsData["next_anchors"];
+        anchorsNext.dataset.page = anchorsPage + 1;
+        anchorsFirst.disabled = anchorsPage === 0;
+        anchorsFirst.dataset.page = 0;
+        anchorsLast.disabled = anchorsPage === (total_pages-1);
+        anchorsLast.dataset.page = total_pages-1;
+
+        if (analyticsData["anchors"].length > 0) {
+            anchorsPageEl.innerText = `Page ${anchorsPage+1} out of ${total_pages > 0 ? total_pages : 'NULL'}`;
+        }
+
+        if (tableRows.length === 0) {
+            anchorTableBodyElement.innerHTML = `<div>No results</div>`;
+            return;
+        }
+        anchorTableBodyElement.innerHTML = tableRows.join('\n');
+    }
+
+    function updateDuplicates() {
+        let tableRows = [];
+        for (const duplicate of analyticsData['duplicates']) {
+            tableRows.push(
+                `<tr>
+                    <td>${duplicate['count']}</td>
+                    <td>${duplicate['source']}</td>
+                    <td>${duplicate['system_id']}</td>
+                    <td>${duplicate['datetime']}</td>
+                    <td><a href="${duplicate['link']}" target="_blank">${duplicate['msg']}</a></td>
+                </tr>`
+            );
+        }
+        if (tableRows.length === 0) {
+            duplicateTableBodyElement.innerHTML = `<div>No results</div>`;
+            return;
+        }
+        duplicateTableBodyElement.innerHTML = tableRows.join('\n');
+    }
+
+    function getLogViewURLForSources(sources) {
+        // Creates a LOG VIEW URL for the given sources
+        if (sources.includes("all")) {
+            // If no source is selected
+            return LOG_VIEW_BASE_URL;
+        }
+
+        let query = encodeURI(`src:(${sources.join(" or ")})`);;
+        const log_view_url = `${LOG_VIEW_BASE_URL}/search?query=${query}`;
+        return log_view_url;
+    }
+
+    function appendQueryForFilter(query, filterKey, filters=[], operation="and") {
+        // Form a query and append to an existing query
+
+        // If no filters are present
+        if (filters.length === 0) {
+            return query;
+        }
+
+        // If all the filters are included
+        if (filters.includes("all")) {
+            return query;
+        }
+
+        // If it is not the first query then it needs to be
+        // appended with an operation either OR or AND.
+        if (query !== "") {
+            query = `${query} ${operation}`;
+        }
+
+        encodedQuery = encodeURI(`${filterKey}:(${filters.join(" or ")})`);
+        query = `${query} ${encodedQuery}`;
+        return query;
+    }
+
+    function trackClickOnLogEntries(element, eventName) {
+        // track event only if an anchor link is clicked
+        if (element.target.tagName.toUpperCase() === 'A') {
+            trackWebEvent(eventName, { link: element.target.href });
+        }
+    }
+
+</script>
+</html>

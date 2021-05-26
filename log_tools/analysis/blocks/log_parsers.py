@@ -4,6 +4,7 @@
 
 import datetime
 import io
+import logging
 import math
 import os
 import re
@@ -19,30 +20,34 @@ class FunOSInput(Block):
     def lines2tuples(self, iter):
         uboot_done = False
 
-        for (_, _, uid, _, line) in iter:
+        for (_, _, system_type, system_id, uid, _, _, line) in iter:
             line = line.strip()
 
             if not uboot_done and self.is_uboot(line):
                 # TODO (jimmy): deal with u-boot lines
                 continue
             else:
-                uboot_done = True
+                try:
+                    uboot_done = True
 
-                # Example:
-                # [23.855474 1.5.2] NOTICE nvdimm ...
-                ts_vp_sep = line.find(']')
+                    # Example:
+                    # [23.855474 1.5.2] NOTICE nvdimm ...
+                    ts_vp_sep = line.find(']')
 
-                # Empty or malformed line ewwwww
-                if not line.startswith('[') or ts_vp_sep == -1:
+                    # Empty or malformed line ewwwww
+                    if not line.startswith('[') or ts_vp_sep == -1:
+                        continue
+
+                    ts_vp = line[1:ts_vp_sep]
+                    ts, vp = self.split_ts_vp(ts_vp)
+
+                    date_time, usecs = self.normalize_ts(ts)
+                    line = '[{}] {}'.format(vp, line[ts_vp_sep + 1:])
+
+                    yield (date_time, usecs, system_type, system_id, uid, None, None, line)
+                except:
+                    logging.warning(f'Malformed line in FUNOS logs: {line}')
                     continue
-
-                ts_vp = line[1:ts_vp_sep]
-                ts, vp = self.split_ts_vp(ts_vp)
-
-                date_time, usecs = self.normalize_ts(ts)
-                line = '[{}] {}'.format(vp, line[ts_vp_sep + 1:])
-
-                yield (date_time, usecs, uid, None, line)
 
     @staticmethod
     def is_uboot(line):
@@ -80,14 +85,14 @@ class FunOSInput(Block):
         #
         #               Also, the resulting object is timezone-naive. This
         #               is a general question for logs: should we use UTC?
-        dt = datetime.datetime.fromtimestamp(secs + float(usecs) * 1e-6)
+        dt = datetime.datetime.utcfromtimestamp(secs + float(usecs) * 1e-6)
         return dt, usecs
 
 
 class ISOFormatInput(Block):
     """ Handles logs with ISO format timestamps """
     def process(self, iters):
-        for (_, _, uid, _, line) in iters[0]:
+        for (_, _, system_type, system_id, uid, _, _, line) in iters[0]:
             line = line.strip()
 
             # Example:
@@ -97,7 +102,7 @@ class ISOFormatInput(Block):
             iso_format_datetime = parts[0] + ' ' + parts[1]
             d = datetime.datetime.fromisoformat(iso_format_datetime)
 
-            yield (d, d.microsecond, uid, None, parts[2])
+            yield (d, d.microsecond, system_type, system_id, uid, None, None, parts[2])
 
 
 class GenericInput(Block):
@@ -106,8 +111,11 @@ class GenericInput(Block):
     <MILLISECONDS|MICROSECONDS|EMPTY> <TIMEZONE_OFFSET|EMPTY> <MESSAGE>
     """
     def process(self, iters):
-        for (_, _, uid, _, line) in iters[0]:
+        for (_, _, system_type, system_id, uid, _, _, line) in iters[0]:
             line = line.strip()
+            # Ignore if the line is empty
+            if line == '':
+                continue
 
             # Match order <FILE_NAME|EMPTY> <DATE> <TIMESTAMP> <MILLISECONDS|MICROSECONDS|EMPTY>
             # <TIMEZONE_OFFSET|EMPTY> <MESSAGE>
@@ -118,8 +126,10 @@ class GenericInput(Block):
             # 2020-08-05 02:20:16.863085 -0700 PDT XXX
             # [simple_ctx_scheduler.go:128] 2020-08-05 02:20:16.863085 -0700 PDT XXX
             # simple_ctx_scheduler.go:128 2020-08-05 02:20:16.863085 XXX
+            # 2021-02-11T12:08:00.951926Z DBG XXX
+            # [2021-04-29 04:20:32,492] INFO shutting down (kafka.server.KafkaServer)
             m = re.match(
-                r'^(\[[\S]+\]\s|[\S]+\s|)([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+).([0-9]+)\s?((?:-|\+|)[0-9]{4}|)([\s\S]*)',
+                r'^(\[[\S]+\]\s|[\S]+\s|)(?:\[|)([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+).([0-9]+)(?:\]|)\s?((?:-|\+|)[0-9]{4}|Z|)([\s\S]*)',
                 line)
 
             if m:
@@ -132,7 +142,9 @@ class GenericInput(Block):
                 # Prepending filename if present to the log message
                 if filename:
                     msg = filename.strip() + ' ' + msg.strip()
-                yield (date_time, usecs, uid, None, msg)
+                yield (date_time, usecs, system_type, system_id, uid, None, None, msg)
+            else:
+                logging.warning(f'Malformed line in {uid}: {line}')
 
     @staticmethod
     def extract_timestamp(day_str, time_str, secs_str):
@@ -152,7 +164,7 @@ class KeyValueInput(Block):
     Handles logs with key value log format
     """
     def process(self, iters):
-        for (_, _, uid, _, line) in iters[0]:
+        for (_, _, system_type, system_id, uid, _, _, line) in iters[0]:
             line = line.strip()
 
             # Matches the line into a list of key value tuple
@@ -174,9 +186,9 @@ class KeyValueInput(Block):
                 # Extract the log message's level either from the log or from the name of the log file
                 # This field then can be indexed to the log storage and be used for filtering out the
                 # logs. TODO (Sourabh): Need to standardize the names of log message levels
-                msg = log_fields.get('level', 'info') + ' ' + log_fields.get('msg', '')
+                msg = log_fields.get('msg', '')
 
-                yield (date_time, usecs, uid, None, msg)
+                yield (date_time, usecs, system_type, system_id, uid, None, log_fields.get('level'), msg)
 
     @staticmethod
     def extract_timestamp(time_str):

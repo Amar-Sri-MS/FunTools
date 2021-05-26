@@ -1,0 +1,17 @@
+{% if body == '' %}
+    <!-- There are no logs to show  -->
+    <div>No logs</div>
+{% else %}
+<table>
+    <thead>
+        <tr>
+            {% for header in head %}
+            <th style="text-align: left">{{header}}</th>
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+       {{body}}
+    </tbody>
+</table>
+{% endif %}

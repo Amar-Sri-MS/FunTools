@@ -1,0 +1,53 @@
+#!/bin/sh
+
+BIN_PATH="/usr/bin"
+ST_STP_D=/sbin/start-stop-daemon
+DPC_SOCKET=/tmp/dpc.sock
+DPC_PID_FILE=/tmp/dpc.pid
+
+if [[ ! -f ${ST_STP_D} ]]; then
+	echo "${ST_STP_D} not found"
+	return 1
+fi
+
+start_dpc_proxy()
+{
+	echo "Starting dpc proxy"
+
+	OPTS="--background --make-pidfile --pidfile ${DPC_PID_FILE} --startas ${BIN_PATH}/dpcsh"
+	CMD="--start -- --pcie_nvme_sock=/dev/nvme0 --nvme_cmd_timeout=10000 --unix_proxy=${DPC_SOCKET}"
+
+	${ST_STP_D} ${OPTS} ${CMD}
+
+	timeout 60 bash -c -- 'while [ ! -e ${DPCSH_SOCKET} ]; do echo "Waiting for dpcsh socket to be open" && sleep 2; done'
+}
+
+stop_by_pid()
+{
+	OPTS="--pidfile $1 --retry TERM/10/KILL/5"
+	CMD="--stop"
+
+	${ST_STP_D} ${OPTS} ${CMD} || true
+	rm $1 || true
+}
+
+case "$1" in
+start)
+	start_dpc_proxy
+	echo "done."
+	;;
+
+stop)
+	echo "Stopping dpc proxy"
+	stop_by_pid ${DPC_PID_FILE}
+	echo "done."
+	;;
+
+*)
+	echo "Usage: /etc/init.d/dpc {start|stop}"
+	exit 1
+	;;
+esac
+
+exit 0
+

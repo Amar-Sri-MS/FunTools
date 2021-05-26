@@ -31,7 +31,7 @@ GB = KB ** 3
 # execution address that u-boot will relocate data to (this is important for elf files,
 # and might not be relevant if file format is changed and the data is loaded directly
 # into the execution address)
-LOAD_ADDR = 0xffffffff91000000
+LOAD_ADDR = 0xa800000021000000
 
 # Block size used by u-boot when operating on a raw MMC device. Unless a filesystem
 # is used on top of the MMC, u-boot will only perform block-aligned block-size accesses,
@@ -98,7 +98,7 @@ def trunc_file(infile_name, outfile_name, size):
 def trunc_head_file(infile_name, outfile_name, size):
     """Remove @size bytes from beginning of file"""
     with open(outfile_name, 'wb') as outfile:
-        with open(infile_name) as infile:
+        with open(infile_name, 'rb') as infile:
             infile.seek(size, 0)
             while True:
                 data = infile.read(4096)
@@ -111,7 +111,7 @@ def trunc_head_file(infile_name, outfile_name, size):
 def merge_file(infile_name, outfile_name):
     """Append infile file to the end of outfile file"""
     with open(outfile_name, 'ab') as outfile:
-        with open(infile_name) as infile:
+        with open(infile_name, 'rb') as infile:
             outfile.seek(0, 2)
             while True:
                 data = infile.read(4096)
@@ -121,14 +121,14 @@ def merge_file(infile_name, outfile_name):
                     break
 
 
-def gen_hex_file(infile_name, outfile_name, append):
+def gen_hex_file(infile_name, outfile_name, append, width):
     mode = 'ab' if append else 'wb'
     cmd = ['hexdump',
            '-v',
-           '-e', '64/1 "%02X"',
+           '-e', '{}/1 "%02X"'.format(width),
            '-e', '"\n"']
     with open(outfile_name, mode) as outfile:
-        with open(infile_name) as infile:
+        with open(infile_name, 'rb') as infile:
             subprocess.call(cmd, stdin=infile, stdout=outfile)
 
 
@@ -202,7 +202,7 @@ def gen_boot_script(filename, funos_start_blk, ccfg_start_blk, linux_start_blk=-
                 load_size=filesize(g.appfile)))
         outfile.write('elf_get_extent ${loadaddr};\n')
         outfile.write('mmc dev; mmc read ${elf_extent} ${ccfg_mmcstart} 0; loadblob ${elf_extent};\n')
-
+        outfile.write('setenv bss_clear 0;\n')
         outfile.write('bootelf -p ${loadaddr};\n')
 
     # default location in full Fungible workspace
@@ -292,6 +292,10 @@ def run():
     parser.add_argument(
         '--hex', help='Generate output in hex format (for Palladium)', action='store_true')
     parser.add_argument(
+        '--hex-width', help='Hex output width in bytes (F1,S1 need 64, F1D1 needs 32)',
+        type=int, default=32
+    )
+    parser.add_argument(
         '--signed', help='Input images are signed', action='store_true')
     parser.add_argument(
         '--fsfile', help='File(s) to put in the filesystem', action='append')
@@ -346,7 +350,7 @@ def run():
 
     if g.hex:
         for f in enumerate(files):
-            gen_hex_file(f[1], outfile_hex, bool(f[0]))
+            gen_hex_file(f[1], outfile_hex, bool(f[0]), g.hex_width)
 
     output_descr = {
         'emmc_image.bin' : 'complete eMMC image',

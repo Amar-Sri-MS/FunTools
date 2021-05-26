@@ -24,7 +24,7 @@ decode_ccucmd(uint64_t cmd, const char *description)
 	       (cmd >> CCU_CMD_CRSV_SHF) & CCU_CMD_CRSV_MSK,
 	       (cmd >> CCU_CMD_TAG_SHF) & CCU_CMD_TAG_MSK,
 #else
-	       0, 0, 0,  /* these fields are not valid for CSRv2 */
+	       0LL, 0LL, 0LL,  /* these fields are not valid for CSRv2 */
 #endif
 	       (cmd >> CCU_CMD_ADDR_SHF) & CCU_CMD_ADDR_MSK);
 }
@@ -33,7 +33,7 @@ decode_ccucmd(uint64_t cmd, const char *description)
  * Dump relevant portions of the CCU.
  */
 static void
-ccu_dump(ccu_info_t *ccu_info)
+ccu_dump(struct ccu_info_t *ccu_info)
 {
 	uint64_t *ccu64 = (uint64_t *)ccu_info->mmap;
 	uint32_t *ccu32 = (uint32_t *)ccu_info->mmap;
@@ -69,7 +69,7 @@ ccu_dump(ccu_info_t *ccu_info)
  * Indirect Register Read.
  */
 static void
-csr_wide_read(ccu_info_t *ccu_info,
+csr_wide_read(struct ccu_info_t *ccu_info,
 	      uint64_t addr,
 	      uint64_t *data,
 	      uint32_t size)
@@ -106,7 +106,7 @@ csr_wide_read(ccu_info_t *ccu_info,
  * Indirect Register Write.
  */
 static void
-csr_wide_write(ccu_info_t *ccu_info,
+csr_wide_write(struct ccu_info_t *ccu_info,
 	       uint64_t addr,
 	       uint64_t *data,
 	       uint32_t size)

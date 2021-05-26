@@ -9,19 +9,18 @@
 ##############################################################################
 
 import sys
-import struct
 import os
 import hashlib
-import json
-import binascii
 import cgi
 
 import traceback
 
-from asn1crypto import core,algos
+from asn1crypto import core, algos, keys, pem
 
 from common import *
-from hsmd_common import hsmd_rpc_call
+from hsmd_common import (remote_hsm_get_modulus,
+                         remote_hsm_sign_hash_with_key,
+                         remote_hsm_sign_hash_with_modulus)
 
 
 RESTRICTED_PORT = 4443
@@ -51,12 +50,38 @@ MAGIC_NUMBER_ENROLL_CERT = 0xB1005C1E
 #
 ########################################################################
 
-def send_binary(binary_buffer):
+def send_binary(binary_buffer, filename = None):
+    if filename:
+        print("Content-Disposition: attachment; filename = %s" %
+              filename)
     print("Content-type: application/octet-stream")
     print("Status: 200 OK")
     print("Content-length: %d\n" % len(binary_buffer))
     sys.stdout.flush()
     sys.stdout.buffer.write(binary_buffer)
+
+#######################################################################
+#
+# DER operations: digest_info, rsapublickey
+#
+#######################################################################
+
+def gen_digest_info(algo_name, algo_digest):
+    digest = core.OctetString()
+    digest.set(algo_digest)
+    digest_algorithm = algos.DigestAlgorithm()
+    digest_algorithm['algorithm'] = algo_name
+    digest_info = algos.DigestInfo()
+    digest_info['digest_algorithm'] = digest_algorithm
+    digest_info['digest'] = digest
+    return digest_info.dump()
+
+
+def gen_rsa_pub_key_info(modulus, exponent=0x10001):
+    rsa = keys.RSAPublicKey()
+    rsa['modulus'] = int.from_bytes(modulus, byteorder='big')
+    rsa['public_exponent'] = exponent
+    return keys.PublicKeyInfo.wrap(rsa, "rsa")
 
 
 ########################################################################
@@ -65,90 +90,20 @@ def send_binary(binary_buffer):
 #
 ########################################################################
 
-def send_binary_modulus(form, key_label):
+def hsm_get_modulus(key_label):
     # get modulus from HSM
     with get_ro_session() as session:
-        modulus = get_modulus(get_public_rsa_with_label(session, key_label))
-        send_binary(modulus)
+        return get_modulus(get_public_rsa_with_label(session, key_label))
 
-def gen_sha512_digest_info(sha512_hash):
-    digest = core.OctetString()
-    digest.set(sha512_hash)
-    digest_algorithm = algos.DigestAlgorithm()
-    digest_algorithm['algorithm'] = 'sha512'
-    digest_info = algos.DigestInfo()
-    digest_info['digest_algorithm'] = digest_algorithm
-    digest_info['digest'] = digest
-    return digest_info.dump()
-
-def hsm_sign_hash_with_key(label, sha512_hash):
-    digest_info_der = gen_sha512_digest_info(sha512_hash)
+def hsm_sign_hash_with_key(label, digest_info):
     with get_ro_session() as session:
         private = get_private_rsa_with_label(session, label)
-        return private.sign(digest_info_der, mechanism=pkcs11.Mechanism.RSA_PKCS)
+        return private.sign(digest_info, mechanism=pkcs11.Mechanism.RSA_PKCS)
 
-def hsm_sign_hash_with_modulus(modulus, sha512_hash):
-    digest_info_der = gen_sha512_digest_info(sha512_hash)
+def hsm_sign_hash_with_modulus(modulus, digest_info):
     with get_ro_session() as session:
         private = get_private_rsa_with_modulus(session, modulus)
-        return private.sign(digest_info_der, mechanism=pkcs11.Mechanism.RSA_PKCS)
-
-
-def hsm_send_modulus(form, key_label):
-
-    # send in binary format by default for this application
-    # to ease transition
-    out_format = safe_form_get(form, "format", "binary")
-    if out_format == "binary":
-        send_binary_modulus(form, key_label)
-    else:
-        print("Content-type: text/plain")
-        send_modulus(form, key_label)
-
-
-
-########################################################################
-#
-# Operation with remote HSM
-#
-########################################################################
-
-def make_json_rpc_call(cmd, params=None, **kwargs):
-
-    if not params:
-        params=kwargs
-    json_cmd = {'jsonrpc': '2.0', 'method': cmd, 'params': params, 'id': 1 }
-    return json.dumps(json_cmd)
-
-def get_result(json_rpc_return):
-    response = json.loads(json_rpc_return)
-    # look for an error
-    if "error" in response:
-        err = response["error"]
-        raise ValueError("HSM returned error %d: %s" %
-                         (err.get("code", 0), err.get("message", "")))
-    return response["result"]
-
-
-def remote_hsm_send_modulus(form, key_label):
-
-    # package the request into json
-    json_rpc_call = make_json_rpc_call("pubkey", key=key_label)
-    json_rpc_return = hsmd_rpc_call(json_rpc_call)
-
-    modulus_b64 = get_result(json_rpc_return)
-    if modulus_b64 is None:
-        raise ValueError("Key \"%s\" not found on remote HSM" %
-                         key_label)
-
-    modulus = binascii.a2b_base64(modulus_b64)
-
-    out_format = safe_form_get(form, "format", "binary")
-    if out_format == "binary":
-        send_binary(modulus)
-    else:
-        print("Content-type: text/plain")
-        send_binary_buffer(modulus, form)
+        return private.sign(digest_info, mechanism=pkcs11.Mechanism.RSA_PKCS)
 
 ########################################################################
 #
@@ -164,22 +119,36 @@ def get_binary_from_form(form, name):
     return ret
 
 
+def cmd_modulus(form):
+
+    key_label = safe_form_get(form, "key", "fpk4")
+    hsm_id = int(safe_form_get(form, "production", 0))
+
+    if hsm_id and key_label != "fpk4":
+        modulus = remote_hsm_get_modulus(key_label, hsm_id)
+    else:
+        modulus = hsm_get_modulus(key_label)
+
+    out_format = safe_form_get(form, "format", "binary")
+    if out_format == "binary":
+        send_binary(modulus, "%s_%d_modulus.bin" % (key_label, hsm_id))
+    elif out_format == "public_key":
+        pub_key_info = gen_rsa_pub_key_info(modulus)
+        pub_key_info_pem = pem.armor('PUBLIC_KEY', pub_key_info.dump())
+        send_binary(pub_key_info_pem, "%s_%d.pem" % (key_label, hsm_id))
+    else:
+        print("Content-type: text/plain")
+        send_binary_buffer(modulus, form)
+
+
 def process_query():
 
     form = cgi.FieldStorage()
 
-    production = int(safe_form_get(form, "production", 0))
     cmd = safe_form_get(form, "cmd", "modulus")
 
     if cmd == "modulus":
-
-        key_label = safe_form_get(form, "key", "fpk4")
-
-        if production and key_label != "fpk4":
-            remote_hsm_send_modulus(form, key_label)
-        else:
-            hsm_send_modulus(form, key_label)
-
+        cmd_modulus(form)
     else:
         raise ValueError("Invalid command")
 
@@ -188,20 +157,47 @@ def sign():
     form = cgi.FieldStorage()
 
     # is there a hash provided?
-    sha512_hash = get_binary_from_form(form, "digest")
+    algo_digest = get_binary_from_form(form, "digest")
+    algo_name = safe_form_get(form, "algo", "sha512") # default and back ward compatible
 
-    if len(sha512_hash) != hashlib.sha512().digest_size:
-        raise ValueError("Digest is %d bytes, expected %d" %
-                        (len(sha512_hash), hashlib.sha512.digest_size))
+    if algo_name in hashlib.algorithms_available:
+        algo = hashlib.new(algo_name)
+        if len(algo_digest) != algo.digest_size:
+            raise ValueError("Digest is %d bytes, expected %d bytes for %s" %
+                             (len(algo_digest), algo.digest_size, algo_name))
+
+    digest_info = gen_digest_info(algo_name, algo_digest)
+
+    auth_token = safe_form_get(form, "auth_token", None)
+
+    # hsm_id: default to 0 but to 1 if auth_token
+    # (backward compatibility with old clients)
+    hsm_id = int(safe_form_get(form,
+                               "production",
+                               1 if auth_token else 0))
 
     key_label = safe_form_get(form, "key", None)
     if key_label:
-        signature = hsm_sign_hash_with_key(key_label, sha512_hash)
+        if auth_token:
+            signature = remote_hsm_sign_hash_with_key(key_label,
+                                                      digest_info,
+                                                      auth_token,
+                                                      hsm_id)
+        else:
+            signature = hsm_sign_hash_with_key(key_label,
+                                               digest_info)
     else:
         modulus = get_binary_from_form(form, "modulus")
         if len(modulus) == 0:
             raise ValueError("No key or modulus specified for sign command")
-        signature = hsm_sign_hash_with_modulus(modulus, sha512_hash)
+        if auth_token:
+            signature = remote_hsm_sign_hash_with_modulus(modulus,
+                                                          digest_info,
+                                                          auth_token,
+                                                          hsm_id)
+        else:
+            signature = hsm_sign_hash_with_modulus(modulus,
+                                                   digest_info)
 
     # send binary signature back
     send_binary(signature)

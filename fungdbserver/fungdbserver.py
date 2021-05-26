@@ -183,6 +183,12 @@ def get_script():
 #
 
 def open_idzip(fname, use_http):
+
+    if (not have_idzip):
+        print("cannot open this file without idzip package")
+        print("% pip3 install python-idzip")
+        sys.exit(1)
+    
     idzip.decompressor.SELECTED_CACHE = idzip.caching.LuckyCache
     if (use_http):
         # just hand over the file directly
@@ -211,12 +217,19 @@ class FileCorpse:
             "_vplocal_arr",
             "_topo_vp",
             "exception_stack_memory",
+            "stack_memory",
             "PLATFORM_DEBUG_CONSTANT_vplocal_stride",
             "PLATFORM_DEBUG_CONSTANT_debug_context_offset",
             "PLATFORM_DEBUG_CONSTANT_ccv_state_invalid",
             "PLATFORM_DEBUG_CONSTANT_ccv_state_offline",
             "PLATFORM_DEBUG_CONSTANT_ccv_state_online",
             "PLATFORM_DEBUG_CONSTANT_topo_vp_stride",
+            "PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_TOKEN_SHIFT",
+            "PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_CLUSTER_SHIFT",
+            "PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_CORE_SHIFT",
+            "PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_VP_SHIFT",
+            "PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_SIZE",
+            "PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_BAD_MASK",
         ]
         self.symbols = None
 
@@ -253,11 +266,44 @@ class FileCorpse:
     def badread(self, n):
         return b"\xde\xad\xbe\xef\xde\xad\xbe\xef"[:n]
 
+    def va_clean(self, addr):
+        # truncate remaining bits to 8gb
+        addr &= (8<<30)-1
+        if (addr < self.memoffset):
+            return None
+
+        return addr
+
+    def decode_dispatch_stack_addr(self, addr):
+
+        # filter out bogus
+        if (addr & self.rdsym("PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_BAD_MASK")):
+            return None
+        
+        cluster = (addr >> self.rdsym("PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_CLUSTER_SHIFT")) & 0xf
+        core = (addr >> self.rdsym("PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_CORE_SHIFT")) & 0xf
+        vp = (addr >> self.rdsym("PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_VP_SHIFT")) & 0xf
+
+        vpnum = self.ccv_vpnum(cluster, core, vp)
+
+        ss = self.rdsym("PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_SIZE")
+        
+        va = self.symbols["stack_memory"]
+        va += vpnum * ss
+        va += addr & (ss-1)
+
+        return self.va_clean(va)
+        
     def virt2phys(self, addr):
 
         # check the top bit for TLB VA
         kseg = addr >> 56
         if (kseg == 0xc0):
+            ## dispatch stack
+            if (((addr >> self.rdsym("PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_TOKEN_SHIFT")) & 0xf) >= 0xe):
+                return self.decode_dispatch_stack_addr(addr)
+            
+            ## guard page
             # magic expander section
             if (addr & (1<<47)):
                 addr &= ~(1<<47);
@@ -269,10 +315,7 @@ class FileCorpse:
         elif (kseg == 0xff):
             addr = addr & 0x1fffffff
 
-        # truncate remaining bits to 8gb
-        addr &= (8<<30)-1
-        if (addr < self.memoffset):
-            return None
+        addr = self.va_clean(addr)
 
         return addr
 
@@ -283,6 +326,9 @@ class FileCorpse:
 
     def elf_offset(self, addr):
         phys = self.virt2phys(addr)
+
+        if (phys is None):
+            return None
 
         if not self.elf_phdrs:
             self.elf_load_phdrs()
@@ -420,6 +466,8 @@ class FileCorpse:
 
 
     def GetNextThreadId(self):
+        if (len(self.thread_list) == 0):
+            return None
         if (self.thread_enumerator >= self.threadcount):
             return None
         tid = self.thread_list[self.thread_enumerator]
@@ -429,9 +477,9 @@ class FileCorpse:
     def GetFirstThreadId(self):
         if (len(self.thread_list) > 0):
             self.thread_enumerator = 0
-            return self.GetNextThreadId()
+            return self.thread_list[0]
         else:
-            return 0
+            return None
 
     def rdsym(self, symname):
 
@@ -890,12 +938,14 @@ def jtag_ReadMemory(size, addr):
     return r
 
 def jtag_SetCpuThreadId(obj, tid):
-    if (tid > 0):
+    if (tid >= 1000):
         tid -= 1000
         corpse.SetThreadId(tid)
     obj.send("OK")
 
 def jtag_GetCpuThreadId():
+    if (corpse.symbols is None):
+        return 0 # nonsense
     return 1000 + corpse.GetThreadId()
 
 def jtag_ReadReg(name):
@@ -903,8 +953,10 @@ def jtag_ReadReg(name):
 
 def jtag_GetFirstThreadId():
     tid = corpse.GetFirstThreadId()
-    if (tid != 0):
+    if (tid != None):
         tid += 1000
+    else:
+        tid = 0
     return tid
 
 def jtag_GetNextThreadId():
@@ -914,13 +966,13 @@ def jtag_GetNextThreadId():
     return 1000 + tid
 
 def jtag_IsRunning(tid):
-    if (tid == 0):
+    if (tid < 1000):
         return False
     tid -= 1000
     return corpse.IsRunning(tid)
 
 def jtag_GetThreadInfo(tid):
-    if (tid == 0):
+    if (tid < 1000):
         return False
     tid -= 1000
     return corpse.GetThreadInfo(tid)
@@ -968,6 +1020,12 @@ DEF_SYMS = {
     "PLATFORM_DEBUG_CONSTANT_ccv_state_offline": 1,
     "PLATFORM_DEBUG_CONSTANT_ccv_state_online": 2,
     "PLATFORM_DEBUG_CONSTANT_topo_vp_stride": 24,
+    "PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_TOKEN_SHIFT": 44,
+    "PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_CLUSTER_SHIFT": 40,
+    "PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_CORE_SHIFT": 36,
+    "PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_VP_SHIFT": 32,
+    "PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_SIZE": 4096,
+    "PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_BAD_MASK": ~0,
     }
 
 def _default_sym(symname):
@@ -1136,8 +1194,6 @@ class GDBClientHandler(object):
             def handle_g(subcmd):
                 if subcmd == '':
                     tid = jtag_GetCpuThreadId()
-                    if (tid == 0):
-                        self.send('E 37')
                     DEBUG("register read request on %d" % tid)
                     # make all the registers
                     registers = jtag_GetRegList()
@@ -1331,6 +1387,9 @@ def run_gdb_async(port, elffile):
             
     cmd += ["-ex", "target remote :%s" % port,
             "-ex", "compare-sections .note.gnu.build-id"]            
+
+    # make sure we discard gdb's bootstrap register state
+    cmd += ["-ex", "flushregs"]
 
     if (opts.crashlog):
         cmd += ["-ex", "crashlog",

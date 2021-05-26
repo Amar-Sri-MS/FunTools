@@ -19,26 +19,23 @@ logger = logging.getLogger("dbgutils")
 logger.setLevel(logging.INFO)
 
 #
-# Determine whether we are in CSR2 mode. This will eventually be the only
-# supported mode, once CSR1 is consigned to the historical graveyard. Then
-# we can get rid of this ugly code.
+# Determine whether csr2 mode or csr1 mode based on chip type
 #
-# This needs to run before the other code in this module, because a lot
-# of the argument parsing must be initialized at module load time, given
-# the way decorators are used in the cmd2 module.
-#
-csr2_parser = argparse.ArgumentParser()
-csr2_parser.add_argument('--csr2', action='store_true',
-                         help='use CSR2 instead of CSR1')
-csr2_args, csr2_remaining_args = csr2_parser.parse_known_args()
-sys.argv = [sys.argv[0]] + csr2_remaining_args
+chip_type_parser = argparse.ArgumentParser()
+chip_type_parser.add_argument('-c', nargs=1,  metavar=('chip_type'), dest='chip_type', choices=['f1', 's1', 'f1d1'], type=str, help='chip type', required = True)
+chip_type_args, chip_type_remaining_args = chip_type_parser.parse_known_args()
+sys.argv = [sys.argv[0]] + chip_type_remaining_args
 
-# The magic boolean that determines if we are in CSR1 or CSR2 mode.
-csr2_mode = csr2_args.csr2
+# Check if it should be CSR1 or CSR2 mode.
+chip_type = chip_type_args.chip_type[0]
+csr2_mode = True if chip_type != 'f1' else False
+
+logger.debug('chip type: {}'.format(csr2_mode))
 
 # csr2 has dependency on FunHW repo, So, for simplicity of usage don't import csr2utils
 if csr2_mode:
     from csr2utils import *
+    csr2utils.load_csr_spec(chip_type_args.chip_type[0])
 
 # Returns action class for field argument min length check
 def required_length_append(nmin):
@@ -124,7 +121,8 @@ class dbgsh(cmd2.Cmd):
     global csr2_mode
 
     intro = ('Welcome to the debug shell. Type help or ? to list commands.\n'
-            '\n\t********* MODE: CSR{} **********\n').format(2 if csr2_mode else 1)
+            '\n\t********* MODE: CSR{}({}) **********\n').format(
+                    2 if csr2_mode else 1, chip_type)
 
     parser = argparse.ArgumentParser(prog='csr', formatter_class=ArgFormatter)
     subparsers = parser.add_subparsers(help='csr sub-command help')
@@ -205,12 +203,15 @@ class dbgsh(cmd2.Cmd):
 
     parser_list = subparsers.add_parser('list',
                 help="List maching csr instances", formatter_class=ArgFormatter)
-    parser_list.set_defaults(func=csr_list)
     parser_list.add_argument('csr', nargs=1, type=str, help="csr name")
-    parser_list.add_argument('-a', nargs=1,
-                metavar=('anode_name'), dest='anode', help="anode name")
-    parser_list.add_argument('-r', nargs=1,
-                metavar=('ring_name'), dest='ring', type=str, help="ring name")
+    if not csr2_mode:
+        parser_list.set_defaults(func=csr_list)
+        parser_list.add_argument('-a', nargs=1,
+                    metavar=('anode_name'), dest='anode', help="anode name")
+        parser_list.add_argument('-r', nargs=1,
+                    metavar=('ring_name'), dest='ring', type=str, help="ring name")
+    else:
+        parser_list.set_defaults(func=csr2utils.csr2_list)
 
     if not csr2_mode:
         parser_find = subparsers.add_parser('find',

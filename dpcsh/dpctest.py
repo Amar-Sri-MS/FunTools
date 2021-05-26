@@ -9,10 +9,12 @@
 import json
 import os
 import sys
+import socket
 import subprocess
 import dpc_client
 import time
 import unittest
+import xmlrunner
 
 
 class TestDPCCommands(unittest.TestCase):
@@ -83,7 +85,7 @@ class TestDPCCommands(unittest.TestCase):
 
     def testVeryLargeCommands(self):
         """Tests that long messages don't get truncated or corrupted."""
-        for i in (10000, 100000):
+        for i in (10000, 50000, 100000, 1000000):
             print 'Attempting message of length %d' % i
             self.checkEchoMessage('b' * i)
 
@@ -125,7 +127,8 @@ def run_tests_client(client, exclude):
         if callable(getattr(TestDPCCommands, func)) and func.startswith('test') \
             and (func not in exclude):
             suite.addTest(TestDPCCommands(client, func))
-    results = unittest.TextTestRunner().run(suite)
+    test_runner = xmlrunner.XMLTestRunner(output="logs/")
+    results = test_runner.run(suite)
     return len(results.failures) == 0
 
 def run_dpc_test(args, unix_sock, delay):
@@ -147,17 +150,42 @@ def run_dpc_test(args, unix_sock, delay):
             pid.terminate()
 
 
-def run_using_env(exclude):
-    """ Initializes DPC client from env.json, runs standard tests """
+def get_dpc_host_and_port(style):
     f = open('./env.json', 'r')
     env_dict = json.load(f)
-    
+
+    # TODO(ridrisov): remove separate check once fun-on-demand support DPC proxy on CC Linux
+    if style == 'fun-on-demand-cc':
+        if len(env_dict['cclinux_hosts']) != 1:
+            raise RuntimeError("configuration error")
+        return env_dict['cclinux_hosts'][0]['host'], 4221
+
     if len(env_dict['dpc_hosts']) != 1:
         raise RuntimeError("configuration error")
 
     dpc_host = env_dict['dpc_hosts'][0]
-    host = dpc_host['host']
-    port = dpc_host['tcp_port']
+    return dpc_host['host'], dpc_host['tcp_port']
+
+
+def wait_for_port(host, port, timeout):
+    start_time = time.time()
+    while True:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect((host, int(port)))
+            break
+        except:
+            time.sleep(0.5)
+            if time.time() - start_time >= timeout:
+                raise Exception('Timeout while waiting for the port to open')
+
+
+def run_using_env(style, exclude):
+    """ Initializes DPC client from env.json, runs standard tests """
+
+    host, port = get_dpc_host_and_port(style)
+    wait_for_port(host, port, 60)
+
     print 'Connecting to dpc host at %s:%s' % (host, port)
     client = dpc_client.DpcClient(server_address=(host, port))
 
@@ -183,7 +211,7 @@ def run_style(manual, style):
 
 
 def usage():
-    print "usage: %s [tcp, unix, qemu, fun-on-demand, fun-on-demand-reduced]" % sys.argv[0]
+    print "usage: %s [tcp, unix, qemu, fun-on-demand, fun-on-demand-cc, fun-on-demand-reduced]" % sys.argv[0]
     sys.exit(1)
 
 
@@ -198,10 +226,11 @@ def main():
 
     tests_passed = True
 
-    if style == 'fun-on-demand' or style == 'fun-on-demand-reduced':
+    if style == 'fun-on-demand' or style == 'fun-on-demand-cc' \
+        or style == 'fun-on-demand-reduced':
         exclude = ['testVeryLargeCommands', 'testAsync', 'testJumbo'] \
-            if style == 'fun-on-demand-reduced' else []
-        tests_passed = run_using_env(exclude)
+            if style == 'fun-on-demand-reduced' or style == 'fun-on-demand-cc' else []
+        tests_passed = run_using_env(style, exclude)
 
     elif style is not None:
         tests_passed = run_style(True, style)

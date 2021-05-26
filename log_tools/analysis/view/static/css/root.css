@@ -1,0 +1,32 @@
+.content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.index {
+    margin: auto;
+    margin-top: 10px;
+}
+
+.index {
+    border-collapse: collapse;
+    border: 1px solid #4d4d4d;
+}
+
+.index td, .index th {
+    font-family: monospace;
+    padding: 5px 10px;
+    border: 1px solid #4d4d4d;
+    font-size: 13px;
+}
+
+.index th {
+    text-align: center;
+    background-color: beige;
+    max-width: 150px;
+}
+
+.tags {
+    max-width: 400px;
+}

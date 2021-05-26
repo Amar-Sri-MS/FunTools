@@ -75,8 +75,24 @@ ALL_ROOTFS_FILES = {
     "f1d1" : [ 'fs1600-rootfs-ro.squashfs' ]
 }
 
+CHIP_SPECIFIC_FILES = {
+    "s1" : [ 'fdc_cbs/composer-boot-services-emmc.img' ]
+}
+
 def _rootfs(f, rootfs):
     return '{}.{}'.format(rootfs, f)
+
+def _mfg(f, signed=False):
+    if signed:
+        return '{}.{}.{}'.format(f, 'mfginstall','signed')
+    else:
+        return '{}.{}'.format(f, 'mfginstall')
+
+def _nor(f, signed=False):
+    if signed:
+        return '{}.{}.{}'.format(f, 'norinstall','signed')
+    else:
+        return '{}.{}'.format(f, 'norinstall')
 
 def main():
     parser = argparse.ArgumentParser()
@@ -84,7 +100,7 @@ def main():
 
     parser.add_argument('config', nargs='*', help='Configuration file(s)')
     parser.add_argument('--action',
-        choices={'all', 'prepare', 'release', 'certificate', 'sign', 'image', 'tarball', 'bundle'},
+        choices={'all', 'prepare', 'release', 'certificate', 'sign', 'image', 'tarball', 'bundle', 'mfginstall'},
         default='all',
         help='Action to be performed on the input files')
     parser.add_argument('--sdkdir', default=os.getcwd(), help='SDK root directory')
@@ -104,14 +120,16 @@ def main():
     if args.release:
         funos_suffixes.append('release')
 
+    args.sdkdir = os.path.abspath(args.sdkdir) # later processing fails if relative path is given
     funos_appname = "funos{}.stripped".format('-'.join(funos_suffixes))
     rootfs_files = ALL_ROOTFS_FILES[args.chip]
+    chip_specific_files = CHIP_SPECIFIC_FILES.get(args.chip, ())
 
     def wanted(action):
         if args.action == 'all':
             return True
         elif args.action == 'release':
-            return action in ['sign', 'image', 'tarball', 'bundle']
+            return action in ['sign', 'image', 'tarball', 'bundle', 'mfginstall']
         else:
             return action == args.action
 
@@ -127,10 +145,10 @@ def main():
 
     for config_file in args.config:
         if config_file == '-':
-            gf.merge_configs(config, json.load(sys.stdin,encoding='ascii'))
+            gf.merge_configs(config, json.load(sys.stdin))
         else:
             with open(config_file, 'r') as f:
-                gf.merge_configs(config, json.load(f,encoding='ascii'))
+                gf.merge_configs(config, json.load(f))
 
     eeprom_list = '{}_eeprom_list.json'.format(args.chip)
     fvht_list_file = None
@@ -153,6 +171,7 @@ def main():
         gf.merge_configs(config, json.loads(FVHT_LIST_CONFIG_OVERRIDE.format(fvht_list=fvht_list_file.name)))
 
     gf.set_config(config)
+    gf.set_chip_type(args.chip)
 
     if args.force_version:
         gf.set_versions(args.force_version)
@@ -209,7 +228,18 @@ def main():
         shutil.copytree(os.path.join(args.sdkdir, 'bin/flash_tools/install_tools'),
             'install_tools')
         for rootfs in rootfs_files:
-            shutil.copy2(os.path.join(args.sdkdir, 'deployments', rootfs), rootfs)
+            root_file = os.path.join(args.sdkdir, 'deployments', rootfs)
+            shutil.copy2(root_file, rootfs)
+            try:
+                shutil.copy2(root_file + '.version', rootfs + '.version')
+            except FileNotFoundError:
+                pass
+
+        shutil.copy2(funos_appname, funos_appname + ".mfginstall")
+        shutil.copy2(funos_appname, funos_appname + ".norinstall")
+
+        for chip_file in chip_specific_files:
+            shutil.copy2(os.path.join(args.sdkdir, chip_file), os.path.basename(chip_file))
 
         bld_info = os.path.join(args.sdkdir, 'build_info.txt')
         v = args.force_version
@@ -342,6 +372,9 @@ def main():
             tarfiles.append(rootfs)
         tarfiles.extend(glob.glob('qspi_image_hw.bin*'))
 
+        for chip_file in chip_specific_files:
+            tarfiles.append(os.path.basename(chip_file))
+
         if os.path.exists('.version'):
             tarfiles.append('.version')
 
@@ -378,8 +411,14 @@ def main():
                 rootfs
             ])
 
+            for chip_file in chip_specific_files:
+                bundle_images.append(os.path.basename(chip_file))
+
             if os.path.exists('.version'):
                 bundle_images.append('.version')
+
+            if os.path.exists(rootfs + '.version'):
+                bundle_images.append(rootfs + '.version')
 
             for f in bundle_images:
                 os.symlink(os.path.join(os.path.abspath(os.curdir), f), os.path.join('bundle_installer', os.path.basename(f)))
@@ -402,6 +441,83 @@ def main():
             subprocess.call(makeself)
 
         os.chdir(curdir)
+
+    if wanted('mfginstall'):
+        os.chdir(args.destdir)
+
+        rootfs = rootfs_files[0]
+        mfgxdata = {
+            'husc' : ('nor', 'hu_sbm_serdes.bin'),
+            'hbsb' : ('nor', 'hbm_sbus.bin'),
+            'kbag' : ('nor', 'key_bag.bin'),
+            'host' : ('nor', 'host_firmware_packed.bin'),
+            'sbpf' : ('nor', 'esecure_firmware_all.bin'),
+            'fgpt' : ('mmc', 'fgpt.signed'),
+            'fvp1' : ('mmc', 'fvos.signed'),
+            'fvp2' : ('mmc', rootfs),
+            'fvp4' : ('mmc', _rootfs('fvht.bin', rootfs)),
+            'emmc' : ('mmc', 'emmc_image.bin'),
+        }
+
+        # that's a bit hacky ... need something better here
+        if args.chip == 'f1':
+            mfgxdata['ccfg'] = ('mmc', 'ccfg-no-come.signed.bin')
+        elif args.chip == 's1':
+            mfgxdata['ccfg'] = ('mmc', 'ccfg-s1-demo-10g_mpg.signed.bin')
+            mfgxdata['dcc0'] = ('mmc', 'composer-boot-services-emmc.img')
+
+        mfgxdata_lists = {
+            'fw_upgrade_all': 'all',
+            'fw_upgrade_nor': 'nor',
+            'fw_upgrade_mmc': 'mmc'
+        }
+
+        for fname, target in mfgxdata_lists.items():
+            # generate upgrade lists to be embedded in xdata
+            with open(fname, 'w') as f:
+                for key, (imgtarget, imgfile) in mfgxdata.items():
+                    if target == imgtarget or target == 'all':
+                        f.write("{}\n".format(key))
+
+        def _gen_xdata_funos(outname_modifier, target=None):
+            with open('fw_upgrade_xdata', 'w') as f:
+                # generate complete xdata list
+                for key, (imgtarget, imgfile) in mfgxdata.items():
+                    if not target or imgtarget == target:
+                        f.write("{} {}\n".format(key, os.path.join(os.getcwd(), imgfile)))
+
+                for fname in mfgxdata_lists:
+                    f.write("{} {}\n".format(fname, os.path.join(os.getcwd(), fname)))
+
+            cmd = [ 'python3', 'xdata.py',
+                    outname_modifier(funos_appname),
+                    'add-file-lists',
+                    'fw_upgrade_xdata' ]
+            subprocess.call(cmd)
+
+        _gen_xdata_funos(_mfg)
+        _gen_xdata_funos(_nor, 'nor')
+
+        # take a copy of all funos default settings for signing
+        # and only override filenames used
+        mfg_app_config = config['signed_images'].get('funos.signed.bin').copy()
+        mfg_app_config['source'] = _mfg(funos_appname)
+        config['signed_mfg_images'] = {
+            _mfg(funos_appname, signed=True) : mfg_app_config
+        }
+        gf.set_search_paths([os.getcwd()])
+        gf.create_file(_mfg(funos_appname, signed=True), section='signed_mfg_images')
+
+        mfg_app_config['source'] = _nor(funos_appname)
+        config['signed_mfg_images'] = {
+            _nor(funos_appname, signed=True) : mfg_app_config
+        }
+        gf.set_search_paths([os.getcwd()])
+        gf.create_file(_nor(funos_appname, signed=True), section='signed_mfg_images')
+
+        os.chdir(curdir)
+
+
 
 if __name__=="__main__":
     main()

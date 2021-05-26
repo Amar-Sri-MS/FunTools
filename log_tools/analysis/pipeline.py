@@ -8,7 +8,6 @@ import argparse
 import collections
 import json
 import os
-import time
 
 # Input blocks
 from blocks import file_input
@@ -19,6 +18,7 @@ from blocks import log_parsers
 from blocks import merge
 
 # Output blocks
+from blocks import analytics_output
 from blocks import elastic_output
 from blocks import html_output
 from blocks import stdout_output
@@ -40,12 +40,8 @@ def main():
     env['logdir'] = args.dir
     env['build_id'] = args.build_id
 
-    start = time.time()
     pipeline = Pipeline(block_factory, cfg, env)
     pipeline.process()
-    end = time.time()
-
-    print('Time spent processing: {}s'.format(end - start))
 
 
 class BlockFactory(object):
@@ -67,6 +63,7 @@ class BlockFactory(object):
         self.plugins['KeyValueInput'] = log_parsers.KeyValueInput
         self.plugins['HumanDateTime'] = display_time.HumanDateTime
         self.plugins['Merge'] = merge.Merge
+        self.plugins['AnalyticsOutput'] = analytics_output.AnalyticsOutput
         self.plugins['HTMLOutput'] = html_output.HTMLOutput
         self.plugins['ElasticOutput'] = elastic_output.ElasticsearchOutput
         self.plugins['StdOutput'] = stdout_output.StdOutput
@@ -109,7 +106,7 @@ class Pipeline(object):
 
             cfg = pipeline_node.get('cfg', dict())
             cfg['env'] = self.env
-            cfg['uid'] = id
+            cfg['uid'] = cfg.get('src', id)
             block.set_config(cfg)
 
             input_inters = input_iters_by_uid[id]

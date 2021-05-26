@@ -22,7 +22,7 @@ import argparse
 import re
 import array
 import struct
-from typing import ClassVar, Optional, BinaryIO
+from typing import Dict, ClassVar, Optional, BinaryIO
 
 snaplen: int = 65535
 
@@ -32,6 +32,7 @@ class Packet:
     sec: int
     micro: int
     data: bytearray
+    complete: bool
     string_splitter: ClassVar[re.Pattern] = re.compile(r'[ -]+')
 
     def __init__(self, total_len: int, sec: int, micro: int) -> None:
@@ -40,14 +41,19 @@ class Packet:
         self.micro = micro
         self.data = bytearray(total_len)
         self.data_len = 0
+        self.complete = False
 
-    def add_bytes(self, index: int, byte_string: str) -> None:
+    def add_bytes(self, index: int, byte_string: str, sec: int, micro: int) -> None:
+        self.sec = sec
+        self.micro = micro
         elts = self.string_splitter.split(byte_string)
         while index < self.total_len and elts:
             elt = elts.pop(0)
             self.data[index] = int(elt, 16)
             index += 1
         self.data_len = index
+        if (index == self.total_len):
+            self.complete = True
 
     def write_pcap(self, f: BinaryIO) -> None:
         f.write(struct.pack('<I', self.sec))
@@ -62,11 +68,11 @@ def main() -> int:
     parser.add_argument("out_file", type=argparse.FileType('wb'), help="output pcap file")
     args = parser.parse_args()
 
-    matcher = re.compile(r'^\[(\d+)\.(\d+) \d\.\d\.\d\].*(RX|TX|Send)\((\d+)[,/](\d+)\): ([^"]*)')
+    matcher = re.compile(r'^\[(\d+)\.(\d+) (\d\.\d\.\d)\].*(RX|TX|Send)\((\d+)[,/](\d+)\): ([^"]*)')
 
     src = args.in_file
     dst = args.out_file
-    current_packet: Optional[Packet] = None
+    current_packets: Dict[str,Packet] = {}
     packet_count = 0
 
     # Write PCAP header
@@ -84,17 +90,25 @@ def main() -> int:
         if m:
             sec = int(m.group(1))
             micro = int(m.group(2))
-            start = int(m.group(4))
-            total = int(m.group(5))
-            data = m.group(6).strip()
+            vp = m.group(3)
+            start = int(m.group(5))
+            total = int(m.group(6))
+            data = m.group(7).strip()
 
+            current_packet: Optional[Packet] = current_packets.get(vp)
             if start == 0:
                 if (current_packet):
                     current_packet.write_pcap(dst)
                     packet_count += 1
                 current_packet = Packet(min(total, snaplen), sec, micro)
+                current_packets[vp] = current_packet
             if (current_packet):
-                current_packet.add_bytes(start, data)
+                current_packet.add_bytes(start, data, sec, micro)
+                if (current_packet.complete):
+                    current_packet.write_pcap(dst)
+                    packet_count += 1
+                    current_packet = None
+                    del current_packets[vp]
 
     if (current_packet):
         current_packet.write_pcap(dst)

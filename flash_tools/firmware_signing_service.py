@@ -10,17 +10,19 @@ import sys
 import struct
 import binascii
 import hashlib
-import json
-
-import socket
 
 import requests
+
+
+# image file format description
+# https://docs.google.com/document/d/1wb34TuVJmPlikeVjvE0tdCQxP8ZgzLc0RSMbyd1prwM
 
 RSA_KEY_SIZE_IN_BITS = 2048
 SIGNING_INFO_SIZE = 2048
 MAX_SIGNATURE_SIZE = 512
 HEADER_RESERVED_SIZE = SIGNING_INFO_SIZE - (4 + MAX_SIGNATURE_SIZE)
-SIGNED_ATTRIBUTES_SIZE = 32
+SIGNED_ATTRIBUTES_CHIP_ID = 3
+SIGNED_ATTRIBUTES_SIZE = 29 # currently undefined/unused
 SIGNED_DESCRIPTION_SIZE = 32
 SERIAL_INFO_NUMBER_SIZE = 24
 CERT_PUB_KEY_POS = 64
@@ -32,19 +34,14 @@ MAGIC_NUMBER_CERTIFICATE = 0xB1005EA5
 MAGIC_NUMBER_ENROLL_CERT = 0xB1005C1E
 
 SIGNING_SERVICE_URL = "https://f1reg.fungible.com:4443/cgi-bin/signing_server.cgi"
-HSM_DAEMON_URL = "https://f1reg.fungible.com:4443/cgi-bin/hsmdaemon.cgi"
 CERTIFICATE_SERVICE_URL = "https://f1reg.fungible.com:4443/"
 PRODUCTION_CERTIFICATE_SERVICE_URL = CERTIFICATE_SERVICE_URL + "production/"
 
-# used when connecting via socket (local)
-SERVER_SOCKET = '/tmp/com.fungible.hsmdaemon.socket'
-
-DEFAULT_HTTP_TIMEOUT = 100
+DEFAULT_HTTP_TIMEOUT = 180
 
 # environment variable: if it is set and points to a file, it triggers the use
 # of the production keys and certificates
 HSM_AUTH_TOKEN_ENV_VAR = "FUN_HSM_TOKEN"
-HSM_USE_SOCKET = "HSM_USE_SOCKET"
 
 ##############################################################################
 # File access -- utils.py ported to Python 3
@@ -101,7 +98,6 @@ def write(filename, content, overwrite=True, tohex=False, tobyte=False,
 
 class SigningEnv:
 
-    __socket = False
     __auth_token = None
     __done = False
 
@@ -114,7 +110,6 @@ class SigningEnv:
 
     def __lazy_init(self):
         if not SigningEnv.__done:
-            SigningEnv.__socket = HSM_USE_SOCKET in os.environ
             auth_token_file_name = os.environ.get(HSM_AUTH_TOKEN_ENV_VAR)
             if auth_token_file_name:
                 self.__read_auth_token(auth_token_file_name)
@@ -138,28 +133,16 @@ class SigningEnv:
             self.__lazy_init()
             return SigningEnv.__auth_token
 
-        if name == 'socket':
-            self.__lazy_init()
-            return SigningEnv.__socket
-
         return None
 
 
     def __read_auth_token(self, auth_token_file_name):
         try:
             with open(auth_token_file_name, "r") as fp:
-                auth_token_dict = json.load(fp)
-                SigningEnv.__auth_token = auth_token_dict['auth_token']
-        except json.JSONDecodeError as ex:
-            print("<<<<<<< '%s': INVALID JSON ==> DEVELOPMENT BUILD >>>>>>>" %
-                  auth_token_file_name,
-                  file=sys.stderr)
-        except OSError as ex:
+                SigningEnv.__auth_token = fp.read()
+
+        except OSError:
             print("<<<<<<< UNABLE TO OPEN '%s' ==> DEVELOPMENT BUILD >>>>>>>" %
-                  auth_token_file_name,
-                  file=sys.stderr)
-        except KeyError as ex:
-            print("<<<<<<< NO 'auth_token' IN '%s' ==> DEVELOPMENT BUILD >>>>>>>" %
                   auth_token_file_name,
                   file=sys.stderr)
         except Exception as ex:
@@ -181,118 +164,9 @@ def get_result(reply):
         raise RuntimeError("No result from the server: %s" % reply)
     return result
 
-################################################################
-#  UNIX DOMAIN SOCKET TRANSPORT
-#  (TESTING)
-
-def make_daemon_msg(s):
-    return struct.pack('!H', len(s)) + s
-
-def recv_daemon_msg(sock):
-
-    data = sock.recv(2)
-    if len(data) != 2:
-        return None
-
-    msg_size = struct.unpack('!H', data)[0]
-
-    recv_size = 0
-    data = b''
-    while recv_size < msg_size:
-        new_data = sock.recv(msg_size - recv_size)
-        recv_size += len(new_data)
-        data += new_data
-
-    return data
-
-
-def json_rpc_client(cmd, params=None, **kwargs):
-
-    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-
-    sock.connect(SERVER_SOCKET)
-
-    if not params:
-        params = kwargs
-
-    json_cmd = {'jsonrpc': '2.0', 'method': cmd, 'params': params, 'id': 1}
-
-    to_send = json.dumps(json_cmd).encode('utf-8')
-
-    sock.sendall(make_daemon_msg(to_send))
-
-    received = recv_daemon_msg(sock)
-    if received is None:
-        print("Server did not send a response", file=sys.stderr)
-        return None
-
-    reply = json.loads(received)
-    return reply
-
-
-def socket_get_modulus(name):
-    reply = json_rpc_client('pubkey', key=name)
-    modulus_b64 = get_result(reply)
-    return from_b64(modulus_b64)
-
-
-########################################################################
-# HTTP production access
-def pack_json_form_data(json_data):
-
-    return ("msg.json", json_data, 'application/json',
-            {"Content-Length" : str(len(json_data))})
-
-
-def http_client(cmd, params=None, **kwargs):
-
-    if not params:
-        params = kwargs
-
-    json_cmd = {'jsonrpc': '2.0', 'method': cmd, 'params': params, 'id': 1}
-
-    to_send = json.dumps(json_cmd)
-
-    response = requests.post(HSM_DAEMON_URL, data=to_send)
-
-    if response.status_code != requests.codes.ok:
-        print("Server send an error code: {0}".format(response.content), file=sys.stderr)
-        return None
-
-    received = response.content
-    reply = json.loads(received)
-    return reply
-
 
 #########################################################################
 # Production server access
-
-def production_hash_sign(auth_token, digest, sign_key, modulus):
-
-    if SigningEnv().socket:
-        client = json_rpc_client
-        # the certificates are retrieved from the real server
-        # and not the test server via socket. So the modulus in
-        # the certificate is for the real production key which the
-        # test server doesn't have. So for testing, substitute the
-        # modulus with the one from the test fpk2 key.
-        if modulus:
-            modulus = socket_get_modulus('fpk2')
-    else:
-        client = http_client
-
-    if modulus:
-        reply = client('sign', auth_token=auth_token,
-                       digest=to_b64(digest),
-                       modulus=to_b64(modulus))
-    else:
-        reply = client('sign', auth_token=auth_token,
-                       digest=to_b64(digest),
-                       key=sign_key)
-
-    signature_b64 = get_result(reply)
-    return from_b64(signature_b64)
-
 
 def production_get_cert(outfile, cert_key, cert_key_file, sign_key, serial_number,
                         serial_number_mask, debugger_flags):
@@ -319,10 +193,6 @@ def production_get_cert(outfile, cert_key, cert_key_file, sign_key, serial_numbe
 
 def get_modulus(name):
 
-    # if socket
-    if SigningEnv().socket:
-        return socket_get_modulus(name)
-
     params = {
         'cmd' : 'modulus',
         'format' : 'binary',
@@ -346,12 +216,15 @@ def hash_sign(digest, sign_key=None, modulus=None):
 
     auth_token = SigningEnv().auth_token
 
-    if auth_token:
-        return production_hash_sign(auth_token, digest, sign_key, modulus)
-
     multipart_form_data = {'digest' : pack_binary_form_data("sha512", digest)}
+
     if modulus:
         multipart_form_data['modulus'] = pack_binary_form_data("modulus", modulus)
+
+    if auth_token:
+        multipart_form_data['auth_token'] = pack_binary_form_data("auth", auth_token)
+
+
     params = {}
     if sign_key:
         params['key'] = sign_key
@@ -407,15 +280,27 @@ def add_cert_and_signature_to_image(image, cert, signature):
     image += b'\x00' * (HEADER_RESERVED_SIZE - len(cert))
     return append_signature_to_binary(image, signature)
 
-
 def image_gen(outfile, infile, ftype, version, description, sign_key,
-              certfile, customer_certfile, key_index, pad=1):
+              certfile, customer_certfile, key_index, chip_type=None, pad=1):
     ''' generate signed firmware image '''
+
+    chip_type_map = {
+        # chip name : [ family, device, revision ]
+        # see https://docs.google.com/document/d/1qojY63VZvkhmbDenbl6J2j51yeA_9FfhU8s_aTUhvJs
+        'f1'   : [1, 1, 0],
+        's1'   : [2, 1, 0],
+        'f1d1' : [1, 1, 1]
+    }
+
     if ((pad == 0) or (pad is None)):
         pad = 1 # make the lazy thing work
     binary = read(infile)
     to_be_signed = struct.pack('<2I', len(binary), version)
     to_be_signed += struct.pack('4s', ftype.encode())
+    if chip_type:
+        to_be_signed += struct.pack('3B', *chip_type_map[chip_type])
+    else:
+        to_be_signed += b'\x00' * SIGNED_ATTRIBUTES_CHIP_ID
     to_be_signed += b'\x00' * SIGNED_ATTRIBUTES_SIZE
     if description:
         # Max allowed size is (block size - 1) to allow for terminating null

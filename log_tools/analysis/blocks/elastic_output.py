@@ -2,18 +2,33 @@
 # Elasticsearch output.
 #
 import datetime
+import json
+import logging
+import os
+import requests
+import sys
 
 from elasticsearch7 import Elasticsearch
 from elasticsearch7.helpers import parallel_bulk
+from itertools import tee
 
 from blocks.block import Block
+import config_loader
 
 
 class ElasticsearchOutput(Block):
     """ Adds all messages as documents in an elasticsearch index. """
 
     def __init__(self):
-        self.es = Elasticsearch([{'host': '10.1.80.95', 'port': 9200}], timeout=20, max_retries=3, retry_on_timeout=True)
+        self.config = config_loader.get_config()
+
+        ELASTICSEARCH_HOSTS = self.config['ELASTICSEARCH']['hosts']
+        ELASTICSEARCH_TIMEOUT = self.config['ELASTICSEARCH']['timeout']
+        ELASTICSEARCH_MAX_RETRIES = self.config['ELASTICSEARCH']['max_retries']
+        self.es = Elasticsearch(ELASTICSEARCH_HOSTS,
+                                timeout=ELASTICSEARCH_TIMEOUT,
+                                max_retries=ELASTICSEARCH_MAX_RETRIES,
+                                retry_on_timeout=True)
         self.env = {}
         self.index = None
 
@@ -32,17 +47,38 @@ class ElasticsearchOutput(Block):
 
     def set_config(self, cfg):
         self.env = cfg['env']
-        build_id = self.env['build_id']
+        # Limitation with ES that it only supports lowercase
+        # index names.
+        build_id = self.env['build_id'].lower()
         self.index = cfg['index'].replace('${build_id}', build_id)
 
     def process(self, iters):
         """ Writes contents from all iterables to elasticsearch """
         for it in iters:
-            # parallel_bulk is a wrapper around bulk to provide threading
-            # default thread_count is 4 and it returns a generator with indexing result
-            for success, info in parallel_bulk(self.es, self.generate_es_doc(it)):
+            # Copying the iterator to send to the next output block.
+            # Might have performance implications because of copying.
+            # TODO(Sourabh): Need to check alternative solutions
+            # to share data between the output blocks.
+            it, it_copy = tee(it)
+            # parallel_bulk is a wrapper around bulk to provide threading.
+            # default thread_count is 4 and it returns a generator with indexing result.
+            # chunk_size of 10k works best based on tests on existing logs on single ES node
+            # running with 4GB heap.
+            # TODO(Sourabh): Need to test again if there's any change in resources of the ES node
+            for success, info in parallel_bulk(
+                                        self.es,
+                                        self.generate_es_doc(it),
+                                        raise_on_error=True,
+                                        raise_on_exception=True,
+                                        chunk_size=10000):
                 if not success:
-                    print('Failed to index a document', info)
+                    logging.error(f'Failed to index a document: {info}')
+                else:
+                    yield from self._add_doc_id_in_iters(next(it_copy), info)
+
+    def _add_doc_id_in_iters(self, tuple, info):
+        """ Adding ES doc id to the message tuple """
+        yield (*tuple, info['index']['_id'])
 
     def generate_es_doc(self, it):
         """ Maps iterable contents to elasticsearch document """
@@ -64,9 +100,31 @@ class ElasticsearchOutput(Block):
             doc = {
                 '_index': self.index,
                 '@timestamp': iso_ts,
-                'src': tuple[2],
-                'msg': tuple[4]
+                'system_type': tuple[2],
+                'system_id': tuple[3],
+                'src': tuple[4],
+                'level': tuple[6],
+                'msg': tuple[7]
             }
 
             yield doc
 
+    def create_kibana_index_pattern(self):
+        """ Creates an index pattern based on Elasticsearch index for Kibana """
+        KIBANA_HOST = self.config['KIBANA']['host']
+        KIBANA_PORT = self.config['KIBANA']['port']
+        kibana_url = f'http://{KIBANA_HOST}:{KIBANA_PORT}/api/saved_objects/index-pattern/{self.index}'
+        headers = {
+            'kbn-xsrf': 'true'
+        }
+
+        data = {
+            "attributes": {
+                "title": self.index,
+                "timeFieldName": "@timestamp"
+            }
+        }
+        response = requests.post(kibana_url, headers=headers, json=data)
+        # TODO(Sourabh): Error handling if index pattern creation fails
+        if response.status_code != 200:
+            print(response.json())

@@ -1,0 +1,90 @@
+# Database of common and interesting output seen in FunOS logs.
+# Each entry must have a key (unique token), short human-readable string,
+#   'match' string to look for in the file.
+# Or 'rematch' string to match a regular expression.
+#   Create a named group with "(?P<NAME>pat)".  Must use named groups!
+#   Reference the named group in the short descrition with "<NAME>"
+#   Note that backslashes need to be doubled in order to work.
+# Entries with "is_failure" set to true indicates a fatal problem where the
+#   short description can be used to explain the failure.
+# Entries are processed in decending order.  The first match found is used
+#   and the remaining are ignored for that line.
+# Use "color" to highlight the found string.
+#   Available colors are: red, green, blue[default], yellow, cyan, magenta, and black
+#   Other colors are silently ignored.  The "is_failure" flag implies "red" unless overridden.
+#     Color meaning: red=failure, green=success, blue=info, yellow=alert,
+#                    cyan=?, magenta=?, black=reference.
+# TODO(tbush): Sadly the colors dont work for standard patterns.  Implementing them causes
+#   the processing to increase by over 20 fold which is unacceptable!
+#
+# Each line is a single JSON dictionary.  Comments and blank lines are
+# permitted.
+
+{"key": "welcome", "short": "Welcome to FunOS", "match": "[kernel] Welcome to FunOS!", "color": "green"}
+{"key": "version", "short": "FunSDK Release <RELEASE_VERSION> Version=<BUILD_ID>, ref=<REF>", "rematch": "FunSDK Release (?P<RELEASE_VERSION>[a-z0-9.]+), Version=(?P<BUILD_ID>bld_[0-9]+), ref=(?P<REF>[a-z0-9]+)"}
+{"key": "build_id", "short": "Build ID=<BUILD_ID>", "rematch": "[kernel] Build ID=(?P<BUILD_ID>[a-z0-9-]+)"}
+{"key": "build_on", "short": "Built on=<BUILD_DATE>", "rematch": "[kernel] Built on=(?P<BUILD_DATE>.+)"}
+{"key": "funos_initialized", "short": "FUNOS_INITIALIZED", "match": "FUNOS_INITIALIZED", "color": "green"}
+{"key": "ready", "short": "System Ready Notification", "match": "System event posted: system_event_ready_to_start", "color": "green"}
+{"key": "freeze", "short": "crash started", "match": ">>> FunOS entering bug_check handler <<<", "is_failure": true}
+# face screaming in fear emoji
+{"key": "bug_check", "short": "bug_check &#x1f631", "match": ">>>>>> bug_check on vp 0x", "is_failure": true}
+{"key": "perf_done", "short": "<FUN> - perf stopped", "rematch": " (?P<FUN>[0-9]+\\.[0-9]+\\.[0-9]+).*CRIT rdsock .wdi_perf_disable_force."}
+{"key": "assert", "short": "assertion failure", "match": "Assertion failed: ", "is_failure": true}
+{"key": "tlbl", "short": "Bad pointer exception (load)", "match": "cause.ExcCode: 2 (0x2): TLB exception (load or instruction fetch)", "is_failure": true}
+{"key": "tlbs", "short": "Bad pointer exception (store)", "match": "cause.ExcCode: 3 (0x3): TLB exception (store)", "is_failure": true}
+{"key": "idle_final", "short": "Exit Cleanup", "match": "INFO nucleus \"Idle state = IDLE_STATE_FINAL\""}
+{"key": "platform_halt", "short": "Platform Halt", "match": "platform_halt: exit status 0", "color": "green"}
+{"key": "pci_started", "short": "PCI Initialized", "match": "hw_hsu_test \"PCI_STARTED\"", "color": "green"}
+{"key": "start_vps", "short": "Starting VPs", "match": "[kernel] Starting all vps", "color": "green"}
+{"key": "network_started", "short": "Network Initialized", "match": "CRIT port \"NETWORK_STARTED\"", "color": "green"}
+{"key": "unit_tests_completed", "short": "Unit tests completed: <FAIL> failures of <TOT> tests, <DISAB> disabled", "rematch": "\\[==========\\] (?P<TOT>[0-9]+) tests, (?P<FAIL>[0-9]+) failures, (?P<DISAB>[0-9]+) disabled"}
+{"key": "unit_tests_completed_success", "short": "App FunOS Finalize with SUCCESS.", "match": "INFO app \"FunOS Finalize with SUCCESS\"", "color": "green"}
+{"key": "mdt_test_done", "short": "MDT test complete, drives formatted", "match": "Formatted  all drive(s)", "color": "green"}
+{"key": "wrong_format_version", "short": "Drive not formatted correctly", "match": "Please run MDT app to format the drive", "color": "red"}
+{"key": "cmh_fatal_interrupt", "short": "Fatal interrupt handler invoked", "match": "FATAL interrupt wu handler invoked", "color": "red"}
+{"key": "end_emulation", "short": "RTL Timeout", "rematch": "END_EMULATION [0-9]+ ([-0-9]+) ([:0-9]+)", "color": "red"}
+{"key": "funtcp_connection_abort", "short": "FunTCP connection aborted State: <STATE> Remote: <REMOTE> Local <LOCAL> Reason: <REASON>", "rematch": "aborting: (?P<STATE>TCP.*),.*(?P<REMOTE>\\d+\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}:(\\d+)*).* (?P<LOCAL>\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}:(\\d+)*).*reason (?P<REASON>\\d+)?", "is_failure": true}
+{"key": "rcnvme_is_ready", "short": "RCNVMe #<ID> is ready for IO", "rematch": "INFO rcnvme \"(?P<ID>[0-9]+): rcnvme is ready for IOs\"", "color": "green"}
+{"key": "rcnvme_no_controller", "short": "RCNVMe no controllers found", "match": "ERR rcnvme_test \"No controllers online\"", "color": "red"}
+{"key": "boot_args", "short": "Boot Args -- <BOOT>", "rematch": "## Starting application at 0x[0-9a-f]+, bootargs = (?P<BOOT>.*) \\.\\.\\."}
+{"key": "unsigned", "short": "FunOS binary not signed - Fun-on-demand can only run signed binaries. Build with SIGN=1  &#x1f631", "match": "Image not authorised", "is_failure": true}
+{"key": "flow_is_proper", "short": "Magic mismatch on flow: <FLOW>", "rematch": "flow_is_proper: magic mismatch.*from (?P<FLOW>0x[a-z0-9]+)", "is_failure": true}
+{"key": "wp_fail", "short": "Worker pool policy constraint failure", "match": "[workerpool] ERROR: force-shared policy failed to find any available VPs. Retrying without private pools.", "is_failure": true}
+
+# FunOS unit tests
+{"key": "unit_test_fail_check_eq", "short": "Unit test assertion failure: CHECK_EQ", "match": "CHECK_EQ:", "is_failure": true}
+{"key": "unit_test_fail_demand_eq", "short": "Unit test assertion failure: DEMAND_EQ", "match": "DEMAND_EQ:", "is_failure": true}
+{"key": "unit_test_fail_check_ne", "short": "Unit test assertion failure: CHECK_NE", "match": "CHECK_NE:", "is_failure": true}
+{"key": "unit_test_fail_demand_ne", "short": "Unit test assertion failure: DEMAND_NE", "match": "DEMAND_NE:", "is_failure": true}
+{"key": "unit_test_fail_compare_near", "short": "Unit test assertion failure: COMPARE_NEAR", "match": "COMPARE_NEAR:", "is_failure": true}
+{"key": "unit_test_fail_demand_near", "short": "Unit test assertion failure: DEMAND_NEAR", "match": "DEMAND_NEAR:", "is_failure": true}
+{"key": "unit_test_fail_check_eq_str", "short": "Unit test assertion failure: CHECK_EQ_STR", "match": "CHECK_EQ_STR:", "is_failure": true}
+{"key": "unit_test_fail_demand_eq_str", "short": "Unit test assertion failure: DEMAND_EQ_STR", "match": "DEMAND_EQ_STR:", "is_failure": true}
+{"key": "unit_test_fail_check_ne_str", "short": "Unit test assertion failure: CHECK_NE_STR", "match": "CHECK_NE_STR:", "is_failure": true}
+{"key": "unit_test_fail_demand_ne_str", "short": "Unit test assertion failure: DEMAND_NE_STR", "match": "DEMAND_NE_STR:", "is_failure": true}
+{"key": "unit_test_fail_check_lt", "short": "Unit test assertion failure: CHECK_LT", "match": "CHECK_LT:", "is_failure": true}
+{"key": "unit_test_fail_demand_lt", "short": "Unit test assertion failure: DEMAND_LT", "match": "DEMAND_LT:", "is_failure": true}
+{"key": "unit_test_fail_check_le", "short": "Unit test assertion failure: CHECK_LE", "match": "CHECK_LE:", "is_failure": true}
+{"key": "unit_test_fail_demand_le", "short": "Unit test assertion failure: DEMAND_LE", "match": "DEMAND_LE:", "is_failure": true}
+{"key": "unit_test_fail_check_gt", "short": "Unit test assertion failure: CHECK_GT", "match": "CHECK_GT:", "is_failure": true}
+{"key": "unit_test_fail_demand_gt", "short": "Unit test assertion failure: DEMAND_GT", "match": "DEMAND_GT:", "is_failure": true}
+{"key": "unit_test_fail_check_ge", "short": "Unit test assertion failure: CHECK_GE", "match": "CHECK_GE:", "is_failure": true}
+{"key": "unit_test_fail_demand_ge", "short": "Unit test assertion failure: DEMAND_GE", "match": "DEMAND_GE:", "is_failure": true}
+{"key": "unit_test_fail_check_not_null", "short": "Unit test assertion failure: CHECK_NOT_NULL", "match": "CHECK_NOT_NULL:", "is_failure": true}
+{"key": "unit_test_fail_demand_not_null", "short": "Unit test assertion failure: DEMAND_NOT_NULL", "match": "DEMAND_NOT_NULL:", "is_failure": true}
+{"key": "unit_test_fail_check_true", "short": "Unit test assertion failure: CHECK_TRUE", "match": "CHECK_TRUE:", "is_failure": true}
+{"key": "unit_test_fail_demand_true", "short": "Unit test assertion failure: DEMAND_TRUE", "match": "DEMAND_TRUE:", "is_failure": true}
+{"key": "unit_test_fail_check_false", "short": "Unit test assertion failure: CHECK_FALSE", "match": "CHECK_FALSE:", "is_failure": true}
+{"key": "unit_test_fail_demand_false", "short": "Unit test assertion failure: DEMAND_FALSE", "match": "DEMAND_FALSE:", "is_failure": true}
+{"key": "unit_test_fail_check_fail", "short": "Unit test assertion failure: CHECK_FAIL", "match": "CHECK_FAIL:", "is_failure": true}
+{"key": "unit_test_fail_demand_fail", "short": "Unit test assertion failure: DEMAND_FAIL", "match": "DEMAND_FAIL:", "is_failure": true}
+
+{"key": "funvisor_ip_address", "short": "Funvisor IP address assigned", "match": "Setting IP address "}
+{"key": "funvisor_ip_address_fail", "short": "FAIL: Funvisor IP address not assigned", "match": "udhcpc: no lease, failing"}
+{"key": "terminate_timeout", "short": "Timeout", "match": "Terminating funos-posix: signal 15", "color": "green"}
+{"key": "dpcsh_command", "short": "dpcsh command", "match": "--dpcsh command:", "color": "green"}
+{"key": "fun_malloc_leaks_fail", "short": "fatal error: fun_malloc: <COUNT> leaks", "rematch": "CRIT fun_malloc \"\\*\\*\\*\\*\\*\\*\\* (?P<COUNT>[0-9]+) leak", "color": "red", "is_failure": true}
+{"key": "fpc_error", "short": "machine problems: FPC may be locked up", "match": "Bus active timeout"}
+{"key": "funos_fail_to_idle", "short": "Lingering WUs: FunOS failed to idle", "match": "FunOS failed to idle after app return", "is_failure": "true"}
+{"key": "dpu_temperature_breached", "short": "DPU temperature sensor breached critical threshold", "match": "DPU temperature breached for sensor", "is_failure": "true"}

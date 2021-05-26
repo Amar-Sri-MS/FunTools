@@ -36,6 +36,7 @@ fi
 
 orig_ld_library_path=$LD_LIBRARY_PATH
 orig_ld_preload=$LD_PRELOAD
+EUSTRIP=eu-strip
 
 unset LD_LIBRARY_PATH LD_PRELOAD
 
@@ -64,9 +65,12 @@ find $DEPLOY_ROOT -type f | (
 		    #echo "Stripping $fname as module"
 		    ${STRIP} --strip-debug $fname
 		    ;;
+		*storage_agent)
+		    ${EUSTRIP} -R=.go_export -R=.pdr --keep-section=.debug_line --keep-section=.debug_info --keep-section=.debug_abbrev --keep-section=.debug_str --keep-section=.debug_ranges $fname
+		    ;;
 		*)
 		    #echo "Stripping $fname"
-		    ${STRIP} $fname
+		    ${STRIP} -R.pdr -R.go_export $fname
 		    ;;
 	    esac
 	fi

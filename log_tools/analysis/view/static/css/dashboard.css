@@ -1,0 +1,49 @@
+.filter_button {
+    cursor: pointer;
+    text-decoration: underline;
+}
+.filter_button:hover {
+    color: #3B7FC4;
+}
+td {
+    border-collapse: collapse;
+    padding-right: 5px;
+    white-space: pre;
+}
+.distribution_stats {
+    min-width: 15%;
+}
+.level_stat {
+    padding: 5px 0px;
+    border-bottom: 0.8px solid #a2a2a270;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-evenly;
+}
+.level_stat > div:first-child {
+    min-width: 65px;
+    max-width: 65px;
+}
+.level_stat > div:last-child {
+    min-width: calc(100% - 90px);
+    max-width: calc(100% - 90px);
+}
+.scrollable {
+    min-height: 250px;
+    max-height: 500px;
+    overflow-y: auto;
+}
+#anchors_container {
+    width: 85%;
+}
+.anchors_button_container {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding-top: 25px;
+    padding-bottom: 10px;
+}
+#anchors_page {
+    text-align: center;
+    width: 200px;
+}

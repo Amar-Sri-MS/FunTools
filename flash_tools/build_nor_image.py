@@ -45,6 +45,10 @@ Image includes an enrollment certificate (secure boot)
 
 python3 build_nor_image.py -c s1 -n ~/mac/Downloads/1234_enrollment_cert.bin
 
+* Build and copy the file to dochub for upgrade
+
+python3 build_nor_image.py -u ferino -v 12910
+
 ---
 '''
 
@@ -60,6 +64,7 @@ BMC_INSTALL_DIR = "/mnt/sdmmc0p1/scripts"
 #destination
 DOCHUB_REPO_DIR_USER_FMT = '/project/users/doc/sbp_images/{0}/{1}'
 
+LOCAL_DIR_FMT = '/var/www/html/sbp_images/{0}'
 
 
 def remove_prefix(a_str, prefix):
@@ -190,7 +195,7 @@ def scp_file(ssh_client, target_dir, file_name):
 
 
 def generate_update_tar_file(args, built_images_dir):
-    ''' generate the TAR file used for update and upload it to dochub '''
+    ''' generate the TAR file used for update and optionally upload it to dochub '''
     def tar_filter(tar_info):
         if tar_info.isdir():
             return tar_info
@@ -211,20 +216,26 @@ def generate_update_tar_file(args, built_images_dir):
     with tarfile.open(tar_file_name, mode='w:gz') as f:
         f.add(built_images_dir, arcname=tar_root, filter=tar_filter)
 
-    ssh_client = get_ssh_client(args.user, 'server1.fungible.local')
+    if args.user:
+        ssh_client = get_ssh_client(args.user, 'server1.fungible.local')
 
-    repo_dir = DOCHUB_REPO_DIR_USER_FMT.format(args.user, args.version)
+        repo_dir = DOCHUB_REPO_DIR_USER_FMT.format(args.user, args.version)
 
-    print("upgrade file will be stored at", repo_dir)
+        print("upgrade file will be stored at", repo_dir)
 
-    # make sure the directory exists
-    _, stdout, _ = ssh_client.exec_command('mkdir -p ' + repo_dir +  ' 2>&1')
-    for line in iter(stdout.readline, ""):
-        print(line, end="")
+        # make sure the directory exists
+        _, stdout, _ = ssh_client.exec_command('mkdir -p ' + repo_dir +  ' 2>&1')
+        for line in iter(stdout.readline, ""):
+            print(line, end="")
 
-    scp_file(ssh_client, repo_dir, tar_file_name)
-
-
+        scp_file(ssh_client, repo_dir, tar_file_name)
+    else:
+        # copy to /var/www/sbp_images directory (must be writable by current user)
+        local_dir = LOCAL_DIR_FMT.format(args.version)
+        os.makedirs(local_dir, exist_ok=True)
+        dest = os.path.join(local_dir, os.path.basename(tar_file_name))
+        os.replace(tar_file_name, dest)
+        print("File ready for upgrade: %s" % dest)
 
 def generate_tar_file(args, built_images_dir):
     ''' package the NOR image and the signed eeproms '''
@@ -243,7 +254,7 @@ def generate_tar_file(args, built_images_dir):
 
         return None
 
-    TGZ_FORMAT = "build_{chip}_{emulation}{_debug}_{version}"
+    TGZ_FORMAT = "build_{chip}_{emulation}{debug}_{version}"
     tar_root = TGZ_FORMAT.format(**vars(args))
     tar_file_name = os.path.join(built_images_dir, tar_root) + ".tgz"
 
@@ -263,8 +274,8 @@ def extract_tar_to_bmc(ssh_client, tar_file_name):
     scp_file(ssh_client, BMC_INSTALL_DIR, tar_file_name)
 
     # now extract it
-    print("extracting tar file {0}".format(target_file_name))
-    tar_extract_cmd = "tar xzf {0} -C {1} && rm {0}".format(target_file_name, BMC_INSTALL_DIR)
+    print("extracting tar file {0}".format(tar_file_name))
+    tar_extract_cmd = "tar xzf {0} -C {1} && rm {0}".format(tar_file_name, BMC_INSTALL_DIR)
     _, _, stderr = ssh_client.exec_command(tar_extract_cmd)
     for line in iter(stderr.readline, ""):
         print(line, end="")
@@ -290,8 +301,16 @@ def parse_args():
     arg_parser.add_argument("-n", "--enrollment-certificate", action='store',
                             metavar='FILE',
                             help="enrollment certificate to add to the image")
-    arg_parser.add_argument("-p", "--production", action='store_true',
-                            help="Production build: very few log messages")
+    bld_type = arg_parser.add_mutually_exclusive_group()
+    bld_type.add_argument("-p", "--production", action='store_const', const='', dest='debug',
+                            help="Production build")
+    bld_type.add_argument("-V", "--verbose", action='store_const', const='_verbose', dest='debug',
+                            help="Production build with verbose logging")
+    bld_type.add_argument("--debug", action='store_const', const='_debug',
+                            help="Debug build")
+    # default to --debug
+    arg_parser.set_defaults(debug='_debug')
+
     arg_parser.add_argument("--customer", action='store_true',
                             help="Customer build: sign with customer keys")
     arg_parser.add_argument("-s", "--sbp", action='store',
@@ -300,14 +319,21 @@ def parse_args():
                             help="Force version for image -- useful for update")
     arg_parser.add_argument("--description", action='store',
                             help="Force description for image")
-    arg_parser.add_argument("-u", "--user", action='store', metavar='USERNAME',
-                            help='''create a tgz file on dochub for use with run_fwupgrade.py
-                            as dochub.fungible.local/doc/<username>/<version>/''')
+
     arg_parser.add_argument("--tar", action='store_true',
                             default='--bmc' in sys.argv,
                             help="generate tgz file with the image and all eeproms")
     arg_parser.add_argument("--bmc", action='store',
                             help="BMC on which to store the build (for install/recovery)")
+
+    dest_grp = arg_parser.add_mutually_exclusive_group()
+
+    dest_grp.add_argument("-u", "--user", action='store', metavar='USERNAME',
+                            help='''create a tgz file on dochub for use with run_fwupgrade.py
+                            as dochub.fungible.local/doc/sbp_images/<username>/<version>/''')
+    dest_grp.add_argument("-l", "--local", action='store_true',
+                          help='''create a tgz file locally for use with run_fwupgrade.py
+                          as /var/www/sbp_images''')
 
     return arg_parser.parse_args()
 
@@ -321,6 +347,9 @@ def sanitize_args(args, eeproms_dir):
         args.sbp = os.path.abspath(args.sbp)
 
     # eeprom
+    # verify the file exists; if not show the list
+    eeprom_files = os.listdir(eeproms_dir)
+
     if args.eeprom is None:
         if args.chip == 'f1':
             if args.emulation:
@@ -332,6 +361,19 @@ def sanitize_args(args, eeproms_dir):
                 args.eeprom = "eeprom_emu_s1_full"
             else:
                 args.eeprom = "eeprom_s1_dev_board"
+
+        # verify somebody did not remove the default
+        if not args.eeprom in eeprom_files:
+            # select a matching one....
+            matches = [e for e in eeprom_files if e.startswith(args.eeprom)]
+            if len(matches):
+                args.eeprom = matches[0]
+            else:
+                print("*** could not find suitable default; please report as bug. ***")
+                print("in the meantime, select one of the available eeproms (-e optional):")
+                print("\n".join(eeprom_files))
+                sys.exit(1)
+
     else:
         # Jenkins or other legacy users might specify the eeprom in
         # a weird way...be nice
@@ -339,10 +381,7 @@ def sanitize_args(args, eeproms_dir):
         if not sane_eeprom.startswith(EEPROM_PREFIX):
             sane_eeprom = EEPROM_PREFIX + sane_eeprom
 
-        # the list of all eeproms files
-        eeprom_files = os.listdir(eeproms_dir)
         # verify the file exists; if not show the list
-        eeprom_files = os.listdir(eeproms_dir)
         if not sane_eeprom in eeprom_files:
             print("eeprom name entered ws not found: \"{0}\"".format(args.eeprom))
             print("Available eeproms are:")
@@ -368,9 +407,6 @@ def sanitize_args(args, eeproms_dir):
         os.write(file_no, enrollment_cert)
         os.close(file_no)
 
-    # args.production translates to a _debug
-    args._debug = "" if args.production else "_debug"
-
     return args
 
 
@@ -383,11 +419,11 @@ def main():
 
     args = sanitize_args(parse_args(), eeproms_dir)
 
-    BUILD_DIR_FORMAT = "{sbp}/{build_dir}_{chip}_{emulation}{_debug}"
+    BUILD_DIR_FORMAT = "{sbp}/{build_dir}_{chip}_{emulation}{debug}"
 
     # the target is like "build_debug_target_f1_0" or "build_target_s1_0"
     # the final 0 is for normal builds, 1 for emulation builds
-    MAKE_CMD_FORMAT = 'BUILD_BASE_DIR={build_dir} make -C {sbp} build{_debug}_target_{chip}_{emulation}'
+    MAKE_CMD_FORMAT = 'BUILD_BASE_DIR={build_dir} make -C {sbp} build{debug}_target_{chip}_{emulation}'
 
     build_dir = BUILD_DIR_FORMAT.format(**vars(args))
     make_cmd = MAKE_CMD_FORMAT.format(**vars(args))
@@ -408,7 +444,7 @@ def main():
     print("*** Images in {0} ***".format(built_images_dir))
 
     # generate the tgz file for update
-    if args.user:
+    if args.user or args.local:
         generate_update_tar_file(args, built_images_dir)
 
     if args.tar:

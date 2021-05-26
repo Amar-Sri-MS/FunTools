@@ -1,7 +1,11 @@
 # Signing Server
 
 The signing server is a HTTPS server running on port 4443.
-The URL is "https://f1reg.fungible.com:4443/cgi-bin/signing_server.cgi"
+
+
+The URL is "[https://f1reg.fungible.com:4443/cgi-bin/signing_server.cgi](https://f1reg.fungible.com:4443/cgi-bin/signing_server.cgi)"
+
+
 It implements the following commands:
 
 ## GET
@@ -20,7 +24,11 @@ Specify the label of the key in the HSM. The modulus of this key is returned in 
 
 ##### production (optional argument, default value: 0)
 
-Use the production HSM if the value is not zero.
+0: development HSM
+
+1: DPU HSM
+
+2: AST2600 HSM
 
 ##### format (optional argument, default value: 'binary')
 
@@ -30,6 +38,17 @@ Possible values are:
 
 * binary: raw bytes of the modulus
 
+* public_key: a PUBLIC KEY PEM file compatible with OpenSSL
+
+		-----BEGIN PUBLIC_KEY-----
+		MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6AXllROlNJL+kxUl/Jen
+		Qf3elTQkclTCJwi22l6nhzYNsz11b2kxzsKdXA9TfqrzJB64pqTb+cJEIMYtSoIc
+		iw7zGbic4ByLaT82pIbf8BiFvh9dwhhPYfHWd5NUtoa7bQWPWJVhaTjzsNo7WQvK
+		YV3TFM9zXu5913nV+gKNSs/ZaZ1E+ymyM7ijxCJOrU9xH5XIAGSh4o3EpXFmw7j5
+		JzjqetOX+eBLnXQoK5iOAIQEXKOlph+EmNTI4vBnB+kKALa99g7dLT/QB+hcih5G
+		rNe0nmmmKobvlAOTOVRM5V0PK7ruZCKfvBdPuFnPvUbC1OteB6ojOS2vG7nAuh7Q
+		hwIDAQAB
+		-----END PUBLIC_KEY-----
 
 * hex: hexadecimal encoding of the bytes of the modulus
 
@@ -86,7 +105,7 @@ Possible values are:
 
 ## POST
 
-The post request is used to sign a single SHA-512 digest.
+The post request is used to sign a single digest with the development keys.
 
 ### Hash signing (development builds only)
 
@@ -94,7 +113,11 @@ The post request is used to sign a single SHA-512 digest.
 
 ##### digest (required)
 
-The SHA512 digest to package as a PKCS v1.5 signature.
+The digest to package as a PKCS v1.5 signature.
+
+##### algo (optional, default = 'sha512')
+
+The hash algorithm that generated the digest. 
 
 ##### modulus (optional)
 

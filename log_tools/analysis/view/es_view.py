@@ -7,39 +7,113 @@
 # navigation. Still a work in progress.
 #
 
+import argparse
+import datetime
 import json
+import logging
 import os
+import requests
+import sys
+import time
 
 import jinja2
 
 from elasticsearch7 import Elasticsearch
 from flask import Flask
 from flask import request
+from pathlib import Path
+from requests.exceptions import HTTPError
+from urllib.parse import quote_plus
+
+from elastic_metadata import ElasticsearchMetadata
+from ingester import ingester_page
+from web_usage import web_usage
+
+sys.path.append('..')
+
+import config_loader
+import logger
 
 
 app = Flask(__name__)
+app.register_blueprint(ingester_page)
+app.register_blueprint(web_usage, url_prefix='/events')
+
+
+# @app.errorhandler(Exception)
+# def handle_exception(error):
+#     """
+#     Handling exceptions by sending only the error message.
+#     This function is called whenever an unhandled Exception
+#     is raised.
+#     """
+#     # TODO(Sourabh): Maybe redirect to a template with an error message instead
+#     # of just displaying a message. Also print error stacktrace.
+#     print('ERROR:', str(error))
+#     return str(error), 500
 
 
 def main():
-    app.run(host='0.0.0.0')
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-p', '--port', type=int, default=5000,
+                        help='port for HTTP file server')
+
+    args = parser.parse_args()
+    port = args.port
+
+    config = config_loader.get_config()
+
+    log_handler = logger.get_logger(filename='es_view.log')
+
+    # Get the flask logger and add our custom handler
+    flask_logger = logging.getLogger('werkzeug')
+    flask_logger.setLevel(logging.INFO)
+    flask_logger.addHandler(log_handler)
+    flask_logger.propagate = False
+
+    # Updating Flask's config with the configs from file
+    app.config.update(config)
+    app.run(host='0.0.0.0', port=port)
 
 
 @app.route('/')
 def root():
     """ Serves the root page, which shows a list of logs """
-    es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+    ELASTICSEARCH_HOSTS = app.config['ELASTICSEARCH']['hosts']
+    es = Elasticsearch(ELASTICSEARCH_HOSTS)
+    es_metadata = ElasticsearchMetadata()
 
-    indices = es.indices.get('log_*')
+    tags = request.args.get('tags', '')
+
+    # Using the ES CAT API to get indices
+    # CAT API supports sorting and returns more data
+    indices = es.cat.indices(
+        index='log_*',
+        h='health,index,id,docs.count,store.size,creation.date',
+        format='json',
+        s='creation.date:desc'
+    )
+
+    if len(tags) > 0:
+        tags_list = [tag.strip() for tag in tags.split(',')]
+        metadata = es_metadata.get_by_tags(tags_list)
+
+        # Sadly indicies API does not let us select the indicies to filter
+        # Filtering out the indices
+        indices = [index for index in indices if index['index'] in metadata]
+    else:
+        log_ids = [index['index'] for index in indices]
+        metadata = es_metadata.get_by_log_ids(log_ids)
 
     # Assume our template is right next door to us.
-    dir = _get_script_dir()
+    dir = os.path.join(_get_script_dir(), 'templates')
 
     jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(dir),
                              trim_blocks=True,
                              lstrip_blocks=True)
     template = jinja_env.get_template('root_template.html')
 
-    return _render_root_page(indices, jinja_env, template)
+    return _render_root_page(indices, metadata, jinja_env, template)
 
 
 def _get_script_dir():
@@ -48,10 +122,32 @@ def _get_script_dir():
     return os.path.dirname(module_path)
 
 
-def _render_root_page(log_ids, jinja_env, template):
+def _render_root_page(log_ids, metadata, jinja_env, template):
     """ Renders the root page from a template """
     template_dict = {}
-    template_dict['logs'] = log_ids
+    template_dict['logs'] = list()
+
+    for log in log_ids:
+        id = log['index']
+        log_view_base_url = _get_log_view_base_url(id)
+        creation_date_epoch = int(log['creation.date'])
+        # Separting out seconds and milliseconds from epoch
+        creation_date_s, creation_date_ms = divmod(creation_date_epoch, 1000)
+        creation_date = '{}'.format(
+                            time.strftime('%B %d, %Y %H:%M:%S', time.gmtime(creation_date_s)),
+                            )
+
+        tags = metadata.get(id, {}).get('tags', [])
+
+        template_dict['logs'].append({
+            'name': id,
+            'link': log_view_base_url,
+            'creation_date': creation_date,
+            'health': log['health'],
+            'doc_count': log['docs.count'],
+            'es_size': log['store.size'],
+            'tags': tags
+        })
 
     result = template.render(template_dict, env=jinja_env)
     return result
@@ -116,8 +212,13 @@ class ElasticLogSearcher(object):
 
     def __init__(self, index):
         """ New searcher, looking at a specific index """
-        self.es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+        ELASTICSEARCH_HOSTS = app.config['ELASTICSEARCH']['hosts']
+        self.es = Elasticsearch(ELASTICSEARCH_HOSTS)
         self.index = index
+
+        # Check if index does not exist
+        if not self.es.indices.exists(index):
+            raise Exception(f'Logs not found for {index}')
 
     def search(self, state,
                query_term=None, source_filters=None, time_filters=None,
@@ -154,7 +255,8 @@ class ElasticLogSearcher(object):
                     "msg": log content
                 }, ...
             ],
-            "state" { opaque state object holding search state }
+            "state" { opaque state object holding search state },
+            "total_search_hits" { "value": 10000, "relation": "gte" }
         }
 
         All results are returned in ascending timestamp order.
@@ -169,12 +271,15 @@ class ElasticLogSearcher(object):
                                 index=self.index,
                                 size=query_size,
                                 sort='@timestamp:asc')
+        # A dict with value (upto 10k) and relation if
+        # the actual hits is exact or greater than
+        total_search_hits = result['hits']['total']
         result = result['hits']['hits']
 
         new_state = ElasticLogState.clone(state)
         _, new_state.after_sort_val = self._get_delimiting_sort_values(result)
 
-        return {'hits': result, 'state': new_state}
+        return {'hits': result, 'state': new_state, 'total_search_hits': total_search_hits}
 
     def _build_query_body(self, query_term,
                           source_filters, time_filters):
@@ -236,7 +341,8 @@ class ElasticLogSearcher(object):
         have lower values than the "before_sort_val" in the state argument.
         """
         body = self._build_query_body(query_term, source_filters, time_filters)
-        body['search_after'] = [state.before_sort_val]
+        if state.before_sort_val != -1:
+            body['search_after'] = [state.before_sort_val]
 
         # The recipe for search_before is to do a search_after in descending
         # sort order, and then reverse the list of results. Quirky.
@@ -244,13 +350,16 @@ class ElasticLogSearcher(object):
                                 index=self.index,
                                 size=query_size,
                                 sort='@timestamp:desc')
+        # A dict with value (upto 10k) and relation if
+        # the actual hits is exact or greater than
+        total_search_hits = result['hits']['total']
         result = result['hits']['hits']
         result.reverse()
 
         new_state = ElasticLogState.clone(state)
         new_state.before_sort_val, _ = self._get_delimiting_sort_values(result)
 
-        return {'hits': result, 'state': new_state}
+        return {'hits': result, 'state': new_state, 'total_search_hits': total_search_hits}
 
     @staticmethod
     def _get_delimiting_sort_values(result):
@@ -273,7 +382,7 @@ class ElasticLogSearcher(object):
 
     def get_unique_entries(self, field):
         """
-        Obtains a list of unique values for the given field.
+        Obtains a dict of unique values along with the count of documents for the given field.
 
         The field can be thought of as a column in a table, or a key in a
         structured log.
@@ -295,9 +404,61 @@ class ElasticLogSearcher(object):
 
         result = self.es.search(body=body,
                                 index=self.index,
-                                size=1)  # we're not really searching
+                                size=0)  # we're not really searching
+
         buckets = result['aggregations']['unique_vals']['buckets']
-        return [bucket['key'] for bucket in buckets]
+        return {bucket['key']: bucket['doc_count'] for bucket in buckets}
+
+    def get_aggregated_unique_entries(self, parent_fields, child_fields=[]):
+        """
+        Obtains aggregated unique entries based on the a list of parent & child fields.
+
+        Parent fields define multi level aggregations. For ex: ['system_type', 'system_id']
+        will have unique entries of field 'system_id' for each unique entry of field 'system_type'
+
+        Child fields define single level aggregations.
+        """
+        max_unique_entries = 100
+        def generate_aggs_body(parent_fields, child_fields=[]):
+            body = dict()
+            if len(parent_fields) == 0:
+                return body
+
+            field = parent_fields.pop()
+            has_more_fields = len(parent_fields) > 0
+            body['aggs'] = {
+                field: {
+                    'terms': { 'field': field, 'size': max_unique_entries },
+                }
+            }
+
+            if has_more_fields:
+                body['aggs'][field] = {
+                    **body['aggs'][field],
+                    **generate_aggs_body(parent_fields, child_fields)
+                }
+            elif len(child_fields) > 0:
+                aggs = dict()
+                for child_field in child_fields:
+                    aggs[child_field] = {
+                        'terms': {'field': child_field, 'size': max_unique_entries}
+                    }
+
+                body['aggs'][field] = {
+                    **body['aggs'][field],
+                    'aggs': aggs
+                }
+
+            return body
+
+        body = generate_aggs_body(list(parent_fields[::-1]), child_fields)
+
+        result = self.es.search(body=body,
+                                index=self.index,
+                                size=0)  # we're not really searching
+
+        buckets = result['aggregations'][parent_fields[0]]['buckets']
+        return buckets
 
     def get_document_by_id(self, doc_id):
         """
@@ -308,6 +469,12 @@ class ElasticLogSearcher(object):
         """
         return self.es.get(index=self.index, id=doc_id)
 
+    def get_document_count(self, query_terms=None, source_filters=None, time_filters=None):
+        """ Returns count of documents for the given search query and filters """
+        body = self._build_query_body(query_terms, source_filters, time_filters)
+        result = self.es.count(index=self.index, body=body)
+        count = result['count']
+        return count
 
 @app.route('/log/<log_id>', methods=['GET'])
 def get_log_page(log_id):
@@ -316,20 +483,21 @@ def get_log_page(log_id):
 
     Subsequent updates to the page are handled via POST requests.
     """
-    state, table_body = _get_requested_log_lines(log_id)
-
-    es = ElasticLogSearcher(log_id)
-    sources = es.get_unique_entries('src')
+    state, total_search_hits, table_body = _get_requested_log_lines(
+                                                log_id,
+                                                include_hyperlinks=False
+                                            )
 
     # Assume our template is right next door to us.
-    dir = _get_script_dir()
+    dir = os.path.join(_get_script_dir(), 'templates')
 
     jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(dir),
                              trim_blocks=True,
                              lstrip_blocks=True)
     template = jinja_env.get_template('log_template.html')
+    jinja_env.filters['formatdatetime'] = _format_datetime
 
-    return _render_log_page(table_body, sources, state,
+    return _render_log_page(table_body, total_search_hits, state,
                             log_id, jinja_env, template)
 
 
@@ -338,13 +506,15 @@ def get_log_contents(log_id):
     """
     Obtains log contents which can be used to update a page.
     """
-    state, page_body = _get_requested_log_lines(log_id)
+    state, total_search_hits, page_body = _get_requested_log_lines(log_id,
+                                                                   include_hyperlinks=False)
 
     return {'content': ''.join(page_body),
+            'total_search_hits': total_search_hits,
             'state': state.to_dict()}
 
 
-def _get_requested_log_lines(log_id):
+def _get_requested_log_lines(log_id, include_hyperlinks=True):
     """
     Obtains the requested log lines.
 
@@ -360,6 +530,7 @@ def _get_requested_log_lines(log_id):
 
     Returns a tuple containing: (
         state: next state object for future searches
+        total_search_hits: object containing total hits value
         body: log lines formatted as HTML table body
     )
     """
@@ -379,7 +550,7 @@ def _get_requested_log_lines(log_id):
     # Elasticsearch has a limit of 10K results, so pagination is required
     size = 1000
     es = ElasticLogSearcher(log_id)
-    before, after, state = get_temporally_close_hits(es, state, size,
+    before, after, state, total_search_hits = get_temporally_close_hits(es, state, size,
                                                      filters, next, prev)
 
     # Before and after are not inclusive searches, so we have to include
@@ -402,15 +573,20 @@ def _get_requested_log_lines(log_id):
     # This quirky magic is how we get paging in search queries. We determine
     # the sort value for the first and last entry in this query.
     for hit in result:
-        line = _convert_to_table_row(hit)
+        line = _convert_to_table_row(hit, include_hyperlinks)
         page_body.append(line)
 
-    return state, page_body
+    return state, total_search_hits, page_body
 
 
-def _convert_to_table_row(hit):
+def _convert_to_table_row(hit, include_hyperlinks=True):
     """ Converts a search hit into an HTML table row """
     s = hit['_source']
+    log_id = hit['_index']
+    log_view_base_url = _get_log_view_base_url(log_id)
+
+    msg = s['msg']
+    timestamp = s['@timestamp']
 
     # The log lines are organized as table rows in the template
     line = '<tr style="vertical-align: baseline">'
@@ -418,9 +594,20 @@ def _convert_to_table_row(hit):
         line = '<tr class={} id={}>'.format('search_highlight',
                                             hit.get('anchor_link'))
 
-    line += '<td>{}</td> <td>{}</td> <td>{}</td>'.format(s['src'],
-                                                         s['@timestamp'],
-                                                         s['msg'])
+    line += '<td>{}</td> <td>{}</td> <td>{}</td> <td>{}</td>'.format(s['src'],
+                                                                     s.get('system_id'),
+                                                                     timestamp,
+                                                                     s.get('level'))
+    if include_hyperlinks:
+        state = f'"before":"{timestamp}","after":"{timestamp}"'
+        log_view_url = ('{}?state={{{}}}&next=true&prev=true&include={}#0').format(
+                            log_view_base_url,
+                            quote_plus(state),
+                            hit['_id'])
+        line += '<td><a href="{}" target="_blank">{}</a></td>'.format(log_view_url,
+                                                                    s['msg'])
+    else:
+        line += '<td>{}</td>'.format(s['msg'])
     line += '</tr>'
     return line
 
@@ -432,11 +619,12 @@ def get_temporally_close_hits(es, state, size, filters, next, prev):
 
     The prev and next booleans control whether to return before, after or both.
 
-    The returned tuple is (before_list, after_list, next_state).
+    The returned tuple is (before_list, after_list, next_state, total_search_hits).
     Both lists are ordered by timestamp. We only return empty lists, never None.
     """
     before = []
     after = []
+    total_search_hits = 0
 
     query_string = filters.get('text')
     source_filters = filters.get('sources', [])
@@ -448,24 +636,39 @@ def get_temporally_close_hits(es, state, size, filters, next, prev):
                             source_filters, time_filters, query_size=size)
         after = results['hits']
         state = results['state']
+        total_search_hits = results['total_search_hits']
     if prev:
         results = es.search_backwards(state, query_string,
                                       source_filters, time_filters,
                                       query_size=size)
         before = results['hits']
         state = results['state']
+        total_search_hits = results['total_search_hits']
 
-    return before, after, state
+    return before, after, state, total_search_hits
 
 
-def _render_log_page(table_body, sources, state,
+def _render_log_page(table_body, total_search_hits, state,
                      log_id, jinja_env, template):
     """ Renders the log page """
+    es = ElasticLogSearcher(log_id)
+    es_metadata = ElasticsearchMetadata()
+
+    metadata = es_metadata.get(log_id)
+
+    sources = es.get_unique_entries('src')
+    unique_entries = es.get_aggregated_unique_entries(['system_type', 'system_id'], ['src'])
+
     template_dict = {}
     template_dict['body'] = ''.join(table_body)
     template_dict['log_id'] = log_id
+    template_dict['total_search_hits'] = total_search_hits
     template_dict['sources'] = sources
+    template_dict['unique_entries'] = unique_entries
+    template_dict['log_view_base_url'] = _get_log_view_base_url(log_id)
     template_dict['state'] = state.to_json_str()
+    template_dict['metadata'] = metadata
+    template_dict['job_link'] = _get_actual_job_link(log_id)
 
     result = template.render(template_dict, env=jinja_env)
     return result
@@ -480,9 +683,9 @@ def search(log_id):
     search_term = request.args.get('query')
     page = request.args.get('page', 1)
     page = int(page)
-
-    # TODO (jimmy): we ought to do this only once
-    total_search_hits = _get_total_hit_count(log_id, search_term)
+    time_start = request.args.get('time_start', '')
+    time_end = request.args.get('time_end', '')
+    time_filters = [time_start, time_end]
 
     state_str = request.args.get('state', None)
     state = ElasticLogState()
@@ -491,9 +694,10 @@ def search(log_id):
     es = ElasticLogSearcher(log_id)
     size = 20
 
-    results = es.search(state, search_term, query_size=size)
+    results = es.search(state, search_term, time_filters=time_filters, query_size=size)
     hits = results['hits']
     state = results['state']
+    total_search_hits = results['total_search_hits']
 
     links = []
     for hit in hits:
@@ -526,13 +730,13 @@ def search(log_id):
                                total_search_hits)
 
 
-def _get_total_hit_count(log_id, search_term):
+def _get_total_hit_count(log_id, search_term, time_filters):
     """ Obtains the search hit count, up to a maximum of 1000 """
     es = ElasticLogSearcher(log_id)
     state = ElasticLogState()
     size = 1000
 
-    results = es.search(state, search_term, query_size=size)
+    results = es.search(state, search_term, time_filters=time_filters, query_size=size)
     return len(results['hits'])
 
 
@@ -540,21 +744,322 @@ def _render_search_page(search_results, log_id, search_term, state, page,
                         total_search_hits):
     """ Renders the search results page """
     template_dict = {}
-    template_dict['body'] = '<br><br>'.join(search_results)
+    template_dict['body'] = ''.join(search_results)
     template_dict['log_id'] = log_id
     template_dict['query'] = search_term
     template_dict['state'] = state.to_json_str()
     template_dict['page'] = page
     template_dict['page_entry_count'] = len(search_results)
     template_dict['search_hits'] = total_search_hits
+    template_dict['job_link'] = _get_actual_job_link(log_id)
 
-    dir = _get_script_dir()
+    dir = os.path.join(_get_script_dir(), 'templates')
     jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(dir),
                              trim_blocks=True,
                              lstrip_blocks=True)
     template = jinja_env.get_template('search_template.html')
 
     result = template.render(template_dict, env=jinja_env)
+    return result
+
+
+@app.route('/log/<log_id>/dashboard', methods=['GET'])
+def dashboard(log_id):
+    """ Renders the dashboard page for a particular log_id """
+    # Assume our template is right next door to us.
+    dir = os.path.join(_get_script_dir(), 'templates')
+
+    jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(dir),
+                             trim_blocks=True,
+                             lstrip_blocks=True)
+    template = jinja_env.get_template('dashboard_template.html')
+    jinja_env.filters['formatdatetime'] = _format_datetime
+
+    return _render_dashboard_page(log_id, jinja_env, template)
+
+
+def _get_log_view_base_url(log_id):
+    """
+    Base URL of home grown log viewer
+    """
+    log_view_base_url = ("/log/{}").format(log_id)
+    return log_view_base_url
+
+
+@app.route('/log/<log_id>/dashboard/anchors', methods=['GET'])
+def get_anchors(log_id):
+    """
+    Returns current, previous and next anchor files
+    for the given page number.
+    page number is zero indexed.
+    """
+    page_num = int(request.args.get('page', 0))
+    anchors = _read_paginated_anchor_file(log_id, page_num)
+    return anchors
+
+
+def _get_kibana_base_url(log_id):
+    """
+    Creates a Kibana Base URL which could be used to create kibana urls
+    with any given query.
+    URL contains a term 'KIBANA_QUERY' which should be replaced with
+    the given search query.
+    URL contains defaults for selected columns to show in Kibana dashboard
+    and time filter to be within last 90 days.
+    """
+
+    KIBANA_HOST = app.config['KIBANA']['host']
+    KIBANA_PORT = app.config['KIBANA']['port']
+    # KIBANA defaults.
+    # TODO(Sourabh): Would be better to have this in config files
+    kibana_time_filter = "from:'1970-01-01T00:00:00.000Z',to:now"
+    kibana_selected_columns = 'src,level,msg'
+    kibana_base_url = ("http://{}:{}/app/kibana#/discover/?_g=(time:({}))&_a=(columns:!({}),index:{},"
+                  "query:(language:kuery,query:'KIBANA_QUERY'))").format(KIBANA_HOST,
+                                                                         KIBANA_PORT,
+                                                                         kibana_time_filter,
+                                                                         kibana_selected_columns,
+                                                                         log_id)
+    return kibana_base_url
+
+def _read_file(log_id, file_name, default={}):
+    """
+    Gets file from file server
+    Returns 'default' if no file found or errored out
+    """
+    FILE_SERVER_URL = app.config['FILE_SERVER_URL']
+    url = f'{FILE_SERVER_URL}/{log_id}/file/{file_name}'
+    data = default
+    try:
+        response = requests.get(url)
+         # If the response was successful, no Exception will be raised
+        response.raise_for_status()
+        data = response.json()
+
+    except HTTPError as http_err:
+        app.logger.error(f'HTTP error occurred: {http_err}')  # Python 3.6
+    except Exception as err:
+        app.logger.error(f'Other error occurred: {err}')  # Python 3.6
+    except Exception as e:
+        app.logger.exception('Could not find file')
+
+    return data
+
+def _read_paginated_anchor_file(log_id, page_num=0):
+    """
+    Returns current, previous and next anchor files
+    for the given page number
+    """
+    previous_anchors = _read_file(log_id, f'anchors_{page_num-1}.json', default=None)
+    anchors = _read_file(log_id, f'anchors_{page_num}.json', default=[])
+    next_anchors = _read_file(log_id, f'anchors_{page_num+1}.json', default=None)
+
+    return {
+        'previous_anchors': previous_anchors,
+        'anchors': anchors,
+        'next_anchors': next_anchors
+    }
+
+def _get_analytics_data(log_id):
+    """
+    Get all the analytics data
+    Returns a dict containing duplicates and anchors
+    """
+    # Reading metadata of detected anchors file
+    anchors_meta = _read_file(log_id, 'anchors_meta.json', default={})
+    # Reading detected anchors from the JSON file
+    anchors = _read_paginated_anchor_file(log_id)
+
+    # Reading detected duplicates from the JSON file
+    duplicates = _read_file(log_id, 'duplicates.json', default=[])
+
+    return {
+        **anchors,
+        'anchors_meta': anchors_meta,
+        'duplicates': duplicates
+    }
+
+def _get_actual_job_link(log_id):
+    """ Returns the link to the job which generated the logs """
+    ids = log_id.split('-')
+    # QA jobs: log_qa-JOBID
+    if log_id.startswith('log_qa-'):
+        job_id = ids[1]
+        return f'http://integration.fungible.local/regression/suite_detail/{job_id}'
+
+    # Fun-on-demand jobs: log_fod-JOBID_JOBDIR
+    if log_id.startswith('log_fod-'):
+        job_id = ids[1]
+        return f'http://palladium-jobs.fungible.local:8080/job/{job_id}'
+
+def _render_dashboard_page(log_id, jinja_env, template):
+
+    es = ElasticLogSearcher(log_id)
+    es_metadata = ElasticsearchMetadata()
+
+    log_view_base_url = _get_log_view_base_url(log_id)
+    keyword_for_level = app.config.get('LEVEL_KEYWORDS')
+
+    default_log_levels = list(keyword_for_level.keys())
+    # Number of documents to fetch for most recent logs
+    RECENT_LOGS_SIZE = 50
+
+    sources = es.get_unique_entries('src')
+    system_types = es.get_unique_entries('system_type')
+    system_ids = es.get_unique_entries('system_id')
+    unique_entries = es.get_aggregated_unique_entries(['system_type', 'system_id'], ['src'])
+    log_level_stats = _get_log_level_stats(log_id)
+
+    # Fetch the first non zero log level
+    nonzero_log_levels = [level for level in default_log_levels if log_level_stats[level]['count'] > 0]
+
+    recent_logs = _get_recent_logs(log_id, RECENT_LOGS_SIZE, log_levels=nonzero_log_levels[0:1])
+
+    analytics_data = _get_analytics_data(log_id)
+
+    metadata = es_metadata.get(log_id)
+
+    template_dict = {}
+    template_dict['log_id'] = log_id
+    template_dict['sources'] = sources
+    template_dict['system_types'] = system_types
+    template_dict['system_ids'] = system_ids
+    template_dict['unique_entries'] = unique_entries
+    template_dict['log_view_base_url'] = log_view_base_url
+    template_dict['log_level_stats'] = log_level_stats
+    template_dict['log_level_for_recent_logs'] = nonzero_log_levels[0] if len(nonzero_log_levels) > 0 else None
+    template_dict['recent_logs'] = _render_log_entries(recent_logs)
+    template_dict['analytics_data'] = json.dumps(analytics_data)
+    template_dict['metadata'] = metadata
+    template_dict['job_link'] = _get_actual_job_link(log_id)
+
+    result = template.render(template_dict, env=jinja_env)
+    return result
+
+
+@app.route('/log/<log_id>/dashboard/level-stats', methods=['GET'])
+def log_level_stats(log_id):
+    sources = request.args.getlist('source')
+    result = _get_log_level_stats(log_id, sources)
+    return result
+
+
+def _get_log_level_stats(log_id, sources=[], log_levels=None, time_filters=None):
+    es = ElasticLogSearcher(log_id)
+    log_view_base_url = _get_log_view_base_url(log_id)
+    query = ''
+    if len(sources) > 0:
+        query = f'src:({" OR ".join(sources)}) AND'
+
+    keyword_for_level = app.config.get('LEVEL_KEYWORDS')
+
+    default_log_levels = keyword_for_level.keys()
+    if log_levels is None:
+        log_levels = default_log_levels
+
+    document_counts = {}
+    for idx, level in enumerate(log_levels):
+        keywords = [f'"{keyword}"' for keyword in keyword_for_level[level]]
+        keyword_query_terms = ' OR '.join(keywords)
+        log_level_query = f'{query} (level:({keyword_query_terms}) OR msg:({keyword_query_terms}))'
+        log_view_url = f'{log_view_base_url}/search?query={quote_plus(log_level_query)}'
+        document_counts[level] = {
+            'order': idx,
+            'count': es.get_document_count(keyword_query_terms, sources, time_filters),
+            'log_view_url': log_view_url,
+            'keywords': ', '.join(keyword_for_level[level])
+        }
+
+    return document_counts
+
+
+@app.route('/log/<log_id>/dashboard/recent', methods=['GET'])
+def recent_logs(log_id):
+    sources = request.args.getlist('source')
+    levels = request.args.getlist('level')
+    # Number of log entries. Defaults to 50
+    size = request.args.get('size', 50)
+
+    recent_logs = _get_recent_logs(log_id, size, sources, levels)
+    result = _render_log_entries(recent_logs)
+    return result
+
+
+def _get_recent_logs(log_id, size, sources=[], log_levels=None, time_filters=None):
+    """
+    Returns table body of recent log entries.
+
+    size parameter determines the number of log entries.
+    log_levels parameter is of list type which contains log level
+    """
+    es = ElasticLogSearcher(log_id)
+    state = ElasticLogState()
+
+    keyword_for_level = app.config.get('LEVEL_KEYWORDS')
+
+    level_keywords = []
+    query_string = ''
+    if log_levels:
+        for level in log_levels:
+            level_keywords.extend([f'"{keyword}"' for keyword in keyword_for_level[level]])
+
+        keyword_query_terms = ' OR '.join(level_keywords)
+        # Check for the log level in either the level field or the msg field
+        query_string = f'level:({keyword_query_terms}) OR msg:({keyword_query_terms})'
+
+    results = es.search_backwards(state, query_string,
+                                      sources, time_filters,
+                                      query_size=size)
+    hits = results['hits']
+    # search_backwards returns the result in reverse order
+    hits.reverse()
+
+    page_body = []
+    for hit in hits:
+        line = _convert_to_table_row(hit)
+        page_body.append(line)
+
+    return page_body
+
+
+def _render_log_entries(entries):
+    """
+    Returns an html table generated using the list of log entries
+    """
+
+    MODULE_PATH = Path(__file__)
+    # This is equivalent to path.parent.parent
+    MODULE_DIR = MODULE_PATH.resolve().parents[1] / 'view' / 'templates'
+
+    jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(MODULE_DIR),
+                                trim_blocks=True,
+                                lstrip_blocks=True)
+    template = jinja_env.get_template('log_entries.html')
+
+    header = ['Source', 'System ID', 'Timestamp', 'Level', 'Log Message']
+    template_dict = {}
+    template_dict['head'] = header
+    template_dict['body'] = '\n'.join(entries)
+
+    result = template.render(template_dict, env=jinja_env)
+    return result
+
+
+def _format_datetime(timestamp, format="%a, %d %b %Y %I:%M:%S %Z"):
+    """Format a date time to (Default): Weekday, Day Mon YYYY HH:MM:SS TZ"""
+    if timestamp is None:
+        return ''
+
+    return datetime.datetime.fromtimestamp(timestamp/1000).strftime(format)
+
+
+@app.route('/log/<log_id>/dashboard/notes', methods=['POST'])
+def save_notes(log_id):
+    note = request.get_json()
+
+    es_metadata = ElasticsearchMetadata()
+    result = es_metadata.update_notes(log_id, note)
+
     return result
 
 

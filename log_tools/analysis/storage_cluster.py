@@ -5,7 +5,6 @@
 #
 
 import argparse
-import time
 
 import pipeline
 
@@ -27,12 +26,8 @@ def main():
 
     block_factory = pipeline.BlockFactory()
 
-    start = time.time()
     p = pipeline.Pipeline(block_factory, cfg, env)
     p.process()
-    end = time.time()
-
-    print('Time spent processing: {}s'.format(end - start))
 
 
 def build_pipeline(machines, output_block):
@@ -189,10 +184,18 @@ def output_pipeline(output_block):
             "block": "ElasticOutput",
             "cfg": {
                 "index": "log_${build_id}"
+            },
+            "out": "analytics"
+        }
+        output_analytics = {
+            "id": "analytics",
+            "block": "AnalyticsOutput",
+            "cfg": {
+                "dir": "view/analytics/log_${build_id}/duplicates.html"
             }
         }
 
-        return [output]
+        return [output, output_analytics]
 
 if __name__ == '__main__':
     main()

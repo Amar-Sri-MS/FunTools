@@ -1,0 +1,17 @@
+metadata:
+  source: controller logs
+contents:
+  - frn:composer:controller::host:apigateway:folder:var/log/fungible/fc:apigateway
+  - frn:composer:controller::host:cassandra:folder:var/log/fungible/fc:cassandra
+  - frn:composer:controller::host:kafka:folder:var/log/fungible/fc:kafka
+  - frn:composer:controller::host:node-service:folder:var/log/fungible/fc:nms
+  - frn:composer:controller::host:telemetry-service:folder:var/log/fungible/fc:tms
+  - frn:composer:controller::host:dataplacement:folder:var/log/fungible/fc/sclogs:dataplacement
+  - frn:composer:controller::host:discovery:folder:var/log/fungible/fc/sclogs:discovery
+  - frn:composer:controller::host:storage_consumer:folder:var/log/fungible/fc/sclogs:lrm_consumer
+  - frn:composer:controller::host:metrics_manager:folder:var/log/fungible/fc/sclogs:metrics_manager
+  - frn:composer:controller::host:metrics_server:folder:var/log/fungible/fc/sclogs:metrics_server
+  - frn:composer:controller::host:scmscv:folder:var/log/fungible/fc/sclogs:scmscv
+  - frn:composer:controller::host:telemetry:folder:var/log/fungible/fc/sclogs:telemetry
+  - frn:composer:controller::host:setup_db:folder:var/log/fungible/fc/sclogs:setup_db
+  - frn:composer:controller::host:sns:folder:var/log/fungible/fc:sns

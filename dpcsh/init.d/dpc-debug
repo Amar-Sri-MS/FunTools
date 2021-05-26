@@ -1,0 +1,55 @@
+#!/bin/sh
+
+# This service opens DPC for external clients
+# Use only for debugging purposes!
+
+BIN_PATH="/usr/bin"
+ST_STP_D=/sbin/start-stop-daemon
+DPC_SOCKET_CONNECT=/tmp/dpc.sock
+DPC_PORT_LISTEN=4221
+DPC_DEBUG_PID_FILE=/tmp/dpc-debug.pid
+
+if [[ ! -f ${ST_STP_D} ]]; then
+	echo "${ST_STP_D} not found"
+	return 1
+fi
+
+start_dpc_proxy()
+{
+	echo "Starting a proxy for DPC proxy"
+
+	OPTS="--background --make-pidfile --pidfile ${DPC_DEBUG_PID_FILE} --startas socat"
+	CMD="--start -- TCP-LISTEN:${DPC_PORT_LISTEN},fork UNIX-CONNECT:${DPC_SOCKET_CONNECT}"
+
+	${ST_STP_D} ${OPTS} ${CMD}
+}
+
+stop_by_pid()
+{
+	OPTS="--pidfile $1 --retry TERM/10/KILL/5"
+	CMD="--stop"
+
+	${ST_STP_D} ${OPTS} ${CMD} || true
+	rm $1 || true
+}
+
+case "$1" in
+start)
+	start_dpc_proxy
+	echo "done."
+	;;
+
+stop)
+	echo "Stopping a proxy for DPC proxy"
+	stop_by_pid ${DPC_DEBUG_PID_FILE}
+	echo "done."
+	;;
+
+*)
+	echo "Usage: /etc/init.d/dpc-debug {start|stop}"
+	exit 1
+	;;
+esac
+
+exit 0
+

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+    .navbar {
+    }
+    .pagination {
+        margin: auto;
+        text-align: center;
+        font-size: 1.1em;
+    }
+    .search_contents {
+        display: block;
+        font-family: monospace;
+        white-space: pre;
+    }
+    .search_contents a {
+        display: block;
+        margin: 4px 0px;
+    }
+    td {
+        white-space: nowrap;
+        border-collapse: collapse;
+        padding-right: 5px
+    }
+    </style>
+
+    <link rel="stylesheet" type="text/css" href="/static/css/index.css">
+    <script type="text/javascript">
+        // Web tracker uses logId
+        const logId = "{{log_id}}";
+    </script>
+
+    <script type="text/javascript" src="/static/js/tracker.js"></script>
+</head>
+<body>
+    {% include 'nav_bar.html' ignore missing %}
+    <h2 class="center-align">Logs for
+        {% if job_link is not none %}
+            <a target="_blank" href="{{job_link}}">{{log_id}}</a>
+        {% else %}
+            {{log_id}}
+        {% endif %}
+    </h2>
+    <div class="container">
+        <h3>Search results for "{{query}}"</h3>
+        {% set max_page_entries = 20 %}
+        {% set low = (page - 1) * max_page_entries + 1 %}
+        {% set high = low + page_entry_count - 1 %}
+        {% if search_hits.relation == 'gte' %}
+            {% set display_hits = search_hits.value|string+'+' %}
+        {% else %}
+            {% set display_hits = search_hits.value|string %}
+        {% endif %}
+        {% if display_hits == '0' %}
+            <p>No results</p>
+        {% else %}
+            <p>Showing entries {{low}} to {{high}} (out of {{display_hits}} entries) from {{log_id}}</p>
+        {% endif %}
+
+        <div class="search_contents">
+            {{body}}
+        </div>
+
+        <div class="pagination">
+            {% if page_entry_count == max_page_entries %}
+                {% set next_page = (page + 1) %}
+                <a
+                    class="btn btn-primary"
+                    data-web_event="NEXT_SEARCH_PAGE"
+                    href='/log/{{log_id}}/search?query={{query}}&next=true&page={{next_page}}&state={{state}}'
+                >Next</a>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

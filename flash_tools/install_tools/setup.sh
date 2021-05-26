@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 
 # .setup is generated as part of bundle generation to contain
 # bundle-specific config variables
@@ -16,11 +16,10 @@ setup_err() {
 		cat $PROGRESS >> $LAST_ERROR
 		echo "Last stderr output:" >> $LAST_ERROR
 		[ -s stderr.txt ] && cat stderr.txt >> $LAST_ERROR
-		rm -f $PROGRESS
 	else
 		log_msg "Install/Upgrade successful."
-		echo "done" >> $PROGRESS
 	fi
+	rm -f $PROGRESS
 	sync
 	exit $trap_code
 }
@@ -38,8 +37,17 @@ LAST_ERROR=/tmp/cclinux_upgrade_error # a reboot will clean up this tmpfs file.
 
 ccfg_install=''
 downgrade=''
+ccfg_only=''
+host_dpu=''
+host_sku=''
 
-host_dpu=$(tr -d '\0' < /proc/device-tree/fungible,dpu || true)
+if [ -e /sys/firmware/devicetree/base/fungible,dpu ] ; then
+    read -d $'\0' host_dpu rest_of_line < /sys/firmware/devicetree/base/fungible,dpu
+fi
+
+if [ -e /sys/firmware/devicetree/base/fungible,sku ] ; then
+    read -d $'\0' host_sku rest_of_line < /sys/firmware/devicetree/base/fungible,sku
+fi
 
 if [ -n "$host_dpu" ] && [ "$host_dpu" != "$CHIP_NAME" ]; then
 	echo "This upgrade bundle is incompatible with the host DPU"
@@ -60,17 +68,23 @@ then
 		ccfg=*)
 			ccfg_install="ccfg-${1/ccfg=/}.signed.bin"
 			;;
+		ccfg-only=*)
+			ccfg_install="ccfg-${1/ccfg-only=/}.signed.bin"
+			ccfg_only='true'
+			;;
 		*)
 			echo "
 	Usage: sudo ${PROG}
 		${PROG} install [ccfg=config_name]
-		${PROG} install-downgrade
+		${PROG} install-downgrade [ccfg=config_name]
+		${PROG} ccfg-only=config_name
 
 	Where,
 		Option install is to flash the DPU and install CCLinux software
 		Option install-downgrade should be used when installing an older bundle to attempt
 			DPU's firmware downgrade. This is not guaranteed to always work.
 		If ccfg is specified, a file called ccfg-<config_name>.signed.bin will be programmed as ccfg.
+		Option ccfg-only is to update ccfg only without performing a full system update
 	"
 			exit 1;
 			;;
@@ -82,7 +96,6 @@ fi
 if [ -f $PROGRESS ]
 then
 	log_msg "Previous upgrade in progress... Aborting..."
-	log_msg "System should be rebooted to complete."
 	log_msg "You may recover by removing $PROGRESS."
 	exit 1
 fi
@@ -94,30 +107,131 @@ trap "setup_err" HUP INT QUIT TERM ABRT EXIT
 
 echo "started" > $PROGRESS
 
+boot_status=$(dpcsh -nQ peek "config/chip_info/boot_complete" | jq -Mr .result)
+case $boot_status in
+	null)
+		: # boot status reporting not supported, assume complete
+		;;
+	true)
+		: # boot complete, continue
+		;;
+	false)
+		# booting still in progress
+		log_msg "DPU has not finished booting, cannot start upgrade"
+		exit 3
+		;;
+	*)
+		: # unexpected status, assume complete for future compatibility
+		log_msg "Unexpected boot complete status: $boot_status"
+		;;
+esac
+
 log_msg "Installing and configuring cclinux software and DPU firmware"
 pwd=$PWD
 
 funos_sdk_version=$(sed -ne 's/^funsdk=\(.*\)/\1/p' .version || echo latest)
 
-log_msg "Upgrading DPU firmware"
+log_msg "Upgrading DPU firmware to $funos_sdk_version"
 
 FW_UPGRADE_ARGS="--offline --ws `pwd`"
 
-if [[ $downgrade ]]; then
-	# downgrades are disabled because cclinux downgrade isn't supported
-	# and they must always be kept in sync ...
-	log_msg "Downgrade currently not supported"
-	exit 1
-	#./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version latest --force --downgrade
-	#./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version latest --force --downgrade --active
+# run once to dump current fw information
+./run_fwupgrade.py ${FW_UPGRADE_ARGS} --dry-run
+
+# silence version checks for future runs of the script, as that
+# makes the output logs hard to read
+FW_UPGRADE_ARGS="$FW_UPGRADE_ARGS --no-version-check"
+
+EXIT_STATUS=0
+
+if [[ $ccfg_only != 'true' ]]; then
+	if [[ $downgrade == 'true' ]]; then
+		./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version latest --force --downgrade
+		RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
+
+		./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version latest --force --downgrade --active
+		RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
+
+		# a small hack until proper downgrade is supported; as we're only going to update
+		# the inactive partition of funvisor data, erase enough of active funos image to make
+		# it unbootable from uboot's perspective to force booing into (current) inactive.
+		dd if=/dev/zero of=emmc_wipe.bin bs=1024 count=1024
+		RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
+
+		./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file mmc1=emmc_wipe.bin --active
+		RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
+
+		if [ -n "$host_sku" ]; then
+			log_msg "Downgrading eepr \"$host_sku\""
+			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u eepr --version latest --force --downgrade --select-by-image-type "$host_sku"
+			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
+
+			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u eepr --version latest --force --downgrade --active --select-by-image-type "$host_sku"
+			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
+		fi
+	else
+		./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version $funos_sdk_version
+		RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
+
+		if [ $EXIT_STATUS -eq 2 ]; then
+			log_msg "Aborting ... downgrade argument required"
+			# exit early here, as this error code means no upgrade
+			# was performed by run_fwupgrade script
+			exit $EXIT_STATUS
+		fi
+
+		if [ -n "$host_sku" ]; then
+			log_msg "Updating eepr \"$host_sku\""
+			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u eepr --select-by-image-type "$host_sku"
+			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
+		fi
+
+	fi
 else
-	./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version $funos_sdk_version
-fi
+	echo "CCFG update only!"
+fi # ccfg_only
 
 if [[ $ccfg_install ]]; then
 	./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file ccfg=$ccfg_install
+	RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
+
 	./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file ccfg=$ccfg_install --active
+	RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
+else
+	feature_set_resp=`dpcsh -nQ peek "config/boot_defaults/feature_set" || true`
+	if echo -n "$feature_set_resp" | jq -Mre .result; then
+		feature_set=`echo -n "$feature_set_resp" | jq -Mr .result`
+		if [ ! -z "$feature_set" ]; then
+			log_msg "Updating ccfg \"$feature_set\""
+			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u ccfg --select-by-image-type "$feature_set"
+			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
+		fi
+	else
+		log_msg "Missing feature set"
+	fi
 fi
+
+if [[ $ccfg_only == 'true' ]]; then
+	# when executing via platform agent, STATUS_DIR will be set
+	# to a folder where the bundle can store data persistently
+	# Add a special stamp file for the upgrade verification to indicate
+	# that the upgrade verification does not need to be performed
+	# in this upgrade job
+	if [[ -n "$STATUS_DIR" ]]; then
+		echo "ccfg-only upgrade" > "$STATUS_DIR"/.no_upgrade_verify
+	fi
+	exit $EXIT_STATUS
+fi
+
+# sku-specific upgrades
+case "${host_sku}" in
+	fc50* | fc100* | fc200* )
+		./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file dcc0=composer-boot-services-emmc.img --active
+		RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
+		;;
+
+	*) : ;; # nothing to do
+esac
 
 echo "DPU done" >> $PROGRESS
 
@@ -127,14 +241,81 @@ log_msg "Upgrading CCLinux"
 ./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file fgpt=fgpt.signed
 # Update partition information
 partprobe
+
+install_and_verify_image() {
+	local ifile=$1
+	local ofile=$2
+	local extra_flags=$3
+	local isize=$(stat --printf="%s" $ifile)
+
+	# calculate checksum of the installed image
+	local isum=$(sha256sum $ifile | head -c 64)
+
+	for retry in `seq 1 5`; do
+		# program the image
+		dd status=none if=$ifile of=$ofile $extra_flags
+
+		sync $ofile; echo 3 > /proc/sys/vm/drop_caches
+
+		# calculate checksum of the programmed image
+		local osum=$(dd status=none if=$ofile count=1 bs=$isize | sha256sum | head -c 64)
+
+		if [ "$isum" != "$osum" ]; then
+			echo "$ifile -> $ofile: Programmed image checksum verification failed ($retry)"
+		else
+			echo "$ifile -> $ofile: Image programmed and verified ($retry)"
+			return 0
+		fi
+	done
+	return 1
+}
+
 # Install OS image
-dd if=fvos.signed of=/dev/vdb1
+install_and_verify_image fvos.signed /dev/vdb1
+RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
+
 # Install rootfs image
-dd if=${ROOTFS_NAME} of=/dev/vdb2 bs=4096
+install_and_verify_image ${ROOTFS_NAME} /dev/vdb2 bs=4096
+RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
+
 # Install rootfs hashtable
-dd if=${ROOTFS_NAME}.fvht.bin of=/dev/vdb4
+install_and_verify_image ${ROOTFS_NAME}.fvht.bin /dev/vdb4
+RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
+
+# when executing via platform agent, STATUS_DIR will be set
+# to a folder where the bundle can store data persistently
+# store files before performing b-persist sync so that they
+# are accessible after reboot into new fw
+if [[ -n "$STATUS_DIR" ]]; then
+	cp -a image.json "$STATUS_DIR"/image.json
+	cp -a ${ROOTFS_NAME}.version "$STATUS_DIR"/version.sdk
+	cp -a run_fwupgrade.py "$STATUS_DIR"/
+fi
+
+log_msg "Update config partition"
+
+# special case for systems with unformatted/seriously corrupt b-persist
+if ! grep -q b-persist /proc/mounts; then
+	log_msg "No b-persist mountpoint found. Trying to mount ..."
+	if ! mount /b-persist; then
+		log_msg "Default mount failed, try remount/fixup"
+		/usr/bin/b-persist mount-rw
+	fi
+fi
+
+# standard setup with a read-only mounted b-persist
+if grep -q "b-persist.*ro," /proc/mounts; then
+	log_msg "Remounting b-persist in rw mode"
+	/usr/bin/b-persist mount-rw
+fi
+
+# should be writable by now
+if grep -q "b-persist.*rw," /proc/mounts; then
+	log_msg "Sync configs"
+	/usr/bin/b-persist sync
+fi
 
 echo "CCLinux done" >> $PROGRESS
 
 sync
-exit 0
+exit $EXIT_STATUS
