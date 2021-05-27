@@ -373,7 +373,7 @@
                         ...analyticsData,
                         ...JSON.parse(data)
                     }
-                    searchBoxForAnchors.value = analyticsData["query"] ? "query" in analyticsData : "";
+                    searchBoxForAnchors.value = "query" in analyticsData ? analyticsData["query"] : "";
                     updateAnchors();
                 }
             }
