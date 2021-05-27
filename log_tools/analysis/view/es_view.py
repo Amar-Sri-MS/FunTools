@@ -20,10 +20,12 @@ import jinja2
 
 from elasticsearch7 import Elasticsearch
 from flask import Flask
+from flask import jsonify
 from flask import request
 from pathlib import Path
 from requests.exceptions import HTTPError
-from urllib.parse import quote_plus
+from urllib.parse import quote, quote_plus
+from urllib.parse import unquote, unquote_plus
 
 from elastic_metadata import ElasticsearchMetadata
 from ingester import ingester_page
@@ -38,19 +40,6 @@ import logger
 app = Flask(__name__)
 app.register_blueprint(ingester_page)
 app.register_blueprint(web_usage, url_prefix='/events')
-
-
-# @app.errorhandler(Exception)
-# def handle_exception(error):
-#     """
-#     Handling exceptions by sending only the error message.
-#     This function is called whenever an unhandled Exception
-#     is raised.
-#     """
-#     # TODO(Sourabh): Maybe redirect to a template with an error message instead
-#     # of just displaying a message. Also print error stacktrace.
-#     print('ERROR:', str(error))
-#     return str(error), 500
 
 
 def main():
@@ -235,9 +224,10 @@ class ElasticLogSearcher(object):
         If the query_term is unspecified (None), this will match against any
         log entry.
 
-        The source_filters parameter is a list of sources to filter on. If a
-        message source does not match any of the values in the list then
-        the message will be omitted.
+        The source_filters parameter is an object containing hierarchical data of
+        system_type, system_id and sources to filter on. If system_type, system_id
+        and source of the message does not match any of the values in the object
+        then the message will be omitted from the result.
 
         The time_filters parameter is a two-element list containing a lower and
         upper bound (both inclusive). Time is specified in ISO8601 format
@@ -289,6 +279,32 @@ class ElasticLogSearcher(object):
         the filters.
         """
 
+        def _generate_match_query(field, value):
+            return {
+                'match': {
+                    field: value
+                }
+            }
+
+        def _generate_must_query(must_list):
+            if not must_list:
+                return {}
+            return {
+                'bool': {
+                    'must': must_list
+                }
+            }
+
+        def _generate_should_query(should_list):
+            if not should_list:
+                return {}
+            return {
+                'bool': {
+                    'should': should_list,
+                    'minimum_should_match': 1
+                }
+            }
+
         # We treat the text filter as a query string, which is Lucerne
         # query DSL. The text filter is capable of complex filtering and
         # search (this will double up as our "advanced" search function)
@@ -298,14 +314,101 @@ class ElasticLogSearcher(object):
                 'query': query_term
             }})
 
-        # Source filters are treated as "terms" queries, which try to
-        # match exactly against all provided values.
+        # Source filters are either simple (list of src) or
+        # hierarchical (system_type -> system_id -> src).
+        # In ES, should queries are equivalent to performing OR query and
+        # must queries are for performing AND queries.
+        #
+        # The hierarchical source filters is a dict which looks liks this:
+        # {
+        #   system_type: {
+        #       system_id: {
+        #           [src]
+        #       }
+        #   }
+        # }
+        #
+        # The query is: [(system_type) AND [(sytem_id) AND ([src])]]
+        # which gets converted into the following filter query:
+        # {
+        # 'bool': {
+        #   'should': [{
+        #       'bool': {
+        #           'must': [{
+        #               'match': {'system_type': 'cluster'}
+        #           },{
+        #               'bool': {
+        #                   'should': [{
+        #                       'bool': {
+        #                           'must': [{
+        #                               'match': {'system_id': 'node-1-cab18-fc-04'}
+        #                           },{
+        #                           'bool': {
+        #                               'should': [
+        #                                   {'match': {'src': 'apigateway'}},
+        #                                   {'match': {'src': 'dataplacement'}},
+        #                                   {'match': {'src': 'discovery'}}
+        #                               ]
+        #                           }
+        #                       }
+        #                   ]}
+        #               },{
+        #                   'bool': {
+        #                       'must': [{
+        #                           'match': {'system_id': 'node-3-cab18-fc-06'}
+        #                       },{
+        #                       'bool': {
+        #                           'should': [{'match': {'src': 'apigateway'}}]
+        #                       }
+        #                   }]}
+        # }]}}]}}]}}
+        #
+        # A simple source filter is a list of src which looks liks this:
+        # ['funos']
+        #
+        # The query is: src:('funos' OR 'storage_agent')
+        # which gets converted into the following filter query:
+        # {
+        #  'bool': {
+        #       'should': [
+        #           {'match': {'src': 'funos'}},
+        #           {'match': {'src': 'apigateway'}}
+        #       ]
+        #   }
+        # }
+
         filter_queries = []
-        if source_filters:
-            term = {'terms': {
-                'src': source_filters
-            }}
-            filter_queries.append(term)
+        if source_filters and len(source_filters) > 0:
+            if type(source_filters) == dict:
+                system_type_list = []
+                for system_type, system_ids in source_filters.items():
+                    system_id_list = []
+                    for system_id, sources in system_ids.items():
+                        source_list = [_generate_match_query('src', source)
+                                    for source in sources]
+                        source_query = _generate_should_query(source_list)
+
+                        system_id_query = _generate_must_query([
+                            _generate_match_query('system_id', system_id),
+                            source_query
+                        ])
+                        system_id_list.append(system_id_query)
+
+                    system_type_query = _generate_must_query([
+                        _generate_match_query('system_type', system_type),
+                        _generate_should_query(system_id_list)
+                    ])
+                    system_type_list.append(system_type_query)
+
+                compound_source_queries = _generate_should_query(system_type_list)
+                filter_queries.append(compound_source_queries)
+
+            elif type(source_filters) == list:
+                source_query_list = [_generate_match_query('src', source)
+                                     for source in source_filters]
+                source_query = _generate_should_query(source_query_list)
+                print(source_query)
+                filter_queries.append(source_query)
 
         # Time filters are range filters
         if time_filters:
@@ -483,11 +586,6 @@ def get_log_page(log_id):
 
     Subsequent updates to the page are handled via POST requests.
     """
-    state, total_search_hits, table_body = _get_requested_log_lines(
-                                                log_id,
-                                                include_hyperlinks=False
-                                            )
-
     # Assume our template is right next door to us.
     dir = os.path.join(_get_script_dir(), 'templates')
 
@@ -497,8 +595,7 @@ def get_log_page(log_id):
     template = jinja_env.get_template('log_template.html')
     jinja_env.filters['formatdatetime'] = _format_datetime
 
-    return _render_log_page(table_body, total_search_hits, state,
-                            log_id, jinja_env, template)
+    return _render_log_page(log_id, jinja_env, template)
 
 
 @app.route('/log/<log_id>/content', methods=['POST'])
@@ -627,7 +724,7 @@ def get_temporally_close_hits(es, state, size, filters, next, prev):
     total_search_hits = 0
 
     query_string = filters.get('text')
-    source_filters = filters.get('sources', [])
+    source_filters = filters.get('sources', {})
     time_filters = filters.get('time')
 
     # The default is to return "next" results if both are unspecified
@@ -648,11 +745,16 @@ def get_temporally_close_hits(es, state, size, filters, next, prev):
     return before, after, state, total_search_hits
 
 
-def _render_log_page(table_body, total_search_hits, state,
-                     log_id, jinja_env, template):
+def _render_log_page(log_id, jinja_env, template):
     """ Renders the log page """
     es = ElasticLogSearcher(log_id)
     es_metadata = ElasticsearchMetadata()
+
+    state, total_search_hits, table_body = _get_requested_log_lines(
+                                                log_id,
+                                                include_hyperlinks=False
+                                            )
+    search_payload = get_search_results(log_id)
 
     metadata = es_metadata.get(log_id)
 
@@ -669,6 +771,7 @@ def _render_log_page(table_body, total_search_hits, state,
     template_dict['state'] = state.to_json_str()
     template_dict['metadata'] = metadata
     template_dict['job_link'] = _get_actual_job_link(log_id)
+    template_dict['search_results'] = json.dumps(search_payload)
 
     result = template.render(template_dict, env=jinja_env)
     return result
@@ -677,90 +780,93 @@ def _render_log_page(table_body, total_search_hits, state,
 @app.route('/log/<log_id>/search', methods=['GET'])
 def search(log_id):
     """
-    Returns an HTML snippet containing links to log entries matching
-    the search term.
+    Returns a JSON payload containing search results and search state.
     """
-    search_term = request.args.get('query')
-    page = request.args.get('page', 1)
-    page = int(page)
-    time_start = request.args.get('time_start', '')
-    time_end = request.args.get('time_end', '')
-    time_filters = [time_start, time_end]
+    search_str = request.args.get('search', None)
+    search_payload = {}
+    if not search_str:
+        return jsonify({
+            'error': 'Could not find the search query parameter'
+        }), 400
 
-    state_str = request.args.get('state', None)
+    search_payload = get_search_results(log_id)
+    return jsonify(search_payload)
+
+
+def get_search_results(log_id):
+    """
+    Returns a dict payload containing search results and search state.
+
+    Parameters on the flask request object control which lines are returned.
+    Request parameters includes search which contains:
+
+        next=true: Get up to 20 log lines with timestamps greater than the
+                   current state.
+        prev=true: Get up to 20 log lines with timestamps smaller than the
+                   current state.
+        state=dict: state object for searching
+
+    Returns a dict containing:
+        query: searched query
+        state: next state object for future searches
+        total_search_hits: object containing total hits value
+        results: list of log lines returned by ES
+        page: page number
+        size: count of results per page
+    """
+    es = ElasticLogSearcher(log_id)
+
+    search_str = request.args.get('search', None)
+    search_payload = {}
+    if not search_str:
+        return None
+
+    filters = {}
+    filter_str = request.args.get('filter', None)
+    if filter_str:
+        filters = json.loads(filter_str)
+
+    search_payload = json.loads(search_str)
+    query = unquote_plus(search_payload.get('query'))
+    page = int(search_payload.get('page', 1))
+    size = int(search_payload.get('size', 20))
+    next = search_payload.get('next', True)
+
+    if filters.get('text'):
+        if query:
+            query = f'{filters.get("text")} AND (msg:"{query}")'
+        else:
+            query = f'{filters.get("text")}'
+
+    source_filters = filters.get('sources', None)
+    time_filters = filters.get('time')
+
+    state_str = search_payload.get('state', None)
     state = ElasticLogState()
     state.from_json_str(state_str)
 
-    es = ElasticLogSearcher(log_id)
-    size = 20
+    if next:
+        results = es.search(state, query,
+                        source_filters, time_filters,
+                        query_size=size)
+    else:
+        results = es.search_backwards(state, query,
+                        source_filters, time_filters,
+                        query_size=size)
 
-    results = es.search(state, search_term, time_filters=time_filters, query_size=size)
-    hits = results['hits']
-    state = results['state']
+    search_results = results['hits']
+    state.before_sort_val, state.after_sort_val = es._get_delimiting_sort_values(search_results)
     total_search_hits = results['total_search_hits']
 
-    links = []
-    for hit in hits:
-        s = hit['_source']
-
-        # TODO (jimmy): urgh, we exposed the elastic state here.
-        hit_state = ElasticLogState()
-        hit_state.before_sort_val = hit['sort'][0]
-        hit_state.after_sort_val = hit['sort'][0]
-
-        # The #0 anchor is how we jump to the searched-for line when the link
-        # is selected.
-        #
-        # Also note that we use double quotes here in python and single quotes
-        # in the link HTML to avoid escape magic because of the state JSON
-        # string.
-        hit_state_str = hit_state.to_json_str()
-        link = ("<a href='/log/{}?"
-                "state={}&"
-                "next=true&"
-                "prev=true&"
-                "include={}#0'>{} {}</a>".format(log_id,
-                                                 hit_state_str,
-                                                 hit['_id'],
-                                                 s['@timestamp'],
-                                                 s['msg']))
-        links.append(link)
-
-    return _render_search_page(links, log_id, search_term, state, page,
-                               total_search_hits)
-
-
-def _get_total_hit_count(log_id, search_term, time_filters):
-    """ Obtains the search hit count, up to a maximum of 1000 """
-    es = ElasticLogSearcher(log_id)
-    state = ElasticLogState()
-    size = 1000
-
-    results = es.search(state, search_term, time_filters=time_filters, query_size=size)
-    return len(results['hits'])
-
-
-def _render_search_page(search_results, log_id, search_term, state, page,
-                        total_search_hits):
-    """ Renders the search results page """
-    template_dict = {}
-    template_dict['body'] = ''.join(search_results)
-    template_dict['log_id'] = log_id
-    template_dict['query'] = search_term
-    template_dict['state'] = state.to_json_str()
-    template_dict['page'] = page
-    template_dict['page_entry_count'] = len(search_results)
-    template_dict['search_hits'] = total_search_hits
-    template_dict['job_link'] = _get_actual_job_link(log_id)
-
-    dir = os.path.join(_get_script_dir(), 'templates')
-    jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(dir),
-                             trim_blocks=True,
-                             lstrip_blocks=True)
-    template = jinja_env.get_template('search_template.html')
-
-    result = template.render(template_dict, env=jinja_env)
-    return result
+    return {
+        **search_payload,
+        'results': search_results,
+        'total_search_hits': total_search_hits,
+        'state': state.to_dict(),
+        'page': page,
+        'size': size,
+        'next': next
+    }
 
 
 @app.route('/log/<log_id>/dashboard', methods=['GET'])
@@ -797,30 +903,6 @@ def get_anchors(log_id):
     anchors = _read_paginated_anchor_file(log_id, page_num)
     return anchors
 
-
-def _get_kibana_base_url(log_id):
-    """
-    Creates a Kibana Base URL which could be used to create kibana urls
-    with any given query.
-    URL contains a term 'KIBANA_QUERY' which should be replaced with
-    the given search query.
-    URL contains defaults for selected columns to show in Kibana dashboard
-    and time filter to be within last 90 days.
-    """
-
-    KIBANA_HOST = app.config['KIBANA']['host']
-    KIBANA_PORT = app.config['KIBANA']['port']
-    # KIBANA defaults.
-    # TODO(Sourabh): Would be better to have this in config files
-    kibana_time_filter = "from:'1970-01-01T00:00:00.000Z',to:now"
-    kibana_selected_columns = 'src,level,msg'
-    kibana_base_url = ("http://{}:{}/app/kibana#/discover/?_g=(time:({}))&_a=(columns:!({}),index:{},"
-                  "query:(language:kuery,query:'KIBANA_QUERY'))").format(KIBANA_HOST,
-                                                                         KIBANA_PORT,
-                                                                         kibana_time_filter,
-                                                                         kibana_selected_columns,
-                                                                         log_id)
-    return kibana_base_url
 
 def _read_file(log_id, file_name, default={}):
     """
@@ -962,7 +1044,8 @@ def _get_log_level_stats(log_id, sources=[], log_levels=None, time_filters=None)
         keywords = [f'"{keyword}"' for keyword in keyword_for_level[level]]
         keyword_query_terms = ' OR '.join(keywords)
         log_level_query = f'{query} (level:({keyword_query_terms}) OR msg:({keyword_query_terms}))'
-        log_view_url = f'{log_view_base_url}/search?query={quote_plus(log_level_query)}'
+        search_query = { 'query': log_level_query.strip() }
+        log_view_url = f'{log_view_base_url}?search={quote(json.dumps(search_query))}'
         document_counts[level] = {
             'order': idx,
             'count': es.get_document_count(keyword_query_terms, sources, time_filters),
@@ -985,7 +1068,7 @@ def recent_logs(log_id):
     return result
 
 
-def _get_recent_logs(log_id, size, sources=[], log_levels=None, time_filters=None):
+def _get_recent_logs(log_id, size, sources={}, log_levels=None, time_filters=None):
     """
     Returns table body of recent log entries.
 

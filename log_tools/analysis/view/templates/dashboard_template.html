@@ -15,7 +15,7 @@
     <div class="content">
         <h2 class="center-align">Dashboard for
             {% if job_link is not none %}
-                <a target="_blank" href="{{job_link}}">{{log_id}}</a>
+                <a target="_blank" data-web_event="JOB_LINK_CLICKED" href="{{job_link}}">{{log_id}}</a>
             {% else %}
                 {{log_id}}
             {% endif %}
@@ -206,12 +206,12 @@
 
 
     function onClickExploreLogs() {
-        const filterQuery = buildSourceFilterQuery();
-        if (filterQuery === null) {
-            return;
+        const selectedSources = getSelectedSources();
+        if (Object.keys(selectedSources).length === 0) {
+            return null;
         }
         const filters = {
-            "text": filterQuery
+            "sources": selectedSources
         };
         const filterString = JSON.stringify(filters);
 
@@ -405,8 +405,8 @@
             return LOG_VIEW_BASE_URL;
         }
 
-        let query = encodeURI(`src:(${sources.join(" or ")})`);;
-        const log_view_url = `${LOG_VIEW_BASE_URL}/search?query=${query}`;
+        const query = JSON.stringify({"query": `src: ${sources.join(" OR ")}`});
+        const log_view_url = `${LOG_VIEW_BASE_URL}?search=${encodeURI(query)}`;
         return log_view_url;
     }
 

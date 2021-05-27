@@ -72,3 +72,9 @@ input[type="search"] {
 #top_button:hover {
     background-color: #555;
 }
+
+.search_result {
+    text-decoration: underline;
+    color: blue;
+    cursor: pointer;
+}
