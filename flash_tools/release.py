@@ -100,7 +100,7 @@ def main():
 
     parser.add_argument('config', nargs='*', help='Configuration file(s)')
     parser.add_argument('--action',
-        choices={'all', 'prepare', 'release', 'certificate', 'sign', 'image', 'tarball', 'bundle', 'mfginstall'},
+        choices={'all', 'prepare', 'release', 'certificate', 'sign', 'image', 'tarball', 'bundle', 'eeprbundle', 'mfginstall'},
         default='all',
         help='Action to be performed on the input files')
     parser.add_argument('--sdkdir', default=os.getcwd(), help='SDK root directory')
@@ -129,7 +129,7 @@ def main():
         if args.action == 'all':
             return True
         elif args.action == 'release':
-            return action in ['sign', 'image', 'tarball', 'bundle', 'mfginstall']
+            return action in ['sign', 'image', 'tarball', 'bundle', 'eeprbundle', 'mfginstall']
         else:
             return action == args.action
 
@@ -440,6 +440,47 @@ def main():
 
             subprocess.call(makeself)
 
+        os.chdir(curdir)
+
+    if wanted('eeprbundle'):
+        os.chdir(args.destdir)
+        with open(eeprom_list) as f:
+            eeproms = json.load(f)
+            for skuid, value in eeproms.items():
+                if not value.get('hw_base'):
+                    continue
+
+                shutil.rmtree('eepr_installer', ignore_errors=True)
+                os.mkdir('eepr_installer')
+
+                bundle_images = [
+                    'install_tools/run_fwupgrade.py',
+                    'install_tools/setup_eepr.sh',
+                    'image.json',
+                    '{}.bin'.format(value['filename'])
+                ]
+
+                for f in bundle_images:
+                    os.symlink(os.path.join(os.path.abspath(os.curdir), f),
+                               os.path.join('eepr_installer', os.path.basename(f)))
+
+                with open(os.path.join('eepr_installer', '.setup'), "w") as cfg:
+                    cfg.writelines([
+                        'EEPR_NAME="{}"\n'.format(skuid),
+                        'CHIP_NAME="{}"\n'.format(args.chip.upper()),
+                        'HW_BASE="{}"\n'.format(value['hw_base'].upper())
+                    ])
+
+                makeself = [
+                    os_utils.path_fixup('makeself'),
+                    '--follow',
+                    'eepr_installer',
+                    'setup_bundle_eepr_{}_{}.sh'.format(args.chip.lower(), skuid),
+                    'DPU EEPR {} installer'.format(skuid),
+                    './setup_eepr.sh'
+                ]
+
+                subprocess.call(makeself)
         os.chdir(curdir)
 
     if wanted('mfginstall'):
