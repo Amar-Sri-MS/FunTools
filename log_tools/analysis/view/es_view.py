@@ -900,7 +900,16 @@ def get_anchors(log_id):
     page number is zero indexed.
     """
     page_num = int(request.args.get('page', 0))
-    anchors = _read_paginated_anchor_file(log_id, page_num)
+
+    # Reading metadata of detected anchors file
+    anchors_meta = _read_file(log_id, 'anchors_meta.json', default={})
+
+    # If the metadata is found then anchors are stored as files
+    if anchors_meta:
+        anchors = _read_paginated_anchor_file(log_id, page_num)
+    else:
+        anchors = _search_anchors(log_id, size=50)
+
     return anchors
 
 
@@ -942,6 +951,89 @@ def _read_paginated_anchor_file(log_id, page_num=0):
         'next_anchors': next_anchors
     }
 
+def _search_anchors(log_id, size=50):
+    """
+    Returns a dict payload containing search results and state for anchors.
+
+    Parameters on the flask request object control which lines are returned.
+    Request parameters includes:
+
+        next=true: Get up to 50 log lines with timestamps greater than the
+                   current state.
+        state=dict: state object for searching
+        query=str: search string to search
+        sources=list: List of sources to filter the searched results
+        only_failed=bool: Toggle to display only failed anchors
+
+    Returns a dict containing:
+        query: searched query
+        state: next state object for future searches
+        total_anchors: object containing total hits value
+        anchors: list of anchors returned by ES
+        page: page number
+        size: count of results per page
+    """
+    es = ElasticLogSearcher(log_id)
+    log_view_base_url = _get_log_view_base_url(log_id)
+
+    query = request.args.get('query')
+    sources = request.args.getlist('source')
+    page = int(request.args.get('page', 0))
+    next = json.loads(request.args.get('next', 'true'))
+    only_failed = json.loads(request.args.get('failed', 'false'))
+
+    state_str = request.args.get('state', None)
+    state = ElasticLogState()
+    state.from_json_str(state_str)
+
+    if "all" in sources:
+        sources = []
+
+    if next:
+        page += 1
+    else:
+        page -= 1
+
+    text_filter = 'is_anchor:true'
+    if only_failed:
+        text_filter += ' AND is_failure:true'
+    if query:
+        text_filter += f' AND {query}'
+
+    if next:
+        results = es.search(state, text_filter,
+                        sources, query_size=size)
+    else:
+        results = es.search_backwards(state, text_filter,
+                        sources, query_size=size)
+
+    search_results = results['hits']
+    state.before_sort_val, state.after_sort_val = es._get_delimiting_sort_values(search_results)
+    total_anchors = results['total_search_hits']
+
+    anchors = []
+    for hit in search_results:
+        source = hit['_source']
+        timestamp = source['@timestamp']
+        search_state = f'"before":"{timestamp}","after":"{timestamp}"'
+        log_view_url = ('{}?state={{{}}}&next=true&prev=true&include={}#0').format(
+                            log_view_base_url,
+                            quote_plus(search_state),
+                            hit['_id'])
+        source['link'] = log_view_url
+
+        anchors.append(source)
+
+    return {
+        'state': state.to_dict(),
+        'total_anchors': total_anchors,
+        'anchors': anchors,
+        'page': page,
+        'query': query,
+        'next': next,
+        'size': size
+    }
+
 def _get_analytics_data(log_id):
     """
     Get all the analytics data
@@ -949,8 +1041,14 @@ def _get_analytics_data(log_id):
     """
     # Reading metadata of detected anchors file
     anchors_meta = _read_file(log_id, 'anchors_meta.json', default={})
-    # Reading detected anchors from the JSON file
-    anchors = _read_paginated_anchor_file(log_id)
+
+    # If the metadata is found then anchors are stored as files
+    if anchors_meta:
+        # Reading detected anchors from the JSON file
+        anchors = _read_paginated_anchor_file(log_id)
+    else:
+        # Searching for anchors in ES
+        anchors = _search_anchors(log_id)
 
     # Reading detected duplicates from the JSON file
     duplicates = _read_file(log_id, 'duplicates.json', default=[])

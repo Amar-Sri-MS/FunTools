@@ -38,9 +38,6 @@ td {
     justify-content: center;
     margin-bottom: 20px;
 }
-input[type="search"] {
-    width: 400px;
-}
 #loader {
     display: none;
     position: fixed;
