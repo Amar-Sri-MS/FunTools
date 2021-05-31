@@ -107,7 +107,7 @@ def clean_files(job_id):
         status_code = http_err.response.status_code
         # Ignore NotFoundError
         if status_code == 404:
-            logging.warning(f'Could not find logs for job: {job_id}')
+            logging.warning(f'Could not find files for job: {job_id}')
             return True
 
         logging.error(f'HTTP error occurred: {http_err}')
