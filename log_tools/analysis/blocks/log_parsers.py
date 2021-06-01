@@ -86,6 +86,13 @@ class FunOSInput(Block):
         #               Also, the resulting object is timezone-naive. This
         #               is a general question for logs: should we use UTC?
         dt = datetime.datetime.utcfromtimestamp(secs + float(usecs) * 1e-6)
+
+        # There have been some issues FunOS logs which merges logs and make
+        # the timestamp incorrect.
+        # Elasticsearch has a limit of supporting timestamp upto the year
+        # 2262 when storing them in nanoseconds resolution
+        if dt.year >= 2262:
+            raise Exception('Timestamp out of range')
         return dt, usecs
 
 

@@ -69,6 +69,13 @@ h3 {
     background-color: #cccccc;
     color: #666666;
 }
+.btn-warning {
+    border: 2px solid rgb(228, 54, 54);
+    color: rgb(228, 54, 54);
+}
+.btn-warning:hover {
+    background-color: #c43b3b40;
+}
 .arrow {
     border: solid;
     border-width: 0 3px 3px 0;
@@ -227,4 +234,7 @@ ul {
     height: 24px;
     float: left;
     margin-right: 4px;
+}
+input[type="search"] {
+    width: 400px;
 }

@@ -68,60 +68,7 @@
         const queryParams = new URLSearchParams(location.search.substring(1));
         if (queryParams.get('filter')) {
             const filters = JSON.parse(queryParams.get('filter'));
-            const textFilter = filters['text'];
-            let array = [], counter = 0;
-
-            /*
-            Splitting the text filter by brackets.
-            The splits will contain the source filters.
-            Ex: (system_type:DPU)
-            */
-            textFilter.split(/([()])/).filter(Boolean).forEach(e =>
-                // Increase / decrease counter and push desired values to an array
-                e == '(' ? counter++ : e == ')' ? counter-- : counter > 0 ? array.push('(' + e + ')') : array.push(e)
-            );
-            let currentSystemType = null, currentSystemID = null;
-            for(let i=0; i<array.length; i++) {
-                let element = array[i];
-                // Ignoring AND or OR splits
-                if (['AND', 'OR'].includes(element) || !element.includes(':')) continue;
-
-                // Removing the brackets
-                element = element.slice(1, element.length-1).trim()
-                if (element.includes('system_type')) {
-                    const keyValue = element.split(':');
-                    const value = keyValue[1].slice(1, keyValue[1].length-1);
-                    if (!(value in existingFilters)) {
-                        existingFilters[value] = {};
-                    }
-                    currentSystemType = value;
-                }
-
-                if (element.includes('system_id')) {
-                    const keyValue = element.split(':');
-                    const value = keyValue[1].slice(1, keyValue[1].length-1);
-                    if (!(value in existingFilters[currentSystemType])) {
-                        existingFilters[currentSystemType][value] = {};
-                    }
-                    currentSystemID = value;
-                }
-
-                if (element.includes('src')) {
-                    /*
-                    Since src can contain more than 1 values, the values are split
-                    into the next split.
-                    Ex: [(src:), (apigateway OR dataplacement)]
-
-                    Removing the brackets of the next element.
-                    */
-                    const nextElement = array[i+1].slice(1, array[i+1].length-1).trim()
-                    const values = nextElement.split(' OR ');
-                    existingFilters[currentSystemType][currentSystemID] = values;
-                    currentSystemType = null;
-                    currentSystemID = null;
-                    i += 1;
-                }
-            }
+            existingFilters = filters["sources"];
         }
     })();
 
@@ -325,23 +272,14 @@
         }
     }
 
-    function buildSourceFilterQuery() {
-        // Builds query based on the selected filters and redirects to Kibana
-        let queries = [];
-        for (const [systemType, systemIDs] of Object.entries(selectedFilters)) {
-            for (const [systemID, sources] of Object.entries(systemIDs)) {
-                const systemTypeQuery = `(system_type:"${systemType}") AND`;
-                const systemIDQuery =`(system_id:"${systemID}") AND`;
-                queries.push(`(${systemTypeQuery} ${systemIDQuery} (src:(${sources.join(' OR ')})))`);
+    function getSelectedSources() {
+        return Object.keys(selectedFilters).reduce((selectedSources, system_type) => {
+            const selectedSystemTypes = selectedFilters[system_type];
+            if (Object.keys(selectedSystemTypes).length > 0) {
+                selectedSources[system_type] = selectedSystemTypes;
             }
-        }
-        if (queries.length === 0) {
-            // Show error message that no source is being selected
-            alert("You have not selected any log source.");
-            return null;
-        }
-        let query = queries.join(' OR ');
-        return query;
+            return selectedSources;
+        }, {});
     }
 
 </script>

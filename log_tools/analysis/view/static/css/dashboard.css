@@ -36,14 +36,15 @@ td {
 #anchors_container {
     width: 85%;
 }
-.anchors_button_container {
+#anchors_button_container {
     display: flex;
     align-items: center;
     justify-content: space-around;
     padding-top: 25px;
     padding-bottom: 10px;
+    display: none;
 }
 #anchors_page {
     text-align: center;
-    width: 200px;
+    width: 250px;
 }

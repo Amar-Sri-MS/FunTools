@@ -38,9 +38,6 @@ td {
     justify-content: center;
     margin-bottom: 20px;
 }
-input[type="search"] {
-    width: 400px;
-}
 #loader {
     display: none;
     position: fixed;
@@ -71,4 +68,10 @@ input[type="search"] {
 
 #top_button:hover {
     background-color: #555;
+}
+
+.search_result {
+    text-decoration: underline;
+    color: blue;
+    cursor: pointer;
 }

@@ -426,6 +426,13 @@ class SKUCfgGen():
                         'image_type' : sku_name
                     }
 
+                    try:
+                        eeprom_list[sku_name]['hw_base'] = \
+                            filter(lambda x: x['name'] == sku_name and x['asic'] == chip_type,
+                                fun_board_config)[0]['hw_base']
+                    except:
+                        pass
+
                 with open(os.path.join(self.output_dir, '{}_eeprom_list.json'.format(chip_type)), "wb") as f:
                     json.dump(eeprom_list, f, indent=4)
 

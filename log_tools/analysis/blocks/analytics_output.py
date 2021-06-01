@@ -13,6 +13,7 @@ import requests
 import sys
 
 from pathlib import Path
+from elasticsearch7 import Elasticsearch
 from urllib.parse import quote_plus
 
 from blocks.block import Block
@@ -163,16 +164,16 @@ class AnalyticsOutput(Block):
         # Maintains hash of unique log entry for detecting duplicates.
         # This might take up memory as the log entries increase.
         self.duplicate_entries = {}
-        self.anchor_matches = list()
         self.config = config_loader.get_config()
+
+        ELASTICSEARCH_HOSTS = self.config['ELASTICSEARCH']['hosts']
+        self.es = Elasticsearch(ELASTICSEARCH_HOSTS)
 
     def set_config(self, cfg):
         self.cfg = cfg
         build_id = cfg['env'].get('build_id')
         self.log_id = f'log_{build_id}'
 
-        KIBANA_HOST = self.config['KIBANA']['host']
-        KIBANA_PORT = self.config['KIBANA']['port']
         self.log_view_base_url = self.config['LOG_VIEW_BASE_URL'].replace('LOG_ID', self.log_id)
 
         # Check for anchors in log lines with timestamps
@@ -190,12 +191,10 @@ class AnalyticsOutput(Block):
                 msg_dict = self.tuple_to_dict(tuple)
 
                 self.check_for_duplicate_entry(msg_dict)
-                self.check_for_anchor_match(msg_dict)
+                self.check_and_store_anchor_match(msg_dict)
 
         # Most duplicated logs
         self.generate_most_duplicates_entries()
-        # Anchors
-        self.store_anchor_matches()
 
     def check_for_duplicate_entry(self, msg_dict):
         """ Hashing the current log message to check if exists already """
@@ -252,91 +251,27 @@ class AnalyticsOutput(Block):
 
         self._save_json('duplicates.json', most_duplicated_entries_list)
 
-    def check_for_anchor_match(self, msg_dict):
+    def check_and_store_anchor_match(self, msg_dict):
         match = self.anchor_matcher.generate_match(msg_dict)
         if match:
-            self.anchor_matches.append(match)
+            self.store_anchor_match(match)
 
-    def store_anchor_matches(self):
-        anchors_list = []
-        # Sort the anchor matches by timestamp
-        matches = sorted(self.anchor_matches)
+    def store_anchor_match(self, match):
+        """ Updating the ES document with anchor details """
+        es_doc_id = match.msg_dict['doc_id']
+        is_failure = match.anchor.get('is_failure', False)
 
-        file_num = 0
-        line_num = 0
-        MAX_LINES_PER_PAGE = 50
-
-        failure_line_count = 0
-
-        for match in matches:
-            is_failure = match.anchor.get('is_failure', False)
-            source = match.msg_dict.get('uid', 'N/A')
-            system_id = match.msg_dict.get('system_id', 'N/A')
-            msg = match.msg_dict['line']
-            datetime = match.msg_dict['datetime']
-            es_doc_id = match.msg_dict['doc_id']
-            es_time = datetime.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-
-            state = f'"before":"{es_time}","after":"{es_time}"'
-            log_view_url = ('{}?state={{{}}}&next=true&prev=true&include={}#0').format(self.log_view_base_url, quote_plus(state), es_doc_id)
-
-            anchors_list.append({
-                'source': source,
-                'system_id': system_id,
+        body = {
+            'doc': {
+                'is_anchor': True,
                 'is_failure': is_failure,
-                'link': log_view_url,
-                'datetime': str(datetime),
-                'level': match.msg_dict['level'],
-                'msg': match.msg_dict['line'],
-                'description': match.short_desc,
-                'doc_id': es_doc_id
-            })
+                'anchor_text': match.short_desc
+            }
+        }
 
-            line_num += 1
-
-            # Paginate when max file count reached
-            if line_num == MAX_LINES_PER_PAGE:
-                # Save the anchors in a file
-                self._save_json(f'anchors_{file_num}.json', anchors_list)
-                # Reset counters and anchors list
-                line_num = 0
-                file_num += 1
-                anchors_list = []
-
-            if is_failure:
-                failure_line_count += 1
-
-        # Save the remaining anchors
-        if line_num != 0:
-            self._save_json(f'anchors_{file_num}.json', anchors_list)
-            file_num += 1
-
-        # Save anchors metadata
-        self._save_json('anchors_meta.json', {
-            'total_pages': file_num,
-            'lines_per_page': MAX_LINES_PER_PAGE,
-            'total_failures': failure_line_count
-        })
-
-    def _create_template(self, path, template_dict):
-        """ Creates a template in the specified path using the template_dict """
-        MODULE_PATH = Path(__file__)
-        # This is equivalent to path.parent.parent
-        MODULE_DIR = MODULE_PATH.resolve().parents[1] / 'view' / 'templates'
-
-        jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(MODULE_DIR),
-                                 trim_blocks=True,
-                                 lstrip_blocks=True)
-        template = jinja_env.get_template('log_entries.html')
-
-        result = template.render(template_dict, env=jinja_env)
-        try:
-            # Creating the directory if it does not exist
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-            with open(path, 'w+') as f:
-                f.write(result)
-        except IOError as e:
-            logging.exception('I/O error')
+        self.es.update(self.log_id,
+                       es_doc_id,
+                       body)
 
     def _save_json(self, filename, data):
         """ Sends the file to the file server """
