@@ -55,7 +55,7 @@ class ElasticsearchMetadata(object):
 
         return self._format_results(results['docs'])
 
-    def get_by_tags(self, tags):
+    def get_by_tags(self, tags, size=-1):
         """
         Fetches all the metadata if the given tags exist in it
         """
@@ -70,7 +70,7 @@ class ElasticsearchMetadata(object):
                 }
             }
         }
-        result = self._search(body)
+        result = self._search(body, size)
 
         return self._format_results(result)
 

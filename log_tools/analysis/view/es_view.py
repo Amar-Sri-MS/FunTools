@@ -85,7 +85,9 @@ def root():
 
     if len(tags) > 0:
         tags_list = [tag.strip() for tag in tags.split(',')]
-        metadata = es_metadata.get_by_tags(tags_list)
+        metadata = es_metadata.get_by_tags(
+                        tags_list,
+                        size=len(indices))
 
         # Sadly indicies API does not let us select the indicies to filter
         # Filtering out the indices
