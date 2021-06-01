@@ -53,7 +53,10 @@ curl -X PUT "localhost:9200/_ilm/policy/fod" -H 'Content-Type: application/json'
       "delete": {
         "min_age" : "14d",
         "actions": {
-          "delete" : { }
+          "delete" : { },
+          "wait_for_snapshot" : {
+            "policy": "fod"
+          }
         }
       }
     }

@@ -53,7 +53,10 @@ curl -X PUT "localhost:9200/_ilm/policy/qa" -H 'Content-Type: application/json' 
       "delete": {
         "min_age" : "28d",
         "actions": {
-          "delete" : { }
+          "delete" : { },
+          "wait_for_snapshot" : {
+            "policy": "qa"
+          }
         }
       }
     }
