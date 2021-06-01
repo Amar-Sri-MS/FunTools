@@ -100,7 +100,7 @@ def main():
 
     parser.add_argument('config', nargs='*', help='Configuration file(s)')
     parser.add_argument('--action',
-        choices={'all', 'prepare', 'release', 'certificate', 'sign', 'image', 'tarball', 'bundle', 'eeprbundle', 'mfginstall'},
+        choices={'all', 'prepare', 'release', 'certificate', 'sign', 'image', 'tarball', 'bundle', 'eeprbundle', 'mfginstall', 'mfgtarball'},
         default='all',
         help='Action to be performed on the input files')
     parser.add_argument('--sdkdir', default=os.getcwd(), help='SDK root directory')
@@ -129,7 +129,7 @@ def main():
         if args.action == 'all':
             return True
         elif args.action == 'release':
-            return action in ['sign', 'image', 'tarball', 'bundle', 'eeprbundle', 'mfginstall']
+            return action in ['sign', 'image', 'tarball', 'bundle', 'eeprbundle', 'mfginstall', 'mfgtarball']
         else:
             return action == args.action
 
@@ -370,7 +370,7 @@ def main():
         for rootfs in rootfs_files:
             tarfiles.append(_rootfs('fvht.bin', rootfs))
             tarfiles.append(rootfs)
-        tarfiles.extend(glob.glob('qspi_image_hw.bin*'))
+        tarfiles.extend(glob.glob('qspi_image_hw.bin.*'))
 
         for chip_file in chip_specific_files:
             tarfiles.append(os.path.basename(chip_file))
@@ -558,6 +558,21 @@ def main():
 
         os.chdir(curdir)
 
+    if wanted('mfgtarball'):
+        os.chdir(args.destdir)
+        tarfiles = []
+
+        tarfiles.extend(glob.glob('qspi_image_hw.bin.*'))
+        tarfiles.append(_mfg(funos_appname, signed=True))
+
+        if os.path.exists('.version'):
+            tarfiles.append('.version')
+
+        with tarfile.open('{chip}_mfg_package.tgz'.format(chip=args.chip), mode='w:gz') as tar:
+            for f in tarfiles:
+                tar.add(f)
+
+        os.chdir(curdir)
 
 
 if __name__=="__main__":
