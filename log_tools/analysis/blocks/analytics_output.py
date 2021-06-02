@@ -2,18 +2,15 @@
 # Analytics Output Block
 # Creates HTML files for each analysis
 #
-import datetime
 import hashlib
-import jinja2
 import json
 import logging
 import os
 import re
 import requests
-import sys
 
-from pathlib import Path
 from elasticsearch7 import Elasticsearch
+from elasticsearch7.helpers import parallel_bulk
 from urllib.parse import quote_plus
 
 from blocks.block import Block
@@ -166,6 +163,11 @@ class AnalyticsOutput(Block):
         self.duplicate_entries = {}
         self.config = config_loader.get_config()
 
+        # Having this limit to avoid storing the complete anchor data on
+        # memory and instead performing bulk updates in batches of 10k
+        self.MAX_ANCHOR_COUNT_PER_BULK_UPDATE = 10000
+        self.anchor_matches = list()
+
         ELASTICSEARCH_HOSTS = self.config['ELASTICSEARCH']['hosts']
         self.es = Elasticsearch(ELASTICSEARCH_HOSTS)
 
@@ -192,6 +194,9 @@ class AnalyticsOutput(Block):
 
                 self.check_for_duplicate_entry(msg_dict)
                 self.check_and_store_anchor_match(msg_dict)
+
+        # Anchor matches
+        self.store_anchor_matches()
 
         # Most duplicated logs
         self.generate_most_duplicates_entries()
@@ -254,24 +259,37 @@ class AnalyticsOutput(Block):
     def check_and_store_anchor_match(self, msg_dict):
         match = self.anchor_matcher.generate_match(msg_dict)
         if match:
-            self.store_anchor_match(match)
+            self.anchor_matches.append(match)
+            # Storing anchors in batches
+            if len(self.anchor_matches) >= self.MAX_ANCHOR_COUNT_PER_BULK_UPDATE:
+                self.store_anchor_matches()
 
-    def store_anchor_match(self, match):
-        """ Updating the ES document with anchor details """
-        es_doc_id = match.msg_dict['doc_id']
-        is_failure = match.anchor.get('is_failure', False)
+    def store_anchor_matches(self):
+        """ Updating the ES documents with anchor details """
+        actions = list()
+        for match in self.anchor_matches:
+            es_doc_id = match.msg_dict['doc_id']
+            is_failure = match.anchor.get('is_failure', False)
 
-        body = {
-            'doc': {
-                'is_anchor': True,
-                'is_failure': is_failure,
-                'anchor_text': match.short_desc
-            }
-        }
+            # ES format for bulk operations where _op_type defines
+            # the type of operation
+            actions.append({
+                '_op_type': 'update',
+                '_index': self.log_id,
+                '_id': es_doc_id,
+                'doc': {
+                    'is_anchor': True,
+                    'is_failure': is_failure,
+                    'anchor_text': match.short_desc
+                }
+            })
 
-        self.es.update(self.log_id,
-                       es_doc_id,
-                       body)
+        # Resetting the anchor matches
+        self.anchor_matches = list()
+        # Performing parallel bulk updates to save time on updating
+        for success, info in parallel_bulk(self.es, actions):
+            if not success:
+                logging.error(f'Failed to add anchor to the log document: {info}')
 
     def _save_json(self, filename, data):
         """ Sends the file to the file server """
