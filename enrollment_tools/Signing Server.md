@@ -105,9 +105,9 @@ Possible values are:
 
 ## POST
 
-The post request is used to sign a single digest with the development keys.
+The post request is used to sign a single digest with the development or production keys.
 
-### Hash signing (development builds only)
+### Hash signing
 
 #### Arguments:
 
@@ -126,5 +126,19 @@ The modulus of the RSA key used for signing.
 ##### key (optional)
 
 Label identifying the key used for signing.
+
+##### auth_token (optional)
+
+Authentication token obtained from an activated production HSM (required to sign with a production key).
+
+[Generating a token](https://docs.google.com/document/d/1d2lcyzSIQXHOLSK-LOkmb61ZHBOiTVhb3TZEKpZ5fE4/edit#heading=h.azk8glyelfia)
+
+##### production (optional)
+
+Identifier the HSM to use for the operation.
+
+* 0: development HSM (default if no auth_token specified)
+* 1: DPU HSM (default if auth_token is specified)
+* 2: BMC HSM 
 
 *NOTE: The two arguments modulus and key are optional but at least one of them must be provided.*
