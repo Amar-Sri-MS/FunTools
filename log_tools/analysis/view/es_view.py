@@ -85,7 +85,9 @@ def root():
 
     if len(tags) > 0:
         tags_list = [tag.strip() for tag in tags.split(',')]
-        metadata = es_metadata.get_by_tags(tags_list)
+        metadata = es_metadata.get_by_tags(
+                        tags_list,
+                        size=len(indices))
 
         # Sadly indicies API does not let us select the indicies to filter
         # Filtering out the indices
@@ -260,7 +262,8 @@ class ElasticLogSearcher(object):
         result = self.es.search(body=body,
                                 index=self.index,
                                 size=query_size,
-                                sort='@timestamp:asc')
+                                sort='@timestamp:asc',
+                                ignore_throttled=False)
         # A dict with value (upto 10k) and relation if
         # the actual hits is exact or greater than
         total_search_hits = result['hits']['total']
@@ -452,7 +455,8 @@ class ElasticLogSearcher(object):
         result = self.es.search(body=body,
                                 index=self.index,
                                 size=query_size,
-                                sort='@timestamp:desc')
+                                sort='@timestamp:desc',
+                                ignore_throttled=False)
         # A dict with value (upto 10k) and relation if
         # the actual hits is exact or greater than
         total_search_hits = result['hits']['total']
@@ -507,9 +511,10 @@ class ElasticLogSearcher(object):
 
         result = self.es.search(body=body,
                                 index=self.index,
+                                ignore_throttled=False,
                                 size=0)  # we're not really searching
 
-        buckets = result['aggregations']['unique_vals']['buckets']
+        buckets = result.get('aggregations', {}).get('unique_vals',{}).get('buckets', [])
         return {bucket['key']: bucket['doc_count'] for bucket in buckets}
 
     def get_aggregated_unique_entries(self, parent_fields, child_fields=[]):
@@ -558,9 +563,10 @@ class ElasticLogSearcher(object):
 
         result = self.es.search(body=body,
                                 index=self.index,
+                                ignore_throttled=False,
                                 size=0)  # we're not really searching
 
-        buckets = result['aggregations'][parent_fields[0]]['buckets']
+        buckets = result.get('aggregations', {}).get(parent_fields[0], {}).get('buckets', [])
         return buckets
 
     def get_document_by_id(self, doc_id):
@@ -575,7 +581,7 @@ class ElasticLogSearcher(object):
     def get_document_count(self, query_terms=None, source_filters=None, time_filters=None):
         """ Returns count of documents for the given search query and filters """
         body = self._build_query_body(query_terms, source_filters, time_filters)
-        result = self.es.count(index=self.index, body=body)
+        result = self.es.count(index=self.index, body=body, ignore_throttled=False)
         count = result['count']
         return count
 

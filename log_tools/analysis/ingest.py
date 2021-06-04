@@ -243,7 +243,7 @@ def build_input_pipeline(path, frn_info):
         blocks.extend(
             controller_input_pipeline(frn_info, source, file_pattern,
                 multiline_settings={
-                    'pattern': r'(\[.*\])\s+([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+).([0-9]+)\s?((?:\-|\+)[0-9]{4})'
+                    'pattern': r'(\[.*\])\s+(\d{4}(?:-|/)\d{2}(?:-|/)\d{2})+(?:T|\s)([:0-9]+).([0-9]+)\s?((?:\-|\+)[0-9]{4})'
                 })
         )
 
@@ -252,7 +252,7 @@ def build_input_pipeline(path, frn_info):
         blocks.extend(
             controller_input_pipeline(frn_info, source, file_pattern,
                 multiline_settings={
-                    'pattern': r'(\[.*\])\s+([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+).([0-9]+)\s?((?:\-|\+)[0-9]{4})'
+                    'pattern': r'(\[.*\])\s+(\d{4}(?:-|/)\d{2}(?:-|/)\d{2})+(?:T|\s)([:0-9]+).([0-9]+)\s?((?:\-|\+)[0-9]{4})'
                 })
         )
 
@@ -264,7 +264,7 @@ def build_input_pipeline(path, frn_info):
                 source,
                 file_pattern,
                 multiline_settings={
-                    'pattern': r'^([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+).([0-9]+)'
+                    'pattern': r'^(\d{4}(?:-|/)\d{2}(?:-|/)\d{2})+(?:T|\s)([:0-9]+).([0-9]+)'
                 })
         )
 
@@ -276,7 +276,7 @@ def build_input_pipeline(path, frn_info):
                 source,
                 file_pattern,
                 multiline_settings={
-                    'pattern': r'^\[([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+).([0-9]+)\]'
+                    'pattern': r'^\[(\d{4}(?:-|/)\d{2}(?:-|/)\d{2})+(?:T|\s)([:0-9]+).([0-9]+)\]'
                 }
             )
         )
@@ -319,6 +319,19 @@ def build_input_pipeline(path, frn_info):
                     file_pattern,
                     file_info_match='FOS(?P<system_id>([0-9a-fA-F]:?){12})-')
             )
+
+    elif source.startswith('cclinux_'):
+        if resource_type == 'textfile':
+            # TODO(Sourabh) Logs under /var/log does have year in the
+            # timestamp which makes it harder to parse them.
+            if not 'var/log' in path:
+                updated_source = source.split('cclinux_')[1]
+                blocks.extend(
+                    fun_agent_input_pipeline(frn_info,
+                        updated_source,
+                        path
+                    )
+                )
 
     else:
         logging.warning(f'Unknown source: {source}!')
@@ -437,7 +450,7 @@ def fun_agent_input_pipeline(frn_info, source, file_pattern, file_info_match=Non
             **cfg,
             'file_pattern': file_pattern,
             'src': source,
-            'pattern': r'([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+)(?:.|,)([0-9]{3,9})',
+            'pattern': r'(\d{4}(?:-|/)\d{2}(?:-|/)\d{2})+(?:T|\s)([:0-9]+)(?:.|,)([0-9]{3,9})',
             # Regex pattern to pick information from the filename
             'file_info_match': file_info_match
         },

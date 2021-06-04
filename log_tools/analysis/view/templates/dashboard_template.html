@@ -10,7 +10,11 @@
     {% include 'nav_bar.html' ignore missing %}
     <!-- Macro for calculating percentage and rounding it off to a given precision -->
     {% macro calculatePercentage(count, total, precision=2) -%}
-        {{((count/total)*100)|round(precision)}}%
+        {% if total != 0 %}
+            {{((count/total)*100)|round(precision)}}%
+        {% else %}
+            0
+        {% endif %}
     {%- endmacro %}
     <div class="content">
         <h2 class="center-align">Dashboard for
