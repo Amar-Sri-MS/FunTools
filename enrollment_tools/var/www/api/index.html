@@ -430,9 +430,9 @@ obvlAOTOVRM5V0PK7ruZCKfvBdPuFnPvUbC1OteB6ojOS2vG7nAuh7Qhw
 
 <h2 id="toc_7">POST</h2>
 
-<p>The post request is used to sign a single digest with the development keys.</p>
+<p>The post request is used to sign a single digest with the development or production keys.</p>
 
-<h3 id="toc_8">Hash signing (development builds only)</h3>
+<h3 id="toc_8">Hash signing</h3>
 
 <h4 id="toc_9">Arguments:</h4>
 
@@ -451,6 +451,22 @@ obvlAOTOVRM5V0PK7ruZCKfvBdPuFnPvUbC1OteB6ojOS2vG7nAuh7Qhw
 <h5 id="toc_13">key (optional)</h5>
 
 <p>Label identifying the key used for signing.</p>
+
+<h5 id="toc_14">auth_token (optional)</h5>
+
+<p>Authentication token obtained from an activated production HSM (required to sign with a production key).</p>
+
+<p><a href="https://docs.google.com/document/d/1d2lcyzSIQXHOLSK-LOkmb61ZHBOiTVhb3TZEKpZ5fE4/edit#heading=h.azk8glyelfia">Generating a token</a></p>
+
+<h5 id="toc_15">production (optional)</h5>
+
+<p>Identifier the HSM to use for the operation.</p>
+
+<ul>
+<li>0: development HSM (default if no auth_token specified)</li>
+<li>1: DPU HSM (default if auth_token is specified)</li>
+<li>2: BMC HSM </li>
+</ul>
 
 <p><em>NOTE: The two arguments modulus and key are optional but at least one of them must be provided.</em></p>
 
