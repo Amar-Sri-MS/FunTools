@@ -62,6 +62,9 @@ log_file = sys.stderr
 
 def LOG(msg, suffix = "\n"):
     log_file.write(msg + suffix)
+    if (opts.verbose >= 2):
+        # flush if we're doing serious debug
+        log_file.flush()
 
 def LOG_ALWAYS(msg):
     msg += "\n"
@@ -350,7 +353,7 @@ class FileCorpse:
             addr = self.elf_offset(addr)
 
         if (addr is None):
-            LOG("zero read")
+            DEBUG("zero read")
             return self.badread(n)
 
         regaddr = addr - self.memoffset
@@ -1100,7 +1103,8 @@ IGNORE_Q = ["TfV", "TfP"]
 class GDBClientHandler(object):
     def __init__(self, clientsocket):
         self.clientsocket = clientsocket
-        self.netin = clientsocket.makefile('r')
+        # need binary input since gdb may send extended ascii (incorrectly?)
+        self.netin = clientsocket.makefile('rb', buffering=0)
         self.netout = clientsocket.makefile('w')
         self.last_pkt = None
 
@@ -1172,7 +1176,7 @@ class GDBClientHandler(object):
                     info = jtag_GetThreadInfo(tid)
                     self.send(hexstr(info))
                 elif (subcmd in IGNORE_Q):
-                    DEBUG('This subcommand %r is not implemented in q' % subcmd)
+                    DEBUG('This subcommand %r is ignored in q' % subcmd)
                     self.send('')
                 else:
                     ERROR('This subcommand %r is not implemented in q' % subcmd)
@@ -1216,7 +1220,7 @@ class GDBClientHandler(object):
                 addr, size = subcmd.split(',')
                 addr = int(addr, 16)
                 size = int(size, 16)
-                LOG('Received a "read memory" command (@%#.8x : %d bytes)' % (addr, size))
+                DEBUG('Received a "read memory" command (@%#.8x : %d bytes)' % (addr, size))
                 self.send(jtag_ReadMemory(size, addr).hex())
 
             def handle_s(subcmd):
@@ -1264,7 +1268,13 @@ class GDBClientHandler(object):
         state = 'Finding SOP'
         packet = ''
         while True:
+            # read a binary character (b'c')
             c = self.netin.read(1)
+            # translate it to internal string. some gdb commands
+            # get messed up bytes. decode() fails on them. but you
+            # can do this. python fail.
+            c = chr(ord(c))
+
             if c == '\x03':
                 return 'Error: CTRL+C'
 
