@@ -65,7 +65,7 @@ find $DEPLOY_ROOT -type f | (
 		    #echo "Stripping $fname as module"
 		    ${STRIP} --strip-debug $fname
 		    ;;
-		*storage_agent)
+		*_agent)
 		    ${EUSTRIP} -R=.go_export -R=.pdr --keep-section=.debug_line --keep-section=.debug_info --keep-section=.debug_abbrev --keep-section=.debug_str --keep-section=.debug_ranges $fname
 		    ;;
 		*)
