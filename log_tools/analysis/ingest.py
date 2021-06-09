@@ -29,6 +29,8 @@ def main():
     parser.add_argument('build_id', help='Unique build ID')
     parser.add_argument('path', help='Path to the logs directory or the log archive')
     parser.add_argument('--output', help='Output block type', default='ElasticOutput')
+    parser.add_argument('-start_time', type=int, help='Epoch start time to filter logs', default=None)
+    parser.add_argument('-end_time', type=int, help='Epoch end time to filter logs', default=None)
 
     args = parser.parse_args()
 
@@ -37,12 +39,20 @@ def main():
     # Limitation with ES that it only supports lowercase
     # index names.
     build_id = args.build_id.lower()
+    start_time = args.start_time
+    end_time = args.end_time
+
+    filters = {
+        'include': {
+            'time': (start_time, end_time)
+        }
+    }
 
     LOG_ID = f'log_{build_id}'
     custom_logging = logger.get_logger(filename=f'{LOG_ID}.log')
     custom_logging.propagate = False
 
-    status = start_pipeline(args.path, build_id, output_block=args.output)
+    status = start_pipeline(args.path, build_id, filters=filters, output_block=args.output)
 
     # Backing up the logs generated during ingestion
     logger.backup_ingestion_logs(LOG_ID)
@@ -52,17 +62,30 @@ def main():
         sys.exit(1)
 
 
-def start_pipeline(base_path, build_id, metadata={}, output_block='ElasticOutput'):
+def start_pipeline(base_path, build_id, filters={}, metadata={}, output_block='ElasticOutput'):
     """
     Start ingestion pipeline.
-    base_path - path to the log directory/archive
-    build_id - Unique identfier for the ingestion
-    output_block (defaults to ES)
+    Args:
+        base_path (str) - path to the log directory/archive
+        build_id (str) - Unique identfier for the ingestion
+        filters (dict) - filters to filter logs to process
+        output_block (str) - (defaults to ES)
+    Returns:
+        dict with success flag, time_taken in seconds and error
+        msg if any.
     """
     LOG_ID = f'log_{build_id}'
+
+    # Flag to determine if the ingestion is partial.
+    # This would let users to ingest logs from the same job
+    # from other time frames.
+    is_partial_ingestion = True if filters.get('include') else False
+
     es_metadata = ElasticsearchMetadata()
     es_metadata.update(LOG_ID, {
         'ingestion_status': 'INGESTION_IN_PROGRESS',
+        'filters': filters.get('include'),
+        'is_partial_ingestion': is_partial_ingestion,
         **metadata
     })
 
@@ -81,7 +104,7 @@ def start_pipeline(base_path, build_id, metadata={}, output_block='ElasticOutput
         env['logdir'] = base_path
         env['build_id'] = build_id
 
-        cfg = build_pipeline_cfg(base_path, output_block)
+        cfg = build_pipeline_cfg(base_path, filters, output_block)
         metadata = {
             **metadata,
             **cfg['metadata']
@@ -111,6 +134,7 @@ def start_pipeline(base_path, build_id, metadata={}, output_block='ElasticOutput
     time_taken = end - start
     es_metadata.update(LOG_ID, {
         'ingestion_status': 'COMPLETED',
+        'ingestion_error': None,
         'ingestion_time': time_taken,
         **metadata
     })
@@ -121,13 +145,16 @@ def start_pipeline(base_path, build_id, metadata={}, output_block='ElasticOutput
     }
 
 
-def build_pipeline_cfg(path, output_block):
+def build_pipeline_cfg(path, filters, output_block):
     """ Constructs pipeline and metadata based on the manifest file """
     cfg = dict()
     pipeline_cfg, metadata = parse_manifest(path)
 
     if not pipeline_cfg:
         raise Exception('Could not parse the manifest file')
+
+    # Adding filter pipeline
+    pipeline_cfg.extend(filter_pipeline(filters))
 
     # Adding output pipeline
     pipeline_cfg.extend(output_pipeline(output_block))
@@ -466,11 +493,24 @@ def fun_agent_input_pipeline(frn_info, source, file_pattern, file_info_match=Non
     return [fun_agent, fun_agent_parse]
 
 
+def filter_pipeline(filters=None):
+    filter_block = {
+        'id': 'merge',
+        'block': 'Filter',
+        'cfg': {
+            'filters': filters
+        },
+        'out': 'filter'
+    }
+
+    return [filter_block]
+
+
 def output_pipeline(output_block = 'ElasticOutput'):
     """ Output pipeline """
     if output_block == 'HTMLOutput':
         merge = {
-            'id': 'merge',
+            'id': 'filter',
             'block': 'Merge',
             'out': 'dt'
         }
@@ -496,7 +536,7 @@ def output_pipeline(output_block = 'ElasticOutput'):
         file_path = os.path.abspath(os.path.dirname(__file__))
         anchors_path = os.path.join(file_path, 'config/anchors.json')
         output = {
-            'id': 'merge',
+            'id': 'filter',
             'block': 'ElasticOutput',
             'cfg': {
                 'index': 'log_${build_id}'

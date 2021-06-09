@@ -1,6 +1,8 @@
 <html>
     <head>
         <title>Log Analyzer: Ingester</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.37/css/bootstrap-datetimepicker.min.css">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
         <link rel="stylesheet" type="text/css" href="/static/css/index.css">
     </head>
     <body>
@@ -9,20 +11,39 @@
             <h3>Ingest logs from QA dashboard</h3>
             <div class="container row">
                 <div style="width: 100%; min-width: 60%;">
-                    <form action="/ingest" method="POST">
+                    <form action="/ingest" onsubmit="return onSubmit(this)" method="POST">
                         <div class="form-group">
                             <label>QA Job ID</label>
-                            <input type="text" class="form-control" id="job_id" name="job_id" placeholder="Enter the JOB ID" value="{{feedback.job_id if feedback else null}}">
+                            <input type="text" id="job_id" name="job_id" placeholder="Enter the JOB ID" value="{{feedback.job_id if feedback else null}}">
                         </div>
                         <div class="form-group">
                             <label>QA Test Index (Default is 0)</label>
-                            <input type="text" class="form-control" id="test_index" name="test_index" placeholder="Enter the Test Index" value="{{feedback.test_index if feedback else 0}}">
+                            <input type="text" id="test_index" name="test_index" placeholder="Enter the Test Index" value="{{feedback.test_index if feedback else 0}}">
                         </div>
                         <div class="form-group">
                             <label>Enter tags (comma separated)</label>
-                            <input type="text" class="form-control" id="tags" name="tags" placeholder="Enter tags" value="{{feedback.tags if feedback else null}}">
+                            <input type="text" id="tags" name="tags" placeholder="Enter tags" value="{{feedback.tags if feedback else null}}">
                         </div>
-                        <button type="submit" class="btn btn-primary" onclick="onSubmit()">Ingest</button>
+                        <div>
+                            <label>Filter logs by time</label>
+                            <div class="form-group">
+                                <label>Start time</label>
+                                <div class="input-group date" id="datetimepicker1">
+                                    <input type="text" id="start_time" name="start_time" class="form-control" />
+                                    <span class="input-group-addon">
+                                        <span class="glyphicon glyphicon-calendar"></span>
+                                    </span>
+                                </div>
+                                <label>End time</label>
+                                <div class="input-group date" id="datetimepicker2">
+                                    <input type="text" id="end_time" name="end_time" class="form-control" />
+                                    <span class="input-group-addon">
+                                        <span class="glyphicon glyphicon-calendar"></span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Ingest</button>
                     </form>
                 </div>
                 <div class="separator"></div>
@@ -40,7 +61,20 @@
             </div>
         </div>
     </body>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/momentjs/2.14.1/moment.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.37/js/bootstrap-datetimepicker.min.js"></script>
     <script type="text/javascript">
+
+        $(function () {
+            $("#datetimepicker1").datetimepicker({
+                sideBySide: true
+            });
+            $("#datetimepicker2").datetimepicker({
+                sideBySide: true
+            });
+        });
 
         // Avoid resubmitting POST from form on refresh or page navigation
         if (window.history.replaceState) {
@@ -68,13 +102,44 @@
                     statusElement.innerHTML = "<p>Ingesting.. Please wait.</p>";
                     statusInterval = setInterval(checkStatus, WAIT_TIME_TO_CHECK_STATUS);
                 }
+
+                const dateFormatter = new Intl.DateTimeFormat('en-US', {'dateStyle': 'short' , 'timeStyle': 'short'})
+                if (feedback.start_time) {
+                    const date = new Date(0);
+                    date.setUTCSeconds(start_time);
+                    document.getElementById("start_time").value = dateFormatter.parse(date);
+                }
+                if (feedback.end_time) {
+                    const date = new Date(0);
+                    date.setUTCSeconds(end_time);
+                    document.getElementById("end_time").value = dateFormatter.parse(date);
+                }
             }
         }
 
-        function onSubmit() {
+        function onSubmit(event) {
+            const job_id = event.elements["job_id"].value;
+            const start_time_str = event.elements["start_time"].value;
+            const end_time_str = event.elements["end_time"].value;
+
+            if (job_id == undefined || job_id === "") {
+                alert("Job ID is missing");
+                return false;
+            }
+
+            if (start_time_str) {
+                const start_time = new Date(`${start_time_str} UTC`);
+                event.elements["start_time"].value = Math.floor(start_time.getTime()/1000);
+            }
+
+            if (end_time_str) {
+                const end_time = new Date(`${end_time_str} UTC`);
+                event.elements["end_time"].value = Math.ceil(end_time.getTime()/1000);
+            }
+
             statusElement.innerHTML = "<p>Ingesting.. Please wait.</p>";
             feedbackElement.innerHTML = "";
-            return;
+            return true;
         }
 
         function checkStatus() {
