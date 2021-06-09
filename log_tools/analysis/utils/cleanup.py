@@ -6,7 +6,7 @@
 # This script can be used to clean all or selected components
 #
 # Usage:
-# python cleanup.py <JOB_ID> --components <COMPONENT_NAME>
+# python cleanup.py <JOB_ID> -components <COMPONENT_NAME>
 #
 # JOB_ID is the Log Analyzer Job ID
 # COMPONENT_NAME (defaults to "all") could be a list of values
@@ -112,7 +112,7 @@ def clean_files(job_id):
 
         logging.error(f'HTTP error occurred: {http_err}')
     except Exception as err:
-        logging.exception(msg)(f'Could not delete files for job: {job_id}')
+        logging.exception(f'Could not delete files for job: {job_id}')
 
     return False
 

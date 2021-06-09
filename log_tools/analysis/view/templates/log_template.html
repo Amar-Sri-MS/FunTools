@@ -269,7 +269,7 @@
         from search query and search state.
     */
     function buildSearchOption(searchPayload) {
-        if (searchPayload == null || (Object.keys(searchPayload).length === 0 && searchPayload.constructor === Object)) {
+        if (searchPayload == null || (Object.keys(searchPayload).length === 0 && searchPayload.constructor === Object) || search_box.value === "") {
             return null;
         }
         return JSON.stringify({

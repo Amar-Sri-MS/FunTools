@@ -234,6 +234,10 @@ def build_input_pipeline(path, frn_info):
     resource_type = frn_info['resource_type']
     source = frn_info['source']
 
+    if not source:
+        logging.error(f'Missing source in FRN: {frn_info}')
+        return blocks
+
     # If the folder does not exist
     if resource_type == 'folder' and not os.path.exists(path):
         return blocks
@@ -436,7 +440,17 @@ def funos_input(frn_info, source, file_pattern, file_info_match=None):
 
 
 def controller_input_pipeline(frn_info, source, file_pattern, multiline_settings={}, parse_block='GenericInput'):
-    """ Input pipeline for Controller services source """
+    """
+    Input pipeline for Controller services source.
+    Args:
+        frn_info: (dict) FRN parsed from the manifest
+        source: (str)
+        file_pattern: (str) Glob pattern for the log filename
+        multiline_settings: (dict)
+            pattern: (str) Regex pattern for detecting start of a log line
+        parse_block: (str) Name of the block type used for parsing the log file
+
+    """
     cfg = _get_cfg_from_frn(frn_info)
     id = _generate_unique_id(source, cfg['system_id'])
 
