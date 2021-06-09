@@ -202,33 +202,52 @@ class bmc:
     def __init__(self, bmc_ip_address):
         self.bmc_ip_address = bmc_ip_address
         self.client = None
+        self.slave_addr = 0x70
+        self.i2ctransfer_mode = False
+
+    def try_bmc_user_root(self, ip_addr):
+        logger.info('bmc connecting as root')
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        try:
+            client.connect(self.bmc_ip_address, username = 'root', password='root', timeout = 3)
+        except Exception as e:
+            status_msg = ('Failed to connect to BMC: {0}! using "root"\n').format(self.bmc_ip_address)
+            #status_msg = status_msg + traceback.format_exc()
+            logging.error(status_msg)
+            return None
+        return client
+
+    def try_bmc_user_sysadmin(self, ip_addr):
+        logger.info('bmc connecting as "sysadmin"')
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        try:
+            client.connect(self.bmc_ip_address, username = 'sysadmin', timeout = 3)
+        except Exception as e:
+            status_msg = ('Failed to connect to BMC: {0}! using "sysadmin"\n').format(self.bmc_ip_address)
+            status_msg = status_msg + traceback.format_exc()
+            logging.error(status_msg)
+            return None
+        return client
 
     # Check i2c device presence and open the device.
     # Returns the device handle
     def connect(self):
-		logger.info('bmc connect')
-                client = paramiko.SSHClient()
-                client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-                try:
-                        client.connect(self.bmc_ip_address, username = 'sysadmin', timeout = 3)
-		except Exception as e:
-                    status_msg = ('Failed to reach BMC:'
-                        ' {0}!\n').format(self.bmc_ip_address)
-                    status_msg = status_msg + traceback.format_exc()
-                    logging.error(status_msg)
-                    return (False, status_msg)
-                self.client = client
+        logger.info('bmc connect')
+        client = self.try_bmc_user_root(self.bmc_ip_address)
 
-                """
-		try:
-			cmd = ['ssh', 'sysadmin@'+ self.bmc_ip_address, '-o', 'ConnectTimeout=4', 'ifconfig']
-			status = subprocess.check_output(cmd)
-		except Exception as e:
-			status_msg = traceback.format_exc()
-			logging.error(status_msg)
-			return (False, status_msg)
-                """
-		return (True, "Connected to BMC!")
+        if not client:
+            client = self.try_bmc_user_sysadmin(self.bmc_ip_address)
+
+        if not client:
+            return (False, "Failed to connect to BMC!")
+
+        self.client = client
+        self.i2ctransfer_mode = self.check_i2cget_exists();
+        logger.info('i2ctransfer_mode: {0}'.format(self.i2ctransfer_mode))
+
+        return (True, "Connected to BMC!")
 
     # Free the i2c bus and close the device handle
     def disconnect(self):
@@ -236,108 +255,166 @@ class bmc:
             self.client.close()
         logger.info('Disconnected!')
 
-	# prepares csr access command bytes
+    # prepares csr access command bytes
     def _prepare_i2c_cmd(self, chip_inst, read, num_bytes):
         assert(read != None)
         assert(num_bytes != None and num_bytes != 0)
         assert(chip_inst != None)
         assert(chip_inst >= 0 and chip_inst <=1)
-        slave_addr = 0x70
         if chip_inst == 0:
             bus_num = 3
         else:
             bus_num = 5
-        mode = 0
-        if read is True:
-            mode = 0
-        cmd = 'i2c-test -b %02d -s 0x%02x '%(bus_num, slave_addr)
-        if read is True:
-            cmd = cmd + ' -rc %d'%(num_bytes) + ' -r'
+
+        cmd = ''
+        if self.i2ctransfer_mode:
+            cmd = 'i2ctransfer -fy %d %s%d@0x%02x '%(bus_num, 'r' if read else 'w', num_bytes, self.slave_addr)
         else:
-            cmd = cmd + ' -w -d'
+            cmd = 'i2c-test -b %02d -s 0x%02x '%(bus_num, self.slave_addr)
+            if read is True:
+                cmd = cmd + ' -rc %d'%(num_bytes) + ' -r'
+            else:
+                cmd = cmd + ' -w -d'
 
         return cmd
 
+    def i2c_decode_read_output(self, output):
+        output_lines = output.splitlines()
+        logger.debug(output_lines)
+        num_output_lines = len(output_lines)
+        logger.debug('num_output_lines: {}'.format(num_output_lines))
+        bytes_stream = list()
+        read_data = list()
+        num_bytes_read = 0
+        if self.i2ctransfer_mode:
+            bytes_stream =  output_lines[0].split()
+            for x in bytes_stream:
+                read_data.append(int(x, 16))
+            num_bytes_read = len(read_data)
+        else:
+            num_bytes_read = int(output_lines[0].split(':')[1].strip())
+            logger.debug('num_bytes_read:{}'.format(num_bytes_read))
+            for i in range(1, len(output_lines)):
+                byte_array =  output_lines[i].strip().split(' ')
+                bytes_stream.extend(byte_array)
+            for i in range(num_bytes_read):
+                read_data.append(int(bytes_stream[i], 16))
+            logger.debug('num_bytes_read: {} data: {}'.format(num_bytes_read, [hex(x) for x in read_data]))
+
+        return (num_bytes_read, read_data)
+
+    def i2c_decode_write_output(self, output):
+        output_lines = output.splitlines()
+        num_bytes_wrote = int(output_lines[1].split(':')[1].strip())
+        bytes_stream =  output_lines[2].strip().split(' ')
+        bytes_wrote = [int(x.encode("utf-8"), 16) for x in bytes_stream]
+        logger.debug('num_bytes_wrote: {0} bytes_wrote: {1}'.format(num_bytes_wrote, bytes_wrote))
+        return num_bytes_wrote
+
+    def check_i2cget_exists(self):
+        assert(self.client)
+        try:
+            cmd = "command -v i2ctransfer"
+            logger.debug('checking i2ctransfer exists! cmd: {0}'.format(cmd))
+            _, stdout, stderr = self.client.exec_command(cmd)
+            err = stderr.read().decode('utf-8')
+            if (len(err) != 0):
+                logging.error(err)
+                return False
+
+            cmd_output = stdout.read().decode('utf-8')
+            logging.debug(cmd_output)
+            if (len(cmd_output) == 0):
+                return False
+            return True
+        except Exception as e:
+            status_msg = traceback.format_exc()
+            logging.error(status_msg)
+        return False
+
     # i2c csr read
     def i2c_read(self, read_data, chip_inst):
-                assert(self.client)
-		cmd = self._prepare_i2c_cmd(chip_inst, True, len(read_data))
-		try:
-			logger.debug('bmc i2c_read: {0}'.format(cmd))
-                        _, stdout, stderr = self.client.exec_command(cmd)
-                        err = stderr.read().decode('utf-8')
-                        if (len(err) != 0):
-			    logging.error(err)
-			    return (False, err)
-                        cmd_output = stdout.read().decode('utf-8')
-                        logging.debug(cmd_output)
-                        if (len(cmd_output) == 0):
-                            err = 'No putput for the cmd: {0}'.format(cmd)
-			    logging.error(err)
-			    return (False, err)
-			#cmd = ['ssh', 'sysadmin@'+ self.bmc_ip_address, '-o', 'ConnectTimeout=4', cmd]
-			#status = subprocess.check_output(cmd)
-		except Exception as e:
-			status_msg = traceback.format_exc()
-			logging.error(status_msg)
-			return None
+        assert(self.client)
+        cmd = self._prepare_i2c_cmd(chip_inst, True, len(read_data))
+        logger.debug('i2c_read cmd: {0}'.format(cmd))
+        num_bytes_read = 0
+        data = None
+        try:
+            logger.debug('bmc i2c_read: {0}'.format(cmd))
+            _, stdout, stderr = self.client.exec_command(cmd)
+            err = stderr.read().decode('utf-8')
+            if (len(err) != 0):
+                logging.error(err)
+                raise Exception(err)
+            cmd_output = stdout.read().decode('utf-8')
+            logging.debug(cmd_output)
+            if (len(cmd_output) == 0):
+                err = 'No output for the cmd: {0}'.format(cmd)
+                logging.error(err)
+                raise Exception(err)
+            (num_bytes_read, parsed_data) = self.i2c_decode_read_output(cmd_output)
+            logger.debug('i2c_read num_bytes_read: {0} read_data: {1}'.format(num_bytes_read, parsed_data))
+            if not num_bytes_read:
+                err = 'No output for the cmd: {0}'.format(cmd)
+                logging.error(err)
+                raise Exception(err)
+            if num_bytes_read != len(read_data):
+                err = 'Invalid length({0}) of data for cmd: {1}'.format(num_bytes_read, cmd)
+                logging.error(err)
+                raise Exception(err)
+        except Exception as e:
+            status_msg = traceback.format_exc()
+            logging.error(status_msg)
+            return 0
 
-		logger.debug(cmd_output)
-		output_lines = cmd_output.splitlines()
-		logger.debug(output_lines)
-		logger.debug('num_output_lines: {}'.format(len(output_lines)))
-		num_bytes_read = int(output_lines[0].split(':')[1].strip())
-		logger.debug('num_bytes_read:{}'.format(num_bytes_read))
-		bytes_stream = list()
-		for i in range(1, len(output_lines)):
-			byte_array =  output_lines[i].strip().split(' ')
-			bytes_stream.extend(byte_array)
-		for i in range(num_bytes_read):
-			read_data[i] = int(bytes_stream[i], 16)
-		logger.debug('bytes read: {}'.format([hex(x) for x in read_data]))
-		if num_bytes_read != len(read_data):
-			err_msg = 'Incorrect read! num_bytes_read:{0} expected: {1}'.format(num_bytes_read, len(read_data))
-			logger.error(err_msg)
-			return None
-		return (num_bytes_read, read_data)
+        for i in range(len(parsed_data)):
+            read_data[i] = parsed_data[i]
+
+        logger.debug('i2c_read return num_bytes_read: {0} read_data: {1}'.format(num_bytes_read, read_data))
+        return (num_bytes_read, read_data)
 
     # i2c csr write
     def i2c_write(self, write_data, chip_inst):
-                assert(self.client)
-                cmd_output = None
-		cmd = self._prepare_i2c_cmd(chip_inst, False, len(write_data))
-		for i in write_data:
-			cmd = cmd + " 0x%02x"%(i)
-		try:
-			logger.debug('bmc i2c_write: {0}'.format(cmd))
-                        _, stdout, stderr = self.client.exec_command(cmd)
-                        err = stderr.read().decode('utf-8')
-                        if (len(err) != 0):
-			    logging.error(err)
-			    return (False, err)
-                        cmd_output = stdout.read().decode('utf-8')
-                        if (len(cmd_output) == 0):
-                            err = 'No putput for the cmd: {0}'.format(cmd)
-			    logging.error(err)
-			    return (False, err)
+        assert(self.client)
+        cmd_output = None
+        num_bytes_wrote = 0
+        cmd = self._prepare_i2c_cmd(chip_inst, False, len(write_data))
+        for i in write_data:
+            cmd = cmd + " 0x%02x"%(i)
 
-			#cmd = ['ssh', 'sysadmin@'+ self.bmc_ip_address, '-o', 'ConnectTimeout=4', cmd]
-			#status = subprocess.check_output(cmd)
-		except Exception as e:
-			status_msg = traceback.format_exc()
-			logging.error(status_msg)
-			return (False, status_msg)
+        logger.debug('i2c_write cmd: {0}'.format(cmd))
+        try:
+            logger.debug('bmc i2c_write: {0}'.format(cmd))
+            _, stdout, stderr = self.client.exec_command(cmd)
+            err = stderr.read().decode('utf-8')
+            if (len(err) != 0):
+                logging.error(err)
+                raise Exception(err)
+            cmd_output = stdout.read().decode('utf-8')
+            if self.i2ctransfer_mode:
+                if (len(cmd_output) != 0):
+                    err = 'No putput is expected for the cmd: {0}'.format(cmd)
+                    logging.error(err)
+                    raise Exception(err)
+                else:
+                    return len(write_data)
+            else:
+                if (len(cmd_output) == 0):
+                    err = 'No putput for the cmd: {0}'.format(cmd)
+                    logging.error(err)
+                    raise Exception(err)
+                logger.debug(cmd_output)
+                num_bytes_wrote = self.i2c_decode_write_output(cmd_output);
+                if num_bytes_wrote != len(write_data):
+                    err_msg = 'Incorrect read! num_bytes_write:{0} expected: {1}'.format(num_bytes_write, len(write_data))
+                    logger.err(err_msg)
+                    raise Exception(err_msg)
+        except Exception as e:
+            status_msg = traceback.format_exc()
+            logging.error(status_msg)
+            return 0
 
-		output_lines = cmd_output.splitlines()
-                logger.debug(output_lines)
-		num_bytes_wrote = int(output_lines[1].split(':')[1].strip())
-                bytes_stream =  output_lines[2].strip().split(' ')
-		bytes_wrote = [int(x.encode("utf-8"), 16) for x in bytes_stream]
-		if num_bytes_wrote != len(write_data):
-			err_msg = 'Incorrect read! num_bytes_write:{0} expected: {1}'.format(num_bytes_write, len(write_data))
-			logger.info(err_msg)
-			return (False, err_msg)
-		return num_bytes_wrote
+        return num_bytes_wrote
 
 class i2c(object):
     CSR1_ADDR_WIDTH_BYTES = 5
@@ -468,7 +545,7 @@ class i2c(object):
                 csr_width = 8
                 read_data = array('B', [00]*(csr_width+1))
                 read_bytes = self.master.i2c_read(read_data = read_data, chip_inst=chip_inst)
-                logger.info(('read_data: {0}').format([hex(x) for x in read_data]))
+                logger.debug(('read_data: {0}').format([hex(x) for x in read_data]))
                 if read_bytes[0] != (csr_width + 1):
                     logger.error(('Read Error!  read_bytes:{0}'
                            ' Expected: {1}').format(read_bytes, (csr_width + 1)))
