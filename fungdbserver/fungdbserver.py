@@ -1270,6 +1270,11 @@ class GDBClientHandler(object):
         while True:
             # read a binary character (b'c')
             c = self.netin.read(1)
+
+            # EOF checks first
+            if len(c) != 1:
+                return 'Error: EOF'
+            
             # translate it to internal string. some gdb commands
             # get messed up bytes. decode() fails on them. but you
             # can do this. python fail.
@@ -1277,9 +1282,6 @@ class GDBClientHandler(object):
 
             if c == '\x03':
                 return 'Error: CTRL+C'
-
-            if len(c) != 1:
-                return 'Error: EOF'
 
             if state == 'Finding SOP':
                 if c == '$':
