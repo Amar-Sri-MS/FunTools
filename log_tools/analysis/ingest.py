@@ -351,18 +351,26 @@ def build_input_pipeline(path, frn_info):
                     file_info_match='FOS(?P<system_id>([0-9a-fA-F]:?){12})-')
             )
 
-    elif source.startswith('cclinux_'):
-        if resource_type == 'textfile':
-            # TODO(Sourabh) Logs under /var/log does have year in the
-            # timestamp which makes it harder to parse them.
-            if not 'var/log' in path:
-                updated_source = source.split('cclinux_')[1]
-                blocks.extend(
-                    fun_agent_input_pipeline(frn_info,
-                        updated_source,
-                        path
-                    )
+    # This source for CCLinux logs from Fun-on-demand jobs
+    elif source.startswith('cclinux_') and resource_type == 'textfile':
+        # TODO(Sourabh) Logs under /var/log does have year in the
+        # timestamp which makes it harder to parse them.
+        if not 'var/log' in path:
+            updated_source = source.split('cclinux_')[1]
+            blocks.extend(
+                fun_agent_input_pipeline(frn_info,
+                    updated_source,
+                    path
                 )
+            )
+
+    elif source == 'cclinux' and resource_type == 'folder':
+        log_files = glob.glob(f'{path}/*.log*')
+        frn_info['resource_type'] = 'textfile'
+        for file in log_files:
+            filename = os.path.basename(file)
+            frn_info['source'] = f'cclinux_{filename}'
+            blocks.extend(build_input_pipeline(file, frn_info))
 
     else:
         logging.warning(f'Unknown source: {source}!')
