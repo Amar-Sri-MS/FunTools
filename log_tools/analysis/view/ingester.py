@@ -50,6 +50,7 @@ def main():
     parser.add_argument('-tags', nargs='*', help='Tags for the ingestion', default=[])
     parser.add_argument('-start_time', type=int, help='Epoch start time to filter logs', default=None)
     parser.add_argument('-end_time', type=int, help='Epoch end time to filter logs', default=None)
+    parser.add_argument('-sources', nargs='*', help='Sources to filter the logs during ingestion', default=None)
 
     try:
         args = parser.parse_args()
@@ -58,6 +59,7 @@ def main():
         tags = args.tags
         start_time = args.start_time
         end_time = args.end_time
+        sources = args.sources
 
         LOG_ID = f'log_qa-{job_id}-{test_index}'
         es_metadata = ElasticsearchMetadata()
@@ -71,7 +73,8 @@ def main():
 
         filters = {
             'include': {
-                'time': (start_time, end_time)
+                'time': (start_time, end_time),
+                'sources': sources
             }
         }
 
@@ -121,6 +124,7 @@ def ingest():
 
         start_time = request.form.get('start_time', None)
         end_time = request.form.get('end_time', None)
+        sources = request.form.getlist('sources', None)
 
         if not job_id:
             return render_template('ingester.html', feedback={
@@ -129,6 +133,7 @@ def ingest():
                 'tags': tags,
                 'start_time': start_time,
                 'end_time': end_time,
+                'sources': sources,
                 'msg': 'Missing JOB ID'
             })
 
@@ -154,6 +159,9 @@ def ingest():
                 cmd.append('-end_time')
                 cmd.append(end_time)
 
+            if len(sources) > 0:
+                cmd.append('-sources')
+                cmd.extend(sources)
             ingestion = subprocess.Popen(cmd)
 
         return render_template('ingester.html', feedback={
@@ -165,6 +173,7 @@ def ingest():
             'tags': tags,
             'start_time': start_time,
             'end_time': end_time,
+            'sources': sources,
             'metadata': metadata
         })
     except Exception as e:
@@ -177,6 +186,7 @@ def ingest():
             'tags': tags,
             'start_time': start_time,
             'end_time': end_time,
+            'sources': sources,
             'msg': str(e)
         }), 500
 

@@ -43,6 +43,51 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="form-group" style="flex-direction: column;">
+                            <h4 class="form-title">Filter logs by source <span class="info">Ingests all the logs if nothing selected</span></h4>
+                            <div>
+                                <label>DPU:</label>
+                                <label class="form-check-label">
+                                    <input type="checkbox" name="sources" id="funos" value="funos">FunOS
+                                </label>
+                                <label class="form-check-label">
+                                    <input type="checkbox" name="sources" id="storage_agent" value="storage_agent">Storage Agent
+                                </label>
+                                <label class="form-check-label">
+                                    <input type="checkbox" name="sources" id="platform_agent" value="platform_agent">Platform Agent
+                                </label>
+                            </div>
+                            <div>
+                                <label>Storage services:</label>
+                                <label class="form-check-label">
+                                    <input type="checkbox" name="sources" id="apigateway" value="apigateway">Apigateway
+                                </label>
+                                <label class="form-check-label">
+                                    <input type="checkbox" name="sources" id="dataplacement" value="dataplacement">Dataplacement
+                                </label>
+                                <label class="form-check-label">
+                                    <input type="checkbox" name="sources" id="discovery" value="discovery">Discovery
+                                </label>
+                                <label class="form-check-label">
+                                    <input type="checkbox" name="sources" id="kafka" value="kafka">Kafka
+                                </label>
+                                <label class="form-check-label">
+                                    <input type="checkbox" name="sources" id="metrics_manager" value="metrics_manager">Metrics Manager
+                                </label>
+                                <label class="form-check-label">
+                                    <input type="checkbox" name="sources" id="metrics_server" value="metrics_server">Metrics Server
+                                </label>
+                                <label class="form-check-label">
+                                    <input type="checkbox" name="sources" id="scmscv" value="scmscv">SCMSCV
+                                </label>
+                                <label class="form-check-label">
+                                    <input type="checkbox" name="sources" id="setup_db" value="setup_db">Setup DB
+                                </label>
+                                <label class="form-check-label">
+                                    <input type="checkbox" name="sources" id="sns" value="sns">SNS
+                                </label>
+                            </div>
+                        </div>
                         <button type="submit" class="btn btn-primary">Ingest</button>
                     </form>
                 </div>
@@ -102,6 +147,7 @@
                     statusElement.innerHTML = "<p>Ingesting.. Please wait.</p>";
                     statusInterval = setInterval(checkStatus, WAIT_TIME_TO_CHECK_STATUS);
                 }
+            }
             const dateFormatter = new Intl.DateTimeFormat('en-US', {
                 'dateStyle': 'short',
                 'timeStyle': 'short',
@@ -117,9 +163,14 @@
                 date.setSeconds(parseInt(feedback.end_time));
                 document.getElementById("end_time").value = dateFormatter.format(date);
             }
-
+            if (feedback.sources && feedback.sources.length > 0) {
+                for (source of feedback.sources) {
+                    const element = document.getElementById(source);
+                    if (element) element.checked = true;
+                }
             }
         }
+
 
         function onSubmit(event) {
             const job_id = event.elements["job_id"].value;

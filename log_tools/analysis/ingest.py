@@ -29,8 +29,9 @@ def main():
     parser.add_argument('build_id', help='Unique build ID')
     parser.add_argument('path', help='Path to the logs directory or the log archive')
     parser.add_argument('--output', help='Output block type', default='ElasticOutput')
-    parser.add_argument('-start_time', type=int, help='Epoch start time to filter logs', default=None)
-    parser.add_argument('-end_time', type=int, help='Epoch end time to filter logs', default=None)
+    parser.add_argument('-start_time', type=int, help='Epoch start time to filter logs during ingestion', default=None)
+    parser.add_argument('-end_time', type=int, help='Epoch end time to filter logs during ingestion', default=None)
+    parser.add_argument('-sources', nargs='*', help='Sources to filter the logs during ingestion', default=None)
 
     args = parser.parse_args()
 
@@ -41,10 +42,12 @@ def main():
     build_id = args.build_id.lower()
     start_time = args.start_time
     end_time = args.end_time
+    sources = args.sources
 
     filters = {
         'include': {
-            'time': (start_time, end_time)
+            'time': (start_time, end_time),
+            'sources': sources
         }
     }
 
@@ -148,7 +151,7 @@ def start_pipeline(base_path, build_id, filters={}, metadata={}, output_block='E
 def build_pipeline_cfg(path, filters, output_block):
     """ Constructs pipeline and metadata based on the manifest file """
     cfg = dict()
-    pipeline_cfg, metadata = parse_manifest(path)
+    pipeline_cfg, metadata = parse_manifest(path, filters=filters)
 
     if not pipeline_cfg:
         raise Exception('Could not form the ingestion pipeline.')
@@ -166,7 +169,7 @@ def build_pipeline_cfg(path, filters, output_block):
     return cfg
 
 
-def parse_manifest(path, parent_frn={}):
+def parse_manifest(path, parent_frn={}, filters={}):
     """ Parses manifest file """
     pipeline_cfg = list()
 
@@ -202,6 +205,7 @@ def parse_manifest(path, parent_frn={}):
 
                 # Build input pipeline by parsing the manifest file in the archive
                 content_pipeline_cfg, content_metadata = parse_manifest(resource_path, frn_info)
+                content_pipeline_cfg, content_metadata = parse_manifest(resource_path, frn_info, filters)
 
                 pipeline_cfg.extend(content_pipeline_cfg)
                 # TODO(Sourabh): Need to store metadata properly based on each archive.
@@ -220,7 +224,7 @@ def parse_manifest(path, parent_frn={}):
             # Check for logs in the folder or textfile based on the source
             if frn_info['resource_type'] == 'folder' or frn_info['resource_type'] == 'textfile':
                 logging.info(f'Checking for logs in {content_path}')
-                pipeline_cfg.extend(build_input_pipeline(content_path, frn_info))
+                pipeline_cfg.extend(build_input_pipeline(content_path, frn_info, filters))
 
         else:
             logging.warning(f'Unknown FRN: {content}')
@@ -228,11 +232,17 @@ def parse_manifest(path, parent_frn={}):
     return pipeline_cfg, metadata
 
 
-def build_input_pipeline(path, frn_info):
+def build_input_pipeline(path, frn_info, filters={}):
     """ Building input pipeline based on reading the manifest file """
     blocks = list()
     resource_type = frn_info['resource_type']
     source = frn_info['source']
+
+    source_filters = filters.get('include', {}).get('sources', [])
+
+    if not _should_ingest_source(source, source_filters):
+        logging.info(f'Skipping to ingest source: {source}. Allowed sources: {source_filters}')
+        return blocks
 
     if not source:
         logging.error(f'Missing source in FRN: {frn_info}')
@@ -324,32 +334,35 @@ def build_input_pipeline(path, frn_info):
         if resource_type == 'folder':
             frn_info['system_type'] = 'DPU'
             frn_info['system_id'] = None
-            # platform agent logs
-            file_pattern = f'{path}/archives/other/*platformagent.log*'
-            blocks.extend(
-                fun_agent_input_pipeline(frn_info,
-                    'platform_agent',
-                    file_pattern,
-                    file_info_match='PA(?P<system_id>([0-9a-fA-F]:?){12})-')
-            )
+            if _should_ingest_source('platform_agent', source_filters):
+                # platform agent logs
+                file_pattern = f'{path}/archives/other/*platformagent.log*'
+                blocks.extend(
+                    fun_agent_input_pipeline(frn_info,
+                        'platform_agent',
+                        file_pattern,
+                        file_info_match='PA(?P<system_id>([0-9a-fA-F]:?){12})-')
+                )
 
-            # storage agent logs
-            file_pattern = f'{path}/archives/other/*storageagent.log*'
-            blocks.extend(
-                fun_agent_input_pipeline(frn_info,
-                    'storage_agent',
-                    file_pattern,
-                    file_info_match='SA(?P<system_id>([0-9a-fA-F]:?){12})-')
-            )
+            if _should_ingest_source('storage_agent', source_filters):
+                # storage agent logs
+                file_pattern = f'{path}/archives/other/*storageagent.log*'
+                blocks.extend(
+                    fun_agent_input_pipeline(frn_info,
+                        'storage_agent',
+                        file_pattern,
+                        file_info_match='SA(?P<system_id>([0-9a-fA-F]:?){12})-')
+                )
 
-            # funos logs
-            file_pattern = f'{path}/archives/other/*funos.log*'
-            blocks.extend(
-                funos_input(frn_info,
-                    'funos',
-                    file_pattern,
-                    file_info_match='FOS(?P<system_id>([0-9a-fA-F]:?){12})-')
-            )
+            if _should_ingest_source('funos', source_filters):
+                # funos logs
+                file_pattern = f'{path}/archives/other/*funos.log*'
+                blocks.extend(
+                    funos_input(frn_info,
+                        'funos',
+                        file_pattern,
+                        file_info_match='FOS(?P<system_id>([0-9a-fA-F]:?){12})-')
+                )
 
     # This source for CCLinux logs from Fun-on-demand jobs
     elif source.startswith('cclinux_') and resource_type == 'textfile':
@@ -391,6 +404,22 @@ def _generate_unique_id(source, system_id):
     time = datetime.datetime.now().timestamp()
     unique_id = f'{source}_{system_id}_{time}'
     return unique_id
+
+
+def _should_ingest_source(source, source_filters=[]):
+    """
+    Returns True if the source needs to be ingested.
+    Allows all sources if no source filters provided.
+    """
+    # These are parent sources which contain indiviual sources.
+    # node-service contains FunOS, Storage and Platform agent logs.
+    allowed_sources = ['cclinux', 'node-service']
+
+    # No source filters provided or source in allowed sources.
+    if len(source_filters) == 0 or source in allowed_sources:
+        return True
+
+    return source in source_filters
 
 
 def funos_input_pipeline(frn_info, path):
