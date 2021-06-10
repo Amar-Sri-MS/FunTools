@@ -151,7 +151,7 @@ def build_pipeline_cfg(path, filters, output_block):
     pipeline_cfg, metadata = parse_manifest(path)
 
     if not pipeline_cfg:
-        raise Exception('Could not parse the manifest file')
+        raise Exception('Could not form the ingestion pipeline.')
 
     # Adding filter pipeline
     pipeline_cfg.extend(filter_pipeline(filters))

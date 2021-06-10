@@ -65,10 +65,6 @@ def main():
         custom_logging = logger.get_logger(filename=f'{LOG_ID}.log')
         custom_logging.propagate = False
 
-        job_info = fetch_qa_job_info(job_id)
-        suite_info = fetch_qa_suite_info(job_info['data']['suite_id'])
-        log_files = fetch_qa_logs(job_id, suite_info, test_index)
-
         metadata = {
             'tags': tags
         }
@@ -78,6 +74,10 @@ def main():
                 'time': (start_time, end_time)
             }
         }
+
+        job_info = fetch_qa_job_info(job_id)
+        suite_info = fetch_qa_suite_info(job_info['data']['suite_id'])
+        log_files = fetch_qa_logs(job_id, suite_info, test_index)
 
         # Start ingestion
         ingestion_status = ingest_logs(job_id, test_index, job_info, log_files, metadata, filters)
@@ -117,7 +117,7 @@ def ingest():
         job_id = request.form.get('job_id')
         test_index = request.form.get('test_index', 0)
         tags = request.form.get('tags')
-        tags_list = [tag.strip() for tag in tags.split(',')]
+        tags_list = [tag.strip() for tag in tags.split(',') if tag.strip() != '']
 
         start_time = request.form.get('start_time', None)
         end_time = request.form.get('end_time', None)
@@ -126,6 +126,9 @@ def ingest():
             return render_template('ingester.html', feedback={
                 'success': False,
                 'job_id': job_id,
+                'tags': tags,
+                'start_time': start_time,
+                'end_time': end_time,
                 'msg': 'Missing JOB ID'
             })
 

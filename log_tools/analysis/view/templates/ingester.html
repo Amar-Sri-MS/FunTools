@@ -24,8 +24,8 @@
                             <label>Enter tags (comma separated)</label>
                             <input type="text" id="tags" name="tags" placeholder="Enter tags" value="{{feedback.tags if feedback else null}}">
                         </div>
-                        <div>
-                            <label>Filter logs by time</label>
+                        <div class="form-group" style="flex-direction: column;">
+                            <h4 class="form-title">Filter logs by time <span class="info">Ingests all the logs if no timeframe is provided</span></h4>
                             <div class="form-group">
                                 <label>Start time</label>
                                 <div class="input-group date" id="datetimepicker1">
@@ -102,18 +102,22 @@
                     statusElement.innerHTML = "<p>Ingesting.. Please wait.</p>";
                     statusInterval = setInterval(checkStatus, WAIT_TIME_TO_CHECK_STATUS);
                 }
+            const dateFormatter = new Intl.DateTimeFormat('en-US', {
+                'dateStyle': 'short',
+                'timeStyle': 'short',
+                'timeZone': 'UTC'
+            });
+            if (feedback.start_time) {
+                const date = new Date(0);
+                date.setSeconds(parseInt(feedback.start_time));
+                document.getElementById("start_time").value = dateFormatter.format(date);
+            }
+            if (feedback.end_time) {
+                const date = new Date(0);
+                date.setSeconds(parseInt(feedback.end_time));
+                document.getElementById("end_time").value = dateFormatter.format(date);
+            }
 
-                const dateFormatter = new Intl.DateTimeFormat('en-US', {'dateStyle': 'short' , 'timeStyle': 'short'})
-                if (feedback.start_time) {
-                    const date = new Date(0);
-                    date.setUTCSeconds(start_time);
-                    document.getElementById("start_time").value = dateFormatter.parse(date);
-                }
-                if (feedback.end_time) {
-                    const date = new Date(0);
-                    date.setUTCSeconds(end_time);
-                    document.getElementById("end_time").value = dateFormatter.parse(date);
-                }
             }
         }
 
