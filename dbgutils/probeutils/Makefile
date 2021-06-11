@@ -39,8 +39,8 @@ install-lib: $(BUILD_DIR)/libpcieproxy.so libpcieproxy.h | $(PCIEPROXY_DIR)/lib 
 $(BUILD_DIR)/hbm_dump_pcie: hbm_dump_pcie.c | $(BUILD_DIR)
 	$(CC) -o $@ hbm_dump_pcie.c
 
-install: $(BUILD_DIR)/hbm_dump_pcie
+install: $(BUILD_DIR)/hbm_dump_pcie $(BUILD_DIR)/pcieproxy
 	mkdir -p $(SDK_INSTALL_DIR)/bin/$(OS)/$(ARCH)
-	cp $< $(SDK_INSTALL_DIR)/bin/$(OS)/$(ARCH)
+	cp $? $(SDK_INSTALL_DIR)/bin/$(OS)/$(ARCH)
 
 .PHONY: install install-lib
