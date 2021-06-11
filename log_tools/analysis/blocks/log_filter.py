@@ -5,8 +5,7 @@
 # Owner: Sourabh Jain (sourabh.jain@fungible.com)
 # Copyright (c) 2021 Fungible Inc.  All rights reserved.
 
-from datetime import datetime, timezone
-from dateutil import tz
+from datetime import datetime
 
 from blocks.block import Block
 
@@ -35,9 +34,9 @@ class LogFilter(Block):
         end_time = time_filter[1]
 
         if start_time:
-            start_time = datetime.fromtimestamp(start_time, tz=timezone.utc)
+            start_time = datetime.utcfromtimestamp(start_time)
         if end_time:
-            end_time = datetime.fromtimestamp(end_time, tz=timezone.utc)
+            end_time = datetime.utcfromtimestamp(end_time)
 
         return (start_time, end_time)
 
@@ -45,8 +44,7 @@ class LogFilter(Block):
         for iter in iters:
             for tuple in iter:
                 filtered = False
-                # Making the datetime object timezone aware
-                date_time = tuple[0].astimezone(tz.UTC)
+                date_time = tuple[0]
                 if self.start_time and date_time < self.start_time:
                     filtered = True
 
