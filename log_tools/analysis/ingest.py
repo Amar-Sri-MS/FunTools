@@ -182,10 +182,18 @@ def parse_manifest(path, parent_frn={}, filters={}):
         if type(content) == str and content.startswith('frn'):
             frn_info = manifest_parser.parse_FRN(content)
             frn_info = manifest_parser.merge_frn(parent_frn, frn_info)
+            source = frn_info.get('source')
 
             # Ignore if the resource_type is not present in the FRN
             if frn_info['resource_type'] == '':
                 continue
+
+            # Ignore if the source is not allowed to ingest
+            if source and source != '':
+                source_filters = filters.get('include', {}).get('sources', [])
+                if not _should_ingest_source(frn_info.get('source'), source_filters):
+                    logging.info(f'Skipping source: {source}. Allowed sources: {source_filters}')
+                    continue
 
             # Path to the content in the FRN
             content_path = os.path.join(path, frn_info['prefix_path'], frn_info['sub_path'])
@@ -416,7 +424,7 @@ def _should_ingest_source(source, source_filters=[]):
     allowed_sources = ['cclinux', 'node-service']
 
     # No source filters provided or source in allowed sources.
-    if len(source_filters) == 0 or source in allowed_sources:
+    if not source_filters or len(source_filters) == 0 or source in allowed_sources:
         return True
 
     return source in source_filters
