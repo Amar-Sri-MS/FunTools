@@ -558,7 +558,7 @@ static bool _parse_hostunitcontroller(struct hw_hsu_api_link_config *cfg,
 				fprintf(stderr, "ERROR: (%u:%u) unknown 'mode'=%s",
 				       ring, cid, str);
 			pcid->cid_flags |=
-				HW_HSU_API_LINK_CONFIG_CID_FLAGS_PORTTYPE_PUT(porttype);
+				htobe64(HW_HSU_API_LINK_CONFIG_CID_FLAGS_PORTTYPE_PUT(porttype));
 		} else
 			fprintf(stderr,
 				"WARNING: (%u:%u) Controller 'mode' not found!",
