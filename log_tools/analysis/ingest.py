@@ -14,8 +14,6 @@ import time
 
 sys.path.append('.')
 
-from pathlib import Path
-
 import pipeline
 import logger
 
@@ -82,7 +80,7 @@ def start_pipeline(base_path, build_id, filters={}, metadata={}, output_block='E
     # Flag to determine if the ingestion is partial.
     # This would let users to ingest logs from the same job
     # from other time frames.
-    is_partial_ingestion = True if filters.get('include') else False
+    is_partial_ingestion = True if _has_ingestion_filters(filters) else False
 
     es_metadata = ElasticsearchMetadata()
     es_metadata.update(LOG_ID, {
@@ -412,6 +410,25 @@ def _generate_unique_id(source, system_id):
     time = datetime.datetime.now().timestamp()
     unique_id = f'{source}_{system_id}_{time}'
     return unique_id
+
+
+def _has_ingestion_filters(filters):
+    """ Check if any filters are applied for ingestion """
+    include = filters.get('include', None)
+    if not include:
+        return False
+
+    time_filters = include.get('time')
+    if not time_filters:
+        return False
+
+    start_time, end_time = time_filters
+    if not start_time and not end_time:
+        return False
+
+    source_filters = include.get('sources')
+    if not source_filters or len(source_filters) == 0:
+        return False
 
 
 def _should_ingest_source(source, source_filters=[]):
