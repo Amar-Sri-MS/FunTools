@@ -148,7 +148,7 @@
 
         let logID = '', statusInterval = null;
         if (feedback && Object.keys(feedback).length !== 0 && feedback.constructor === Object) {
-            logID = `log_qa-${feedback["job_id"]}-${feedback["test_index"]}`;
+            logID = feedback["log_id"];
 
             if (feedback.started) {
                 statusContainer.style = "width: 40%;";

@@ -166,6 +166,7 @@ def ingest():
 
         return render_template('ingester.html', feedback={
             'started': True,
+            'log_id': LOG_ID,
             'success': metadata.get('ingestion_status') == 'COMPLETED',
             'is_partial_ingestion': metadata.get('is_partial_ingestion', False),
             'job_id': job_id,
@@ -181,6 +182,7 @@ def ingest():
         return render_template('ingester.html', feedback={
             'started': False,
             'success': False,
+            'log_id': LOG_ID,
             'job_id': job_id,
             'test_index': test_index,
             'tags': tags,
