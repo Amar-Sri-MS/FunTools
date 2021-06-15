@@ -5,6 +5,7 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.37/css/bootstrap-datetimepicker.min.css">
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
         <link rel="stylesheet" type="text/css" href="/static/css/index.css">
+        <link rel="stylesheet" type="text/css" href="/static/css/ingester.css">
     </head>
     <body>
         {% include "nav_bar.html" ignore missing %}
@@ -56,43 +57,43 @@
                             <label class="form-title">By Source<span class="info">Ingests all logs if nothing selected</span></label>
                             <div>
                                 <label>DPU:</label>
-                                <label class="form-check-label">
+                                <label>
                                     <input type="checkbox" name="sources" id="funos" value="funos">FunOS
                                 </label>
-                                <label class="form-check-label">
+                                <label>
                                     <input type="checkbox" name="sources" id="storage_agent" value="storage_agent">Storage Agent
                                 </label>
-                                <label class="form-check-label">
+                                <label>
                                     <input type="checkbox" name="sources" id="platform_agent" value="platform_agent">Platform Agent
                                 </label>
                             </div>
                             <div>
                                 <label>Storage services:</label>
-                                <label class="form-check-label">
+                                <label>
                                     <input type="checkbox" name="sources" id="apigateway" value="apigateway">Apigateway
                                 </label>
-                                <label class="form-check-label">
+                                <label>
                                     <input type="checkbox" name="sources" id="dataplacement" value="dataplacement">Dataplacement
                                 </label>
-                                <label class="form-check-label">
+                                <label>
                                     <input type="checkbox" name="sources" id="discovery" value="discovery">Discovery
                                 </label>
-                                <label class="form-check-label">
+                                <label>
                                     <input type="checkbox" name="sources" id="kafka" value="kafka">Kafka
                                 </label>
-                                <label class="form-check-label">
+                                <label>
                                     <input type="checkbox" name="sources" id="metrics_manager" value="metrics_manager">Metrics Manager
                                 </label>
-                                <label class="form-check-label">
+                                <label>
                                     <input type="checkbox" name="sources" id="metrics_server" value="metrics_server">Metrics Server
                                 </label>
-                                <label class="form-check-label">
+                                <label>
                                     <input type="checkbox" name="sources" id="scmscv" value="scmscv">SCMSCV
                                 </label>
-                                <label class="form-check-label">
+                                <label>
                                     <input type="checkbox" name="sources" id="setup_db" value="setup_db">Setup DB
                                 </label>
-                                <label class="form-check-label">
+                                <label>
                                     <input type="checkbox" name="sources" id="sns" value="sns">SNS
                                 </label>
                             </div>
@@ -160,6 +161,7 @@
                     statusInterval = setInterval(checkStatus, WAIT_TIME_TO_CHECK_STATUS);
                 }
             }
+
             const dateFormatter = new Intl.DateTimeFormat('en-US', {
                 'dateStyle': 'short',
                 'timeStyle': 'short'
