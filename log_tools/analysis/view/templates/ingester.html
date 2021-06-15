@@ -194,6 +194,7 @@
                 paramName: 'file',
                 dictDefaultMessage: 'Drop log archive here or click to upload',
                 chunking: true,
+                retryChunks: true,
                 forceChunking: true,
                 autoProcessQueue: false,
                 processingmultiple: false,
@@ -201,7 +202,7 @@
                 maxFilesize: 1024 * 10, // 10GB
                 maxFiles: 1,
                 addRemoveLinks: true,
-                chunkSize: 1000000 * 10 // (in bytes) => 10MB
+                chunkSize: 1000000 // (in bytes) => 1MB
             });
 
             dropzone.on("addedfile", file => {
