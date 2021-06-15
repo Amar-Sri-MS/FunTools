@@ -62,7 +62,7 @@ def main():
             # and archived logs until a set time based on retention.
             if (metadata and
                 metadata.get('ingestion_status') == 'COMPLETED' and
-                metadata.get('archived_until') < current_time):
+                metadata.get('archived_until', 0) < current_time):
 
                 logging.info(f'Cleaning files and metadata for job: {dirname}')
                 status = clean(dirname, ['files', 'metadata'])

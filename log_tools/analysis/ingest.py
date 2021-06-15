@@ -210,22 +210,25 @@ def parse_manifest(path, parent_frn={}, filters={}):
                     archive_extractor.extract(content_path)
 
                 # Build input pipeline by parsing the manifest file in the archive
-                content_pipeline_cfg, content_metadata = parse_manifest(resource_path, frn_info)
-                content_pipeline_cfg, content_metadata = parse_manifest(resource_path, frn_info, filters)
+                if manifest_parser.has_manifest(resource_path):
+                    content_pipeline_cfg, content_metadata = parse_manifest(resource_path, frn_info, filters)
+                    pipeline_cfg.extend(content_pipeline_cfg)
 
-                pipeline_cfg.extend(content_pipeline_cfg)
-                # TODO(Sourabh): Need to store metadata properly based on each archive.
-                # Attempting to create a unique key so that the metadata from
-                # different manifest files do not get overridden.
-                metadata_key = '{}_{}_{}_{}_{}'.format(frn_info['namespace'],
-                                                    frn_info['system_type'],
-                                                    frn_info['system_id'],
-                                                    frn_info['component'],
-                                                    frn_info['source'])
-                metadata = {
-                    **metadata,
-                    metadata_key: content_metadata
-                }
+                    # TODO(Sourabh): Need to store metadata properly based on each archive.
+                    # Attempting to create a unique key so that the metadata from
+                    # different manifest files do not get overridden.
+                    metadata_key = '{}_{}_{}_{}_{}'.format(frn_info['namespace'],
+                                                        frn_info['system_type'],
+                                                        frn_info['system_id'],
+                                                        frn_info['component'],
+                                                        frn_info['source'])
+                    metadata = {
+                        **metadata,
+                        metadata_key: content_metadata
+                    }
+                else:
+                    frn_info['resource_type'] = 'folder'
+                    content_path = resource_path
 
             # Check for logs in the folder or textfile based on the source
             if frn_info['resource_type'] == 'folder' or frn_info['resource_type'] == 'textfile':
