@@ -16,6 +16,7 @@ from blocks import file_input
 from blocks import display_time
 from blocks import log_parsers
 from blocks import merge
+from blocks import log_filter
 
 # Output blocks
 from blocks import analytics_output
@@ -63,6 +64,7 @@ class BlockFactory(object):
         self.plugins['KeyValueInput'] = log_parsers.KeyValueInput
         self.plugins['HumanDateTime'] = display_time.HumanDateTime
         self.plugins['Merge'] = merge.Merge
+        self.plugins['Filter'] = log_filter.LogFilter
         self.plugins['AnalyticsOutput'] = analytics_output.AnalyticsOutput
         self.plugins['HTMLOutput'] = html_output.HTMLOutput
         self.plugins['ElasticOutput'] = elastic_output.ElasticsearchOutput

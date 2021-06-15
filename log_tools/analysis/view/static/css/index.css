@@ -46,9 +46,11 @@ h3 {
 .container {
     border-bottom: 1px solid #4d4d4d80;
     padding: 10px 0px;
+    width: calc(100vw);
 }
 .row {
     display: flex;
+    margin: 0px;
 }
 .btn {
     border: 2px solid #3B7FC4;
@@ -96,7 +98,16 @@ h3 {
 }
 
 .form-group {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     margin: 10px 0px;
+}
+.form-check-label {
+    padding: 5px;
+}
+.form-title {
+    text-decoration: underline;
 }
 .caps {
     text-transform: uppercase;

@@ -1,6 +1,9 @@
 <html>
     <head>
         <title>Log Analyzer: Ingester</title>
+        <!-- Datepicker dependencies -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.37/css/bootstrap-datetimepicker.min.css">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
         <link rel="stylesheet" type="text/css" href="/static/css/index.css">
     </head>
     <body>
@@ -9,20 +12,93 @@
             <h3>Ingest logs from QA dashboard</h3>
             <div class="container row">
                 <div style="width: 100%; min-width: 60%;">
-                    <form action="/ingest" method="POST">
+                    <form action="/ingest" onsubmit="return onSubmit(this)" method="POST">
                         <div class="form-group">
                             <label>QA Job ID</label>
-                            <input type="text" class="form-control" id="job_id" name="job_id" placeholder="Enter the JOB ID" value="{{feedback.job_id if feedback else null}}">
+                            <input type="text" id="job_id" name="job_id" placeholder="Enter the JOB ID" value="{{feedback.job_id if feedback else null}}">
                         </div>
                         <div class="form-group">
                             <label>QA Test Index (Default is 0)</label>
-                            <input type="text" class="form-control" id="test_index" name="test_index" placeholder="Enter the Test Index" value="{{feedback.test_index if feedback else 0}}">
+                            <input type="text" id="test_index" name="test_index" placeholder="Enter the Test Index" value="{{feedback.test_index if feedback else 0}}">
                         </div>
                         <div class="form-group">
                             <label>Enter tags (comma separated)</label>
-                            <input type="text" class="form-control" id="tags" name="tags" placeholder="Enter tags" value="{{feedback.tags if feedback else null}}">
+                            <input type="text" id="tags" name="tags" placeholder="Enter tags" value="{{feedback.tags if feedback else null}}">
                         </div>
-                        <button type="submit" class="btn btn-primary" onclick="onSubmit()">Ingest</button>
+                        <hr >
+                        <h4 class="form-title">Ingestion Filters</h4>
+                        <div class="form-group" style="flex-direction: column;">
+                            <label class="form-title">By Time range (in local timezone)<span class="info">Ingests all logs if no timeframe is provided</span></label>
+                            <div class="form-group">
+                                <div style="margin-right: 10px;">
+                                    <label>Start time</label>
+                                    <div class="input-group date" id="start_time_picker">
+                                        <input type="text" id="start_time" name="start_time" class="form-control" />
+                                        <span class="input-group-addon">
+                                            <span class="glyphicon glyphicon-calendar"></span>
+                                        </span>
+                                    </div>
+                                    <div id="start_time_str" style="min-height: 20px; margin-top: 10px;"></div>
+                                </div>
+                                <div>
+                                    <label>End time</label>
+                                    <div class="input-group date" id="end_time_picker">
+                                        <input type="text" id="end_time" name="end_time" class="form-control" />
+                                        <span class="input-group-addon">
+                                            <span class="glyphicon glyphicon-calendar"></span>
+                                        </span>
+                                    </div>
+                                    <div id="end_time_str" style="min-height: 20px; margin-top: 10px;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group" style="flex-direction: column;">
+                            <label class="form-title">By Source<span class="info">Ingests all logs if nothing selected</span></label>
+                            <div>
+                                <label>DPU:</label>
+                                <label class="form-check-label">
+                                    <input type="checkbox" name="sources" id="funos" value="funos">FunOS
+                                </label>
+                                <label class="form-check-label">
+                                    <input type="checkbox" name="sources" id="storage_agent" value="storage_agent">Storage Agent
+                                </label>
+                                <label class="form-check-label">
+                                    <input type="checkbox" name="sources" id="platform_agent" value="platform_agent">Platform Agent
+                                </label>
+                            </div>
+                            <div>
+                                <label>Storage services:</label>
+                                <label class="form-check-label">
+                                    <input type="checkbox" name="sources" id="apigateway" value="apigateway">Apigateway
+                                </label>
+                                <label class="form-check-label">
+                                    <input type="checkbox" name="sources" id="dataplacement" value="dataplacement">Dataplacement
+                                </label>
+                                <label class="form-check-label">
+                                    <input type="checkbox" name="sources" id="discovery" value="discovery">Discovery
+                                </label>
+                                <label class="form-check-label">
+                                    <input type="checkbox" name="sources" id="kafka" value="kafka">Kafka
+                                </label>
+                                <label class="form-check-label">
+                                    <input type="checkbox" name="sources" id="metrics_manager" value="metrics_manager">Metrics Manager
+                                </label>
+                                <label class="form-check-label">
+                                    <input type="checkbox" name="sources" id="metrics_server" value="metrics_server">Metrics Server
+                                </label>
+                                <label class="form-check-label">
+                                    <input type="checkbox" name="sources" id="scmscv" value="scmscv">SCMSCV
+                                </label>
+                                <label class="form-check-label">
+                                    <input type="checkbox" name="sources" id="setup_db" value="setup_db">Setup DB
+                                </label>
+                                <label class="form-check-label">
+                                    <input type="checkbox" name="sources" id="sns" value="sns">SNS
+                                </label>
+                            </div>
+                        </div>
+                        <hr />
+                        <button type="submit" class="btn btn-primary">Ingest</button>
                     </form>
                 </div>
                 <div class="separator"></div>
@@ -40,7 +116,22 @@
             </div>
         </div>
     </body>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/momentjs/2.14.1/moment.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.37/js/bootstrap-datetimepicker.min.js"></script>
     <script type="text/javascript">
+
+        $(function () {
+            $("#start_time_picker").datetimepicker({
+                sideBySide: true
+            });
+            $("#end_time_picker").datetimepicker({
+                sideBySide: true
+            });
+            $("#start_time_picker").on("dp.change", onChangeTimeFilter);
+            $("#end_time_picker").on("dp.change", onChangeTimeFilter);
+        });
 
         // Avoid resubmitting POST from form on refresh or page navigation
         if (window.history.replaceState) {
@@ -69,12 +160,60 @@
                     statusInterval = setInterval(checkStatus, WAIT_TIME_TO_CHECK_STATUS);
                 }
             }
+            const dateFormatter = new Intl.DateTimeFormat('en-US', {
+                'dateStyle': 'short',
+                'timeStyle': 'short'
+            });
+            if (feedback.start_time) {
+                const date = new Date(parseInt(feedback.start_time)*1000);
+                document.getElementById("start_time").value = dateFormatter.format(date);
+            }
+            if (feedback.end_time) {
+                const date = new Date(parseInt(feedback.end_time)*1000);
+                document.getElementById("end_time").value = dateFormatter.format(date);
+            }
+            if (feedback.sources && feedback.sources.length > 0) {
+                for (source of feedback.sources) {
+                    const element = document.getElementById(source);
+                    if (element) element.checked = true;
+                }
+            }
         }
 
-        function onSubmit() {
+
+        function onChangeTimeFilter(event) {
+            const dateStr = event.date.toISOString();
+            if (event.target.id === "start_time_picker") {
+                document.getElementById("start_time_str").innerHTML = `UTC Time: ${dateStr}`;
+            }
+            if (event.target.id === "end_time_picker") {
+                document.getElementById("end_time_str").innerHTML = `UTC Time: ${dateStr}`;
+            }
+        }
+
+        function onSubmit(event) {
+            const job_id = event.elements["job_id"].value;
+            const start_time_str = event.elements["start_time"].value;
+            const end_time_str = event.elements["end_time"].value;
+
+            if (job_id == undefined || job_id === "") {
+                alert("Job ID is missing");
+                return false;
+            }
+
+            if (start_time_str) {
+                const start_time = new Date(start_time_str);
+                event.elements["start_time"].value = Math.floor(start_time.getTime()/1000);
+            }
+
+            if (end_time_str) {
+                const end_time = new Date(end_time_str);
+                event.elements["end_time"].value = Math.ceil(end_time.getTime()/1000);
+            }
+
             statusElement.innerHTML = "<p>Ingesting.. Please wait.</p>";
             feedbackElement.innerHTML = "";
-            return;
+            return true;
         }
 
         function checkStatus() {

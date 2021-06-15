@@ -48,12 +48,18 @@ def main():
     parser.add_argument('job_id', help='QA Job ID')
     parser.add_argument('-test_index', type=int, help='Test index of the QA job', default=0)
     parser.add_argument('-tags', nargs='*', help='Tags for the ingestion', default=[])
+    parser.add_argument('-start_time', type=int, help='Epoch start time to filter logs', default=None)
+    parser.add_argument('-end_time', type=int, help='Epoch end time to filter logs', default=None)
+    parser.add_argument('-sources', nargs='*', help='Sources to filter the logs during ingestion', default=None)
 
     try:
         args = parser.parse_args()
         job_id = args.job_id
         test_index = args.test_index
         tags = args.tags
+        start_time = args.start_time
+        end_time = args.end_time
+        sources = args.sources
 
         LOG_ID = f'log_qa-{job_id}-{test_index}'
         es_metadata = ElasticsearchMetadata()
@@ -61,16 +67,23 @@ def main():
         custom_logging = logger.get_logger(filename=f'{LOG_ID}.log')
         custom_logging.propagate = False
 
-        job_info = fetch_qa_job_info(job_id)
-        suite_info = fetch_qa_suite_info(job_info['data']['suite_id'])
-        log_files = fetch_qa_logs(job_id, suite_info, test_index)
-
         metadata = {
             'tags': tags
         }
 
+        filters = {
+            'include': {
+                'time': (start_time, end_time),
+                'sources': sources
+            }
+        }
+
+        job_info = fetch_qa_job_info(job_id)
+        suite_info = fetch_qa_suite_info(job_info['data']['suite_id'])
+        log_files = fetch_qa_logs(job_id, suite_info, test_index)
+
         # Start ingestion
-        ingestion_status = ingest_logs(job_id, test_index, job_info, log_files, metadata)
+        ingestion_status = ingest_logs(job_id, test_index, job_info, log_files, metadata, filters)
 
         if ingestion_status and not ingestion_status['success']:
             _update_metadata(es_metadata, LOG_ID, 'FAILED', {
@@ -107,12 +120,20 @@ def ingest():
         job_id = request.form.get('job_id')
         test_index = request.form.get('test_index', 0)
         tags = request.form.get('tags')
-        tags_list = [tag.strip() for tag in tags.split(',')]
+        tags_list = [tag.strip() for tag in tags.split(',') if tag.strip() != '']
+
+        start_time = request.form.get('start_time', None)
+        end_time = request.form.get('end_time', None)
+        sources = request.form.getlist('sources', None)
 
         if not job_id:
             return render_template('ingester.html', feedback={
                 'success': False,
                 'job_id': job_id,
+                'tags': tags,
+                'start_time': start_time,
+                'end_time': end_time,
+                'sources': sources,
                 'msg': 'Missing JOB ID'
             })
 
@@ -129,14 +150,30 @@ def ingest():
             if len(tags_list) > 0:
                 cmd.append('-tags')
                 cmd.append(' '.join(tags_list))
+
+            if start_time:
+                cmd.append('-start_time')
+                cmd.append(start_time)
+
+            if end_time:
+                cmd.append('-end_time')
+                cmd.append(end_time)
+
+            if len(sources) > 0:
+                cmd.append('-sources')
+                cmd.extend(sources)
             ingestion = subprocess.Popen(cmd)
 
         return render_template('ingester.html', feedback={
             'started': True,
             'success': metadata.get('ingestion_status') == 'COMPLETED',
+            'is_partial_ingestion': metadata.get('is_partial_ingestion', False),
             'job_id': job_id,
             'test_index': test_index,
             'tags': tags,
+            'start_time': start_time,
+            'end_time': end_time,
+            'sources': sources,
             'metadata': metadata
         })
     except Exception as e:
@@ -147,6 +184,9 @@ def ingest():
             'job_id': job_id,
             'test_index': test_index,
             'tags': tags,
+            'start_time': start_time,
+            'end_time': end_time,
+            'sources': sources,
             'msg': str(e)
         }), 500
 
@@ -256,7 +296,7 @@ def _get_valid_files(path):
             ]
 
 
-def ingest_logs(job_id, test_index, job_info, log_files, metadata):
+def ingest_logs(job_id, test_index, job_info, log_files, metadata, filters):
     """
     Ingesting logs using "job_id" and "log_files"
 
@@ -387,7 +427,8 @@ def ingest_logs(job_id, test_index, job_info, log_files, metadata):
         # Start the ingestion
         return ingest_handler.start_pipeline(path,
                                          f'qa-{job_id}-{test_index}',
-                                         metadata=metadata)
+                                         metadata=metadata,
+                                         filters=filters)
     except Exception as e:
         logging.exception('Error while ingesting the logs')
         _update_metadata(es_metadata, LOG_ID, 'FAILED', {
