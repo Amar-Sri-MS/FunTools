@@ -28,7 +28,9 @@ sys.path.insert(0, '.')
 from elastic_metadata import ElasticsearchMetadata
 from flask import Blueprint, jsonify, request, render_template
 from flask import current_app
-from utils import archive_extractor
+from werkzeug.utils import secure_filename
+
+from utils import archive_extractor, manifest_parser
 import ingest as ingest_handler
 import logger
 
@@ -45,30 +47,35 @@ QA_STATIC_ENDPOINT = 'http://integration.fungible.local/static/logs'
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--ingest_type', help='Ingestion type')
     parser.add_argument('job_id', help='QA Job ID')
     parser.add_argument('--test_index', type=int, help='Test index of the QA job', default=0)
     parser.add_argument('--tags', nargs='*', help='Tags for the ingestion', default=[])
     parser.add_argument('--start_time', type=int, help='Epoch start time to filter logs', default=None)
     parser.add_argument('--end_time', type=int, help='Epoch end time to filter logs', default=None)
     parser.add_argument('--sources', nargs='*', help='Sources to filter the logs during ingestion', default=None)
+    parser.add_argument('--file_name', help='File name of the uploaded log archive', default=None)
 
     try:
         args = parser.parse_args()
+        ingest_type = args.ingest_type
         job_id = args.job_id
         test_index = args.test_index
+        file_name = args.file_name
         tags = args.tags
         start_time = args.start_time
         end_time = args.end_time
         sources = args.sources
 
-        LOG_ID = f'log_qa-{job_id}-{test_index}'
+        LOG_ID = _get_log_id(job_id, ingest_type, test_index=test_index)
         es_metadata = ElasticsearchMetadata()
 
         custom_logging = logger.get_logger(filename=f'{LOG_ID}.log')
         custom_logging.propagate = False
 
         metadata = {
-            'tags': tags
+            'tags': tags,
+            'ingest_type': ingest_type
         }
 
         filters = {
@@ -78,12 +85,13 @@ def main():
             }
         }
 
-        job_info = fetch_qa_job_info(job_id)
-        suite_info = fetch_qa_suite_info(job_info['data']['suite_id'])
-        log_files = fetch_qa_logs(job_id, suite_info, test_index)
-
         # Start ingestion
-        ingestion_status = ingest_logs(job_id, test_index, job_info, log_files, metadata, filters)
+        if ingest_type == 'qa':
+            ingestion_status = ingest_qa_logs(job_id, test_index, metadata, filters)
+        elif ingest_type == 'upload':
+            ingestion_status = ingest_techsupport_logs(job_id, file_name, metadata, filters)
+        else:
+            raise Exception('Wrong ingest type')
 
         if ingestion_status and not ingestion_status['success']:
             _update_metadata(es_metadata, LOG_ID, 'FAILED', {
@@ -104,10 +112,67 @@ def main():
         logger.backup_ingestion_logs(LOG_ID)
 
 
+@ingester_page.route('/upload', methods=['POST'])
+def upload():
+    """
+    Upload API for uploading techsupport log archive. Using the
+    dropzone.js in UI to upload the files and hence the dropzone
+    specific form data for chunking.
+
+    Form data:
+    job_id: unique job_id
+    file: binary file of log archive uploaded in chunks
+    """
+    job_id = request.form.get('job_id')
+    file = request.files['file']
+    LOG_ID = _get_log_id(job_id, ingest_type='upload')
+
+    save_dir = os.path.join(DOWNLOAD_DIRECTORY, LOG_ID)
+    os.makedirs(save_dir, exist_ok=True)
+    save_path = os.path.join(save_dir, secure_filename(file.filename))
+
+    current_chunk = int(request.form['dzchunkindex'])
+
+    # If the file already exists it's ok if we are appending to it,
+    # but not if it's new file that would overwrite the existing one
+    if os.path.exists(save_path) and current_chunk == 0:
+        # 400 and 500s will tell dropzone that an error occurred and show an error
+        return jsonify('File already exists for this job id.'
+                    'Please enter a new job id if this was not uploaded by you.'), 400
+
+    try:
+        with open(save_path, 'ab') as f:
+            f.seek(int(request.form['dzchunkbyteoffset']))
+            f.write(file.stream.read())
+    except OSError:
+        logging.exception('Could not write to file')
+        return jsonify("Not sure why,"
+                    " but we couldn't write the file to disk"), 500
+
+    total_chunks = int(request.form['dztotalchunkcount'])
+
+    if current_chunk + 1 == total_chunks:
+        # This was the last chunk, the file should be complete and the size we expect
+        if os.path.getsize(save_path) != int(request.form['dztotalfilesize']):
+            logging.error(f"File {file.filename} was completed, "
+                      f"but has a size mismatch."
+                      f"Was {os.path.getsize(save_path)} but we"
+                      f" expected {request.form['dztotalfilesize']}")
+            return jsonify('Size mismatch after final upload'), 500
+        else:
+            logging.info(f'File {file.filename} has been uploaded successfully')
+    else:
+        logging.debug(f'Chunk {current_chunk + 1} of {total_chunks} '
+                  f'for file {file.filename} complete')
+
+    return jsonify('Chunk upload successful'), 200
+
+
 @ingester_page.route('/ingest', methods=['GET'])
 def render_ingest_page():
     """ UI for ingesting logs """
-    return render_template('ingester.html', feedback={})
+    ingest_type = request.args.get('ingest_type', 'qa')
+    return render_template('ingester.html', feedback={}, ingest_type=ingest_type)
 
 
 @ingester_page.route('/ingest', methods=['POST'])
@@ -117,10 +182,12 @@ def ingest():
     Required QA "job_id"
     """
     try:
+        ingest_type = request.form.get('ingest_type', 'qa')
         job_id = request.form.get('job_id')
         test_index = request.form.get('test_index', 0)
         tags = request.form.get('tags')
         tags_list = [tag.strip() for tag in tags.split(',') if tag.strip() != '']
+        file_name = request.form.get('filename')
 
         start_time = request.form.get('start_time', None)
         end_time = request.form.get('end_time', None)
@@ -135,18 +202,19 @@ def ingest():
                 'end_time': end_time,
                 'sources': sources,
                 'msg': 'Missing JOB ID'
-            })
+            }, ingest_type=ingest_type)
 
         job_id = job_id.strip()
 
-        LOG_ID = f'log_qa-{job_id}-{test_index}'
+        LOG_ID = _get_log_id(job_id, ingest_type, test_index=test_index)
+
         es_metadata = ElasticsearchMetadata()
         metadata = es_metadata.get(LOG_ID)
 
         # If metadata exists then either ingestion for this job
         # is already done or in progress
         if not metadata or metadata['ingestion_status'] == 'FAILED':
-            cmd = ['./ingester.py', job_id, '-test_index', str(test_index)]
+            cmd = ['./ingester.py', job_id, '--ingest_type', ingest_type]
             if len(tags_list) > 0:
                 cmd.append('--tags')
                 cmd.append(' '.join(tags_list))
@@ -162,6 +230,14 @@ def ingest():
             if len(sources) > 0:
                 cmd.append('--sources')
                 cmd.extend(sources)
+
+            if ingest_type == 'qa':
+                cmd.append('--test_index')
+                cmd.append(str(test_index))
+            elif ingest_type == 'upload':
+                cmd.append('--file_name')
+                cmd.append(file_name)
+
             ingestion = subprocess.Popen(cmd)
 
         return render_template('ingester.html', feedback={
@@ -176,7 +252,7 @@ def ingest():
             'end_time': end_time,
             'sources': sources,
             'metadata': metadata
-        })
+        }, ingest_type=ingest_type)
     except Exception as e:
         current_app.logger.exception(f'Error when starting ingestion for job: {job_id}')
         return render_template('ingester.html', feedback={
@@ -190,7 +266,7 @@ def ingest():
             'end_time': end_time,
             'sources': sources,
             'msg': str(e)
-        }), 500
+        }, ingest_type=ingest_type), 500
 
 
 @ingester_page.route('/ingest/<log_id>/status', methods=['GET'])
@@ -206,6 +282,18 @@ def check_status(log_id):
     # not COMPLETED to see if the process is running
 
     return metadata
+
+
+def _get_log_id(job_id, ingest_type, **additional_data):
+    """
+    Returns log identifier based on the job_id, ingest_type and
+    any additional_data.
+    """
+    if ingest_type == 'qa':
+        test_index = additional_data.get('test_index', 0)
+        return f'log_qa-{job_id}-{test_index}'
+    elif ingest_type == 'upload':
+        return f'log_techsupport-{job_id}'
 
 
 def fetch_qa_job_info(job_id):
@@ -298,37 +386,40 @@ def _get_valid_files(path):
             ]
 
 
-def ingest_logs(job_id, test_index, job_info, log_files, metadata, filters):
+def ingest_qa_logs(job_id, test_index, metadata, filters):
     """
-    Ingesting logs using "job_id" and "log_files"
+    Ingesting logs using QA "job_id" and "test_index".
 
-    Required job_info to get the release train info and
-    ingest logs accordingly.
-
-    This function downloads the log file and ingest
-    it to the Log Analyzer.
+    This function downloads the log archives from QA platform
+    and ingest them to the Log Analyzer.
     """
     es_metadata = ElasticsearchMetadata()
-    LOG_ID = f'log_qa-{job_id}-{test_index}'
+    LOG_ID = _get_log_id(job_id, ingest_type='qa', test_index=test_index)
 
     path = f'{DOWNLOAD_DIRECTORY}/{job_id}'
     file_path = os.path.abspath(os.path.dirname(__file__))
-    release_train = job_info['data']['primary_release_train']
     QA_LOGS_DIRECTORY = '/regression/Integration/fun_test/web/static/logs'
     found_logs = False
 
-    tags = metadata.get('tags') if metadata.get('tags') else []
-    # Adding the release train to the tags
-    metadata = {
-        **metadata,
-        'tags': tags + [release_train]
-    }
-
     manifest_contents = list()
 
-    _update_metadata(es_metadata, LOG_ID, 'DOWNLOAD_STARTED')
     start = time.time()
     try:
+        job_info = fetch_qa_job_info(job_id)
+        suite_info = fetch_qa_suite_info(job_info['data']['suite_id'])
+        log_files = fetch_qa_logs(job_id, suite_info, test_index)
+
+        release_train = job_info['data']['primary_release_train']
+
+        tags = metadata.get('tags') if metadata.get('tags') else []
+        # Adding the release train to the tags
+        metadata = {
+            **metadata,
+            'tags': tags + [release_train]
+        }
+
+        _update_metadata(es_metadata, LOG_ID, 'DOWNLOAD_STARTED')
+
         for log_file in log_files:
             log_dir = log_file.split(QA_LOGS_DIRECTORY)[1]
             url = f'{QA_STATIC_ENDPOINT}{log_dir}'
@@ -429,6 +520,53 @@ def ingest_logs(job_id, test_index, job_info, log_files, metadata, filters):
         # Start the ingestion
         return ingest_handler.start_pipeline(path,
                                          f'qa-{job_id}-{test_index}',
+                                         metadata=metadata,
+                                         filters=filters)
+    except Exception as e:
+        logging.exception('Error while ingesting the logs')
+        _update_metadata(es_metadata, LOG_ID, 'FAILED', {
+            'ingestion_error': str(e)
+        })
+
+
+def ingest_techsupport_logs(job_id, file_name, metadata, filters):
+    """
+    Ingesting logs using an uploaded techsupport log archive.
+
+    This function ingest logs to the Log Analyzer from the log
+    archive uploaded with the name provided as "file_name".
+    """
+    es_metadata = ElasticsearchMetadata()
+    LOG_ID = _get_log_id(job_id, ingest_type='upload')
+    LOG_DIR = os.path.join(DOWNLOAD_DIRECTORY, LOG_ID, file_name)
+
+    try:
+        # Extract if the file is an archive
+        if archive_extractor.is_archive(LOG_DIR):
+            archive_extractor.extract(LOG_DIR)
+            LOG_DIR = os.path.splitext(LOG_DIR)[0]
+
+        if not manifest_parser.has_manifest(LOG_DIR):
+            folders = next(os.walk(os.path.join(LOG_DIR,'.')))[1]
+
+            # TODO(Sourabh): This is an assumption that there will only
+            # be techsupport folder.
+            log_folder_name = folders[0]
+            LOG_DIR = os.path.join(LOG_DIR, log_folder_name)
+
+            # TODO(Sourabh): Temp workaround until David G's fix to ingest
+            # storage agent logs collected by node-service since it is the
+            # only source for storage agent debug logs.
+            manifest = manifest_parser.parse(LOG_DIR)
+            manifest['contents'].extend([
+                'frn:plaform:DPU::system:storage_agent:textfile:other:*storageagent.log*'
+            ])
+
+            _create_manifest(LOG_DIR, manifest['metadata'], manifest['contents'])
+
+        # Start the ingestion
+        return ingest_handler.start_pipeline(LOG_DIR,
+                                         f'techsupport-{job_id}',
                                          metadata=metadata,
                                          filters=filters)
     except Exception as e:

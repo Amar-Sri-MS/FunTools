@@ -4,24 +4,62 @@
         <!-- Datepicker dependencies -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.37/css/bootstrap-datetimepicker.min.css">
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+
+        <!-- Dropzone uploader dependencies -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.4.0/min/dropzone.min.css"/>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.4.0/min/basic.min.css"/>
+
         <link rel="stylesheet" type="text/css" href="/static/css/index.css">
         <link rel="stylesheet" type="text/css" href="/static/css/ingester.css">
     </head>
     <body>
         {% include "nav_bar.html" ignore missing %}
         <div class="center-align">
-            <h3>Ingest logs from QA dashboard</h3>
             <div class="container row">
                 <div style="width: 100%; min-width: 60%;">
                     <form action="/ingest" onsubmit="return onSubmit(this)" method="POST">
-                        <div class="form-group">
-                            <label>QA Job ID</label>
-                            <input type="text" id="job_id" name="job_id" placeholder="Enter the JOB ID" value="{{feedback.job_id if feedback else null}}">
-                        </div>
-                        <div class="form-group">
-                            <label>QA Test Index (Default is 0)</label>
-                            <input type="text" id="test_index" name="test_index" placeholder="Enter the Test Index" value="{{feedback.test_index if feedback else 0}}">
-                        </div>
+                        <h3 class="form-group">
+                            <label>Ingest logs from</label>
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="ingest_type"
+                                    value="qa"
+                                    {{"checked" if ingest_type == "qa" else ""}}
+                                    onchange="onChangeIngestType(this)"
+                                />
+                                QA
+                            </label>
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="ingest_type"
+                                    value="upload"
+                                    {{"checked" if ingest_type == "upload" else ""}}
+                                    onchange="onChangeIngestType(this)"
+                                />
+                                Upload techsupport archive
+                            </label>
+                        </h3>
+                        {% if ingest_type == "qa" %}
+                            <div class="form-group">
+                                <label>QA Job ID</label>
+                                <input type="text" id="job_id" name="job_id" placeholder="Enter the JOB ID" value="{{feedback.job_id if feedback else null}}">
+                            </div>
+                            <div class="form-group">
+                                <label>QA Test Index (Default is 0)</label>
+                                <input type="text" id="test_index" name="test_index" placeholder="Enter the Test Index" value="{{feedback.test_index if feedback else 0}}">
+                            </div>
+                        {% elif ingest_type == "upload" %}
+                            <div class="form-group">
+                                <label>Job ID</label>
+                                <input type="text" id="job_id" name="job_id" placeholder="Enter the JOB ID" value="{{feedback.job_id if feedback else null}}">
+                            </div>
+                            <div class="form-group">
+                                <div class="dropzone" id="uploader"></div>
+                                <input type="text" id="filename" name="filename" hidden />
+                            </div>
+                        {% endif %}
                         <div class="form-group">
                             <label>Enter tags (comma separated)</label>
                             <input type="text" id="tags" name="tags" placeholder="Enter tags" value="{{feedback.tags if feedback else null}}">
@@ -121,8 +159,13 @@
     <script src="https://cdn.jsdelivr.net/momentjs/2.14.1/moment.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.37/js/bootstrap-datetimepicker.min.js"></script>
+
+    <script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.4.0/min/dropzone.min.js"></script>
     <script type="text/javascript">
 
+        // Dropzone.js object to track the uploading of files.
+        let dropzone = null;
+        Dropzone.autoDiscover = false;
         $(function () {
             $("#start_time_picker").datetimepicker({
                 sideBySide: true
@@ -140,9 +183,48 @@
         }
 
         const feedback = {{feedback|tojson}};
+        let ingestType = "{{ingest_type}}";
         const statusContainer = document.getElementById("status-container");
         const statusElement = document.getElementById("status");
         const feedbackElement = document.getElementById("feedback");
+
+        if (ingestType && ingestType === "upload") {
+            dropzone = new Dropzone("div#uploader", {
+                url: 'upload',
+                paramName: 'file',
+                dictDefaultMessage: 'Drop log archive here or click to upload',
+                chunking: true,
+                forceChunking: true,
+                autoProcessQueue: false,
+                processingmultiple: false,
+                uploadMultiple: false,
+                maxFilesize: 1024 * 10, // 10GB
+                maxFiles: 1,
+                addRemoveLinks: true,
+                chunkSize: 1000000 * 10 // (in bytes) => 10MB
+            });
+
+            dropzone.on("addedfile", file => {
+                const job_id = document.getElementById("job_id").value;
+                // job_id is a necessary field.
+                if (job_id === undefined || job_id === "") {
+                    alert("Job ID missing");
+                    dropzone.removeFile(file);
+                    return;
+                }
+                dropzone.processFile(file);
+            });
+
+            dropzone.on("sending", (file, xhr, formData) => {
+                const job_id = document.getElementById("job_id").value;
+                // Also send the job_id along with the uploaded file.
+                formData.append("job_id", job_id);
+            });
+
+            dropzone.on("error", (file, error) => {
+                alert(`UPLOAD FAILED: ${error}`);
+            });
+        }
 
         // Time is in milliseconds
         const WAIT_TIME_TO_CHECK_STATUS = 30 * 1000;
@@ -182,6 +264,14 @@
             }
         }
 
+        function onChangeIngestType(event) {
+            const value = event.value;
+            if (value) {
+                let params = new URLSearchParams();
+                params.set("ingest_type", value);
+                window.location.href = `?${params.toString()}`;
+            }
+        }
 
         function onChangeTimeFilter(event) {
             const dateStr = event.date.toISOString();
@@ -211,6 +301,20 @@
             if (end_time_str) {
                 const end_time = new Date(end_time_str);
                 event.elements["end_time"].value = Math.ceil(end_time.getTime()/1000);
+            }
+
+            if (ingestType === "upload" && dropzone) {
+                const files = dropzone.files;
+                if (files.length === 0 || files[0].status == "error") {
+                    alert("Please upload an archive");
+                    return false;
+                }
+                const file = files[0];
+                if (file.status == "uploading") {
+                    alert("Please wait for the archive to be uploaded.")
+                    return false;
+                }
+                event.elements["filename"].value = file.name;
             }
 
             statusElement.innerHTML = "<p>Ingesting.. Please wait.</p>";
