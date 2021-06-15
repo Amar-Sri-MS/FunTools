@@ -46,11 +46,11 @@ QA_STATIC_ENDPOINT = 'http://integration.fungible.local/static/logs'
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('job_id', help='QA Job ID')
-    parser.add_argument('-test_index', type=int, help='Test index of the QA job', default=0)
-    parser.add_argument('-tags', nargs='*', help='Tags for the ingestion', default=[])
-    parser.add_argument('-start_time', type=int, help='Epoch start time to filter logs', default=None)
-    parser.add_argument('-end_time', type=int, help='Epoch end time to filter logs', default=None)
-    parser.add_argument('-sources', nargs='*', help='Sources to filter the logs during ingestion', default=None)
+    parser.add_argument('--test_index', type=int, help='Test index of the QA job', default=0)
+    parser.add_argument('--tags', nargs='*', help='Tags for the ingestion', default=[])
+    parser.add_argument('--start_time', type=int, help='Epoch start time to filter logs', default=None)
+    parser.add_argument('--end_time', type=int, help='Epoch end time to filter logs', default=None)
+    parser.add_argument('--sources', nargs='*', help='Sources to filter the logs during ingestion', default=None)
 
     try:
         args = parser.parse_args()
@@ -148,19 +148,19 @@ def ingest():
         if not metadata or metadata['ingestion_status'] == 'FAILED':
             cmd = ['./ingester.py', job_id, '-test_index', str(test_index)]
             if len(tags_list) > 0:
-                cmd.append('-tags')
+                cmd.append('--tags')
                 cmd.append(' '.join(tags_list))
 
             if start_time:
-                cmd.append('-start_time')
+                cmd.append('--start_time')
                 cmd.append(start_time)
 
             if end_time:
-                cmd.append('-end_time')
+                cmd.append('--end_time')
                 cmd.append(end_time)
 
             if len(sources) > 0:
-                cmd.append('-sources')
+                cmd.append('--sources')
                 cmd.extend(sources)
             ingestion = subprocess.Popen(cmd)
 

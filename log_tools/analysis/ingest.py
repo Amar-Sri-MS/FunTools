@@ -27,9 +27,9 @@ def main():
     parser.add_argument('build_id', help='Unique build ID')
     parser.add_argument('path', help='Path to the logs directory or the log archive')
     parser.add_argument('--output', help='Output block type', default='ElasticOutput')
-    parser.add_argument('-start_time', type=int, help='Epoch start time to filter logs during ingestion', default=None)
-    parser.add_argument('-end_time', type=int, help='Epoch end time to filter logs during ingestion', default=None)
-    parser.add_argument('-sources', nargs='*', help='Sources to filter the logs during ingestion', default=None)
+    parser.add_argument('--start_time', type=int, help='Epoch start time to filter logs during ingestion', default=None)
+    parser.add_argument('--end_time', type=int, help='Epoch end time to filter logs during ingestion', default=None)
+    parser.add_argument('--sources', nargs='*', help='Sources to filter the logs during ingestion', default=None)
 
     args = parser.parse_args()
 
