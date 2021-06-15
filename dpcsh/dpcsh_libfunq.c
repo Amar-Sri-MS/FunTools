@@ -18,7 +18,7 @@
 #define ACQE_SIZE			(128)
 #define ASQ_DEPTH			(DMA_BUFSIZE_BYTES / ASQE_SIZE)
 #define ACQ_DEPTH			(DMA_BUFSIZE_BYTES / ACQE_SIZE)
-#define FIRST_LEVEL_SGL_N			(6)
+#define FIRST_LEVEL_SGL_N			(5)
 #define MAX_BUFFERS_PER_OPERATION (FUNQ_MAX_DMA_BUFFERS / 4)
 
 #define dprintf(debug_mode, ...) \
