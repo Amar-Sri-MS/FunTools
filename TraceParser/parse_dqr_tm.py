@@ -458,6 +458,10 @@ class PerfSample(object):
     """
     Represents a perf sample.
     """
+    # Slots are part of python's data model, and allow us to explicitly
+    # declare data members. We do this to avoid the implicit __dict__
+    # which is expensive (I was measuring 1kB per object, which is
+    # unbelievable).
     __slots__ = ['wuid', 'arg0', 'timestamp', 'cp0_count', 'perf_counts',
                  'vp', 'is_custom_data', 'custom_data']
     def __init__(self):
