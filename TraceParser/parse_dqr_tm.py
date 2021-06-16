@@ -264,6 +264,9 @@ class PerfParser:
 
                 self.state = self.next_state
 
+            # We don't need the traces any longer, clear them to free memory
+            frame.clear_tfs()
+
     def parse_regular_tf(self, tf):
         """
         Handles trace formats that are not overflow or overflow recovery
@@ -327,11 +330,11 @@ class PerfParser:
                 raise RuntimeError('illegal parser state %s' %
                                    self.state[vp])
 
-    def get_perfmon_samples(self):
+    def get_perfmon_sample_generator(self):
         """
-        Returns the samples, encoded in perfmon format.
+        Returns a generator for the samples, encoded in perfmon format.
 
-        The return type is a list of list of strings. Each sublist is a perf
+        The generator item type is a list of strings. Each list is a perf
         sample.
         """
         cluster_offset = self.cluster * MAX_VPS_PER_CLUSTER
@@ -339,15 +342,12 @@ class PerfParser:
 
         # Converts the local VP identifier at the lowest 8 bits of each
         # value into a global VP identifier, and formats for perfmon use.
-        result = []
-        local_samples = [s.to_perfmon_data() for s in self.samples]
-        for sample_with_local_vp in local_samples:
+        for s in self.samples:
+            sample_with_local_vp = s.to_perfmon_data()
             sample_with_global_vp = [cluster_offset + core_offset + val
                                      for val in sample_with_local_vp]
             perfmon_sample = [format(s, '016x') for s in sample_with_global_vp]
-            result.append(perfmon_sample)
-
-        return result
+            yield perfmon_sample
 
     def get_overflow_frames(self):
         """ Returns a list of overflow frame indices """
@@ -454,10 +454,12 @@ class PerfSampleBuilder:
                             self.WORD4_CP0_MASK)
 
 
-class PerfSample:
+class PerfSample(object):
     """
     Represents a perf sample.
     """
+    __slots__ = ['wuid', 'arg0', 'timestamp', 'cp0_count', 'perf_counts',
+                 'vp', 'is_custom_data', 'custom_data']
     def __init__(self):
         self.wuid = None
         self.arg0 = None
@@ -686,6 +688,9 @@ class Frame:
         if tf.tf_type == 5:
             self.overflow = True
 
+    def clear_tfs(self):
+        self.tfs = []
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -713,15 +718,17 @@ def run_perf_parser(args):
     perfmon_samples = None
     with open(args.input_file, 'r') as fh:
         trace_parser.parse_trace_messages(fh)
-        perfmon_samples = trace_parser.get_perfmon_samples()
-    if not perfmon_samples:
+        perfmon_sample_gen = trace_parser.get_perfmon_sample_generator()
+
+    if len(trace_parser.samples) == 0:
         print('No samples')
         return
+
     out_file = 'put_%s_%s_perfmon.txt' % (str(args.cluster),
                                           str(args.core))
     out_path = os.path.join(args.output_dir, out_file)
     with open(out_path, 'w') as fh:
-        for sample in perfmon_samples:
+        for sample in perfmon_sample_gen:
             fh.write('\n'.join(sample))
             fh.write('\n')
 
@@ -785,7 +792,7 @@ def parse_and_group_trace_formats(fh):
     frames = []
     last_frame_index = None
 
-    for line in fh.readlines():
+    for line in fh:
         match = FRAME_AND_TF_PATTERN.match(line)
         if match:
             frame_index = match.group(1)
