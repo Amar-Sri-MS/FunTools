@@ -154,10 +154,10 @@ def main():
     fvht_list_file = None
 
     if wanted('prepare'):
-        gf.merge_configs(config, json.loads(EEPROM_CONFIG_OVERRIDE))
-        gf.merge_configs(config, json.loads(HOST_FIRMWARE_CONFIG_OVERRIDE))
-        gf.merge_configs(config, json.loads(FUNOS_CONFIG_OVERRIDE.format(funos_appname=funos_appname)))
-        gf.merge_configs(config, json.loads(EEPROM_LIST_CONFIG_OVERRIDE.format(eeprom_list=eeprom_list)))
+        gf.merge_configs(config, json.loads(EEPROM_CONFIG_OVERRIDE), only_if_present=True)
+        gf.merge_configs(config, json.loads(HOST_FIRMWARE_CONFIG_OVERRIDE), only_if_present=True)
+        gf.merge_configs(config, json.loads(FUNOS_CONFIG_OVERRIDE.format(funos_appname=funos_appname)), only_if_present=True)
+        gf.merge_configs(config, json.loads(EEPROM_LIST_CONFIG_OVERRIDE.format(eeprom_list=eeprom_list)), only_if_present=True)
 
         fvht_config = {}
         fvht_list_file = tempfile.NamedTemporaryFile(mode='w', delete=False)

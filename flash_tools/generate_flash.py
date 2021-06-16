@@ -432,11 +432,14 @@ class FileJsonEncoder(json.JSONEncoder):
             return o.decode('ascii')
         return super().default(o)
 
-def merge_configs(old, new):
+def merge_configs(old, new, only_if_present=False):
     for k,v in new.items():
         if k in old and isinstance(old[k], dict) and isinstance(new[k], dict):
-            merge_configs(old[k], new[k])
+            merge_configs(old[k], new[k], only_if_present)
         else:
+            if only_if_present and isinstance(new[k], dict):
+                continue
+
             old[k] = new[k]
 
 def override_field(config, field, value, only_if_empty=True):
