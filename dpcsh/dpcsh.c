@@ -737,7 +737,8 @@ bool dpcsocket_init(struct dpcsock *sock)
 	}
 
 	if(sock->mode == SOCKMODE_FUNQ) {
-		return dpc_funq_init((struct dpc_funq_handle **)&sock->funq_handle, sock->socket_name, _debug_log);
+		sock->funq_handle = dpc_funq_init(sock->socket_name, _debug_log);
+		return sock->funq_handle != NULL;
 	}
 
 	return true;
@@ -779,7 +780,8 @@ struct dpcsock_connection *dpcsocket_connect(struct dpcsock *sock)
 	}
 
 	if (sock->mode == SOCKMODE_FUNQ) {
-		if (!dpc_funq_open_connection((struct dpc_funq_connection **)&connection->funq_connection, sock->funq_handle)) {
+		connection->funq_connection = dpc_funq_open_connection(sock->funq_handle);
+		if (!connection->funq_connection) {
 			free(connection);
 			return NULL;
 		}

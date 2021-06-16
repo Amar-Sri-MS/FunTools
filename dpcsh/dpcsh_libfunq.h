@@ -20,11 +20,11 @@ struct dpc_funq_handle;
 struct dpc_funq_connection;
 
 // malloc and initialize a handle
-extern bool dpc_funq_init(struct dpc_funq_handle **handle, const char *devname, bool debug);
+extern struct dpc_funq_handle *dpc_funq_init(const char *devname, bool debug);
 // cleanup and free a handle
 extern bool dpc_funq_destroy(struct dpc_funq_handle *handle);
 
-extern bool dpc_funq_open_connection(struct dpc_funq_connection **connection, struct dpc_funq_handle *handle);
+extern struct dpc_funq_connection *dpc_funq_open_connection(struct dpc_funq_handle *handle);
 extern bool dpc_funq_close_connection(struct dpc_funq_connection *connection);
 
 extern bool dpc_funq_send(struct dpc_funq_connection *connection, struct fun_ptr_and_size data);

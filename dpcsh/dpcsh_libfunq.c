@@ -100,8 +100,10 @@ static int dpc_allocate_buffer(struct dpc_funq_handle *h)
 	return -1;
 }
 
-void dpc_free_buffer(struct dpc_funq_handle *h, int idx)
+static void dpc_free_buffer(struct dpc_funq_handle *h, int idx)
 {
+	if (idx < 0) return;
+
 	h->buffers[idx].used = false;
 
 	struct dpc_pending_allocation *p = h->pending;
@@ -133,6 +135,12 @@ static void dpc_allocate_rx_tx(struct dpc_funq_connection *connection)
 	connection->recv_buffer_idx = dpc_allocate_buffer(connection->dpc_handle);
 }
 
+static void dpc_deallocate_rx_tx(struct dpc_funq_connection *connection)
+{
+	dpc_free_buffer(connection->dpc_handle, connection->send_buffer_idx);
+	dpc_free_buffer(connection->dpc_handle, connection->recv_buffer_idx);
+}
+
 static void dpc_add_pending(struct dpc_funq_handle *h, struct dpc_pending_allocation *p)
 {
 	struct dpc_pending_allocation **last;
@@ -143,73 +151,78 @@ static void dpc_add_pending(struct dpc_funq_handle *h, struct dpc_pending_alloca
 	*last = p;
 }
 
-extern bool dpc_funq_open_connection(struct dpc_funq_connection **connection, struct dpc_funq_handle *h)
+struct dpc_funq_connection *dpc_funq_open_connection(struct dpc_funq_handle *dpc_handle)
 {
 	struct fun_admin_dpc_req c = {};
 	struct fun_admin_dpc_rsp r = {};
 
-	*connection = (struct dpc_funq_connection *)calloc(1, sizeof(struct dpc_funq_connection));
-	(*connection)->dpc_handle = h;
+	struct dpc_funq_connection *connection = (struct dpc_funq_connection *)calloc(1, sizeof(struct dpc_funq_connection));
+	connection->dpc_handle = dpc_handle;
 
 	fun_admin_req_common_init(&c.common, FUN_ADMIN_OP_DPC,
 			sizeof (c) >> 3, 0 /* flags */, 0 /* suboff8 */, 0 /* cid */);
 	fun_admin_dpc_open_connection_req_init(&c, FUN_ADMIN_DPC_SUBOP_OPEN_CONNECTION, 0, 0);
 
-	funq_handle_t handle = h->handle;
-
-	int ret = funq_admin_submit_sync_cmd(handle,
+	int ret = funq_admin_submit_sync_cmd(dpc_handle->handle,
 			&c.common, &r.common, sizeof(r), 0);
 
 	if (ret != 0 || r.u.open.code != FUN_ADMIN_DPC_ISSUE_CMD_RESP_COMPLETE) {
 		printf("Failed to open the connection, ret = %d, code = %" PRId8 "\n", ret, r.u.open.code);
-		free(*connection);
-		return false;
+		free(connection);
+		return NULL;
 	}
 
-	(*connection)->id = r.u.open.connection_id;
+	connection->id = r.u.open.connection_id;
 
-	dprintf((*connection)->dpc_handle->debug, "dpc_open_connection successful, id=%" PRIu16 "\n", (*connection)->id);
+	dprintf(dpc_handle->debug, "dpc_open_connection successful, id=%" PRIu16 "\n", connection->id);
 
-	pthread_mutex_lock(&h->lock);
-	h->connections_active++;
+	pthread_mutex_lock(&dpc_handle->lock);
+	dpc_handle->connections_active++;
 
 	dpc_allocate_rx_tx(*connection);
-	if ((*connection)->recv_buffer_idx == -1 || (*connection)->send_buffer_idx == -1) {
+	if (connection->recv_buffer_idx == -1 || connection->send_buffer_idx == -1) {
 		struct dpc_pending_allocation *a = calloc(1, sizeof(struct dpc_pending_allocation));
 		a->rx_index = (*connection)->recv_buffer_idx;
 		a->tx_index = (*connection)->send_buffer_idx;
 		a->next = NULL;
 
-		dprintf(h->debug, "waiting for buffers to be available\n");
+		dprintf(dpc_handle->debug, "waiting for buffers to be available\n");
 
 		if (pthread_cond_init(&a->ready, NULL) != 0) {
 			printf("pthread_cond_init() error");
+			free(a);
+			goto fail;
 		}
 
-		dpc_add_pending(h, a);
+		dpc_add_pending(dpc_handle, a);
 
-		ret = pthread_cond_wait(&a->ready, &h->lock);
+		ret = pthread_cond_wait(&a->ready, &dpc_handle->lock);
 		if (ret) {
 			printf("Failed to wait for release of buffers, code = %d\n", ret);
 		}
 
-		(*connection)->recv_buffer_idx = a->rx_index;
-		(*connection)->send_buffer_idx = a->tx_index;
+		connection->recv_buffer_idx = a->rx_index;
+		connection->send_buffer_idx = a->tx_index;
 		if (a->rx_index == -1 || a->tx_index == -1) {
 			printf("Failed to allocate after waiting\n");
 			ret = 1;
 		}
 	}
 
-	dprintf(h->debug, "rx and tx buffers allocated\n");
+	dprintf(dpc_handle->debug, "rx and tx buffers allocated\n");
 
-	pthread_mutex_unlock(&h->lock);
+	if (ret) goto fail;
 
-	if (ret) {
-		free(*connection);
-	}
+	pthread_mutex_unlock(&dpc_handle->lock);
 
-	return !ret;
+	return connection;
+
+fail:
+	dpc_deallocate_rx_tx(connection);
+	dpc_handle->connections_active--;
+	pthread_mutex_unlock(&dpc_handle->lock);
+	free(connection);
+	return NULL;
 }
 
 extern bool dpc_funq_close_connection(struct dpc_funq_connection *connection)
@@ -234,8 +247,7 @@ extern bool dpc_funq_close_connection(struct dpc_funq_connection *connection)
 	dprintf(connection->dpc_handle->debug, "dpc_close_connection successful\n");
 
 	pthread_mutex_lock(&connection->dpc_handle->lock);
-	dpc_free_buffer(connection->dpc_handle, connection->recv_buffer_idx);
-	dpc_free_buffer(connection->dpc_handle, connection->send_buffer_idx);
+	dpc_deallocate_rx_tx(connection);
 	connection->dpc_handle->connections_active--;
 	pthread_mutex_unlock(&connection->dpc_handle->lock);
 	free(connection);
@@ -548,7 +560,7 @@ static bool dpc_first_recv_data_cmd(struct dpc_funq_connection *connection)
 	return dpc_recv_data_cmd(context);
 }
 
-int dpc_destroy_cmd(funq_handle_t handle)
+static int dpc_destroy_cmd(funq_handle_t handle)
 {
 	struct fun_admin_dpc_req c = {};
 	struct fun_admin_dpc_rsp r = {};
@@ -561,7 +573,7 @@ int dpc_destroy_cmd(funq_handle_t handle)
 			&c.common, &r.common, sizeof(r), 0);
 }
 
-funq_handle_t dpc_admin_queue_init(const char *devname)
+static funq_handle_t dpc_admin_queue_init(const char *devname)
 {
 	/* Admin Q Req */
 	struct fun_admin_queue_req aqreq = {
@@ -591,48 +603,48 @@ funq_handle_t dpc_admin_queue_init(const char *devname)
 	return handle;
 }
 
-bool dpc_funq_init(struct dpc_funq_handle **handle, const char *devname, bool debug)
+struct dpc_funq_handle *dpc_funq_init(const char *devname, bool debug)
 {
-	*handle = calloc(1, sizeof(struct dpc_funq_handle));
+	struct dpc_funq_handle *handle = calloc(1, sizeof(struct dpc_funq_handle));
 
-	if (*handle == NULL) {
+	if (handle == NULL) {
 		printf("err: oom when allocating dpc_funq_handle\n");
-		return false;
+		return NULL;
 	}
 
-	(*handle)->debug = debug;
+	handle->debug = debug;
 
-	if (pthread_mutex_init(&(*handle)->lock, NULL) != 0) {
-		free(*handle);
+	if (pthread_mutex_init(&handle->lock, NULL) != 0) {
+		free(handle);
 		printf("err: failed to initialize pthread mutex\n");
-		return false;
+		return NULL;
 	}
 
-	(*handle)->handle = dpc_admin_queue_init(devname);
+	handle->handle = dpc_admin_queue_init(devname);
 
-	dprintf((*handle)->debug, "admin_queue_init successful\n");
+	dprintf(handle->debug, "admin_queue_init successful\n");
 
-	if (dpc_create_cmd((*handle)->handle) != 0) {
-		free(*handle);
+	if (dpc_create_cmd(handle->handle) != 0) {
+		free(handle);
 		printf("err: failed to run create command\n");
-		return false;
+		return NULL;
 	}
 
-	dprintf((*handle)->debug, "dpc_create_cmd successful\n");
+	dprintf(handle->debug, "dpc_create_cmd successful\n");
 
 	for (int i = 0; i < FUNQ_MAX_DMA_BUFFERS; i++) {
 		(*handle)->buffers[i].dma_addr_local = (uint8_t *)funq_dma_alloc((*handle)->handle, DMA_BUFSIZE_BYTES, &((*handle)->buffers[i].dma_addr_dpu));
 		if (!(*handle)->buffers[i].dma_addr_local) {
 			printf("err: failed to allocate dma buffers\n");
 			dpc_funq_destroy(*handle);
-			return false;
+			return NULL;
 		}
 	}
-	(*handle)->free_buffers_n = FUNQ_MAX_DMA_BUFFERS;
+	handle->free_buffers_n = FUNQ_MAX_DMA_BUFFERS;
 
-	dprintf((*handle)->debug, "DMA buffers allocated\n");
+	dprintf(handle->debug, "DMA buffers allocated\n");
 
-	return true;
+	return handle;
 }
 
 bool dpc_funq_destroy(struct dpc_funq_handle *dpc_handle)
@@ -715,22 +727,22 @@ struct dpc_funq_connection {
 	struct dpc_funq_handle *h;
 };
 
-bool dpc_funq_init(struct dpc_funq_handle **handle, const char *devname, bool debug)
+struct dpc_funq_handle *dpc_funq_init(const char *devname, bool debug)
+{
+	return NULL;
+}
+
+bool dpc_funq_destroy(struct dpc_funq_handle *dpc_handle)
 {
 	return false;
 }
 
-bool dpc_funq_destroy(struct dpc_funq_handle *handle)
+struct dpc_funq_connection *dpc_funq_open_connection(struct dpc_funq_handle *dpc_handle)
 {
-	return false;
+	return NULL;
 }
 
-extern bool dpc_funq_open_connection(struct dpc_funq_connection **c, struct dpc_funq_handle *h)
-{
-	return false;
-}
-
-extern bool dpc_funq_close_connection(struct dpc_funq_connection *c)
+extern bool dpc_funq_close_connection(struct dpc_funq_connection *connection)
 {
 	return false;
 }
