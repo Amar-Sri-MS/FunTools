@@ -297,7 +297,7 @@ def build_input_pipeline(path, frn_info, filters={}):
                 })
         )
 
-    elif source in ['discovery', 'metrics_manager', 'scmscv']:
+    elif source in ['discovery', 'metrics_manager', 'scmscv', 'expansion_rebalance']:
         file_pattern = f'{path}/info*' if resource_type == 'folder' else path
         blocks.extend(
             controller_input_pipeline(frn_info, source, file_pattern,
