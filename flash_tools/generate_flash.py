@@ -597,7 +597,9 @@ def run(arg_action, arg_enroll_cert = None, *args, **kwargs):
             if infile:
                 shutil.copy2(infile, v['source'])
             else:
-                src = config['key_injection'].get(v['source'])
+                src = config.get('key_injection')
+                if src:
+                    src = src.get(v['source'])
                 if src and src['source']:
                     infile = find_file_in_srcdirs(src['source'])
                     if infile:
