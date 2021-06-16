@@ -179,11 +179,11 @@ struct dpc_funq_connection *dpc_funq_open_connection(struct dpc_funq_handle *dpc
 	pthread_mutex_lock(&dpc_handle->lock);
 	dpc_handle->connections_active++;
 
-	dpc_allocate_rx_tx(*connection);
+	dpc_allocate_rx_tx(connection);
 	if (connection->recv_buffer_idx == -1 || connection->send_buffer_idx == -1) {
 		struct dpc_pending_allocation *a = calloc(1, sizeof(struct dpc_pending_allocation));
-		a->rx_index = (*connection)->recv_buffer_idx;
-		a->tx_index = (*connection)->send_buffer_idx;
+		a->rx_index = connection->recv_buffer_idx;
+		a->tx_index = connection->send_buffer_idx;
 		a->next = NULL;
 
 		dprintf(dpc_handle->debug, "waiting for buffers to be available\n");
@@ -633,10 +633,10 @@ struct dpc_funq_handle *dpc_funq_init(const char *devname, bool debug)
 	dprintf(handle->debug, "dpc_create_cmd successful\n");
 
 	for (int i = 0; i < FUNQ_MAX_DMA_BUFFERS; i++) {
-		(*handle)->buffers[i].dma_addr_local = (uint8_t *)funq_dma_alloc((*handle)->handle, DMA_BUFSIZE_BYTES, &((*handle)->buffers[i].dma_addr_dpu));
-		if (!(*handle)->buffers[i].dma_addr_local) {
+		handle->buffers[i].dma_addr_local = (uint8_t *)funq_dma_alloc(handle->handle, DMA_BUFSIZE_BYTES, &(handle->buffers[i].dma_addr_dpu));
+		if (!handle->buffers[i].dma_addr_local) {
 			printf("err: failed to allocate dma buffers\n");
-			dpc_funq_destroy(*handle);
+			dpc_funq_destroy(handle);
 			return NULL;
 		}
 	}
