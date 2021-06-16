@@ -546,6 +546,8 @@ def ingest_techsupport_logs(job_id, file_name, metadata, filters):
             archive_extractor.extract(LOG_DIR)
             LOG_DIR = os.path.splitext(LOG_DIR)[0]
 
+        # TODO(Sourabh): Techsupport archive does not have the manifest
+        # at the root but one level down.
         if not manifest_parser.has_manifest(LOG_DIR):
             folders = next(os.walk(os.path.join(LOG_DIR,'.')))[1]
 
@@ -558,11 +560,19 @@ def ingest_techsupport_logs(job_id, file_name, metadata, filters):
             # storage agent logs collected by node-service since it is the
             # only source for storage agent debug logs.
             manifest = manifest_parser.parse(LOG_DIR)
-            manifest['contents'].extend([
+
+            contents = list()
+            # TODO(Sourabh) Temp workaround for techsupport dumps generated
+            # from S1 chips.
+            for content in manifest['contents']:
+                content = content.replace('platform-agent:archive', 'cclinux:archive')
+                contents.append(content)
+
+            contents.extend([
                 'frn:plaform:DPU::system:storage_agent:textfile:other:*storageagent.log*'
             ])
 
-            _create_manifest(LOG_DIR, manifest['metadata'], manifest['contents'])
+            _create_manifest(LOG_DIR, manifest['metadata'], contents)
 
         # Start the ingestion
         return ingest_handler.start_pipeline(LOG_DIR,

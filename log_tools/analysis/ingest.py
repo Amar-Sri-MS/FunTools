@@ -278,7 +278,12 @@ def build_input_pipeline(path, frn_info, filters={}):
         # nms contains SA<MAC_ID>-storageagent.log whereas system log archive contains storage-agent.log
         file_pattern = f'{path}/*storage?agent.log*' if resource_type == 'folder' else path
         blocks.extend(
-            fun_agent_input_pipeline(frn_info, source, file_pattern)
+            fun_agent_input_pipeline(
+                frn_info,
+                source,
+                file_pattern,
+                file_info_match='SA(?P<system_id>([0-9a-fA-F]:?){12})-'
+            )
         )
 
     elif source in ['platform-agent', 'platform_agent']:
