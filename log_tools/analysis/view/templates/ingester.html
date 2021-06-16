@@ -65,9 +65,9 @@
                             <input type="text" id="tags" name="tags" placeholder="Enter tags" value="{{feedback.tags if feedback else null}}">
                         </div>
                         <hr >
-                        <h4 class="form-title">Ingestion Filters</h4>
+                        <h3>Ingestion Filters</h3>
                         <div class="form-group" style="flex-direction: column;">
-                            <label class="form-title">By Time range (in local timezone)<span class="info">Ingests all logs if no timeframe is provided</span></label>
+                            <h4>By Time range (in local timezone)<span class="info">Ingests all logs if no timeframe is provided</span></h4>
                             <div class="form-group">
                                 <div style="margin-right: 10px;">
                                     <label>Start time</label>
@@ -92,46 +92,46 @@
                             </div>
                         </div>
                         <div class="form-group" style="flex-direction: column;">
-                            <label class="form-title">By Source<span class="info">Ingests all logs if nothing selected</span></label>
+                            <h4>By Source<span class="info">Ingests all logs if nothing selected</span></h4>
                             <div>
                                 <label>DPU:</label>
-                                <label>
+                                <label class="source-title">
                                     <input type="checkbox" name="sources" id="funos" value="funos">FunOS
                                 </label>
-                                <label>
+                                <label class="source-title">
                                     <input type="checkbox" name="sources" id="storage_agent" value="storage_agent">Storage Agent
                                 </label>
-                                <label>
+                                <label class="source-title">
                                     <input type="checkbox" name="sources" id="platform_agent" value="platform_agent">Platform Agent
                                 </label>
                             </div>
                             <div>
                                 <label>Storage services:</label>
-                                <label>
+                                <label class="source-title">
                                     <input type="checkbox" name="sources" id="apigateway" value="apigateway">Apigateway
                                 </label>
-                                <label>
+                                <label class="source-title">
                                     <input type="checkbox" name="sources" id="dataplacement" value="dataplacement">Dataplacement
                                 </label>
-                                <label>
+                                <label class="source-title">
                                     <input type="checkbox" name="sources" id="discovery" value="discovery">Discovery
                                 </label>
-                                <label>
+                                <label class="source-title">
                                     <input type="checkbox" name="sources" id="kafka" value="kafka">Kafka
                                 </label>
-                                <label>
+                                <label class="source-title">
                                     <input type="checkbox" name="sources" id="metrics_manager" value="metrics_manager">Metrics Manager
                                 </label>
-                                <label>
+                                <label class="source-title">
                                     <input type="checkbox" name="sources" id="metrics_server" value="metrics_server">Metrics Server
                                 </label>
-                                <label>
+                                <label class="source-title">
                                     <input type="checkbox" name="sources" id="scmscv" value="scmscv">SCMSCV
                                 </label>
-                                <label>
+                                <label class="source-title">
                                     <input type="checkbox" name="sources" id="setup_db" value="setup_db">Setup DB
                                 </label>
-                                <label>
+                                <label class="source-title">
                                     <input type="checkbox" name="sources" id="sns" value="sns">SNS
                                 </label>
                             </div>

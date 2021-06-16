@@ -472,13 +472,13 @@
         if (totalResults) {
             anchorPageInfo += `(${totalResults} results)`;
         }
-        anchorsPageEl.innerText = anchorPageInfo;
-        anchorsButtonContainer.style.display = "flex";
 
         if (tableRows.length === 0) {
             anchorTableBodyElement.innerHTML = "<div>No results</div>";
             return;
         }
+        anchorsPageEl.innerText = anchorPageInfo;
+        anchorsButtonContainer.style.display = "flex";
         anchorTableBodyElement.innerHTML = tableRows.join("\n");
     }
 
