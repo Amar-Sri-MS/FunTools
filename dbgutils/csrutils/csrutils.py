@@ -1101,26 +1101,15 @@ def connect(dut_name, mode, force_connect=False):
         if dut_pcie_info is None:
             print('Failed to get pcie connection details!')
             return None
-        if dut_pcie_info[0] is False:
-            pcie_ccu_bar = dut_pcie_info[1]
-            pcie_probe_ip = dut_pcie_info[2]
-            pcie_mem_offset = dut_pcie_info[3]
-            status = dbgprobe().connect(mode='pcie', bmc_board=False,
-                                        probe_ip_addr = pcie_probe_ip,
-                                        probe_id = pcie_ccu_bar,
-                                        chip_type=chip_type,
-                                        slave_addr = pcie_mem_offset)
-        else:
-            bmc_ip = dut_pcie_info[1]
-            pcie_ccu_bar = dut_pcie_info[2]
-            pcie_probe_ip = dut_pcie_info[3]
-            pcie_mem_offset = dut_pcie_info[4]
-            status = dbgprobe().connect(mode='pcie', bmc_board=False,
-                                        probe_ip_addr=pcie_probe_ip,
-                                        probe_id = pcie_ccu_bar,
-                                        chip_type=chip_type,
-                                        slave_addr = pcie_mem_offset)
-
+        pcie_ccu_bar = dut_pcie_info[0]
+        pcie_probe_ip = dut_pcie_info[1]
+        pcie_mem_offset = dut_pcie_info[2]
+        chip_type = dut_pcie_info[3]
+        status = dbgprobe().connect(mode='pcie', bmc_board=False,
+                                    probe_ip_addr = pcie_probe_ip,
+                                    probe_id = pcie_ccu_bar,
+                                    chip_type=chip_type,
+                                    slave_addr = pcie_mem_offset)
     else:
         print('Mode: {} is not yet supported!'.format(mode))
         return

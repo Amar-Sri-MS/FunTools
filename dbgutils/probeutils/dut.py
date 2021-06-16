@@ -94,20 +94,14 @@ class dut(object):
             logger.error('dut:{} does not exist in dut db!'.format(dut))
             logger.info('Valid duts: {}'.format(self.data))
             return None
-        bmc = True
-        bmc_ip = dut_cfg.get('bmc_ip', None)
-        if not bmc_ip:
-            bmc = False
+        chip_type = dut_cfg.get('chip_type', None)
         pcie_ccu_bar = dut_cfg.get('pcie_ccu_bar', None)
         pcie_probe_ip = dut_cfg.get('pcie_probe_ip', None)
         pcie_mem_offset = dut_cfg.get('pcie_mem_offset', 0)
         if not pcie_ccu_bar or not pcie_probe_ip:
             logger.error('Invalid dut db for dut: {}'.format(dut))
             return None
-        if bmc is True:
-            return (bmc, bmc_ip, pcie_ccu_bar, pcie_probe_ip, pcie_mem_offset)
-        else:
-            return (bmc, pcie_ccu_bar, pcie_probe_ip, pcie_mem_offset)
+        return (pcie_ccu_bar, pcie_probe_ip, pcie_mem_offset, chip_type)
 
 def dut_cfg_test():
     duts = dut()
