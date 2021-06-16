@@ -47,8 +47,8 @@ QA_STATIC_ENDPOINT = 'http://integration.fungible.local/static/logs'
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--ingest_type', help='Ingestion type')
-    parser.add_argument('job_id', help='QA Job ID')
+    parser.add_argument('--ingest_type', help='Ingestion type', choices=['qa', 'upload'])
+    parser.add_argument('job_id', help='Job ID')
     parser.add_argument('--test_index', type=int, help='Test index of the QA job', default=0)
     parser.add_argument('--tags', nargs='*', help='Tags for the ingestion', default=[])
     parser.add_argument('--start_time', type=int, help='Epoch start time to filter logs', default=None)
@@ -106,7 +106,7 @@ def main():
         })
     finally:
         # Clean up the downloaded files
-        clean_up(job_id)
+        clean_up(LOG_ID)
 
         # Backing up the logs generated during ingestion
         logger.backup_ingestion_logs(LOG_ID)
@@ -396,7 +396,7 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
     es_metadata = ElasticsearchMetadata()
     LOG_ID = _get_log_id(job_id, ingest_type='qa', test_index=test_index)
 
-    path = f'{DOWNLOAD_DIRECTORY}/{job_id}'
+    path = f'{DOWNLOAD_DIRECTORY}/{LOG_ID}'
     file_path = os.path.abspath(os.path.dirname(__file__))
     QA_LOGS_DIRECTORY = '/regression/Integration/fun_test/web/static/logs'
     found_logs = False
@@ -614,9 +614,9 @@ def _update_metadata(metadata_handler, log_id, status, additional_data={}):
     return metadata_handler.update(log_id, metadata)
 
 
-def clean_up(job_id):
-    """ Deleting the downloaded directory for the job_id """
-    path = os.path.join(DOWNLOAD_DIRECTORY, job_id)
+def clean_up(log_id):
+    """ Deleting the downloaded directory for the log_id """
+    path = os.path.join(DOWNLOAD_DIRECTORY, log_id)
     if os.path.exists(path):
         logging.info(f'Cleaning up downloaded files from: {path}')
         # Deletes the entire directory with its children
