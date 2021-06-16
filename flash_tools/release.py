@@ -341,11 +341,15 @@ def main():
                     '--signed', _rootfs('fvht.signed', rootfs) ]
             subprocess.call(cmd)
 
-        with open(eeprom_list) as f:
-            eeproms = json.load(f)
-            for skuid, value in eeproms.items():
-                er.replace('qspi_image_hw.bin',
-                    'qspi_image_hw.bin.{}'.format(skuid), value['filename'] + '.bin')
+        try:
+            output_image = config['output_format']['output']
+            with open(eeprom_list) as f:
+                eeproms = json.load(f)
+                for skuid, value in eeproms.items():
+                    er.replace('{}.bin'.format(output_image),
+                        '{}.bin.{}'.format(output_image, skuid), value['filename'] + '.bin')
+        except:
+            pass
 
         os.chdir(curdir)
 
@@ -393,14 +397,14 @@ def main():
 
             with open("image.json") as f:
                 images = json.load(f)
-                bundle_images.extend([key for key,value in images['signed_images'].items()
+                bundle_images.extend([key for key,value in images.get('signed_images',{}).items()
                                     if not value.get("no_export", False)])
-                bundle_images.extend([key for key,value in images['signed_meta_images'].items()
+                bundle_images.extend([key for key,value in images.get('signed_meta_images', {}).items()
                                     if not value.get("no_export", False)])
 
             with open("mmc_image.json") as f:
                 images = json.load(f)
-                bundle_images.extend([key for key,value in images['generated_images'].items()
+                bundle_images.extend([key for key,value in images.get('generated_images',{}).items()
                                     if not value.get("no_export", False)])
 
             bundle_images.extend([
