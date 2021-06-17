@@ -156,6 +156,11 @@ def create_file(filename, section="signed_images"):
     if config.get(section):
         image = config[section].get(filename)
         if image:
+            delete_after_sign = image.get('delete_after_sign')
+
+            if delete_after_sign and os.path.exists(filename):
+                return filename
+
             # process indirection to keybag
             if 'key_index' in image:
                 # retrieve name of key from keybag specification
@@ -166,7 +171,13 @@ def create_file(filename, section="signed_images"):
                 # use the first element in spec -- there's only one key bag now.
                 key_list = next(iter(key_bag_spec.values()))
                 image['key'] = key_list['keys'][image['key_index']]
-            return gen_fw_image(filename, image)
+            ret = gen_fw_image(filename, image)
+
+            if delete_after_sign:
+                os.remove(image['source'])
+
+            return ret
+
     return None
 
 def read_file_and_pad(filename, padding, optional, minsize, create):
