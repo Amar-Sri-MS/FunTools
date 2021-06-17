@@ -100,7 +100,7 @@ def main():
 
     parser.add_argument('config', nargs='*', help='Configuration file(s)')
     parser.add_argument('--action',
-        choices={'all', 'prepare', 'sdk-prepare', 'release', 'certificate', 'sign', 'image', 'tarball', 'bundle', 'eeprbundle', 'mfginstall', 'mfgtarball'},
+        choices={'all', 'prepare', 'sdk-prepare', 'release', 'sdk-release', 'certificate', 'sign', 'image', 'tarball', 'bundle', 'eeprbundle', 'mfginstall', 'mfgtarball'},
         default='all',
         help='Action to be performed on the input files')
     parser.add_argument('--sdkdir', default=os.getcwd(), help='SDK root directory')
@@ -130,6 +130,8 @@ def main():
             return True
         elif args.action == 'release':
             return action in ['sign', 'image', 'tarball', 'bundle', 'eeprbundle', 'mfginstall', 'mfgtarball']
+        elif args.action == 'sdk-release':
+            return action in ['sign', 'image', 'bundle']
         else:
             return action == args.action
 
