@@ -1,0 +1,55 @@
+{
+    "signed_images": {
+        "funos.signed.bin": {
+            "source": "funos-f1.stripped",
+            "version": 1,
+            "fourcc": "fun1",
+            "cert": "",
+            "customer_cert": "",
+            "key_index": 0,
+            "description": "",
+            "no_export": true
+        },
+        "boot.img.signed": {
+            "source": "boot.img",
+            "version": 1,
+            "fourcc": "boot",
+            "cert": "",
+            "customer_cert": "",
+            "key_index": 0,
+            "description": "",
+            "no_export": true
+        },
+        "fgpt.signed": {
+            "source": "fgpt.unsigned",
+            "version": 1,
+            "fourcc": "fgpt",
+            "cert": "",
+            "customer_cert": "",
+            "key_index": 0,
+            "description": "",
+            "delete_after_sign": true
+        },
+        "fvos.signed": {
+            "source": "fvos.unsigned",
+            "version": 1,
+            "fourcc": "fvos",
+            "cert": "",
+            "customer_cert": "",
+            "key_index": 0,
+            "description": "",
+            "delete_after_sign": true
+        },
+        "FVHT": {
+            "source": "INVALID_TO_BE_OVERWRITTEN",
+            "version": 1,
+            "fourcc": "fvht",
+            "cert": "",
+            "customer_cert": "",
+            "key_index": 0,
+            "description": "",
+            "no_export": true,
+            "delete_after_sign": true
+        }
+    }
+}
