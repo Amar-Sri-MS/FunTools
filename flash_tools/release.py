@@ -100,7 +100,7 @@ def main():
 
     parser.add_argument('config', nargs='*', help='Configuration file(s)')
     parser.add_argument('--action',
-        choices={'all', 'prepare', 'release', 'certificate', 'sign', 'image', 'tarball', 'bundle', 'eeprbundle', 'mfginstall', 'mfgtarball'},
+        choices={'all', 'prepare', 'sdk-prepare', 'release', 'certificate', 'sign', 'image', 'tarball', 'bundle', 'eeprbundle', 'mfginstall', 'mfgtarball'},
         default='all',
         help='Action to be performed on the input files')
     parser.add_argument('--sdkdir', default=os.getcwd(), help='SDK root directory')
@@ -134,7 +134,7 @@ def main():
             return action == args.action
 
     if args.default_cfg:
-        if wanted('prepare'):
+        if wanted('prepare') or wanted('sdk-prepare'):
             args.config = [
                 'bin/flash_tools/qspi_config_fungible.json',
                 'bin/flash_tools/mmc_config_fungible.json',
@@ -153,7 +153,7 @@ def main():
     eeprom_list = '{}_eeprom_list.json'.format(args.chip)
     fvht_list_file = None
 
-    if wanted('prepare'):
+    if wanted('prepare') or wanted('sdk-prepare'):
         gf.merge_configs(config, json.loads(EEPROM_CONFIG_OVERRIDE), only_if_present=True)
         gf.merge_configs(config, json.loads(HOST_FIRMWARE_CONFIG_OVERRIDE), only_if_present=True)
         gf.merge_configs(config, json.loads(FUNOS_CONFIG_OVERRIDE.format(funos_appname=funos_appname)), only_if_present=True)
@@ -181,7 +181,7 @@ def main():
 
     curdir = os.getcwd()
 
-    if wanted('prepare'):
+    if wanted('prepare') or wanted('sdk-prepare'):
         # paths to application binaries in SDK tree
         paths = [ "bin",
                 "FunSDK/sbpfw/roms",
@@ -235,11 +235,13 @@ def main():
             except FileNotFoundError:
                 pass
 
-        shutil.copy2(funos_appname, funos_appname + ".mfginstall")
-        shutil.copy2(funos_appname, funos_appname + ".norinstall")
+        if wanted('prepare'):
+            # these files are not needed in sdk-prepare
+            shutil.copy2(funos_appname, funos_appname + ".mfginstall")
+            shutil.copy2(funos_appname, funos_appname + ".norinstall")
 
-        for chip_file in chip_specific_files:
-            shutil.copy2(os.path.join(args.sdkdir, chip_file), os.path.basename(chip_file))
+            for chip_file in chip_specific_files:
+                shutil.copy2(os.path.join(args.sdkdir, chip_file), os.path.basename(chip_file))
 
         bld_info = os.path.join(args.sdkdir, 'build_info.txt')
         v = args.force_version
