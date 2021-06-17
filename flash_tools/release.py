@@ -293,8 +293,6 @@ def main():
         with open("image.json", "w") as f:
             json.dump(config, f, indent=4)
 
-        gf.run('key_injection')
-
         os.unlink(fvht_list_file.name)
         os.chdir(curdir)
 
