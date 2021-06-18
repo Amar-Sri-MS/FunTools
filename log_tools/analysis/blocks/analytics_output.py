@@ -11,7 +11,7 @@ import requests
 
 from elasticsearch7 import Elasticsearch
 from elasticsearch7.helpers import parallel_bulk
-from urllib.parse import quote_plus
+from urllib.parse import quote
 
 from blocks.block import Block
 import config_loader
@@ -242,7 +242,8 @@ class AnalyticsOutput(Block):
             # Removing special characters
             # TODO(Sourabh): Better approach for handling special characters
             query = '"{}"'.format(msg['line'].replace('\\','').replace('"',' ').replace('\'', '!\'')).replace('!', '!!')
-            log_view_url = f'{self.log_view_base_url}/search?query={quote_plus(query)}'
+            search_query = { 'query': query.strip() }
+            log_view_url = f'{self.log_view_base_url}?search={quote(json.dumps(search_query))}'
 
             most_duplicated_entries_list.append({
                 'count': entry['count'],

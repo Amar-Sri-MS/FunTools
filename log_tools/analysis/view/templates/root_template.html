@@ -8,7 +8,9 @@
 <body>
     {% include 'nav_bar.html' ignore missing %}
     <div class="content">
-        <a href="/ingest">Click here to ingest logs from QA dashboard</a>
+        <a href="/ingest?ingest_type=qa">Click here to ingest logs from QA dashboard</a>
+        <br />
+        <a href="/ingest?ingest_type=upload">Click here to upload techsupport archive</a>
     </div>
     <div class="content">
         <h3>Ingested Logs</h3>
@@ -18,6 +20,9 @@
 
             <input type="checkbox" id="fod" name="job_filter" value="fod" onclick="onSelectFilter(this);">
             <label for="fod">Fun-on-demand jobs</label>
+
+            <input type="checkbox" id="techsupport" name="job_filter" value="techsupport" onclick="onSelectFilter(this);">
+            <label for="techsupport">Techsupport jobs</label>
         </div>
         <table class="index">
             <thead>
@@ -57,7 +62,8 @@
     // filter to log id pattern mapping
     const filterMapping = {
         "qa": ["log_qa-"],
-        "fod": ["log_fond-job", "log_fod-"]
+        "fod": ["log_fond-job", "log_fod-"],
+        "techsupport": ["log_techsupport-"]
     };
 
     window.onload = function() {

@@ -29,6 +29,12 @@ def parse(dir):
     return manifest
 
 
+def has_manifest(dir):
+    """ Returns True if manifest file exists in the given directory """
+    manifest_path = os.path.join(dir, MANIFEST_FILE_NAME)
+    return os.path.exists(manifest_path)
+
+
 def _format_manifest(manifest):
     contents = list()
     for content in manifest['contents']:
