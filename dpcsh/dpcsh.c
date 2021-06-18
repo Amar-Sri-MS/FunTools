@@ -511,18 +511,21 @@ static uint8_t *_b64_to_bin(char *line, ssize_t /* out */ *size)
 	return binbuf;
 }
 
-struct fun_json *_buffer2json(const uint8_t *buffer, size_t max)
+struct fun_json *_buffer2json(const uint8_t *buffer, size_t max, size_t *read_bytes)
 {
 	struct fun_json *json = NULL;
 	size_t r;
 
+	if (read_bytes == NULL)
+		read_bytes = &r;
+
 	if (!buffer)
 		return NULL;
 
-	r = fun_json_binary_serialization_size(buffer, max);
-	if (r <= max) {
+	*read_bytes = fun_json_binary_serialization_size(buffer, max);
+	if (*read_bytes <= max) {
 		json = fun_json_create_from_binary_with_options(buffer,
-				r,
+				*read_bytes,
 				true);
 	}
 
@@ -734,8 +737,8 @@ bool dpcsocket_init(struct dpcsock *sock)
 	}
 
 	if(sock->mode == SOCKMODE_FUNQ) {
-		sock->funq_connection = malloc(sizeof(struct dpc_funq_connection));
-		return dpc_funq_init(sock->funq_connection, sock->socket_name, _debug_log);
+		sock->funq_handle = dpc_funq_init(sock->socket_name, _debug_log);
+		return sock->funq_handle != NULL;
 	}
 
 	return true;
@@ -744,8 +747,8 @@ bool dpcsocket_init(struct dpcsock *sock)
 static void dpcsocket_destroy(struct dpcsock *sock)
 {
 	if(sock->mode == SOCKMODE_FUNQ) {
-		dpc_funq_destroy(sock->funq_connection);
-		free(sock->funq_connection);
+		dpc_funq_destroy(sock->funq_handle);
+		free(sock->funq_handle);
 	}
 }
 
@@ -774,6 +777,14 @@ struct dpcsock_connection *dpcsocket_connect(struct dpcsock *sock)
 		connection->nvme_session_id = (0xFFFF & (nvme_session_counter++)) + ((0xFFFF & getpid()) << 16);
 		if (_debug_log) printf("NVMe session id = %" PRIu32 "\n", connection->nvme_session_id);
 		return connection;
+	}
+
+	if (sock->mode == SOCKMODE_FUNQ) {
+		connection->funq_connection = dpc_funq_open_connection(sock->funq_handle);
+		if (!connection->funq_connection) {
+			free(connection);
+			return NULL;
+		}
 	}
 
 	/* unused == no-op */
@@ -806,6 +817,13 @@ void dpcsocket_close(struct dpcsock_connection *connection)
 	if (connection->socket->mode != SOCKMODE_NVME && connection->socket->mode != SOCKMODE_FUNQ) {
 		close(connection->fd);
 	}
+
+	if (connection->socket->mode == SOCKMODE_FUNQ) {
+		if (!dpc_funq_close_connection(connection->funq_connection)) {
+			perror("dpc_funq_close_connection");
+		}
+	}
+
 	free(connection);
 }
 
@@ -831,7 +849,7 @@ static struct fun_json *_read_from_sock(struct dpcsock_connection *connection, b
 		return NULL;
 	}
 
-	json = _buffer2json(data, data_size); /* ignores NULL */
+	json = _buffer2json(data, data_size, NULL); /* ignores NULL */
 	free(deallocate_ptr);
 
 	return json;
@@ -1018,7 +1036,7 @@ static bool _is_loopback_command(struct dpcsock *sock, char *line,
 	if (buf) {
 		struct fun_json *json = NULL;
 
-		json = _buffer2json(buf, (size_t) r);
+		json = _buffer2json(buf, (size_t) r, NULL);
 		free(buf);
 
 		if (json) {
@@ -1156,9 +1174,21 @@ static bool _write_response(struct fun_json *output, struct dpcsock_connection *
 static void _recv_callback(struct fun_ptr_and_size response, void *context)
 {
 	struct dpcsock_connection *cmd_sock = (struct dpcsock_connection *)context;
-	struct fun_json *output = _buffer2json(response.ptr, response.size);
-	_write_response(output, cmd_sock);
-	fun_json_release(output);
+	struct fun_json *output;
+	size_t position = 0;
+	size_t read_bytes;
+
+	do {
+		output = _buffer2json(response.ptr + position, response.size - position, &read_bytes);
+		if (!output) {
+			perror("*** _recv_callback output is NULL");
+			return;
+		}
+
+		_write_response(output, cmd_sock);
+		fun_json_release(output);
+		position += read_bytes;
+	} while (position < response.size);
 }
 
 static bool _write_to_sock(struct fun_json *json,
@@ -1177,8 +1207,7 @@ static bool _write_to_sock(struct fun_json *json,
 		connection->nvme_seq_num++;
 		ok = _write_to_nvme(pas, connection);
 	} else if (socket->mode == SOCKMODE_FUNQ) {
-		ok = dpc_funq_send(pas, socket->funq_connection,
-			_recv_callback, connection->funq_callback_context);
+		ok = dpc_funq_send(connection->funq_connection, pas);
 	} else {
 		/* base64 case */
 		ok = _base64_write(connection, pas.ptr, pas.size);
@@ -1244,7 +1273,7 @@ static void _do_session(struct dpcsock_connection *funos,
 		FD_ZERO(&fds);
 		FD_SET(cmd->fd, &fds);
 		nfds = cmd->fd;
-		if (funos->socket->mode != SOCKMODE_TERMINAL && funos->socket->mode != SOCKMODE_NVME) {
+		if (funos->socket->mode != SOCKMODE_TERMINAL && funos->socket->mode != SOCKMODE_NVME && funos->socket->mode != SOCKMODE_FUNQ) {
 			FD_SET(funos->fd, &fds);
 
 			if (funos->fd > nfds)
@@ -1318,7 +1347,9 @@ static void open_connections(struct dpcsock *funos_socket,
 	*funos = dpcsocket_connect(funos_socket);
 	*cmd = dpcsocket_connect(cmd_socket);
 	if (funos_socket->mode == SOCKMODE_FUNQ) {
-		(*funos)->funq_callback_context = *cmd;
+		if (!dpc_funq_register_receive_callback((*funos)->funq_connection, _recv_callback, *cmd)) {
+			printf("Can't register a callback for libfunq\n");
+		}
 	}
 }
 
@@ -1786,7 +1817,7 @@ int main(int argc, char *argv[])
 				funos_sock.cmd_timeout = atoi(DEFAULT_NVME_CMD_TIMEOUT_MS);
 			}
 		}
-		/* Use libfunq otherwsie */
+		/* Use libfunq otherwise */
 		else {
 			/* default connection to FunOS posix simulator dpcsock */
 			funos_sock.mode = SOCKMODE_IP;

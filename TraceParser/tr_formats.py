@@ -7,7 +7,9 @@
 import re
 
 
-class BaseTF:
+class BaseTF(object):
+
+    __slots__ = ['tf_type']
     def __init__(self, tf_type):
         self.tf_type = tf_type
 
@@ -21,39 +23,39 @@ class TF2(BaseTF):
 
 
 class TF3(BaseTF):
+    #
+    # Pattern for TF3 messages. These are samples of the TF3 messages
+    # that we need to match.
+    #
+    # 1.046: 82 00003333 33333333 3334FE00  TF3 ic[0]=ni  tt=tu1 te=1 tm=1      va[64]=0x3333333333333333
+    # 2.039: 26                   00000000  TF3 ic[0]=ni  tt=nt  te=0 tm=0      va[08]=              0x00
+    # 2.133: 34          00000003 33333F80  TF3 ic[3]=ni  tt=tu2 te=1 tm=1      va[16]=            0x3333
+    # 2.339: 26                   00000000  TF3 ic[0]=?   tt=nt  te=0 tm=0      va[08]=              0x00
+    #
+    # Note that the last example trace has a inscomp of ? - this only
+    # occurs during overflow or TMOAS when the frame gets messed up.
+    #
+    pattern = re.compile(r'^\s*\d+\.\d+: '
+                         r'([\s0-9A-F]+)'
+                         r'TF3\s+'
+                         r'ic\[(\d+)\]=([\w?]+)\s+'
+                         r'tt=(\w+)\s+'
+                         r'te=(\d)\s+'
+                         r'tm=(\d)\s+'
+                         r'va\[(\d+)\]=\s*0x([0-9A-F]+)')
+
+    __slots__ = ['inscomp', 'ttype', 'addr']
     def __init__(self):
         BaseTF.__init__(self, 3)
         self.inscomp = None
         self.ttype = None
         self.addr = None
-        self.vpid = None
-
-        #
-        # Pattern for TF3 messages. These are samples of the TF3 messages
-        # that we need to match.
-        #
-        # 1.046: 82 00003333 33333333 3334FE00  TF3 ic[0]=ni  tt=tu1 te=1 tm=1      va[64]=0x3333333333333333
-        # 2.039: 26                   00000000  TF3 ic[0]=ni  tt=nt  te=0 tm=0      va[08]=              0x00
-        # 2.133: 34          00000003 33333F80  TF3 ic[3]=ni  tt=tu2 te=1 tm=1      va[16]=            0x3333
-        # 2.339: 26                   00000000  TF3 ic[0]=?   tt=nt  te=0 tm=0      va[08]=              0x00
-        #
-        # Note that the last example trace has a inscomp of ? - this only
-        # occurs during overflow or TMOAS when the frame gets messed up.
-        #
-        self.pattern = re.compile(r'^\s*\d+\.\d+: '
-                                  r'([\s0-9A-F]+)'
-                                  r'TF3\s+'
-                                  r'ic\[(\d+)\]=([\w?]+)\s+'
-                                  r'tt=(\w+)\s+'
-                                  r'te=(\d)\s+'
-                                  r'tm=(\d)\s+'
-                                  r'va\[(\d+)\]=\s*0x([0-9A-F]+)')
 
     def init_from_msg(self, msg):
         """
         Returns a TF3 object with information from the parsed message.
         """
-        match = self.pattern.match(msg)
+        match = TF3.pattern.match(msg)
         if match:
             self.inscomp = match.group(3)
             self.ttype = match.group(4)

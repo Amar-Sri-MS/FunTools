@@ -14,8 +14,6 @@ import time
 
 sys.path.append('.')
 
-from pathlib import Path
-
 import pipeline
 import logger
 
@@ -29,9 +27,9 @@ def main():
     parser.add_argument('build_id', help='Unique build ID')
     parser.add_argument('path', help='Path to the logs directory or the log archive')
     parser.add_argument('--output', help='Output block type', default='ElasticOutput')
-    parser.add_argument('-start_time', type=int, help='Epoch start time to filter logs during ingestion', default=None)
-    parser.add_argument('-end_time', type=int, help='Epoch end time to filter logs during ingestion', default=None)
-    parser.add_argument('-sources', nargs='*', help='Sources to filter the logs during ingestion', default=None)
+    parser.add_argument('--start_time', type=int, help='Epoch start time to filter logs during ingestion', default=None)
+    parser.add_argument('--end_time', type=int, help='Epoch end time to filter logs during ingestion', default=None)
+    parser.add_argument('--sources', nargs='*', help='Sources to filter the logs during ingestion', default=None)
 
     args = parser.parse_args()
 
@@ -82,7 +80,7 @@ def start_pipeline(base_path, build_id, filters={}, metadata={}, output_block='E
     # Flag to determine if the ingestion is partial.
     # This would let users to ingest logs from the same job
     # from other time frames.
-    is_partial_ingestion = True if filters.get('include') else False
+    is_partial_ingestion = True if _has_ingestion_filters(filters) else False
 
     es_metadata = ElasticsearchMetadata()
     es_metadata.update(LOG_ID, {
@@ -212,22 +210,25 @@ def parse_manifest(path, parent_frn={}, filters={}):
                     archive_extractor.extract(content_path)
 
                 # Build input pipeline by parsing the manifest file in the archive
-                content_pipeline_cfg, content_metadata = parse_manifest(resource_path, frn_info)
-                content_pipeline_cfg, content_metadata = parse_manifest(resource_path, frn_info, filters)
+                if manifest_parser.has_manifest(resource_path):
+                    content_pipeline_cfg, content_metadata = parse_manifest(resource_path, frn_info, filters)
+                    pipeline_cfg.extend(content_pipeline_cfg)
 
-                pipeline_cfg.extend(content_pipeline_cfg)
-                # TODO(Sourabh): Need to store metadata properly based on each archive.
-                # Attempting to create a unique key so that the metadata from
-                # different manifest files do not get overridden.
-                metadata_key = '{}_{}_{}_{}_{}'.format(frn_info['namespace'],
-                                                    frn_info['system_type'],
-                                                    frn_info['system_id'],
-                                                    frn_info['component'],
-                                                    frn_info['source'])
-                metadata = {
-                    **metadata,
-                    metadata_key: content_metadata
-                }
+                    # TODO(Sourabh): Need to store metadata properly based on each archive.
+                    # Attempting to create a unique key so that the metadata from
+                    # different manifest files do not get overridden.
+                    metadata_key = '{}_{}_{}_{}_{}'.format(frn_info['namespace'],
+                                                        frn_info['system_type'],
+                                                        frn_info['system_id'],
+                                                        frn_info['component'],
+                                                        frn_info['source'])
+                    metadata = {
+                        **metadata,
+                        metadata_key: content_metadata
+                    }
+                else:
+                    frn_info['resource_type'] = 'folder'
+                    content_path = resource_path
 
             # Check for logs in the folder or textfile based on the source
             if frn_info['resource_type'] == 'folder' or frn_info['resource_type'] == 'textfile':
@@ -277,7 +278,12 @@ def build_input_pipeline(path, frn_info, filters={}):
         # nms contains SA<MAC_ID>-storageagent.log whereas system log archive contains storage-agent.log
         file_pattern = f'{path}/*storage?agent.log*' if resource_type == 'folder' else path
         blocks.extend(
-            fun_agent_input_pipeline(frn_info, source, file_pattern)
+            fun_agent_input_pipeline(
+                frn_info,
+                source,
+                file_pattern,
+                file_info_match='SA(?P<system_id>([0-9a-fA-F]:?){12})-'
+            )
         )
 
     elif source in ['platform-agent', 'platform_agent']:
@@ -296,7 +302,7 @@ def build_input_pipeline(path, frn_info, filters={}):
                 })
         )
 
-    elif source in ['discovery', 'metrics_manager', 'scmscv']:
+    elif source in ['discovery', 'metrics_manager', 'scmscv', 'expansion_rebalance']:
         file_pattern = f'{path}/info*' if resource_type == 'folder' else path
         blocks.extend(
             controller_input_pipeline(frn_info, source, file_pattern,
@@ -412,6 +418,25 @@ def _generate_unique_id(source, system_id):
     time = datetime.datetime.now().timestamp()
     unique_id = f'{source}_{system_id}_{time}'
     return unique_id
+
+
+def _has_ingestion_filters(filters):
+    """ Check if any filters are applied for ingestion """
+    include = filters.get('include', None)
+    if not include:
+        return False
+
+    time_filters = include.get('time')
+    if not time_filters:
+        return False
+
+    start_time, end_time = time_filters
+    if not start_time and not end_time:
+        return False
+
+    source_filters = include.get('sources')
+    if not source_filters or len(source_filters) == 0:
+        return False
 
 
 def _should_ingest_source(source, source_filters=[]):

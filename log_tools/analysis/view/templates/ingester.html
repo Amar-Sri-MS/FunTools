@@ -4,31 +4,70 @@
         <!-- Datepicker dependencies -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.37/css/bootstrap-datetimepicker.min.css">
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+
+        <!-- Dropzone uploader dependencies -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.4.0/min/dropzone.min.css"/>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.4.0/min/basic.min.css"/>
+
         <link rel="stylesheet" type="text/css" href="/static/css/index.css">
+        <link rel="stylesheet" type="text/css" href="/static/css/ingester.css">
     </head>
     <body>
         {% include "nav_bar.html" ignore missing %}
         <div class="center-align">
-            <h3>Ingest logs from QA dashboard</h3>
             <div class="container row">
                 <div style="width: 100%; min-width: 60%;">
                     <form action="/ingest" onsubmit="return onSubmit(this)" method="POST">
-                        <div class="form-group">
-                            <label>QA Job ID</label>
-                            <input type="text" id="job_id" name="job_id" placeholder="Enter the JOB ID" value="{{feedback.job_id if feedback else null}}">
-                        </div>
-                        <div class="form-group">
-                            <label>QA Test Index (Default is 0)</label>
-                            <input type="text" id="test_index" name="test_index" placeholder="Enter the Test Index" value="{{feedback.test_index if feedback else 0}}">
-                        </div>
+                        <h3 class="form-group">
+                            <label>Ingest logs from</label>
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="ingest_type"
+                                    value="qa"
+                                    {{"checked" if ingest_type == "qa" else ""}}
+                                    onchange="onChangeIngestType(this)"
+                                />
+                                QA
+                            </label>
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="ingest_type"
+                                    value="upload"
+                                    {{"checked" if ingest_type == "upload" else ""}}
+                                    onchange="onChangeIngestType(this)"
+                                />
+                                Upload techsupport archive
+                            </label>
+                        </h3>
+                        {% if ingest_type == "qa" %}
+                            <div class="form-group">
+                                <label>QA Job ID</label>
+                                <input type="text" id="job_id" name="job_id" placeholder="Enter the JOB ID" value="{{feedback.job_id if feedback else null}}">
+                            </div>
+                            <div class="form-group">
+                                <label>QA Test Index (Default is 0)</label>
+                                <input type="text" id="test_index" name="test_index" placeholder="Enter the Test Index" value="{{feedback.test_index if feedback else 0}}">
+                            </div>
+                        {% elif ingest_type == "upload" %}
+                            <div class="form-group">
+                                <label>Job ID</label>
+                                <input type="text" id="job_id" name="job_id" placeholder="Enter the JOB ID" value="{{feedback.job_id if feedback else null}}">
+                            </div>
+                            <div class="form-group">
+                                <div class="dropzone" id="uploader"></div>
+                                <input type="text" id="filename" name="filename" hidden />
+                            </div>
+                        {% endif %}
                         <div class="form-group">
                             <label>Enter tags (comma separated)</label>
                             <input type="text" id="tags" name="tags" placeholder="Enter tags" value="{{feedback.tags if feedback else null}}">
                         </div>
                         <hr >
-                        <h4 class="form-title">Ingestion Filters</h4>
+                        <h3>Ingestion Filters</h3>
                         <div class="form-group" style="flex-direction: column;">
-                            <label class="form-title">By Time range (in local timezone)<span class="info">Ingests all logs if no timeframe is provided</span></label>
+                            <h4>By Time range (in local timezone)<span class="info">Ingests all logs if no timeframe is provided</span></h4>
                             <div class="form-group">
                                 <div style="margin-right: 10px;">
                                     <label>Start time</label>
@@ -53,47 +92,50 @@
                             </div>
                         </div>
                         <div class="form-group" style="flex-direction: column;">
-                            <label class="form-title">By Source<span class="info">Ingests all logs if nothing selected</span></label>
+                            <h4>By Source<span class="info">Ingests all logs if nothing selected</span></h4>
                             <div>
                                 <label>DPU:</label>
-                                <label class="form-check-label">
+                                <label class="source-title">
                                     <input type="checkbox" name="sources" id="funos" value="funos">FunOS
                                 </label>
-                                <label class="form-check-label">
+                                <label class="source-title">
                                     <input type="checkbox" name="sources" id="storage_agent" value="storage_agent">Storage Agent
                                 </label>
-                                <label class="form-check-label">
+                                <label class="source-title">
                                     <input type="checkbox" name="sources" id="platform_agent" value="platform_agent">Platform Agent
                                 </label>
                             </div>
                             <div>
                                 <label>Storage services:</label>
-                                <label class="form-check-label">
+                                <label class="source-title">
                                     <input type="checkbox" name="sources" id="apigateway" value="apigateway">Apigateway
                                 </label>
-                                <label class="form-check-label">
+                                <label class="source-title">
                                     <input type="checkbox" name="sources" id="dataplacement" value="dataplacement">Dataplacement
                                 </label>
-                                <label class="form-check-label">
+                                <label class="source-title">
                                     <input type="checkbox" name="sources" id="discovery" value="discovery">Discovery
                                 </label>
-                                <label class="form-check-label">
+                                <label class="source-title">
                                     <input type="checkbox" name="sources" id="kafka" value="kafka">Kafka
                                 </label>
-                                <label class="form-check-label">
+                                <label class="source-title">
                                     <input type="checkbox" name="sources" id="metrics_manager" value="metrics_manager">Metrics Manager
                                 </label>
-                                <label class="form-check-label">
+                                <label class="source-title">
                                     <input type="checkbox" name="sources" id="metrics_server" value="metrics_server">Metrics Server
                                 </label>
-                                <label class="form-check-label">
+                                <label class="source-title">
                                     <input type="checkbox" name="sources" id="scmscv" value="scmscv">SCMSCV
                                 </label>
-                                <label class="form-check-label">
+                                <label class="source-title">
                                     <input type="checkbox" name="sources" id="setup_db" value="setup_db">Setup DB
                                 </label>
-                                <label class="form-check-label">
+                                <label class="source-title">
                                     <input type="checkbox" name="sources" id="sns" value="sns">SNS
+                                </label>
+                                <label class="source-title">
+                                    <input type="checkbox" name="sources" id="expansion_rebalance" value="expansion_rebalance">Expansion Rebalance
                                 </label>
                             </div>
                         </div>
@@ -120,8 +162,13 @@
     <script src="https://cdn.jsdelivr.net/momentjs/2.14.1/moment.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.37/js/bootstrap-datetimepicker.min.js"></script>
+
+    <script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.4.0/min/dropzone.min.js"></script>
     <script type="text/javascript">
 
+        // Dropzone.js object to track the uploading of files.
+        let dropzone = null;
+        Dropzone.autoDiscover = false;
         $(function () {
             $("#start_time_picker").datetimepicker({
                 sideBySide: true
@@ -139,16 +186,56 @@
         }
 
         const feedback = {{feedback|tojson}};
+        let ingestType = "{{ingest_type}}";
         const statusContainer = document.getElementById("status-container");
         const statusElement = document.getElementById("status");
         const feedbackElement = document.getElementById("feedback");
+
+        if (ingestType && ingestType === "upload") {
+            dropzone = new Dropzone("div#uploader", {
+                url: 'upload',
+                paramName: 'file',
+                dictDefaultMessage: 'Drop log archive here or click to upload',
+                chunking: true,
+                retryChunks: true,
+                forceChunking: true,
+                autoProcessQueue: false,
+                processingmultiple: false,
+                uploadMultiple: false,
+                maxFilesize: 1024 * 10, // 10GB
+                maxFiles: 1,
+                addRemoveLinks: true,
+                chunkSize: 1000000 // (in bytes) => 1MB
+            });
+
+            dropzone.on("addedfile", file => {
+                const job_id = document.getElementById("job_id").value;
+                // job_id is a necessary field.
+                if (job_id === undefined || job_id === "") {
+                    alert("Job ID missing");
+                    dropzone.removeFile(file);
+                    return;
+                }
+                dropzone.processFile(file);
+            });
+
+            dropzone.on("sending", (file, xhr, formData) => {
+                const job_id = document.getElementById("job_id").value;
+                // Also send the job_id along with the uploaded file.
+                formData.append("job_id", job_id);
+            });
+
+            dropzone.on("error", (file, error) => {
+                alert(`UPLOAD FAILED: ${error}`);
+            });
+        }
 
         // Time is in milliseconds
         const WAIT_TIME_TO_CHECK_STATUS = 30 * 1000;
 
         let logID = '', statusInterval = null;
         if (feedback && Object.keys(feedback).length !== 0 && feedback.constructor === Object) {
-            logID = `log_qa-${feedback["job_id"]}-${feedback["test_index"]}`;
+            logID = feedback["log_id"];
 
             if (feedback.started) {
                 statusContainer.style = "width: 40%;";
@@ -160,6 +247,7 @@
                     statusInterval = setInterval(checkStatus, WAIT_TIME_TO_CHECK_STATUS);
                 }
             }
+
             const dateFormatter = new Intl.DateTimeFormat('en-US', {
                 'dateStyle': 'short',
                 'timeStyle': 'short'
@@ -180,6 +268,14 @@
             }
         }
 
+        function onChangeIngestType(event) {
+            const value = event.value;
+            if (value) {
+                let params = new URLSearchParams();
+                params.set("ingest_type", value);
+                window.location.href = `?${params.toString()}`;
+            }
+        }
 
         function onChangeTimeFilter(event) {
             const dateStr = event.date.toISOString();
@@ -209,6 +305,20 @@
             if (end_time_str) {
                 const end_time = new Date(end_time_str);
                 event.elements["end_time"].value = Math.ceil(end_time.getTime()/1000);
+            }
+
+            if (ingestType === "upload" && dropzone) {
+                const files = dropzone.files;
+                if (files.length === 0 || files[0].status == "error") {
+                    alert("Please upload an archive");
+                    return false;
+                }
+                const file = files[0];
+                if (file.status == "uploading") {
+                    alert("Please wait for the archive to be uploaded.")
+                    return false;
+                }
+                event.elements["filename"].value = file.name;
             }
 
             statusElement.innerHTML = "<p>Ingesting.. Please wait.</p>";

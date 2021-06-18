@@ -35,7 +35,7 @@ struct dpcsock {
 	uint32_t cmd_timeout;    /* cmd timeout in ms */
 
 	/* runtime */
-	void *funq_connection;       /* handle for libfunq connection */
+	void *funq_handle;       /* handle for libfunq connection */
 	int listen_fd;           /* fd if this is a server */
 };
 
@@ -46,7 +46,7 @@ struct dpcsock_connection {
                                     is successful so that we can read from it */
 	uint32_t nvme_session_id;
 	uint32_t nvme_seq_num;
-	void *funq_callback_context;
+	void *funq_connection;
 };
 
 // Flag that controls how JSON is printed
@@ -70,5 +70,3 @@ extern int run_webserver(struct dpcsock *funos_sock, int cmd_listen_sock);
 
 /* callback from webserver to handle a request */
 extern int json_handle_req(struct dpcsock *funos_sock, const char *path, char *buf, int *size);
-
-extern struct fun_json *_buffer2json(const uint8_t *, size_t max);

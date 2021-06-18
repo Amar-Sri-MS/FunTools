@@ -77,7 +77,7 @@ class AnalyticsOutputTest(unittest.TestCase):
         # Checking for anchor matches
         for it in lines_to_iterable(lines):
             msg_block = msg_tuple_to_dict(it)
-            self.block.check_for_anchor_match(msg_block)
+            self.block.check_and_store_anchor_match(msg_block)
 
         anchor_descriptions = [anchor_match.short_desc for anchor_match in self.block.anchor_matches]
 

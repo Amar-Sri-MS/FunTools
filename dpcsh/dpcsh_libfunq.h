@@ -11,21 +11,22 @@
 #include <FunSDK/nucleus/types.h>
 
 #define FUNQ_DEV_NAME ("auto")
-#define FUNQ_ASYNC_DEPTH (16)
-#define FUNQ_MAX_DATA_BYTES (100*1024*1024)
+#define FUNQ_MAX_CONNECTIONS (63)
+#define FUNQ_MAX_DMA_BUFFERS (126) // 128 - 2 (cq + sq)
 
 typedef void (*dpc_funq_callback_t)(struct fun_ptr_and_size response, void *context);
 
-struct dpc_funq_connection {
-	void *handle;
-	bool available[FUNQ_ASYNC_DEPTH];
-	void *allocated[FUNQ_ASYNC_DEPTH];
-	pthread_mutex_t lock;
-	bool debug;
-};
+struct dpc_funq_handle;
+struct dpc_funq_connection;
 
-extern bool dpc_funq_init(struct dpc_funq_connection *c, const char *devname, bool debug);
-extern bool dpc_funq_destroy(struct dpc_funq_connection *c);
+// malloc and initialize a handle
+extern struct dpc_funq_handle *dpc_funq_init(const char *devname, bool debug);
+// cleanup and free a handle
+extern bool dpc_funq_destroy(struct dpc_funq_handle *handle);
 
-extern bool dpc_funq_send(struct fun_ptr_and_size data, struct dpc_funq_connection *c,
+extern struct dpc_funq_connection *dpc_funq_open_connection(struct dpc_funq_handle *handle);
+extern bool dpc_funq_close_connection(struct dpc_funq_connection *connection);
+
+extern bool dpc_funq_send(struct dpc_funq_connection *connection, struct fun_ptr_and_size data);
+extern bool dpc_funq_register_receive_callback(struct dpc_funq_connection *connection,
 	dpc_funq_callback_t callback, void *context);
