@@ -31,3 +31,6 @@ Customer can then generate their own bundles by taking the contents of `build_fo
 ```
 ./release.py --destdir . --action sdk-release --default-config-files
 ```
+
+
+A convenience script `build_customer_bundle.sh` is available to automatically generate customer bundles
