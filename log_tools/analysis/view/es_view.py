@@ -1095,6 +1095,7 @@ def _render_dashboard_page(log_id, jinja_env, template):
     system_ids = es.get_unique_entries('system_id')
     unique_entries = es.get_aggregated_unique_entries(['system_type', 'system_id'], ['src'])
     log_level_stats = _get_log_level_stats(log_id)
+    log_event_stats = _get_log_event_stats(log_id)
 
     # Fetch the first non zero log level
     nonzero_log_levels = [level for level in default_log_levels if log_level_stats[level]['count'] > 0]
@@ -1113,6 +1114,7 @@ def _render_dashboard_page(log_id, jinja_env, template):
     template_dict['unique_entries'] = unique_entries
     template_dict['log_view_base_url'] = log_view_base_url
     template_dict['log_level_stats'] = log_level_stats
+    template_dict['log_event_stats'] = log_event_stats
     template_dict['log_level_for_recent_logs'] = nonzero_log_levels[0] if len(nonzero_log_levels) > 0 else None
     template_dict['recent_logs'] = _render_log_entries(recent_logs)
     template_dict['analytics_data'] = json.dumps(analytics_data)
@@ -1126,35 +1128,63 @@ def _render_dashboard_page(log_id, jinja_env, template):
 @app.route('/log/<log_id>/dashboard/level-stats', methods=['GET'])
 def log_level_stats(log_id):
     sources = request.args.getlist('source')
-    result = _get_log_level_stats(log_id, sources)
-    return result
+    return {
+        'levels': _get_log_level_stats(log_id, sources),
+        'events': _get_log_event_stats(log_id, sources)
+    }
 
+def _get_log_level_stats(log_id, sources=[], time_filters=None):
+    level_keywords = app.config.get('LEVEL_KEYWORDS')
+    return _get_log_count_for_keywords(log_id, level_keywords, sources, time_filters)
 
-def _get_log_level_stats(log_id, sources=[], log_levels=None, time_filters=None):
+def _get_log_event_stats(log_id, sources=[], time_filters=None):
+    event_keywords = app.config.get('EVENTS_BY_SOURCE')
+    source_keywords = dict()
+    for source, keywords in event_keywords.items():
+        # Filter the events for only the sources we want or select all
+        # events if no source is provided.
+        if len(sources) == 0 or source in sources:
+            source_keywords.update(keywords)
+
+    return _get_log_count_for_keywords(log_id, source_keywords, sources, time_filters)
+
+def _get_log_count_for_keywords(log_id, keywords, sources=[], time_filters=None):
+    """
+    Args:
+    log_id (str)
+    keywords (dict): keywords as keys with a list of search mappings as values.
+    sources (list): sources to filter
+    time_filter (tuple): time filter
+
+    Returns a dict with keywords as keys and document count and log_view_url as values.
+    Example:
+    {
+        'error': {
+            'order': 1,
+            'count': 10,
+            'log_view_url': SEARCH URL,
+            'keywords': 'error, err'
+        }
+    }
+    """
     es = ElasticLogSearcher(log_id)
     log_view_base_url = _get_log_view_base_url(log_id)
     query = ''
     if len(sources) > 0:
         query = f'src:({" OR ".join(sources)}) AND'
 
-    keyword_for_level = app.config.get('LEVEL_KEYWORDS')
-
-    default_log_levels = keyword_for_level.keys()
-    if log_levels is None:
-        log_levels = default_log_levels
-
     document_counts = {}
-    for idx, level in enumerate(log_levels):
-        keywords = [f'"{keyword}"' for keyword in keyword_for_level[level]]
-        keyword_query_terms = ' OR '.join(keywords)
+    for idx, keyword in enumerate(keywords.keys()):
+        search_keywords = [f'"{keyword}"' for keyword in keywords[keyword]]
+        keyword_query_terms = ' OR '.join(search_keywords)
         log_level_query = f'{query} (level:({keyword_query_terms}) OR msg:({keyword_query_terms}))'
         search_query = { 'query': log_level_query.strip() }
         log_view_url = f'{log_view_base_url}?search={quote(json.dumps(search_query))}'
-        document_counts[level] = {
+        document_counts[keyword] = {
             'order': idx,
             'count': es.get_document_count(keyword_query_terms, sources, time_filters),
             'log_view_url': log_view_url,
-            'keywords': ', '.join(keyword_for_level[level])
+            'keywords': ', '.join(keywords[keyword])
         }
 
     return document_counts

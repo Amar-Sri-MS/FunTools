@@ -14,9 +14,14 @@
     "LEVEL_KEYWORDS": {
         "critical": ["crit"],
         "error": ["error", "err"],
-        "assert": ["Assertion failed:"],
         "warning": ["warning", "warn"],
         "info": ["info"]
+    },
+    "EVENTS_BY_SOURCE": {
+        "funos": {
+            "assert": ["Assertion failed:"],
+            "MUD error": ["mud non-fatal interrupt received", "ddr_ecc_cerr"]
+        }
     },
     "FILE_SERVER_URL": "http://funlogs.fungible.local:11000",
     "LOG_VIEW_BASE_URL": "http://funlogs.fungible.local:5000/log/LOG_ID"
