@@ -156,6 +156,11 @@ def create_file(filename, section="signed_images"):
     if config.get(section):
         image = config[section].get(filename)
         if image:
+            delete_after_sign = image.get('delete_after_sign')
+
+            if delete_after_sign and os.path.exists(filename):
+                return filename
+
             # process indirection to keybag
             if 'key_index' in image:
                 # retrieve name of key from keybag specification
@@ -166,7 +171,13 @@ def create_file(filename, section="signed_images"):
                 # use the first element in spec -- there's only one key bag now.
                 key_list = next(iter(key_bag_spec.values()))
                 image['key'] = key_list['keys'][image['key_index']]
-            return gen_fw_image(filename, image)
+            ret = gen_fw_image(filename, image)
+
+            if delete_after_sign:
+                os.remove(image['source'])
+
+            return ret
+
     return None
 
 def read_file_and_pad(filename, padding, optional, minsize, create):
@@ -432,11 +443,14 @@ class FileJsonEncoder(json.JSONEncoder):
             return o.decode('ascii')
         return super().default(o)
 
-def merge_configs(old, new):
+def merge_configs(old, new, only_if_present=False):
     for k,v in new.items():
         if k in old and isinstance(old[k], dict) and isinstance(new[k], dict):
-            merge_configs(old[k], new[k])
+            merge_configs(old[k], new[k], only_if_present)
         else:
+            if only_if_present and isinstance(new[k], dict):
+                continue
+
             old[k] = new[k]
 
 def override_field(config, field, value, only_if_empty=True):
@@ -597,7 +611,9 @@ def run(arg_action, arg_enroll_cert = None, *args, **kwargs):
             if infile:
                 shutil.copy2(infile, v['source'])
             else:
-                src = config['key_injection'].get(v['source'])
+                src = config.get('key_injection')
+                if src:
+                    src = src.get(v['source'])
                 if src and src['source']:
                     infile = find_file_in_srcdirs(src['source'])
                     if infile:

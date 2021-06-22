@@ -44,8 +44,9 @@ if [ -n "$host_dpu" ] && [ "$host_dpu" != "$CHIP_NAME" ]; then
 	exit 20
 fi
 if [ "$product" != "$HW_BASE" ]; then
-	echo "This bundle is incompatible with the host DPU"
-	echo "Bundle target: $HW_BASE, product: $product"
+	echo "This bundle is incompatible with this hw platform"
+	echo "Bundle target: $HW_BASE, hw platform: $product"
+	echo "(if no hw platform is shown, the firmware must first be upgraded to a newer bundle)"
 	exit 20
 fi
 
