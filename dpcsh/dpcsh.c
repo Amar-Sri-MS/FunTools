@@ -40,7 +40,7 @@
 
 #define SOCK_NAME	"/tmp/funos-dpc.sock"      /* default FunOS socket */
 #define PROXY_NAME      "/tmp/funos-dpc-text.sock" /* default unix proxy name */
-#define DPC_PORT        40220   /* default FunOS port */
+#define DPC_PORT        20110   /* default FunOS port */
 #define DPC_PROXY_PORT  40221   /* default TCP proxy port */
 #define DPC_B64_PORT    40222   /* default dpcuart port in qemu */
 #define DPC_B64SRV_PORT 40223   /* default dpcuart listen port */
