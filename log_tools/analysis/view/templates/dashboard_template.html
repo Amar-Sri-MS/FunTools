@@ -63,6 +63,7 @@
                         {% endfor %}
                     </select>
                 </div>
+                <h4 class="center-align">Levels</h4>
                 <div class="content">
                     <div id="log_level_stats">
                         <div class="level_stat">
@@ -75,10 +76,21 @@
                             {% set log_level_obj = {"level": level} %}
                             <div class="level_stat" title="{{stat.keywords}}">
                                 <div><a href="{{stat.log_view_url}}" target="_blank" onclick="trackWebEvent('LOG_LEVEL_CLICKED', {{log_level_obj}})">{{level}}</a></div>:
-                                <div class="fixed-font">{{stat.count}}({{log_distribution}})</div>
+                                <div class="fixed-font">{{stat.count}}({{log_distribution.strip()}})</div>
                             </div>
                         {% endfor %}
                     </div>
+                </div>
+                <h4 class="center-align">Events</h4>
+                <div class="content" id="log_events_stats">
+                    {% for event, stat in log_event_stats.items() %}
+                        {% set log_distribution = calculatePercentage(stat.count, total_entries) %}
+                        {% set log_event_obj = {"event": event} %}
+                        <div class="level_stat" title="{{stat.keywords}}">
+                            <div><a href="{{stat.log_view_url}}" target="_blank" onclick="trackWebEvent('LOG_EVENT_CLICKED', {{log_event_obj}})">{{event}}</a></div>:
+                            <div class="fixed-font">{{stat.count}}({{log_distribution.strip()}})</div>
+                        </div>
+                    {% endfor %}
                 </div>
             </div>
             <div class="separator"></div>
@@ -91,15 +103,16 @@
                         {% endfor %}
                     </select>
                 logs</h3>
-                <div style="display: flex; align-items: center;">
-                    <div>
+                <div style="display: flex; flex-direction: column;">
+                    <div style="display: flex; align-items: center;">
                         <input id="search" type="search" placeholder="Search..." onkeydown="onKeyDownSearchText(event)" />
                         <button class="btn" onclick="onSubmitSearch();">Search</button>
+                        <div style="margin: 0px 20px;">
+                            <input type="checkbox" id="failedAnchors" value="showFailedAnchors" onchange="toggleShowOnlyFailedAnchors(this)">
+                            <label for="failedAnchors">Show only failed events?</label><br>
+                        </div>
                     </div>
-                    <div style="margin: 0px 20px;">
-                        <input type="checkbox" id="failedAnchors" value="showFailedAnchors" onchange="toggleShowOnlyFailedAnchors(this)">
-                        <label for="failedAnchors">Show only failed events?</label><br>
-                    </div>
+                    <span class="info">Tip: Remove search results by using -(minus) sign before the search string. Example: <i style="padding-left: 2px;">-(FunTCP)</i></span>
                 </div>
                 <div class="log_entries scrollable">
                     <table>
@@ -178,6 +191,7 @@
     // LOG VIEW URL for redirecting to the view with given query.
     const LOG_VIEW_BASE_URL = "{{log_view_base_url}}";
     const logLevelStatsElement = document.getElementById('log_level_stats');
+    const logLevelEventsElement = document.getElementById('log_events_stats');
     const recentLogsElement = document.getElementById('recent_logs');
 
     const logId = "{{log_id}}";
@@ -270,6 +284,13 @@
 
     function updateLogLevelStats(stats) {
         // Updates the Log Level distribution
+        const levelStats = stats["levels"];
+        const eventStats = stats["events"];
+        renderLogStats(logLevelStatsElement, levelStats);
+        renderLogStats(logLevelEventsElement, eventStats, showTotal=false);
+    }
+
+    function renderLogStats(element, stats, showTotal=true) {
         let totalEntriesForSource = selectedSourceForLogLevelStats === "all" ?
                                     totalEntries :
                                     sources[selectedSourceForLogLevelStats];
@@ -278,14 +299,22 @@
         // Sorting log levels by severity order
         const logLevels = Object.keys(stats).sort((level1, level2) => stats[level1]['order'] - stats[level2]['order']);
 
-        let divs = [`<div class="level_stat"><div><a href="${logViewUrlForSource}" target="_blank">Total</a></div>: <div class="fixed-font">${totalEntriesForSource}(${Math.round((totalEntriesForSource/totalEntries)*100)}%)</div></div>`];
+        let divs = [];
+        if (showTotal) {
+            divs.push(`<div class="level_stat"><div><a href="${logViewUrlForSource}" target="_blank">Total</a></div>: <div class="fixed-font">${totalEntriesForSource}(${Math.round((totalEntriesForSource/totalEntries)*100)}%)</div></div>`);
+        }
         for (const level of logLevels) {
             const stat = stats[level];
             // let logDistribution = Math.round((stat.count/totalEntriesForSource)*100);
             let logDistribution = ((stat.count/totalEntriesForSource)*100).toFixed(2);
             divs.push(`<div class="level_stat" title="${stat.keywords}"><div><a href="${stat.log_view_url}" target="_blank">${level}</a></div>: <div class="fixed-font">${stat.count}(${logDistribution}%)</div></div>`);
         }
-        logLevelStatsElement.innerHTML = divs.join('\n');
+        if (divs.length === 0) {
+            element.innerHTML = "No events";
+        }
+        else {
+            element.innerHTML = divs.join('\n');
+        }
     }
 
     function onSelectLevelForRecentLogs(levelElement) {
