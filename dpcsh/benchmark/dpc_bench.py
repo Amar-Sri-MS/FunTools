@@ -1,6 +1,6 @@
 #!/usr/bin/env python2.7
 """Usage: dpc_bench.py [-h] [--iterations=<N>] [--unix_socket=<file>]
-          [--tcp_port=<port>]
+          [--tcp_port=<port>] [--tcp_host=<host>]
 
 Benchmarks DPC-echo with given number of iterations.
 """
@@ -9,6 +9,7 @@ from __future__ import print_function
 from docopt import docopt
 import sys
 import time
+import json
 from dpc_client import DpcClient
 
 def main():
@@ -25,14 +26,14 @@ def main():
     print('Running on Unix Socket', arguments['--unix_socket'])
     client = DpcClient(server_address=arguments['--unix_socket'], unix_sock=True)
   else:
-    print('Running on TCP localhost:', arguments['--tcp_port'])
-    client = DpcClient(server_address=('localhost', int(arguments['--tcp_port'])))
+    print('Running on TCP ', arguments['--tcp_host'], arguments['--tcp_port'])
+    client = DpcClient(server_address=(arguments['--tcp_host'], int(arguments['--tcp_port'])))
 
   print("Connected")
 
   start_time = time.time()
   for _ in range(1, n_iterations + 1):
-    client.execute('echo', [
+    ob = client.execute('echo', [
           {
               "class": "volume", 
               "opcode": "VOL_ADMIN_OPCODE_CREATE", 
@@ -46,6 +47,7 @@ def main():
               }
           }
       ], None)
+    print(len(json.dumps(ob)))
 
   print("Total time: " + str(time.time() - start_time) + " secs. for " + str(n_iterations) + " iterations")
 
