@@ -50,31 +50,53 @@ class ElasticsearchOutput(Block):
 
     def process(self, iters):
         """ Writes contents from all iterables to elasticsearch """
+        CHUNK_SIZE = 10000
+        documents = list()
         for it in iters:
-            # Copying the iterator to send to the next output block.
-            # Might have performance implications because of copying.
-            # TODO(Sourabh): Need to check alternative solutions
-            # to share data between the output blocks.
-            it, it_copy = tee(it)
-            # parallel_bulk is a wrapper around bulk to provide threading.
-            # default thread_count is 4 and it returns a generator with indexing result.
-            # chunk_size of 10k works best based on tests on existing logs on single ES node
-            # running with 4GB heap.
-            # TODO(Sourabh): Need to test again if there's any change in resources of the ES node
-            for success, info in parallel_bulk(
-                                        self.es,
-                                        self.generate_es_doc(it),
-                                        raise_on_error=True,
-                                        raise_on_exception=True,
-                                        chunk_size=10000):
-                if not success:
-                    logging.error(f'Failed to index a document: {info}')
-                else:
-                    yield from self._add_doc_id_in_iters(next(it_copy), info)
+            for tuple in it:
+                # Converting the iterator into list to send them to the
+                # next output block.
+                documents.append(tuple)
 
-    def _add_doc_id_in_iters(self, tuple, info):
+                if len(documents) >= CHUNK_SIZE:
+                    self._ingest_documents(documents, chunk_size=CHUNK_SIZE)
+                    documents = list()
+
+            # If any documents are left to ingest
+            if len(documents) > 0:
+                self._ingest_documents(documents, chunk_size=CHUNK_SIZE)
+                documents = list()
+
+    def _ingest_documents(self, documents, **options):
+        """
+        Ingest the documents and yields them for the next output block.
+        Args:
+            documents: list of tuple containing log information
+        Yields:
+            tuple with log information and Elasticsearch document id
+        """
+        chunk_size = options.get('chunk_size', 10000)
+        # parallel_bulk is a wrapper around bulk to provide threading.
+        # default thread_count is 4 and it returns a generator with indexing result.
+        # chunk_size of 10k works best based on tests on existing logs on single ES node
+        # running with 4GB heap.
+        # TODO(Sourabh): Need to test again if there's any change in resources of the ES node
+        statuses = parallel_bulk(self.es,
+                                self.generate_es_doc(documents),
+                                raise_on_error=True,
+                                raise_on_exception=True,
+                                chunk_size=chunk_size)
+        # parallel_bulk returns a generator of tuples containing two elements: status flag (bool)
+        # and result of document creation (object).
+        for idx, status in enumerate(statuses):
+            if status[0] == False:
+                logging.error(f'Failed to index a document: {status}')
+            else:
+                yield from self._add_doc_id_in_iters(documents[idx], status[1]['index']['_id'])
+
+    def _add_doc_id_in_iters(self, tuple, doc_id):
         """ Adding ES doc id to the message tuple """
-        yield (*tuple, info['index']['_id'])
+        yield (*tuple, doc_id)
 
     def generate_es_doc(self, it):
         """ Maps iterable contents to elasticsearch document """
