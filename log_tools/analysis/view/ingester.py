@@ -289,6 +289,9 @@ def _get_log_id(job_id, ingest_type, **additional_data):
     Returns log identifier based on the job_id, ingest_type and
     any additional_data.
     """
+    # job_id should be lowercase due to Elasticsearch index
+    # naming constraints
+    job_id = job_id.lower()
     if ingest_type == 'qa':
         test_index = additional_data.get('test_index', 0)
         return f'log_qa-{job_id}-{test_index}'

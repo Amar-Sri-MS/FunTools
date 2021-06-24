@@ -52,7 +52,10 @@
                             </div>
                         {% elif ingest_type == "upload" %}
                             <div class="form-group">
-                                <label>Job ID</label>
+                                <label>
+                                    Job ID
+                                    <div class="info">(only lowercase characters & numbers allowed)</div>
+                                </label>
                                 <input type="text" id="job_id" name="job_id" placeholder="Enter the JOB ID" value="{{feedback.job_id if feedback else null}}">
                             </div>
                             <div class="form-group">
