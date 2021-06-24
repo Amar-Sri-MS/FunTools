@@ -59,12 +59,12 @@ class ElasticsearchOutput(Block):
                 documents.append(tuple)
 
                 if len(documents) >= CHUNK_SIZE:
-                    self._ingest_documents(documents, chunk_size=CHUNK_SIZE)
+                    yield from self._ingest_documents(documents, chunk_size=CHUNK_SIZE)
                     documents = list()
 
             # If any documents are left to ingest
             if len(documents) > 0:
-                self._ingest_documents(documents, chunk_size=CHUNK_SIZE)
+                yield from self._ingest_documents(documents, chunk_size=CHUNK_SIZE)
                 documents = list()
 
     def _ingest_documents(self, documents, **options):
