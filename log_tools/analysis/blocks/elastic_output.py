@@ -2,11 +2,7 @@
 # Elasticsearch output.
 #
 import datetime
-import json
 import logging
-import os
-import requests
-import sys
 
 from elasticsearch7 import Elasticsearch
 from elasticsearch7.helpers import parallel_bulk
@@ -108,23 +104,3 @@ class ElasticsearchOutput(Block):
             }
 
             yield doc
-
-    def create_kibana_index_pattern(self):
-        """ Creates an index pattern based on Elasticsearch index for Kibana """
-        KIBANA_HOST = self.config['KIBANA']['host']
-        KIBANA_PORT = self.config['KIBANA']['port']
-        kibana_url = f'http://{KIBANA_HOST}:{KIBANA_PORT}/api/saved_objects/index-pattern/{self.index}'
-        headers = {
-            'kbn-xsrf': 'true'
-        }
-
-        data = {
-            "attributes": {
-                "title": self.index,
-                "timeFieldName": "@timestamp"
-            }
-        }
-        response = requests.post(kibana_url, headers=headers, json=data)
-        # TODO(Sourabh): Error handling if index pattern creation fails
-        if response.status_code != 200:
-            print(response.json())
