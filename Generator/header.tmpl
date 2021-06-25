@@ -23,7 +23,7 @@ enum {{enum.name}} {  {{enum.key_comment|as_comment}}
 {% for enum_variable in enum.variables %}
 {{enum_variable.body_comment|as_comment}} {{enum_variable.name}} = {{enum_variable.value|as_hex}},  {{enum_variable.key_comment|as_comment}}
 {% endfor %}{{enum.tail_comment|as_comment}}
-
+ {{enum.name}}_max_value = {{enum.last_value|as_hex}}
 };
 
 /* Human-readable strings for enum values in {{enum.name}}. */

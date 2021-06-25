@@ -165,7 +165,8 @@ END
 
 Enums are generated as enum types in C code.  The symbolic names and meanings are provided in HTML.
 An array of strings called <enum_name>_names contains a table for looking up the symbolic name
-for each enum value.
+for each enum value.  In the generated C header file, a synthetic enum value <enum_name>_max_value
+is also generated, it can be used for sizing arrays indexed by the enum values.
 
 Flags represent a set of related constants that should be implemented as
 separate values rather than an enum.
