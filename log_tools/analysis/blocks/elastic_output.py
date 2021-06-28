@@ -6,7 +6,6 @@ import logging
 
 from elasticsearch7 import Elasticsearch
 from elasticsearch7.helpers import parallel_bulk
-from itertools import tee
 
 from blocks.block import Block
 import config_loader
@@ -50,7 +49,7 @@ class ElasticsearchOutput(Block):
 
     def process(self, iters):
         """ Writes contents from all iterables to elasticsearch """
-        CHUNK_SIZE = 10000
+        DOCUMENT_COUNT_PER_BULK_INGEST = 100000
         documents = list()
         for it in iters:
             for tuple in it:
@@ -58,16 +57,15 @@ class ElasticsearchOutput(Block):
                 # next output block.
                 documents.append(tuple)
 
-                if len(documents) >= CHUNK_SIZE:
-                    yield from self._ingest_documents(documents, chunk_size=CHUNK_SIZE)
+                if len(documents) >= DOCUMENT_COUNT_PER_BULK_INGEST:
+                    yield from self._ingest_documents(documents)
                     documents = list()
 
             # If any documents are left to ingest
             if len(documents) > 0:
-                yield from self._ingest_documents(documents, chunk_size=CHUNK_SIZE)
-                documents = list()
+                yield from self._ingest_documents(documents)
 
-    def _ingest_documents(self, documents, **options):
+    def _ingest_documents(self, documents):
         """
         Ingest the documents and yields them for the next output block.
         Args:
@@ -75,7 +73,6 @@ class ElasticsearchOutput(Block):
         Yields:
             tuple with log information and Elasticsearch document id
         """
-        chunk_size = options.get('chunk_size', 10000)
         # parallel_bulk is a wrapper around bulk to provide threading.
         # default thread_count is 4 and it returns a generator with indexing result.
         # chunk_size of 10k works best based on tests on existing logs on single ES node
@@ -85,7 +82,7 @@ class ElasticsearchOutput(Block):
                                 self.generate_es_doc(documents),
                                 raise_on_error=True,
                                 raise_on_exception=True,
-                                chunk_size=chunk_size)
+                                chunk_size=10000)
         # parallel_bulk returns a generator of tuples containing two elements: status flag (bool)
         # and result of document creation (object).
         for idx, status in enumerate(statuses):
