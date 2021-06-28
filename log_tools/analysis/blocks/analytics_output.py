@@ -1,8 +1,9 @@
 #
 # Analytics Output Block
-# Creates HTML files for each analysis
+# Perform analysis on the logs
 #
 import hashlib
+import heapq
 import json
 import logging
 import os
@@ -15,7 +16,7 @@ from urllib.parse import quote
 
 from blocks.block import Block
 import config_loader
-
+from utils.lossycounting import LossyCounting
 
 class AnchorMatch:
     """ Anchor Match to hold data required for a match """
@@ -154,14 +155,14 @@ class AnchorMatcher:
 
 
 class AnalyticsOutput(Block):
-    """ Creates HTML pages after analysing the logs """
+    """ Perform analysis on the logs """
 
     def __init__(self):
         self.cfg = None
-        # Maintains hash of unique log entry for detecting duplicates.
-        # This might take up memory as the log entries increase.
-        self.duplicate_entries = {}
         self.config = config_loader.get_config()
+
+        # Window size of 100k to check for duplicates.
+        self.duplicate_counter = LossyCounting(100000)
 
         # Having this limit to avoid storing the complete anchor data on
         # memory and instead performing bulk updates in batches of 10k
@@ -208,25 +209,12 @@ class AnalyticsOutput(Block):
         # Creates a hash from the log line to compare with
         # other log lines
         hashval = hashlib.md5(msg.encode('utf-8')).digest()
-
-        # If the hashval is new, then create a new key
-        # in the duplicate_entries, which will be assigned
-        # a value of a dict with msg and count set to 0.
-        # If hashval already exists, then just
-        # increment the count
-        if hashval not in self.duplicate_entries:
-            self.duplicate_entries[hashval] = {
-                'msg': msg_dict,
-                'count': 0
-            }
-        self.duplicate_entries[hashval]['count'] += 1
+        self.duplicate_counter.count(hashval, msg_dict)
 
     def get_most_duplicated_entries(self, entries=10):
         # Sorting by count and picking up the top entries
-        most_duplicated_entries = sorted(self.duplicate_entries.values(),
-                                key=lambda entry: entry['count'],
-                                reverse=True)[:entries]
-        return most_duplicated_entries
+        return heapq.nlargest(entries, self.duplicate_counter.get_iter(2),
+                                key=lambda entry: entry['count'])
 
     def generate_most_duplicates_entries(self):
         """
@@ -237,7 +225,7 @@ class AnalyticsOutput(Block):
         most_duplicated_entries_list = []
 
         for entry in most_duplicated_entries:
-            msg = entry['msg']
+            msg = entry['entry']
             # Kibana query should be enclosed within quotations for exact match
             # Removing special characters
             # TODO(Sourabh): Better approach for handling special characters
@@ -255,7 +243,8 @@ class AnalyticsOutput(Block):
                 'msg': msg.get('line')
             })
 
-        self._save_json('duplicates.json', most_duplicated_entries_list)
+        if (len(most_duplicated_entries_list) > 0):
+            self._save_json('duplicates.json', most_duplicated_entries_list)
 
     def check_and_store_anchor_match(self, msg_dict):
         match = self.anchor_matcher.generate_match(msg_dict)
