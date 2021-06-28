@@ -54,7 +54,7 @@
                             <div class="form-group">
                                 <label>
                                     Job ID
-                                    <div class="info">(only lowercase characters & numbers allowed)</div>
+                                    <div style="font-size: 10px;">(only lowercase characters & numbers allowed)</div>
                                 </label>
                                 <input type="text" id="job_id" name="job_id" placeholder="Enter the JOB ID" value="{{feedback.job_id if feedback else null}}">
                             </div>
@@ -67,7 +67,11 @@
                             <label>Enter tags (comma separated)</label>
                             <input type="text" id="tags" name="tags" placeholder="Enter tags" value="{{feedback.tags if feedback else null}}">
                         </div>
-                        <hr >
+                        <div class="form-group">
+                            <label>Sumbitted By</label>
+                            <input type="email" id="submitted_by" name="submitted_by" placeholder="Enter email" value="{{feedback.submitted_by if feedback else null}}">
+                        </div>
+                        <hr />
                         <h3>Ingestion Filters</h3>
                         <div class="form-group" style="flex-direction: column;">
                             <h4>By Time range (in local timezone)<span class="info">Ingests all logs if no timeframe is provided</span></h4>
