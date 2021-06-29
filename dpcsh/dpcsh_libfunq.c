@@ -346,6 +346,7 @@ static void dpc_split_sgl_layers(struct dpc_funq_context *context)
 {
 	bool direct = (context->sgl_n <= FIRST_LEVEL_SGL_N);
 	context->sgl_first_n = context->sgl_n;
+	context->sgl_second_n = 0;
 	if (!direct) {
 		context->sgl_first_n = CEILING(context->sgl_n * sizeof(struct fun_subop_sgl), DMA_BUFSIZE_BYTES);
 		context->sgl_first_n = min(context->sgl_first_n, FIRST_LEVEL_SGL_N);
@@ -394,10 +395,10 @@ static bool dpc_send_data_cmd(size_t *position, struct dpc_funq_connection *conn
 		return false;
 	}
 
-	bool last_buffer = ((data.size - *position) <= (data_buffers_n * DMA_BUFSIZE_BYTES));
+	bool last_buffer = (data.size <= *position + chunk.size);
 	if ((response.u.cmd.code == FUN_ADMIN_DPC_ISSUE_CMD_RESP_COMPLETE && last_buffer)
 		|| (response.u.cmd.code == FUN_ADMIN_DPC_ISSUE_CMD_RESP_PARTIAL && !last_buffer)) {
-		*position += data_buffers_n * DMA_BUFSIZE_BYTES;
+		*position += chunk.size;
 		return true;
 	}
 
