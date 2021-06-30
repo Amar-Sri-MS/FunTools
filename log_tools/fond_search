@@ -259,8 +259,13 @@ def get_command(args):
 
 
 def run(args):
+    cmd = get_command(args)
+
+    if args.verbose:
+        sys.stderr.write("Running {cmd}\n".format(cmd=cmd))
+
     p = subprocess.Popen(
-        get_command(args),
+        cmd,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         shell=True,
@@ -409,6 +414,12 @@ def handle_args():
         "--invert-match",
         action="store_true",
         help="Show jobs that don't match the given pattern",
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Enable extra logging",
     )
     parser.add_argument("pattern", help="Grep compatible search pattern")
     args = parser.parse_args()
