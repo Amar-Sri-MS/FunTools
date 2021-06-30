@@ -2,15 +2,10 @@
 # Elasticsearch output.
 #
 import datetime
-import json
 import logging
-import os
-import requests
-import sys
 
 from elasticsearch7 import Elasticsearch
 from elasticsearch7.helpers import parallel_bulk
-from itertools import tee
 
 from blocks.block import Block
 import config_loader
@@ -54,31 +49,51 @@ class ElasticsearchOutput(Block):
 
     def process(self, iters):
         """ Writes contents from all iterables to elasticsearch """
+        DOCUMENT_COUNT_PER_BULK_INGEST = 100000
+        documents = list()
         for it in iters:
-            # Copying the iterator to send to the next output block.
-            # Might have performance implications because of copying.
-            # TODO(Sourabh): Need to check alternative solutions
-            # to share data between the output blocks.
-            it, it_copy = tee(it)
-            # parallel_bulk is a wrapper around bulk to provide threading.
-            # default thread_count is 4 and it returns a generator with indexing result.
-            # chunk_size of 10k works best based on tests on existing logs on single ES node
-            # running with 4GB heap.
-            # TODO(Sourabh): Need to test again if there's any change in resources of the ES node
-            for success, info in parallel_bulk(
-                                        self.es,
-                                        self.generate_es_doc(it),
-                                        raise_on_error=True,
-                                        raise_on_exception=True,
-                                        chunk_size=10000):
-                if not success:
-                    logging.error(f'Failed to index a document: {info}')
-                else:
-                    yield from self._add_doc_id_in_iters(next(it_copy), info)
+            for tuple in it:
+                # Converting the iterator into list to send them to the
+                # next output block.
+                documents.append(tuple)
 
-    def _add_doc_id_in_iters(self, tuple, info):
+                if len(documents) >= DOCUMENT_COUNT_PER_BULK_INGEST:
+                    yield from self._ingest_documents(documents)
+                    documents = list()
+
+            # If any documents are left to ingest
+            if len(documents) > 0:
+                yield from self._ingest_documents(documents)
+
+    def _ingest_documents(self, documents):
+        """
+        Ingest the documents and yields them for the next output block.
+        Args:
+            documents: list of tuple containing log information
+        Yields:
+            tuple with log information and Elasticsearch document id
+        """
+        # parallel_bulk is a wrapper around bulk to provide threading.
+        # default thread_count is 4 and it returns a generator with indexing result.
+        # chunk_size of 10k works best based on tests on existing logs on single ES node
+        # running with 4GB heap.
+        # TODO(Sourabh): Need to test again if there's any change in resources of the ES node
+        statuses = parallel_bulk(self.es,
+                                self.generate_es_doc(documents),
+                                raise_on_error=True,
+                                raise_on_exception=True,
+                                chunk_size=10000)
+        # parallel_bulk returns a generator of tuples containing two elements: status flag (bool)
+        # and result of document creation (object).
+        for idx, status in enumerate(statuses):
+            if status[0] == False:
+                logging.error(f'Failed to index a document: {status}')
+            else:
+                yield from self._add_doc_id_in_iters(documents[idx], status[1]['index']['_id'])
+
+    def _add_doc_id_in_iters(self, tuple, doc_id):
         """ Adding ES doc id to the message tuple """
-        yield (*tuple, info['index']['_id'])
+        yield (*tuple, doc_id)
 
     def generate_es_doc(self, it):
         """ Maps iterable contents to elasticsearch document """
@@ -108,23 +123,3 @@ class ElasticsearchOutput(Block):
             }
 
             yield doc
-
-    def create_kibana_index_pattern(self):
-        """ Creates an index pattern based on Elasticsearch index for Kibana """
-        KIBANA_HOST = self.config['KIBANA']['host']
-        KIBANA_PORT = self.config['KIBANA']['port']
-        kibana_url = f'http://{KIBANA_HOST}:{KIBANA_PORT}/api/saved_objects/index-pattern/{self.index}'
-        headers = {
-            'kbn-xsrf': 'true'
-        }
-
-        data = {
-            "attributes": {
-                "title": self.index,
-                "timeFieldName": "@timestamp"
-            }
-        }
-        response = requests.post(kibana_url, headers=headers, json=data)
-        # TODO(Sourabh): Error handling if index pattern creation fails
-        if response.status_code != 200:
-            print(response.json())

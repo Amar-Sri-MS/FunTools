@@ -55,6 +55,7 @@ def main():
     parser.add_argument('--end_time', type=int, help='Epoch end time to filter logs', default=None)
     parser.add_argument('--sources', nargs='*', help='Sources to filter the logs during ingestion', default=None)
     parser.add_argument('--file_name', help='File name of the uploaded log archive', default=None)
+    parser.add_argument('--submitted_by', help='Email address of the submitter', default=None)
 
     try:
         args = parser.parse_args()
@@ -63,6 +64,7 @@ def main():
         test_index = args.test_index
         file_name = args.file_name
         tags = args.tags
+        submitted_by = args.submitted_by
         start_time = args.start_time
         end_time = args.end_time
         sources = args.sources
@@ -75,6 +77,7 @@ def main():
 
         metadata = {
             'tags': tags,
+            'submitted_by': submitted_by,
             'ingest_type': ingest_type
         }
 
@@ -95,6 +98,7 @@ def main():
 
         if ingestion_status and not ingestion_status['success']:
             _update_metadata(es_metadata, LOG_ID, 'FAILED', {
+                **metadata,
                 'ingestion_error': ingestion_status.get('msg')
             })
 
@@ -188,6 +192,7 @@ def ingest():
         tags = request.form.get('tags')
         tags_list = [tag.strip() for tag in tags.split(',') if tag.strip() != '']
         file_name = request.form.get('filename')
+        submitted_by = request.form.get('submitted_by', None)
 
         start_time = request.form.get('start_time', None)
         end_time = request.form.get('end_time', None)
@@ -198,6 +203,7 @@ def ingest():
                 'success': False,
                 'job_id': job_id,
                 'tags': tags,
+                'submitted_by': submitted_by,
                 'start_time': start_time,
                 'end_time': end_time,
                 'sources': sources,
@@ -238,6 +244,10 @@ def ingest():
                 cmd.append('--file_name')
                 cmd.append(file_name)
 
+            if submitted_by:
+                cmd.append('--submitted_by')
+                cmd.append(submitted_by)
+
             ingestion = subprocess.Popen(cmd)
 
         return render_template('ingester.html', feedback={
@@ -248,6 +258,7 @@ def ingest():
             'job_id': job_id,
             'test_index': test_index,
             'tags': tags,
+            'submitted_by': submitted_by,
             'start_time': start_time,
             'end_time': end_time,
             'sources': sources,
@@ -262,6 +273,7 @@ def ingest():
             'job_id': job_id,
             'test_index': test_index,
             'tags': tags,
+            'submitted_by': submitted_by,
             'start_time': start_time,
             'end_time': end_time,
             'sources': sources,
@@ -289,6 +301,9 @@ def _get_log_id(job_id, ingest_type, **additional_data):
     Returns log identifier based on the job_id, ingest_type and
     any additional_data.
     """
+    # job_id should be lowercase due to Elasticsearch index
+    # naming constraints
+    job_id = job_id.lower()
     if ingest_type == 'qa':
         test_index = additional_data.get('test_index', 0)
         return f'log_qa-{job_id}-{test_index}'
@@ -525,6 +540,7 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
     except Exception as e:
         logging.exception('Error while ingesting the logs')
         _update_metadata(es_metadata, LOG_ID, 'FAILED', {
+            **metadata,
             'ingestion_error': str(e)
         })
 
