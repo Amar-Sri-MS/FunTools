@@ -39,6 +39,10 @@ def get_logger(name=None, filename=None):
     # Get the default logger
     custom_logger = logging.getLogger(name)
 
+    # Checking if the logger with the name is already configured.
+    if custom_logger.hasHandlers() and len(custom_logger.handlers) > 0:
+        return custom_logger
+
     # Always register a stderr handler.
     handler = logging.StreamHandler()
     formatter = logging.Formatter(fmt=DEFAULT_LOG_FORMAT)
