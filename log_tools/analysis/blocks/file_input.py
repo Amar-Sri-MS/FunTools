@@ -112,9 +112,9 @@ class TextFileInput(Block):
         """
         if pattern:
             match = re.search(pattern, filename)
-            grouped_matches = match.groupdict()
 
-            if match and grouped_matches:
+            if match:
+                grouped_matches = match.groupdict()
                 self.cfg = {
                     **self.cfg,
                     **grouped_matches
