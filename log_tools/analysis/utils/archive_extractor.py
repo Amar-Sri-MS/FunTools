@@ -10,8 +10,9 @@ import tarfile
 import zipfile
 
 from pathlib import Path
+from utils.timeline import timeline_logger
 
-
+@timeline_logger('extracting_archive')
 def extract(path):
     """ Extract archive in the exisiting path """
     if not os.path.exists(path):

@@ -31,6 +31,7 @@ from flask import current_app
 from werkzeug.utils import secure_filename
 
 from utils import archive_extractor, manifest_parser
+from utils import timeline
 import ingest as ingest_handler
 import logger
 
@@ -74,6 +75,9 @@ def main():
 
         custom_logging = logger.get_logger(filename=f'{LOG_ID}.log')
         custom_logging.propagate = False
+
+        # Initializing the timeline tracker
+        timeline.init(LOG_ID)
 
         metadata = {
             'tags': tags,
@@ -613,6 +617,7 @@ def _create_manifest(path, metadata={}, contents=[]):
         yaml.dump(manifest, file)
 
 
+@timeline.timeline_logger('downloading_logs')
 def check_and_download_logs(url, path):
     """ Downloading log archives from QA dashboard """
     filename = url.split('/')[-1].replace(' ', '_')

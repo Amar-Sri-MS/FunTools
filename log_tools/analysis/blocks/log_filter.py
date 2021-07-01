@@ -8,6 +8,7 @@
 from datetime import datetime
 
 from blocks.block import Block
+from utils import timeline
 
 
 class LogFilter(Block):
@@ -41,6 +42,7 @@ class LogFilter(Block):
         return (start_time, end_time)
 
     def process(self, iters):
+        timeline.track_start('log_filter')
         for iter in iters:
             for tuple in iter:
                 filtered = False
@@ -54,3 +56,4 @@ class LogFilter(Block):
                 if not filtered:
                     yield tuple
 
+        timeline.track_end('log_filter')

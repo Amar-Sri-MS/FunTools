@@ -10,12 +10,14 @@ import os
 import re
 
 from blocks.block import Block
-
+from utils import timeline
 
 class FunOSInput(Block):
     """ Handles FunOS log files """
     def process(self, iters):
-        return self.lines2tuples(iters[0])
+        timeline.track_start('log_parser')
+        yield from self.lines2tuples(iters[0])
+        timeline.track_end('log_parser')
 
     def lines2tuples(self, iter):
         uboot_done = False
@@ -99,6 +101,7 @@ class FunOSInput(Block):
 class ISOFormatInput(Block):
     """ Handles logs with ISO format timestamps """
     def process(self, iters):
+        timeline.track_start('log_parser')
         for (_, _, system_type, system_id, uid, _, _, line) in iters[0]:
             line = line.strip()
 
@@ -110,7 +113,7 @@ class ISOFormatInput(Block):
             d = datetime.datetime.fromisoformat(iso_format_datetime)
 
             yield (d, d.microsecond, system_type, system_id, uid, None, None, parts[2])
-
+        timeline.track_end('log_parser')
 
 class GenericInput(Block):
     """
@@ -118,6 +121,7 @@ class GenericInput(Block):
     <MILLISECONDS|MICROSECONDS|EMPTY> <TIMEZONE_OFFSET|EMPTY> <MESSAGE>
     """
     def process(self, iters):
+        timeline.track_start('log_parser')
         for (_, _, system_type, system_id, uid, _, _, line) in iters[0]:
             line = line.strip()
             # Ignore if the line is empty
@@ -151,7 +155,9 @@ class GenericInput(Block):
                     msg = filename.strip() + ' ' + msg.strip()
                 yield (date_time, usecs, system_type, system_id, uid, None, None, msg)
             else:
-                logging.warning(f'Malformed line in {uid}: {line}')
+                # logging.warning(f'Malformed line in {uid}: {line}')
+                pass
+        timeline.track_end('log_parser')
 
     @staticmethod
     def extract_timestamp(day_str, time_str, secs_str):
@@ -171,6 +177,7 @@ class KeyValueInput(Block):
     Handles logs with key value log format
     """
     def process(self, iters):
+        timeline.track_start('log_parser')
         for (_, _, system_type, system_id, uid, _, _, line) in iters[0]:
             line = line.strip()
 
@@ -196,6 +203,8 @@ class KeyValueInput(Block):
                 msg = log_fields.get('msg', '')
 
                 yield (date_time, usecs, system_type, system_id, uid, None, log_fields.get('level'), msg)
+
+        timeline.track_end('log_parser')
 
     @staticmethod
     def extract_timestamp(time_str):

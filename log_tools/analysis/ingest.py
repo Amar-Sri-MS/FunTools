@@ -20,6 +20,7 @@ import logger
 from elastic_metadata import ElasticsearchMetadata
 from utils import archive_extractor
 from utils import manifest_parser
+from utils import timeline
 
 
 def main():
@@ -52,6 +53,9 @@ def main():
     LOG_ID = f'log_{build_id}'
     custom_logging = logger.get_logger(filename=f'{LOG_ID}.log')
     custom_logging.propagate = False
+
+    # Initializing the timeline tracker
+    timeline.init(LOG_ID)
 
     status = start_pipeline(args.path, build_id, filters=filters, output_block=args.output)
 
@@ -140,12 +144,16 @@ def start_pipeline(base_path, build_id, filters={}, metadata={}, output_block='E
         **metadata
     })
 
+    timeline.generate_timeline()
+    timeline.backup_timeline_files()
+
     return {
         'success': True,
         'time_taken': time_taken
     }
 
 
+@timeline.timeline_logger('build_pipeline')
 def build_pipeline_cfg(path, filters, output_block):
     """ Constructs pipeline and metadata based on the manifest file """
     cfg = dict()

@@ -17,7 +17,7 @@ import os
 import re
 
 from blocks.block import Block
-
+from utils import timeline
 
 class TextFileInput(Block):
     """ Reads input from text files matching a specified pattern """
@@ -36,6 +36,7 @@ class TextFileInput(Block):
         self.cfg = cfg
 
     def process(self, iters):
+        timeline.track_start('file_input')
         pattern = self._replace_file_vars()
 
         input_files = glob.glob(pattern)
@@ -64,6 +65,7 @@ class TextFileInput(Block):
                     f.seek(0,2)
                     file_size += f.tell()
         logging.info(f'Uncompressed file size (in bytes): {file_size}')
+        timeline.track_end('file_input')
 
     def read_logs(self, f):
         multiline_logs = []

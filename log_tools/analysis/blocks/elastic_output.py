@@ -9,6 +9,7 @@ from elasticsearch7.helpers import parallel_bulk
 
 from blocks.block import Block
 import config_loader
+from utils import timeline
 
 
 class ElasticsearchOutput(Block):
@@ -49,6 +50,7 @@ class ElasticsearchOutput(Block):
 
     def process(self, iters):
         """ Writes contents from all iterables to elasticsearch """
+        timeline.track_start('indexing')
         DOCUMENT_COUNT_PER_BULK_INGEST = 100000
         documents = list()
         for it in iters:
@@ -64,6 +66,8 @@ class ElasticsearchOutput(Block):
             # If any documents are left to ingest
             if len(documents) > 0:
                 yield from self._ingest_documents(documents)
+
+        timeline.track_end('indexing')
 
     def _ingest_documents(self, documents):
         """
