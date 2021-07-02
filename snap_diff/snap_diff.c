@@ -161,7 +161,7 @@ int get_snap_diff()
 	unsigned short nlb = 0;
 	int dd = 0, ret = 0, cnt = 0;
 	unsigned long long *b = NULL;
-	char *data = NULL, *cb_data = NULL; 
+	char *data = NULL; 
 	unsigned long long blockid = 0, mask = 0;
 	unsigned long long slba = g_params.slba;
 	unsigned long long end = g_params.slba + g_params.nlb;
@@ -194,7 +194,6 @@ int get_snap_diff()
 	cmd.addr = (unsigned long long)data;
 	cmd.data_len = BUF_SIZE;
 	memcpy(&cmd.cdw12, g_params.snap_uuid, UUID_LEN);
-    cb_data = data + CB_DATA_OFFSET_IN_BYTES;
 
 	write_header(fp);
 	while (slba < end) {
@@ -215,9 +214,7 @@ int get_snap_diff()
 		blockid = slba;
 		cnt = (BITMAP_ALIGN(nlb, 64) >> 6);
 		b = (unsigned long long*)data;
-        printf("count=%d\n", cnt);
 		for (int i=cnt-1; i >= 0; i--) {
-			printf("data=%llu\n", b[i]);
 			for(int j=0; j < BITS_PER_RECORD; j++) {
 				if (blockid == end) {
 					break;
