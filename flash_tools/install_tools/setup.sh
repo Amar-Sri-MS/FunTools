@@ -146,6 +146,14 @@ EXIT_STATUS=0
 
 if [[ $ccfg_only != 'true' ]]; then
 	if [[ $downgrade == 'true' ]]; then
+		if [ -n "$host_sku" ]; then
+			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u eepr --check-image-only --select-by-image-type "$host_sku"
+			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
+			if [ $EXIT_STATUS -ne 0 ]; then
+				log_msg "This sku \"$host_sku\" is not supported by this bundle"
+				exit 1
+			fi
+		fi
 		./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version latest --force --downgrade
 		RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
 
