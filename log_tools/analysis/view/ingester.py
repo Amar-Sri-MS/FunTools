@@ -454,7 +454,7 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
                     # Path to the extracted log files
                     LOG_DIR = f'{path}/{archive_name}'
 
-                    if release_train in ('master', '2.0', '2.0.1', '2.0.2', '2.1', '2.2', '2.3'):
+                    if release_train in ('master', '2.0', '2.0.1', '2.0.2', '2.1', '2.2', '2.2.1', '2.3'):
                         # Copying FUNLOG_MANIFEST file
                         template_path = os.path.join(file_path, '../config/templates/fc/FUNLOG_MANIFEST')
                         shutil.copy(template_path, LOG_DIR)
@@ -475,7 +475,7 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
                     LOG_DIR = f'{path}/{archive_name}/tmp/debug_logs'
 
                     # master release
-                    if release_train in ('master', '2.1', '2.2', '2.3'):
+                    if release_train in ('master', '2.1', '2.2', '2.2.1', '2.3'):
                         files = _get_valid_files(LOG_DIR)
                         # TODO(Sourabh): This is an assumption that there will not be
                         # other files in this directory
@@ -515,7 +515,7 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
                     # Path to the extracted log files
                     LOG_DIR = f'{path}/{archive_name}'
 
-                    if release_train in ('master', '2.0', '2.0.1', '2.1', '2.2', '2.3'):
+                    if release_train in ('master', '2.0', '2.0.1', '2.1', '2.2', '2.2.1', '2.3'):
                         # Copying FUNLOG_MANIFEST file
                         template_path = os.path.join(file_path, '../config/templates/system/FUNLOG_MANIFEST')
                         shutil.copy(template_path, LOG_DIR)
