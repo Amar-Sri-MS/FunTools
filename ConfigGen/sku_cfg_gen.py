@@ -436,6 +436,17 @@ class SKUCfgGen():
                 with open(os.path.join(self.output_dir, '{}_eeprom_list.json'.format(chip_type)), "wb") as f:
                     json.dump(eeprom_list, f, indent=4)
 
+    # Generate a new dict containing @entry that can be merged into
+    # a global config for a given sku
+    @staticmethod
+    def create_sku_cfg_entry(sku, entry):
+        return { 'skus' : { sku: entry }}
+
+    # Get a dict key where the sku entries are stored
+    @staticmethod
+    def get_sku_path():
+        return 'skus'
+
     @staticmethod
     def get_build_deplist():
         this_dir = os.path.dirname(os.path.abspath(__file__))

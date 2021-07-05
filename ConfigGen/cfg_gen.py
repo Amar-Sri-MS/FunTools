@@ -209,7 +209,7 @@ def _validate_subprofile_cfg(fname, js):
     print(js)
     print(js["key_path"])
     print(type(js["key_path"]))
-    
+
     assert(isinstance(js["key_path"], basestring))
 
     if ("weight" in js):
@@ -222,9 +222,9 @@ def _validate_subprofile_cfg(fname, js):
 # to skip the "subprofile-xyz.cfg" file when we encounter it. If this
 # is not the global_path, that file should not exist.
 def _load_subprofile_fragments(subdir, global_path):
-    
+
     fragments = {}
-    
+
     cfgglob = os.path.join(subdir, "*.cfg")
     for fname in glob.glob(cfgglob):
 
@@ -237,7 +237,7 @@ def _load_subprofile_fragments(subdir, global_path):
         if ("-" in pname):
             pname = pname.split("-")[0]
         assert(len(pname) > 0) # "-foo.cfg" is nonsense
-        
+
         # see if this is a subprofile descriptor
         if (fnmatch.fnmatch(bname, "subprofile-*.cfg")):
             if (not global_path):
@@ -255,7 +255,7 @@ def _load_subprofile_fragments(subdir, global_path):
         fragments[pname] = js
 
     return fragments
-        
+
 def _load_subprofiles_and_fragments(spglob, subprofiles, stype, sval):
 
     sglob = os.path.join(spglob, "*_profile")
@@ -263,24 +263,24 @@ def _load_subprofiles_and_fragments(spglob, subprofiles, stype, sval):
         if (not os.path.isdir(subprof)):
             print("WARNING: %s is not a directory, ignoring" % subprof)
             continue
-        
+
         # get the name
         subname = os.path.basename(subprof)
 
         # make sure it's valid
         assert(subname in subprofiles)
-        
+
         sub_fragments = _load_subprofile_fragments(subprof, False)
         subprofiles[subname][stype][sval] = sub_fragments
-    
+
 # boot-time configuration profiles. see profiles_config/HOWTO.md
 def _generate_profiles_config(config_root_dir, target_chip, target_boards):
- 
+
     ## root of the profile configs
     pdir = os.path.join(config_root_dir, "profiles_config")
 
     ## read the subprofile descriptions
-    
+
     # subprofiles are described in  "subprofiles/foo_subprofile" directories
     subprofiles = {}
     sglob = os.path.join(pdir, "subprofiles", "*_profile")
@@ -291,7 +291,7 @@ def _generate_profiles_config(config_root_dir, target_chip, target_boards):
 
         # get the name
         subname = os.path.basename(subdir)
-        
+
         # the definition of a subprofile is in
         # "subprofile-whatever.cfg" in the "foo_subprofile" directory.
         # the "whatever" is ignored, just there to disambiguate many
@@ -330,14 +330,14 @@ def _generate_profiles_config(config_root_dir, target_chip, target_boards):
     # read all the fragments for the chip
     chipdir = os.path.join(pdir, "chip", target_chip)
     _load_subprofiles_and_fragments(chipdir, subprofiles, "chip", target_chip)
-        
+
     # read all the fragments for all the boards
     bglob = os.path.join(pdir, "board", "*")
     for boarddir in glob.glob(bglob):
         if (not os.path.isdir(boarddir)):
             print("WARNING: %s is not a directory, ignoring" % boarddir)
             continue
-        
+
         # get the name
         boardname = os.path.basename(boarddir)
 
@@ -347,7 +347,7 @@ def _generate_profiles_config(config_root_dir, target_chip, target_boards):
 
         _load_subprofiles_and_fragments(boarddir, subprofiles,
                                         "board", boardname)
-        
+
     # parse the list of profiles
     profiles = {}
     pglob = os.path.join(pdir, "profiles", "*.cfg")
@@ -367,10 +367,10 @@ def _generate_profiles_config(config_root_dir, target_chip, target_boards):
         # validate all the keys & values that we can do statically
         print("found profile %s" % pname)
         _validate_profile_cfg(pname, js)
-        
+
         # add it to the list
         profiles[pname] = js
-    
+
 
     # make the big dict and return that
     profiles_config = {"profiles_config":
@@ -381,7 +381,7 @@ def _generate_profiles_config(config_root_dir, target_chip, target_boards):
     }
 
     return profiles_config
-        
+
 def build_target_is_posix(target_machine):
     if 'posix' in target_machine:
         return True
@@ -435,18 +435,28 @@ def _generate_funos_default_config(config_root_dir, sdk_dir, output_dir,
     funos_default_config = jsonutils.merge_dicts(funos_default_config,
                                                  modules_cfg)
 
+    ## process module config -- per-sku
+    for sku in list(funos_default_config[SKUCfgGen.get_sku_path()].keys()):
+        config_sku_dir = os.path.join(config_root_dir,
+                                   "modules_config", "board", sku)
+        if os.path.exists(config_sku_dir):
+            module_cfg = _generate_modules_config(config_sku_dir)
+            sku_modules_cfg = SKUCfgGen.create_sku_cfg_entry(sku, module_cfg)
+            funos_default_config = jsonutils.merge_dicts_recursive(funos_default_config,
+                                                    sku_modules_cfg)
+
     ## process profile configs
-    
+
     ## FIXME: generate the list of valid boards from the existing
     ## config and pass them through
     target_boards = []
     profiles_cfg = _generate_profiles_config(config_root_dir,
                                              target_chip, target_boards)
-    
+
     ## assemble into main config
     funos_default_config = jsonutils.merge_dicts(funos_default_config,
                                                  profiles_cfg)
-    
+
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
