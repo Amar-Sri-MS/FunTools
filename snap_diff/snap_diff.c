@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <unistd.h>
 #include <linux/fs.h>
+#include <uuid/uuid.h>
 
 // TODO:
 // 1. Query snap vol uuid
@@ -23,6 +24,7 @@
 #define MAX_PATH (256)
 #define BUF_SIZE (4096)
 #define OPCODE_CHANGED_BLOCKS (0xc6)
+#define OPCODE_IDENTIFY (0x06)
 #define UUID_LEN (16)
 #define MAX_QUERY_BLOCK_COUNT (512)
 #define BITS_PER_BYTE (8)
@@ -36,16 +38,19 @@ enum change_block_format{
 
 struct params {
 	char dev_path[MAX_PATH];
-	char snap_uuid[UUID_LEN + 1];
+	char snap_uuid1[UUID_STR_LEN];
+	char snap_uuid2[UUID_STR_LEN];
 	char file_path[MAX_PATH];
 	unsigned long long slba;
 	unsigned short nlb;
 	enum change_block_format format;
 	int nsid;
 	int block_size;
+	unsigned long long ns_size;
+	uuid_t snap_id;
 };
 
-struct params g_params;
+struct params g_params = {};
 
 void print_usage()
 {
@@ -53,8 +58,8 @@ void print_usage()
 	printf("-d:<device_path> Required. NVMe device path to which change block tracking query is sent\n");
 	printf("-t:<snap_uuid> Required. UUID of target snapshot for comparison/diff\n");
 	printf("-f:<file_path> Required. Path of file to write JSON diff\n");
-	printf("-s:<starting_block> Required. Lba of volume from which diff is generated.\n");
-	printf("-l:<count_of_blocks> Required. Block count for which diff is generated.\n");
+	printf("-s:<starting_block> Optional. Lba of volume from which diff is generated. Default is 0.\n");
+	printf("-l:<count_of_blocks> Optional. Block count for which diff is generated. Default is all blocks of the volume.\n");
 	printf("-r Generate the output in range format. Default is block format\n");
 	printf("-h Print usage\n");
 }
@@ -66,7 +71,7 @@ void parse_params(int cnt, char* params[])
 		if (strncasecmp(params[i], "-d:", strlen("-d:")) == 0) {
 			strncpy(g_params.dev_path, params[i]+strlen("-d:"), MAX_PATH);
 		} else if (strncasecmp(params[i], "-t:", strlen("-t:")) == 0) {
-			strncpy(g_params.snap_uuid, params[i]+strlen("-t:"), UUID_LEN);
+			strncpy(g_params.snap_uuid1, params[i]+strlen("-t:"), UUID_STR_LEN);
 		} else if (strncasecmp(params[i], "-f:", strlen("-f:")) == 0) {
 			strncpy(g_params.file_path, params[i]+strlen("-f:"), MAX_PATH);
 		} else if (strncasecmp(params[i], "-s:", strlen("-s:")) == 0) {
@@ -90,9 +95,19 @@ void parse_params(int cnt, char* params[])
 bool validate_params()
 {
 	if (strlen(g_params.dev_path) == 0 ||
-		strlen(g_params.snap_uuid) == 0 ||
+		strlen(g_params.snap_uuid1) == 0 ||
 		strlen(g_params.file_path) == 0) {
 		printf("Error. Required parameter missing.\n");
+		print_usage();
+		return false;
+	}
+	if (g_params.slba < 0 || g_params.nlb < 0) {
+		printf("Error. Invalid parameter.\n");
+		print_usage();
+		return false;
+	}
+	if (uuid_parse(g_params.snap_uuid1, g_params.snap_id)) {
+		printf("Invalid snapshot uuid.\n");
 		return false;
 	}
 	return true;
@@ -103,8 +118,8 @@ void write_header(FILE *fp)
 	fprintf(fp, "{\n");
 	fprintf(fp, "\t\"version\": \"1.0\"\n");
 	fprintf(fp, "\t\"format\": \"block_format\"\n");
-	fprintf(fp, "\t\"snap1\": \"%s\"\n", g_params.snap_uuid);
-	fprintf(fp, "\t\"snap2\": \"%s\"\n", g_params.snap_uuid);
+	fprintf(fp, "\t\"snap1\": \"%s\"\n", g_params.snap_uuid1);
+	fprintf(fp, "\t\"snap2\": \"%s\"\n", g_params.snap_uuid2);
 	fprintf(fp, "\t\"start\": \"%llu\"\n", g_params.slba);
 	fprintf(fp, "\t\"length\": \"%d\"\n", g_params.nlb);
 	fprintf(fp, "\t\"block_size\": \"%d\"\n", g_params.block_size);
@@ -120,6 +135,33 @@ void write_footer(FILE *fp)
 {
 	fprintf(fp, "]\n}\n");
 	fflush(fp);
+}
+
+int query_device_details(int dd, int nsid)
+{
+	int ret = 0;
+	unsigned long long *ns_size;
+	struct nvme_admin_cmd cmd = {};
+	char buf[BUF_SIZE];
+
+	memset(buf, 0, BUF_SIZE);
+	cmd.opcode = OPCODE_IDENTIFY;
+	cmd.nsid = nsid;
+	cmd.addr = (unsigned long long)buf;
+	cmd.data_len = BUF_SIZE;
+
+	ret = ioctl(dd, NVME_IOCTL_ADMIN_CMD, &cmd);
+	if(0 != ret) {
+		printf("Error sending NVMe command %d\n", ret);
+		goto done;
+	}
+
+	ns_size = (unsigned long long *) buf;
+	g_params.ns_size = le64toh(*ns_size) + 1;
+	uuid_unparse_lower(buf+104, g_params.snap_uuid2);
+
+done:
+	return ret;
 }
 
 int query_device()
@@ -141,9 +183,25 @@ int query_device()
 		goto done;
 	}
 
+	if (query_device_details(dd, g_params.nsid)) {
+		printf("Failed to query device details\n");
+		ret = 1;
+		goto done;
+	}
+
 	ret = ioctl(dd, BLKSSZGET, &g_params.block_size);
 	if (ret < 0) {
 		printf("Failed to query block size\n");
+		goto done;
+	}
+
+	if (g_params.nlb == 0) {
+		g_params.nlb = g_params.ns_size;
+	}
+
+	if ((g_params.slba + g_params.nlb) > g_params.ns_size) {
+		printf("Invalid parameter. Blocks out of range.\n");
+		ret = 1;
 		goto done;
 	}
 
@@ -165,7 +223,6 @@ int get_snap_diff()
 	unsigned long long blockid = 0, mask = 0;
 	unsigned long long slba = g_params.slba;
 	unsigned long long end = g_params.slba + g_params.nlb;
-	char uuid2[UUID_LEN] = {};
 	struct nvme_admin_cmd cmd = {};
 
 	dd = open(g_params.dev_path, O_RDWR);
@@ -193,7 +250,7 @@ int get_snap_diff()
 	cmd.nsid = g_params.nsid;
 	cmd.addr = (unsigned long long)data;
 	cmd.data_len = BUF_SIZE;
-	memcpy(&cmd.cdw12, g_params.snap_uuid, UUID_LEN);
+	memcpy(&cmd.cdw12, g_params.snap_id, UUID_LEN);
 
 	write_header(fp);
 	while (slba < end) {
