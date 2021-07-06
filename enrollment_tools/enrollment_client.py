@@ -217,7 +217,7 @@ def generate_enrollment_cert(tbs_cert, verbose=False):
 
 def get_cert_of_serial_number(sn, verbose=False):
 
-    sn_64 = binascii.b2a_base64(sn)
+    sn_64 = binascii.b2a_base64(sn).rstrip()
 
     url = "https://f1reg.fungible.com/cgi-bin/enrollment_server.cgi?cmd=cert&sn=%s" % sn_64
     response = requests.get(url)
