@@ -11,10 +11,6 @@
 #include <linux/fs.h>
 #include <uuid/uuid.h>
 
-// TODO:
-// 1. Query snap vol uuid
-// 2. Query snap vol block count
-
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 #define BITMAP_ALIGN(_val, _boundary)\
@@ -214,7 +210,7 @@ done:
 
 int get_snap_diff()
 {
-	char delim = '\0';
+	char delim = ' ';
 	FILE *fp = NULL;
 	unsigned short nlb = 0;
 	int dd = 0, ret = 0, cnt = 0;
