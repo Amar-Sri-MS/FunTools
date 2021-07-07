@@ -28,7 +28,6 @@ sys.path.insert(0, '.')
 from elastic_metadata import ElasticsearchMetadata
 from flask import Blueprint, jsonify, request, render_template
 from flask import current_app
-from werkzeug.utils import secure_filename
 
 from utils import archive_extractor, manifest_parser
 from utils import timeline
@@ -137,7 +136,7 @@ def upload():
 
     save_dir = os.path.join(DOWNLOAD_DIRECTORY, LOG_ID)
     os.makedirs(save_dir, exist_ok=True)
-    save_path = os.path.join(save_dir, secure_filename(file.filename))
+    save_path = os.path.join(save_dir, file.filename)
 
     current_chunk = int(request.form['dzchunkindex'])
 

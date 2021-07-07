@@ -199,6 +199,10 @@
         const feedbackElement = document.getElementById("feedback");
 
         if (ingestType && ingestType === "upload") {
+            let params = new URLSearchParams();
+            params.set("ingest_type", "upload");
+            window.history.pushState(null, null, `?${params.toString()}`);
+
             dropzone = new Dropzone("div#uploader", {
                 url: 'upload',
                 paramName: 'file',
@@ -344,7 +348,7 @@
                 }
             }
 
-            const uri = `${window.location.href}/${logID}/status`;
+            const uri = `${window.location.origin}${window.location.pathname}/${logID}/status`;
             xhttp.open('GET', uri);
             xhttp.send();
         }
