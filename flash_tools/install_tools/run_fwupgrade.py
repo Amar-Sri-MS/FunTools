@@ -41,6 +41,7 @@ UPGRADE_IF_PRESENT_IMAGES = {'nvdm', 'scap'}
 # noticed during upgrade success verification
 IGNORE_ERRORS_IMAGES = {'nvdm', 'scap'}
 
+EXIT_CODE_OK = 0
 EXIT_CODE_ERROR = 1
 EXIT_CODE_DOWNGRADE_ATTEMPT = 2
 
@@ -548,6 +549,9 @@ def main():
             dest='version_check',
             help='Skip current version query')
 
+    arg_parser.add_argument('--check-image-only', action='store_true',
+            help='Do not perform upgrade, only check if a given image type is present in package')
+
     args, unknown = arg_parser.parse_known_args()
 
     if unknown:
@@ -598,6 +602,10 @@ def main():
 
     try:
         release_images = prepare(args)
+        if args.check_image_only:
+            i = { k:release_images.get(k) for k in args.upgrade if release_images.get(k) }
+            sys.exit(EXIT_CODE_OK if len(i) == len(args.upgrade) else EXIT_CODE_ERROR)
+
         run_upgrade(args, release_images)
     except DowngradeAttemptException:
         sys.exit(EXIT_CODE_DOWNGRADE_ATTEMPT)
