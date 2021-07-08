@@ -10,44 +10,45 @@
 #include <unistd.h>
 #include <linux/fs.h>
 #include <uuid/uuid.h>
+#include <errno.h>
 
-// TODO:
-// 1. Query snap vol uuid
-// 2. Query snap vol block count
-
+// macro functions
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 #define BITMAP_ALIGN(_val, _boundary)\
 	(__typeof__(_val))(((unsigned long)(_val) +\
 	(_boundary) - 1) & ~((_boundary) - 1))
 
-#define MAX_PATH (256)
-#define BUF_SIZE (4096)
-#define OPCODE_CHANGED_BLOCKS (0xc6)
-#define OPCODE_IDENTIFY (0x06)
-#define UUID_LEN (16)
-#define MAX_QUERY_BLOCK_COUNT (512)
-#define BITS_PER_BYTE (8)
-#define CB_DATA_OFFSET_IN_BYTES (0)
-#define BITS_PER_RECORD (64)
+// constants
+#define MAX_PATH 				(256)
+#define BUF_SIZE 				(4096)
+#define UUID_LEN 				(16)
+#define MAX_QUERY_BLOCK_COUNT 	(512)
+#define BITS_PER_BYTE 			(8)
+#define BITS_PER_RECORD 		(64)
 
+// NVMe opcodes
+#define OPCODE_CHANGED_BLOCKS 	(0xc6)
+#define OPCODE_IDENTIFY 		(0x06)
+
+// enum for output format options
 enum change_block_format{
 	FORMAT_BLOCK_LIST,
 	FORMAT_RANGE_LIST
 };
 
 struct params {
-	char dev_path[MAX_PATH];
-	char snap_uuid1[UUID_STR_LEN];
-	char snap_uuid2[UUID_STR_LEN];
-	char file_path[MAX_PATH];
-	unsigned long long slba;
-	unsigned short nlb;
-	enum change_block_format format;
-	int nsid;
-	int block_size;
-	unsigned long long ns_size;
-	uuid_t snap_id;
+	int nsid; // namespace id of the nvme namespace device
+	int block_size; // block size in bytes of the nve device
+	unsigned long long nlb; // number of blocks in the diff request
+	unsigned long long slba; // starting block of the diff request
+	unsigned long long ns_size; // size of nvme namespace in blocks
+	enum change_block_format format; // output format
+	uuid_t snap_id; // uuid of the snapshot volume namespace
+	char dev_path[MAX_PATH]; // device path of nvme device
+	char snap_uuid1[UUID_STR_LEN]; // uuid string of snapshot1 in diff request
+	char snap_uuid2[UUID_STR_LEN]; // uuid string of snapshot2 in diff request
+	char file_path[MAX_PATH]; // file path of output file
 };
 
 struct params g_params = {};
@@ -102,7 +103,7 @@ bool validate_params()
 		return false;
 	}
 	if (g_params.slba < 0 || g_params.nlb < 0) {
-		printf("Error. Invalid parameter.\n");
+		printf("Error. Invalid parameter. -l/-s can't be negative.\n");
 		print_usage();
 		return false;
 	}
@@ -121,14 +122,19 @@ void write_header(FILE *fp)
 	fprintf(fp, "\t\"snap1\": \"%s\"\n", g_params.snap_uuid1);
 	fprintf(fp, "\t\"snap2\": \"%s\"\n", g_params.snap_uuid2);
 	fprintf(fp, "\t\"start\": \"%llu\"\n", g_params.slba);
-	fprintf(fp, "\t\"length\": \"%d\"\n", g_params.nlb);
+	fprintf(fp, "\t\"length\": \"%llu\"\n", g_params.nlb);
 	fprintf(fp, "\t\"block_size\": \"%d\"\n", g_params.block_size);
-	fprintf(fp, "\t\"block_list\": [");
+	fprintf(fp, "\t\"%s\": [", g_params.format == FORMAT_BLOCK_LIST ? "block_list": "range_list");
 }
 
-void write_record(FILE *fp, char delim, unsigned long long slba)
+void write_block_record(FILE *fp, char delim, unsigned long long slba)
 {
 	fprintf(fp, "%c %llu", delim, slba);
+}
+
+void write_range_record(FILE *fp, char delim, unsigned long long slba, unsigned long long nlb)
+{
+	fprintf(fp, "%c {\"start\":%llu, \"length\":%llu}", delim, slba, nlb);
 }
 
 void write_footer(FILE *fp)
@@ -151,8 +157,8 @@ int query_device_details(int dd, int nsid)
 	cmd.data_len = BUF_SIZE;
 
 	ret = ioctl(dd, NVME_IOCTL_ADMIN_CMD, &cmd);
-	if(0 != ret) {
-		printf("Error sending NVMe command %d\n", ret);
+	if(ret < 0) {
+		printf("NVMe admin command %x failed. Error %d\n", OPCODE_IDENTIFY, errno);
 		goto done;
 	}
 
@@ -171,14 +177,14 @@ int query_device()
 
 	dd = open(g_params.dev_path, O_RDWR);
 	if(dd == 0) {
-		printf("Could not open device file %s\n", g_params.dev_path);
+		printf("Could not open device file %s. Error %d\n", g_params.dev_path, errno);
 		ret = 1;
 		goto done;
 	}
 
 	g_params.nsid = ioctl(dd, NVME_IOCTL_ID);
-	if (g_params.nsid == -1) {
-		printf("Failed to query nsid\n");
+	if (g_params.nsid < 0) {
+		printf("Failed to query nsid. Erro %d\n", errno);
 		ret = 1;
 		goto done;
 	}
@@ -191,7 +197,7 @@ int query_device()
 
 	ret = ioctl(dd, BLKSSZGET, &g_params.block_size);
 	if (ret < 0) {
-		printf("Failed to query block size\n");
+		printf("Failed to query block size. Error %d\n", errno);
 		goto done;
 	}
 
@@ -214,12 +220,13 @@ done:
 
 int get_snap_diff()
 {
-	char delim = '\0';
+	char delim = ' ';
 	FILE *fp = NULL;
 	unsigned short nlb = 0;
 	int dd = 0, ret = 0, cnt = 0;
 	unsigned long long *b = NULL;
 	char *data = NULL; 
+	unsigned long long range = 0, rslba = g_params.slba;
 	unsigned long long blockid = 0, mask = 0;
 	unsigned long long slba = g_params.slba;
 	unsigned long long end = g_params.slba + g_params.nlb;
@@ -227,14 +234,14 @@ int get_snap_diff()
 
 	dd = open(g_params.dev_path, O_RDWR);
 	if(dd == 0) {
-		printf("Could not open device file %s\n", g_params.dev_path);
+		printf("Could not open device file %s. Error %d\n", g_params.dev_path, errno);
 		ret = 1;
 		goto done;
 	}
 
 	fp = fopen(g_params.file_path, "w+");
 	if(fp == NULL) {
-		printf("Could not open file %s\n", g_params.file_path);
+		printf("Could not open file %s. Error %d\n", g_params.file_path, errno);
 		ret = 1;
 		goto done;
 	}
@@ -262,8 +269,8 @@ int get_snap_diff()
 		memset(data, 0, BUF_SIZE);
 
 		ret = ioctl(dd, NVME_IOCTL_ADMIN_CMD, &cmd);
-		if(0 != ret) {
-			printf("Error sending NVMe command %d\n", ret);
+		if(ret < 0) {
+			printf("NVMe admin command %x failed. Error %d\n", OPCODE_CHANGED_BLOCKS, errno);
 			goto done;
 		}
 
@@ -278,13 +285,27 @@ int get_snap_diff()
 				}
 				mask = 1ULL << j;
 				if (b[i] & mask) {
-					write_record(fp, delim, blockid);
-					delim = ',';
+					if (g_params.format == FORMAT_BLOCK_LIST) {
+						write_block_record(fp, delim, blockid);
+						delim = ',';
+					} else {
+						if (range == 0) {
+							rslba = blockid;
+						}
+						range++;
+					}
+				} else if (range > 0) {
+					write_range_record(fp, delim, rslba, range);
+					range = 0;
 				}
 				blockid++;
 			}
 		}
 		slba += nlb;
+	}
+	if (range > 0) {
+		write_range_record(fp, delim, rslba, range);
+		range = 0;
 	}
 	write_footer(fp);
 	printf("snap_diff completed\n");
