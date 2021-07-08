@@ -146,6 +146,8 @@ void write_footer(FILE *fp)
 int query_device_details(int dd, int nsid)
 {
 	int ret = 0;
+	unsigned short noiob = 0;
+	unsigned short *pnoiob;
 	unsigned long long *ns_size;
 	struct nvme_admin_cmd cmd = {};
 	char buf[BUF_SIZE];
@@ -164,6 +166,11 @@ int query_device_details(int dd, int nsid)
 
 	ns_size = (unsigned long long *) buf;
 	g_params.ns_size = le64toh(*ns_size) + 1;
+	pnoiob = (unsigned short *) buf + 46;
+	noiob = le16toh(*pnoiob);
+	if (noiob != 0) {
+		g_params.block_size *= noiob;
+	}
 	uuid_unparse_lower(buf+104, g_params.snap_uuid2);
 
 done:
@@ -189,15 +196,15 @@ int query_device()
 		goto done;
 	}
 
-	if (query_device_details(dd, g_params.nsid)) {
-		printf("Failed to query device details\n");
-		ret = 1;
-		goto done;
-	}
-
 	ret = ioctl(dd, BLKSSZGET, &g_params.block_size);
 	if (ret < 0) {
 		printf("Failed to query block size. Error %d\n", errno);
+		goto done;
+	}
+
+	if (query_device_details(dd, g_params.nsid)) {
+		printf("Failed to query device details\n");
+		ret = 1;
 		goto done;
 	}
 
