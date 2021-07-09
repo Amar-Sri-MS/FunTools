@@ -73,7 +73,7 @@ class DPCCAVP(AbsCAVPTestRunner):
             # use the name and TCP port of the DPC proxy for 1st chip
             dpc_host = env_dict['dpc_hosts'][0]
             host = dpc_host['host']
-            port = dpc_host['tcp_port']
+            port = 4223 # dpc_host['tcp_port']
             print('Using dpc host at %s:%s' % (host, port))
             self.dpc_client = dpc_client.DpcClient(server_address=(host, port))
 
