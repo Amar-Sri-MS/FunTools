@@ -294,6 +294,11 @@ def execute_all_tests(args):
     dpc_args = { n : int(dict_args.get(n,0),0) for n in ARGS_NAMES }
     remote_file_name = "trng_data_" + "_".join(["%s_x%x" % (k[0], v) for k,v in dpc_args.items()])
 
+    # deal with fun_json limitation
+    val64 = dpc_args["disabled_rings"]
+    dpc_args["disabled_rings_hi"] = (val64 >> 32)
+    dpc_args["disabled_rings_lo"] = (val64 & 0xFFFF_FFFF)
+
     print(dpc_args)
     print(remote_file_name)
 
