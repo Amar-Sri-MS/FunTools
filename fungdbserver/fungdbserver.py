@@ -69,7 +69,7 @@ def LOG(msg, suffix = "\n"):
 def LOG_ALWAYS(msg):
     msg += "\n"
     prefix = ""
-    if (not opts.server_only):        
+    if (not opts.server_only):
         prefix = "fungdbserver: "
     fl = sys.stderr
     if (opts.crashlog):
@@ -109,7 +109,7 @@ def get_default_dir():
 
     if (os.environ.get("FUNOS_SRC") is not None):
         return os.environ.get("FUNOS_SRC")
-    
+
     if (os.environ.get("WORKSPACE") is not None):
         return os.path.join(os.environ.get("WORKSPACE"), "FunOS")
 
@@ -144,11 +144,11 @@ def get_sdkdir():
         sdk = os.path.join(workspace, "FunSDK")
         if (os.path.exists(sdk)):
             return sdk
-    
+
     # no idea -- assume CWD
     return "."
 
-    
+
 
 def get_script():
 
@@ -191,7 +191,7 @@ def open_idzip(fname, use_http):
         print("cannot open this file without idzip package")
         print("% pip3 install python-idzip")
         sys.exit(1)
-    
+
     idzip.decompressor.SELECTED_CACHE = idzip.caching.LuckyCache
     if (use_http):
         # just hand over the file directly
@@ -204,7 +204,7 @@ def open_idzip(fname, use_http):
     else:
         dzfile = idzip.decompressor.IdzipFile(fname)
     return dzfile
-    
+
 class FileCorpse:
 
     def __init__(self, fname, use_idzip = False, use_http = False):
@@ -282,7 +282,7 @@ class FileCorpse:
         # filter out bogus
         if (addr & self.rdsym("PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_BAD_MASK")):
             return None
-        
+
         cluster = (addr >> self.rdsym("PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_CLUSTER_SHIFT")) & 0xf
         core = (addr >> self.rdsym("PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_CORE_SHIFT")) & 0xf
         vp = (addr >> self.rdsym("PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_VP_SHIFT")) & 0xf
@@ -290,13 +290,13 @@ class FileCorpse:
         vpnum = self.ccv_vpnum(cluster, core, vp)
 
         ss = self.rdsym("PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_SIZE")
-        
+
         va = self.symbols["stack_memory"]
         va += vpnum * ss
         va += addr & (ss-1)
 
         return self.va_clean(va)
-        
+
     def virt2phys(self, addr):
 
         # check the top bit for TLB VA
@@ -305,7 +305,7 @@ class FileCorpse:
             ## dispatch stack
             if (((addr >> self.rdsym("PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_TOKEN_SHIFT")) & 0xf) >= 0xe):
                 return self.decode_dispatch_stack_addr(addr)
-            
+
             ## guard page
             # magic expander section
             if (addr & (1<<47)):
@@ -372,8 +372,8 @@ class FileCorpse:
         b = self.symbols["exception_stack_memory"]
         o = (vpnum + 1) * 4096 - (32*8)
         return b + o
-      
-    
+
+
     def find_exception_base(self):
         if (self.symbols is None):
             return None
@@ -395,7 +395,7 @@ class FileCorpse:
         if (base == 0):
             DEBUG("NULL exception base, going straight to stack memory")
             return self.find_context_from_stack()
-            
+
         return base
 
     def ReadMemory8(self, addr):
@@ -492,7 +492,7 @@ class FileCorpse:
             return p
         else:
             return self.ReadMemory64(self.symbols[symname], host=True)
-        
+
     def vpnum_IsRunning(self, tid):
         p = self.symbols["_topo_vp"]
         n = self.rdsym("PLATFORM_DEBUG_CONSTANT_topo_vp_stride")
@@ -643,9 +643,9 @@ def find_corpse_uuid(corpse):
             raise RuntimeError("invalid forced UUID: %s" % opts.force_uuid)
         LOG_ALWAYS("FunOS UUID forced to %s" % str(uu))
         return uu
-            
+
     LOG_ALWAYS("Searching for FunOS UUID")
-    
+
     # search for the locator token
     offset = 0
     found = None
@@ -666,7 +666,7 @@ def find_corpse_uuid(corpse):
 
     if (u is None):
         raise RuntimeError("Could not locate FunOS UUID")
-        
+
     return u
 
 
@@ -678,7 +678,7 @@ def auto_corpse_offset(corpse):
     # ELF files have no offset
     if corpse.elf is not None:
         return 0
-    
+
     if (n0mb != 0):
         LOG("Detected 1mb memory offset")
         return 1024 * 1024
@@ -688,8 +688,8 @@ def auto_corpse_offset(corpse):
 
     LOG("detected corpse offset 0")
     return 0
-        
-    
+
+
 def find_corpse_offset(corpse):
 
     if (opts.offset == "0"):
@@ -730,7 +730,7 @@ def file_is_data(hbmdump):
     stype = filetype(hbmdump)
     if (stype == "data"):
         return True
-    
+
     return False
 
 def file_is_gzip(hbmdump):
@@ -747,7 +747,7 @@ def file_is_tar(hbmdump):
     stype = filetype(hbmdump)
     if (stype.startswith("POSIX tar archive")):
         return True
-    
+
     return False
 
 def file_is_tgz(hbmdump):
@@ -755,7 +755,7 @@ def file_is_tgz(hbmdump):
     if ((stype.startswith("POSIX tar archive") and
          ("gzip compressed data" in stype))):
         return True
-    
+
     return False
 
 def file_is_tbz(hbmdump):
@@ -763,7 +763,7 @@ def file_is_tbz(hbmdump):
     if ((stype.startswith("POSIX tar archive") and
          ("bzip2 compressed data" in stype))):
         return True
-    
+
     return False
 
 # indexed gzip (idzip)
@@ -775,7 +775,7 @@ def file_is_idgz(hbmdump):
     stype = filetype(hbmdump)
     if ("(gzip compressed data, extra field" in stype):
         return True
-    
+
     return False
 
 # http remote indexed gzip
@@ -806,7 +806,7 @@ def transform_file(xform, cmd, inname, outname=None):
     if (outname is None):
         # so you can rm *.fungdb_out*
         outname = "%s.fungdb_out" % inname
-    
+
     if (not os.path.exists(outname)):
         # transform the args
         y = {}
@@ -837,7 +837,7 @@ def extract_tar(tarname):
     return transform_file("untar",
                           ["tar", "Oxf", "{inname}", ">", "{outname}"],
                           tarname)
-    
+
 def extract_tgz(tarname):
     return transform_file("untgz",
                           ["tar", "Ozxf", "{inname}", ">", "{outname}"],
@@ -858,25 +858,25 @@ def setup_corpse(hbmdump):
 
     global corpse
     use_idzip = False
-        
+
     # work out what kind of file it is
     if (file_is_http(hbmdump)):
         # remote compressed file
         print("File is http, using remote")
-        
+
         # setup the file object
         corpse = FileCorpse(hbmdump, True, True)
     elif (file_is_idgz(hbmdump)):
         # same file, different file object
         print("File is indexed gzip, using in-place")
-        
+
         # setup the file object
         corpse = FileCorpse(hbmdump, True)
     else:
         print("Regular old file")
         if (file_is_tgz(hbmdump)):
             hbmdump = extract_tgz(hbmdump)
-        
+
         if (file_is_tbz(hbmdump)):
             hbmdump = extract_tbz(hbmdump)
 
@@ -891,7 +891,7 @@ def setup_corpse(hbmdump):
 
         if (not file_is_data(hbmdump) and not file_is_elf(hbmdump)):
             raise RuntimeError("hbmdump file is still not raw data or elf")
-                
+
         # setup the file object
         corpse = FileCorpse(hbmdump, False)
 
@@ -900,7 +900,7 @@ def setup_corpse(hbmdump):
 
     # work out its offset
     corpse.memoffset = find_corpse_offset(corpse)
-    
+
     return uuid
 
 ###
@@ -1040,7 +1040,7 @@ def _default_sym(symname):
     # barf
     ERROR("Failed to find symbol '%s' in binary or defaults. Exiting" % symname)
     sys.exit(1)
-    
+
 
 def deal_withCRC(obj, cmd):
 
@@ -1061,7 +1061,7 @@ def deal_withCRC(obj, cmd):
     LOG(s)
     obj.send(s)
 
-    
+
 SYMLIST = None
 SYMTAB = None
 def deal_withsymbols(obj, reply):
@@ -1274,7 +1274,7 @@ class GDBClientHandler(object):
             # EOF checks first
             if len(c) != 1:
                 return 'Error: EOF'
-            
+
             # translate it to internal string. some gdb commands
             # get messed up bytes. decode() fails on them. but you
             # can do this. python fail.
@@ -1334,7 +1334,7 @@ def poll_sock_and_gdb(sock):
         if (gdb_status is not None):
             ERROR("gdb terminated before connecting to TCP socket: %s" % gdb_status)
             sys.exit(1)
-        
+
         # wait a short while for a connection
         DEBUG("selecting")
         r, w, x = select.select([sock], [], [sock], 0.1)
@@ -1352,7 +1352,7 @@ def wait_for_connect(sock):
         return
 
     poll_sock_and_gdb(sock)
-    
+
 
 def server_listen(sock):
     port = sock.getsockname()[1]
@@ -1381,24 +1381,24 @@ def run_gdb_async(port, elffile):
 
     if (opts.debug_exit_gdb):
         cmd += ["-ex", "quit"]
-        
+
     if (not opts.confirm):
         cmd += ["-ex", "set confirm off"]
-        
+
     script = get_script()
     if (script is not None):
         cmd += ["-ex", "source %s" % script]
 
     if (opts.gdb_debug):
         cmd += ["-ex", "set debug remote 1"]
-        
+
     if (opts.gdb_timeout is not None):
         # avoid gdb packet timeout errors due to
         # wire latency
         cmd += ["-ex", "set remotetimeout %s" % opts.gdb_timeout]
-            
+
     cmd += ["-ex", "target remote :%s" % port,
-            "-ex", "compare-sections .note.gnu.build-id"]            
+            "-ex", "compare-sections .note.gnu.build-id"]
 
     # make sure we discard gdb's bootstrap register state
     cmd += ["-ex", "flushregs"]
@@ -1409,9 +1409,9 @@ def run_gdb_async(port, elffile):
 
     for command in opts.ex:
         cmd += ["-ex", command]
-        
+
     cmd += [elffile]
-    
+
     LOG_ALWAYS("Running GDB: %s" % " ".join(cmd))
     try:
         gdb_proc = subprocess.Popen(cmd)
@@ -1423,7 +1423,7 @@ def run_gdb_async(port, elffile):
 ###
 ##  entry & argument parsing
 #
-        
+
 def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
@@ -1475,6 +1475,7 @@ def parse_args():
                         help="Set gdb packet timeout")
     parser.add_argument("--ex", action="append", metavar="command", default=[],
                         help="GDB ex command to run")
+    parser.add_argument("--elf", help="Use provided elf file instead of downloading from excat")
 
     # final arg is the dump file
     parser.add_argument("hbmdump", help="hbmdump file")
@@ -1482,7 +1483,7 @@ def parse_args():
     args = parser.parse_args()
 
     return args
-    
+
 def main():
     # In the parent process, we want to ignore SIGINT, this will get sent to
     # GDB and GDB will stop executing whatever is currently consuming the main
@@ -1498,20 +1499,23 @@ def main():
         global log_file
         LOG_ALWAYS("fungdbserver logging to %s" % opts.output)
         log_file = open(opts.output, "w")
-        
+
     # setup the file
     uuid = setup_corpse(opts.hbmdump)
 
     LOG_ALWAYS("uuid of FunOS is %s" % str(uuid))
-    
+
     # setup the server
     sock = setup_server()
 
     # start gdb and give it control of the stdin/stdout
     if (not opts.server_only):
         # find us a binary
-        excat.parse_args(True)
-        elffile = excat.get_action(str(uuid))
+        if opts.elf:
+            elffile = opts.elf
+        else:
+            excat.parse_args(True)
+            elffile = excat.get_action(str(uuid))
 
         if (elffile is None):
             LOG_ALWAYS("Cannot continue without symbols")
