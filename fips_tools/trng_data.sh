@@ -45,5 +45,5 @@ DESC="trng $RINGS $CLOCK $SSIZE"
 
 sed "s|<description>|$DESC|g" trng_run.params > trng_run_filled.params
 echo " $RINGS $CLOCK $SSIZE" >> trng_run_filled.params
-./run_f1.py --rootfs-image ../fod/rootfs-images/ --params ../fod/trng_run_filled.params funos-f1.signed  2>&1
+./run_f1.py --params ../fod/trng_run_filled.params funos-f1.signed  2>&1
 echo "    Done!"

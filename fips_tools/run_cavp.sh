@@ -24,5 +24,5 @@ fi
 
 sed "s|<description>|$(basename ${*: -1})|g" cavp_test.params > cavp_test_filled.params
 echo ' ' $* >> cavp_test_filled.params
-./run_f1.py --rootfs-image ../fod/rootfs-images/ --params ../fod/cavp_test_filled.params funos-f1.signed  2>&1
+./run_f1.py --params ../fod/cavp_test_filled.params funos-f1.signed  2>&1
 echo "    Done!"
