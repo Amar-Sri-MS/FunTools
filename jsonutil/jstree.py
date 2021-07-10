@@ -104,11 +104,15 @@ def main():
 
     # read the code as a string
     jsonutil = os.path.join(args.sdkdir, "bin",
-                             os.uname()[0], "x86_64", "jsonutil")
+                             os.uname()[0], os.uname()[4], "jsonutil")
     subargs = [jsonutil, itype, args.file]
     # print(subargs)
-    p = subprocess.Popen(subargs,
-                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    try:
+        p = subprocess.Popen(subargs,
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except OSError:
+        print("OSError Exception executing %s" % subargs)
+        sys.exit(1)
     (stdout, stderr) = p.communicate()
 
     js = json.loads(stdout)
