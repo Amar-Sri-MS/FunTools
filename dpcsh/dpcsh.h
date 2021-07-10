@@ -21,6 +21,13 @@ enum sockmode {
 	SOCKMODE_FUNQ
 };
 
+enum parsingmode {
+	PARSE_UNKNOWN, /* bug trap */
+	PARSE_TEXT,    /* friendly command-line parsing (and legacy proxy mode) */
+	PARSE_JSON,
+	PARSE_BINARY_JSON,
+};
+
 struct dpcsock {
 
 	/* configuration */
@@ -44,6 +51,7 @@ struct dpcsock_connection {
 	int fd;                  /* connected fd */
 	bool nvme_write_done;    /* flag indicating whether write to nvme device
                                     is successful so that we can read from it */
+	enum parsingmode encoding;   /* use binary json for encoding */
 	uint32_t nvme_session_id;
 	uint32_t nvme_seq_num;
 	void *funq_connection;
