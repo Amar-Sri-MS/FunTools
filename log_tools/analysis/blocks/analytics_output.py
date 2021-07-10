@@ -17,6 +17,7 @@ from urllib.parse import quote
 from blocks.block import Block
 import config_loader
 from utils.lossycounting import LossyCounting
+from utils import timeline
 
 class AnchorMatch:
     """ Anchor Match to hold data required for a match """
@@ -188,7 +189,7 @@ class AnalyticsOutput(Block):
 
     def process(self, iters):
         """ Performs analysis on all iterables """
-
+        timeline.track_start('analytics')
         for it in iters:
             for tuple in it:
                 msg_dict = self.tuple_to_dict(tuple)
@@ -201,6 +202,7 @@ class AnalyticsOutput(Block):
 
         # Most duplicated logs
         self.generate_most_duplicates_entries()
+        timeline.track_end('analytics')
 
     def check_for_duplicate_entry(self, msg_dict):
         """ Hashing the current log message to check if exists already """

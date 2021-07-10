@@ -28,9 +28,9 @@ sys.path.insert(0, '.')
 from elastic_metadata import ElasticsearchMetadata
 from flask import Blueprint, jsonify, request, render_template
 from flask import current_app
-from werkzeug.utils import secure_filename
 
 from utils import archive_extractor, manifest_parser
+from utils import timeline
 import ingest as ingest_handler
 import logger
 
@@ -74,6 +74,9 @@ def main():
 
         custom_logging = logger.get_logger(filename=f'{LOG_ID}.log')
         custom_logging.propagate = False
+
+        # Initializing the timeline tracker
+        timeline.init(LOG_ID)
 
         metadata = {
             'tags': tags,
@@ -133,7 +136,7 @@ def upload():
 
     save_dir = os.path.join(DOWNLOAD_DIRECTORY, LOG_ID)
     os.makedirs(save_dir, exist_ok=True)
-    save_path = os.path.join(save_dir, secure_filename(file.filename))
+    save_path = os.path.join(save_dir, file.filename)
 
     current_chunk = int(request.form['dzchunkindex'])
 
@@ -450,7 +453,7 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
                     # Path to the extracted log files
                     LOG_DIR = f'{path}/{archive_name}'
 
-                    if release_train in ('master', '2.0', '2.0.1', '2.0.2', '2.1', '2.2'):
+                    if release_train in ('master', '2.0', '2.0.1', '2.0.2', '2.1', '2.2', '2.2.1', '2.3'):
                         # Copying FUNLOG_MANIFEST file
                         template_path = os.path.join(file_path, '../config/templates/fc/FUNLOG_MANIFEST')
                         shutil.copy(template_path, LOG_DIR)
@@ -471,7 +474,7 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
                     LOG_DIR = f'{path}/{archive_name}/tmp/debug_logs'
 
                     # master release
-                    if release_train in ('master', '2.1', '2.2'):
+                    if release_train in ('master', '2.1', '2.2', '2.2.1', '2.3'):
                         files = _get_valid_files(LOG_DIR)
                         # TODO(Sourabh): This is an assumption that there will not be
                         # other files in this directory
@@ -511,7 +514,7 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
                     # Path to the extracted log files
                     LOG_DIR = f'{path}/{archive_name}'
 
-                    if release_train in ('master', '2.0', '2.0.1', '2.1'):
+                    if release_train in ('master', '2.0', '2.0.1', '2.1', '2.2', '2.2.1', '2.3'):
                         # Copying FUNLOG_MANIFEST file
                         template_path = os.path.join(file_path, '../config/templates/system/FUNLOG_MANIFEST')
                         shutil.copy(template_path, LOG_DIR)
@@ -613,6 +616,7 @@ def _create_manifest(path, metadata={}, contents=[]):
         yaml.dump(manifest, file)
 
 
+@timeline.timeline_logger('downloading_logs')
 def check_and_download_logs(url, path):
     """ Downloading log archives from QA dashboard """
     filename = url.split('/')[-1].replace(' ', '_')
