@@ -1,27 +1,15 @@
 #! /usr/bin/env python3
 #
-# cavp.py
-# CAVP file parser
-# Copyright (c) 2020-2021. Fungible, Inc. All rights reserved.
+# trng.py
+# Get TRNG data
+# Copyright (c) 2021. Fungible, Inc. All rights reserved.
 #
-
-''' Rationale: CAVP test files follow the same overall syntax
-This module reads a CAVP test file, extract the tests from it based on
-the syntax, calls the proper method to execute the tests and writes
-the results to the CAVP response file
-The response file is a copy of the request file with the result
-appended to each individual test
-'''
 
 import os
 import sys
 import argparse
 import requests
 import json
-
-# need to generate some RSA keys for RSA sig gen tests
-from cryptography.hazmat.primitives.asymmetric import rsa, dsa, ec
-from cryptography.hazmat.backends import default_backend
 
 import dpc_client
 
@@ -35,34 +23,8 @@ def int_to_hex(x):
     x_bytes = x.to_bytes((x.bit_length() + 7) // 8, byteorder='big')
     return x_bytes.hex().upper()
 
-def response_file_name(req_file_name):
-    # if file is '*.req.*' replace the '.req' with '.rsp'
-    # other wise just append '.rsp'
-    if '.req' in req_file_name:
-        return rreplace(req_file_name, '.req', '.rsp', 1)
-    return req_file_name + '.rsp'
 
-######
-# Tester classes
-#
-
-
-class AbsCAVPTestRunner:
-    ''' abstract tester class '''
-    def test(self, request):
-        raise RuntimeError("abstract class called")
-
-
-class TestTester(AbsCAVPTestRunner):
-    ''' dummy tester class '''
-    def test(self, request):
-        #print(request)
-        return {'r' : 'daa1e4c446d9c7f34bb8547b1339b901f536a7e4',
-                's':  'daa1e4c446d9c7f34bb8547b1339b901f536a7e4'}
-
-
-class DPCCAVP(AbsCAVPTestRunner):
-    ''' tester using DPC function '''
+class DPCTRNGRunner:
 
     def __init__(self):
         try:
@@ -81,9 +43,9 @@ class DPCCAVP(AbsCAVPTestRunner):
             self.dpc_client = dpc_client.DpcClient()
             # no file try default
 
-    def test(self, request):
+    def run(self, request):
         # package the request as JSON and send to FunOS
-        execute_args = ['cavp', request]
+        execute_args = ['sbp_trng_data', request]
         results = self.dpc_client.execute('execute', execute_args)
         print("Result = %s" % str(results))
         # result is a dictionary with either a key 'error' or a key 'result'
@@ -99,16 +61,7 @@ class DPCCAVP(AbsCAVPTestRunner):
 
 
 
-#########################################
-# CAVP File Parser
-#
-class CAVPTest:
-
-    CURVE_MAPPING = { 'P-192' : ec.SECP192R1,
-                      'P-224' : ec.SECP224R1,
-                      'P-256' : ec.SECP256R1,
-                      'P-384' : ec.SECP384R1,
-                      'P-521' : ec.SECP521R1 }
+class TRNGDataSet:
 
     def __init__(self, file_path, tester, suffix):
         self.req_file = os.path.abspath(file_path)
@@ -195,100 +148,6 @@ class CAVPTest:
             json.dump(response, respf, indent=4)
 
 
-    def augment_test_group(self, file_props, test_group):
-        ''' generate a test group dictionary for input to the test,
-        and a test group dictionary for the response.'''
-
-        if file_props.get("mode") == "sigGen":
-
-            alg = file_props["algorithm"]
-
-            if alg == "RSA":
-                return self.augment_rsa_sig_gen_test_group(test_group)
-
-            if alg == "DSA":
-                return self.augment_dsa_sig_gen_test_group(test_group)
-
-            if alg == "ECDSA":
-                return self.augment_ecdsa_sig_gen_test_group(test_group)
-
-        # default: return same
-        return test_group, test_group
-
-    def augment_ecdsa_sig_gen_test_group(self, test_group):
-        # need to generate a private key
-        curve_name = test_group["curve"]
-
-        private_key = ec.generate_private_key(self.CURVE_MAPPING[curve_name]())
-
-        # private components -> input
-        # public components -> output
-        test_group_resp = test_group.copy()
-
-        private_numbers = private_key.private_numbers()
-        public_numbers = private_numbers.public_numbers
-
-        test_group["d"] = int_to_hex(private_numbers.private_value)
-
-        for pub_attr in ("x", "y"):
-            test_group_resp["q" + pub_attr] = int_to_hex(getattr(public_numbers, pub_attr))
-
-        return test_group, test_group_resp
-
-
-    def augment_rsa_sig_gen_test_group(self, test_group):
-        # need to generate a private key
-        private_key = rsa.generate_private_key(public_exponent=65537,
-                                               key_size=test_group["modulo"],
-                                               backend=default_backend())
-        # private components -> input
-        # public components -> output
-        test_group_resp = test_group.copy()
-
-        private_numbers = private_key.private_numbers()
-        public_numbers = private_numbers.public_numbers
-
-        for priv_attr in ("p", "q", "dmp1", "dmq1", "iqmp"):
-            test_group[priv_attr] = int_to_hex(getattr(private_numbers, priv_attr))
-        test_group["n"] = int_to_hex(public_numbers.n)
-
-        for pub_attr in ("n", "e"):
-            test_group_resp[pub_attr] = int_to_hex(getattr(public_numbers, pub_attr))
-
-        return test_group, test_group_resp
-
-
-    def augment_dsa_sig_gen_test_group(self, test_group):
-        # need to generate a private key
-
-        l = test_group["l"]
-        n = test_group["n"]
-
-        # most crypto libraries can not generate n (= q bit length) = 224
-        if l == 2048 and n == 224:
-            return None, None
-
-        # others combination, 1024/160, 2048/256, 3072/256 are supported
-        # by python3 crypto aka openssl
-        private_key = dsa.generate_private_key(l, backend=default_backend())
-
-        dsa_pqg = private_key.parameters().parameter_numbers()
-        dsa_numbers = private_key.private_numbers()
-        dsa_x = dsa_numbers.x
-        dsa_y = dsa_numbers.public_numbers.y
-
-        # private components -> input
-        # public components -> output
-        test_group_resp = test_group.copy()
-
-        for priv_attr in ("p", "q", "g"):
-            test_group[priv_attr] = int_to_hex(getattr(dsa_pqg, priv_attr))
-            test_group_resp[priv_attr] = test_group[priv_attr]
-
-        test_group["x"] = int_to_hex(dsa_x)
-        test_group_resp["y"] = int_to_hex(dsa_y)
-
-        return test_group, test_group_resp
 
 class WebDavClient:
 
@@ -411,43 +270,52 @@ class WebDavClient:
 def parse_args():
 
     parser = argparse.ArgumentParser(
-        description="Execute CAVP Test")
+        description="Execute TRGN Data Gathering")
 
-    parser.add_argument('inputs', metavar='FILE', nargs='+',
-                        help='Test file')
-    parser.add_argument('-u', '--user',
+    parser.add_argument('-u', '--user', required=True,
                         help='user name (remote)')
-    parser.add_argument('-p', '--password',
+    parser.add_argument('-p', '--password', required=True,
                         help='password (remote)')
-    parser.add_argument('-r', '--remote',
-                        help='HTTP URL where the files can be found')
-    parser.add_argument('-s', '--suffix-test-type',
-                        help='Suffix added to the testType field in the test spec')
-    parser.add_argument('-t', '--tester', default='TestTester',
-                        help='tester class')
+    parser.add_argument('-r', '--remote', required=True,
+                        help='HTTP URL where the files will be saved')
+    parser.add_argument('-d', '--disabled-rings', default="0",
+                        help='Disabled Rings Mask')
+    parser.add_argument('-s', '--sample-size', default="131072",
+                        help='Size of sample')
+    parser.add_argument('-c', '--clock-divider', default="0",
+                        help='Clock Divider')
+
     return parser.parse_args()
 
 
 def execute_all_tests(args):
+    ARGS_NAMES = ["disabled_rings", "clock_divider", "sample_size"]
+    dict_args = vars(args)
+    dpc_args = { n : int(dict_args.get(n,0),0) for n in ARGS_NAMES }
+    remote_file_name = "trng_data_" + "_".join(["%s_x%x" % (k[0], v) for k,v in dpc_args.items()])
 
-    LOCAL_FILE_NAME = 'curr_test.req.json'
+    # deal with fun_json limitation
+    val64 = dpc_args["disabled_rings"]
+    dpc_args["disabled_rings_hi"] = (val64 >> 32)
+    dpc_args["disabled_rings_lo"] = (val64 & 0xFFFF_FFFF)
 
-    tester = globals()[args.tester]()
-    if args.remote:
-        # download the file, run the test, upload the file
-        webclient = WebDavClient(args.remote, args.user, args.password)
-        for arg in args.inputs:
-            webclient.download(arg, LOCAL_FILE_NAME)
-            curr_cavp = CAVPTest(LOCAL_FILE_NAME, tester, args.suffix_test_type)
-            curr_cavp.run()
-            webclient.upload(curr_cavp.result_path(),
-                             response_file_name(arg))
+    print(dpc_args)
+    print(remote_file_name)
 
-    else:
-        # local case
-        for arg in args.inputs:
-            curr_cavp = CAVPTest(arg, tester, args.suffix_test_type)
-            curr_cavp.run()
+
+    LOCAL_FILE = 'dataset.json'
+    # run the test, save to local file, upload the file
+    webclient = WebDavClient(args.remote, args.user, args.password)
+    runner = DPCTRNGRunner()
+
+    result = runner.run(dpc_args)
+    result.update(dpc_args)
+
+    with open(LOCAL_FILE, "w") as respf:
+        json.dump(result, respf, indent=4)
+
+    webclient.upload(LOCAL_FILE,remote_file_name)
+
 
 def main():
     args = parse_args()
