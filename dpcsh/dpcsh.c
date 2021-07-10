@@ -967,18 +967,21 @@ static void apply_command_locally(const struct fun_json *json,
 	if (!strcmp(verb, "encoding_json")) {
 		*complete = true;
 		cmd->encoding = PARSE_JSON;
+		dprintf("changing encoding to json\n");
 		return;
 	}
 
 	if (!strcmp(verb, "encoding_text")) {
 		*complete = true;
 		cmd->encoding = PARSE_TEXT;
+		dprintf("changing encoding to text\n");
 		return;
 	}
 
 	if (!strcmp(verb, "encoding_binary_json")) {
 		*complete = true;
 		cmd->encoding = PARSE_BINARY_JSON;
+		dprintf("changing encoding to binary json\n");
 		return;
 	}
 
