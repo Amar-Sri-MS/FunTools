@@ -548,6 +548,7 @@
         {% endif %}
         <div id="quicklinks">
             <a id="anchor_link" data-web_event="ANCHOR_LINK" style="display: none;" href="#0">Link to the selected log</a>
+            <a data-web_event="STORAGE_TOOL" href="/tools/{{log_id}}/volume">Storage Tools</a>
             <button class="btn" onclick="toggleNotesOverlay()">
                 Add/Show notes({{ metadata.notes|length }})
             </button>

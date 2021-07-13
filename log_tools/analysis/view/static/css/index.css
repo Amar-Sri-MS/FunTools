@@ -182,7 +182,7 @@ ul {
     justify-content: flex-end;
 }
 #quicklinks > div {
-    width: calc(100% - 160px);
+    width: calc(100% - 270px);
 }
 #quicklinks a {
     padding: 5px;
