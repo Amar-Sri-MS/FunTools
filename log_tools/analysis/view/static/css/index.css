@@ -103,6 +103,9 @@ h3 {
     justify-content: center;
     margin: 10px 0px;
 }
+.form-group label {
+    padding: 0px 5px;
+}
 .form-title {
     text-decoration: underline;
 }
@@ -244,5 +247,14 @@ ul {
     margin-right: 4px;
 }
 input[type="search"] {
-    width: 400px;
+    width: 700px;
+}
+
+#loader {
+    display: none;
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    width: 100px;
+    height: 100px;
 }

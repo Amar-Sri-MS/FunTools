@@ -38,14 +38,6 @@ td {
     justify-content: center;
     margin-bottom: 20px;
 }
-#loader {
-    display: none;
-    position: fixed;
-    left: 50%;
-    top: 50%;
-    width: 100px;
-    height: 100px;
-}
 #selectedFilters {
     white-space: pre;
     display: none;
