@@ -45,11 +45,12 @@ update_sdk() {
 		kernel_cmd="${kernel_cmd} -v ${bld_num}"
 	fi
 
-	cmd="${sdkup_cmd} --sdkup"
+	sdkup_cmd="${sdkup_cmd} --sdkup"
 	kernel_cmd="${kernel_cmd} -H Linux --sdkup cc-linux-yocto.mips64"
 	echo $sdkup_cmd
 	echo $kernel_cmd
 	cd $WORKSPACE/FunSDK/
+	./scripts/bob --clean-all --sure
 	eval "$sdkup_cmd"
 	eval "$kernel_cmd"
 }
@@ -252,6 +253,59 @@ detach_volumes() {
 	fi
 }
 
+delete_volumes() {
+	if [ ! -d $WORKSPACE/Integration ]
+	then
+		echo "Integration directory does not exist"
+		exit -1
+	fi
+	cd $WORKSPACE/Integration/tools/platform/utils/myFabCmds
+
+	setup=$1
+	prefix=$2
+	fab -f flib.py cluster_setup:"$setup" delete_volumes_with_prefix:prefix="$prefix"
+}
+
+lsv_benchmark() {
+	if [ ! -d $WORKSPACE/Integration ]
+	then
+		echo "Integration directory does not exist"
+		exit -1
+	fi
+	cd $WORKSPACE/Integration/tools/platform/utils/myFabCmds
+
+	setup=$1
+
+	for queue in {2..16}
+	do
+		for qdepth in {4..16}
+		do
+			for idx in {0..11}
+			do
+				cmd_str='storage { "class": "controller"\, "opcode": "MODIFY_QOS_TABLE"\, "params": { "type": "lsv"\, "iops": 800000\, "num_queues": '
+				cmd_str+=$queue
+				cmd_str+='\, "rds_qdepth": '
+				cmd_str+=$qdepth
+				cmd_str+='\, "tcp_qdepth": '
+				cmd_str+=$qdepth
+				cmd_str+='\, "idx": '
+				cmd_str+=$idx
+				cmd_str+=' } }'
+				fab -f flib.py cluster_setup:$setup dpcshF:index=0,cmd="$cmd_str"
+				fab -f flib.py cluster_setup:$setup dpcshF:index=1,cmd="$cmd_str"
+			done
+			fab -f flib.py cluster_setup:"$setup" dpcshF:index=0,cmd='peek storage/ctrlr/qos/lsv'
+			fab -f flib.py cluster_setup:"$setup" dpcshF:index=1,cmd='peek storage/ctrlr/qos/lsv'
+			create_ec_volumes "$setup" 1 256G True True
+			attach_volumes "$setup" 1 durable True True net cab08-perf-01
+			echo "perform fio with $queue queues and $qdepth qdepth"
+			fab -f flib.py cluster_setup:"$setup" host_perfio:nvols=1
+			detach_volumes "$setup" 1 durable cab08-perf-01 net
+			delete_volumes "$setup" "durable"
+		done
+	done
+}
+
 demo_setup() {
 	if [ ! -d $WORKSPACE/Integration ]
 	then
@@ -308,6 +362,8 @@ help_menu() {
 	echo -e "--create-ec <setup_name> <numvols> <volsize> <encrypt> <compress> Creates ec volumes"
 	echo -e "--attach-volumes <setup_name> <numvols> <voltype> <encrypt> <compress> <rds/net> <host_name> Attach volumes of type voltype to host"
 	echo -e "--detach-volumes <setup_name> <numvols> <voltype> <host_name> <rds/net> Detach volumes of type voltype from host"
+	echo -e "--delete-volumes <setup_name> <prefix> Deletes volumes with prefix"
+	echo -e "--lsv-benchmark <setup_name> Runs lsv benchmark on setup"
 	echo -e "--test <numvols> <encryption> <volsize> Runs a multi-vol test"
 }
 
@@ -330,8 +386,9 @@ main() {
 		--compile)
 		fetch_workspace
 		shift # past argument
-		compile $1
+		compile $1 $2
 		shift # past value
+		shift # past second value
 		;;
 		--clean)
 		fetch_workspace
@@ -405,6 +462,19 @@ main() {
 		shift # past third value
 		shift # past forth value
 		shift # past fifth value
+		;;
+		--delete-volumes)
+		fetch_workspace
+		shift # past argument
+		delete_volumes $1 $2
+		shift # past value
+		shift # past second value
+		;;
+		--lsv-benchmark)
+		fetch_workspace
+		shift # past argument
+		lsv_benchmark $1
+		shift # past value
 		;;
 		--demo-setup)
 		demo_setup
