@@ -1088,6 +1088,8 @@ static bool _print_response_info(const struct fun_json *response) {
 			printf(PRELUDE BLUE POSTLUDE "output => *** error: '%s'"
 			       NORMAL_COLORIZE "\n", str);
 		}
+	} else if (!response) {
+		printf("*** NULL response returned\n");
 	} else {
 		if (_verbose_log || _nocli_script_mode) {
 			size_t allocated_size = 0;
@@ -1125,6 +1127,9 @@ static char *_wrap_proxy_message(struct fun_json *response) {
 			fun_json_release(result);
 			return NULL;
 		}
+	} else if (!response) {
+		printf("*** NULL response returned\n");
+		result = fun_json_create_null();
 	} else {
 		result = fun_json_retain(response);
 	}
