@@ -28,6 +28,33 @@
 # encryption enabled. The two volumes will then be attached to the host server
 # and FIO read traffic will be started.
 
+update_sdk() {
+	sdkup_cmd="./scripts/bob"
+	kernel_cmd="./scripts/bob"
+	if [ ! -z "$1" ];
+	then
+		rel_branch=$1
+		sdkup_cmd="${sdkup_cmd} -R ${rel_branch}"
+		kernel_cmd="${kernel_cmd} -R ${rel_branch}"
+	fi
+
+	if [ ! -z "$2" ];
+	then
+		bld_num=$2
+		sdkup_cmd="${sdkup_cmd} -v ${bld_num}"
+		kernel_cmd="${kernel_cmd} -v ${bld_num}"
+	fi
+
+	sdkup_cmd="${sdkup_cmd} --sdkup"
+	kernel_cmd="${kernel_cmd} -H Linux --sdkup cc-linux-yocto.mips64"
+	echo $sdkup_cmd
+	echo $kernel_cmd
+	cd $WORKSPACE/FunSDK/
+	./scripts/bob --clean-all --sure
+	eval "$sdkup_cmd"
+	eval "$kernel_cmd"
+}
+
 compile() {
 	if [ -z "$1" ]
 	then
@@ -41,8 +68,14 @@ compile() {
 		exit -1
 	fi
 
+	release=$2
 	cd $WORKSPACE/FunOS/
-	make -j4 MACHINE=$1 NDEBUG=1 SIGN=1 XDATA_LISTS=fv.file.list.yocto
+	if [ -f "fv.file.list.yocto" ]; then
+		make -j4 MACHINE=$1 NDEBUG=$release SIGN=1 LTO=1 XDATA_LISTS=fv.file.list.yocto
+	else
+		echo $WORKSPACE/FunSDK/bin/cc-linux-yocto/mips64hv/vmlinux.bin > fv.file.list.yocto
+		make -j4 MACHINE=$1 NDEBUG=$release SIGN=1 LTO=1 XDATA_LISTS=fv.file.list.yocto
+	fi
 }
 
 clean() {
@@ -155,6 +188,17 @@ create_ec_volumes() {
 	done
 }
 
+attach_volumes_help() {
+	echo -e "--attach-volumes <setup_name> <numvols> <voltype> <encrypt> <compress> <rds/net> <host_name>"
+	echo -e "	setup_name: Name of the system setup"
+	echo -e "	numvols:    Number of volumes to be attached"
+	echo -e "	voltype:    Type of volume to be attached: durable/raw"
+	echo -e "	encrypt:    Whether encryption is enabled"
+	echo -e "	compress:   Whether compression is enabled"
+	echo -e "	rds/net:    Attach mechanism...rds for FC cards...net for TCP attach"
+	echo -e "	host_name:  Name of the host server where volumes are to be attached"
+}
+
 attach_volumes() {
 	if [ ! -d $WORKSPACE/Integration ]
 	then
@@ -166,11 +210,22 @@ attach_volumes() {
 	setup=$1
 	numvols=$2
 	voltype=$3
+	via=$6
+	host=$7
 	for i in $(seq 1 $numvols);
 	do
 		volname="$voltype-vol-$i"
-		fab -f flib.py cluster_setup:"$setup" attach_vol_to_host:vol_name="$volname",host_name="cab08-qa-03",via="rds",rno=$i,cno=1,nsid=$i,encrypt=$4,compress=$5
+		fab -f flib.py cluster_setup:"$setup" attach_vol_to_host:vol_name="$volname",host_name="$host",via=$via,rno=$i,cno=1,nsid=$i,encrypt=$4,compress=$5
 	done
+}
+
+detach_volumes_help() {
+	echo -e "--detach-volumes <setup_name> <numvols> <voltype> <host_name> <rds/net>"
+	echo -e "	setup_name: Name of the system setup"
+	echo -e "	numvols:    Number of volumes to be detached"
+	echo -e "	voltype:    Type of volume to be detached: durable/raw"
+	echo -e "	host_name:  Name of the host server where volumes are to be detached"
+	echo -e "	rds/net:    Detach mechanism...rds for FC cards...net for TCP detach"
 }
 
 detach_volumes() {
@@ -184,12 +239,71 @@ detach_volumes() {
 	setup=$1
 	numvols=$2
 	voltype=$3
+	host_name=$4
+	via=$5
 	for i in $(seq 1 $numvols);
 	do
 		volname="$voltype-vol-$i"
-		fab -f flib.py cluster_setup:"$setup" detach_vol_to_host:vol_name="$volname",host_name="cab08-qa-03",via="rds",rno=$i,cno=1,nsid=$i
+		fab -f flib.py cluster_setup:"$setup" detach_vol_to_host:vol_name="$volname",host_name="$host_name",via=$via,rno=$i,cno=1,nsid=$i
 	done
-	fab -f flib.py cluster_setup:"$setup" rds_delete_controller:cno=1
+
+	if [ $via == "rds" ]
+	then
+		fab -f flib.py cluster_setup:"$setup" rds_delete_controller:cno=1
+	fi
+}
+
+delete_volumes() {
+	if [ ! -d $WORKSPACE/Integration ]
+	then
+		echo "Integration directory does not exist"
+		exit -1
+	fi
+	cd $WORKSPACE/Integration/tools/platform/utils/myFabCmds
+
+	setup=$1
+	prefix=$2
+	fab -f flib.py cluster_setup:"$setup" delete_volumes_with_prefix:prefix="$prefix"
+}
+
+lsv_benchmark() {
+	if [ ! -d $WORKSPACE/Integration ]
+	then
+		echo "Integration directory does not exist"
+		exit -1
+	fi
+	cd $WORKSPACE/Integration/tools/platform/utils/myFabCmds
+
+	setup=$1
+
+	for queue in {2..16}
+	do
+		for qdepth in {4..16}
+		do
+			for idx in {0..11}
+			do
+				cmd_str='storage { "class": "controller"\, "opcode": "MODIFY_QOS_TABLE"\, "params": { "type": "lsv"\, "iops": 800000\, "num_queues": '
+				cmd_str+=$queue
+				cmd_str+='\, "rds_qdepth": '
+				cmd_str+=$qdepth
+				cmd_str+='\, "tcp_qdepth": '
+				cmd_str+=$qdepth
+				cmd_str+='\, "idx": '
+				cmd_str+=$idx
+				cmd_str+=' } }'
+				fab -f flib.py cluster_setup:$setup dpcshF:index=0,cmd="$cmd_str"
+				fab -f flib.py cluster_setup:$setup dpcshF:index=1,cmd="$cmd_str"
+			done
+			fab -f flib.py cluster_setup:"$setup" dpcshF:index=0,cmd='peek storage/ctrlr/qos/lsv'
+			fab -f flib.py cluster_setup:"$setup" dpcshF:index=1,cmd='peek storage/ctrlr/qos/lsv'
+			create_ec_volumes "$setup" 1 256G True True
+			attach_volumes "$setup" 1 durable True True net cab08-perf-01
+			echo "perform fio with $queue queues and $qdepth qdepth"
+			fab -f flib.py cluster_setup:"$setup" host_perfio:nvols=1
+			detach_volumes "$setup" 1 durable cab08-perf-01 net
+			delete_volumes "$setup" "durable"
+		done
+	done
 }
 
 demo_setup() {
@@ -238,15 +352,18 @@ fetch_workspace() {
 
 help_menu() {
 	echo "Usage:"
-	echo -e "--compile s1/f1           Build s1/f1 FunOS image"
+	echo -e "--update-sdk <rel_branch> <bld_num> Updates FunSDK"
+	echo -e "--compile s1/f1 <release> Build s1/f1 FunOS image"
 	echo -e "--clean                   Clean up FunOS image"
 	echo -e "--upload s1/f1            Upload FunOS image to tftp server"
 	echo -e "--run s1/f1 <setup_name>  Run the FunOS image on s1/f1 setup"
 	echo -e "--format-drives <setup_name> Formats all drives in the setup"
 	echo -e "--create-raw <setup_name> <numvols> <volsize> <encrypt> Creates raw volumes"
 	echo -e "--create-ec <setup_name> <numvols> <volsize> <encrypt> <compress> Creates ec volumes"
-	echo -e "--attach-volumes <setup_name> <numvols> <voltype> <encrypt> <compress> Attach volumes of type voltype to host"
-	echo -e "--detach-volumes <setup_name> <numvols> <voltype> Detach volumes of type voltype from host"
+	echo -e "--attach-volumes <setup_name> <numvols> <voltype> <encrypt> <compress> <rds/net> <host_name> Attach volumes of type voltype to host"
+	echo -e "--detach-volumes <setup_name> <numvols> <voltype> <host_name> <rds/net> Detach volumes of type voltype from host"
+	echo -e "--delete-volumes <setup_name> <prefix> Deletes volumes with prefix"
+	echo -e "--lsv-benchmark <setup_name> Runs lsv benchmark on setup"
 	echo -e "--test <numvols> <encryption> <volsize> Runs a multi-vol test"
 }
 
@@ -259,11 +376,19 @@ main() {
 		help_menu
 		shift # past argument
 		;;
+		--update-sdk)
+		fetch_workspace
+		shift # past argument
+		update_sdk $1 $2
+		shift # past value
+		shift # past second value
+		;;
 		--compile)
 		fetch_workspace
 		shift # past argument
-		compile $1
+		compile $1 $2
 		shift # past value
+		shift # past second value
 		;;
 		--clean)
 		fetch_workspace
@@ -311,20 +436,45 @@ main() {
 		--attach-volumes)
 		fetch_workspace
 		shift # past argument
-		attach_volumes $1 $2 $3 $4 $5
+		if [ "$#" -ne 7 ]; then
+			attach_volumes_help
+			exit 1
+		fi
+		attach_volumes $1 $2 $3 $4 $5 $6 $7
+		shift # past value
+		shift # past second value
+		shift # past third value
+		shift # past forth value
+		shift # past fifth value
+		shift # past sixth value
+		shift # past seventh value
+		;;
+		--detach-volumes)
+		fetch_workspace
+		shift # past argument
+		if [ "$#" -ne 5 ]; then
+			detach_volumes_help
+			exit 1
+		fi
+		detach_volumes $1 $2 $3 $4 $5
 		shift # past value
 		shift # past second value
 		shift # past third value
 		shift # past forth value
 		shift # past fifth value
 		;;
-		--detach-volumes)
+		--delete-volumes)
 		fetch_workspace
 		shift # past argument
-		detach_volumes $1 $2 $3
+		delete_volumes $1 $2
 		shift # past value
 		shift # past second value
-		shift # past third value
+		;;
+		--lsv-benchmark)
+		fetch_workspace
+		shift # past argument
+		lsv_benchmark $1
+		shift # past value
 		;;
 		--demo-setup)
 		demo_setup
