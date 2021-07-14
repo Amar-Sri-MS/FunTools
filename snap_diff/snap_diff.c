@@ -117,13 +117,13 @@ bool validate_params()
 void write_header(FILE *fp)
 {
 	fprintf(fp, "{\n");
-	fprintf(fp, "\t\"version\": \"1.0\"\n");
-	fprintf(fp, "\t\"format\": \"block_format\"\n");
-	fprintf(fp, "\t\"snap1\": \"%s\"\n", g_params.snap_uuid1);
-	fprintf(fp, "\t\"snap2\": \"%s\"\n", g_params.snap_uuid2);
-	fprintf(fp, "\t\"start\": \"%llu\"\n", g_params.slba);
-	fprintf(fp, "\t\"length\": \"%llu\"\n", g_params.nlb);
-	fprintf(fp, "\t\"block_size\": \"%d\"\n", g_params.block_size);
+	fprintf(fp, "\t\"version\": \"1.0\",\n");
+	fprintf(fp, "\t\"format\": \"block_format\",\n");
+	fprintf(fp, "\t\"snap1\": \"%s\",\n", g_params.snap_uuid1);
+	fprintf(fp, "\t\"snap2\": \"%s\",\n", g_params.snap_uuid2);
+	fprintf(fp, "\t\"start\": \"%llu\",\n", g_params.slba);
+	fprintf(fp, "\t\"length\": \"%llu\",\n", g_params.nlb);
+	fprintf(fp, "\t\"block_size\": \"%d\",\n", g_params.block_size);
 	fprintf(fp, "\t\"%s\": [", g_params.format == FORMAT_BLOCK_LIST ? "block_list": "range_list");
 }
 
@@ -303,6 +303,7 @@ int get_snap_diff()
 					}
 				} else if (range > 0) {
 					write_range_record(fp, delim, rslba, range);
+					delim = ',';
 					range = 0;
 				}
 				blockid++;
