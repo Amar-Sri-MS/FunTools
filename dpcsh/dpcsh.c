@@ -1156,7 +1156,7 @@ static bool _print_response_info(const struct fun_json *response) {
 	return ok;
 }
 
-static char *_wrap_proxy_message(struct fun_json *response) {
+static char *_wrap_proxy_message(enum parsingmode mode, struct fun_json *response, size_t *size) {
 	const char *error_message;
 	struct fun_json *result;
 
@@ -1184,8 +1184,19 @@ static char *_wrap_proxy_message(struct fun_json *response) {
 
 	size_t allocated_size = 0;
 	uint32_t flags = use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0;
-	char *message = fun_json_pretty_print(result, 0, "    ",
+	char *message = NULL;
+	if (mode == PARSE_TEXT || mode == PARSE_JSON) {
+		message = fun_json_pretty_print(result, 0, "    ",
 					      0, flags, &allocated_size);
+		*size = strlen(message);
+		message[*size] = '\n'; // trick, since we do not need trailing zero
+	} else if (mode == PARSE_BINARY_JSON) {
+		struct fun_ptr_and_size pas = fun_json_serialize(result, &allocated_size);
+		message = (char *)pas.ptr;
+		*size = pas.size;
+	} else {
+		perror("*** Unsupported parsing mode for client!\n");
+	}
 
 	fun_json_release(result);
 	return message;
@@ -1215,10 +1226,13 @@ static bool _write_response(struct fun_json *output, struct dpcsock_connection *
 	bool ok = _print_response_info(output);
 
 	if (connection->socket->mode != SOCKMODE_TERMINAL) {
-		char *proxy_message = _wrap_proxy_message(output);
-		write(connection->fd, proxy_message, strlen(proxy_message));
-		write(connection->fd, "\n", 1);
-		fun_free_string(proxy_message);
+		size_t size;
+		char *proxy_message = _wrap_proxy_message(connection->encoding, output, &size);
+		if (proxy_message != NULL) {
+			write(connection->fd, proxy_message, size);
+			fsync(connection->fd);
+		}
+		free(proxy_message);
 	}
 
 	return ok;
