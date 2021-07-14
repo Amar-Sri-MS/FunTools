@@ -284,9 +284,11 @@
 
         function renderFailedPlexACKHistory(failedPlexACKHistory, type="EC") {
             for (const [uuid, history] of Object.entries(failedPlexACKHistory)) {
-                const title = `Failed Plex ACK History of ${type} UUID: ${uuid}`;
-                const failedPlexACKHistoryTable = getFailedPlexACKHistoryTable(history, title);
-                addTableToElement(failed_plex_ack_history_element, failedPlexACKHistoryTable);
+                if (history.length > 0) {
+                    const title = `Failed Plex ACK History of ${type} UUID: ${uuid}`;
+                    const failedPlexACKHistoryTable = getFailedPlexACKHistoryTable(history, title);
+                    addTableToElement(failed_plex_ack_history_element, failedPlexACKHistoryTable);
+                }
             }
         }
 

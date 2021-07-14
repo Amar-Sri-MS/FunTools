@@ -307,7 +307,6 @@ class Volume(object):
         time_filters = (start_time, end_time)
 
         results = self._perform_es_search(queries, time_filters)
-
         return results
 
     def _get_failed_plex_ack_info_logs(self, vol_id, start_time=None, end_time=None):
@@ -399,6 +398,9 @@ class Volume(object):
             pvg_uuid = get_value_from_params(pv_info, 'partvg_uuid')
             self.op_time = convert_datetime_str(pv_info['@timestamp'])
             primary_dpu = get_value_from_params(pv_info, 'Dpu')
+            # Primary DPU information is either in key Dpu or dpu
+            if not primary_dpu:
+                primary_dpu = get_value_from_params(pv_info, 'dpu')
             secondary_dpu = get_value_from_params(pv_info, 'secondary')
 
             pv_result_data = {
@@ -416,7 +418,7 @@ class Volume(object):
                     result_data['lsv_info'][lsv_uuid]['jvol_info'].update(complete_plex_info)
 
                 if ec_uuid:
-                    complete_plex_info = self.get_complete_plex_info(jvol_uuid, ecvol_time, vol_type='EC')
+                    complete_plex_info = self.get_complete_plex_info(ec_uuid, ecvol_time, vol_type='EC')
                     result_data['lsv_info'][lsv_uuid]['ec_info'].update(complete_plex_info)
 
                 if result_data:
@@ -493,7 +495,7 @@ class Volume(object):
             result_data['lsv_info'][lsv_uuid]['jvol_info'].update(complete_plex_info)
 
         if ec_uuid:
-            complete_plex_info = self.get_complete_plex_info(jvol_uuid, ecvol_time, vol_type='EC')
+            complete_plex_info = self.get_complete_plex_info(ec_uuid, ecvol_time, vol_type='EC')
             result_data['lsv_info'][lsv_uuid]['ec_info'].update(complete_plex_info)
 
         if result_data:
