@@ -165,7 +165,7 @@ int query_device_details(int dd, int nsid)
 	}
 
 	ns_size = (unsigned long long *) buf;
-	g_params.ns_size = le64toh(*ns_size) + 1;
+	g_params.ns_size = le64toh(*ns_size);
 	pnoiob = (unsigned short *) buf + 46;
 	noiob = le16toh(*pnoiob);
 	if (noiob != 0) {
