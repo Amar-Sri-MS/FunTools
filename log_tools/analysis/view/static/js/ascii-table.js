@@ -81,13 +81,21 @@
    */
   
   AsciiTable.alignLeft = function(str, len, pad) {
+    var strlen = null
     if (!len || len < 0) return ''
     if (str === undefined || str === null) str = ''
     if (typeof pad === 'undefined') pad = ' '
-    if (typeof str !== 'string') str = str.toString()
-    var alen = len + 1 - str.length
+    // If we want to display an HTML element then we want to
+    // consider the length of the innerText.
+    if (str instanceof Element) {
+      strlen = str.innerText.length;
+      str = str.outerHTML;
+    }
+    else if (typeof str !== 'string') str = str.toString()
+    if (!strlen) strlen = str.length;
+    var alen = len + 1 - strlen
     if (alen <= 0) return str
-    return str + Array(len + 1 - str.length).join(pad)
+    return str + Array(len + 1 - strlen).join(pad)
   }
   
   /**
@@ -100,15 +108,23 @@
    */
   
   AsciiTable.alignCenter = function(str, len, pad) {
+    var strlen = null
     if (!len || len < 0) return ''
     if (str === undefined || str === null) str = ''
     if (typeof pad === 'undefined') pad = ' '
-    if (typeof str !== 'string') str = str.toString()
-    var nLen = str.length
+    // If we want to display an HTML element then we want to
+    // consider the length of the innerText.
+    if (str instanceof Element) {
+      strlen = str.innerText.length;
+      str = str.outerHTML;
+    }
+    else if (typeof str !== 'string') str = str.toString()
+    if (!strlen) strlen = str.length;
+    var nLen = strlen
       , half = Math.floor(len / 2 - nLen / 2)
       , odds = Math.abs((nLen % 2) - (len % 2))
-      , len = str.length
-  
+      , len = strlen
+
     return AsciiTable.alignRight('', half, pad) 
       + str
       + AsciiTable.alignLeft('', half + odds, pad)
@@ -124,13 +140,22 @@
    */
   
   AsciiTable.alignRight = function(str, len, pad) {
+    var strlen = null
     if (!len || len < 0) return ''
     if (str === undefined || str === null) str = ''
     if (typeof pad === 'undefined') pad = ' '
-    if (typeof str !== 'string') str = str.toString()
-    var alen = len + 1 - str.length
+    // If we want to display an HTML element then we want to
+    // consider the length of the innerText.
+    if (str instanceof Element) {
+      strlen = str.innerText.length;
+      str = str.outerHTML;
+    }
+    else if (typeof str !== 'string') str = str.toString()
+    if (!strlen) strlen = str.length;
+    var alen = len + 1 - strlen
+
     if (alen <= 0) return str
-    return Array(len + 1 - str.length).join(pad) + str
+    return Array(len + 1 - strlen).join(pad) + str
   }
   
   /**
@@ -143,19 +168,23 @@
    */
   
   AsciiTable.alignAuto = function(str, len, pad) {
+    var strlen = 0;
     if (str === undefined || str === null) str = ''
     var type = toString.call(str)
     pad || (pad = ' ')
     len = +len
-    if (type !== '[object String]') {
-      str = str.toString()
-    }
-    if (str.length < len) {
+    // If we want to display an HTML element then we want to
+    // consider the length of the innerText.
+    if (str instanceof Element) strlen = str.innerText.length
+    else if (typeof str !== 'string') str = str.toString()
+    if (!strlen) strlen = str.length;
+    if (strlen < len) {
       switch(type) {
         case '[object Number]': return AsciiTable.alignRight(str, len, pad)
         default: return AsciiTable.alignLeft(str, len, pad)
       }
     }
+    if (str instanceof Element) return str.outerHTML
     return str
   }
   
@@ -204,6 +233,8 @@
       this.__name = name
     } else if (toString.call(name) === '[object Object]') {
       this.fromJSON(name)
+    } else if (name instanceof Element) {
+      this.__name = name
     }
     return this
   }
@@ -506,7 +537,11 @@
       var row = all[i]
       for (var k = 0; k < mLen; k++) {
         var cell = row[k]
-        max[k] = Math.max(max[k], cell ? cell.toString().length : 0)
+        var strlen = cell ? cell.toString().length : 0;
+        // If we want to display an HTML element then we want to
+        // consider the length of the innerText.
+        if (cell instanceof Element) strlen = cell.innerText.length;
+        max[k] = Math.max(max[k], cell ? strlen : 0)
       }
     }
     this.__colMaxes = max
@@ -572,8 +607,8 @@
    */
   
   AsciiTable.prototype._renderTitle = function(len) {
-    var name = ' ' + this.__name + ' '
-      , str = AsciiTable.align(this.__nameAlign, name, len - 1, ' ')
+    var name = this.__name instanceof Element ? this.__name : ' ' + this.__name + ' '
+    var str = AsciiTable.align(this.__nameAlign, name, len - 1, ' ')
     return this.__edge + str + this.__edge
   }
   
@@ -605,7 +640,6 @@
       if (use === AsciiTable.LEFT) method = 'alignLeft'
       if (use === AsciiTable.CENTER) method = 'alignCenter'
       if (use === AsciiTable.RIGHT) method = 'alignRight'
-  
       tmp.push(AsciiTable[method](cell, pad, str))
     }
     var front = tmp.join(str + this.__edge + str)
