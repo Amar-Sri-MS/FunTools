@@ -32,7 +32,7 @@ def get_volume_lifecycle(log_id):
     vol_id = request_data.get('volume_id')
 
     if not vol_id:
-        return jsonify('Volume ID missing'), 400
+        return jsonify({'error': 'Volume ID missing'}), 400
 
     try:
         volume = Volume(log_id, vol_id)
