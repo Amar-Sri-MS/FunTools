@@ -42,6 +42,7 @@
     </body>
     <script src="/static/js/ascii-table.js"></script>
     <script type="text/javascript">
+        const logID = "{{log_id}}";
         const lifecycle_element = document.getElementById("lifecycle");
         const create_phase_element = document.getElementById("create_phase");
         const mount_phase_element = document.getElementById("mount_phase");
@@ -178,8 +179,11 @@
         }
 
         function getPVInfoTable(pvInfo) {
-            let table = new window.AsciiTable("PV Info");
-            table.setHeading("Timestamp", "PVG UUID", "Primary DPU", "Secondary DPU");
+            const timestamp = pvInfo["pv_info"]["@timestamp"];
+            const URL = formLogURL(timestamp, pvInfo["pv_info"]["_id"]);
+            const title = formAnchorTag(URL, "PV Info");
+            let table = new window.AsciiTable(title);
+            table.setHeading("Timestamp", "PVG UUID", "Primary DPU", "Secondary DPU", "View Logs");
             table.addRow(
                 pvInfo["timestamp"],
                 pvInfo["pvg_uuid"],
@@ -190,7 +194,10 @@
         }
 
         function getLSVInfoTable(lsvInfo) {
-            let table = new window.AsciiTable("LSV Info");
+            const timestamp = lsvInfo["lsv_info"]["@timestamp"];
+            const URL = formLogURL(timestamp, lsvInfo["lsv_info"]["_id"]);
+            const title = formAnchorTag(URL, "LSV Info");
+            let table = new window.AsciiTable(title);
             table.setHeading("Timestamp", "LSV UUID", "JVOL UUID", "EC UUID");
             table.addRow(
                 lsvInfo["timestamp"],
@@ -244,27 +251,46 @@
                 // For remote plexes, it will contain two entries for type
                 // RDS and NV_MEMORY each
                 if (plex_info.length > 1) {
-                    remote_plex_uuid = getValueFromParams(plex_info[1], "uuid");
+                    const timestamp = plex_info[1]["@timestamp"];
+                    const URL = formLogURL(timestamp, plex_info[1]["_id"]);
+
+                    remote_plex_uuid = formAnchorTag(URL, getValueFromParams(plex_info[1], "uuid"));
                     hostingDPU = convertSystemIDtoMAC(plex_info[1]["system_id"]);
                     is_local_plex = false;
                 }
 
                 const location = is_local_plex ? "local" : "remote";
-                const status = plex_number in plex_status ? plex_status[plex_number] : "NA";
-                const fail_plex_ack = plex_uuid in fail_plex_ack_info ? fail_plex_ack_info[plex_uuid] : "";
-
-                rebuld_time = "";
-                spare_uuid = "";
-                if (plex_uuid in plex_rebuild_info) {
-                    rebuld_time = plex_rebuild_info[plex_uuid][0];
-                    spare_uuid = plex_rebuild_info[plex_uuid][1];
+                let status = plex_number in plex_status ? plex_status[plex_number]["status"] : "NA";
+                if (status !== "active" && plex_number in plex_status) {
+                    const timestamp = plex_status[plex_number]["info"]["_source"]["@timestamp"];
+                    const URL = formLogURL(timestamp, plex_status[plex_number]["info"]["_id"]);
+                    status = formAnchorTag(URL, status);
                 }
+
+                let fail_plex_ack = "";
+                if (plex_uuid in fail_plex_ack_info) {
+                    const timestamp = fail_plex_ack_info[plex_uuid]["@timestamp"];
+                    const URL = formLogURL(timestamp, fail_plex_ack_info[plex_uuid]["_id"]);
+                    fail_plex_ack = formAnchorTag(URL, timestamp);
+                }
+
+                let rebuld_time = "";
+                let spare_uuid = "";
+                if (plex_uuid in plex_rebuild_info) {
+                    const timestamp = plex_rebuild_info[plex_uuid]["@timestamp"];
+                    const URL = formLogURL(timestamp, plex_rebuild_info[plex_uuid]["_id"]);
+                    rebuld_time = formAnchorTag(URL, timestamp);
+                    spare_uuid = getValueFromParams(plex_rebuild_info[plex_uuid], "spare_uuid");
+                }
+
+                const timestamp = plex_info[0]["@timestamp"];
+                const URL = formLogURL(timestamp, plex_info[0]["_id"]);
 
                 table.addRow(
                     operation,
                     plex_number,
                     location,
-                    plex_uuid,
+                    formAnchorTag(URL, plex_uuid),
                     remote_plex_uuid,
                     status,
                     hostingDPU,
@@ -287,13 +313,16 @@
 
         function getPlexStatusHistoryTable(history, title) {
             let table = new window.AsciiTable(title);
-            table.setHeading("Timestamp", "Source", "Log");
+            table.setHeading("Timestamp", "Source", "Log Message");
 
             history.forEach(item => {
+                const timestamp = item["_source"]["@timestamp"];
+                const URL = formLogURL(timestamp, item["_id"]);
+                const anchorTag = formAnchorTag(URL, item["_source"]["msg"]);
                 table.addRow(
                     item["_source"]["@timestamp"],
                     convertSystemIDtoMAC(item["_source"]["system_id"]),
-                    item["_source"]["msg"]
+                    anchorTag
                 )
             });
             return table;
@@ -314,13 +343,43 @@
             table.setHeading("Timestamp", "Source", "Failed UUIDs");
 
             history.forEach(item => {
+                const timestamp = item["@timestamp"];
+                const URL = formLogURL(timestamp, item["_id"]);
                 table.addRow(
-                    item["@timestamp"],
+                    formAnchorTag(URL, item["@timestamp"]),
                     convertSystemIDtoMAC(item["system_id"]),
                     getValueFromParams(item, "failed_uuids")
                 )
             });
             return table;
+        }
+
+        function formAnchorTag(href, text, openNewTab=true) {
+            let a = document.createElement("a");
+            let linkText = document.createTextNode(text);
+            a.appendChild(linkText);
+            a.href = href;
+            a.target = openNewTab ? "_blank" : "_self";
+            return a;
+        }
+
+        function formSearchState(before, after) {
+            return {
+                "before": before,
+                "after": after
+            }
+        }
+
+        function formLogURL(timestamp, docID) {
+            const state = formSearchState(timestamp, timestamp);
+            let url = `${window.location.origin}/log/${logID}`;
+            let params = new URLSearchParams();
+            params.set("next", true);
+            params.set("prev", true);
+            if (state) params.set("state", JSON.stringify(state));
+            if (docID) params.set("include", docID);
+            url = `${url}?${params.toString()}#0`;
+            return url;
         }
     </script>
 </html>

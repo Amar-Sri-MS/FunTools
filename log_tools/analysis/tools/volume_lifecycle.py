@@ -296,7 +296,10 @@ class Volume(object):
             m = re.match('.*UUID: ([\S]+) plex(?:|\S) ([0-9]+) marked ([\S]+) total failed:([0-9]+)', log)
             if m:
                 uuid, plex_num, status, total_failed = m.group(1), m.group(2), m.group(3), m.group(4)
-                plex_status[int(plex_num)] = status
+                plex_status[int(plex_num)] = {
+                    'info': hit,
+                    'status': status
+                }
 
         return plex_status
 
@@ -325,7 +328,7 @@ class Volume(object):
         for result in results:
             failed_ids = get_value_from_params(result, 'failed_uuids')
             for id in failed_ids:
-                failed_uuids[id] = result['@timestamp']
+                failed_uuids[id] = result
 
         return failed_uuids
 
@@ -339,8 +342,7 @@ class Volume(object):
         rebuild_info = dict()
         for result in results:
             uuid = get_value_from_params(result, 'failed_uuid')
-            spare_uuid = get_value_from_params(result, 'spare_uuid')
-            rebuild_info[uuid] = (result['@timestamp'], spare_uuid)
+            rebuild_info[uuid] = result
 
         return rebuild_info
 
