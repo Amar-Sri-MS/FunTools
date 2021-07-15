@@ -1189,7 +1189,7 @@ static char *_wrap_proxy_message(enum parsingmode mode, struct fun_json *respons
 		message = fun_json_pretty_print(result, 0, "    ",
 					      0, flags, &allocated_size);
 		*size = strlen(message);
-		message[*size] = '\n'; // trick, since we do not need trailing zero
+		message[(*size)++] = '\n'; // trick, since we do not need trailing zero
 	} else if (mode == PARSE_BINARY_JSON) {
 		struct fun_ptr_and_size pas = fun_json_serialize(result, &allocated_size);
 		message = (char *)pas.ptr;
