@@ -538,6 +538,20 @@
             {% else %}
                 {{log_id}}
             {% endif %}
+            {% if metadata.ingestion_status is defined and metadata.ingestion_status %}
+                <div class="info" style="justify-content: center;">Ingestion Status:
+                    {% if metadata.ingestion_status is defined %}
+                        {% if metadata.ingestion_status == "INGESTION_IN_PROGRESS" %}
+                            <img title="Ingestion is in progress" class="status-img" src="/static/images/pacman.svg" />
+                        {% elif metadata.ingestion_status == "FAILED" %}
+                            <img title="Ingestion failed" class="status-img" src="/static/images/fail.png" />
+                        {% endif %}
+                    {% endif %} {{metadata.ingestion_status}}
+                    {% if metadata.ingestion_time is defined %}
+                        (Time to ingest: {{metadata.ingestion_time|round(2)}}s)
+                    {% endif %}
+                </div>
+            {% endif %}
         </h2>
         {% if metadata.tags is defined and metadata.tags and metadata.tags|length > 0 %}
             <div class="center-align">Tags:
@@ -547,11 +561,14 @@
             </div>
         {% endif %}
         <div id="quicklinks">
-            <a id="anchor_link" data-web_event="ANCHOR_LINK" style="display: none;" href="#0">Link to the selected log</a>
-            <a data-web_event="STORAGE_TOOL" href="/tools/{{log_id}}/volume" target="_blank">Storage Tools</a>
-            <button class="btn" onclick="toggleNotesOverlay()">
-                Add/Show notes({{ metadata.notes|length }})
-            </button>
+            <div></div>
+            <div style="display: flex;">
+                <a id="anchor_link" data-web_event="ANCHOR_LINK" style="display: none;" href="#0">Link to the selected log</a>
+                <button class="btn" data-web_event="STORAGE_TOOL" onclick="window.location.href='/tools/{{log_id}}/volume'">Storage Tools</button>
+                <button class="btn" onclick="toggleNotesOverlay()">
+                    Add/Show notes({{ metadata.notes|length }})
+                </button>
+            </div>
         </div>
         <div class="container">
             <h3>Apply Filters</h3>

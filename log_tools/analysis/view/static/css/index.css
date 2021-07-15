@@ -177,12 +177,13 @@ ul {
 
 
 #quicklinks {
+    width: 100%;
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: space-between;
 }
-#quicklinks > div {
-    width: calc(100% - 270px);
+#quicklinks button {
+    margin-left: 5px;
 }
 #quicklinks a {
     padding: 5px;
@@ -257,4 +258,9 @@ input[type="search"] {
     top: 50%;
     width: 100px;
     height: 100px;
+}
+
+.status-img {
+    width: 20px;
+    height: 20px;
 }

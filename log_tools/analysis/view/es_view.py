@@ -139,7 +139,8 @@ def _render_root_page(log_ids, metadata, jinja_env, template):
             'health': log['health'],
             'doc_count': log['docs.count'],
             'es_size': log['store.size'],
-            'tags': tags
+            'tags': tags,
+            'metadata': metadata.get(id, {})
         })
 
     result = template.render(template_dict, env=jinja_env)
