@@ -47,13 +47,6 @@
 #define HTTP_PORTNO     9001    /* default HTTP listen port */
 #define NO_FLOW_CTRL_DELAY_USEC	10000	/* no flow control delay in usec */
 
-enum parsingmode {
-	PARSE_UNKNOWN, /* bug trap */
-	PARSE_TEXT,    /* friendly command-line parsing (and legacy proxy mode) */
-	PARSE_JSON,    /* just proxy json */
-};
-
-static enum parsingmode _parse_mode = PARSE_UNKNOWN;
 const char *dpcsh_path;
 
 /* for debug */
@@ -545,6 +538,11 @@ static char *_read_a_line(struct dpcsock_connection *connection, ssize_t *nbytes
 
 	*nbytes = -1; /* assume error */
 
+	if (connection->encoding == PARSE_BINARY_JSON) {
+		*nbytes = fun_json_read_enough_bytes_for_json_from_fd(fd, (uint8_t **)&buf, &size);
+		return buf;
+	}
+
 	if ((connection->socket->mode == SOCKMODE_TERMINAL) && !connection->socket->base64) {
 		/* fancy pants line editor on stdin */
 		buf = getline_with_history(nbytes);
@@ -764,10 +762,12 @@ struct dpcsock_connection *dpcsocket_connect(struct dpcsock *sock)
 	}
 
 	connection->socket = sock;
+	connection->encoding = PARSE_BINARY_JSON;
 
 	if (sock->server) {
 		if (_debug_log) printf("Listening\n");
 		connection->fd = accept(sock->listen_fd, NULL, NULL);
+		connection->encoding = PARSE_JSON;
 		return connection;
 	}
 
@@ -790,6 +790,7 @@ struct dpcsock_connection *dpcsocket_connect(struct dpcsock *sock)
 	/* unused == no-op */
 	if (sock->mode == SOCKMODE_TERMINAL) {
 		connection->fd = STDIN_FILENO; /* give it a real FD */
+		connection->encoding = PARSE_TEXT;
 	}
 
 	if (sock->mode == SOCKMODE_DEV) {
@@ -836,6 +837,11 @@ static struct fun_json *_read_from_sock(struct dpcsock_connection *connection, b
 	struct fun_json *json = NULL;
 	struct dpcsock *socket = connection->socket;
 
+	if (connection->encoding != PARSE_BINARY_JSON) {
+		perror("the only mode for communication with FunOS is binary json");
+		return NULL;
+	}
+
 	if (!socket->base64 && socket->mode != SOCKMODE_NVME) {
 		return fun_json_read_from_fd(connection->fd);
 	}
@@ -881,9 +887,8 @@ static struct fun_json *_read_from_sock(struct dpcsock_connection *connection, b
  * NOTE: mixing text & json modes with async transactions is in no way
  * supported. Just use json mode for that (or cross your fingers...)
  */
-static struct fun_json *line2json(char *line, const char **error)
+static struct fun_json *line2json(char *line, enum parsingmode pmode, const char **error)
 {
-	enum parsingmode pmode = _parse_mode;
 	struct fun_json *json = NULL;
 
 	/* clear this up in case we return early */
@@ -945,16 +950,45 @@ void dpcsh_unregister_pretty_printer(uint64_t tid, void *context)
 
 // Somewhat of a hack: help needs to apply to both local (dpcsh-side) and remote (funos-side)
 // So we apply it once locally first
-static void apply_command_locally(const struct fun_json *json)
+static void apply_command_locally(const struct fun_json *json,
+			struct dpcsock_connection *cmd, bool *complete)
 {
 	const char *verb = NULL;
+	*complete = false;
 
 	if (!fun_json_lookup_string(json, "verb", &verb)) {
 		return;
 	}
-	if (!verb || strcmp(verb, "help")) {
+
+	if (!verb) {
 		return;
 	}
+
+	if (!strcmp(verb, "encoding_json")) {
+		*complete = true;
+		cmd->encoding = PARSE_JSON;
+		dprintf("changing encoding to json\n");
+		return;
+	}
+
+	if (!strcmp(verb, "encoding_text")) {
+		*complete = true;
+		cmd->encoding = PARSE_TEXT;
+		dprintf("changing encoding to text\n");
+		return;
+	}
+
+	if (!strcmp(verb, "encoding_binary_json")) {
+		*complete = true;
+		cmd->encoding = PARSE_BINARY_JSON;
+		dprintf("changing encoding to binary json\n");
+		return;
+	}
+
+	if (strcmp(verb, "help")) {
+		return;
+	}
+
 	struct fun_json_command_environment *env = fun_json_command_environment_create();
 	struct fun_json *j = fun_commander_execute(env, json);
 
@@ -978,14 +1012,23 @@ static bool _write_to_sock(struct fun_json *json,
 // We pass the sock INOUT in order to be able to reestablish a
 // connection if the server went down and up
 static bool _do_send_cmd(struct dpcsock_connection *funos,
-			 char *line, ssize_t read)
+			 struct dpcsock_connection *cmd, char *line, ssize_t read)
 {
 	if (read == 0)
 		return false; // skip blank lines
 
 	const char *error;
 
-	struct fun_json *json = line2json(line, &error);
+	struct fun_json *json = NULL;
+	if (cmd->encoding == PARSE_BINARY_JSON) {
+		json = fun_json_create_from_binary_with_options((uint8_t *)line, read, false);
+		if (fun_json_fill_error_message(json, &error)) {
+			fun_json_release(json);
+			json = NULL;
+		}
+	} else {
+		json = line2json(line, cmd->encoding, &error);
+	}
 
 	if (!json) {
 		printf("could not parse: %s\n", error);
@@ -998,7 +1041,12 @@ static bool _do_send_cmd(struct dpcsock_connection *funos,
 	}
 
 	// Hack to list local commands if the command is 'help'
-	apply_command_locally(json);
+	bool complete;
+	apply_command_locally(json, cmd, &complete);
+	if (complete) {
+		return true;
+	}
+
 	bool ok = _write_to_sock(json, funos);
 	fun_json_release(json);
 	if (!ok) {
@@ -1108,7 +1156,7 @@ static bool _print_response_info(const struct fun_json *response) {
 	return ok;
 }
 
-static char *_wrap_proxy_message(struct fun_json *response) {
+static char *_wrap_proxy_message(enum parsingmode mode, struct fun_json *response, size_t *size) {
 	const char *error_message;
 	struct fun_json *result;
 
@@ -1136,8 +1184,19 @@ static char *_wrap_proxy_message(struct fun_json *response) {
 
 	size_t allocated_size = 0;
 	uint32_t flags = use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0;
-	char *message = fun_json_pretty_print(result, 0, "    ",
+	char *message = NULL;
+	if (mode == PARSE_TEXT || mode == PARSE_JSON) {
+		message = fun_json_pretty_print(result, 0, "    ",
 					      0, flags, &allocated_size);
+		*size = strlen(message);
+		message[(*size)++] = '\n'; // trick, since we do not need trailing zero
+	} else if (mode == PARSE_BINARY_JSON) {
+		struct fun_ptr_and_size pas = fun_json_serialize(result, &allocated_size);
+		message = (char *)pas.ptr;
+		*size = pas.size;
+	} else {
+		perror("*** Unsupported parsing mode for client!\n");
+	}
 
 	fun_json_release(result);
 	return message;
@@ -1167,10 +1226,13 @@ static bool _write_response(struct fun_json *output, struct dpcsock_connection *
 	bool ok = _print_response_info(output);
 
 	if (connection->socket->mode != SOCKMODE_TERMINAL) {
-		char *proxy_message = _wrap_proxy_message(output);
-		write(connection->fd, proxy_message, strlen(proxy_message));
-		write(connection->fd, "\n", 1);
-		fun_free_string(proxy_message);
+		size_t size;
+		char *proxy_message = _wrap_proxy_message(connection->encoding, output, &size);
+		if (proxy_message != NULL) {
+			write(connection->fd, proxy_message, size);
+			fsync(connection->fd);
+		}
+		free(proxy_message);
 	}
 
 	return ok;
@@ -1199,6 +1261,11 @@ static void _recv_callback(struct fun_ptr_and_size response, void *context)
 static bool _write_to_sock(struct fun_json *json,
 			struct dpcsock_connection *connection)
 {
+	if (connection->encoding != PARSE_BINARY_JSON) {
+		perror("the only mode for communication with FunOS is binary json");
+		return NULL;
+	}
+
 	struct dpcsock *socket = connection->socket;
 	if (!socket->base64 && socket->mode != SOCKMODE_NVME && socket->mode != SOCKMODE_FUNQ) {
 		/* easy case */
@@ -1307,7 +1374,7 @@ static void _do_session(struct dpcsock_connection *funos,
 			if (_is_loopback_command(funos->socket, line, read))
 				continue;
 
-			ok = _do_send_cmd(funos, line, read);
+			ok = _do_send_cmd(funos, cmd, line, read);
 			free(line);
 			if (!ok) {
 				printf("error sending command\n");
@@ -1447,7 +1514,7 @@ static bool _do_cli(int argc, char *argv[],
 	size_t len = strlen(buf);
 	buf[--len] = 0;	// trim the last space
 	dprintf(">> single cmd [%s] len=%zd\n", buf, len);
-	ok = _do_send_cmd(funos, buf, len);
+	ok = _do_send_cmd(funos, cmd, buf, len);
 	if (ok) {
 		ok = _do_recv_cmd(funos, cmd, true);
 	}
@@ -1868,14 +1935,12 @@ int main(int argc, char *argv[])
 
 	switch(mode) {
 	case MODE_PROXY:
-		_parse_mode = PARSE_JSON;
 		if (one_shot)
 			cmd_sock.retries = 1;
 		_do_interactive(&funos_sock, &cmd_sock);
 		break;
 	case MODE_INTERACTIVE:
 	case MODE_NOCONNECT: {
-		_parse_mode = PARSE_TEXT;
 		if (one_shot) {
 
 			bool ok = _do_cli(argc, argv, &funos_sock, &cmd_sock, optind);
