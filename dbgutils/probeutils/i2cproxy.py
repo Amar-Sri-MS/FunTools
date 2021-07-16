@@ -304,16 +304,15 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                 cmd_data = dbg_chal_args.get("data", None)
                 logger.debug('cmd: {0} cmd_data: {1}'.format(cmd, cmd_data))
                 status = False
-                data = None
-                #if cmd_data is not None:
-                    #logger.info("cmd data: {0}".format([hex(x) for x in cmd_data]))
+                logger.debug("cmd data: {0}".format(cmd_data))
                 try:
                     retry_cnt = 0
                     status = False
+                    resp_data = None
                     while status == False:
                         logger.info('Issueing chal cmd: {0}'.format(hex(cmd)))
-                        (status, data) = i2c_conn.i2c_dbg_chal_cmd(cmd = cmd,
-                                                                   data = data)
+                        (status, resp_data) = i2c_conn.i2c_dbg_chal_cmd(cmd = cmd,
+                                                                   data = cmd_data)
                         if status == False:
                             i2c_wedged = i2c_conn.i2c_wedge_detect()
                             if i2c_wedged == True:
@@ -335,17 +334,17 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                                     logger.info('I2C UNWEDGED!')
                             else:
                                 logger.info(('i2c not wedged! but i2c_dbg_chal_cmd failed.'
-                                        ' data: {0}').format(data))
-                                err_msg = data if data else "Unknown error!"
+                                        ' resp data: {0}').format(resp_data))
+                                err_msg = resp_data if resp_data else "Unknown error!"
                                 logger.error(err_msg)
                                 self.send_obj({"STATUS":[False, err_msg]})
                                 return
                         else:
-                            logger.debug('status: {0} data: {1}'.format(status, data))
+                            logger.debug('status: {0} resp_data: {1}'.format(status, resp_data))
                             resp = dict()
                             resp["STATUS"] = [True, "dbg cmd success!"]
-                            if data is not None:
-                                resp["DATA"] = list(data)
+                            if not resp_data:
+                                resp["DATA"] = list(resp_data)
                             logger.debug(resp)
                             self.send_obj(resp)
                             return
