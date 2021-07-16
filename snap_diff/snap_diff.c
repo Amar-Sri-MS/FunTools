@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <inttypes.h>
 #include <linux/nvme_ioctl.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
@@ -28,8 +29,10 @@
 #define BITS_PER_RECORD 		(64)
 
 // NVMe opcodes
-#define OPCODE_CHANGED_BLOCKS 	(0xc6)
-#define OPCODE_IDENTIFY 		(0x06)
+#define OPCODE_CHANGED_BLOCKS 			(0xc6)
+#define OPCODE_IDENTIFY 				(0x06)
+#define IDENTIFY_RESP_NS_SIZE_OFFSET	(0x0)
+#define IDENTIFY_RESP_NOIOB_OFFSET		(0x2e)
 
 // enum for output format options
 enum change_block_format{
@@ -40,9 +43,9 @@ enum change_block_format{
 struct params {
 	int nsid; // namespace id of the nvme namespace device
 	int block_size; // block size in bytes of the nve device
-	unsigned long long nlb; // number of blocks in the diff request
-	unsigned long long slba; // starting block of the diff request
-	unsigned long long ns_size; // size of nvme namespace in blocks
+	uint64_t nlb; // number of blocks in the diff request
+	uint64_t slba; // starting block of the diff request
+	uint64_t ns_size; // size of nvme namespace in blocks
 	enum change_block_format format; // output format
 	uuid_t snap_id; // uuid of the snapshot volume namespace
 	char dev_path[MAX_PATH]; // device path of nvme device
@@ -121,20 +124,20 @@ void write_header(FILE *fp)
 	fprintf(fp, "\t\"format\": \"block_format\",\n");
 	fprintf(fp, "\t\"snap1\": \"%s\",\n", g_params.snap_uuid1);
 	fprintf(fp, "\t\"snap2\": \"%s\",\n", g_params.snap_uuid2);
-	fprintf(fp, "\t\"start\": \"%llu\",\n", g_params.slba);
-	fprintf(fp, "\t\"length\": \"%llu\",\n", g_params.nlb);
+	fprintf(fp, "\t\"start\": \"%"PRIu64"\",\n", g_params.slba);
+	fprintf(fp, "\t\"length\": \"%"PRIu64"\",\n", g_params.nlb);
 	fprintf(fp, "\t\"block_size\": \"%d\",\n", g_params.block_size);
 	fprintf(fp, "\t\"%s\": [", g_params.format == FORMAT_BLOCK_LIST ? "block_list": "range_list");
 }
 
-void write_block_record(FILE *fp, char delim, unsigned long long slba)
+void write_block_record(FILE *fp, char delim, uint64_t slba)
 {
-	fprintf(fp, "%c %llu", delim, slba);
+	fprintf(fp, "%c %"PRIu64, delim, slba);
 }
 
-void write_range_record(FILE *fp, char delim, unsigned long long slba, unsigned long long nlb)
+void write_range_record(FILE *fp, char delim, uint64_t slba, uint64_t nlb)
 {
-	fprintf(fp, "%c {\"start\":%llu, \"length\":%llu}", delim, slba, nlb);
+	fprintf(fp, "%c {\"start\":%"PRIu64", \"length\":%"PRIu64"}", delim, slba, nlb);
 }
 
 void write_footer(FILE *fp)
@@ -146,16 +149,16 @@ void write_footer(FILE *fp)
 int query_device_details(int dd, int nsid)
 {
 	int ret = 0;
-	unsigned short noiob = 0;
-	unsigned short *pnoiob;
-	unsigned long long *ns_size;
+	uint16_t noiob = 0;
+	uint16_t *pnoiob;
+	uint64_t *ns_size;
 	struct nvme_admin_cmd cmd = {};
 	char buf[BUF_SIZE];
 
 	memset(buf, 0, BUF_SIZE);
 	cmd.opcode = OPCODE_IDENTIFY;
 	cmd.nsid = nsid;
-	cmd.addr = (unsigned long long)buf;
+	cmd.addr = (uint64_t)buf;
 	cmd.data_len = BUF_SIZE;
 
 	ret = ioctl(dd, NVME_IOCTL_ADMIN_CMD, &cmd);
@@ -164,9 +167,9 @@ int query_device_details(int dd, int nsid)
 		goto done;
 	}
 
-	ns_size = (unsigned long long *) buf;
+	ns_size = (uint64_t *) buf + IDENTIFY_RESP_NS_SIZE_OFFSET;
 	g_params.ns_size = le64toh(*ns_size);
-	pnoiob = (unsigned short *) buf + 46;
+	pnoiob = (uint16_t *) buf + IDENTIFY_RESP_NOIOB_OFFSET;
 	noiob = le16toh(*pnoiob);
 	if (noiob != 0) {
 		g_params.block_size *= noiob;
@@ -229,14 +232,14 @@ int get_snap_diff()
 {
 	char delim = ' ';
 	FILE *fp = NULL;
-	unsigned short nlb = 0;
+	uint16_t nlb = 0;
 	int dd = 0, ret = 0, cnt = 0;
-	unsigned long long *b = NULL;
+	uint64_t *b = NULL;
 	char *data = NULL; 
-	unsigned long long range = 0, rslba = g_params.slba;
-	unsigned long long blockid = 0, mask = 0;
-	unsigned long long slba = g_params.slba;
-	unsigned long long end = g_params.slba + g_params.nlb;
+	uint64_t range = 0, rslba = g_params.slba;
+	uint64_t blockid = 0, mask = 0;
+	uint64_t slba = g_params.slba;
+	uint64_t end = g_params.slba + g_params.nlb;
 	struct nvme_admin_cmd cmd = {};
 
 	dd = open(g_params.dev_path, O_RDWR);
@@ -262,7 +265,7 @@ int get_snap_diff()
 
 	cmd.opcode = OPCODE_CHANGED_BLOCKS;
 	cmd.nsid = g_params.nsid;
-	cmd.addr = (unsigned long long)data;
+	cmd.addr = (uint64_t)data;
 	cmd.data_len = BUF_SIZE;
 	memcpy(&cmd.cdw12, g_params.snap_id, UUID_LEN);
 
@@ -270,7 +273,7 @@ int get_snap_diff()
 	while (slba < end) {
 		nlb = MIN(MAX_QUERY_BLOCK_COUNT, end - slba);
 		// encode slba and nlb into cdw10 and cdw11
-		cmd.cdw10 = (unsigned int)(slba & 0xFFFFFFFF);
+		cmd.cdw10 = (uint32_t)(slba & 0xFFFFFFFF);
 		cmd.cdw11 = (nlb-1) << 16;
 		cmd.cdw11 |= ((slba >> 32) & 0xFFFF);
 		memset(data, 0, BUF_SIZE);
@@ -284,7 +287,7 @@ int get_snap_diff()
 		mask = 0;
 		blockid = slba;
 		cnt = (BITMAP_ALIGN(nlb, 64) >> 6);
-		b = (unsigned long long*)data;
+		b = (uint64_t*)data;
 		for (int i=cnt-1; i >= 0; i--) {
 			for(int j=0; j < BITS_PER_RECORD; j++) {
 				if (blockid == end) {
