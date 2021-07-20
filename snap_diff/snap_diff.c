@@ -289,7 +289,7 @@ int get_snap_diff()
 		cnt = (BITMAP_ALIGN(nlb, 64) >> 6);
 		b = (uint64_t*)data;
 		for (int i=cnt-1; i >= 0; i--) {
-			d = htole64(b[i]);
+			d = htobe64(b[i]);
 			for(int j=0; j < BITS_PER_RECORD; j++) {
 				if (blockid == end) {
 					break;
