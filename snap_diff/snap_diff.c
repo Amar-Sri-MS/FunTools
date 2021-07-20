@@ -237,7 +237,7 @@ int get_snap_diff()
 	uint64_t *b = NULL;
 	char *data = NULL; 
 	uint64_t range = 0, rslba = g_params.slba;
-	uint64_t blockid = 0, mask = 0;
+	uint64_t blockid = 0, mask = 0, d = 0;
 	uint64_t slba = g_params.slba;
 	uint64_t end = g_params.slba + g_params.nlb;
 	struct nvme_admin_cmd cmd = {};
@@ -289,12 +289,13 @@ int get_snap_diff()
 		cnt = (BITMAP_ALIGN(nlb, 64) >> 6);
 		b = (uint64_t*)data;
 		for (int i=cnt-1; i >= 0; i--) {
+			d = htole64(b[i]);
 			for(int j=0; j < BITS_PER_RECORD; j++) {
 				if (blockid == end) {
 					break;
 				}
 				mask = 1ULL << j;
-				if (b[i] & mask) {
+				if (d & mask) {
 					if (g_params.format == FORMAT_BLOCK_LIST) {
 						write_block_record(fp, delim, blockid);
 						delim = ',';
