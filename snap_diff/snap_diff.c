@@ -27,6 +27,7 @@
 #define MAX_QUERY_BLOCK_COUNT 	(512)
 #define BITS_PER_BYTE 			(8)
 #define BITS_PER_RECORD 		(64)
+#define DEFAULT_BLOCK_SIZE		(4096)
 
 // NVMe opcodes
 #define OPCODE_CHANGED_BLOCKS 			(0xc6)
@@ -173,6 +174,12 @@ int query_device_details(int dd, int nsid)
 	noiob = le16toh(*pnoiob);
 	if (noiob != 0) {
 		g_params.block_size *= noiob;
+	} else {
+		g_params.block_size = DEFAULT_BLOCK_SIZE;
+	}
+	// TODO: add block size and ns_size related checks
+	if (g_params.block_size > DEFAULT_BLOCK_SIZE) {
+		g_params.ns_size /= (g_params.block_size / DEFAULT_BLOCK_SIZE);
 	}
 	uuid_unparse_lower(buf+104, g_params.snap_uuid2);
 
