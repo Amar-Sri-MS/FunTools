@@ -320,7 +320,6 @@ int get_snap_diff()
 		range = 0;
 	}
 	write_footer(fp);
-	printf("snap_diff completed\n");
 
 done:
 	if (dd != 0) {
@@ -335,6 +334,8 @@ done:
 	if (ret != 0) {
 		remove(g_params.file_path);
 		printf("snap_diff failed\n");
+	} else {
+		printf("snap_diff completed\n");
 	}
 	return ret;
 }
