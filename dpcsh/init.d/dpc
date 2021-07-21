@@ -19,7 +19,7 @@ start_dpc_proxy()
 
 	${ST_STP_D} ${OPTS} ${CMD}
 
-	timeout 60 bash -c -- 'while [ ! -e ${DPC_SOCKET} ]; do echo "Waiting for dpcsh socket to be open" && sleep 2; done'
+	timeout 60 bash -c -- "while [ ! -e ${DPC_SOCKET} ]; do echo 'Waiting for dpcsh socket to be open' && sleep 2; done"
 }
 
 stop_by_pid()
