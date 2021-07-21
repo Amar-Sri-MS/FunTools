@@ -27,6 +27,7 @@
 #define MAX_QUERY_BLOCK_COUNT 	(512)
 #define BITS_PER_BYTE 			(8)
 #define BITS_PER_RECORD 		(64)
+#define DEFAULT_BLOCK_SIZE		(4096)
 
 // NVMe opcodes
 #define OPCODE_CHANGED_BLOCKS 			(0xc6)
@@ -173,6 +174,12 @@ int query_device_details(int dd, int nsid)
 	noiob = le16toh(*pnoiob);
 	if (noiob != 0) {
 		g_params.block_size *= noiob;
+	} else {
+		g_params.block_size = DEFAULT_BLOCK_SIZE;
+	}
+	// TODO: add block size and ns_size related checks
+	if (g_params.block_size > DEFAULT_BLOCK_SIZE) {
+		g_params.ns_size /= (g_params.block_size / DEFAULT_BLOCK_SIZE);
 	}
 	uuid_unparse_lower(buf+104, g_params.snap_uuid2);
 
@@ -237,7 +244,7 @@ int get_snap_diff()
 	uint64_t *b = NULL;
 	char *data = NULL; 
 	uint64_t range = 0, rslba = g_params.slba;
-	uint64_t blockid = 0, mask = 0;
+	uint64_t blockid = 0, mask = 0, d = 0;
 	uint64_t slba = g_params.slba;
 	uint64_t end = g_params.slba + g_params.nlb;
 	struct nvme_admin_cmd cmd = {};
@@ -289,12 +296,13 @@ int get_snap_diff()
 		cnt = (BITMAP_ALIGN(nlb, 64) >> 6);
 		b = (uint64_t*)data;
 		for (int i=cnt-1; i >= 0; i--) {
+			d = htobe64(b[i]);
 			for(int j=0; j < BITS_PER_RECORD; j++) {
 				if (blockid == end) {
 					break;
 				}
 				mask = 1ULL << j;
-				if (b[i] & mask) {
+				if (d & mask) {
 					if (g_params.format == FORMAT_BLOCK_LIST) {
 						write_block_record(fp, delim, blockid);
 						delim = ',';
@@ -319,7 +327,6 @@ int get_snap_diff()
 		range = 0;
 	}
 	write_footer(fp);
-	printf("snap_diff completed\n");
 
 done:
 	if (dd != 0) {
@@ -334,6 +341,8 @@ done:
 	if (ret != 0) {
 		remove(g_params.file_path);
 		printf("snap_diff failed\n");
+	} else {
+		printf("snap_diff completed\n");
 	}
 	return ret;
 }
