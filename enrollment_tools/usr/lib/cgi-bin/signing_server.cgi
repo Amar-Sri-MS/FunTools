@@ -25,25 +25,6 @@ from hsmd_common import (remote_hsm_get_modulus,
 
 RESTRICTED_PORT = 4443
 
-# FIXME: this should be a shared constants file
-RSA_KEY_SIZE_IN_BITS = 2048
-SIGNING_INFO_SIZE = 2048
-
-HEADER_RESERVED_SIZE = SIGNING_INFO_SIZE - (4 + MAX_SIGNATURE_SIZE)
-
-SIGNED_ATTRIBUTES_SIZE = 32
-SIGNED_DESCRIPTION_SIZE = 32
-
-SERIAL_INFO_NUMBER_SIZE = 24
-
-CERT_PUB_KEY_POS = 64
-
-MAX_KEYS_IN_KEYBAG = 96
-
-MAGIC_NUMBER_CERTIFICATE = 0xB1005EA5
-MAGIC_NUMBER_ENROLL_CERT = 0xB1005C1E
-
-
 ########################################################################
 #
 # Send binary bytes
