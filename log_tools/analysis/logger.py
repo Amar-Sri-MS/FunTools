@@ -44,9 +44,7 @@ def get_logger(name=None, filename=None):
     formatter.converter = time.gmtime
 
     # Checking if the logger already has StreamHandler.
-    print(_has_handler(custom_logger.handlers, logging.StreamHandler))
     if not _has_handler(custom_logger.handlers, logging.StreamHandler):
-        print('Adding Streamhandler')
         # Always register a stderr handler.
         handler = logging.StreamHandler()
 
@@ -54,10 +52,8 @@ def get_logger(name=None, filename=None):
         custom_logger.addHandler(handler)
         custom_logger.setLevel(logging.INFO)
 
-    print(_has_handler(custom_logger.handlers, logging.handlers.RotatingFileHandler))
     # Checking if the logger needs and already has RotatingFileHandler.
     if filename and not _has_handler(custom_logger.handlers, logging.handlers.RotatingFileHandler):
-        print('Adding filehandler')
         os.makedirs(LOGS_DIRECTORY, exist_ok=True)
         path = os.path.join(LOGS_DIRECTORY, filename)
 
