@@ -429,11 +429,15 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
 
         release_train = job_info['data']['primary_release_train']
 
-        tags = metadata.get('tags') if metadata.get('tags') else []
+        tags = set(metadata.get('tags') if metadata.get('tags') else [])
         # Adding the release train to the tags
+        tags.add(release_train)
+        # Adding the tags from suite_info to the tags
+        tags.update(suite_info.get('tags', []))
+
         metadata = {
             **metadata,
-            'tags': tags + [release_train]
+            'tags': list(tags)
         }
 
         _update_metadata(es_metadata, LOG_ID, 'DOWNLOAD_STARTED')
