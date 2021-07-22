@@ -10,6 +10,7 @@
 
 import datetime
 import json
+import logging
 import re
 
 import config_loader
@@ -58,6 +59,7 @@ def convert_to_json(log_line):
         ret_json = json.loads('{' + json_str + '}')
         return ret_json
     except:
+        logging.warning(f'Malformed JSON: {log_line}')
         return None
 
 def build_search_body(queries, time_filters=None, operator='AND'):
