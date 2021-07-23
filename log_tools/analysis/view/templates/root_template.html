@@ -37,7 +37,18 @@
             <tbody>
             {% for log in logs %}
                 <tr class="log-row" data-job_name="{{log.name}}">
-                    <td><a href="/log/{{log.name}}/dashboard">{{log.name}}</a></td>
+                    <td>
+                        <div style="display: flex; align-items: center;">
+                            {% if log.metadata.ingestion_status is defined %}
+                                {% if log.metadata.ingestion_status == "INGESTION_IN_PROGRESS" %}
+                                    <img title="Ingestion is in progress" class="status-img" src="/static/images/pacman.svg" />
+                                {% elif log.metadata.ingestion_status == "FAILED" %}
+                                    <img title="Ingestion failed" class="status-img" src="/static/images/fail.png" />
+                                {% endif %}
+                            {% endif %}
+                            <a href="/log/{{log.name}}/dashboard">{{log.name}}</a>
+                        </div>
+                    </td>
                     <td class="fixed-font">{{log.creation_date}}</td>
                     <td class="right-align fixed-font">{{log.doc_count}}</td>
                     <td class="right-align fixed-font caps">{{log.es_size}}</td>

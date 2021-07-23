@@ -30,6 +30,7 @@ from urllib.parse import unquote, unquote_plus
 from elastic_metadata import ElasticsearchMetadata
 from ingester import ingester_page
 from web_usage import web_usage
+from tools_view import tools_page
 
 sys.path.append('..')
 
@@ -40,6 +41,7 @@ import logger
 app = Flask(__name__)
 app.register_blueprint(ingester_page)
 app.register_blueprint(web_usage, url_prefix='/events')
+app.register_blueprint(tools_page, url_prefix='/tools')
 
 
 def main():
@@ -137,7 +139,8 @@ def _render_root_page(log_ids, metadata, jinja_env, template):
             'health': log['health'],
             'doc_count': log['docs.count'],
             'es_size': log['store.size'],
-            'tags': tags
+            'tags': tags,
+            'metadata': metadata.get(id, {})
         })
 
     result = template.render(template_dict, env=jinja_env)

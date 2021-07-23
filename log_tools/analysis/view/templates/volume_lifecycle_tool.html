@@ -1,0 +1,385 @@
+<html>
+    <head>
+        <title>Log Analyzer: Storage Tool</title>
+        <link rel="stylesheet" type="text/css" href="/static/css/index.css">
+        <style>
+            #volume_id {
+                width: 300px;
+            }
+        </style>
+    </head>
+    <body>
+        {% include "nav_bar.html" ignore missing %}
+        <div class="container">
+            <h2 class="center-align">Lifecycle of a Part Volume</h2>
+            <div class="form-group">
+                <label for="volume_id">Part Volume ID</label>
+                <input type="search" id="volume_id" placeholder="Enter part volume ID" />
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary" onclick="onSubmit()">Submit</button>
+            </div>
+        </div>
+        <div class="content" id="lifecycle" style="display: none;">
+            <div class="container">
+                <h3>CREATE Phase</h3>
+                <pre id="create_phase"></pre>
+            </div>
+            <div class="container">
+                <h3>MOUNT Phase</h3>
+                <pre id="mount_phase"></pre>
+            </div>
+            <div class="container">
+                <h3>Plex Status History</h3>
+                <pre id="plex_status_history"></pre>
+            </div>
+            <div class="container">
+                <h3>Failed Plex ACK History</h3>
+                <pre id="failed_plex_ack_history"></pre>
+            </div>
+        </div>
+        {% include 'loader.html' %}
+    </body>
+    <script src="/static/js/ascii-table.js"></script>
+    <script type="text/javascript">
+        const logID = "{{log_id}}";
+        const lifecycle_element = document.getElementById("lifecycle");
+        const create_phase_element = document.getElementById("create_phase");
+        const mount_phase_element = document.getElementById("mount_phase");
+        const plex_status_history_element = document.getElementById("plex_status_history");
+        const failed_plex_ack_history_element = document.getElementById("failed_plex_ack_history");
+
+        // Self invocation function
+        (function() {
+            const params = new URLSearchParams(location.search);
+            const uuid = params.get("uuid");
+            if (uuid) {
+                document.getElementById("volume_id").value = uuid;
+                getVolumeLifecycle(uuid);
+            }
+        })();
+
+        function onSubmit() {
+            const volume_id = document.getElementById("volume_id").value;
+            const params = new URLSearchParams(location.search);
+            params.set("uuid", volume_id);
+            window.history.pushState(null, null, `?${params.toString()}`);
+
+            getVolumeLifecycle(volume_id);
+        }
+
+        function getVolumeLifecycle(uuid) {
+            if (uuid === null || uuid === undefined || uuid === "") {
+                alert("Please enter the volume ID");
+                return;
+            }
+            // Clearing HTML before fetching new data
+            clearTables();
+            toggleElementDisplay(lifecycle_element, false);
+            toggleLoader(true);
+
+            let xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4) {
+                    toggleLoader(false);
+                    if (this.status == 200) {
+                        let data = JSON.parse(xhttp.responseText);
+                        showLifecycle(data);
+                    }
+                    else {
+                        let data = JSON.parse(xhttp.responseText);
+                        const errorMsg = data && "error" in data ? data["error"] : "Some error occurred";
+                        alert(errorMsg);
+                    }
+                }
+            }
+
+            const uri = `${window.location.origin}${window.location.pathname}`;
+            const requestData = {
+                "volume_id": uuid
+            };
+            xhttp.open("POST", uri);
+            xhttp.setRequestHeader("Content-type", "application/json");
+            xhttp.send(JSON.stringify(requestData));
+        }
+
+        function clearTables() {
+            create_phase_element.innerHTML = "";
+            mount_phase_element.innerHTML = "";
+            plex_status_history_element.innerHTML = "";
+            failed_plex_ack_history_element.innerHTML = "";
+        }
+
+        // Generic function to toggle any HTML element's display property
+        function toggleElementDisplay(element, flag) {
+            if (flag) {
+                element.style = "display: block";
+            }
+            else {
+                element.style = "display: none";
+            }
+        }
+
+        function showLifecycle(lifecycle) {
+            toggleElementDisplay(lifecycle_element, true);
+            console.log(lifecycle);
+            // Create phase
+            const createPhase = "create" in lifecycle ? lifecycle["create"] : null;
+            if (createPhase) {
+                renderPhases("CREATE", create_phase_element, createPhase)
+            }
+
+            // Mount phase
+            const mountPhases = "mount" in lifecycle ? lifecycle["mount"] : null;
+            if (mountPhases) {
+                renderPhases("MOUNT", mount_phase_element, mountPhases)
+            }
+
+            // Plex Status History
+            renderPlexStatusHistory(lifecycle["jvol_plex_status_history"], "JVOL");
+            renderPlexStatusHistory(lifecycle["ec_plex_status_history"], "EC");
+
+            // Failed Plex ACK History
+            renderFailedPlexACKHistory(lifecycle["jvol_failed_plex_ack_history"], "JVOL");
+            renderFailedPlexACKHistory(lifecycle["ec_failed_plex_ack_history"], "EC");
+        }
+
+        function renderPhases(operation="CREATE", element, phases) {
+            phases.forEach((phase, phaseIndex) => {
+                // Title of the operation with phase index
+                if (phases.length > 1) {
+                    element.innerHTML += `<b>${operation} #${phaseIndex+1}</b>\n`;
+                }
+                const pvInfoTable = getPVInfoTable(phase["pv_info"]);
+                addTableToElement(element, pvInfoTable);
+                const lsvInfo = phase["lsv_info"];
+                for (const [ec_uuid, info] of Object.entries(lsvInfo)) {
+                    const lsvInfoTable = getLSVInfoTable(info);
+                    addTableToElement(element, lsvInfoTable);
+
+                    const jvolPlexInfoTable = getPlexInfoTable(info["jvol_info"], operation, title="JVOL Plex Info");
+                    addTableToElement(element, jvolPlexInfoTable);
+
+                    const ecPlexInfoTable = getPlexInfoTable(info["ec_info"], operation, title="EC Plex Info");
+                    addTableToElement(element, ecPlexInfoTable);
+                }
+
+                // Spacing between two phases of same operation
+                if (phases.length > 1 && phaseIndex !== phases.length-1) {
+                    element.innerHTML += "\n\n";
+                }
+            })
+        }
+
+        function addTableToElement(element, table, spacing=2) {
+            element.innerHTML += table.toString();
+            for (let i=0; i<spacing; i++) {
+                element.innerHTML += "\n";
+            }
+        }
+
+        function getPVInfoTable(pvInfo) {
+            const timestamp = pvInfo["pv_info"]["@timestamp"];
+            const URL = formLogURL(timestamp, pvInfo["pv_info"]["_id"]);
+            const title = formAnchorTag(URL, "PV Info");
+            let table = new window.AsciiTable(title);
+            table.setHeading("Timestamp", "PVG UUID", "Primary DPU", "Secondary DPU", "View Logs");
+            table.addRow(
+                pvInfo["timestamp"],
+                pvInfo["pvg_uuid"],
+                pvInfo["primary_dpu"],
+                pvInfo["secondary_dpu"]
+            );
+            return table;
+        }
+
+        function getLSVInfoTable(lsvInfo) {
+            const timestamp = lsvInfo["lsv_info"]["@timestamp"];
+            const URL = formLogURL(timestamp, lsvInfo["lsv_info"]["_id"]);
+            const title = formAnchorTag(URL, "LSV Info");
+            let table = new window.AsciiTable(title);
+            table.setHeading("Timestamp", "LSV UUID", "JVOL UUID", "EC UUID");
+            table.addRow(
+                lsvInfo["timestamp"],
+                lsvInfo["lsv_uuid"],
+                lsvInfo["jvol_uuid"],
+                lsvInfo["ec_uuid"]
+            );
+            return table;
+        }
+
+        function getValueFromParams(info, key, notFound=null) {
+            if (info && "msg" in info && "params" in info["msg"]
+                && key in info["msg"]["params"])
+                return info["msg"]["params"][key]
+            return notFound
+        }
+
+        /*
+            Log Analyzer tracks System ID for FunOS logs which is MAC address of the
+            DPU. The MAC address is not well formed. This function is to parse and
+            format it.
+        */
+        function convertSystemIDtoMAC(systemID) {
+            if (!systemID || systemID.length !== 12) {
+                return "";
+            }
+            systemID = systemID.toLowerCase();
+            let chunks = [];
+            for (let i=0; i<systemID.length; i+=2) {
+                chunks.push(systemID.slice(i,i+2));
+            }
+            return chunks.join(":");
+        }
+
+        function getPlexInfoTable(info, operation="CREATE", title="Plex Info") {
+            let table = new window.AsciiTable(title);
+            table.setHeading("Operation", "Number", "Location", "Local UUID", "Remote UUID", "Status", "Hosting DPU", "Remote IP", "Failed Plex ACK", "Rebuild", "Spare UUID");
+
+            const pvol_uuids = info["pvol_uuids"];
+            const plex_status = info["plex_status"];
+            const fail_plex_ack_info = info["plex_fail_ack"];
+            const plex_rebuild_info = info["plex_rebuild"];
+
+            pvol_uuids.forEach((plex_uuid, plex_number) => {
+                let remote_plex_uuid = plex_uuid;
+                let is_local_plex = true;
+                const plex_info = info["plex_info"][plex_uuid];
+
+                let hostingDPU = "";
+                let remoteIP = getValueFromParams(plex_info[0], "remote_ip");
+                // For remote plexes, it will contain two entries for type
+                // RDS and NV_MEMORY each
+                if (plex_info.length > 1) {
+                    const timestamp = plex_info[1]["@timestamp"];
+                    const URL = formLogURL(timestamp, plex_info[1]["_id"]);
+
+                    remote_plex_uuid = formAnchorTag(URL, getValueFromParams(plex_info[1], "uuid"));
+                    hostingDPU = convertSystemIDtoMAC(plex_info[1]["system_id"]);
+                    is_local_plex = false;
+                }
+
+                const location = is_local_plex ? "local" : "remote";
+                let status = plex_number in plex_status ? plex_status[plex_number]["status"] : "NA";
+                if (status !== "active" && plex_number in plex_status) {
+                    const timestamp = plex_status[plex_number]["info"]["_source"]["@timestamp"];
+                    const URL = formLogURL(timestamp, plex_status[plex_number]["info"]["_id"]);
+                    status = formAnchorTag(URL, status);
+                }
+
+                let fail_plex_ack = "";
+                if (plex_uuid in fail_plex_ack_info) {
+                    const timestamp = fail_plex_ack_info[plex_uuid]["@timestamp"];
+                    const URL = formLogURL(timestamp, fail_plex_ack_info[plex_uuid]["_id"]);
+                    fail_plex_ack = formAnchorTag(URL, timestamp);
+                }
+
+                let rebuld_time = "";
+                let spare_uuid = "";
+                if (plex_uuid in plex_rebuild_info) {
+                    const timestamp = plex_rebuild_info[plex_uuid]["@timestamp"];
+                    const URL = formLogURL(timestamp, plex_rebuild_info[plex_uuid]["_id"]);
+                    rebuld_time = formAnchorTag(URL, timestamp);
+                    spare_uuid = getValueFromParams(plex_rebuild_info[plex_uuid], "spare_uuid");
+                }
+
+                const timestamp = plex_info[0]["@timestamp"];
+                const URL = formLogURL(timestamp, plex_info[0]["_id"]);
+
+                table.addRow(
+                    operation,
+                    plex_number,
+                    location,
+                    formAnchorTag(URL, plex_uuid),
+                    remote_plex_uuid,
+                    status,
+                    hostingDPU,
+                    remoteIP,
+                    fail_plex_ack,
+                    rebuld_time,
+                    spare_uuid
+                );
+            })
+            return table;
+        }
+
+        function renderPlexStatusHistory(statusHistory, type="EC") {
+            for (const [uuid, history] of Object.entries(statusHistory)) {
+                const title = `Status History of ${type} UUID: ${uuid}`;
+                const statusHistoryTable = getPlexStatusHistoryTable(history, title);
+                addTableToElement(plex_status_history_element, statusHistoryTable);
+            }
+        }
+
+        function getPlexStatusHistoryTable(history, title) {
+            let table = new window.AsciiTable(title);
+            table.setHeading("Timestamp", "Source", "Log Message");
+
+            history.forEach(item => {
+                const timestamp = item["_source"]["@timestamp"];
+                const URL = formLogURL(timestamp, item["_id"]);
+                const anchorTag = formAnchorTag(URL, item["_source"]["msg"]);
+                table.addRow(
+                    item["_source"]["@timestamp"],
+                    convertSystemIDtoMAC(item["_source"]["system_id"]),
+                    anchorTag
+                )
+            });
+            return table;
+        }
+
+        function renderFailedPlexACKHistory(failedPlexACKHistory, type="EC") {
+            for (const [uuid, history] of Object.entries(failedPlexACKHistory)) {
+                if (history.length > 0) {
+                    const title = `Failed Plex ACK History of ${type} UUID: ${uuid}`;
+                    const failedPlexACKHistoryTable = getFailedPlexACKHistoryTable(history, title);
+                    addTableToElement(failed_plex_ack_history_element, failedPlexACKHistoryTable);
+                }
+            }
+        }
+
+        function getFailedPlexACKHistoryTable(history, title) {
+            let table = new window.AsciiTable(title);
+            table.setHeading("Timestamp", "Source", "Failed UUIDs");
+
+            history.forEach(item => {
+                const timestamp = item["@timestamp"];
+                const URL = formLogURL(timestamp, item["_id"]);
+                table.addRow(
+                    formAnchorTag(URL, item["@timestamp"]),
+                    convertSystemIDtoMAC(item["system_id"]),
+                    getValueFromParams(item, "failed_uuids")
+                )
+            });
+            return table;
+        }
+
+        function formAnchorTag(href, text, openNewTab=true) {
+            let a = document.createElement("a");
+            let linkText = document.createTextNode(text);
+            a.appendChild(linkText);
+            a.href = href;
+            a.target = openNewTab ? "_blank" : "_self";
+            return a;
+        }
+
+        function formSearchState(before, after) {
+            return {
+                "before": before,
+                "after": after
+            }
+        }
+
+        function formLogURL(timestamp, docID) {
+            const state = formSearchState(timestamp, timestamp);
+            let url = `${window.location.origin}/log/${logID}`;
+            let params = new URLSearchParams();
+            params.set("next", true);
+            params.set("prev", true);
+            if (state) params.set("state", JSON.stringify(state));
+            if (docID) params.set("include", docID);
+            url = `${url}?${params.toString()}#0`;
+            return url;
+        }
+    </script>
+</html>

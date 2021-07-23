@@ -14,6 +14,10 @@ from utils import timeline
 
 class FunOSInput(Block):
     """ Handles FunOS log files """
+    def __init__(self):
+        self.is_multiline = False
+        self.multilines = list()
+
     def process(self, iters):
         timeline.track_start('log_parser')
         yield from self.lines2tuples(iters[0])
@@ -44,7 +48,31 @@ class FunOSInput(Block):
                     ts, vp = self.split_ts_vp(ts_vp)
 
                     date_time, usecs = self.normalize_ts(ts)
-                    line = '[{}] {}'.format(vp, line[ts_vp_sep + 1:])
+                    line = line[ts_vp_sep + 1:]
+
+                    # FunOS logs print JSON output as multiline logs.
+                    # This is a workaround to gather the JSON output lines and combine
+                    # them into one log message. This is useful for searching logs
+                    # containing multiple key values from the JSON output.
+                    multiline_start = 'NOTICE volume_manager "Storage: command data {'
+                    multiline_end = '}"'
+                    if multiline_start in line and line[-1] != '"':
+                        self.is_multiline = True
+                        multiline_tuple = (date_time, usecs, system_type, system_id, uid, None, None)
+                        line = '[{}] {}'.format(vp, line)
+
+                    if self.is_multiline:
+                        self.multilines.append(line)
+                        if multiline_end in line:
+                            self.is_multiline = False
+                            line = '\n'.join(self.multilines)
+                            yield (*multiline_tuple, line)
+                            multiline_tuple = tuple()
+                            self.multilines = list()
+
+                        continue
+
+                    line = '[{}] {}'.format(vp, line)
 
                     yield (date_time, usecs, system_type, system_id, uid, None, None, line)
                 except:

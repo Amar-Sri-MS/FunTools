@@ -23,8 +23,22 @@
             {% else %}
                 {{log_id}}
             {% endif %}
+            {% if metadata.ingestion_status is defined and metadata.ingestion_status %}
+                <div class="info" style="justify-content: center;">Ingestion Status:
+                    {% if metadata.ingestion_status is defined %}
+                        {% if metadata.ingestion_status == "INGESTION_IN_PROGRESS" %}
+                            <img title="Ingestion is in progress" class="status-img" src="/static/images/pacman.svg" />
+                        {% elif metadata.ingestion_status == "FAILED" %}
+                            <img title="Ingestion failed" class="status-img" src="/static/images/fail.png" />
+                        {% endif %}
+                    {% endif %} {{metadata.ingestion_status}}
+                    {% if metadata.ingestion_time is defined %}
+                        (Time to ingest: {{metadata.ingestion_time|round(2)}}s)
+                    {% endif %}
+                </div>
+            {% endif %}
         </h2>
-        {% if metadata.tags is defined and metadata.tags and metadata|length > 0 %}
+        {% if metadata.tags is defined and metadata.tags and metadata.tags|length > 0 %}
             <div class="center-align">Tags:
                 {% for tag in metadata.tags %}
                     <a href="/?tags={{tag}}">{{tag}}</a>
@@ -36,9 +50,12 @@
                 <a data-web_event="RECENT_LINK" href="#recent">Recent Logs</a>
                 <a data-web_event="DUPLICATES_LINK" href="#duplicates">Duplicate Logs</a>
             </div>
-            <button class="btn" onclick="toggleNotesOverlay()">
-                Add/Show notes({{ metadata.notes|length }})
-            </button>
+            <div>
+                <button class="btn" data-web_event="STORAGE_TOOL" onclick="window.open('/tools/{{log_id}}/volume')">Storage Tools</button>
+                <button class="btn" onclick="toggleNotesOverlay()">
+                    Add/Show notes({{ metadata.notes|length }})
+                </button>
+            </div>
         </div>
         <div class="container">
             <h3>Explore logs by source</h3>

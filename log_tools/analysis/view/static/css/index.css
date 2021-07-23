@@ -103,6 +103,9 @@ h3 {
     justify-content: center;
     margin: 10px 0px;
 }
+.form-group label {
+    padding: 0px 5px;
+}
 .form-title {
     text-decoration: underline;
 }
@@ -174,12 +177,13 @@ ul {
 
 
 #quicklinks {
+    width: 100%;
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: space-between;
 }
-#quicklinks > div {
-    width: calc(100% - 160px);
+#quicklinks button {
+    margin-left: 5px;
 }
 #quicklinks a {
     padding: 5px;
@@ -244,5 +248,19 @@ ul {
     margin-right: 4px;
 }
 input[type="search"] {
-    width: 400px;
+    width: 700px;
+}
+
+#loader {
+    display: none;
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    width: 100px;
+    height: 100px;
+}
+
+.status-img {
+    width: 20px;
+    height: 20px;
 }

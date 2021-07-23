@@ -355,8 +355,16 @@
 
         function handleStatusUpdate(metadata) {
             const status = "ingestion_status" in metadata ? metadata["ingestion_status"] : "STARTING";
+            let statusImg = "";
+            if (metadata.ingestion_status) {
+                if (metadata.ingestion_status == "INGESTION_IN_PROGRESS")
+                    statusImg = `<img title="Ingestion is in progress" class="status-img" src="/static/images/pacman.svg" />`;
+                else if (metadata.ingestion_status == "FAILED")
+                    statusImg = `<img title="Ingestion failed" class="status-img" src="/static/images/fail.png" />`;
+            }
+
             statusElement.innerHTML = `
-                <p>Status: ${status}</p>
+                <p>Status: ${statusImg} ${status}</p>
                 <p>Last checked: ${new Date()}</p>
             `;
             if (status == "COMPLETED") {
