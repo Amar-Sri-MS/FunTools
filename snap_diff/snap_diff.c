@@ -27,13 +27,13 @@
 #define MAX_QUERY_BLOCK_COUNT 	(512)
 #define BITS_PER_BYTE 			(8)
 #define BITS_PER_RECORD 		(64)
-#define DEFAULT_BLOCK_SIZE		(4096)
 
 // NVMe opcodes
-#define OPCODE_CHANGED_BLOCKS 			(0xc6)
-#define OPCODE_IDENTIFY 				(0x06)
-#define IDENTIFY_RESP_NS_SIZE_OFFSET	(0x0)
-#define IDENTIFY_RESP_NOIOB_OFFSET		(0x2e)
+#define OPCODE_VS_CHANGED_BLOCKS 			(0xc6)
+#define OPCODE_VS_GET_NS_BLKHDR				(0xc7)
+#define OPCODE_IDENTIFY 					(0x06)
+#define IDENTIFY_RESP_NS_SIZE_OFFSET		(0x0)
+#define OPCODE_VS_GET_NS_BLKHDR_BS_MASK		(0xff)
 
 // enum for output format options
 enum change_block_format{
@@ -43,7 +43,8 @@ enum change_block_format{
 
 struct params {
 	int nsid; // namespace id of the nvme namespace device
-	int block_size; // block size in bytes of the nve device
+	int block_size; // internal block size in bytes of the nvme device
+	int ns_block_size; // block size seen by nvme client
 	uint64_t nlb; // number of blocks in the diff request
 	uint64_t slba; // starting block of the diff request
 	uint64_t ns_size; // size of nvme namespace in blocks
@@ -150,8 +151,6 @@ void write_footer(FILE *fp)
 int query_device_details(int dd, int nsid)
 {
 	int ret = 0;
-	uint16_t noiob = 0;
-	uint16_t *pnoiob;
 	uint64_t *ns_size;
 	struct nvme_admin_cmd cmd = {};
 	char buf[BUF_SIZE];
@@ -170,19 +169,30 @@ int query_device_details(int dd, int nsid)
 
 	ns_size = (uint64_t *) buf + IDENTIFY_RESP_NS_SIZE_OFFSET;
 	g_params.ns_size = le64toh(*ns_size);
-	pnoiob = (uint16_t *) buf + IDENTIFY_RESP_NOIOB_OFFSET;
-	noiob = le16toh(*pnoiob);
-	if (noiob != 0) {
-		g_params.block_size *= noiob;
-	} else {
-		g_params.block_size = DEFAULT_BLOCK_SIZE;
-	}
-	// TODO: add block size and ns_size related checks
-	if (g_params.block_size > DEFAULT_BLOCK_SIZE) {
-		g_params.ns_size /= (g_params.block_size / DEFAULT_BLOCK_SIZE);
-	}
 	uuid_unparse_lower(buf+104, g_params.snap_uuid2);
 
+	cmd.opcode = OPCODE_VS_GET_NS_BLKHDR;
+	cmd.nsid = nsid;
+	cmd.addr = 0;
+	cmd.data_len = 0;
+	cmd.result = 0;
+
+	ret = ioctl(dd, NVME_IOCTL_ADMIN_CMD, &cmd);
+	if(ret != 0) {
+		printf("NVMe admin command %x failed. Error %d\n", OPCODE_VS_GET_NS_BLKHDR, errno);
+		goto done;
+	}
+
+	g_params.block_size = 1 << (le32toh(cmd.result) & OPCODE_VS_GET_NS_BLKHDR_BS_MASK);
+	if (g_params.block_size > g_params.ns_block_size) {
+		if (g_params.block_size % g_params.ns_block_size) {
+			printf("Incompatible block size. internal block size %u, exposed block size %u\n",
+				g_params.block_size, g_params.ns_block_size);
+			ret = 1;
+			goto done;
+		}
+		g_params.ns_size /= (g_params.block_size / g_params.ns_block_size);
+	}
 done:
 	return ret;
 }
@@ -201,12 +211,12 @@ int query_device()
 
 	g_params.nsid = ioctl(dd, NVME_IOCTL_ID);
 	if (g_params.nsid < 0) {
-		printf("Failed to query nsid. Erro %d\n", errno);
+		printf("Failed to query nsid. Error %d\n", errno);
 		ret = 1;
 		goto done;
 	}
 
-	ret = ioctl(dd, BLKSSZGET, &g_params.block_size);
+	ret = ioctl(dd, BLKSSZGET, &g_params.ns_block_size);
 	if (ret < 0) {
 		printf("Failed to query block size. Error %d\n", errno);
 		goto done;
@@ -270,7 +280,7 @@ int get_snap_diff()
 		goto done;
 	}
 
-	cmd.opcode = OPCODE_CHANGED_BLOCKS;
+	cmd.opcode = OPCODE_VS_CHANGED_BLOCKS;
 	cmd.nsid = g_params.nsid;
 	cmd.addr = (uint64_t)data;
 	cmd.data_len = BUF_SIZE;
@@ -287,7 +297,7 @@ int get_snap_diff()
 
 		ret = ioctl(dd, NVME_IOCTL_ADMIN_CMD, &cmd);
 		if(ret < 0) {
-			printf("NVMe admin command %x failed. Error %d\n", OPCODE_CHANGED_BLOCKS, errno);
+			printf("NVMe admin command %x failed. Error %d\n", OPCODE_VS_CHANGED_BLOCKS, errno);
 			goto done;
 		}
 
@@ -340,22 +350,30 @@ done:
 	}
 	if (ret != 0) {
 		remove(g_params.file_path);
-		printf("snap_diff failed\n");
-	} else {
-		printf("snap_diff completed\n");
 	}
 	return ret;
 }
 
 int main(int argc, char* argv[])
 {
-	parse_params(argc, argv);
-	if (validate_params() == false) {
-		print_usage();
-		return 1;
-	}
-	if (query_device() != 0) {
-		return 1;
-	}
-	return get_snap_diff();
+	int res = 0;
+	do {
+		parse_params(argc, argv);
+		if (validate_params() == false) {
+			print_usage();
+			res = 1;
+			break;
+		}
+		if (query_device() != 0) {
+			res = 1;
+			break;
+		}
+		if (get_snap_diff() != 0) {
+			res = 1;
+			break;
+		}
+	} while (0);
+
+	printf("snap_diff %s\n", res == 0 ? "completed" : "failed");
+	return res;
 }
