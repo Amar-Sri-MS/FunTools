@@ -20,7 +20,7 @@ import requests
 RSA_KEY_SIZE_IN_BITS = 2048
 SIGNING_INFO_SIZE = 2048
 MAX_SIGNATURE_SIZE = 512
-HEADER_RESERVED_SIZE = SIGNING_INFO_SIZE - (4 + MAX_SIGNATURE_SIZE)
+HEADER_RESERVED_SIZE = SIGNING_INFO_SIZE - (8 + 4 + MAX_SIGNATURE_SIZE)
 SIGNED_ATTRIBUTES_CHIP_ID = 3
 SIGNED_ATTRIBUTES_SIZE = 29 # currently undefined/unused
 SIGNED_DESCRIPTION_SIZE = 32
@@ -32,11 +32,14 @@ SEC_GRP_SIZE = 2
 
 MAGIC_NUMBER_CERTIFICATE = 0xB1005EA5
 MAGIC_NUMBER_ENROLL_CERT = 0xB1005C1E
+MAGIC_STRING_FUNGIBLE_SIGN = b'Fungible'
+MAGIC_STRING_CUSTOMER_SIGN = b'FunCustS'
 
 SIGNING_SERVER_URL = "https://f1reg.fungible.com:4443"
 SIGNING_SERVICE_URL = SIGNING_SERVER_URL + "/cgi-bin/signing_server.cgi"
 CERTIFICATE_SERVICE_URL = SIGNING_SERVER_URL + "/"
 PRODUCTION_CERTIFICATE_SERVICE_URL = SIGNING_SERVER_URL + "/production/"
+
 
 DEFAULT_HTTP_TIMEOUT = 180
 
@@ -276,9 +279,11 @@ def append_signature_to_binary(binary, signature):
     return binary
 
 
-def add_cert_and_signature_to_image(image, cert, signature):
+def add_cert_and_signature_to_image(image, cert, signature, magic):
     image += cert
     image += b'\x00' * (HEADER_RESERVED_SIZE - len(cert))
+    assert len(magic) == 8
+    image += struct.pack('8s', magic)
     return append_signature_to_binary(image, signature)
 
 def image_gen(outfile, infile, ftype, version, description, sign_key,
@@ -335,7 +340,7 @@ def image_gen(outfile, infile, ftype, version, description, sign_key,
               "to identify the key used to sign a firmware image")
         print("Image will not be signed!")
 
-    customer_to_be_signed = add_cert_and_signature_to_image(b'', cert, signature)
+    customer_to_be_signed = add_cert_and_signature_to_image(b'', cert, signature, MAGIC_STRING_FUNGIBLE_SIGN)
     customer_to_be_signed += to_be_signed
 
     if customer_certfile:
@@ -347,7 +352,7 @@ def image_gen(outfile, infile, ftype, version, description, sign_key,
         customer_signature = b''
 
     image = add_cert_and_signature_to_image(b'', customer_cert,
-                                            customer_signature)
+                                            customer_signature, MAGIC_STRING_CUSTOMER_SIGN)
     image += customer_to_be_signed
 
     # pad the image to the requested length
