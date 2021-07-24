@@ -229,20 +229,16 @@ def get_binary_from_form(form, name):
 def cmd_modulus(form):
 
     key_label = safe_form_get(form, "key", "fpk4")
-    hsm_id = int(safe_form_get(form, "production", 0))
 
-    if hsm_id and key_label != "fpk4":
-        modulus = remote_hsm_get_modulus(key_label, hsm_id)
-    else:
-        modulus = hsm_get_modulus(key_label)
+    modulus = get_modulus_of_key(key_label)
 
     out_format = safe_form_get(form, "format", "binary")
     if out_format == "binary":
-        send_binary(modulus, "%s_%d_modulus.bin" % (key_label, hsm_id))
+        send_binary(modulus, "%s_modulus.bin" % (key_label))
     elif out_format == "public_key":
         pub_key_info = gen_rsa_pub_key_info(modulus)
         pub_key_info_pem = pem.armor('PUBLIC_KEY', pub_key_info.dump())
-        send_binary(pub_key_info_pem, "%s_%d.pem" % (key_label, hsm_id))
+        send_binary(pub_key_info_pem, "%s.pem" % (key_label))
     else:
         print("Content-type: text/plain")
         send_binary_buffer(modulus, form)
