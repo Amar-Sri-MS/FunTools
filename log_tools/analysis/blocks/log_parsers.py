@@ -308,7 +308,8 @@ class JSONInput(Block):
     def process(self, iters):
         timeline.track_start('log_parser')
         for (_, _, system_type, system_id, uid, _, _, line) in iters[0]:
-            line = line.strip()# Ignore if the line is empty
+            line = line.strip()
+            # Ignore if the line is empty
             if line == '':
                 continue
 

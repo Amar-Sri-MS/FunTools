@@ -9,10 +9,13 @@ import unittest
 
 from blocks.log_parsers import FunOSInput
 from blocks.log_parsers import GenericInput
+from blocks.log_parsers import JSONInput
 from blocks.log_parsers import KeyValueInput
 from blocks_test.common import lines_to_iterable
 from blocks_test.common import msg_tuple_to_dict
 from blocks_test.common import process
+
+from utils import timeline
 
 
 class FunOSInputTest(unittest.TestCase):
@@ -20,6 +23,7 @@ class FunOSInputTest(unittest.TestCase):
 
     def setUp(self):
         self.block = FunOSInput()
+        timeline.init('test')
 
     def test_skips_uboot_lines(self):
         """ Ensures that we only read FunOS log lines and not uboot """
@@ -64,6 +68,7 @@ class GenericInputTest(unittest.TestCase):
     """ Unit tests for the generic input parser """
     def setUp(self):
         self.block = GenericInput()
+        timeline.init('test')
 
     def test_can_convert_to_datetime(self):
         """ check if the date and time strings are converted to datetime """
@@ -112,6 +117,7 @@ class KeyValueInputTest(unittest.TestCase):
     """ Unit tests for Key Value input parser """
     def setUp(self):
         self.block = KeyValueInput()
+        timeline.init('test')
 
     def test_can_convert_nsecs(self):
         """ check if nanoseconds are converted to microseconds """
@@ -148,6 +154,76 @@ class KeyValueInputTest(unittest.TestCase):
     def test_can_parse_log_level(self):
         """ check if the log level can be parsed from the log line """
         lines = ['time="2020-08-04T23:09:14.705144973-07:00" level=info msg="Relay for module: dataplane_interface key openconfig-fun-global:fun-global"']
+        output = process(self.block, lines_to_iterable(lines))
+
+        level = msg_tuple_to_dict(output[0])['level']
+        expected = "info"
+
+        self.assertEqual(expected, level)
+
+    def test_can_parse_custom_key_values(self):
+        """ check if the custom key value pairs can be parsed """
+        lines = ['ts="2020-08-04T23:09:14.705144973-07:00" lvl=info msg="Relay for module: dataplane_interface key openconfig-fun-global:fun-global"']
+        self.block.set_config({
+            'key_name_mappings': {
+                'level': 'lvl',
+                'time': 'ts'
+            }
+        })
+        output = process(self.block, lines_to_iterable(lines))
+
+        level = msg_tuple_to_dict(output[0])['level']
+        expected = "info"
+
+        self.assertEqual(expected, level)
+
+class JSONInputTest(unittest.TestCase):
+    """ Unit tests for JSON input parser """
+    def setUp(self):
+        self.block = JSONInput()
+        timeline.init('test')
+
+    def test_can_convert_nsecs(self):
+        """ check if nanoseconds are converted to microseconds """
+        lines = ['{"level":"info","msg":"Validating kafka brokers","time":"2021-06-20 05:10:43.619987"}']
+        output = process(self.block, lines_to_iterable(lines))
+
+        timestamp = msg_tuple_to_dict(output[0])['usecs']
+        expected = 619987
+
+        self.assertEqual(expected, timestamp)
+
+    def test_can_convert_to_datetime(self):
+        """ check if log time is converted to python datetime """
+        lines = [
+            '{"level":"info","msg":"Validating kafka brokers","time":"2021-06-20 05:10:43.619987"}'
+        ]
+        output = process(self.block, lines_to_iterable(lines))
+
+        timestamp = msg_tuple_to_dict(output[0])['datetime']
+        expected = datetime.datetime.strptime('2021-06-20 05:10:43.619987', '%Y-%m-%d %H:%M:%S.%f')
+
+        self.assertEqual(expected, timestamp)
+
+    def test_can_parse_log_level(self):
+        """ check if the log level can be parsed from the log line """
+        lines = ['{"level":"info","msg":"Validating kafka brokers","time":"2021-06-20 05:10:43.619987"}']
+        output = process(self.block, lines_to_iterable(lines))
+
+        level = msg_tuple_to_dict(output[0])['level']
+        expected = "info"
+
+        self.assertEqual(expected, level)
+
+    def test_can_parse_custom_key_values(self):
+        """ check if the custom key value can be parsed """
+        lines = ['{"lvl":"info","msg":"Validating kafka brokers","ts":"2021-06-20 05:10:43.619987"}']
+        self.block.set_config({
+            'key_name_mappings': {
+                'level': 'lvl',
+                'time': 'ts'
+            }
+        })
         output = process(self.block, lines_to_iterable(lines))
 
         level = msg_tuple_to_dict(output[0])['level']

@@ -40,7 +40,8 @@ class AnalyticsOutputTest(unittest.TestCase):
             msg_block = msg_tuple_to_dict(it)
             self.block.check_for_duplicate_entry(msg_block)
 
-        duplicated_entry_count = self.block.duplicate_entries[hashval]['count']
+        duplicate_entries = self.block.duplicate_counter.get_iter(2)
+        duplicated_entry_count = next((entry for entry in duplicate_entries if entry['item'] == hashval), {}).get('count', 0)
         self.assertEqual(expected_count, duplicated_entry_count)
 
     def test_most_duplicated_entries(self):
@@ -56,9 +57,8 @@ class AnalyticsOutputTest(unittest.TestCase):
         # Sorting the duplicates and getting the most duplicated entries
         most_duplicated_entries = self.block.get_most_duplicated_entries()
 
-        expected = ['[8.3.0] "opcode": "VOL_ADMIN_OPCODE_STATUS",',
-                    '[physical_resources.go:1771] PDT m=+606846.835741524 eror c8:2c:2b:00:0a:28']
-        most_duplicated_lines = [entry['msg']['line'] for entry in most_duplicated_entries]
+        expected = ['[8.3.0] "opcode": "VOL_ADMIN_OPCODE_STATUS",']
+        most_duplicated_lines = [entry['entry']['line'] for entry in most_duplicated_entries]
 
         self.assertListEqual(expected, most_duplicated_lines)
 
