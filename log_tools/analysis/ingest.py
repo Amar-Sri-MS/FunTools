@@ -392,12 +392,24 @@ def build_input_pipeline(path, frn_info, filters={}):
         # timestamp which makes it harder to parse them.
         if not 'var/log' in path:
             updated_source = source.split('cclinux_')[1]
-            blocks.extend(
-                fun_agent_input_pipeline(frn_info,
-                    updated_source,
-                    path
+
+            # TODO(Sourabh): Reach out to relevant folks to standardize
+            # log formats. funapisvr logs are in JSON.
+            if 'funapisvr' in source:
+                blocks.extend(
+                    controller_input_pipeline(frn_info,
+                        updated_source,
+                        path,
+                        parse_block='JSONInput'
+                    )
                 )
-            )
+            else:
+                blocks.extend(
+                    fun_agent_input_pipeline(frn_info,
+                        updated_source,
+                        path
+                    )
+                )
 
     elif source == 'cclinux' and resource_type == 'folder':
         log_files = glob.glob(f'{path}/*.log*')
