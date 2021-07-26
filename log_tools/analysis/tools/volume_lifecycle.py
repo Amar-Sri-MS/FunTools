@@ -257,6 +257,9 @@ class Volume(object):
         time_filters = (start_time, end_time)
 
         results = self._perform_es_search(queries, time_filters)
+        if len(results) == 0:
+            raise Exception(f'Could not find Plex Info for UUID: {pvol_id} from time: {start_time} till time: {end_time}')
+
         type = get_value_from_params(results[0], 'type')
         info = list()
         info.append(results[0])
@@ -443,7 +446,11 @@ class Volume(object):
                 lsv_info = self.get_lsv_info(lsv_uuid, end_time=self.op_time, operation=operation)
                 jvol_uuid = get_value_from_params(lsv_info, 'jvol_uuid')
                 # CHECK: Why is this a list?
-                ec_uuid = get_value_from_params(lsv_info, 'pvol_id')[0]
+                ec_uuids = get_value_from_params(lsv_info, 'pvol_id')
+                if len(ec_uuids) == 0:
+                    raise Exception(f'Could not find EC UUIDs from LSV UUID: {lsv_uuid}')
+
+                ec_uuid = ec_uuids[0]
 
                 self.jvol_uuids.add(jvol_uuid)
                 self.ec_uuids.add(ec_uuid)
