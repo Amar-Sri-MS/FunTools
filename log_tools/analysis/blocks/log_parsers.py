@@ -154,35 +154,37 @@ class GenericInput(Block):
             if line == '':
                 continue
 
-            # Match order <FILE_NAME|EMPTY> <DATE> <TIMESTAMP> <MILLISECONDS|MICROSECONDS|EMPTY>
-            # <TIMEZONE_OFFSET|EMPTY> <MESSAGE>
-            # The log message at the end also includes newline characters to support multiline logs
-            # Examples:
-            # 2020-08-03 14:13:04,086085 INFO XXX
-            # 2020/08/05 02:48:10.850085 INFO    tracer
-            # 2020-08-05 02:20:16.863085 -0700 PDT XXX
-            # [simple_ctx_scheduler.go:128] 2020-08-05 02:20:16.863085 -0700 PDT XXX
-            # simple_ctx_scheduler.go:128 2020-08-05 02:20:16.863085 XXX
-            # 2021-02-11T12:08:00.951926Z DBG XXX
-            # [2021-04-29 04:20:32,492] INFO shutting down (kafka.server.KafkaServer)
-            m = re.match(
-                r'^(\[[\S]+\]\s|[\S]+\s|)(?:\[|)(\d{4}(?:-|/)\d{2}(?:-|/)\d{2})+(?:T|\s)([:0-9]+)[\.|\,]{0,1}([0-9]+)(?:\]|)\s?((?:-|\+|)[0-9]{2}[:]{0,1}[0-9]{2}|Z|)([\s\S]*)',
-                line)
+            try:
+                # Match order <FILE_NAME|EMPTY> <DATE> <TIMESTAMP> <MILLISECONDS|MICROSECONDS|EMPTY>
+                # <TIMEZONE_OFFSET|EMPTY> <MESSAGE>
+                # The log message at the end also includes newline characters to support multiline logs
+                # Examples:
+                # 2020-08-03 14:13:04,086085 INFO XXX
+                # 2020/08/05 02:48:10.850085 INFO    tracer
+                # 2020-08-05 02:20:16.863085 -0700 PDT XXX
+                # [simple_ctx_scheduler.go:128] 2020-08-05 02:20:16.863085 -0700 PDT XXX
+                # simple_ctx_scheduler.go:128 2020-08-05 02:20:16.863085 XXX
+                # 2021-02-11T12:08:00.951926Z DBG XXX
+                # [2021-04-29 04:20:32,492] INFO shutting down (kafka.server.KafkaServer)
+                m = re.match(
+                    r'^(\[[\S]+\]\s|[\S]+\s|)(?:\[|)(\d{4}(?:-|/)\d{2}(?:-|/)\d{2})+(?:T|\s)([:0-9]+)[\.|\,]{0,1}([0-9]+)(?:\]|)\s?((?:-|\+|)[0-9]{2}[:]{0,1}[0-9]{2}|Z|)([\s\S]*)',
+                    line)
 
-            if m:
-                filename, date_str, time_str = m.group(1), m.group(2), m.group(3)
-                secs_str, tz_offset_str, msg = m.group(4), m.group(5), m.group(6)
+                if m:
+                    filename, date_str, time_str = m.group(1), m.group(2), m.group(3)
+                    secs_str, tz_offset_str, msg = m.group(4), m.group(5), m.group(6)
 
-                date_time, usecs = self.extract_timestamp(date_str,
-                                                          time_str,
-                                                          secs_str)
-                # Prepending filename if present to the log message
-                if filename:
-                    msg = filename.strip() + ' ' + msg.strip()
-                yield (date_time, usecs, system_type, system_id, uid, None, None, msg)
-            else:
-                # logging.warning(f'Malformed line in {uid}: {line}')
-                pass
+                    date_time, usecs = self.extract_timestamp(date_str,
+                                                            time_str,
+                                                            secs_str)
+                    # Prepending filename if present to the log message
+                    if filename:
+                        msg = filename.strip() + ' ' + msg.strip()
+                    yield (date_time, usecs, system_type, system_id, uid, None, None, msg)
+                else:
+                    logging.warning(f'Malformed line in {uid}: {line}')
+            except:
+                logging.exception(f'Malformed line in {uid}: {line}')
         timeline.track_end('log_parser')
 
     @staticmethod
@@ -202,33 +204,53 @@ class KeyValueInput(Block):
     """
     Handles logs with key value log format
     """
+    def __init__(self):
+        # Default key name mappings
+        self.key_name_mappings = {
+            'time': 'time',
+            'msg': 'msg',
+            'level': 'level'
+        }
+
+    def set_config(self, cfg):
+        self.key_name_mappings.update(cfg.get('key_name_mappings', {}))
+
     def process(self, iters):
         timeline.track_start('log_parser')
         for (_, _, system_type, system_id, uid, _, _, line) in iters[0]:
             line = line.strip()
+            # Ignore if the line is empty
+            if line == '':
+                continue
 
-            # Matches the line into a list of key value tuple
-            # Example:
-            # time="2020-09-26T03:04:51.267809475-07:00" level=info msg="Previous key not present"
-            log_field_tuples = re.findall(r'([\w.-]+)=("(?:[^\s]*|[^\n]*)"|\w+)', line)
+            try:
+                # Matches the line into a list of key value tuple
+                # Example:
+                # time="2020-09-26T03:04:51.267809475-07:00" level=info msg="Previous key not present"
+                log_field_tuples = re.findall(r'([\w.-]+)=("(?:[^\s]*|[^\n]*)"|\w+)', line)
 
-            log_fields = dict()
-            for key, value in log_field_tuples:
-                # Removing quotations at the start & end if any
-                value = value.lstrip('\"')
-                value = value.rstrip('\"')
-                log_fields[key] = value
+                log_fields = dict()
+                for key, value in log_field_tuples:
+                    # Removing quotations at the start & end if any
+                    value = value.lstrip('\"')
+                    value = value.rstrip('\"')
+                    log_fields[key] = value
 
-            time_str = log_fields.get('time', None)
-            if time_str:
-                date_time, usecs = self.extract_timestamp(time_str)
+                time_str = log_fields.get(self.key_name_mappings.get('time'), None)
+                if time_str:
+                    date_time, usecs = self.extract_timestamp(time_str)
 
-                # Extract the log message's level either from the log or from the name of the log file
-                # This field then can be indexed to the log storage and be used for filtering out the
-                # logs. TODO (Sourabh): Need to standardize the names of log message levels
-                msg = log_fields.get('msg', '')
+                    # Extract the log message's level either from the log or from the name of the log file
+                    # This field then can be indexed to the log storage and be used for filtering out the
+                    # logs. TODO (Sourabh): Need to standardize the names of log message levels
+                    msg = log_fields.get(self.key_name_mappings.get('msg'), '')
+                    level = log_fields.get(self.key_name_mappings.get('level'))
 
-                yield (date_time, usecs, system_type, system_id, uid, None, log_fields.get('level'), msg)
+                    yield (date_time, usecs, system_type, system_id, uid, None, log_fields.get('level'), msg)
+                else:
+                    logging.warning(f'Malformed line in {uid}: {line}')
+            except:
+                logging.exception(f'Malformed line in {uid}: {line}')
 
         timeline.track_end('log_parser')
 
