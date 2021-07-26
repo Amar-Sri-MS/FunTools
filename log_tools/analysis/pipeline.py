@@ -62,6 +62,7 @@ class BlockFactory(object):
         self.plugins['ISOFormatInput'] = log_parsers.ISOFormatInput
         self.plugins['GenericInput'] = log_parsers.GenericInput
         self.plugins['KeyValueInput'] = log_parsers.KeyValueInput
+        self.plugins['JSONInput'] = log_parsers.JSONInput
         self.plugins['HumanDateTime'] = display_time.HumanDateTime
         self.plugins['Merge'] = merge.Merge
         self.plugins['Filter'] = log_filter.LogFilter

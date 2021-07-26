@@ -266,7 +266,7 @@ def build_input_pipeline(path, frn_info, filters={}):
         return blocks
 
     # If the folder does not exist
-    if resource_type == 'folder' and not os.path.exists(path):
+    if resource_type in ['folder', 'textfile'] and not os.path.exists(path):
         return blocks
 
     # TODO(Sourabh): Have multiple source keywords to check for a source
@@ -417,10 +417,10 @@ def build_input_pipeline(path, frn_info, filters={}):
         for file in log_files:
             filename = os.path.basename(file)
             frn_info['source'] = f'cclinux_{filename}'
-            blocks.extend(build_input_pipeline(file, frn_info))
+            blocks.extend(build_input_pipeline(file, frn_info, filters))
 
     else:
-        logging.warning(f'Unknown source: {source}!')
+        logging.warning(f'Unknown source: {source} or resource type: {resource_type}!')
 
     return blocks
 
@@ -529,7 +529,7 @@ def funos_input(frn_info, source, file_pattern, file_info_match=None):
     return [input, parse]
 
 
-def controller_input_pipeline(frn_info, source, file_pattern, multiline_settings={}, parse_block='GenericInput'):
+def controller_input_pipeline(frn_info, source, file_pattern, multiline_settings={}, parse_block='GenericInput', parse_settings={}):
     """
     Input pipeline for Controller services source.
     Args:
@@ -561,13 +561,14 @@ def controller_input_pipeline(frn_info, source, file_pattern, multiline_settings
     parse = {
         'id': parse_id,
         'block': parse_block,
+        'cfg': parse_settings,
         'out': 'merge'
     }
 
     return [input, parse]
 
 
-def fun_agent_input_pipeline(frn_info, source, file_pattern, file_info_match=None):
+def fun_agent_input_pipeline(frn_info, source, file_pattern, parse_block='GenericInput', parse_settings={}, file_info_match=None):
     """ Input pipeline for Fun agent source """
     cfg = _get_cfg_from_frn(frn_info)
     id = _generate_unique_id(source, cfg['system_id'])
@@ -590,7 +591,8 @@ def fun_agent_input_pipeline(frn_info, source, file_pattern, file_info_match=Non
 
     fun_agent_parse = {
         'id': fun_agent_parse_id,
-        'block': 'GenericInput',
+        'block': parse_block,
+        'cfg': parse_settings,
         'out': 'merge'
     }
 
