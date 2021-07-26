@@ -266,7 +266,7 @@ def build_input_pipeline(path, frn_info, filters={}):
         return blocks
 
     # If the folder does not exist
-    if resource_type in ['folder', 'textfile'] and not os.path.exists(path):
+    if resource_type  == 'folder' and not os.path.exists(path):
         return blocks
 
     # TODO(Sourabh): Have multiple source keywords to check for a source
@@ -352,13 +352,15 @@ def build_input_pipeline(path, frn_info, filters={}):
         )
 
     elif 'kapacitor' in source:
-        file_pattern = f'{path}/kapacitor.log*' if resource_type == 'folder' else path
+        file_pattern = f'{path}/kapacitord.log*' if resource_type == 'folder' else path
         blocks.extend(
             controller_input_pipeline(frn_info, source, file_pattern,
                 parse_block='KeyValueInput',
                 parse_settings={
-                    'time': 'ts',
-                    'level': 'lvl'
+                    'key_name_mappings': {
+                        'time': 'ts',
+                        'level': 'lvl'
+                    }
                 })
         )
 
@@ -370,7 +372,7 @@ def build_input_pipeline(path, frn_info, filters={}):
                 filename = os.path.basename(file)
                 frn_info['source'] = filename
                 # Few log archives contain the kapacitor logs in tms folder.
-                if 'kapacitor' in filename:
+                if 'kapacitord.log' in filename:
                     frn_info['source'] = 'kapacitor'
                     blocks.extend(build_input_pipeline(file, frn_info, filters))
                 else:

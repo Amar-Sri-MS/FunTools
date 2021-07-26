@@ -211,12 +211,25 @@ class KeyValueInput(Block):
             'msg': 'msg',
             'level': 'level'
         }
+        self.value_separator = '='
 
     def set_config(self, cfg):
         self.key_name_mappings.update(cfg.get('key_name_mappings', {}))
 
     def process(self, iters):
         timeline.track_start('log_parser')
+        # Matches the line into a list of key value tuple
+        # Example:
+        # time="2020-09-26T03:04:51.267809475-07:00" level=info msg="Previous key not present"
+        split_regex = r"""
+            (?P<key>[\w\-]+)=       # Key consists of only alphanumerics and '-' character
+            (?P<quote>["']?)        # Optional quote character.
+            (?P<value>[\S\s]*?)     # Value is a non greedy match
+            (?P=quote)              # Closing quote equals the first.
+            ($|\s)                  # Entry ends with comma or end of string
+        """.replace("=", self.value_separator)
+        regex = re.compile(split_regex, re.VERBOSE)
+
         for (_, _, system_type, system_id, uid, _, _, line) in iters[0]:
             line = line.strip()
             # Ignore if the line is empty
@@ -224,13 +237,9 @@ class KeyValueInput(Block):
                 continue
 
             try:
-                # Matches the line into a list of key value tuple
-                # Example:
-                # time="2020-09-26T03:04:51.267809475-07:00" level=info msg="Previous key not present"
-                log_field_tuples = re.findall(r'([\w.-]+)=("(?:[^\s]*|[^\n]*)"|\w+)', line)
-
+                log_field_tuples = regex.findall(line)
                 log_fields = dict()
-                for key, value in log_field_tuples:
+                for key, _, value, _ in log_field_tuples:
                     # Removing quotations at the start & end if any
                     value = value.lstrip('\"')
                     value = value.rstrip('\"')
@@ -246,9 +255,9 @@ class KeyValueInput(Block):
                     msg = log_fields.get(self.key_name_mappings.get('msg'), '')
                     level = log_fields.get(self.key_name_mappings.get('level'))
 
-                    yield (date_time, usecs, system_type, system_id, uid, None, log_fields.get('level'), msg)
+                    yield (date_time, usecs, system_type, system_id, uid, None, level, msg)
                 else:
-                    logging.warning(f'Malformed line in {uid}: {line}')
+                    logging.warning(f'Malformed timestamp in {uid}: {line}')
             except:
                 logging.exception(f'Malformed line in {uid}: {line}')
 
@@ -318,6 +327,8 @@ class JSONInput(Block):
                     level = log_fields.get(self.key_name_mappings.get('level'))
 
                     yield (date_time, usecs, system_type, system_id, uid, None, level, msg)
+                else:
+                    logging.warning(f'Malformed timestamp in {uid}: {line}')
             except:
                 logging.exception(f'Malformed line in {uid}: {line}')
 
