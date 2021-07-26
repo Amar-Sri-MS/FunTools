@@ -351,9 +351,57 @@ def build_input_pipeline(path, frn_info, filters={}):
                 parse_block='KeyValueInput')
         )
 
-    elif source == 'node-service':
-        # nms folder contains funos and agent logs
+    elif 'kapacitor' in source:
+        file_pattern = f'{path}/kapacitor.log*' if resource_type == 'folder' else path
+        blocks.extend(
+            controller_input_pipeline(frn_info, source, file_pattern,
+                parse_block='KeyValueInput',
+                parse_settings={
+                    'time': 'ts',
+                    'level': 'lvl'
+                })
+        )
+
+    elif source in ['telemetry-service', 'tms']:
         if resource_type == 'folder':
+            log_files = glob.glob(f'{path}/*.log*')
+            frn_info['resource_type'] = 'textfile'
+            for file in log_files:
+                filename = os.path.basename(file)
+                frn_info['source'] = filename
+                # Few log archives contain the kapacitor logs in tms folder.
+                if 'kapacitor' in filename:
+                    frn_info['source'] = 'kapacitor'
+                    blocks.extend(build_input_pipeline(file, frn_info, filters))
+                else:
+                    blocks.extend(
+                        controller_input_pipeline(frn_info, filename, file,
+                            parse_block='JSONInput')
+                    )
+
+    elif source in ['node-service', 'nms']:
+        if resource_type == 'folder':
+            log_files = glob.glob(f'{path}/*.log*')
+            frn_info['resource_type'] = 'textfile'
+            for file in log_files:
+                filename = os.path.basename(file)
+                frn_info['source'] = filename
+                if 'audit.log' in filename:
+                    blocks.extend(controller_input_pipeline(
+                        frn_info,
+                        filename,
+                        file,
+                        parse_block='JSONInput',
+                        parse_settings={
+                            'key_name_mappings': {
+                                'time': 'ts'
+                            }
+                        }
+                    ))
+                else:
+                    blocks.extend(controller_input_pipeline(frn_info, filename, file))
+
+            # nms folder contains funos and agent logs
             frn_info['system_type'] = 'DPU'
             frn_info['system_id'] = None
             if _should_ingest_source('platform_agent', source_filters):
