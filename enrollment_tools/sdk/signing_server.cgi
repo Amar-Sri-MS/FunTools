@@ -9,7 +9,7 @@
 #  THIS SHOULD BE USED FOR DEVELOPMENT PURPOSES ONLY. THE KEYS USED ARE NOT
 #  PROPERLY PROTECTED (PEM FILES W/O PASSWORD). IT IS STRONGLY RECOMMENDED
 #  TO USE A HSM FOR PRODUCTION SIGNING BY MODIFYING THE FUNCTIONS IN THE
-#  "Operations with keys" SECTION.
+#  "Operations with keys" CODE SECTION BELOW.
 #
 #  The PEM Key files should be readable by the Apache user account
 #  (typically www-data). These files can be located anywhere by
@@ -33,7 +33,8 @@ from asn1crypto import core, algos, keys, pem
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding, utils
-from cryptography.hazmat.primitives.serialization import load_pem_private_key
+from cryptography.hazmat.primitives.serialization import (load_der_private_key,
+                                                          load_der_public_key)
 
 # optional key_label -> key_file_path. Files in the current directory will be used
 # if the required key name or modulus is not found using the labels or paths
@@ -90,6 +91,8 @@ def send_binary_buffer(bin_buffer, form_values):
             bin_c_struct += "\n"
         bin_c_struct += "}"
         bin_str = bin_c_struct
+    else:
+        raise ValueError("Unsupported format: %s" % format)
 
     send_response_body(bin_str)
 
@@ -138,16 +141,38 @@ HASH_ALGO_NAMES = {
 def load_key_from_path(fname):
     try:
         with open(fname, 'rb') as fd:
-            return load_pem_private_key(fd.read(),
+            data = fd.read()
+        if not pem.detect(data):
+            return None # only support PEM
+
+        data_type, _, der_data = pem.unarmor(data)
+
+        if 'PRIVATE' in data_type:
+            return load_der_private_key(der_data,
                                         password=None,
                                         backend=default_backend())
+        elif 'PUBLIC' in data_type:
+            # this can load both PUBLIC KEY and RSA PUBLIC KEY
+            return load_der_public_key(der_data,
+                                       backend=default_backend())
+        else:
+            return None
+
     except Exception as exc:
         log("Error: %s" % str(exc))
         return None
 
-def key_has_modulus(key, n):
-    return n == key.public_key().public_numbers().n
+def key_n(key):
+    #deal with public and private keys
+    try:
+        key = key.public_key()
+    except:
+        pass
+    return key.public_numbers().n
 
+
+def key_has_modulus(key, n):
+    return n == key_n(key)
 
 def search_paths_for_modulus( paths, n):
     for fname in paths:
@@ -191,7 +216,7 @@ def get_modulus_of_key(key_label):
     # get modulus from key
     key = get_key_with_label(key_label)
 
-    n = key.public_key().public_numbers().n
+    n = key_n(key)
     modulus = n.to_bytes((n.bit_length()+7)//8, byteorder='big')
     return modulus
 
@@ -237,7 +262,7 @@ def cmd_modulus(form):
         send_binary(modulus, "%s_modulus.bin" % (key_label))
     elif out_format == "public_key":
         pub_key_info = gen_rsa_pub_key_info(modulus)
-        pub_key_info_pem = pem.armor('PUBLIC_KEY', pub_key_info.dump())
+        pub_key_info_pem = pem.armor('PUBLIC KEY', pub_key_info.dump())
         send_binary(pub_key_info_pem, "%s.pem" % (key_label))
     else:
         print("Content-type: text/plain")
