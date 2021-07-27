@@ -1365,7 +1365,7 @@ static void _do_session(struct dpcsock_connection *funos,
 			// printf("user input\n");
 			char *line = _read_a_line(cmd, &read);
 
-			if (read == -1 || line == NULL) /* user ^D or connection closed*/
+			if (read <= 0 || line == NULL) /* user ^D or connection closed*/
 				break;
 
 			/* in loopback mode, check if this is output from
