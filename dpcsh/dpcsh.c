@@ -1585,6 +1585,7 @@ static struct option longopts[] = {
 	{ "legacy_b64",      no_argument,       NULL, 'L' },
 	{ "verbose",         no_argument,       NULL, 'v' },
 	{ "debug",           no_argument,       NULL, 'd' },
+	{ "log",             required_argument, NULL, 'l' },
 	{ "version",         no_argument,       NULL, 'V' },
 	{ "retry",           optional_argument, NULL, 'Y' },
 #ifdef __linux__
@@ -1630,6 +1631,7 @@ static void usage(const char *argv0)
 	printf("       -L, --legacy_b64            support old-style base64 encoding, despite issues\n");
 	printf("       -v, --verbose               log all json transactions in proxy mode\n");
 	printf("       -d, --debug                 print debugging information\n");
+	printf("       -l, --log[=filename]        log to a file\n");
 	printf("       -Y, --retry[=N]             retry every seconds for N seconds for first socket connection\n");
 	printf("       -V, --version               display version info and exit\n");
 #ifdef __linux__
@@ -1655,6 +1657,7 @@ int main(int argc, char *argv[])
 	bool autodetect_input_device = true;
 	bool cmd_timeout_is_set = false;
 	char detected_nvme_device_name[64]; /* when no input device is specified */
+	int log_fd = -1;
 
 	srand(time(NULL));
 	dpcsh_path = argv[0];
@@ -1844,6 +1847,17 @@ int main(int argc, char *argv[])
 			_debug_log = true;
 			break;
 
+		case 'l':
+			log_fd = open(optarg, O_CREAT|O_APPEND|O_SYNC|O_WRONLY, 0644);
+			if (log_fd == -1
+			|| dup2(log_fd, fileno(stdout)) == -1
+			|| dup2(log_fd, fileno(stderr)) == -1) {
+				printf("failed to open a file or redirect standard output\n");
+				exit(1);
+			}
+			setvbuf(stdout, NULL, _IOLBF, 0);
+			break;
+
 		case 'Y':  /* retry=N */
 
 			connect_retries = opt_num(optarg, RETRY_NOARG);
@@ -1958,5 +1972,6 @@ int main(int argc, char *argv[])
 
 	dpcsocket_destroy(&funos_sock);
 	dpcsocket_destroy(&cmd_sock);
+	if (log_fd != -1) close(log_fd);
 	return 0;
 }
