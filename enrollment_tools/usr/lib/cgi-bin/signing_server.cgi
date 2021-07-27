@@ -115,7 +115,7 @@ def cmd_modulus(form):
         send_binary(modulus, "%s_%d_modulus.bin" % (key_label, hsm_id))
     elif out_format == "public_key":
         pub_key_info = gen_rsa_pub_key_info(modulus)
-        pub_key_info_pem = pem.armor('PUBLIC_KEY', pub_key_info.dump())
+        pub_key_info_pem = pem.armor('PUBLIC KEY', pub_key_info.dump())
         send_binary(pub_key_info_pem, "%s_%d.pem" % (key_label, hsm_id))
     else:
         print("Content-type: text/plain")
