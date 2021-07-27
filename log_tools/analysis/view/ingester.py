@@ -433,7 +433,9 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
         # Adding the release train to the tags
         tags.add(release_train)
         # Adding the tags from suite_info to the tags
-        tags.update(suite_info.get('tags', []))
+        suite_info_tags = suite_info.get('tags')
+        if suite_info_tags:
+            tags.update(suite_info_tags)
 
         metadata = {
             **metadata,
