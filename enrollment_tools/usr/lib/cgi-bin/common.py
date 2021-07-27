@@ -86,6 +86,8 @@ def send_binary_buffer(bin_buffer, form_values):
             bin_c_struct += "\n"
         bin_c_struct += "}"
         bin_str = bin_c_struct
+    else:
+        raise ValueError("Unknown format: %s" % format)
 
     send_response_body(bin_str)
 
