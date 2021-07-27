@@ -3,10 +3,8 @@
 #
 
 import datetime
-import io
+import json
 import logging
-import math
-import os
 import re
 
 from blocks.block import Block
@@ -156,35 +154,37 @@ class GenericInput(Block):
             if line == '':
                 continue
 
-            # Match order <FILE_NAME|EMPTY> <DATE> <TIMESTAMP> <MILLISECONDS|MICROSECONDS|EMPTY>
-            # <TIMEZONE_OFFSET|EMPTY> <MESSAGE>
-            # The log message at the end also includes newline characters to support multiline logs
-            # Examples:
-            # 2020-08-03 14:13:04,086085 INFO XXX
-            # 2020/08/05 02:48:10.850085 INFO    tracer
-            # 2020-08-05 02:20:16.863085 -0700 PDT XXX
-            # [simple_ctx_scheduler.go:128] 2020-08-05 02:20:16.863085 -0700 PDT XXX
-            # simple_ctx_scheduler.go:128 2020-08-05 02:20:16.863085 XXX
-            # 2021-02-11T12:08:00.951926Z DBG XXX
-            # [2021-04-29 04:20:32,492] INFO shutting down (kafka.server.KafkaServer)
-            m = re.match(
-                r'^(\[[\S]+\]\s|[\S]+\s|)(?:\[|)(\d{4}(?:-|/)\d{2}(?:-|/)\d{2})+(?:T|\s)([:0-9]+)[\.|\,]{0,1}([0-9]+)(?:\]|)\s?((?:-|\+|)[0-9]{2}[:]{0,1}[0-9]{2}|Z|)([\s\S]*)',
-                line)
+            try:
+                # Match order <FILE_NAME|EMPTY> <DATE> <TIMESTAMP> <MILLISECONDS|MICROSECONDS|EMPTY>
+                # <TIMEZONE_OFFSET|EMPTY> <MESSAGE>
+                # The log message at the end also includes newline characters to support multiline logs
+                # Examples:
+                # 2020-08-03 14:13:04,086085 INFO XXX
+                # 2020/08/05 02:48:10.850085 INFO    tracer
+                # 2020-08-05 02:20:16.863085 -0700 PDT XXX
+                # [simple_ctx_scheduler.go:128] 2020-08-05 02:20:16.863085 -0700 PDT XXX
+                # simple_ctx_scheduler.go:128 2020-08-05 02:20:16.863085 XXX
+                # 2021-02-11T12:08:00.951926Z DBG XXX
+                # [2021-04-29 04:20:32,492] INFO shutting down (kafka.server.KafkaServer)
+                m = re.match(
+                    r'^(\[[\S]+\]\s|[\S]+\s|)(?:\[|)(\d{4}(?:-|/)\d{2}(?:-|/)\d{2})+(?:T|\s)([:0-9]+)[\.|\,]{0,1}([0-9]+)(?:\]|)\s?((?:-|\+|)[0-9]{2}[:]{0,1}[0-9]{2}|Z|)([\s\S]*)',
+                    line)
 
-            if m:
-                filename, date_str, time_str = m.group(1), m.group(2), m.group(3)
-                secs_str, tz_offset_str, msg = m.group(4), m.group(5), m.group(6)
+                if m:
+                    filename, date_str, time_str = m.group(1), m.group(2), m.group(3)
+                    secs_str, tz_offset_str, msg = m.group(4), m.group(5), m.group(6)
 
-                date_time, usecs = self.extract_timestamp(date_str,
-                                                          time_str,
-                                                          secs_str)
-                # Prepending filename if present to the log message
-                if filename:
-                    msg = filename.strip() + ' ' + msg.strip()
-                yield (date_time, usecs, system_type, system_id, uid, None, None, msg)
-            else:
-                # logging.warning(f'Malformed line in {uid}: {line}')
-                pass
+                    date_time, usecs = self.extract_timestamp(date_str,
+                                                            time_str,
+                                                            secs_str)
+                    # Prepending filename if present to the log message
+                    if filename:
+                        msg = filename.strip() + ' ' + msg.strip()
+                    yield (date_time, usecs, system_type, system_id, uid, None, None, msg)
+                else:
+                    logging.warning(f'Malformed line in {uid}: {line}')
+            except:
+                logging.exception(f'Malformed line in {uid}: {line}')
         timeline.track_end('log_parser')
 
     @staticmethod
@@ -204,39 +204,139 @@ class KeyValueInput(Block):
     """
     Handles logs with key value log format
     """
+    def __init__(self):
+        # Default key name mappings
+        self.key_name_mappings = {
+            'time': 'time',
+            'msg': 'msg',
+            'level': 'level'
+        }
+        self.value_separator = '='
+
+    def set_config(self, cfg):
+        self.key_name_mappings.update(cfg.get('key_name_mappings', {}))
+
     def process(self, iters):
         timeline.track_start('log_parser')
+        # Matches the line into a list of key value tuple
+        # Example:
+        # time="2020-09-26T03:04:51.267809475-07:00" level=info msg="Previous key not present"
+        split_regex = r"""
+            (?P<key>[\w\-]+)=       # Key consists of only alphanumerics and '-' character
+            (?P<quote>["']?)        # Optional quote character.
+            (?P<value>[\S\s]*?)     # Value is a non greedy match
+            (?P=quote)              # Closing quote equals the first.
+            ($|\s)                  # Entry ends with comma or end of string
+        """.replace("=", self.value_separator)
+        regex = re.compile(split_regex, re.VERBOSE)
+
         for (_, _, system_type, system_id, uid, _, _, line) in iters[0]:
             line = line.strip()
+            # Ignore if the line is empty
+            if line == '':
+                continue
 
-            # Matches the line into a list of key value tuple
-            # Example:
-            # time="2020-09-26T03:04:51.267809475-07:00" level=info msg="Previous key not present"
-            log_field_tuples = re.findall(r'([\w.-]+)=("(?:[^\s]*|[^\n]*)"|\w+)', line)
+            try:
+                log_field_tuples = regex.findall(line)
+                log_fields = dict()
+                for key, _, value, _ in log_field_tuples:
+                    # Removing quotations at the start & end if any
+                    value = value.lstrip('\"')
+                    value = value.rstrip('\"')
+                    log_fields[key] = value
 
-            log_fields = dict()
-            for key, value in log_field_tuples:
-                # Removing quotations at the start & end if any
-                value = value.lstrip('\"')
-                value = value.rstrip('\"')
-                log_fields[key] = value
+                time_str = log_fields.get(self.key_name_mappings.get('time'), None)
+                if time_str:
+                    date_time, usecs = self.extract_timestamp(time_str)
 
-            time_str = log_fields.get('time', None)
-            if time_str:
-                date_time, usecs = self.extract_timestamp(time_str)
+                    # Extract the log message's level either from the log or from the name of the log file
+                    # This field then can be indexed to the log storage and be used for filtering out the
+                    # logs. TODO (Sourabh): Need to standardize the names of log message levels
+                    msg = log_fields.get(self.key_name_mappings.get('msg'), '')
+                    level = log_fields.get(self.key_name_mappings.get('level'))
 
-                # Extract the log message's level either from the log or from the name of the log file
-                # This field then can be indexed to the log storage and be used for filtering out the
-                # logs. TODO (Sourabh): Need to standardize the names of log message levels
-                msg = log_fields.get('msg', '')
-
-                yield (date_time, usecs, system_type, system_id, uid, None, log_fields.get('level'), msg)
+                    yield (date_time, usecs, system_type, system_id, uid, None, level, msg)
+                else:
+                    logging.warning(f'Malformed timestamp in {uid}: {line}')
+            except:
+                logging.exception(f'Malformed line in {uid}: {line}')
 
         timeline.track_end('log_parser')
 
     @staticmethod
     def extract_timestamp(time_str):
 
+        # 2020-08-04T23:09:14.705144973-07:00 OR 2020-08-04 23:09:14.705144973-07:00
+        # OR 2020/08/04 23:09:14.705144973
+        m = re.match(r'^(\d{4}(?:-|/)\d{2}(?:-|/)\d{2})+(?:T|\s)([:0-9]+)[.]{0,1}([0-9]*)([\s\S]*)', time_str)
+        day_str, time_str, secs_str, tz_offset = m.group(1), m.group(2), m.group(3), m.group(4)
+
+        # Converting nanoseconds to microseconds because Python datetime only supports upto microseconds
+        # TODO (Sourabh): Precision loss due to conversion microseconds
+        usecs_str = secs_str[0:6] if len(secs_str) > 6 else secs_str
+
+        day_str = day_str.replace('-', '/')
+        log_time = f"{day_str} {time_str}.{usecs_str}" if usecs_str else f"{day_str} {time_str}.0"
+        log_time_format = '%Y/%m/%d %H:%M:%S.%f'
+
+        d = datetime.datetime.strptime(log_time, log_time_format)
+
+        # adding if timezone offset is present, converting to UTC
+        # if tz_offset:
+        #     tz_d = datetime.datetime.strptime(tz_offset, '%z')
+        #     time_delta = tz_d.tzinfo.utcoffset(None)
+        #     d = d + time_delta
+
+        return d, d.microsecond
+
+
+class JSONInput(Block):
+    """
+    Handles logs with JSON logs
+    """
+    def __init__(self):
+        # Default key name mappings
+        self.key_name_mappings = {
+            'time': 'time',
+            'msg': 'msg',
+            'level': 'level'
+        }
+
+    def set_config(self, cfg):
+        self.key_name_mappings.update(cfg.get('key_name_mappings', {}))
+
+    def process(self, iters):
+        timeline.track_start('log_parser')
+        for (_, _, system_type, system_id, uid, _, _, line) in iters[0]:
+            line = line.strip()
+            # Ignore if the line is empty
+            if line == '':
+                continue
+
+            try:
+                # Converts the log line into a dict
+                log_fields = json.loads(line)
+
+                time_str = log_fields.get(self.key_name_mappings.get('time'), None)
+                if time_str:
+                    date_time, usecs = self.extract_timestamp(time_str)
+
+                    # Extract the log message's level either from the log or from the name of the log file
+                    # This field then can be indexed to the log storage and be used for filtering out the
+                    # logs. TODO (Sourabh): Need to standardize the names of log message levels
+                    msg = log_fields.get(self.key_name_mappings.get('msg'), '')
+                    level = log_fields.get(self.key_name_mappings.get('level'))
+
+                    yield (date_time, usecs, system_type, system_id, uid, None, level, msg)
+                else:
+                    logging.warning(f'Malformed timestamp in {uid}: {line}')
+            except:
+                logging.exception(f'Malformed line in {uid}: {line}')
+
+        timeline.track_end('log_parser')
+
+    @staticmethod
+    def extract_timestamp(time_str):
         # 2020-08-04T23:09:14.705144973-07:00 OR 2020-08-04 23:09:14.705144973-07:00
         # OR 2020/08/04 23:09:14.705144973
         m = re.match(r'^(\d{4}(?:-|/)\d{2}(?:-|/)\d{2})+(?:T|\s)([:0-9]+)[.]{0,1}([0-9]*)([\s\S]*)', time_str)

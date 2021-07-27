@@ -8,6 +8,7 @@
 # Owner: Sourabh Jain (sourabh.jain@fungible.com)
 # Copyright (c) 2021 Fungible Inc.  All rights reserved.
 
+import logging
 import sys
 
 sys.path.insert(0, '.')
@@ -32,12 +33,14 @@ def get_volume_lifecycle(log_id):
     vol_id = request_data.get('volume_id')
 
     if not vol_id:
+        logging.error('Volume ID missing')
         return jsonify({'error': 'Volume ID missing'}), 400
 
     try:
         volume = Volume(log_id, vol_id)
         lifecycle = volume.get_lifecycle()
     except Exception as e:
+        logging.exception('Error in storage tool')
         return jsonify({
             'error': str(e)
         }), 500

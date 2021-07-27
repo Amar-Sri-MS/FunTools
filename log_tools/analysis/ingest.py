@@ -266,7 +266,7 @@ def build_input_pipeline(path, frn_info, filters={}):
         return blocks
 
     # If the folder does not exist
-    if resource_type == 'folder' and not os.path.exists(path):
+    if resource_type  == 'folder' and not os.path.exists(path):
         return blocks
 
     # TODO(Sourabh): Have multiple source keywords to check for a source
@@ -351,9 +351,59 @@ def build_input_pipeline(path, frn_info, filters={}):
                 parse_block='KeyValueInput')
         )
 
-    elif source == 'node-service':
-        # nms folder contains funos and agent logs
+    elif 'kapacitor' in source:
+        file_pattern = f'{path}/kapacitord.log*' if resource_type == 'folder' else path
+        blocks.extend(
+            controller_input_pipeline(frn_info, source, file_pattern,
+                parse_block='KeyValueInput',
+                parse_settings={
+                    'key_name_mappings': {
+                        'time': 'ts',
+                        'level': 'lvl'
+                    }
+                })
+        )
+
+    elif source in ['telemetry-service', 'tms']:
         if resource_type == 'folder':
+            log_files = glob.glob(f'{path}/*.log*')
+            frn_info['resource_type'] = 'textfile'
+            for file in log_files:
+                filename = os.path.basename(file)
+                frn_info['source'] = filename
+                # Few log archives contain the kapacitor logs in tms folder.
+                if 'kapacitord.log' in filename:
+                    frn_info['source'] = 'kapacitor'
+                    blocks.extend(build_input_pipeline(file, frn_info, filters))
+                else:
+                    blocks.extend(
+                        controller_input_pipeline(frn_info, filename, file,
+                            parse_block='JSONInput')
+                    )
+
+    elif source in ['node-service', 'nms']:
+        if resource_type == 'folder':
+            log_files = glob.glob(f'{path}/*.log*')
+            frn_info['resource_type'] = 'textfile'
+            for file in log_files:
+                filename = os.path.basename(file)
+                frn_info['source'] = filename
+                if 'audit.log' in filename:
+                    blocks.extend(controller_input_pipeline(
+                        frn_info,
+                        filename,
+                        file,
+                        parse_block='JSONInput',
+                        parse_settings={
+                            'key_name_mappings': {
+                                'time': 'ts'
+                            }
+                        }
+                    ))
+                else:
+                    blocks.extend(controller_input_pipeline(frn_info, filename, file))
+
+            # nms folder contains funos and agent logs
             frn_info['system_type'] = 'DPU'
             frn_info['system_id'] = None
             if _should_ingest_source('platform_agent', source_filters):
@@ -392,12 +442,24 @@ def build_input_pipeline(path, frn_info, filters={}):
         # timestamp which makes it harder to parse them.
         if not 'var/log' in path:
             updated_source = source.split('cclinux_')[1]
-            blocks.extend(
-                fun_agent_input_pipeline(frn_info,
-                    updated_source,
-                    path
+
+            # TODO(Sourabh): Reach out to relevant folks to standardize
+            # log formats. funapisvr logs are in JSON.
+            if 'funapisvr' in source:
+                blocks.extend(
+                    controller_input_pipeline(frn_info,
+                        updated_source,
+                        path,
+                        parse_block='JSONInput'
+                    )
                 )
-            )
+            else:
+                blocks.extend(
+                    fun_agent_input_pipeline(frn_info,
+                        updated_source,
+                        path
+                    )
+                )
 
     elif source == 'cclinux' and resource_type == 'folder':
         log_files = glob.glob(f'{path}/*.log*')
@@ -405,10 +467,10 @@ def build_input_pipeline(path, frn_info, filters={}):
         for file in log_files:
             filename = os.path.basename(file)
             frn_info['source'] = f'cclinux_{filename}'
-            blocks.extend(build_input_pipeline(file, frn_info))
+            blocks.extend(build_input_pipeline(file, frn_info, filters))
 
     else:
-        logging.warning(f'Unknown source: {source}!')
+        logging.warning(f'Unknown source: {source} or resource type: {resource_type}!')
 
     return blocks
 
@@ -517,7 +579,7 @@ def funos_input(frn_info, source, file_pattern, file_info_match=None):
     return [input, parse]
 
 
-def controller_input_pipeline(frn_info, source, file_pattern, multiline_settings={}, parse_block='GenericInput'):
+def controller_input_pipeline(frn_info, source, file_pattern, multiline_settings={}, parse_block='GenericInput', parse_settings={}):
     """
     Input pipeline for Controller services source.
     Args:
@@ -549,13 +611,14 @@ def controller_input_pipeline(frn_info, source, file_pattern, multiline_settings
     parse = {
         'id': parse_id,
         'block': parse_block,
+        'cfg': parse_settings,
         'out': 'merge'
     }
 
     return [input, parse]
 
 
-def fun_agent_input_pipeline(frn_info, source, file_pattern, file_info_match=None):
+def fun_agent_input_pipeline(frn_info, source, file_pattern, parse_block='GenericInput', parse_settings={}, file_info_match=None):
     """ Input pipeline for Fun agent source """
     cfg = _get_cfg_from_frn(frn_info)
     id = _generate_unique_id(source, cfg['system_id'])
@@ -578,7 +641,8 @@ def fun_agent_input_pipeline(frn_info, source, file_pattern, file_info_match=Non
 
     fun_agent_parse = {
         'id': fun_agent_parse_id,
-        'block': 'GenericInput',
+        'block': parse_block,
+        'cfg': parse_settings,
         'out': 'merge'
     }
 
