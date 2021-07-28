@@ -56,7 +56,8 @@ catastrophic_timeout = 100
 
 
 class DirLookup(object):
-    """ Thread-safe lookup for trace directory by ip address.
+    """
+    Thread-safe lookup for trace directory by ip address.
 
     This may not be required in CPython because of the GIL, but paranoia wins
     the day.
@@ -71,6 +72,9 @@ class DirLookup(object):
 
     def put(self, ip, dir):
         with self.lock:
+            if ip in self.dir_by_ip:
+                logging.warning('Changing directory for %s from'
+                                ' %s to %s' % (ip, self.dir_by_ip[ip], dir))
             self.dir_by_ip[ip] = dir
 
     def remove(self, ip):
@@ -87,8 +91,7 @@ class Message(object):
     """
     Cluster identifier and message data for that cluster.
 
-    The cluster identifier is binary-encoded and is not ascii. Data
-    is also binary and not text.
+    The cluster identifier is of type bytes.
     """
     def __init__(self):
         self.cluster = None
@@ -167,11 +170,9 @@ class CSIMessageHandler(socketserver.BaseRequestHandler):
         This should only do one recv() as doing more may block. Think of this
         as attempting to make one transition in the state machine.
         """
-        log('Proc')
         if self.state == self.STATE_HEADER:
             header_remaining = self.HDR_LEN - len(self.partial_header)
             fragment = sock.recv(header_remaining)
-            log('Hdr %d' % len(fragment))
             if not fragment:
                 return False
             self.partial_header += fragment
@@ -182,7 +183,6 @@ class CSIMessageHandler(socketserver.BaseRequestHandler):
 
         elif self.state == self.STATE_DATA:
             fragment = sock.recv(self.data_remaining)
-            log('Len %d' % len(fragment))
             if not fragment:
                 return False
             self.data_remaining -= len(fragment)
@@ -201,10 +201,9 @@ class CSIMessageHandler(socketserver.BaseRequestHandler):
         """
         self.current_message = Message()
 
-        # slice to ensure we get a bytes() object, not an int
+        # python funkiness: slice to ensure we get a bytes() object, not an int
         self.current_message.cluster = self.partial_header[0:1]
         self.data_remaining = struct.unpack('>L', self.partial_header[1:5])[0]
-        log('Size %d' % self.data_remaining)
 
 
 class CSIWriter(object):
@@ -274,8 +273,8 @@ class HTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         Respond to a POST request.
 
         Valid URLS are:
-        /start?dir=<directory-for-data-dumps>
-        /end
+        /start?dir=<directory-for-data-dumps>&ip=<client-ip>
+        /end?ip=<client-ip>
         """
         url = urllib.parse.urlparse(self.path)
         query_components = urllib.parse.parse_qs(url.query)
@@ -400,11 +399,10 @@ def main():
                                     HTTPRequestHandler)
     http_serv.dir_lookup = dir_lookup
 
-    log('Starting servers')
     csi_thread = threading.Thread(target=csi_serv.serve_forever)
     csi_thread.start()
 
-    log('Serving on port %d' % args.csi_port)
+    log('Serving on port %d' % args.http_port)
     http_serv.serve_forever(poll_interval=TIMEOUT_INTERVAL)
 
 
