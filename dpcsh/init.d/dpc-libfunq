@@ -17,6 +17,9 @@ fi
 start_dpc_proxy()
 {
 	echo "Starting dpc proxy"
+
+	mkdir -p ${LOGS_FOLDER}
+
 	DEVICE_SLOT=`lspci -d ${DEVICE_ID} | awk '{print $1}'`
 
 	if lspci -k -d ${DEVICE_ID} | grep "in use"; then

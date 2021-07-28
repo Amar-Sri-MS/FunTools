@@ -15,6 +15,8 @@ start_dpc_proxy()
 {
 	echo "Starting dpc proxy"
 
+	mkdir -p ${LOGS_FOLDER}
+
 	OPTS="--background --make-pidfile --pidfile ${DPC_PID_FILE} --startas ${BIN_PATH}/dpcsh"
 	CMD="--start -- --pcie_nvme_sock=/dev/nvme0 --nvme_cmd_timeout=10000 --unix_proxy=${DPC_SOCKET} --log=${LOGS_FOLDER}/dpcsh.log"
 
