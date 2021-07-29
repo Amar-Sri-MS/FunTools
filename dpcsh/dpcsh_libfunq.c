@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include "dpcsh_libfunq.h"
+#include "dpcsh_log.h"
 
 // libfunq is supported only for Linux
 #ifdef WITH_LIBFUNQ
@@ -20,12 +21,7 @@
 #define ACQ_DEPTH			(DMA_BUFSIZE_BYTES / ACQE_SIZE)
 #define FIRST_LEVEL_SGL_N			(5)
 #define MAX_BUFFERS_PER_OPERATION (FUNQ_MAX_DMA_BUFFERS / 4)
-
-#define dprintf(debug_mode, ...) \
-	do { \
-		if(debug_mode) \
-			printf("dbg: " __VA_ARGS__);\
-	} while(0)
+#define FUNQ_SYNC_CMD_TIMEOUT_MS	(1000)
 
 static_assert((FUNQ_MAX_CONNECTIONS*2 <= ASQ_DEPTH) && (FUNQ_MAX_CONNECTIONS*2 <= ACQ_DEPTH),
 	"Queue must be deep enough to support all the context");
@@ -69,6 +65,9 @@ struct dpc_funq_connection {
 	int recv_buffer_idx;
 
 	bool receiver_alive;
+	bool receiver_closing_connection;
+	pthread_mutex_t receive_lock;
+	pthread_cond_t receiver_closed;
 
 	dpc_funq_callback_t callback;
 	void *callback_context;
@@ -121,7 +120,7 @@ static void dpc_free_buffer(struct dpc_funq_handle *h, int idx)
 	if (p->rx_index == -1) {
 		p->rx_index = idx;
 	} else {
-		printf("err: allocation inconsistency\n");
+		log_error("allocation inconsistency\n");
 	}
 
 	pthread_cond_signal(&p->ready);
@@ -159,22 +158,29 @@ struct dpc_funq_connection *dpc_funq_open_connection(struct dpc_funq_handle *dpc
 	struct dpc_funq_connection *connection = (struct dpc_funq_connection *)calloc(1, sizeof(struct dpc_funq_connection));
 	connection->dpc_handle = dpc_handle;
 
+	if (pthread_cond_init(&connection->receiver_closed, NULL) != 0 ||
+		  pthread_mutex_init(&connection->receive_lock, NULL) != 0) {
+		log_error("pthread cond and lock error");
+		free(connection);
+		return NULL;
+	}
+
 	fun_admin_req_common_init(&c.common, FUN_ADMIN_OP_DPC,
 			sizeof (c) >> 3, 0 /* flags */, 0 /* suboff8 */, 0 /* cid */);
 	fun_admin_dpc_open_connection_req_init(&c, FUN_ADMIN_DPC_SUBOP_OPEN_CONNECTION, 0, 0);
 
 	int ret = funq_admin_submit_sync_cmd(dpc_handle->handle,
-			&c.common, &r.common, sizeof(r), 0);
+			&c.common, &r.common, sizeof(r), FUNQ_SYNC_CMD_TIMEOUT_MS);
 
 	if (ret != 0 || r.u.open.code != FUN_ADMIN_DPC_ISSUE_CMD_RESP_COMPLETE) {
-		printf("Failed to open the connection, ret = %d, code = %" PRId8 "\n", ret, r.u.open.code);
+		log_error("failed to open the connection, ret = %d, code = %" PRId8 "\n", ret, r.u.open.code);
 		free(connection);
 		return NULL;
 	}
 
 	connection->id = r.u.open.connection_id;
 
-	dprintf(dpc_handle->debug, "dpc_open_connection successful, id=%" PRIu16 "\n", connection->id);
+	log_debug(dpc_handle->debug, "dpc_open_connection successful, id=%" PRIu16 "\n", connection->id);
 
 	pthread_mutex_lock(&dpc_handle->lock);
 	dpc_handle->connections_active++;
@@ -186,10 +192,10 @@ struct dpc_funq_connection *dpc_funq_open_connection(struct dpc_funq_handle *dpc
 		a->tx_index = connection->send_buffer_idx;
 		a->next = NULL;
 
-		dprintf(dpc_handle->debug, "waiting for buffers to be available\n");
+		log_debug(dpc_handle->debug, "waiting for buffers to be available\n");
 
 		if (pthread_cond_init(&a->ready, NULL) != 0) {
-			printf("pthread_cond_init() error");
+			log_error("pthread_cond_init() error");
 			free(a);
 			goto fail;
 		}
@@ -198,18 +204,18 @@ struct dpc_funq_connection *dpc_funq_open_connection(struct dpc_funq_handle *dpc
 
 		ret = pthread_cond_wait(&a->ready, &dpc_handle->lock);
 		if (ret) {
-			printf("Failed to wait for release of buffers, code = %d\n", ret);
+			log_error("failed to wait for release of buffers, code = %d\n", ret);
 		}
 
 		connection->recv_buffer_idx = a->rx_index;
 		connection->send_buffer_idx = a->tx_index;
 		if (a->rx_index == -1 || a->tx_index == -1) {
-			printf("Failed to allocate after waiting\n");
+			log_error("failed to allocate after waiting\n");
 			ret = 1;
 		}
 	}
 
-	dprintf(dpc_handle->debug, "rx and tx buffers allocated\n");
+	log_debug(dpc_handle->debug, "rx and tx buffers allocated\n");
 
 	if (ret) goto fail;
 
@@ -230,6 +236,8 @@ extern bool dpc_funq_close_connection(struct dpc_funq_connection *connection)
 	struct fun_admin_dpc_req c = {};
 	struct fun_admin_dpc_rsp r = {};
 
+	connection->receiver_closing_connection = true;
+
 	fun_admin_req_common_init(&c.common, FUN_ADMIN_OP_DPC,
 			sizeof (c) >> 3, 0 /* flags */, 0 /* suboff8 */, 0 /* cid */);
 	fun_admin_dpc_close_connection_req_init(&c, FUN_ADMIN_DPC_SUBOP_CLOSE_CONNECTION,
@@ -237,14 +245,24 @@ extern bool dpc_funq_close_connection(struct dpc_funq_connection *connection)
 
 	funq_handle_t handle = connection->dpc_handle->handle;
 	int ret = funq_admin_submit_sync_cmd(handle,
-			&c.common, &r.common, sizeof(r), 0);
+			&c.common, &r.common, sizeof(r), FUNQ_SYNC_CMD_TIMEOUT_MS);
 
 	if (ret != 0) {
-		printf("Failed to close the connection, code = %d\n", ret);
+		log_error("failed to close the connection, code = %d\n", ret);
+		pthread_mutex_unlock(&connection->receive_lock);
 		return false;
 	}
 
-	dprintf(connection->dpc_handle->debug, "dpc_close_connection successful\n");
+	pthread_mutex_lock(&connection->receive_lock);
+	if (connection->receiver_alive) {
+		ret = pthread_cond_wait(&connection->receiver_closed, &connection->receive_lock);
+		if (ret) {
+			log_error("failed to wait for receiver to stop, code = %d\n", ret);
+		}
+	}
+	pthread_mutex_unlock(&connection->receive_lock);
+
+	log_debug(connection->dpc_handle->debug, "dpc_close_connection successful\n");
 
 	pthread_mutex_lock(&connection->dpc_handle->lock);
 	dpc_deallocate_rx_tx(connection);
@@ -265,7 +283,7 @@ static int dpc_create_cmd(funq_handle_t handle)
 			FUN_ADMIN_RES_CREATE_FLAG_ALLOCATOR /* flag */, 0 /* id */);
 
 	return funq_admin_submit_sync_cmd(handle,
-			&c.common, &r.common, sizeof(r), 0);
+			&c.common, &r.common, sizeof(r), FUNQ_SYNC_CMD_TIMEOUT_MS);
 }
 
 static size_t fun_admin_request_size(size_t first_level_sgl_n)
@@ -308,8 +326,8 @@ static void fill_send_request_header(struct dpc_funq_context *context,
 
 	fill_sgl_request_header(context, true);
 
-	dprintf(dpc_handle->debug, "preparing send request connection_id=%" PRIu16 ", size=%zu, offset=%zu, full_size=%zu\n", context->connection->id, size, offset, full_size);
-	dprintf(dpc_handle->debug, "sgl_n=%d, sgl_first_n=%d, sgl_second_n=%d\n", context->sgl_n, context->sgl_first_n, context->sgl_second_n);
+	log_debug(dpc_handle->debug, "preparing send request connection_id=%" PRIu16 ", size=%zu, offset=%zu, full_size=%zu\n", context->connection->id, size, offset, full_size);
+	log_debug(dpc_handle->debug, "sgl_n=%d, sgl_first_n=%d, sgl_second_n=%d\n", context->sgl_n, context->sgl_first_n, context->sgl_second_n);
 
 	fun_admin_dpc_send_data_req_init(context->request,
 			FUN_ADMIN_DPC_SUBOP_SEND_DATA, 0, 0,
@@ -325,8 +343,8 @@ static void fill_recv_request_header(struct dpc_funq_context *context)
 
 	size_t buffer_size = (context->sgl_second_n ? context->sgl_second_n : context->sgl_first_n) * DMA_BUFSIZE_BYTES;
 
-	dprintf(dpc_handle->debug, "preparing receive request connection_id=%" PRIu16 ", size=%zu\n", context->connection->id, buffer_size);
-	dprintf(dpc_handle->debug, "sgl_n=%d, sgl_first_n=%d, sgl_second_n=%d\n", context->sgl_n, context->sgl_first_n, context->sgl_second_n);
+	log_debug(dpc_handle->debug, "preparing receive request connection_id=%" PRIu16 ", size=%zu\n", context->connection->id, buffer_size);
+	log_debug(dpc_handle->debug, "sgl_n=%d, sgl_first_n=%d, sgl_second_n=%d\n", context->sgl_n, context->sgl_first_n, context->sgl_second_n);
 
 	fun_admin_dpc_receive_data_req_init(context->request,
 		FUN_ADMIN_DPC_SUBOP_RECEIVE_DATA, 0, 0,
@@ -386,12 +404,12 @@ static bool dpc_send_data_cmd(size_t *position, struct dpc_funq_connection *conn
 	fill_sgl_buffers(buffers, sgl_idx, chunk);
 
 	int rc = funq_admin_submit_sync_cmd(connection->dpc_handle->handle,
-			&context.request->common, &response.common, sizeof(response), 0);
+			&context.request->common, &response.common, sizeof(response), FUNQ_SYNC_CMD_TIMEOUT_MS);
 
 	free(context.request);
 
 	if (rc) {
-		printf("err: send failed, code %d\n", rc);
+		log_error("send failed, code %d\n", rc);
 		return false;
 	}
 
@@ -402,7 +420,7 @@ static bool dpc_send_data_cmd(size_t *position, struct dpc_funq_connection *conn
 		return true;
 	}
 
-	printf("err: unexpected return code, code %d, last_buffer = %s\n", response.u.cmd.code, (last_buffer ? "true": "false"));
+	log_error("unexpected return code, code %d, last_buffer = %s\n", response.u.cmd.code, (last_buffer ? "true": "false"));
 	return false;
 }
 
@@ -466,15 +484,26 @@ static void dpc_proccess_recv_response(void *response, void *ctx)
 {
 	struct dpc_funq_context *context = ctx;
 	struct fun_admin_dpc_rsp *r = response;
+	pthread_mutex_lock(&context->connection->receive_lock);
 
-	if (r->u.receive.code == FUN_ADMIN_DPC_ISSUE_CMD_RESP_FAIL) {
+	if (context->connection->receiver_closing_connection) {
 		context->connection->receiver_alive = false;
-		printf("err: unsuccessful receive, stopping the receiver");
+		pthread_cond_signal(&context->connection->receiver_closed);
+		pthread_mutex_unlock(&context->connection->receive_lock);
+		log_debug("stopping the receiver\n");
 		free_context(context);
 		return;
 	}
 
-	dprintf(context->connection->dpc_handle->debug, "rx size=%" PRIu32 ", offset=%" PRIu32 ", full_size=%" PRIu32 "\n",
+	if (r->u.receive.code == FUN_ADMIN_DPC_ISSUE_CMD_RESP_FAIL) {
+		context->connection->receiver_alive = false;
+		pthread_mutex_unlock(&context->connection->receive_lock);
+		log_error("unsuccessful receive, stopping the receiver\n");
+		free_context(context);
+		return;
+	}
+
+	log_debug(context->connection->dpc_handle->debug, "rx size=%" PRIu32 ", offset=%" PRIu32 ", full_size=%" PRIu32 "\n",
 		r->u.receive.resp_size, r->u.receive.resp_offset, r->u.receive.resp_full_size);
 
 	if (!context->response.ptr) {
@@ -482,7 +511,8 @@ static void dpc_proccess_recv_response(void *response, void *ctx)
 		context->response.size = r->u.receive.resp_full_size;
 		if (!context->response.ptr) {
 			context->connection->receiver_alive = false;
-			printf("err: oom when allocating space for the response");
+			pthread_mutex_unlock(&context->connection->receive_lock);
+			log_error("oom when allocating space for the response\n");
 			free_context(context);
 			return;
 		}
@@ -491,7 +521,8 @@ static void dpc_proccess_recv_response(void *response, void *ctx)
 
 	if (r->u.receive.resp_offset != context->response_offset) {
 		context->connection->receiver_alive = false;
-		printf("err: unexpected offset when processing response %" PRIu32 " != %zu", r->u.receive.resp_offset, context->response_offset);
+		pthread_mutex_unlock(&context->connection->receive_lock);
+		log_error("unexpected offset when processing response %" PRIu32 " != %zu\n", r->u.receive.resp_offset, context->response_offset);
 		free_context(context);
 		return;
 	}
@@ -524,9 +555,12 @@ static void dpc_proccess_recv_response(void *response, void *ctx)
 
 	if (!dpc_recv_data_cmd(context)) {
 		context->connection->receiver_alive = false;
+		pthread_mutex_unlock(&context->connection->receive_lock);
 		free_context(context);
 		return;
 	}
+
+	pthread_mutex_unlock(&context->connection->receive_lock);
 }
 
 static bool dpc_recv_data_cmd(struct dpc_funq_context *context)
@@ -538,7 +572,7 @@ static bool dpc_recv_data_cmd(struct dpc_funq_context *context)
 			&context->request->common, dpc_proccess_recv_response, fun_admin_request_size(FIRST_LEVEL_SGL_N), context);
 	
 	if (rv != 0) {
-		printf("err: unexpected return code from funq_admin_submit_async_cmd = %d\n", rv);
+		log_error("unexpected return code from funq_admin_submit_async_cmd = %d\n", rv);
 		return false;
 	}
 
@@ -553,7 +587,7 @@ static bool dpc_first_recv_data_cmd(struct dpc_funq_connection *connection)
 	context->request = calloc(1, fun_admin_request_size(FIRST_LEVEL_SGL_N));
 	if (!dpc_init_buffers(&context->sgl_idx, &context->sgl_n,
 		connection->dpc_handle, connection->recv_buffer_idx)) {
-		printf("err: failed to initialize buffers\n");
+		log_error("failed to initialize buffers\n");
 		free(context);
 		return false;
 	}
@@ -571,7 +605,7 @@ static int dpc_destroy_cmd(funq_handle_t handle)
 			0 /* flag */, 0 /* id */);
 
 	return funq_admin_submit_sync_cmd(handle,
-			&c.common, &r.common, sizeof(r), 0);
+			&c.common, &r.common, sizeof(r), FUNQ_SYNC_CMD_TIMEOUT_MS);
 }
 
 static funq_handle_t dpc_admin_queue_init(const char *devname)
@@ -597,7 +631,7 @@ static funq_handle_t dpc_admin_queue_init(const char *devname)
 	int rc = funq_admin_init(DEVTYPE_VFIO, devname_p, &aqreq, &handle);
 
 	if (rc) {
-		printf("err: funq_admin_init failed\n");
+		log_error("funq_admin_init failed\n");
 		exit(rc);
 	}
 
@@ -609,7 +643,7 @@ struct dpc_funq_handle *dpc_funq_init(const char *devname, bool debug)
 	struct dpc_funq_handle *handle = calloc(1, sizeof(struct dpc_funq_handle));
 
 	if (handle == NULL) {
-		printf("err: oom when allocating dpc_funq_handle\n");
+		log_error("oom when allocating dpc_funq_handle\n");
 		return NULL;
 	}
 
@@ -617,33 +651,33 @@ struct dpc_funq_handle *dpc_funq_init(const char *devname, bool debug)
 
 	if (pthread_mutex_init(&handle->lock, NULL) != 0) {
 		free(handle);
-		printf("err: failed to initialize pthread mutex\n");
+		log_error("failed to initialize pthread mutex\n");
 		return NULL;
 	}
 
 	handle->handle = dpc_admin_queue_init(devname);
 
-	dprintf(handle->debug, "admin_queue_init successful\n");
+	log_debug(handle->debug, "admin_queue_init successful\n");
 
 	if (dpc_create_cmd(handle->handle) != 0) {
 		free(handle);
-		printf("err: failed to run create command\n");
+		log_error("failed to run create command\n");
 		return NULL;
 	}
 
-	dprintf(handle->debug, "dpc_create_cmd successful\n");
+	log_debug(handle->debug, "dpc_create_cmd successful\n");
 
 	for (int i = 0; i < FUNQ_MAX_DMA_BUFFERS; i++) {
 		handle->buffers[i].dma_addr_local = (uint8_t *)funq_dma_alloc(handle->handle, DMA_BUFSIZE_BYTES, &(handle->buffers[i].dma_addr_dpu));
 		if (!handle->buffers[i].dma_addr_local) {
-			printf("err: failed to allocate dma buffers\n");
+			log_error("failed to allocate dma buffers\n");
 			dpc_funq_destroy(handle);
 			return NULL;
 		}
 	}
 	handle->free_buffers_n = FUNQ_MAX_DMA_BUFFERS;
 
-	dprintf(handle->debug, "DMA buffers allocated\n");
+	log_debug(handle->debug, "DMA buffers allocated\n");
 
 	return handle;
 }
@@ -653,7 +687,7 @@ bool dpc_funq_destroy(struct dpc_funq_handle *dpc_handle)
 	pthread_mutex_lock(&dpc_handle->lock);
 
 	if (dpc_handle->connections_active > 0) {
-		printf("err: can't close dpc_handle, need to close all connections first\n");
+		log_error("can't close dpc_handle, need to close all connections first\n");
 		pthread_mutex_unlock(&dpc_handle->lock);
 		return false;
 	}
@@ -661,7 +695,7 @@ bool dpc_funq_destroy(struct dpc_funq_handle *dpc_handle)
 	bool result = dpc_destroy_cmd(dpc_handle->handle) == 0;
 
 	if (result) {
-		dprintf(dpc_handle->debug, "dpc_destroy_cmd successful\n");
+		log_debug(dpc_handle->debug, "dpc_destroy_cmd successful\n");
 	}
 
 	for (int i = 0; i < FUNQ_MAX_DMA_BUFFERS; i++) {
@@ -680,12 +714,12 @@ bool dpc_funq_send(struct dpc_funq_connection *connection, struct fun_ptr_and_si
 	int *allocations;
 
 	if (!dpc_init_buffers(&allocations, &allocations_n, connection->dpc_handle, connection->send_buffer_idx)) {
-		printf("err: failed to init buffers, can't send\n");
+		log_error("failed to init buffers, can't send\n");
 		return false;
 	}
 
 	if (!connection->receiver_alive) {
-		printf("err: no receiver running, can't send\n");
+		log_error("no receiver running, can't send\n");
 		return false;
 	}
 
@@ -695,7 +729,7 @@ bool dpc_funq_send(struct dpc_funq_connection *connection, struct fun_ptr_and_si
 		dpc_reallocate_buffers(&allocations, &allocations_n, connection->dpc_handle,
 			CEILING(data.size - position, DMA_BUFSIZE_BYTES));
 
-		dprintf(connection->dpc_handle->debug, "allocated %d buffers\n", allocations_n);
+		log_debug(connection->dpc_handle->debug, "allocated %d buffers\n", allocations_n);
 
 		result = dpc_send_data_cmd(&position, connection, data, allocations, allocations_n);
 	}
@@ -707,14 +741,17 @@ bool dpc_funq_send(struct dpc_funq_connection *connection, struct fun_ptr_and_si
 bool dpc_funq_register_receive_callback(struct dpc_funq_connection *connection,
 	dpc_funq_callback_t callback, void *context)
 {
+	pthread_mutex_lock(&connection->receive_lock);
 	if (connection->receiver_alive) {
-		printf("err: receiver already running\n");
+		log_error("receiver already running\n");
+		pthread_mutex_unlock(&connection->receive_lock);
 		return false;
 	}
 	connection->receiver_alive = true;
 	connection->callback = callback;
 	connection->callback_context = context;
-
+	pthread_mutex_unlock(&connection->receive_lock);
+	
 	return dpc_first_recv_data_cmd(connection);
 }
 

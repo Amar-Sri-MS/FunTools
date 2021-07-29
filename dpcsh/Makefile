@@ -66,7 +66,7 @@ CFLAGS += -I $(SDKDIR) -I $(SDKDIR)/FunSDK -g -Wall -Werror -Wno-multichar $(BRA
 #LDFLAGS += -L $(SDKDIR)/lib/${OS}/x86_64 -lfunclient -fsanitize=address
 LDFLAGS += -lpthread -L $(SDKDIR)/lib/$(OS)/$(SDK_LIB_SUBDIR)/$(MACHINE) -lfunclient -ldl
 
-SRCS = dpcsh.c dpcsh_nvme.c dpcsh_libfunq.c dpcsh_macros.c csr_command.c
+SRCS = dpcsh.c dpcsh_nvme.c dpcsh_libfunq.c dpcsh_macros.c csr_command.c dpcsh_log.c
 OBJS = $(addprefix $(BUILD_ROOT)/,$(SRCS:.c=.o))
 
 # Deal with gcc versioning for ASAN
