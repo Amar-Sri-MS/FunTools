@@ -7,6 +7,7 @@ ST_STP_D=/sbin/start-stop-daemon
 DPC_SOCKET=/tmp/dpc-funq.sock
 DPC_PID_FILE=/tmp/dpc-funq.pid
 DEVICE_ID="1dad:0108:ff00"
+LOGS_FOLDER=/persist/logs
 
 if [[ ! -f ${ST_STP_D} ]]; then
 	echo "${ST_STP_D} not found"
@@ -16,6 +17,9 @@ fi
 start_dpc_proxy()
 {
 	echo "Starting dpc proxy"
+
+	mkdir -p ${LOGS_FOLDER}
+
 	DEVICE_SLOT=`lspci -d ${DEVICE_ID} | awk '{print $1}'`
 
 	if lspci -k -d ${DEVICE_ID} | grep "in use"; then
@@ -25,7 +29,7 @@ start_dpc_proxy()
 	fi
 
 	OPTS="--background --make-pidfile --pidfile ${DPC_PID_FILE} --startas ${BIN_PATH}/dpcsh"
-	CMD="--start -- -q${DEVICE_SLOT} --unix_proxy=${DPC_SOCKET}"
+	CMD="--start -- -q${DEVICE_SLOT} --unix_proxy=${DPC_SOCKET} --log=${LOGS_FOLDER}/dpcsh-funq.log"
 
 	${ST_STP_D} ${OPTS} ${CMD}
 

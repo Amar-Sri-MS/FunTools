@@ -4,6 +4,7 @@ BIN_PATH="/usr/bin"
 ST_STP_D=/sbin/start-stop-daemon
 DPC_SOCKET=/tmp/dpc.sock
 DPC_PID_FILE=/tmp/dpc.pid
+LOGS_FOLDER=/persist/logs
 
 if [[ ! -f ${ST_STP_D} ]]; then
 	echo "${ST_STP_D} not found"
@@ -14,8 +15,10 @@ start_dpc_proxy()
 {
 	echo "Starting dpc proxy"
 
+	mkdir -p ${LOGS_FOLDER}
+
 	OPTS="--background --make-pidfile --pidfile ${DPC_PID_FILE} --startas ${BIN_PATH}/dpcsh"
-	CMD="--start -- --pcie_nvme_sock=/dev/nvme0 --nvme_cmd_timeout=10000 --unix_proxy=${DPC_SOCKET}"
+	CMD="--start -- --pcie_nvme_sock=/dev/nvme0 --nvme_cmd_timeout=10000 --unix_proxy=${DPC_SOCKET} --log=${LOGS_FOLDER}/dpcsh.log"
 
 	${ST_STP_D} ${OPTS} ${CMD}
 
