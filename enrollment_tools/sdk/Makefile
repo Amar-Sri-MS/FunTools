@@ -3,7 +3,7 @@ all: signing_server.tar.gz
 
 
 signing_server.tar.gz: signing_server.tar
-	gzip $^
+	gzip -f $^
 
 # create a flat archive with the script and the key files
 signing_server.tar:
