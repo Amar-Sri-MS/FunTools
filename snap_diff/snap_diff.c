@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <inttypes.h>
 #include <linux/nvme_ioctl.h>
 #include <sys/ioctl.h>
@@ -35,6 +36,13 @@
 #define IDENTIFY_RESP_NS_SIZE_OFFSET		(0x0)
 #define OPCODE_VS_GET_NS_BLKHDR_BS_MASK		(0xff)
 
+// enum for various log messages
+enum log_type {
+	INFO,
+	ERROR,
+	VERBOSE
+};
+
 // enum for output format options
 enum change_block_format{
 	FORMAT_BLOCK_LIST,
@@ -42,32 +50,83 @@ enum change_block_format{
 };
 
 struct params {
-	int nsid; // namespace id of the nvme namespace device
-	int block_size; // internal block size in bytes of the nvme device
-	int ns_block_size; // block size seen by nvme client
-	uint64_t nlb; // number of blocks in the diff request
-	uint64_t slba; // starting block of the diff request
-	uint64_t ns_size; // size of nvme namespace in blocks
-	enum change_block_format format; // output format
-	uuid_t snap_id; // uuid of the snapshot volume namespace
-	char dev_path[MAX_PATH]; // device path of nvme device
-	char snap_uuid1[UUID_STR_LEN]; // uuid string of snapshot1 in diff request
-	char snap_uuid2[UUID_STR_LEN]; // uuid string of snapshot2 in diff request
-	char file_path[MAX_PATH]; // file path of output file
+	int nsid; 							// namespace id of the nvme namespace device
+	int block_size; 					// internal block size in bytes of the nvme device
+	int ns_block_size; 					// block size seen by nvme client
+	uint64_t nlb; 						// number of blocks in the diff request
+	uint64_t slba; 						// starting block of the diff request
+	uint64_t ns_size; 					// size of nvme namespace in blocks
+	enum change_block_format format; 	// output format
+	uuid_t snap_id; 					// uuid of the snapshot volume namespace
+	char dev_path[MAX_PATH]; 			// device path of nvme device
+	char snap_uuid1[UUID_STR_LEN]; 		// uuid string of snapshot1 in diff request
+	char snap_uuid2[UUID_STR_LEN]; 		// uuid string of snapshot2 in diff request
+	char file_path[MAX_PATH]; 			// file path of output JSON file
+	FILE *log_fp;						// handle to tool's diagnostic log file
+	bool verbose;						// enable verbose logging
 };
 
 struct params g_params = {};
 
+// ******************* logging functions *******************
+void LOG_INIT()
+{
+	g_params.log_fp = fopen("./snap_diff.log", "a");
+}
+
+void LOG(enum log_type type, char *format, ...)
+{
+	if (g_params.log_fp != NULL) {
+		switch(type) {
+			case INFO:
+				fprintf (g_params.log_fp, "[%s] INFO: ",
+					__TIMESTAMP__);
+			break;
+			case ERROR:
+				fprintf (g_params.log_fp, "[%s] ERROR: ",
+					__TIMESTAMP__);
+			break;
+			case VERBOSE:
+				if (!g_params.verbose) {
+					return;
+				}
+				fprintf (g_params.log_fp, "[%s] VERBOSE: ",
+					__TIMESTAMP__);
+				break;
+			default:
+				break;
+		}
+		va_list args;
+		va_start (args, format);
+		vfprintf (g_params.log_fp, format, args);
+		va_end (args);
+	}
+}
+
+void LOG_UNINIT()
+{
+	if (g_params.log_fp != NULL) {
+		fclose(g_params.log_fp);
+	}
+}
+
+//******************* parsing and help functions *******************
 void print_usage()
 {
-	printf("snap_diff -d:<device_path> -t:<snap_uuid> -f:<file_path> -s:<starting_block> -l:<count_of_blocks> [-r -h]\n");
+	printf("snap_diff -d:<device_path> -t:<snap_uuid> -f:<file_path> [-s:<starting_block> -l:<count_of_blocks> -r -v -h]\n");
 	printf("-d:<device_path> Required. NVMe device path to which change block tracking query is sent\n");
 	printf("-t:<snap_uuid> Required. UUID of target snapshot for comparison/diff\n");
 	printf("-f:<file_path> Required. Path of file to write JSON diff\n");
-	printf("-s:<starting_block> Optional. Lba of volume from which diff is generated. Default is 0.\n");
-	printf("-l:<count_of_blocks> Optional. Block count for which diff is generated. Default is all blocks of the volume.\n");
+	printf("-s:<starting_block> Optional. LBA of volume from which diff is generated. Default is 0.\n");
+	printf("-l:<number_of_blocks> Optional. Number of blocks from starting_block for which diff is generated. Default count is till last block.\n");
 	printf("-r Generate the output in range format. Default is block format\n");
+	printf("-v Enable verbose logging\n");
 	printf("-h Print usage\n");
+	printf("Examples:\n");
+	printf("1. Generate sample.json in range format for all blocks of the device.\n");
+	printf("\tsnap_diff -d:/dev/nvme0n1 -t:5e611fd0-50f8-43a9-9296-e9c921a4df1e -f:sample.json -r\n");
+	printf("2. Generate sample.json in block format starting from LBA 1024 ending at LBA 2047.\n");
+	printf("\tsnap_diff -d:/dev/nvme0n1 -t:5e611fd0-50f8-43a9-9296-e9c921a4df1e -s:1024 -l:1024 -f:sample.json\n");
 }
 
 void parse_params(int cnt, char* params[])
@@ -90,8 +149,7 @@ void parse_params(int cnt, char* params[])
 			print_usage();
 			exit(0);
 		} else {
-			printf("Invalid parameter %s\n", params[i]);
-			print_usage();
+			LOG(ERROR, "Invalid parameter %s\n", params[i]);
 			exit(1);
 		}
 		i++;
@@ -103,22 +161,22 @@ bool validate_params()
 	if (strlen(g_params.dev_path) == 0 ||
 		strlen(g_params.snap_uuid1) == 0 ||
 		strlen(g_params.file_path) == 0) {
-		printf("Error. Required parameter missing.\n");
-		print_usage();
+		LOG(ERROR, "Required parameter(s) missing. Run with -h option to see required parameter list.\n");
 		return false;
 	}
 	if (g_params.slba < 0 || g_params.nlb < 0) {
-		printf("Error. Invalid parameter. -l/-s can't be negative.\n");
-		print_usage();
+		LOG(ERROR, "Invalid parameter. -l/-s can't be negative.\n");
 		return false;
 	}
 	if (uuid_parse(g_params.snap_uuid1, g_params.snap_id)) {
-		printf("Invalid snapshot uuid.\n");
+		LOG(ERROR, "Invalid snapshot uuid.\n");
 		return false;
 	}
+	uuid_unparse_lower(g_params.snap_id, g_params.snap_uuid1);
 	return true;
 }
 
+// ******************* JSON file writer functions *******************
 void write_header(FILE *fp)
 {
 	fprintf(fp, "{\n");
@@ -132,14 +190,14 @@ void write_header(FILE *fp)
 	fprintf(fp, "\t\"%s\": [", g_params.format == FORMAT_BLOCK_LIST ? "block_list": "range_list");
 }
 
-void write_block_record(FILE *fp, char delim, uint64_t slba)
+void write_block_record(FILE *fp, char *delim, uint64_t slba)
 {
-	fprintf(fp, "%c %"PRIu64, delim, slba);
+	fprintf(fp, "%s%"PRIu64, delim, slba);
 }
 
-void write_range_record(FILE *fp, char delim, uint64_t slba, uint64_t nlb)
+void write_range_record(FILE *fp, char *delim, uint64_t slba, uint64_t nlb)
 {
-	fprintf(fp, "%c {\"start\":%"PRIu64", \"length\":%"PRIu64"}", delim, slba, nlb);
+	fprintf(fp, "%s{\"start\":%"PRIu64", \"length\":%"PRIu64"}", delim, slba, nlb);
 }
 
 void write_footer(FILE *fp)
@@ -148,52 +206,68 @@ void write_footer(FILE *fp)
 	fflush(fp);
 }
 
+// ******************* device query functions *******************
 int query_device_details(int dd, int nsid)
 {
-	int ret = 0;
 	uint64_t *ns_size;
+	int ret = 0, multiplier = 0;
 	struct nvme_admin_cmd cmd = {};
-	char buf[BUF_SIZE];
+	char buf[BUF_SIZE] = {};
 
-	memset(buf, 0, BUF_SIZE);
-	cmd.opcode = OPCODE_IDENTIFY;
-	cmd.nsid = nsid;
-	cmd.addr = (uint64_t)buf;
-	cmd.data_len = BUF_SIZE;
+	do {
+		cmd.opcode = OPCODE_IDENTIFY;
+		cmd.nsid = nsid;
+		cmd.addr = (uint64_t)buf;
+		cmd.data_len = BUF_SIZE;
 
-	ret = ioctl(dd, NVME_IOCTL_ADMIN_CMD, &cmd);
-	if(ret < 0) {
-		printf("NVMe admin command %x failed. Error %d\n", OPCODE_IDENTIFY, errno);
-		goto done;
-	}
-
-	ns_size = (uint64_t *) buf + IDENTIFY_RESP_NS_SIZE_OFFSET;
-	g_params.ns_size = le64toh(*ns_size);
-	uuid_unparse_lower(buf+104, g_params.snap_uuid2);
-
-	cmd.opcode = OPCODE_VS_GET_NS_BLKHDR;
-	cmd.nsid = nsid;
-	cmd.addr = 0;
-	cmd.data_len = 0;
-	cmd.result = 0;
-
-	ret = ioctl(dd, NVME_IOCTL_ADMIN_CMD, &cmd);
-	if(ret != 0) {
-		printf("NVMe admin command %x failed. Error %d\n", OPCODE_VS_GET_NS_BLKHDR, errno);
-		goto done;
-	}
-
-	g_params.block_size = 1 << (le32toh(cmd.result) & OPCODE_VS_GET_NS_BLKHDR_BS_MASK);
-	if (g_params.block_size > g_params.ns_block_size) {
-		if (g_params.block_size % g_params.ns_block_size) {
-			printf("Incompatible block size. internal block size %u, exposed block size %u\n",
-				g_params.block_size, g_params.ns_block_size);
-			ret = 1;
-			goto done;
+		ret = ioctl(dd, NVME_IOCTL_ADMIN_CMD, &cmd);
+		if(ret < 0) {
+			LOG(ERROR, "NVMe admin command %x failed with error %d\n", OPCODE_IDENTIFY, errno);
+			break;
 		}
-		g_params.ns_size /= (g_params.block_size / g_params.ns_block_size);
-	}
-done:
+
+		ns_size = (uint64_t *) buf + IDENTIFY_RESP_NS_SIZE_OFFSET;
+		g_params.ns_size = le64toh(*ns_size);
+		uuid_unparse_lower(buf+104, g_params.snap_uuid2);
+
+		if (!uuid_compare(g_params.snap_uuid1, g_params.snap_uuid2)) {
+			LOG(ERROR, "No changes. Source and destination for diff are same %s\n",
+				g_params.snap_uuid1);
+			ret = 1;
+			break;
+		}
+
+		cmd.opcode = OPCODE_VS_GET_NS_BLKHDR;
+		cmd.nsid = nsid;
+		cmd.addr = 0;
+		cmd.data_len = 0;
+		cmd.result = 0;
+
+		ret = ioctl(dd, NVME_IOCTL_ADMIN_CMD, &cmd);
+		if(ret != 0) {
+			LOG(ERROR, "NVMe admin command %x failed with error %d\n", OPCODE_VS_GET_NS_BLKHDR, errno);
+			break;
+		}
+
+		g_params.block_size = 1 << (le32toh(cmd.result) & OPCODE_VS_GET_NS_BLKHDR_BS_MASK);
+		if (g_params.block_size > g_params.ns_block_size) {
+			if (g_params.block_size % g_params.ns_block_size) {
+				LOG(ERROR, "Incompatible block size. internal block size %u, namespace block size %u\n",
+					g_params.block_size, g_params.ns_block_size);
+				ret = 1;
+				break;
+			}
+			multiplier = g_params.block_size / g_params.ns_block_size;
+			if (g_params.ns_size % multiplier) {
+				LOG(ERROR, "Incompatible block size %u and namespace size %"PRIu64"\n",
+					g_params.block_size, g_params.ns_size);
+				ret = 1;
+				break;
+			}
+			g_params.ns_size /= multiplier;
+		}
+	} while (0);
+
 	return ret;
 }
 
@@ -202,52 +276,55 @@ int query_device()
 	int dd = 0, ret = 0;
 	struct nvme_admin_cmd cmd = {};
 
-	dd = open(g_params.dev_path, O_RDWR);
-	if(dd == 0) {
-		printf("Could not open device file %s. Error %d\n", g_params.dev_path, errno);
-		ret = 1;
-		goto done;
-	}
+	do {
+		dd = open(g_params.dev_path, O_RDWR);
+		if(dd == 0) {
+			LOG(ERROR, "Device %s open failed with error %d\n", g_params.dev_path, errno);
+			ret = 1;
+			break;
+		}
 
-	g_params.nsid = ioctl(dd, NVME_IOCTL_ID);
-	if (g_params.nsid < 0) {
-		printf("Failed to query nsid. Error %d\n", errno);
-		ret = 1;
-		goto done;
-	}
+		g_params.nsid = ioctl(dd, NVME_IOCTL_ID);
+		if (g_params.nsid < 0) {
+			LOG(ERROR, "Nsid query on device %s failed with error %d\n", g_params.dev_path, errno);
+			ret = 1;
+			break;
+		}
 
-	ret = ioctl(dd, BLKSSZGET, &g_params.ns_block_size);
-	if (ret < 0) {
-		printf("Failed to query block size. Error %d\n", errno);
-		goto done;
-	}
+		ret = ioctl(dd, BLKSSZGET, &g_params.ns_block_size);
+		if (ret < 0) {
+			LOG(ERROR, "Block size query on device %s failed with error %d\n", g_params.dev_path, errno);
+			break;
+		}
 
-	if (query_device_details(dd, g_params.nsid)) {
-		printf("Failed to query device details\n");
-		ret = 1;
-		goto done;
-	}
+		if (query_device_details(dd, g_params.nsid)) {
+			ret = 1;
+			break;
+		}
 
-	if (g_params.nlb == 0) {
-		g_params.nlb = g_params.ns_size;
-	}
+		if (g_params.nlb == 0) {
+			g_params.nlb = g_params.ns_size - g_params.slba;
+			LOG(VERBOSE, "-l not specified. Using %"PRIu64, g_params.nlb);
+		}
 
-	if ((g_params.slba + g_params.nlb) > g_params.ns_size) {
-		printf("Invalid parameter. Blocks out of range.\n");
-		ret = 1;
-		goto done;
-	}
+		if ((g_params.slba + g_params.nlb) > g_params.ns_size) {
+			LOG(ERROR, "Blocks out of range. s=%"PRIu64" l="PRIu64" ns size=%"PRIu64"\n",
+				g_params.slba, g_params.nlb, g_params.ns_size);
+			ret = 1;
+			break;
+		}
+	} while (0);
 
-done:
 	if (dd != 0) {
 		close(dd);
 	}
 	return ret;
 }
 
+// ******************* snapshot diff generator function *******************
 int get_snap_diff()
 {
-	char delim = ' ';
+	char *delim = "";
 	FILE *fp = NULL;
 	uint16_t nlb = 0;
 	int dd = 0, ret = 0, cnt = 0;
@@ -259,86 +336,100 @@ int get_snap_diff()
 	uint64_t end = g_params.slba + g_params.nlb;
 	struct nvme_admin_cmd cmd = {};
 
-	dd = open(g_params.dev_path, O_RDWR);
-	if(dd == 0) {
-		printf("Could not open device file %s. Error %d\n", g_params.dev_path, errno);
-		ret = 1;
-		goto done;
-	}
+	printf("It may take several minutes to complete for large namespace..\n");
 
-	fp = fopen(g_params.file_path, "w+");
-	if(fp == NULL) {
-		printf("Could not open file %s. Error %d\n", g_params.file_path, errno);
-		ret = 1;
-		goto done;
-	}
+	LOG(INFO, "Comparing %s <-> %s Device %s", g_params.snap_uuid1, g_params.snap_uuid2, g_params.dev_path);
+	LOG(INFO, " Start LBA %"PRIu64" Length %"PRIu64, g_params.slba, g_params.nlb);
+	LOG(INFO, " Output file %s Format %s\n", g_params.file_path,
+		g_params.format == FORMAT_RANGE_LIST ? "RANGE LIST" : "BLOCK LIST");
 
-	data = (char*)malloc(sizeof(char)*BUF_SIZE);
-	if(NULL == data) {
-		printf("Unable to allocate memory\n");
-		ret = 1;
-		goto done;
-	}
-
-	cmd.opcode = OPCODE_VS_CHANGED_BLOCKS;
-	cmd.nsid = g_params.nsid;
-	cmd.addr = (uint64_t)data;
-	cmd.data_len = BUF_SIZE;
-	memcpy(&cmd.cdw12, g_params.snap_id, UUID_LEN);
-
-	write_header(fp);
-	while (slba < end) {
-		nlb = MIN(MAX_QUERY_BLOCK_COUNT, end - slba);
-		// encode slba and nlb into cdw10 and cdw11
-		cmd.cdw10 = (uint32_t)(slba & 0xFFFFFFFF);
-		cmd.cdw11 = (nlb-1) << 16;
-		cmd.cdw11 |= ((slba >> 32) & 0xFFFF);
-		memset(data, 0, BUF_SIZE);
-
-		ret = ioctl(dd, NVME_IOCTL_ADMIN_CMD, &cmd);
-		if(ret < 0) {
-			printf("NVMe admin command %x failed. Error %d\n", OPCODE_VS_CHANGED_BLOCKS, errno);
-			goto done;
+	do {
+		dd = open(g_params.dev_path, O_RDWR);
+		if(dd == 0) {
+			LOG(ERROR, "Device %s open failed with error %d\n", g_params.dev_path, errno);
+			ret = 1;
+			break;
 		}
 
-		mask = 0;
-		blockid = slba;
-		cnt = (BITMAP_ALIGN(nlb, 64) >> 6);
-		b = (uint64_t*)data;
-		for (int i=cnt-1; i >= 0; i--) {
-			d = htobe64(b[i]);
-			for(int j=0; j < BITS_PER_RECORD; j++) {
-				if (blockid == end) {
-					break;
-				}
-				mask = 1ULL << j;
-				if (d & mask) {
-					if (g_params.format == FORMAT_BLOCK_LIST) {
-						write_block_record(fp, delim, blockid);
-						delim = ',';
-					} else {
-						if (range == 0) {
-							rslba = blockid;
-						}
-						range++;
-					}
-				} else if (range > 0) {
-					write_range_record(fp, delim, rslba, range);
-					delim = ',';
-					range = 0;
-				}
-				blockid++;
+		fp = fopen(g_params.file_path, "w+");
+		if(fp == NULL) {
+			LOG(ERROR, "File %s open failed with error %d\n", g_params.file_path, errno);
+			ret = 1;
+			break;
+		}
+
+		data = (char*)malloc(sizeof(char)*BUF_SIZE);
+		if(NULL == data) {
+			LOG(ERROR, "Failed to allocate memory\n");
+			ret = 1;
+			break;
+		}
+
+		cmd.opcode = OPCODE_VS_CHANGED_BLOCKS;
+		cmd.nsid = g_params.nsid;
+		cmd.addr = (uint64_t)data;
+		cmd.data_len = BUF_SIZE;
+		memcpy(&cmd.cdw12, g_params.snap_id, UUID_LEN);
+
+		write_header(fp);
+		while (slba < end) {
+			nlb = MIN(MAX_QUERY_BLOCK_COUNT, end - slba);
+			// encode slba and nlb into cdw10 and cdw11
+			cmd.cdw10 = (uint32_t)(slba & 0xFFFFFFFF);
+			cmd.cdw11 = (nlb-1) << 16;
+			cmd.cdw11 |= ((slba >> 32) & 0xFFFF);
+			memset(data, 0, BUF_SIZE);
+
+			LOG(VERBOSE, "Querying slba=%"PRIu64" nlb=%u\n",
+				slba, nlb);
+
+			ret = ioctl(dd, NVME_IOCTL_ADMIN_CMD, &cmd);
+			if(ret < 0) {
+				LOG(ERROR, "NVMe admin command %x failed with error %d\n", OPCODE_VS_CHANGED_BLOCKS, errno);
+				break;
 			}
-		}
-		slba += nlb;
-	}
-	if (range > 0) {
-		write_range_record(fp, delim, rslba, range);
-		range = 0;
-	}
-	write_footer(fp);
 
-done:
+			//LOG_HEX(VERBOSE, data, BUF_SIZE);
+
+			mask = 0;
+			blockid = slba;
+			cnt = (BITMAP_ALIGN(nlb, 64) >> 6);
+			b = (uint64_t*)data;
+
+			for (int i=cnt-1; i >= 0; i--) {
+				d = htobe64(b[i]);
+				for(int j=0; j < BITS_PER_RECORD; j++) {
+					if (blockid == end) {
+						break;
+					}
+					mask = 1ULL << j;
+					if (d & mask) {
+						if (g_params.format == FORMAT_BLOCK_LIST) {
+							write_block_record(fp, delim, blockid);
+							delim = ",";
+						} else {
+							if (range == 0) {
+								rslba = blockid;
+							}
+							range++;
+						}
+					} else if (range > 0) {
+						write_range_record(fp, delim, rslba, range);
+						delim = ",";
+						range = 0;
+					}
+					blockid++;
+				}
+			}
+			slba += nlb;
+		}
+		if (range > 0) {
+			write_range_record(fp, delim, rslba, range);
+			range = 0;
+		}
+		write_footer(fp);
+	} while (0);
+
 	if (dd != 0) {
 		close(dd);
 	}
@@ -354,9 +445,13 @@ done:
 	return ret;
 }
 
+// ******************* program entry point *******************
 int main(int argc, char* argv[])
 {
 	int res = 0;
+
+	LOG_INIT();
+	LOG(INFO, "Starting snap_diff\n");
 	do {
 		parse_params(argc, argv);
 		if (validate_params() == false) {
@@ -373,7 +468,9 @@ int main(int argc, char* argv[])
 			break;
 		}
 	} while (0);
+	LOG(INFO, "Ending snap_diff\n");
+	LOG_UNINIT();
 
-	printf("snap_diff %s\n", res == 0 ? "completed" : "failed");
+	printf("snap_diff %s\n", res == 0 ? "completed" : "failed. See snap_diff.log file for more details.");
 	return res;
 }
