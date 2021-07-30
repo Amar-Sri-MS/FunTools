@@ -145,6 +145,8 @@ void parse_params(int cnt, char* params[])
 			g_params.nlb = atoll(params[i]+strlen("-l:"));
 		} else if (strcasecmp(params[i], "-r") == 0) {
 			g_params.format = FORMAT_RANGE_LIST;
+		} else if (strcasecmp(params[i], "-v") == 0) {
+			g_params.verbose = true;
 		} else if (strcasecmp(params[i], "-h") == 0) {
 			print_usage();
 			exit(0);
