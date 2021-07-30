@@ -1002,7 +1002,7 @@ static bool _do_send_cmd(struct dpcsock_connection *funos,
 	if (cmd->encoding == PARSE_BINARY_JSON) {
 		json = fun_json_create_from_binary_with_options((uint8_t *)line, read, false);
 		if (fun_json_fill_error_message(json, &error)) {
-			log_error("could not parse: %s, size = %ld\n", error, read);
+			log_error("could not parse: %s, size = %zd\n", error, read);
 			if (read > 3) {
 				log_error("first bytes: %d %d %d %d\n", line[0], line[1], line[2], line[3]);
 			}
@@ -1014,7 +1014,7 @@ static bool _do_send_cmd(struct dpcsock_connection *funos,
 	}
 
 	if (!json) {
-		log_error("could not parse: %s, size = %ld\n", error, read);
+		log_error("could not parse: %s, size = %zd\n", error, read);
 		return false;
 	}
 	if (_verbose_log) {
