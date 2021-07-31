@@ -23,6 +23,7 @@
 #include <fcntl.h>
 
 #include "dpcsh_nvme.h"
+#include "dpcsh_log.h"
 #include <utils/threaded/fun_malloc_threaded.h>
 
 #define READ_RETRY_DELAY_IN_US	(500) // in microsecs
@@ -52,7 +53,7 @@ static bool _read_from_nvme_helper(struct dpcsock_connection *connection, uint8_
 		};
 		int fd = open(connection->socket->socket_name, O_RDWR);
 		if (fd < 0) {
-			printf("%s: Failed to open %s\n", __func__,
+			log_error("%s: Failed to open %s\n", __func__,
 			       connection->socket->socket_name);
 			break;
 		}
@@ -72,7 +73,7 @@ static bool _read_from_nvme_helper(struct dpcsock_connection *connection, uint8_
 			(*remaining) -= MIN(*remaining, NVME_ADMIN_CMD_DATA_LEN);
 			retVal = true;
 		} else {
-			printf("NVME_IOCTL_ADMIN_CMD %x failed %d\n",NVME_VS_API_RECV,ret);
+			log_error("NVME_IOCTL_ADMIN_CMD %x failed %d\n",NVME_VS_API_RECV,ret);
 		}
 		close(fd);
 		writeDone = true;
@@ -152,16 +153,16 @@ bool _write_to_nvme(struct fun_ptr_and_size data, struct dpcsock_connection *con
 					ok = true;
 					connection->nvme_write_done = true;
 				} else {
-					printf("NVME_IOCTL_ADMIN_CMD %x failed %d\n",
+					log_error("NVME_IOCTL_ADMIN_CMD %x failed %d\n",
 							NVME_VS_API_SEND, ret);
 				}
 				close(fd);
 			} else {
-				printf("%s: Failed to open %s\n", __func__,
+				log_error("%s: Failed to open %s\n", __func__,
 				       connection->socket->socket_name);
 			}
 		} else {
-			printf("Input is bigger than maximum supported size (%zu)\n",
+			log_error("Input is bigger than maximum supported size (%zu)\n",
 			       NVME_ADMIN_CMD_DATA_LEN - sizeof(struct nvme_vs_api_hdr));
 		}
 		free(addr);
@@ -195,7 +196,7 @@ uint32_t _read_from_nvme(uint8_t **data, uint8_t **deallocate_ptr, struct dpcsoc
 							     connection->socket->cmd_timeout);
 			offset += NVME_ADMIN_CMD_DATA_LEN;
 			if ((sizeof(struct nvme_vs_api_hdr) + data_len) > NVME_DPC_MAX_RESPONSE_LEN) {
-				printf("%s:%d: sess %u/%u: Data len = %d\n",
+				log_error("%s:%d: sess %u/%u: Data len = %d\n",
 				       __func__, __LINE__, connection->nvme_session_id, connection->nvme_seq_num,
 				       data_len);
 			}
@@ -218,7 +219,7 @@ uint32_t _read_from_nvme(uint8_t **data, uint8_t **deallocate_ptr, struct dpcsoc
 						offset += NVME_ADMIN_CMD_DATA_LEN;
 					} while(readSuccess && (remaining > 0));
 				} else {
-					printf("%s:%d  sess %u/%u Unable to alloc %u bytes",
+					log_error("%s:%d  sess %u/%u Unable to alloc %u bytes",
 					       __func__, __LINE__, connection->nvme_session_id,
 					       connection->nvme_seq_num, alloc_len);
 					readSuccess = 0;
@@ -233,7 +234,7 @@ uint32_t _read_from_nvme(uint8_t **data, uint8_t **deallocate_ptr, struct dpcsoc
 			}
 			free(addr);
 		} else {
-			printf("%s:%d sess %u/%u Unable to alloc %u bytes",
+			log_error("%s:%d sess %u/%u Unable to alloc %u bytes",
 			       __func__, __LINE__, connection->nvme_session_id, connection->nvme_seq_num,
 			       NVME_ADMIN_CMD_DATA_LEN);
 		}

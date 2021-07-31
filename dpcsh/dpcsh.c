@@ -27,6 +27,7 @@
 #include <time.h>
 
 #include "dpcsh.h"
+#include "dpcsh_log.h"
 #include "dpcsh_nvme.h"
 #include "csr_command.h"
 #include "dpcsh_libfunq.h"
@@ -84,12 +85,6 @@ struct dpc_thread {
 	bool used;
 };
 
-#define dprintf(...) \
-	do { \
-		if(_debug_log) \
-			printf(__VA_ARGS__);\
-	} while(0)
-
 /* cmd timeout, use driver default timeout */
 #define DEFAULT_NVME_CMD_TIMEOUT_MS "0"
 
@@ -98,29 +93,18 @@ struct dpc_thread {
 #define RETRY_NOARG   (RETRY_DEFAULT)
 static uint16_t connect_retries = RETRY_DEFAULT;
 
-static inline void _setnosigpipe(int const fd)
-{
-#ifdef __APPLE__
-	int yes = 1;
-	(void)setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &yes, sizeof(yes));
-#else
-	/* unfortunately Linux does not support SO_NOSIGPIPE... */
-	signal(SIGPIPE, SIG_IGN);
-#endif
-}
-
 static void _print_version(void)
 {
 	if (_nocli_script_mode && !_debug_log)
 		return;
 
 	/* single line version when everything matches up */
-	printf("FunSDK version %s, branch: %s\n",
+	log_info("FunSDK version %s, branch: %s\n",
 	       FunSDK_version, branch_version);
 
 	/* extra logging when things are built a little weird */
 	if (strcmp(FunSDK_version, platform_SDK_version) != 0) {
-		printf("libfunclient FunSDK version %s, branch: %s\n",
+		log_info("libfunclient FunSDK version %s, branch: %s\n",
 		       platform_SDK_version, platform_branch_version);
 	}
 }
@@ -197,7 +181,7 @@ static char *getline_with_history(OUT ssize_t *nbytes)
 			capa += 16;
 			line = realloc(line, capa);
 			if (line == NULL) {
-				printf("error allocating input line buffer\n");
+				log_error("error allocating input line buffer\n");
 				exit(1);
 			}
 		}
@@ -263,11 +247,9 @@ static int _open_sock_inet(uint16_t port)
 
 	do {
 		if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-			printf("\n Socket creation error \n");
+			log_error("socket creation error \n");
 			return sock;
 		}
-		_setnosigpipe(sock);
-
 		memset(&serv_addr, '0', sizeof(serv_addr));
 
 		serv_addr.sin_family = AF_INET;
@@ -275,12 +257,12 @@ static int _open_sock_inet(uint16_t port)
 
 		// Convert IPv4 and IPv6 addresses from text to binary form
 		if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr)<=0) {
-			printf("\nInvalid address/ Address not supported \n");
+			log_error("invalid address/ Address not supported \n");
 			return -1;
 		}
 
 		if (tries > 0) {
-			printf("connect error, retry %d\n", tries);
+			log_error("connect error, retry %d\n", tries);
 			sleep(1);
 		}
 
@@ -290,7 +272,7 @@ static int _open_sock_inet(uint16_t port)
 	} while ((r < 0) && (tries < connect_retries));
 
 	if (r < 0) {
-		printf("*** Can't connect\n");
+		log_error("can't connect\n");
 		perror("connect");
 		exit(1);
 	}
@@ -307,12 +289,11 @@ static int _open_sock_unix(const char *name)
 	if (sock <= 0)
 		return sock;
 
-	_setnosigpipe(sock);
 	struct sockaddr_un server = { .sun_family = AF_UNIX };
 	strcpy(server.sun_path, name);
 	do {
 		if (tries > 0) {
-			printf("connection fail, retry %d\n", tries);
+			log_error("connection fail, retry %d\n", tries);
 			sleep(1);
 		}
 
@@ -321,7 +302,7 @@ static int _open_sock_unix(const char *name)
 	} while(r && (tries < connect_retries));
 
 	if (r) {
-		printf("*** Can't connect: %d\n", r);
+		log_error("can't connect: %d\n", r);
 		perror("connect");
 		exit(1);
 	}
@@ -346,7 +327,7 @@ static void _listen_sock_init(struct dpcsock *sock)
 		assert(sock->listen_fd > 0);
 
 		/* set socket parameters */
-		printf("Publishing %s\n", sock->socket_name);
+		log_info("publishing %s\n", sock->socket_name);
 
 		local_unix.sun_family = AF_UNIX;
 
@@ -354,7 +335,7 @@ static void _listen_sock_init(struct dpcsock *sock)
 			 sizeof(local_unix.sun_path), "%s", sock->socket_name);
 		if ((r = unlink(local_unix.sun_path))
 		    && (errno != ENOENT)) {
-			printf("failed to remove existing socket file: %s\n",
+			log_error("failed to remove existing socket file: %s\n",
 			       strerror(errno));
 			exit(1);
 		}
@@ -414,17 +395,15 @@ bool _base64_write(struct dpcsock_connection *connection,
 	int fd = connection->fd;
 
 	if (b64buf == NULL) {
-		printf("**** out of memory allocating output b64 buffer\n");
+		log_error("out of memory allocating output b64 buffer\n");
 		exit(1);
 	}
 
 	r = base64_encode(b64buf, b64size, (void*) buf, nbyte);
 	if (r <= 0) {
-		printf("**** error encoding base64\n");
+		log_error("error encoding base64\n");
 		return false;
 	}
-
-	// printf("[dpcsh] sending b64 %s\n", b64buf);
 
 	/* send it */
 	if (_no_flow_control) {
@@ -490,7 +469,7 @@ static uint8_t *_b64_to_bin(char *line, ssize_t /* out */ *size)
 	/* this means the buffer is oversize. meh. */
 	binbuf = malloc(nbytes);
 	if (binbuf == NULL) {
-		printf("couldn't allocate input buffer\n");
+		log_error("couldn't allocate input buffer\n");
 		exit(1);
 	}
 
@@ -563,7 +542,7 @@ static char *_read_a_line(struct dpcsock_connection *connection, ssize_t *nbytes
 			buf = realloc(buf, size);
 
 			if (buf == NULL) {
-				printf("couldn't allocate input buffer\n");
+				log_error("couldn't allocate input buffer\n");
 				exit(1);
 			}
 		}
@@ -573,7 +552,7 @@ static char *_read_a_line(struct dpcsock_connection *connection, ssize_t *nbytes
 		r = read(fd, &buf[pos], 1);
 
 		if (r <= 0) {
-			printf("**** remote hung up / error: %d %d %s\n",
+			log_error("remote hung up / error: %d %d %s\n",
 			       r, errno, strerror(errno));
 			free(buf);
 			*nbytes = 0;
@@ -696,13 +675,13 @@ void _configure_device(struct dpcsock *sock)
 
 	/* if the user wants to rock the existing setup */
 	if (!_do_device_init) {
-		printf("skipping UART device configuration\n");
+		log_info("skipping UART device configuration\n");
 		return;
 	}
 
 	/* make sure we can actually fit the string */
 	if (strlen(sock->socket_name) + strlen(_baudrate) + 1 >= FMT_PAD) {
-		printf("stty arguments too long\n");
+		log_error("stty arguments too long\n");
 		exit(1);
 	}
 
@@ -710,12 +689,12 @@ void _configure_device(struct dpcsock *sock)
 	snprintf(cmd, strlen(cmdfmt) + FMT_PAD, cmdfmt,
 		 sock->socket_name, _baudrate);
 
-	printf("Executing command to configure device: %s\n", cmd);
+	log_info("Executing command to configure device: %s\n", cmd);
 
 	r = system(cmd);
 
 	if (r) {
-		printf("error configuring UART with stty\n");
+		log_error("error configuring UART with stty\n");
 		exit(1);
 	}
 }
@@ -730,7 +709,7 @@ bool dpcsocket_init(struct dpcsock *sock)
 
 	if (sock->server) {
 		/* setup the server socket*/
-		printf("connecting server socket\n");
+		log_info("connecting server socket\n");
 		_listen_sock_init(sock);
 	}
 
@@ -765,7 +744,7 @@ struct dpcsock_connection *dpcsocket_connect(struct dpcsock *sock)
 	connection->encoding = PARSE_BINARY_JSON;
 
 	if (sock->server) {
-		if (_debug_log) printf("Listening\n");
+		log_debug(_debug_log, "Listening\n");
 		connection->fd = accept(sock->listen_fd, NULL, NULL);
 		connection->encoding = PARSE_JSON;
 		return connection;
@@ -775,7 +754,7 @@ struct dpcsock_connection *dpcsocket_connect(struct dpcsock *sock)
 		connection->nvme_seq_num = 0;
 		connection->nvme_write_done = true;
 		connection->nvme_session_id = (0xFFFF & (nvme_session_counter++)) + ((0xFFFF & getpid()) << 16);
-		if (_debug_log) printf("NVMe session id = %" PRIu32 "\n", connection->nvme_session_id);
+		log_debug(_debug_log, "NVMe session id = %" PRIu32 "\n", connection->nvme_session_id);
 		return connection;
 	}
 
@@ -967,21 +946,21 @@ static void apply_command_locally(const struct fun_json *json,
 	if (!strcmp(verb, "encoding_json")) {
 		*complete = true;
 		cmd->encoding = PARSE_JSON;
-		dprintf("changing encoding to json\n");
+		log_debug(_debug_log, "changing encoding to json\n");
 		return;
 	}
 
 	if (!strcmp(verb, "encoding_text")) {
 		*complete = true;
 		cmd->encoding = PARSE_TEXT;
-		dprintf("changing encoding to text\n");
+		log_debug(_debug_log, "changing encoding to text\n");
 		return;
 	}
 
 	if (!strcmp(verb, "encoding_binary_json")) {
 		*complete = true;
 		cmd->encoding = PARSE_BINARY_JSON;
-		dprintf("changing encoding to binary json\n");
+		log_debug(_debug_log, "changing encoding to binary json\n");
 		return;
 	}
 
@@ -1017,21 +996,25 @@ static bool _do_send_cmd(struct dpcsock_connection *funos,
 	if (read == 0)
 		return false; // skip blank lines
 
-	const char *error;
+	const char *error = "unknown";
 
 	struct fun_json *json = NULL;
 	if (cmd->encoding == PARSE_BINARY_JSON) {
 		json = fun_json_create_from_binary_with_options((uint8_t *)line, read, false);
 		if (fun_json_fill_error_message(json, &error)) {
+			log_error("could not parse: %s, size = %zd\n", error, read);
+			if (read > 3) {
+				log_error("first bytes: %d %d %d %d\n", line[0], line[1], line[2], line[3]);
+			}
 			fun_json_release(json);
-			json = NULL;
+			return false;
 		}
 	} else {
 		json = line2json(line, cmd->encoding, &error);
 	}
 
 	if (!json) {
-		printf("could not parse: %s\n", error);
+		log_error("could not parse: %s, size = %zd\n", error, read);
 		return false;
 	}
 	if (_verbose_log) {
@@ -1050,7 +1033,7 @@ static bool _do_send_cmd(struct dpcsock_connection *funos,
 	bool ok = _write_to_sock(json, funos);
 	fun_json_release(json);
 	if (!ok) {
-		printf("*** Write to socket failed\n");
+		log_error("write to socket failed\n");
 		return false;
 	}
 
@@ -1094,13 +1077,13 @@ static bool _is_loopback_command(struct dpcsock *sock, char *line,
 							  0, "    ",
 							  100, flags,
 							  &allocated_size);
-			printf("output => %s\n", pp2);
+			log_debug(_debug_log, "output => %s\n", pp2);
 			free(pp2);
 		} else {
-			printf("base64 output didn't decode to binary json\n");
+			log_error("base64 output didn't decode to binary json\n");
 		}
 	} else {
-		printf("couldn't base64 decode input\n");
+		log_error("couldn't base64 decode input\n");
 	}
 
 	/* say we consumed it even it if was mangled so we don't send it on */
@@ -1126,18 +1109,18 @@ static bool _print_response_info(const struct fun_json *response) {
 					FUN_JSON_PRETTY_PRINT_HUMAN_READABLE_STRINGS);
 		}
 	} else if (!fun_json_lookup_int64(response, "tid", &tid)) {
-		printf("No tid\n");
+		log_error("No tid\n");
 	}
 
 	if (fun_json_fill_error_message(_get_result_if_present(response),
 					&str)) {
 		ok = false;
 		if (_verbose_log || _nocli_script_mode) {
-			printf(PRELUDE BLUE POSTLUDE "output => *** error: '%s'"
+			log_error(PRELUDE BLUE POSTLUDE "output => *** error: '%s'"
 			       NORMAL_COLORIZE "\n", str);
 		}
 	} else if (!response) {
-		printf("*** NULL response returned\n");
+		log_error("NULL response returned\n");
 	} else {
 		if (_verbose_log || _nocli_script_mode) {
 			size_t allocated_size = 0;
@@ -1171,12 +1154,12 @@ static char *_wrap_proxy_message(enum parsingmode mode, struct fun_json *respons
 				fun_json_create_string(error_message, fun_json_no_copy_no_own), true)
 				|| !fun_json_dict_add(result, "tid", fun_json_no_copy_no_own,
 				fun_json_create_int64(tid), true)) {
-			printf("Can't form proxy message\n");
+			log_error("can't form proxy message\n");
 			fun_json_release(result);
 			return NULL;
 		}
 	} else if (!response) {
-		printf("*** NULL response returned\n");
+		log_error("NULL response returned\n");
 		result = fun_json_create_null();
 	} else {
 		result = fun_json_retain(response);
@@ -1302,7 +1285,7 @@ static bool _do_recv_cmd(struct dpcsock_connection *funos_connection,
 	struct fun_json *output = _read_from_sock(funos_connection, retry);
 
 	if (!output && retry) {
-			printf("invalid json returned\n");
+			log_error("invalid json returned\n");
 	}
 
 	bool nvme_write_incomplete = (funos_connection->socket->mode == SOCKMODE_NVME) &&
@@ -1353,7 +1336,6 @@ static void _do_session(struct dpcsock_connection *funos,
 		}
 
 		/* wait on our input(s) */
-		// printf("waiting on input\n");
 		r = select(nfds+1, &fds, NULL, NULL, NULL);
 
 		if (r <= 0) {
@@ -1362,7 +1344,6 @@ static void _do_session(struct dpcsock_connection *funos,
 		}
 
 		if (FD_ISSET(cmd->fd, &fds)) {
-			// printf("user input\n");
 			char *line = _read_a_line(cmd, &read);
 
 			if (read <= 0 || line == NULL) /* user ^D or connection closed*/
@@ -1377,7 +1358,7 @@ static void _do_session(struct dpcsock_connection *funos,
 			ok = _do_send_cmd(funos, cmd, line, read);
 			free(line);
 			if (!ok) {
-				printf("error sending command\n");
+				log_error("error sending command\n");
 			}
 		}
 
@@ -1420,7 +1401,7 @@ static void open_connections(struct dpcsock *funos_socket,
 	*cmd = dpcsocket_connect(cmd_socket);
 	if (funos_socket->mode == SOCKMODE_FUNQ) {
 		if (!dpc_funq_register_receive_callback((*funos)->funq_connection, _recv_callback, *cmd)) {
-			printf("Can't register a callback for libfunq\n");
+			log_error("can't register a callback for libfunq\n");
 		}
 	}
 }
@@ -1436,7 +1417,7 @@ static void _add_thread(struct dpc_thread *workers, size_t max_workers,
 				workers[i].used = false;
 				pthread_join(workers[i].thread, NULL);
 				close_connections(workers[i].args[0], workers[i].args[1]);
-				if (_debug_log) printf("Garbage-collected thread #%zu\n", i);
+				log_debug(_debug_log, "garbage-collected thread #%zu\n", i);
 			}
 		}
 		if (!workers[i].used) {
@@ -1445,11 +1426,11 @@ static void _add_thread(struct dpc_thread *workers, size_t max_workers,
 			workers[i].args[1] = cmd;
 			workers[i].args[2] = 0;
 			pthread_create(&workers[i].thread, NULL, _run_thread, workers[i].args);
-			if (_debug_log) printf("Added thread #%zu\n", i);
+			log_debug(_debug_log, "added thread #%zu\n", i);
 			return;
 		}
 	}
-	printf("Out of connections\n");
+	log_error("out of connections\n");
 	close_connections(funos, cmd);
 }
 
@@ -1460,7 +1441,7 @@ static void _wait_finalize_threads(struct dpc_thread *workers, size_t max_worker
 		if (workers[i].used) {
 			pthread_join(workers[i].thread, &retval);
 			close_connections(workers[i].args[0], workers[i].args[1]);
-			if (_debug_log) printf("Joined thread #%zu\n", i);
+			log_debug(_debug_log, "joined thread #%zu\n", i);
 		}
 	}
 }
@@ -1493,7 +1474,7 @@ static bool _do_cli(int argc, char *argv[],
 	}
 	char *buf = malloc(bufsize);
 	if (!buf) {
-		printf("Failed to allocate command buffer of size %zu", bufsize);
+		log_error("failed to allocate command buffer of size %zu", bufsize);
 		goto malloc_fail;
 	}
 
@@ -1502,18 +1483,18 @@ static bool _do_cli(int argc, char *argv[],
 	open_connections(funos_socket, cmd_socket, &funos, &cmd);
 
 	if (!funos || !cmd || cmd->fd < 0) {
-		printf("Can't open connections\n");
+		log_error("can't open connections\n");
 		goto connect_fail;
 	}
 
 	for (int i = startIndex; i < argc; i++) {
 		n += snprintf(buf + n, bufsize - n, "%s ", argv[i]);
-		dprintf("buf=%s n=%d\n", buf, n);
+		log_debug(_debug_log, "buf=%s n=%d\n", buf, n);
 	}
 
 	size_t len = strlen(buf);
 	buf[--len] = 0;	// trim the last space
-	dprintf(">> single cmd [%s] len=%zd\n", buf, len);
+	log_debug(_debug_log, ">> single cmd [%s] len=%zd\n", buf, len);
 	ok = _do_send_cmd(funos, cmd, buf, len);
 	if (ok) {
 		ok = _do_recv_cmd(funos, cmd, true);
@@ -1658,6 +1639,9 @@ int main(int argc, char *argv[])
 	bool cmd_timeout_is_set = false;
 	char detected_nvme_device_name[64]; /* when no input device is specified */
 	int log_fd = -1;
+
+	// otherwise it will be killed on unsuccessful write to a pipe
+	signal(SIGPIPE, SIG_IGN);
 
 	srand(time(NULL));
 	dpcsh_path = argv[0];
@@ -1920,8 +1904,8 @@ int main(int argc, char *argv[])
 	}
 
 	/* make an announcement as to what we are */
-	if (!_nocli_script_mode || _debug_log)
-		printf("FunOS Dataplane Control Shell");
+	if (!_nocli_script_mode)
+		log_debug(_debug_log, "FunOS Dataplane Control Shell");
 
 	switch (mode) {
 	case MODE_INTERACTIVE:
@@ -1930,10 +1914,10 @@ int main(int argc, char *argv[])
 			_verbose_log = true;
 		break;
 	case MODE_PROXY:
-		printf(": socket proxy mode");
+		log_debug(_debug_log, "socket proxy mode");
 		break;
 	case MODE_NOCONNECT:
-		printf(": manual base64 mode");
+		log_debug(_debug_log, "manual base64 mode");
 		break;
 	}
 
@@ -1943,7 +1927,7 @@ int main(int argc, char *argv[])
 
 	/* start by initializing the sockets */
 	if (!dpcsocket_init(&funos_sock) || !dpcsocket_init(&cmd_sock)) {
-		printf("*** Can't initialize connections\n");
+		log_error("can't initialize connections\n");
 		exit(1);
 	}
 
