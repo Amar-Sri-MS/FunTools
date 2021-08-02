@@ -223,8 +223,8 @@ int query_device_details(int dd, int nsid)
 		cmd.data_len = BUF_SIZE;
 
 		ret = ioctl(dd, NVME_IOCTL_ADMIN_CMD, &cmd);
-		if(ret < 0) {
-			LOG(ERROR, "NVMe admin command %x failed with error %d\n", OPCODE_IDENTIFY, errno);
+		if(ret != 0) {
+			LOG(ERROR, "NVMe admin command %x failed with error %d\n", OPCODE_IDENTIFY, ret);
 			break;
 		}
 
@@ -247,7 +247,7 @@ int query_device_details(int dd, int nsid)
 
 		ret = ioctl(dd, NVME_IOCTL_ADMIN_CMD, &cmd);
 		if(ret != 0) {
-			LOG(ERROR, "NVMe admin command %x failed with error %d\n", OPCODE_VS_GET_NS_BLKHDR, errno);
+			LOG(ERROR, "NVMe admin command %x failed with error %d\n", OPCODE_VS_GET_NS_BLKHDR, ret);
 			break;
 		}
 
@@ -386,8 +386,8 @@ int get_snap_diff()
 				slba, nlb);
 
 			ret = ioctl(dd, NVME_IOCTL_ADMIN_CMD, &cmd);
-			if(ret < 0) {
-				LOG(ERROR, "NVMe admin command %x failed with error %d\n", OPCODE_VS_CHANGED_BLOCKS, errno);
+			if(ret != 0) {
+				LOG(ERROR, "NVMe admin command %x failed with error %d\n", OPCODE_VS_CHANGED_BLOCKS, ret);
 				break;
 			}
 
