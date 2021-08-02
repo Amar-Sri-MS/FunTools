@@ -40,7 +40,6 @@ function _delete(url) {
 
 // helper functions
 function handleResponse(response) {
-    console.log("Handling response");
     return response.text().then(text => {
         const data = text && JSON.parse(text);
 

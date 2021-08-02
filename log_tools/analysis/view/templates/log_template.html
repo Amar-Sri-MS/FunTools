@@ -121,9 +121,14 @@
         }
 
         if (queryParams.get("search")) {
-            const query = decodeURIComponent(searchPayload["query"]);
-            search_box.value = query;
-            updateSearchResults(searchPayload);
+            try {
+                const query = decodeURIComponent(searchPayload["query"]);
+                search_box.value = query;
+                updateSearchResults(searchPayload);
+            }
+            catch {
+                alert("ERROR: Could not parse the search string.");
+            }
         }
     }
 
