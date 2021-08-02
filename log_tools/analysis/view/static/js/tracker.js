@@ -16,9 +16,6 @@ function trackWebEvent(eventName, data=null) {
         logID: logId
     }
 
-    const xhttp = new XMLHttpRequest();
     const TRACK_WEB_EVENT_API = `${window.location.origin}/events/track`;
-    xhttp.open('POST', TRACK_WEB_EVENT_API);
-    xhttp.setRequestHeader('Content-Type', 'application/json');
-    xhttp.send(JSON.stringify(eventData));
+    fetchWrapper.post(TRACK_WEB_EVENT_API, eventData);
 }

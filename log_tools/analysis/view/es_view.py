@@ -612,8 +612,14 @@ def get_log_contents(log_id):
     """
     Obtains log contents which can be used to update a page.
     """
-    state, total_search_hits, page_body = _get_requested_log_lines(log_id,
-                                                                   include_hyperlinks=False)
+    try:
+        state, total_search_hits, page_body = _get_requested_log_lines(log_id,
+                                                                    include_hyperlinks=False)
+    except Exception as e:
+        app.logger.exception('Could not get log contents')
+        return jsonify({
+            'error': str(e)
+        }), 500
 
     return {'content': ''.join(page_body),
             'total_search_hits': total_search_hits,
@@ -805,8 +811,14 @@ def search(log_id):
             'error': 'Could not find the search query parameter'
         }), 400
 
-    search_payload = get_search_results(log_id)
-    return jsonify(search_payload)
+    try:
+        search_payload = get_search_results(log_id)
+        return jsonify(search_payload)
+    except Exception as e:
+        app.logger.exception('Error while searching for logs')
+        return jsonify({
+            'error': str(e)
+        }), 500
 
 
 def get_search_results(log_id):
@@ -1177,25 +1189,28 @@ def _get_log_count_for_keywords(log_id, keywords, sources=[], time_filters=None)
         }
     }
     """
-    es = ElasticLogSearcher(log_id)
-    log_view_base_url = _get_log_view_base_url(log_id)
-    query = ''
-    if len(sources) > 0:
-        query = f'src:({" OR ".join(sources)}) AND'
+    try:
+        es = ElasticLogSearcher(log_id)
+        log_view_base_url = _get_log_view_base_url(log_id)
+        query = ''
+        if len(sources) > 0:
+            query = f'src:({" OR ".join(sources)}) AND'
 
-    document_counts = {}
-    for idx, keyword in enumerate(keywords.keys()):
-        search_keywords = [f'"{keyword}"' for keyword in keywords[keyword]]
-        keyword_query_terms = ' OR '.join(search_keywords)
-        log_level_query = f'{query} (level:({keyword_query_terms}) OR msg:({keyword_query_terms}))'
-        search_query = { 'query': log_level_query.strip() }
-        log_view_url = f'{log_view_base_url}?search={quote(json.dumps(search_query))}'
-        document_counts[keyword] = {
-            'order': idx,
-            'count': es.get_document_count(keyword_query_terms, sources, time_filters),
-            'log_view_url': log_view_url,
-            'keywords': ', '.join(keywords[keyword])
-        }
+        document_counts = {}
+        for idx, keyword in enumerate(keywords.keys()):
+            search_keywords = [f'"{keyword}"' for keyword in keywords[keyword]]
+            keyword_query_terms = ' OR '.join(search_keywords)
+            log_level_query = f'{query} (level:({keyword_query_terms}) OR msg:({keyword_query_terms}))'
+            search_query = { 'query': log_level_query.strip() }
+            log_view_url = f'{log_view_base_url}?search={quote(json.dumps(search_query))}'
+            document_counts[keyword] = {
+                'order': idx,
+                'count': es.get_document_count(keyword_query_terms, sources, time_filters),
+                'log_view_url': log_view_url,
+                'keywords': ', '.join(keywords[keyword])
+            }
+    except Exception as e:
+        app.logger.exception('Could not get log count for keywords')
 
     return document_counts
 
@@ -1282,12 +1297,18 @@ def _format_datetime(timestamp, format="%a, %d %b %Y %I:%M:%S %Z"):
 
 @app.route('/log/<log_id>/dashboard/notes', methods=['POST'])
 def save_notes(log_id):
-    note = request.get_json()
+    try:
+        note = request.get_json()
 
-    es_metadata = ElasticsearchMetadata()
-    result = es_metadata.update_notes(log_id, note)
+        es_metadata = ElasticsearchMetadata()
+        result = es_metadata.update_notes(log_id, note)
 
-    return result
+        return result
+    except Exception as e:
+        app.logger.exception('Error when creating a note')
+        return jsonify({
+            'error': str(e)
+        }), 500
 
 
 if __name__ == '__main__':

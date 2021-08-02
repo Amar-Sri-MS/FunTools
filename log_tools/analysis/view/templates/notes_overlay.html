@@ -40,14 +40,8 @@
         };
 
         const url = `${location.origin}/log/${logId}/dashboard/notes`;
-
-        const xhttp = new XMLHttpRequest();
-        xhttp.open("POST", url);
-        xhttp.setRequestHeader("Content-type", "application/json");
-        xhttp.send(JSON.stringify(payload));
-
-        xhttp.onload = function() {
-            if (this.readyState == 4 && this.status == 200) {
+        fetchWrapper.post(url, payload)
+            .then(data => {
                 notesContainer.innerHTML += `
                     <div class="note">
                         <div class="note_item">
@@ -61,12 +55,10 @@
                     </div>
                 `;
                 trackWebEvent("NOTES_ADDED");
-            }
-            else {
-                const response = xhttp.responseText;
-                alert(`There was an error while adding a note. ${response}`);
-            }
-        }
+            })
+            .catch(error => {
+                alert(`There was an error while adding a note. ${error}`);
+            });
     }
 
     function toggleNotesOverlay() {
