@@ -21,7 +21,7 @@
 #define ACQ_DEPTH			(DMA_BUFSIZE_BYTES / ACQE_SIZE)
 #define FIRST_LEVEL_SGL_N			(5)
 #define MAX_BUFFERS_PER_OPERATION (FUNQ_MAX_DMA_BUFFERS / 4)
-#define FUNQ_SYNC_CMD_TIMEOUT_MS	(1000)
+#define FUNQ_SYNC_CMD_TIMEOUT_MS	(0) // no timeout
 
 static_assert((FUNQ_MAX_CONNECTIONS*2 <= ASQ_DEPTH) && (FUNQ_MAX_CONNECTIONS*2 <= ACQ_DEPTH),
 	"Queue must be deep enough to support all the context");
