@@ -756,31 +756,38 @@ def get_temporally_close_hits(es, state, size, filters, next, prev):
 
 def _render_log_page(log_id, jinja_env, template):
     """ Renders the log page """
-    es = ElasticLogSearcher(log_id)
-    es_metadata = ElasticsearchMetadata()
+    try:
+        es = ElasticLogSearcher(log_id)
+        es_metadata = ElasticsearchMetadata()
 
-    state, total_search_hits, table_body = _get_requested_log_lines(
-                                                log_id,
-                                                include_hyperlinks=False
-                                            )
-    search_payload = get_search_results(log_id)
+        metadata = es_metadata.get(log_id)
 
-    metadata = es_metadata.get(log_id)
+        sources = es.get_unique_entries('src')
+        unique_entries = es.get_aggregated_unique_entries(['system_type', 'system_id'], ['src'])
 
-    sources = es.get_unique_entries('src')
-    unique_entries = es.get_aggregated_unique_entries(['system_type', 'system_id'], ['src'])
+        template_dict = {}
+        template_dict['log_id'] = log_id
+        template_dict['sources'] = sources
+        template_dict['unique_entries'] = unique_entries
+        template_dict['log_view_base_url'] = _get_log_view_base_url(log_id)
+        template_dict['metadata'] = metadata
+        template_dict['job_link'] = _get_actual_job_link(log_id)
 
-    template_dict = {}
-    template_dict['body'] = ''.join(table_body)
-    template_dict['log_id'] = log_id
-    template_dict['total_search_hits'] = total_search_hits
-    template_dict['sources'] = sources
-    template_dict['unique_entries'] = unique_entries
-    template_dict['log_view_base_url'] = _get_log_view_base_url(log_id)
-    template_dict['state'] = state.to_json_str()
-    template_dict['metadata'] = metadata
-    template_dict['job_link'] = _get_actual_job_link(log_id)
-    template_dict['search_results'] = json.dumps(search_payload)
+        state, total_search_hits, table_body = _get_requested_log_lines(
+                                                    log_id,
+                                                    include_hyperlinks=False
+                                                )
+        search_payload = get_search_results(log_id)
+
+        template_dict['body'] = ''.join(table_body)
+        template_dict['total_search_hits'] = total_search_hits
+        template_dict['state'] = state.to_json_str()
+        template_dict['search_results'] = json.dumps(search_payload)
+    except Exception as e:
+        app.logger.exception('Error while rendering log page')
+        template_dict['error'] = str(e)
+        template_dict['state'] = {}
+        template_dict['search_results'] = {}
 
     result = template.render(template_dict, env=jinja_env)
     return result
