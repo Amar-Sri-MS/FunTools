@@ -13,29 +13,19 @@ The Simple Signing Server can be installed on each developer machine or a single
 
 ## Installation
 
-The installer consists of 2 files:
-
-1. `install_signing_server.sh`: installer script
-2. `signing_server.tar.gz`: archive with the Simple Signing Server scripts and support files. 
-
-Run as root the installation script on a Ubuntu-like machine to install the Simple Signing Server. By default, the file `signing_server_tar.gz` in the current directory is used.
+To install the signing server, just execute the `signing_server.run` script as root:
 
 ```sh
-sudo ./install_signing_server.sh
-```
-
-##### Optional
-It is also possible to specify the path to the archive as an argument:
-
-```sh
-sudo ./install_signing_server.sh /path/to/signing_server.tar.gz
+sudo ./signing_server.run
 ```
 
 #### Self Test
-After it runs, the installer will perform a simple test to verify everything is working:
+The installer will perform a simple test to verify everything is working:
 
 ```sh
-sudo ./install_signing_server.sh
+$ sudo ./signing_server.run
+Verifying archive integrity...  100%   All good.
+Uncompressing Fungible Simple Signing Server Installer  100%  
 <...snip...>
 --2021-07-29 10:02:22--  http://localhost/cgi-bin/signing_server.cgi?cmd=modulus&key=hkey1&format=c_struct
 Resolving localhost (localhost)... 127.0.0.1
