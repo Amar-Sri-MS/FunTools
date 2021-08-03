@@ -79,12 +79,24 @@
 {"key": "unit_test_fail_demand_false", "short": "Unit test assertion failure: DEMAND_FALSE", "match": "DEMAND_FALSE:", "is_failure": true}
 {"key": "unit_test_fail_check_fail", "short": "Unit test assertion failure: CHECK_FAIL", "match": "CHECK_FAIL:", "is_failure": true}
 {"key": "unit_test_fail_demand_fail", "short": "Unit test assertion failure: DEMAND_FAIL", "match": "DEMAND_FAIL:", "is_failure": true}
+{"key": "unit_test_chario_dropped", "short": "FunOS logs lost when chario buffer filled up. Consider logging less to avoid this problem. Check HBM memory dump for missing contents.", "match": "[chario] dropped ","color": "red"}
 
 {"key": "funvisor_ip_address", "short": "Funvisor IP address assigned", "match": "Setting IP address "}
 {"key": "funvisor_ip_address_fail", "short": "FAIL: Funvisor IP address not assigned", "match": "udhcpc: no lease, failing"}
+{"key": "funvisor_reboot", "short": "Reboot is triggered from Funvisor", "match": "FV cons: Rebooting"}
+{"key": "health_monitor_reboot", "short": "Reboot is triggered by health_monitor", "match": "FV cons: dpu health check: rebooting DPU", "is_failure": true}
+{"key": "time_shift", "short": "Time has shifted", "match": "NOTICE nucleus \"Time shift by"}
+{"key": "cc_linux_booted", "short": "CC Linux booted", "match": "FV cons: End of CC startup"}
+{"key": "storage_agent_starting", "short": "Starting storage agent", "match": "Starting storage agent"}
+{"key": "platform_agent_starting", "short": "Starting platform agent", "match": "Starting platform agent"}
+{"key": "dpc_proxy_starting", "short": "Starting dpc proxy", "match": "Starting dpc proxy"}
 {"key": "terminate_timeout", "short": "Timeout", "match": "Terminating funos-posix: signal 15", "color": "green"}
 {"key": "dpcsh_command", "short": "dpcsh command", "match": "--dpcsh command:", "color": "green"}
 {"key": "fun_malloc_leaks_fail", "short": "fatal error: fun_malloc: <COUNT> leaks", "rematch": "CRIT fun_malloc \"\\*\\*\\*\\*\\*\\*\\* (?P<COUNT>[0-9]+) leak", "color": "red", "is_failure": true}
 {"key": "fpc_error", "short": "machine problems: FPC may be locked up", "match": "Bus active timeout"}
 {"key": "funos_fail_to_idle", "short": "Lingering WUs: FunOS failed to idle", "match": "FunOS failed to idle after app return", "is_failure": "true"}
 {"key": "dpu_temperature_breached", "short": "DPU temperature sensor breached critical threshold", "match": "DPU temperature breached for sensor", "is_failure": "true"}
+{"key": "perst_error", "short": "BIOS started the reset", "match": "PCIE perst 1 -> 0", "color": "red", "is_failure": true}
+{"key": "perst_error_remove", "short": "BIOS removed the reset", "match": "PCIE perst 0 -> 1", "is_failure": false}
+{"key": "rootfs_nfs_error", "short": "Unable to load Linux filesystem from NFS", "match": "Unable to mount root fs", "color": "red", "is_failure": true}
+{"key": "uboot-reset", "short": "Netconsole detected that card reset", "match": "U-BOOT-NETCONSOLE ", "color": "red", "is_failure": true}
