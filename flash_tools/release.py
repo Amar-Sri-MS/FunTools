@@ -110,6 +110,7 @@ def main():
     parser.add_argument('--chip', choices=['f1', 's1', 'f1d1'], default='f1', help='Target chip')
     parser.add_argument('--debug-build', dest='release', action='store_false', help='Use debug application binary')
     parser.add_argument('--default-config-files', dest='default_cfg', action='store_true')
+    parser.add_argument('--dev-image', action='store_true', help='Create a development image installer')
 
     args = parser.parse_args()
 
@@ -131,7 +132,7 @@ def main():
         elif args.action == 'release':
             return action in ['sign', 'image', 'tarball', 'bundle', 'eeprbundle', 'mfginstall', 'mfgtarball']
         elif args.action == 'sdk-release':
-            return action in ['sign', 'image', 'bundle']
+            return action in ['funos_loader', 'sign', 'image', 'bundle']
         else:
             return action == args.action
 
@@ -170,10 +171,25 @@ def main():
             }
         json.dump(fvht_config, fvht_list_file)
         fvht_list_file.flush()
-        gf.merge_configs(config, json.loads(FVHT_LIST_CONFIG_OVERRIDE.format(fvht_list=fvht_list_file.name)))
+        fvht_override = json.loads(FVHT_LIST_CONFIG_OVERRIDE.format(fvht_list=fvht_list_file.name))
+        if config['signed_images'].get(list(fvht_override['signed_images'].keys())[0]):
+            gf.merge_configs(config, fvht_override)
 
     gf.set_config(config)
     gf.set_chip_type(args.chip)
+
+    if args.dev_image:
+        if config.get('global_config'):
+            config['global_config'].update({'dev_image':True})
+        else:
+            config['global_config'] = {'dev_image':True}
+    else:
+        # if --dev-image was not specified in cmdline args check
+        # if config.json:/global_config/dev_image exists
+        if config.get('global_config'):
+            config_dev_image = config['global_config'].get('dev_image')
+            if config_dev_image:
+                args.dev_image = True
 
     if args.force_version:
         gf.set_versions(args.force_version)
@@ -202,7 +218,7 @@ def main():
 
         # temporary as gf.run() doesn't support configurable target location
         if not os.path.exists(args.destdir):
-            os.mkdir(args.destdir)
+            os.makedirs(args.destdir)
         os.chdir(args.destdir)
         gf.set_search_paths(sdkpaths)
 
@@ -260,39 +276,42 @@ def main():
             version_file.write('funsdk={}\n'.format(v))
             version_file.write('funsdk_version={}\n'.format(sdk_v))
 
-        #TODO(mnowakowski)
-        #     skip direct invocation and import make_emulation_emmc
-        cmd = [ 'python', 'make_emulation_emmc.py',
-                '-w', '.',
-                '-o', '.',
-                '--appfile', funos_appname,
-                '--filesystem',
-                '--signed',
-                '--bootscript-only']
-        subprocess.check_call(cmd)
+        if not wanted('sdk-prepare'):
+            # in sdk builds, the bootscript will need to be
+            # generated later when a new funos image is present
+            cmd = [ 'python', 'make_emulation_emmc.py',
+                    '-w', '.',
+                    '-o', '.',
+                    '--appfile', funos_appname,
+                    '--filesystem',
+                    '--signed',
+                    '--bootscript-only']
+            subprocess.check_call(cmd)
 
-        cmd = [ 'python3', 'gen_fgpt.py', 'fgpt.unsigned' ]
-        subprocess.call(cmd)
-
-        cmd = [ 'python3', 'xdata.py',
-                '-r',
-                '--data-offset=4096',
-                '--data-alignment=512',
-                '--padding=4',
-                'fvos.unsigned',
-                'add',
-                os.path.join(args.sdkdir,
-                    'bin/cc-linux-yocto/mips64hv/vmlinux.bin') ]
-        subprocess.call(cmd)
-
-        for rootfs in rootfs_files:
-            cmd = [ 'python3', 'gen_hash_tree.py',
-                    '-O', _rootfs('fvht.bin', rootfs),
-                    'hash',
-                    '-N', 'rootfs.hashtree',
-                    '--to-sign', _rootfs('fvht.unsigned', rootfs),
-                    '-I', rootfs ]
+        if not args.dev_image:
+            # dev images do not need cclinux stuff
+            cmd = [ 'python3', 'gen_fgpt.py', 'fgpt.unsigned' ]
             subprocess.call(cmd)
+
+            cmd = [ 'python3', 'xdata.py',
+                    '-r',
+                    '--data-offset=4096',
+                    '--data-alignment=512',
+                    '--padding=4',
+                    'fvos.unsigned',
+                    'add',
+                    os.path.join(args.sdkdir,
+                        'bin/cc-linux-yocto/mips64hv/vmlinux.bin') ]
+            subprocess.call(cmd)
+
+            for rootfs in rootfs_files:
+                cmd = [ 'python3', 'gen_hash_tree.py',
+                        '-O', _rootfs('fvht.bin', rootfs),
+                        'hash',
+                        '-N', 'rootfs.hashtree',
+                        '--to-sign', _rootfs('fvht.unsigned', rootfs),
+                        '-I', rootfs ]
+                subprocess.call(cmd)
 
         with open("image.json", "w") as f:
             json.dump(config, f, indent=4)
@@ -306,6 +325,19 @@ def main():
         gf.set_search_paths(sdkpaths)
         os.chdir(args.destdir)
         gf.run('certificates')
+        os.chdir(curdir)
+
+    if wanted('funos_loader'):
+        # if funos image is different then create a new bootloader script
+        os.chdir(args.destdir)
+        cmd = [ 'python', 'make_emulation_emmc.py',
+                '-w', '.',
+                '-o', '.',
+                '--appfile', funos_appname,
+                '--filesystem',
+                '--signed',
+                '--bootscript-only']
+        subprocess.check_call(cmd)
         os.chdir(curdir)
 
     if wanted('sign'):
@@ -325,8 +357,6 @@ def main():
         os.chdir(args.destdir)
         gf.run('flash')
 
-        #TODO(mnowakowski)
-        #     skip direct invocation and import make_emulation_emmc
         cmd = [ 'python', 'make_emulation_emmc.py',
                 '-w', '.',
                 '-o', '.',
@@ -412,10 +442,14 @@ def main():
             bundle_images.extend([
                 'install_tools/run_fwupgrade.py',
                 'install_tools/setup.sh',
-                'image.json',
-                _rootfs('fvht.bin', rootfs),
-                rootfs
+                'image.json'
             ])
+
+            if not args.dev_image:
+                bundle_images.extend([
+                    _rootfs('fvht.bin', rootfs),
+                    rootfs
+                ])
 
             for chip_file in chip_specific_files:
                 bundle_images.append(os.path.basename(chip_file))
@@ -432,15 +466,17 @@ def main():
             with open(os.path.join('bundle_installer', '.setup'), "w") as cfg:
                 cfg.writelines([
                     'ROOTFS_NAME="{}"\n'.format(rootfs),
-                    'CHIP_NAME="{}"\n'.format(args.chip.upper())
+                    'CHIP_NAME="{}"\n'.format(args.chip.upper()),
+                    'DEV_IMAGE={}\n'.format(1 if args.dev_image else 0)
                 ])
 
+            bundle_name = 'development_image' if args.dev_image else rootfs
             makeself = [
                 os_utils.path_fixup('makeself'),
                 '--follow',
                 'bundle_installer',
-                'setup_bundle_{}.sh'.format(rootfs),
-                'CCLinux/FunOS {} installer'.format(rootfs),
+                'setup_bundle_{}.sh'.format(bundle_name),
+                'CCLinux/FunOS {} installer'.format(bundle_name),
                 './setup.sh'
             ]
 

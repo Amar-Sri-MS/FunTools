@@ -24,12 +24,12 @@ For that reason the steps are slightly more complicated to create a correct bund
 ```
 ./bin/flash_tools/release.py --action sdk-prepare --destdir <build_folder> --chip <chip_type> bin/flash_tools/mmc_config_sdk.json bin/flash_tools/key_bag_config.json  --force-version <build_number> --force-description "customer sdk bundle"
 cd <build_folder>
-./release.py --destdir . --action sign --default-config-files
+./release.py --destdir . --action sign --default-config-files --chip <chip_type>
 ```
 After these steps, `build_folder` will contain a signed funvisor image, funos image and all scripts required to generate a bundle by the customer.
 Customer can then generate their own bundles by taking the contents of `build_folder` and running
 ```
-./release.py --destdir . --action sdk-release --default-config-files
+./release.py --destdir . --action sdk-release --default-config-files --chip <chip_type>
 ```
 
 

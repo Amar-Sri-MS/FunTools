@@ -144,7 +144,15 @@ FW_UPGRADE_ARGS="$FW_UPGRADE_ARGS --no-version-check"
 
 EXIT_STATUS=0
 
-if [[ $ccfg_only != 'true' ]]; then
+CCFG_IMAGE_ID='ccfg'
+
+if [[ $ccfg_only == 'true' ]]; then
+	echo "CCFG update only!"
+elif [[ "$DEV_IMAGE" -eq 1 ]]; then
+	echo "Dev image upgrade!"
+	./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file mmcx=mmc1_image.bin
+	CCFG_IMAGE_ID='ccfx'
+else
 	if [[ $downgrade == 'true' ]]; then
 		if [ -n "$host_sku" ]; then
 			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u eepr --check-image-only --select-by-image-type "$host_sku"
@@ -195,23 +203,21 @@ if [[ $ccfg_only != 'true' ]]; then
 		fi
 
 	fi
-else
-	echo "CCFG update only!"
-fi # ccfg_only
+fi
 
 if [[ $ccfg_install ]]; then
-	./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file ccfg=$ccfg_install
+	./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file $CCFG_IMAGE_ID=$ccfg_install
 	RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
 
-	./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file ccfg=$ccfg_install --active
+	./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file $CCFG_IMAGE_ID=$ccfg_install --active
 	RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
 else
 	feature_set_resp=`dpcsh -nQ peek "config/boot_defaults/feature_set" || true`
 	if echo -n "$feature_set_resp" | jq -Mre .result; then
 		feature_set=`echo -n "$feature_set_resp" | jq -Mr .result`
 		if [ ! -z "$feature_set" ]; then
-			log_msg "Updating ccfg \"$feature_set\""
-			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u ccfg --select-by-image-type "$feature_set"
+			log_msg "Updating $CCFG_IMAGE_ID \"$feature_set\""
+			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u $CCFG_IMAGE_ID --select-by-image-type "$feature_set"
 			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
 		fi
 	else
@@ -228,6 +234,17 @@ if [[ $ccfg_only == 'true' ]]; then
 	if [[ -n "$STATUS_DIR" ]]; then
 		echo "ccfg-only upgrade" > "$STATUS_DIR"/.no_upgrade_verify
 	fi
+	exit $EXIT_STATUS
+fi
+
+if [[ "$DEV_IMAGE" -eq 1 ]]; then
+	if [[ -n "$STATUS_DIR" ]]; then
+		echo "dev-only upgrade" > "$STATUS_DIR"/.no_upgrade_verify
+	fi
+	# update u-boot env to enable dev image booting
+	dpc_uboot_env.py get
+	fw_setenv boot_debug_fw 1
+	dpc_uboot_env.py set
 	exit $EXIT_STATUS
 fi
 
