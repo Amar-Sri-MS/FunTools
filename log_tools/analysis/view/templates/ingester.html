@@ -11,6 +11,7 @@
 
         <link rel="stylesheet" type="text/css" href="/static/css/index.css">
         <link rel="stylesheet" type="text/css" href="/static/css/ingester.css">
+        <script type="text/javascript" src="/static/js/fetchWrapper.js"></script>
     </head>
     <body>
         {% include "nav_bar.html" ignore missing %}
@@ -338,19 +339,14 @@
         }
 
         function checkStatus() {
-            let xhttp = new XMLHttpRequest();
-            xhttp.onreadystatechange = function() {
-                if (this.readyState == 4 && this.status == 200) {
-                    let data = JSON.parse(xhttp.responseText);
-                    if (data && "ingestion_status" in data) {
+            const uri = `${window.location.origin}${window.location.pathname}/${logID}/status`;
+            fetchWrapper.get(uri)
+                .then(data => {
+                    if ("ingestion_status" in data) {
                         handleStatusUpdate(data);
                     }
-                }
-            }
-
-            const uri = `${window.location.origin}${window.location.pathname}/${logID}/status`;
-            xhttp.open('GET', uri);
-            xhttp.send();
+                })
+                .catch(error => alert("Could not get the ingestion status"))
         }
 
         function handleStatusUpdate(metadata) {

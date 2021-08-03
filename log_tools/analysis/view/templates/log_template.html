@@ -3,6 +3,7 @@
 <head>
     <link rel="stylesheet" type="text/css" href="/static/css/index.css">
     <link rel="stylesheet" type="text/css" href="/static/css/logs.css">
+    <script type="text/javascript" src="/static/js/fetchWrapper.js"></script>
     <script type="text/javascript" src="/static/js/tracker.js"></script>
     <script>
     // Web tracker uses logId
@@ -70,9 +71,15 @@
         clear_search_box = document.getElementById("clear_search_results");
         search_results_container = document.getElementById("search_results");
         search_results_body = document.getElementById("search_table_body");
-        search_page_info = document.getElementById("search_page_info")
-        search_prev_button = document.getElementById("search_prev_button");;
-        search_next_button = document.getElementById("search_next_button");;
+        search_page_info = document.getElementById("search_page_info");
+        search_prev_button = document.getElementById("search_prev_button");
+        search_next_button = document.getElementById("search_next_button");
+
+        // Alert in case there's an error.
+        const errorMsg = "{{error}}";
+        if (errorMsg) {
+            alert(errorMsg);
+        }
 
         // Disable the Previous logs button if there are
         // no more logs to display
@@ -114,9 +121,14 @@
         }
 
         if (queryParams.get("search")) {
-            const query = decodeURIComponent(searchPayload["query"]);
-            search_box.value = query;
-            updateSearchResults(searchPayload);
+            try {
+                const query = decodeURIComponent(searchPayload["query"]);
+                search_box.value = query;
+                updateSearchResults(searchPayload);
+            }
+            catch {
+                alert("ERROR: Could not parse the search string.");
+            }
         }
     }
 
@@ -124,41 +136,6 @@
     function onClickTopButton() {
         document.body.scrollTop = 0; // For Safari
         document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
-    }
-
-    function handleMessageFilter(element) {
-        textFilter = element.value;
-    }
-
-    function handleMessageTableFilterUpdates() {
-        toggleLoader(true);
-        var xhttp = new XMLHttpRequest();
-        xhttp.onreadystatechange = function() {
-            if (this.readyState == 4 && this.status == 200) {
-                var data = JSON.parse(xhttp.responseText);
-                if (data) {
-                    clearMessageTable();
-                    updateMessageTable(data, true);
-
-                    state = data["state"];
-                }
-                toggleLoader(false);
-            }
-        }
-
-        var uri = "/log/{{log_id}}/content";
-
-        var filterString = buildFilterOption();
-        if (filterString === null) {
-            toggleLoader(false);
-            return;
-        }
-        if (filterString != "") {
-            uri += "?filter=" + filterString;
-        }
-
-        xhttp.open('POST', uri);
-        xhttp.send();
     }
 
     function clearMessageTable() {
@@ -178,36 +155,54 @@
         toggleElementDisplay(next_button, showNextButton);
     }
 
+    function validateTimeFilter(datetimeStr) {
+        // Default time format of ES is either epoch in millis
+        // or yyyy-MM-dd'T'HH:mm:ss.SSSZ
+        if (datetimeStr && datetimeStr !== "") {
+            // Check for epoch millis
+            if (!isNaN(datetimeStr)) datetimeStr = +datetimeStr;
+            const date = new Date(datetimeStr);
+            let isValid = (date != "Invalid Date");
+            if (isValid) {
+                // Date & time should be separated by T
+                if (date.getUTCHours() == 0 && datetimeStr.includes(":")) isValid = datetimeStr.includes("T");
+                if (!isValid) alert("Date & time should be separated by T");
+            }
+            else alert(`Time filter: ${datetimeStr} is not valid.`);
+            return isValid;
+        }
+        return true;
+    }
+
     function handleTimeFilters(element, type="start") {
+        const datetimeStr = element.value;
+        validateTimeFilter(datetimeStr);
         if (type === "start") {
-            startTime = element.value;
+            startTime = datetimeStr;
         }
         else {
-            endTime = element.value;
+            endTime = datetimeStr;
         }
     }
 
     function loadNext() {
         toggleLoader(true);
-        var xhttp = new XMLHttpRequest();
-        xhttp.onreadystatechange = function() {
-            if (this.readyState == 4 && this.status == 200) {
-                var data = JSON.parse(xhttp.responseText);
-                if (data) {
-                    updateMessageTable(data, true);
-                    state = data["state"];
-                }
-                toggleLoader(false);
-            }
-        }
-
         var uri = buildContentRequest("next");
         if (uri === null) {
             toggleLoader(false);
             return;
         }
-        xhttp.open('POST', uri);
-        xhttp.send();
+
+        fetchWrapper.post(uri)
+            .then(data => {
+                toggleLoader(false);
+                updateMessageTable(data, true);
+                state = data["state"];
+            })
+            .catch(error => {
+                toggleLoader(false);
+                alert(`Could not load next logs: ${error}`);
+            })
     }
 
     // Generic function to toggle any HTML element's display property
@@ -257,6 +252,10 @@
             allFilters["text"] = `(${textFilter})`;
         }
 
+        if (!validateTimeFilter(startTime) || !validateTimeFilter(endTime)) {
+            return null;
+        }
+
         datetimeFilters = [startTime, endTime];
         allFilters["time"] = datetimeFilters;
 
@@ -281,25 +280,21 @@
 
     function loadPrev() {
         toggleLoader(true);
-        var xhttp = new XMLHttpRequest();
-        xhttp.onreadystatechange = function() {
-            if (this.readyState == 4 && this.status == 200) {
-                var data = JSON.parse(xhttp.responseText);
-                if (data) {
-                    updateMessageTable(data, false);
-                    state = data["state"];
-                }
-                toggleLoader(false);
-            }
-        }
-
         var uri = buildContentRequest("prev");
         if (uri === null) {
             toggleLoader(false);
             return;
         }
-        xhttp.open('POST', uri);
-        xhttp.send();
+        fetchWrapper.post(uri)
+            .then(data => {
+                toggleLoader(false);
+                updateMessageTable(data, false);
+                state = data["state"];
+            })
+            .catch(error => {
+                toggleLoader(false);
+                alert(`Could not load previous logs: ${error}`);
+            })
     }
 
     function onClickFilterLogs() {
@@ -358,27 +353,22 @@
         }
 
         const search_url = `${LOG_VIEW_BASE_URL}/search?${params.toString()}${location.hash}`;
-
-        var xhttp = new XMLHttpRequest();
-        xhttp.onreadystatechange = function() {
-            if (this.readyState == 4 && this.status == 200) {
-                var data = JSON.parse(xhttp.responseText);
-                if (data) {
-                    searchPayload = data;
-                    updateSearchResults(data);
-                    const searchString = buildSearchOption({
-                        ...searchPayload,
-                        "state": prevSearchState
-                    });
-                    params.set("search", searchString);
-                    window.history.pushState(null, null, `?${params.toString()}#0`);
-                }
+        fetchWrapper.get(search_url)
+            .then(data => {
                 toggleLoader(false);
-            }
-        }
-
-        xhttp.open("GET", search_url);
-        xhttp.send();
+                searchPayload = data;
+                updateSearchResults(data);
+                const searchString = buildSearchOption({
+                    ...searchPayload,
+                    "state": prevSearchState
+                });
+                params.set("search", searchString);
+                window.history.pushState(null, null, `?${params.toString()}#0`);
+            })
+            .catch(error => {
+                toggleLoader(false);
+                alert(`Could not get search results: ${error}`);
+            })
 
         trackWebEvent("SEARCH_CLICKED", { "payload": searchPayload });
     }
@@ -441,30 +431,28 @@
         }
 
         toggleLoader(true);
-        var xhttp = new XMLHttpRequest();
-        xhttp.onreadystatechange = function() {
-            if (this.readyState == 4 && this.status == 200) {
-                const data = JSON.parse(xhttp.responseText);
-                if (data) {
-                    clearMessageTable();
-                    updateMessageTable(data, true);
-                    document.getElementById("0").scrollIntoView();
-                    state = data["state"];
 
-                    let params = new URLSearchParams(location.search);
-                    params.set("state", JSON.stringify(current_state));
-                    params.set("next", true);
-                    params.set("prev", true);
-                    params.set("include", docId);
-
-                    window.history.pushState(null, null, `?${params.toString()}#0`);
-                }
+        fetchWrapper.post(uri)
+            .then(data => {
                 toggleLoader(false);
-            }
-        }
 
-        xhttp.open('POST', uri);
-        xhttp.send();
+                clearMessageTable();
+                updateMessageTable(data, true);
+                document.getElementById("0").scrollIntoView();
+                state = data["state"];
+
+                let params = new URLSearchParams(location.search);
+                params.set("state", JSON.stringify(current_state));
+                params.set("next", true);
+                params.set("prev", true);
+                params.set("include", docId);
+
+                window.history.pushState(null, null, `?${params.toString()}#0`);
+            })
+            .catch(error => {
+                toggleLoader(false);
+                alert(`Could not get the selected search result: ${error}`);
+            });
     }
 
     function onPaginateSearchResults(next=true) {
@@ -642,34 +630,43 @@
         </div>
         <div class="container">
             <h3>View Logs</h3>
-            <div class="content">
-                {% if total_search_hits.relation == "gte" %}
-                    {% set total_hits = total_search_hits.value|string+'+' %}
-                {% else %}
-                    {% set total_hits = total_search_hits.value %}
-                {% endif %}
-                <b>{{total_hits}} results</b> sorted from earliest to latest timestamp
-            </div>
-            <div class="pagination" id="prev_button">
-                <button class="btn" data-web_event="PREVIOUS_LOGS" onclick="loadPrev()">Load previous logs</button>
-            </div>
-            <table class="log_entries">
-                <thead>
-                    <tr>
-                        <th>Source</th>
-                        <th>System ID</th>
-                        <th>Timestamp</th>
-                        <th>Level</th>
-                        <th>Log message</th>
-                    </tr>
-                </thead>
-                <tbody id="line_table">
-                    {{body}}
-                </tbody>
-            </table>
-            <div class="pagination" id="next_button">
-                <button class="btn" data-web_event="NEXT_LOGS" onclick="loadNext()">Load next logs</button>
-            </div>
+            {% if error is defined %}
+                <div class="content">
+                    <div>Sorry! We could not fetch the requested logs</div>
+                    <div>Error: {{error}}</div>
+                </div>
+            {% else %}
+                <div class="content">
+                    {% if not total_search_hits is defined %}
+                        {% set total_hits = 0 %}
+                    {% elif total_search_hits.relation == "gte" %}
+                        {% set total_hits = total_search_hits.value|string+'+' %}
+                    {% else %}
+                        {% set total_hits = total_search_hits.value %}
+                    {% endif %}
+                    <b>{{total_hits}} results</b> sorted from earliest to latest timestamp
+                </div>
+                <div class="pagination" id="prev_button">
+                    <button class="btn" data-web_event="PREVIOUS_LOGS" onclick="loadPrev()">Load previous logs</button>
+                </div>
+                <table class="log_entries">
+                    <thead>
+                        <tr>
+                            <th>Source</th>
+                            <th>System ID</th>
+                            <th>Timestamp</th>
+                            <th>Level</th>
+                            <th>Log message</th>
+                        </tr>
+                    </thead>
+                    <tbody id="line_table">
+                        {{body}}
+                    </tbody>
+                </table>
+                <div class="pagination" id="next_button">
+                    <button class="btn" data-web_event="NEXT_LOGS" onclick="loadNext()">Load next logs</button>
+                </div>
+            {% endif %}
         </div>
     </div>
     <button onclick="onClickTopButton()" data-web_event="TOP_BUTTON" id="top_button" title="Go to top">Jump to top</button>

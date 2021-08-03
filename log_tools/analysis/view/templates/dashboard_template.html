@@ -3,6 +3,7 @@
 <head>
     <link rel="stylesheet" type="text/css" href="/static/css/index.css">
     <link rel="stylesheet" type="text/css" href="/static/css/dashboard.css">
+    <script type="text/javascript" src="/static/js/fetchWrapper.js"></script>
     <script type="text/javascript" src="/static/js/tracker.js"></script>
     <title>Log Analyzer Dashboard: {{log_id}}</title>
 </head>
@@ -202,6 +203,7 @@
             </div>
         </div>
     </div>
+    {% include 'loader.html' %}
     {% include 'notes_overlay.html' %}
 </body>
 <script type="text/javascript">
@@ -276,26 +278,25 @@
 
 
     function onSelectSourceForLogLevelStats(sourceElement) {
+        toggleLoader(true);
         // Fetch log level stats for the selected source
-        let xhttp = new XMLHttpRequest();
-        xhttp.onreadystatechange = function() {
-            if (this.readyState == 4 && this.status == 200) {
-                let data = JSON.parse(xhttp.responseText);
-                if (data) {
-                    selectedSourceForLogLevelStats = sourceElement.value;
-                    updateLogLevelStats(data);
-                }
-            }
-        }
-
         let uri = `${window.location.href}/level-stats`;
         if (sourceElement.value !== 'all') {
             source = sourceElement.value;
             uri = `${uri}?source=${source}`;
         }
 
-        xhttp.open('GET', uri);
-        xhttp.send();
+        fetchWrapper.get(uri)
+            .then(data => {
+                toggleLoader(false);
+                selectedSourceForLogLevelStats = sourceElement.value;
+                updateLogLevelStats(data);
+            })
+            .catch(error => {
+                toggleLoader(false);
+                alert(`Could not get log level stats: ${error}`);
+            });
+
         trackWebEvent("LOG_LEVEL_DIST_SOURCE_UPDATED", data=sourceElement.value);
     }
 
@@ -345,10 +346,12 @@
     }
 
     function fetchRecentLogs() {
+        toggleLoader(true);
         // Fetch recent logs for the selected level source
         let xhttp = new XMLHttpRequest();
         xhttp.onreadystatechange = function() {
             if (this.readyState == 4 && this.status == 200) {
+                toggleLoader(false);
                 const data = xhttp.responseText;
                 if (data) {
                     updateRecentLogs(data);
@@ -414,21 +417,7 @@
 
     function fetchAnchors() {
         // Fetch anchors for the selected source or query or page
-        let xhttp = new XMLHttpRequest();
-        xhttp.onreadystatechange = function() {
-            if (this.readyState == 4 && this.status == 200) {
-                const data = xhttp.responseText;
-                if (data) {
-                    analyticsData = {
-                        ...analyticsData,
-                        ...JSON.parse(data)
-                    }
-                    searchBoxForAnchors.value = "query" in analyticsData ? analyticsData["query"] : "";
-                    updateAnchors();
-                }
-            }
-        }
-
+        toggleLoader(true);
         let params = new URLSearchParams();
         params.set("page", anchorsPage);
         params.set("next", true);
@@ -446,8 +435,20 @@
             params.set("state", JSON.stringify(analyticsData["state"]));
         }
         const uri = `${window.location.href}/anchors?${params.toString()}`;
-        xhttp.open('GET', uri);
-        xhttp.send();
+        fetchWrapper.get(uri)
+            .then(data => {
+                toggleLoader(false);
+                analyticsData = {
+                    ...analyticsData,
+                    ...data
+                }
+                searchBoxForAnchors.value = "query" in analyticsData ? analyticsData["query"] : "";
+                updateAnchors();
+            })
+            .catch(error => {
+                toggleLoader(false);
+                alert(`Could not fetch anchors: ${error}`);
+            });
     }
 
     function updateAnchors() {

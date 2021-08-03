@@ -40,6 +40,7 @@
         </div>
         {% include 'loader.html' %}
     </body>
+    <script type="text/javascript" src="/static/js/fetchWrapper.js"></script>
     <script src="/static/js/ascii-table.js"></script>
     <script type="text/javascript">
         const logID = "{{log_id}}";
@@ -78,29 +79,19 @@
             toggleElementDisplay(lifecycle_element, false);
             toggleLoader(true);
 
-            let xhttp = new XMLHttpRequest();
-            xhttp.onreadystatechange = function() {
-                if (this.readyState == 4) {
-                    toggleLoader(false);
-                    if (this.status == 200) {
-                        let data = JSON.parse(xhttp.responseText);
-                        showLifecycle(data);
-                    }
-                    else {
-                        let data = JSON.parse(xhttp.responseText);
-                        const errorMsg = data && "error" in data ? data["error"] : "Some error occurred";
-                        alert(errorMsg);
-                    }
-                }
-            }
-
             const uri = `${window.location.origin}${window.location.pathname}`;
             const requestData = {
                 "volume_id": uuid
             };
-            xhttp.open("POST", uri);
-            xhttp.setRequestHeader("Content-type", "application/json");
-            xhttp.send(JSON.stringify(requestData));
+            fetchWrapper.post(uri, requestData)
+                .then(data => {
+                    toggleLoader(false);
+                    showLifecycle(data);
+                })
+                .catch(error => {
+                    toggleLoader(false);
+                    alert(`Error: ${error}`);
+                });
         }
 
         function clearTables() {
