@@ -123,6 +123,9 @@ if ($numArgs > 2) {
     }
 }
 
+my $err_cnt = 0;
+my $warn_cnt = 0;
+
 while (1) {
     my $letter;
     my $cmdlist_bytes;
@@ -270,12 +273,14 @@ while (1) {
     # ----------------------------------------
     my $wu_flags_cwu;
     my $opr_flags_type;
+    my $opr_len;
     if ($mode ne "cmdlist") {
         # Check that the DMA WU opcode is correct.
         my $qword = hex($dma_wu_qword[0]);
         my $wu_opcode = $qword >> 59;
         if ($wu_opcode != 0x10) {
             printf("[ERROR]: Invalid WU opcode seen, expected 0x10 but saw 0x%0x\n", $wu_opcode);
+            $err_cnt++;
         }
 
         # Get the WU fields
@@ -302,7 +307,7 @@ while (1) {
         my $opr_flags_chk = bit_slice(4, 19, 1, @dma_wu_qword);
         my $opr_flags_seed = bit_slice(4, 21, 1, @dma_wu_qword);
         my $opr_flags_pi = bit_slice(4, 22, 1, @dma_wu_qword);
-        my $opr_len = bit_slice(4, 0, 16, @dma_wu_qword);
+        $opr_len = bit_slice(4, 0, 16, @dma_wu_qword);
 
         if ($mode eq "logfile") {
             print "\n";
@@ -320,14 +325,17 @@ while (1) {
         # Do some checks on the WU fields
         if ($wu_cmd != 0x10) {
             printf("[ERROR]: Invalid WU opcode 0x%0x\n", $wu_cmd);
+            $err_cnt++;
         }
         my $exp_wu_cmdlist_size = scalar(@cmdlist_qword) + $wu_flags_cwu * 4;
         if ($mode eq "logfile" && $wu_cmdlist_size != $exp_wu_cmdlist_size) {
             printf("[ERROR]: Command list size mismatch, expected %0d\n", $exp_wu_cmdlist_size);
+            $err_cnt++;
         }
         if ($opr_opc != 0x1) {
             printf("[ERROR]: Invalid OPR OPC field, expected 1 but saw %0d\n", $opr_opc);
-        }
+            $err_cnt++;
+       }
     }
 
     # ----------------------------------------
@@ -340,16 +348,19 @@ while (1) {
         if (($wu_opcode & 0x1e) == 0x10) {
             if ($mode eq "logfile" && !$wu_flags_cwu) {
                 printf("[ERROR]: Command list seems to start with continuation WU, but CWU flag was not set in DMA WU\n");
+                $err_cnt++;
             }
             $wu_flags_cwu = 1;
         } elsif ($cmd_opc == 0) {
             if ($mode eq "logfile" && $wu_flags_cwu) {
                 printf("[ERROR]: Expected command list to start with continuation WU, but CWU opcode was incorrect: 0x%0x\n", $wu_opcode);
+                $err_cnt++;
             }
             $wu_flags_cwu = 0;
         } else {
             printf("[ERROR]: Command list did not start with either continuation WU or gather command\n");
             $wu_flags_cwu = 0;
+            $err_cnt++;
         }
 
         # First, strip off the continuation WU, if it exists.
@@ -373,11 +384,15 @@ while (1) {
         my $warn_str_f1 = 0;
         my $warn_str_pcie = 0;
         my $qword;
+        my $gtr_eop = 0;
+        my $str_eop = 0;
         while (scalar(@cmdlist_qword) > 0) {
             my $cmd_opc = bit_slice(0, 30, 2, @cmdlist_qword);
             my $cmd_tgt = bit_slice(0, 28, 2, @cmdlist_qword);
             my $cmd_ins = bit_slice(0, 26, 2, @cmdlist_qword);
             my $cmd_type = bit_slice(0, 24, 2, @cmdlist_qword);
+            my $eop;
+            my $eop_str;
             
             # ----------------------------------------
             # Gather commands
@@ -388,9 +403,21 @@ while (1) {
                     my $len = bit_slice(1, 0, 16, @cmdlist_qword);
                     my $addr = (bit_slice(2, 0, 16, @cmdlist_qword) << 32) + (bit_slice(3, 0, 32, @cmdlist_qword));
                     my $ins_str = ins2str($cmd_ins);
+
+                    if ($cmd_type == 2) {
+                        $eop = 1;
+                        $eop_str = ", EOP"
+                    } else {
+                        $eop = 0;
+                        $eop_str = "";
+                    }
                     printf("CMD %0d: GTR F1 read\n", $cmd_num);
-                    printf("  ADDR = 0x%0x, LEN = %0d, BM_FLAGS = 0x%0x, INS = %0s\n",
-                        $addr, $len, $bm_flags, $ins_str);
+                    printf("  ADDR = 0x%0x, LEN = %0d, BM_FLAGS = 0x%0x, INS = %0s%0s\n",
+                        $addr, $len, $bm_flags, $ins_str, $eop_str);
+                    if ($cmd_type == 1 || $cmd_type == 3) {
+                        printf("[ERROR] GTR F1 read command had invalid TYPE of %0d\n", $cmd_type);
+                        $err_cnt++;
+                    }
                     $qword = shift(@cmdlist_qword);
                     $qword = shift(@cmdlist_qword);
                     $gtr_sum += $len;
@@ -398,16 +425,28 @@ while (1) {
                     my $len = bit_slice(1, 0, 16, @cmdlist_qword);
                     my $addr;
                     my $rmmu_idx;
+
+                    if ($cmd_type == 2) {
+                        $eop = 1;
+                        $eop_str = ", EOP"
+                    } else {
+                        $eop = 0;
+                        $eop_str = "";
+                    }
                     if ($cmd_ins == 0) {
                         $addr = (bit_slice(2, 0, 32, @cmdlist_qword) << 32) + (bit_slice(3, 0, 32, @cmdlist_qword));
                         printf("CMD %0d: GTR PCIe read\n", $cmd_num);
-                        printf("  ADDR = 0x%0x, LEN = %0d\n", $addr, $len);
+                        printf("  ADDR = 0x%0x, LEN = %0d%0s\n", $addr, $len, $eop_str);
                     } elsif ($cmd_ins == 1) {
                         $rmmu_idx = bit_slice(3, 2, 10, @cmdlist_qword);
                         printf("CMD %0d: GTR read from RMMU\n, $cmd_num");
-                        printf("  IDX = %0d\n", $rmmu_idx);
+                        printf("  IDX = %0d%0s\n", $rmmu_idx, $eop_str);
                     }
                     decode_pcie_info(@cmdlist_qword);
+                    if ($cmd_type == 1 || $cmd_type == 3) {
+                        printf("[ERROR] GTR PCIe read command had invalid TYPE of %0d\n", $cmd_type);
+                        $err_cnt++;
+                    }
                     $qword = shift(@cmdlist_qword);
                     $qword = shift(@cmdlist_qword);
                     $gtr_sum += $len;
@@ -416,11 +455,20 @@ while (1) {
                     my $imm_off = bit_slice(0, 8, 4, @cmdlist_qword);
                     my $imm_cmd_bytes = 3 + $imm_len + $imm_off;
                     my $imm_cmd_qwords = $imm_cmd_bytes / 8;
+
                     if ($imm_cmd_bytes % 8) {
                         $imm_cmd_qwords++;
                     }
+                    if ($cmd_type == 2) {
+                        $eop = 1;
+                        $eop_str = ", EOP"
+                    } else {
+                        $eop = 0;
+                        $eop_str = "";
+                    }
+
                     printf("CMD %0d: GTR Inline Immediate\n", $cmd_num);
-                    printf("  LEN = %0d, OFFSET = %0d\n", $imm_len, $imm_off);
+                    printf("  LEN = %0d, OFFSET = %0d%0s\n", $imm_len, $imm_off, $eop_str);
                     my $in_ptr = 3;
                     my $out_cnt = 0;
                     my $dword = 0;
@@ -439,24 +487,55 @@ while (1) {
                         $qword = shift(@cmdlist_qword);
                     }
                     $gtr_sum += $imm_len;
-                } elsif ($cmd_tgt == 2 && $cmd_type == 1) {
-                    printf("CMD %0d: GTR Inline PCIe control\n", $cmd_num);
-                    decode_pcie_ctrl(@cmdlist_qword);
-                    $qword = shift(@cmdlist_qword);
+                } elsif ($cmd_tgt == 2) {
+                    if ($cmd_type == 1) {
+                        printf("CMD %0d: GTR Inline PCIe control\n", $cmd_num);
+                        decode_pcie_ctrl(@cmdlist_qword);
+                        $qword = shift(@cmdlist_qword);
+                    } else {
+                        printf("[ERROR] GTR Inline PCIe control command had invalid TYPE of %0d\n", $cmd_type);                                    
+                        $err_cnt++;
+                    }
                 } elsif ($cmd_tgt == 3) {
                     my $len = bit_slice(1, 0, 16, @cmdlist_qword);
                     my $pat0 = bit_slice(2, 0, 32, @cmdlist_qword);
                     my $pat1 = bit_slice(3, 0, 32, @cmdlist_qword);
+
+                    if ($cmd_type == 2) {
+                        $eop = 1;
+                        $eop_str = ", EOP"
+                    } else {
+                        $eop = 0;
+                        $eop_str = "";
+                    }
                     printf("CMD %0d: GTR Inline Generated\n", $cmd_num);
-                    printf("  LEN = %0d\n", $len);
+                    printf("  LEN = %0d%0s\n", $len, $eop_str);
                     printf("  PATTERN[63:32] = 0x%08x\n", $pat0);
                     printf("  PATTERN[31:0]  = 0x%08x\n", $pat1);
+                    if ($cmd_type == 1 || $cmd_type == 3) {
+                        printf("[ERROR] GTR Inline Generated command had invalid TYPE of %0d\n", $cmd_type);
+                        $err_cnt++;
+                    }
                     $qword = shift(@cmdlist_qword);
                     $qword = shift(@cmdlist_qword);
                     $gtr_sum += $len;
                 } else {
                     printf("[ERROR] while parsing GTR command\n");
+                    $err_cnt++;
                     last;
+                }
+
+                if ($gtr_eop) {
+                    if ($eop) {
+                        printf("[ERROR] Two or more GTR commands has EOP set. (Only the last GTR command should have EOP set.)\n");
+                        $err_cnt++;
+                    } else {
+                        printf("[ERROR] Another GTR command seen after EOP. (EOP shall only be set on the last GTR command.)\n");
+                        $err_cnt++;
+                    }
+                }
+                if ($eop) {
+                    $gtr_eop = 1;
                 }
             }
 
@@ -465,6 +544,7 @@ while (1) {
             # ----------------------------------------
             elsif ($cmd_opc == 1) {
                 printf("[ERROR] Should not see OPR command in command list\n");
+                $err_cnt++;
                 # This is not likely to be a valid OPR command.
                 # But just pull the typical size of an OPR command just for the heck of it.
                 $qword = shift(@cmdlist_qword);
@@ -480,9 +560,22 @@ while (1) {
                     my $len = bit_slice(1, 0, 8, @cmdlist_qword);
                     my $addr = (bit_slice(2, 0, 16, @cmdlist_qword) << 32) + (bit_slice(3, 0, 32, @cmdlist_qword));
                     my $ins_str = ins2str($cmd_ins);
+
+                    if ($cmd_type == 2) {
+                        $eop = 1;
+                        $eop_str = ", EOP"
+                    } else {
+                        $eop = 0;
+                        $eop_str = "";
+                    }
+
                     printf("CMD %0d: STR F1 write\n", $cmd_num);
-                    printf("  ADDR = 0x%0x, LEN = %0d, FLAGS = 0x%0x, INS = %0s\n",
-                        $addr, $len, $flags, $ins_str);
+                    printf("  ADDR = 0x%0x, LEN = %0d, FLAGS = 0x%0x, INS = %0s%0s\n",
+                        $addr, $len, $flags, $ins_str, $eop_str);
+                    if ($cmd_type == 1 || $cmd_type == 3) {
+                        printf("[ERROR] STR F1 write command had invalid TYPE of %0d\n", $cmd_type);
+                        $err_cnt++;
+                    }
                     $qword = shift(@cmdlist_qword);
                     $qword = shift(@cmdlist_qword);
                     $str_sum += $len;
@@ -490,24 +583,37 @@ while (1) {
                     if ($len == 0) { $warn_str_0b = 1; }
                 } elsif ($cmd_tgt == 1) {
                     my $len = bit_slice(1, 0, 16, @cmdlist_qword);
+
+                    if ($cmd_type == 2) {
+                        $eop = 1;
+                        $eop_str = ", EOP"
+                    } else {
+                        $eop = 0;
+                        $eop_str = "";
+                    }
+
                     if ($cmd_ins == 0) {
                         my $addr = (bit_slice(2, 0, 32, @cmdlist_qword) << 32) + (bit_slice(3, 0, 32, @cmdlist_qword));
                         my $prepend = bit_slice(0, 20, 1, @cmdlist_qword);
                         my $append = bit_slice(0, 20, 1, @cmdlist_qword);
                         printf("CMD %0d: STR PCIe write\n", $cmd_num);
-                        printf("  ADDR = 0x%0x, LEN = %0d, PREPEND = %0d, APPEND = %0d\n",
-                               $addr, $len, $prepend, $append);
+                        printf("  ADDR = 0x%0x, LEN = %0d, PREPEND = %0d, APPEND = %0d%0s\n",
+                               $addr, $len, $prepend, $append, $eop_str);
                     } elsif ($cmd_ins == 1) {
                         my $rmmu_idx = bit_slice(3, 2, 10, @cmdlist_qword);
                         printf("CMD %0d: STR write to RMMU\n", $cmd_num);
-                        printf("  IDX = %0d\n", $rmmu_idx);
+                        printf("  IDX = %0d%0s\n", $rmmu_idx, $eop_str);
                     } elsif ($cmd_ins == 3) {
                         my $func_id = bit_slice(2, 16, 9, @cmdlist_qword);
                         my $int_vec = bit_slice(2, 0, 11, @cmdlist_qword);
                         printf("CMD %0d: STR PCIe interrupt\n", $cmd_num);
-                        printf("  FUNC_ID = 0x%0x, INT_VEC = 0x%0x\n", $func_id, $int_vec);
+                        printf("  FUNC_ID = 0x%0x, INT_VEC = 0x%0x%0s\n", $func_id, $int_vec, $eop_str);
                     }
                     decode_pcie_info(@cmdlist_qword);
+                    if ($cmd_type == 1 || $cmd_type == 3) {
+                        printf("[ERROR] STR PCIe write command had invalid TYPE of %0d\n", $cmd_type);
+                        $err_cnt++;
+                    }
                     $qword = shift(@cmdlist_qword);
                     $qword = shift(@cmdlist_qword);
                     $str_sum += $len;
@@ -515,13 +621,42 @@ while (1) {
                 } elsif ($cmd_tgt == 2) {
                     printf("CMD %0d: STR Inline PCIe control\n", $cmd_num);
                     decode_pcie_ctrl(@cmdlist_qword);
+                    if ($cmd_type != 1) {
+                        printf("[ERROR] STR Inline PCIe control command had invalid TYPE of %0d\n", $cmd_type);
+                        $err_cnt++;
+                    }
                     $qword = shift(@cmdlist_qword);
                 } else {
                     my $len = bit_slice(1, 0, 16, @cmdlist_qword);
+
+                    if ($cmd_type == 2) {
+                        $eop = 1;
+                        $eop_str = ", EOP"
+                    } else {
+                        $eop = 0;
+                        $eop_str = "";
+                    }
+
                     printf("CMD %0d: STR NULL (Delete)\n", $cmd_num);
-                    printf("  LEN = %0d\n", $len);
+                    printf("  LEN = %0d%0s\n", $len, $eop_str);
+                    if ($cmd_type == 1 || $cmd_type == 3) {
+                        printf("[ERROR] STR NULL (Delete) command had invalid TYPE of %0d\n", $cmd_type);
+                        $err_cnt++;
+                    }
                     $qword = shift(@cmdlist_qword);
                     $str_sum += $len;
+                }
+
+                if ($str_eop) {
+                    if ($eop) {
+                        printf("[ERROR] Two or more STR commands has EOP set. (Only the last STR command should have EOP set.)\n");
+                    } else {
+                        printf("[ERROR] Another STR command seen after EOP. (EOP shall only be set on the last STR command.)\n");
+                    }
+                    $err_cnt++;
+                }
+                if ($eop) {
+                    $str_eop = 1;
                 }
             }
 
@@ -544,6 +679,7 @@ while (1) {
                         $addr, $len, $flags, $ins_str, $cond_str);
                     if ($len > 256) {
                         printf("[ERROR] Length of CMP command with immediate data cannot exceed 256B\n");
+                        $err_cnt++;
                         $len = 256;
                     }
                     for (my $i = 0; $i < $len; $i += 4) {
@@ -616,14 +752,23 @@ while (1) {
 
         # Check if GTR and STR byte sums match. (Only for COPY OPR, and only in logfile or cmdlist mode)
         # TODO: Add checks for other operator types.
-        if ($mode ne "wu" && $opr_flags_type == 0 && $gtr_sum != $str_sum) {
-            printf("[WARNING]: GTR and STR data byte sums mismatch! Will see STR non-fatal interrupts!\n");
+        if ($mode ne "wu") {
+            if ($opr_flags_type == 0 && $gtr_sum != $str_sum) {
+                printf("[ERROR]: GTR and STR data byte sums mismatch! Will see STR non-fatal interrupts!\n");
+                $err_cnt++;
+            }
+            if ($mode ne "cmdlist" && ($gtr_sum != $opr_len || $str_sum != $opr_len)) {
+                printf("[ERROR]: Mismatch between OPR LENGTH (%0d) and GTR/STR byte sum\n", $opr_len);
+                $err_cnt++;
+            }
         }
         if ($warn_str_0b) {
             printf("[WARNING]: STR zero-byte F1 command seen! Will see STR non-fatal interrupts!\n");
+            $warn_cnt++;
         }
         if ($warn_str_f1 && $warn_str_pcie) {
             printf("[WARNING]: Mix of F1 and PCIe STR commands seen! May see STR non-fatal interrupts!\n");
+            $warn_cnt++;
         }
     }
 
@@ -631,5 +776,9 @@ while (1) {
         last;
     }
 }
+
+printf("\n");
+printf("Number of ERROR messages: %0d\n", $err_cnt);
+printf("Number of WARNING messages: %0d\n", $warn_cnt);
 
 close LOG;
