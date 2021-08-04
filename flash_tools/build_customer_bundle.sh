@@ -49,11 +49,17 @@ function prepare_bundle() {
     rm -rf __pycache__
     find . -name '*.pyc' -delete
 
+    # remove unnecessary files generated as part of the build
+    rm funos.signed.bin
+    rm funos*.stripped
     popd 2>/dev/null
 }
 
 prepare_bundle "${BUNDLEDIR}/production" mmc_config_sdk.json
 prepare_bundle "${BUNDLEDIR}/development" mmc_config_dev_funos.json "--dev-image"
+
+# rootfs not needed in the development image build
+rm "${BUNDLEDIR}"/development/*rootfs*
 
 cd ${WORKDIR}
 tar czf "${CUSTOMER_BUNDLE_NAME}.tgz" "${CUSTOMER_BUNDLE_NAME}"
