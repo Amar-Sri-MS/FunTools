@@ -706,20 +706,24 @@ def _convert_to_table_row(hit, include_hyperlinks=True):
         line = '<tr class={} id={}>'.format('search_highlight',
                                             hit.get('anchor_link'))
 
-    line += '<td>{}</td> <td>{}</td> <td>{}</td> <td>{}</td>'.format(s['src'],
-                                                                     s.get('system_id'),
-                                                                     timestamp,
-                                                                     s.get('level'))
+    line += """
+            <td class="table-source">{}</td>
+            <td class="table-system_id">{}</td>
+            <td class="table-timestamp">{}</td>
+            <td class="table-level">{}</td>""".format(s['src'],
+                                                      s.get('system_id'),
+                                                      timestamp,
+                                                      s.get('level'))
     if include_hyperlinks:
         state = f'"before":"{timestamp}","after":"{timestamp}"'
         log_view_url = ('{}?state={{{}}}&next=true&prev=true&include={}#0').format(
                             log_view_base_url,
                             quote_plus(state),
                             hit['_id'])
-        line += '<td><a href="{}" target="_blank">{}</a></td>'.format(log_view_url,
-                                                                    s['msg'])
+        line += '<td class="table-msg"><a href="{}" target="_blank">{}</a></td>'.format(log_view_url,
+                                                                    msg)
     else:
-        line += '<td>{}</td>'.format(s['msg'])
+        line += '<td class="table-msg">{}</td>'.format(msg)
     line += '</tr>'
     return line
 
