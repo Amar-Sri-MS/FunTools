@@ -57,8 +57,6 @@ sudo apt-get install python-yaml
 sudo apt-get install python3-asn1crypto
 sudo apt-get install python3-pyelftools
 
-sudo pip3 install python-pkcs11
-
 
 MIPS toolchain installation
 ===========================
