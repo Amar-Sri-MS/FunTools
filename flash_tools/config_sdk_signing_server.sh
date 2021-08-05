@@ -68,7 +68,8 @@ if [[ $URL == http://* ]] || [[ $URL == https://* ]]; then
     NUM=`find "$SDK_PATH" -name firmware_signing_service.py \
 	 -exec sed -i'~' -e 's|'"$PREFIX"'https*://.*$|'"$REPLACE"'|g' {} \;  \
 	 -exec grep -c -e "$REPLACE" {} \;`
-    echo "Replaced ""$NUM"" occurrence(s) to \""$URL"\""
+
+    echo "Replaced "$(( ${NUM//$'\n'/+} ))" occurrence(s) to \""$URL"\""
 
 else
     show_help
