@@ -20,6 +20,21 @@
 #define BITMAP_ALIGN(_val, _boundary)\
 	(__typeof__(_val))(((unsigned long)(_val) +\
 	(_boundary) - 1) & ~((_boundary) - 1))
+#define ONE_GB_IN_BYTES (1073741824ULL)
+#define ONE_GB_IN_BLOCKS(blksz) (ONE_GB_IN_BYTES / blksz)
+#define IS_SNAPPING_GB_BOUNDRY(slba, nlb, blksz) ({\
+	bool is_spanning = false;\
+	if ((slba / ONE_GB_IN_BLOCKS(blksz)) !=\
+		((slba + nlb - 1) / ONE_GB_IN_BLOCKS(blksz))) {\
+		is_spanning = true;\
+	}\
+	is_spanning;\
+})
+#define BLOCK_COUNT_ROUND_DOWN(slba, nlb, blksz) ({\
+	uint16_t _nlb = nlb;\
+	_nlb -= ((slba + nlb) % ONE_GB_IN_BLOCKS(blksz));\
+	_nlb;\
+})
 
 // constants
 #define MAX_PATH 				(256)
@@ -76,22 +91,23 @@ void LOG_INIT()
 
 void LOG(enum log_type type, char *format, ...)
 {
+	time_t t = time(NULL);
+	char *time_str = asctime(localtime(&t));
+	time_str[strlen(time_str)-1] = 0;
+
 	if (g_params.log_fp != NULL) {
 		switch(type) {
 			case INFO:
-				fprintf (g_params.log_fp, "[%s] INFO: ",
-					__TIMESTAMP__);
+				fprintf (g_params.log_fp, "[%s] INFO: ", time_str);
 			break;
 			case ERROR:
-				fprintf (g_params.log_fp, "[%s] ERROR: ",
-					__TIMESTAMP__);
+				fprintf (g_params.log_fp, "[%s] ERROR: ", time_str);
 			break;
 			case VERBOSE:
 				if (!g_params.verbose) {
 					return;
 				}
-				fprintf (g_params.log_fp, "[%s] VERBOSE: ",
-					__TIMESTAMP__);
+				fprintf (g_params.log_fp, "[%s] VERBOSE: ", time_str);
 				break;
 			default:
 				break;
@@ -340,9 +356,12 @@ int get_snap_diff()
 
 	printf("It may take several minutes to complete for large namespace..\n");
 
-	LOG(INFO, "Comparing %s <-> %s Device %s", g_params.snap_uuid1, g_params.snap_uuid2, g_params.dev_path);
-	LOG(INFO, " Start LBA %"PRIu64" Length %"PRIu64, g_params.slba, g_params.nlb);
-	LOG(INFO, " Output file %s Format %s\n", g_params.file_path,
+	LOG(INFO, "Comparing %s <-> %s Device %s NS ID %d Device Size %"PRIu64"\n",
+		g_params.snap_uuid1, g_params.snap_uuid2, g_params.dev_path,
+		g_params.nsid, g_params.ns_size);
+	LOG(INFO, "Start LBA %"PRIu64" Length %"PRIu64" Block Size %d NS Block Size %d\n",
+		g_params.slba, g_params.nlb, g_params.block_size, g_params.ns_block_size);
+	LOG(INFO, "Output file %s Format %s\n", g_params.file_path,
 		g_params.format == FORMAT_RANGE_LIST ? "RANGE LIST" : "BLOCK LIST");
 
 	do {
@@ -376,6 +395,10 @@ int get_snap_diff()
 		write_header(fp);
 		while (slba < end) {
 			nlb = MIN(MAX_QUERY_BLOCK_COUNT, end - slba);
+			if (IS_SNAPPING_GB_BOUNDRY(slba, nlb, g_params.block_size)) {
+				nlb = BLOCK_COUNT_ROUND_DOWN(slba, nlb, g_params.block_size);
+			}
+
 			// encode slba and nlb into cdw10 and cdw11
 			cmd.cdw10 = (uint32_t)(slba & 0xFFFFFFFF);
 			cmd.cdw11 = (nlb-1) << 16;
@@ -387,7 +410,8 @@ int get_snap_diff()
 
 			ret = ioctl(dd, NVME_IOCTL_ADMIN_CMD, &cmd);
 			if(ret != 0) {
-				LOG(ERROR, "NVMe admin command %x failed with error %d\n", OPCODE_VS_CHANGED_BLOCKS, ret);
+				LOG(ERROR, "NVMe admin command %x (slba=%"PRIu64" nlb=%u) failed with error %d\n",
+					OPCODE_VS_CHANGED_BLOCKS, slba, nlb, ret);
 				break;
 			}
 
