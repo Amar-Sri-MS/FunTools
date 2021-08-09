@@ -523,6 +523,17 @@
             element.style.display = isChecked ? "table-cell" : "none";
         }
     }
+
+    /*
+        Log lines can be long and take up the screen width.
+        This function wraps the log lines within the screen width.
+    */
+    function toggleWrapLogMessage(inputElement) {
+        const isChecked = inputElement.checked;
+        for (element of document.getElementsByClassName("table-msg")) {
+            element.style.whiteSpace = isChecked ? "normal" : "pre";
+        }
+    }
     </script>
 </head>
 <body>
@@ -675,6 +686,12 @@
                             <input type="checkbox" name="table-col" id="msg" value="msg" onchange="toggleTableColumn(this)" checked>Log message
                         </label>
                     </div>
+                </div>
+                <div class="content">
+                    <label>
+                        <b>Wrap log message?</b>
+                        <input type="checkbox" name="table-col" id="source" value="source" onchange="toggleWrapLogMessage(this)">
+                    </label>
                 </div>
                 <div class="pagination" id="prev_button">
                     <button class="btn" data-web_event="PREVIOUS_LOGS" onclick="loadPrev()">Load previous logs</button>
