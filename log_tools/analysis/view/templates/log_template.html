@@ -384,11 +384,11 @@
 
             return `
                 <tr style="vertical-align: baseline" onclick="onClickSearchResult('${result["_id"]}', '${timestamp}')">
-                    <td>${source["src"]}</td>
-                    <td>${source["system_id"]}</td>
-                    <td>${timestamp}</td>
-                    <td>${source["level"]}</td>
-                    <td class="search_result">${source["msg"]}</td>
+                    <td class="table-source">${source["src"]}</td>
+                    <td class="table-system_id">${source["system_id"]}</td>
+                    <td class="table-timestamp">${timestamp}</td>
+                    <td class="table-level">${source["level"]}</td>
+                    <td class="search_result table-msg">${source["msg"]}</td>
                 </tr>`;
         });
         search_results_body.innerHTML = results.join("\n");
@@ -616,11 +616,11 @@
                     <table class="log_entries">
                         <thead>
                             <tr>
-                                <th>Source</th>
-                                <th>System ID</th>
-                                <th>Timestamp</th>
-                                <th>Level</th>
-                                <th>Log message</th>
+                                <th class="table-source">Source</th>
+                                <th class="table-system_id">System ID</th>
+                                <th class="table-timestamp">Timestamp</th>
+                                <th class="table-level">Level</th>
+                                <th class="table-msg">Log message</th>
                             </tr>
                         </thead>
                         <tbody id="search_table_body">
@@ -656,7 +656,7 @@
                     {% endif %}
                     <b>{{total_hits}} results</b> sorted from earliest to latest timestamp
                 </div>
-                <div class="row content">
+                <div class="content" style="display: flex;">
                     <b>Hide/Show Columns:</b>
                     <div style="margin-left: 5px;">
                         <label>
