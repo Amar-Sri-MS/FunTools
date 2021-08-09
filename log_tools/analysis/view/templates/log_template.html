@@ -375,6 +375,8 @@
 
     function updateSearchResults(searchPayload) {
         toggleElementDisplay(search_results_container.parentElement, true);
+        // Scroll to the top of search container
+        search_results_container.parentElement.scrollIntoView();
         clear_search_box.style.display = "inline-block";
         const results = searchPayload.results.map(result => {
             const source = result["_source"];
@@ -513,6 +515,14 @@
         window.history.pushState(null, null, `?${params.toString()}${location.hash}`);
     }
 
+    function toggleTableColumn(inputElement) {
+        // Toggling the view of the log table column
+        const columnName = inputElement.value;
+        const isChecked = inputElement.checked;
+        for (element of document.getElementsByClassName(`table-${columnName}`)) {
+            element.style.display = isChecked ? "table-cell" : "none";
+        }
+    }
     </script>
 </head>
 <body>
@@ -646,17 +656,37 @@
                     {% endif %}
                     <b>{{total_hits}} results</b> sorted from earliest to latest timestamp
                 </div>
+                <div class="row content">
+                    <b>Hide/Show Columns:</b>
+                    <div style="margin-left: 5px;">
+                        <label>
+                            <input type="checkbox" name="table-col" id="source" value="source" onchange="toggleTableColumn(this)" checked>Source
+                        </label>
+                        <label>
+                            <input type="checkbox" name="table-col" id="system_id" value="system_id" onchange="toggleTableColumn(this)" checked>System ID
+                        </label>
+                        <label>
+                            <input type="checkbox" name="table-col" id="timestamp" value="timestamp" onchange="toggleTableColumn(this)" checked>Timestamp
+                        </label>
+                        <label>
+                            <input type="checkbox" name="table-col" id="level" value="level" onchange="toggleTableColumn(this)" checked>Level
+                        </label>
+                        <label>
+                            <input type="checkbox" name="table-col" id="msg" value="msg" onchange="toggleTableColumn(this)" checked>Log message
+                        </label>
+                    </div>
+                </div>
                 <div class="pagination" id="prev_button">
                     <button class="btn" data-web_event="PREVIOUS_LOGS" onclick="loadPrev()">Load previous logs</button>
                 </div>
                 <table class="log_entries">
                     <thead>
                         <tr>
-                            <th>Source</th>
-                            <th>System ID</th>
-                            <th>Timestamp</th>
-                            <th>Level</th>
-                            <th>Log message</th>
+                            <th class="table-source">Source</th>
+                            <th class="table-system_id">System ID</th>
+                            <th class="table-timestamp">Timestamp</th>
+                            <th class="table-level">Level</th>
+                            <th class="table-msg">Log message</th>
                         </tr>
                     </thead>
                     <tbody id="line_table">

@@ -21,6 +21,9 @@
             </div>
         </div>
         <div class="content" id="lifecycle" style="display: none;">
+            <div id="show_plex_logs" class="center-align" style="display: none;">
+                <button class="btn btn-primary" onclick="showAllUUIDLogs()">Show logs of all UUIDs</button>
+            </div>
             <div class="container">
                 <h3>CREATE Phase</h3>
                 <pre id="create_phase"></pre>
@@ -49,6 +52,10 @@
         const mount_phase_element = document.getElementById("mount_phase");
         const plex_status_history_element = document.getElementById("plex_status_history");
         const failed_plex_ack_history_element = document.getElementById("failed_plex_ack_history");
+        const LOG_PAGE_URL = `${window.location.origin}/log/${logID}`;
+
+        // Maintains a set of all UUIDs seen in the lifecycle.
+        let uuids = new Set();
 
         // Self invocation function
         (function() {
@@ -59,6 +66,24 @@
                 getVolumeLifecycle(uuid);
             }
         })();
+
+        // Opens LOG page in a new tab with all UUIDs as search string.
+        function showAllUUIDLogs() {
+            if (uuids.size === 0) {
+                alert("Could not find UUIDs.");
+                return;
+            }
+            const query = Array.from(uuids).reduce((q, uuid) => {
+                return q ? `${q} OR "${uuid}"` : `"${uuid}"`;
+            }, null);
+            const searchPayload = JSON.stringify({
+                "query": query
+            });
+            let params = new URLSearchParams();
+            params.set("search", searchPayload);
+            const url = `${LOG_PAGE_URL}?${params.toString()}`;
+            window.open(url, "_blank");
+        }
 
         function onSubmit() {
             const volume_id = document.getElementById("volume_id").value;
@@ -85,6 +110,8 @@
             };
             fetchWrapper.post(uri, requestData)
                 .then(data => {
+                    // Adding the PV UUID.
+                    uuids.add(uuid);
                     toggleLoader(false);
                     showLifecycle(data);
                 })
@@ -95,6 +122,8 @@
         }
 
         function clearTables() {
+            // Resetting the UUIDs set.
+            uuids = new Set();
             create_phase_element.innerHTML = "";
             mount_phase_element.innerHTML = "";
             plex_status_history_element.innerHTML = "";
@@ -133,6 +162,11 @@
             // Failed Plex ACK History
             renderFailedPlexACKHistory(lifecycle["jvol_failed_plex_ack_history"], "JVOL");
             renderFailedPlexACKHistory(lifecycle["ec_failed_plex_ack_history"], "EC");
+
+            // Show the all plex logs button
+            if (uuids.size > 0) {
+                toggleElementDisplay(document.getElementById("show_plex_logs"), true);
+            }
         }
 
         function renderPhases(operation="CREATE", element, phases) {
@@ -181,6 +215,8 @@
                 pvInfo["primary_dpu"],
                 pvInfo["secondary_dpu"]
             );
+            // Adding the PVG UUID.
+            uuids.add(pvInfo["pvg_uuid"]);
             return table;
         }
 
@@ -196,6 +232,10 @@
                 lsvInfo["jvol_uuid"],
                 lsvInfo["ec_uuid"]
             );
+            // Adding LSV, JVOL & EC UUID.
+            uuids.add(lsvInfo["lsv_uuid"]);
+            uuids.add(lsvInfo["jvol_uuid"]);
+            uuids.add(lsvInfo["ec_uuid"]);
             return table;
         }
 
@@ -248,6 +288,8 @@
                     remote_plex_uuid = formAnchorTag(URL, getValueFromParams(plex_info[1], "uuid"));
                     hostingDPU = convertSystemIDtoMAC(plex_info[1]["system_id"]);
                     is_local_plex = false;
+                    // Adding the remote Plex UUID.
+                    uuids.add(getValueFromParams(plex_info[1], "uuid"));
                 }
 
                 const location = is_local_plex ? "local" : "remote";
@@ -272,6 +314,8 @@
                     const URL = formLogURL(timestamp, plex_rebuild_info[plex_uuid]["_id"]);
                     rebuld_time = formAnchorTag(URL, timestamp);
                     spare_uuid = getValueFromParams(plex_rebuild_info[plex_uuid], "spare_uuid");
+                    // Adding the spare Plex UUID.
+                    uuids.add(getValueFromParams(plex_rebuild_info[plex_uuid], "spare_uuid"));
                 }
 
                 const timestamp = plex_info[0]["@timestamp"];
@@ -290,6 +334,8 @@
                     rebuld_time,
                     spare_uuid
                 );
+                // Adding the local Plex UUID.
+                uuids.add(plex_uuid);
             })
             return table;
         }
@@ -363,13 +409,12 @@
 
         function formLogURL(timestamp, docID) {
             const state = formSearchState(timestamp, timestamp);
-            let url = `${window.location.origin}/log/${logID}`;
             let params = new URLSearchParams();
             params.set("next", true);
             params.set("prev", true);
             if (state) params.set("state", JSON.stringify(state));
             if (docID) params.set("include", docID);
-            url = `${url}?${params.toString()}#0`;
+            const url = `${LOG_PAGE_URL}?${params.toString()}#0`;
             return url;
         }
     </script>

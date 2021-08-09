@@ -484,6 +484,10 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
                         files = _get_valid_files(LOG_DIR)
                         # TODO(Sourabh): This is an assumption that there will not be
                         # other files in this directory
+                        if len(files) == 0:
+                            raise Exception('Could not find the CS log archive')
+                        if len(files) > 1:
+                            raise Exception('There are more than 1 CS log archive')
 
                         # The path contains only a tar file, with a FUNLOG_MANIFEST
                         # file, which needs to be ingested
