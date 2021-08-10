@@ -238,15 +238,25 @@ if [[ $ccfg_only == 'true' ]]; then
 	exit $EXIT_STATUS
 fi
 
+update_uboot_boot_debug_flag() {
+	dpc_uboot_env.py get
+	local current=$(fw_printenv -n boot_debug_fw 2>/dev/null)
+	if [ "$current" != "$1" ]; then
+		echo "Updating boot_debug flag to $1"
+		fw_setenv boot_debug_fw $1
+		dpc_uboot_env.py set
+	fi
+}
+
 if [[ "$DEV_IMAGE" -eq 1 ]]; then
 	if [[ -n "$STATUS_DIR" ]]; then
 		echo "dev-only upgrade" > "$STATUS_DIR"/.no_upgrade_verify
 	fi
 	# update u-boot env to enable dev image booting
-	dpc_uboot_env.py get
-	fw_setenv boot_debug_fw 1
-	dpc_uboot_env.py set
+	update_uboot_boot_debug_flag 1
 	exit $EXIT_STATUS
+else
+	update_uboot_boot_debug_flag 0
 fi
 
 # sku-specific upgrades
