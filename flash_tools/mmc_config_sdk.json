@@ -61,5 +61,8 @@
             "no_export": true,
             "delete_after_sign": true
         }
+    },
+    "global_config": {
+        "sdk_package": true
     }
 }

@@ -196,7 +196,8 @@ else
 			exit $EXIT_STATUS
 		fi
 
-		if [ -n "$host_sku" ]; then
+		# skip eeprom update on sdk bundles, as eepr images are not present
+		if [ -n "$host_sku" ] && [ "$SDK_BUNDLE" -eq 0 ]; then
 			log_msg "Updating eepr \"$host_sku\""
 			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u eepr --select-by-image-type "$host_sku"
 			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
@@ -237,22 +238,34 @@ if [[ $ccfg_only == 'true' ]]; then
 	exit $EXIT_STATUS
 fi
 
+update_uboot_boot_debug_flag() {
+	dpc_uboot_env.py get
+	local current=$(fw_printenv -n boot_debug_fw 2>/dev/null)
+	if [ "$current" != "$1" ]; then
+		echo "Updating boot_debug flag to $1"
+		fw_setenv boot_debug_fw $1
+		dpc_uboot_env.py set
+	fi
+}
+
 if [[ "$DEV_IMAGE" -eq 1 ]]; then
 	if [[ -n "$STATUS_DIR" ]]; then
 		echo "dev-only upgrade" > "$STATUS_DIR"/.no_upgrade_verify
 	fi
 	# update u-boot env to enable dev image booting
-	dpc_uboot_env.py get
-	fw_setenv boot_debug_fw 1
-	dpc_uboot_env.py set
+	update_uboot_boot_debug_flag 1
 	exit $EXIT_STATUS
+else
+	update_uboot_boot_debug_flag 0
 fi
 
 # sku-specific upgrades
 case "${host_sku}" in
 	fc50* | fc100* | fc200* )
-		./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file dcc0=composer-boot-services-emmc.img --active
-		RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
+		if [ "$SDK_BUNDLE" -eq 0 ]; then
+			./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file dcc0=composer-boot-services-emmc.img --active
+			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
+		fi
 		;;
 
 	*) : ;; # nothing to do
