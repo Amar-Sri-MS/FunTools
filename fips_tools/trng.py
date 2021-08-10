@@ -43,9 +43,9 @@ class DPCTRNGRunner:
             self.dpc_client = dpc_client.DpcClient()
             # no file try default
 
-    def run(self, request):
+    def run(self, app, request):
         # package the request as JSON and send to FunOS
-        execute_args = ['sbp_trng_data', request]
+        execute_args = [app, request]
         results = self.dpc_client.execute('execute', execute_args)
         print("Result = %s" % str(results))
         # result is a dictionary with either a key 'error' or a key 'result'
@@ -284,20 +284,28 @@ def parse_args():
                         help='Size of sample')
     parser.add_argument('-c', '--clock-divider', default="0",
                         help='Clock Divider')
+    parser.add_argument('-a', '--app',
+                        help='FunOS app to execute')
 
     return parser.parse_args()
 
 
 def execute_all_tests(args):
-    ARGS_NAMES = ["disabled_rings", "clock_divider", "sample_size"]
-    dict_args = vars(args)
-    dpc_args = { n : int(dict_args.get(n,0),0) for n in ARGS_NAMES }
-    remote_file_name = "trng_data_" + "_".join(["%s_x%x" % (k[0], v) for k,v in dpc_args.items()])
+    if args.app:
+        app_name = args.app
+        dpc_args = {'app': app_name}
+        remote_file_name = "trng_data_" + app_name
+    else:
+        app_name = 'sbp_trng_data'
+        ARGS_NAMES = ["disabled_rings", "clock_divider", "sample_size"]
+        dict_args = vars(args)
+        dpc_args = { n : int(dict_args.get(n,0),0) for n in ARGS_NAMES }
+        remote_file_name = "trng_data_" + "_".join(["%s_x%x" % (k[0], v) for k,v in dpc_args.items()])
 
-    # deal with fun_json limitation
-    val64 = dpc_args["disabled_rings"]
-    dpc_args["disabled_rings_hi"] = (val64 >> 32)
-    dpc_args["disabled_rings_lo"] = (val64 & 0xFFFF_FFFF)
+        # deal with fun_json limitation
+        val64 = dpc_args["disabled_rings"]
+        dpc_args["disabled_rings_hi"] = (val64 >> 32)
+        dpc_args["disabled_rings_lo"] = (val64 & 0xFFFF_FFFF)
 
     print(dpc_args)
     print(remote_file_name)
@@ -308,7 +316,7 @@ def execute_all_tests(args):
     webclient = WebDavClient(args.remote, args.user, args.password)
     runner = DPCTRNGRunner()
 
-    result = runner.run(dpc_args)
+    result = runner.run(app_name, dpc_args)
     result.update(dpc_args)
 
     with open(LOCAL_FILE, "w") as respf:
