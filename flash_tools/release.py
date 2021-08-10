@@ -199,6 +199,8 @@ def main():
 
     curdir = os.getcwd()
 
+    config_sdk_package = config['global_config'].get('sdk_package') if config.get('global_config') else False
+
     if wanted('prepare') or wanted('sdk-prepare'):
         # paths to application binaries in SDK tree
         paths = [ "bin",
@@ -467,7 +469,8 @@ def main():
                 cfg.writelines([
                     'ROOTFS_NAME="{}"\n'.format(rootfs),
                     'CHIP_NAME="{}"\n'.format(args.chip.upper()),
-                    'DEV_IMAGE={}\n'.format(1 if args.dev_image else 0)
+                    'DEV_IMAGE={}\n'.format(1 if args.dev_image else 0),
+                    'SDK_BUNDLE={}\n'.format(1 if config_sdk_package else 0)
                 ])
 
             bundle_name = 'development_image' if args.dev_image else rootfs
