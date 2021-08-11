@@ -13,10 +13,12 @@ tarball_name=""
 readme_file="README"
 
 # Default is to use the master branch, no build ID, and to only build posix
-branch=""
+branch_funsdk=""
+branch_funos=""
 build_id=""
 include_mips=""
 toolchain_dir=""
+build_funos="no"
 
 # Top level directory
 root_dir=`pwd`
@@ -27,6 +29,7 @@ show_usage()
     echo "options:"
     echo "  -h:                 Display this information."
     echo "  -b <branch>         Specify the FunSDK branch to use"
+    echo "  -f <branch>         Specify the FunOS branch to use"
     echo "  -m                  Include MIPS and MIPS toolchain"
     echo "  -v <build_id>       Specify the FunSDK and FunOS build ID/version to use"
     echo "  -r <version>        Specify the release version to assign to the SDK"
@@ -63,7 +66,7 @@ MIPS toolchain installation
 
 sudo mkdir -p /opt/cross
 cd /opt/cross
-sudo tar zxvf linux-mips64-gcc-9.3.tar.gz
+sudo tar zxvf linux-mips64-gcc-8.2.tar.gz
 
 
 Building the S1 posix target binary (funospkg-s1-posix)
@@ -90,14 +93,14 @@ Running sample WU handler hello world package
 =============================================
 
 cd FunOSPackageDemo
-./build/funospkg-s1-posix app=hello_world_pkg_wuh
+./build/funospkg-s1-posix app=hello_world_pkg
 
 
 Running sample channel push hello world package
 ===============================================
 
 cd FunOSPackageDemo
-./build/funospkg-s1-posix app=hello_world_ch
+./build/funospkg-s1-posix app=hello_world_channel
 
 
 Running sample timer handler package
@@ -129,11 +132,11 @@ funsdk_setup()
     fi
 
     # Clone FunSDK repository
-    if [ "$branch" == "" ]; then
+    if [ "$branch_funsdk" == "" ]; then
 	git clone ssh://git@github.com/fungible-inc/FunSDK-small FunSDK
     else
 	git clone ssh://git@github.com/fungible-inc/FunSDK-small -b \
-	    $branch FunSDK
+	    $branch_funsdk FunSDK
     fi
 
     cd FunSDK
@@ -216,18 +219,30 @@ funos_setup()
 	exit 1
     fi
 
-    # Clone FunOS and checkout using the tag bld_<build_id>
-    tag=bld_$build_id
-    git clone ssh://git@github.com/fungible-inc/FunOS
-    cd FunOS
-    git checkout tags/$tag
+    # Clone FunSDK repository
+    if [ "$branch_funos" == "" ]; then
+        # Clone FunOS and checkout using the tag bld_<build_id>
+        tag=bld_$build_id
+        git clone ssh://git@github.com/fungible-inc/FunOS
+        cd FunOS
+        git checkout tags/$tag
+    else
+        git clone ssh://git@github.com/fungible-inc/FunOS -b $branch_funos --depth 1
+    fi
+
 }
 
 # Build FunOS and export the libraries and header files
 funos_export_lib_headers()
 {
     cd $root_dir/FunOS
-    if ! make -j8 MACHINE=s1-posix install-libfunosrt install-funosrt-makefiles install-headers; then
+    if ! make -j8 install-funosrt-makefiles install-headers; then
+	echo ""
+	echo "FunOS headers fails to build"
+	echo ""
+	exit 1
+    fi
+    if ! make -j8 MACHINE=s1-posix install-libfunosrt; then
 	echo ""
 	echo "FunOS s1-posix fails to build"
 	echo ""
@@ -236,7 +251,7 @@ funos_export_lib_headers()
 
     # Check MIPS builds if requested
     if [ "$include_mips" != "" ]; then
-	if ! make -j8 MACHINE=s1 install-libfunosrt install-funosrt-makefiles install-headers; then
+	if ! make -j8 MACHINE=s1 install-libfunosrt; then
 	    echo ""
 	    echo "FunOS s1 fails to build"
 	    echo ""
@@ -273,23 +288,23 @@ mips_toolchain_setup()
     cd $root_dir
     mkdir $toolchain_dir
     cd $toolchain_dir
-    wget http://dochub.fungible.local/doc/sw/tools/mips/linux-mips64-gcc-9.3.tar.gz
+    wget http://dochub.fungible.local/doc/sw/tools/mips/linux-mips64-gcc-8.2.tar.gz
 }
 
 # Verify the posix packages run to completion
 run_posix()
 {
     cd $root_dir/FunOSPackageDemo
-    if ! ./build/funospkg-s1-posix app=hello_world_pkg_wuh; then
+    if ! ./build/funospkg-s1-posix app=hello_world_pkg; then
 	echo ""
 	echo "s1-posix hello_world package fails to run to completion"
 	echo ""
 	exit 1
     fi
 
-    if ! ./build/funospkg-s1-posix app=hello_world_ch; then
+    if ! ./build/funospkg-s1-posix app=hello_world_channel; then
 	echo ""
-	echo "s1-posix hello_world_ch package fails to run to completion"
+	echo "s1-posix hello_world_channel package fails to run to completion"
 	echo ""
 	exit 1
     fi
@@ -310,14 +325,19 @@ run_posix()
 }
 
 # Parse the options
-while getopts "hb:mv:r:" option; do
+while getopts "hb:f:mv:r:" option; do
     case "$option" in
 	h)
 	    show_usage
 	    exit 1
 	    ;;
 	b)
-	    branch=$OPTARG
+	    branch_funsdk=$OPTARG
+        build_funos="yes"
+	    ;;
+	f)
+	    branch_funos=$OPTARG
+        build_funos="yes"
 	    ;;
 	m)
 	    include_mips="yes"
@@ -344,10 +364,15 @@ funsdk_setup
 funos_package_demo_setup
 
 # Setup the FunOS source code
+if [ "$build_funos" == "yes" ]; then
+echo "Building FunOS"
 funos_setup
 
 # Verify the software builds and export libraries and header files to FunSDK
 funos_export_lib_headers
+else
+echo "Using FunOS from SDK"
+fi
 
 # Download the MIPS toolchain if requested
 if [ "$include_mips" != "" ]; then
