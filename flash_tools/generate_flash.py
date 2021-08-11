@@ -108,6 +108,7 @@ def gen_fw_image(filename, attrs):
         'fourcc':'ftype',
         'key':'sign_key',
         'key_index':'key_index',
+        'keys_in_header': 'keys_in_header',
         'source':'infile',
         'version':'version',
         'pad':'pad',
@@ -131,6 +132,10 @@ def gen_fw_image(filename, attrs):
 
     if args['infile']:
         try:
+            # list of locations to put in header if specified: (id | offset in words)
+            args['locations'] = [(keyid << 24) | (kr.get_key_loc(args['infile'], keyid) >> 2)
+                                 for keyid in args['keys_in_header'] or []]
+
             fsi.image_gen(outfile=filename, **args)
         except Exception as e:
             raise RuntimeError("Failed to sign the image", e)
@@ -171,6 +176,7 @@ def create_file(filename, section="signed_images"):
                 # use the first element in spec -- there's only one key bag now.
                 key_list = next(iter(key_bag_spec.values()))
                 image['key'] = key_list['keys'][image['key_index']]
+
             ret = gen_fw_image(filename, image)
 
             if delete_after_sign:
