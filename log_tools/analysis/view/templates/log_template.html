@@ -153,6 +153,8 @@
         var showNextButton = filterData["state"].after != -1;
         toggleElementDisplay(prev_button, showPrevButton);
         toggleElementDisplay(next_button, showNextButton);
+
+        updateLogTableDisplay();
     }
 
     function validateTimeFilter(datetimeStr) {
@@ -411,6 +413,8 @@
         const showPrevButton = searchBefore != -1 && currentPage > 1;
         search_next_button.firstElementChild.disabled = !showNextButton;
         search_prev_button.firstElementChild.disabled = !showPrevButton;
+
+        updateLogTableDisplay();
     }
 
     /*
@@ -515,10 +519,18 @@
         window.history.pushState(null, null, `?${params.toString()}${location.hash}`);
     }
 
-    function toggleTableColumn(inputElement) {
+    function updateLogTableDisplay() {
+        // Toggling columns
+        const tableColumnInputBoxes = document.getElementsByName("table-col");
+        tableColumnInputBoxes.forEach(el => toggleTableColumn(el.value, el.checked));
+
+        // Wrap log message
+        const wrapLogMessage = document.getElementById("wrap_log_message").checked;
+        toggleWrapLogMessage(wrapLogMessage);
+    }
+
+    function toggleTableColumn(columnName, isChecked) {
         // Toggling the view of the log table column
-        const columnName = inputElement.value;
-        const isChecked = inputElement.checked;
         for (element of document.getElementsByClassName(`table-${columnName}`)) {
             element.style.display = isChecked ? "table-cell" : "none";
         }
@@ -528,8 +540,7 @@
         Log lines can be long and take up the screen width.
         This function wraps the log lines within the screen width.
     */
-    function toggleWrapLogMessage(inputElement) {
-        const isChecked = inputElement.checked;
+    function toggleWrapLogMessage(isChecked) {
         for (element of document.getElementsByClassName("table-msg")) {
             element.style.whiteSpace = isChecked ? "normal" : "pre";
         }
@@ -604,7 +615,7 @@
                 </div>
             </div>
             <div id="explore_button">
-                <button class="btn" onclick="onClickFilterLogs()">Filter logs</button>
+                <button class="btn" onclick="onClickFilterLogs()">Apply Filter</button>
             </div>
         </div>
         <div class="container">
@@ -671,26 +682,26 @@
                     <b>Hide/Show Columns:</b>
                     <div style="margin-left: 5px;">
                         <label>
-                            <input type="checkbox" name="table-col" id="source" value="source" onchange="toggleTableColumn(this)" checked>Source
+                            <input type="checkbox" name="table-col" id="source" value="source" onchange="toggleTableColumn(this.value, this.checked)" checked>Source
                         </label>
                         <label>
-                            <input type="checkbox" name="table-col" id="system_id" value="system_id" onchange="toggleTableColumn(this)" checked>System ID
+                            <input type="checkbox" name="table-col" id="system_id" value="system_id" onchange="toggleTableColumn(this.value, this.checked)" checked>System ID
                         </label>
                         <label>
-                            <input type="checkbox" name="table-col" id="timestamp" value="timestamp" onchange="toggleTableColumn(this)" checked>Timestamp
+                            <input type="checkbox" name="table-col" id="timestamp" value="timestamp" onchange="toggleTableColumn(this.value, this.checked)" checked>Timestamp
                         </label>
                         <label>
-                            <input type="checkbox" name="table-col" id="level" value="level" onchange="toggleTableColumn(this)" checked>Level
+                            <input type="checkbox" name="table-col" id="level" value="level" onchange="toggleTableColumn(this.value, this.checked)" checked>Level
                         </label>
                         <label>
-                            <input type="checkbox" name="table-col" id="msg" value="msg" onchange="toggleTableColumn(this)" checked>Log message
+                            <input type="checkbox" name="table-col" id="msg" value="msg" onchange="toggleTableColumn(this.value, this.checked)" checked>Log message
                         </label>
                     </div>
                 </div>
                 <div class="content">
                     <label>
                         <b>Wrap log message?</b>
-                        <input type="checkbox" name="table-col" id="source" value="source" onchange="toggleWrapLogMessage(this)">
+                        <input type="checkbox" id="wrap_log_message" onchange="toggleWrapLogMessage(this.checked)">
                     </label>
                 </div>
                 <div class="pagination" id="prev_button">
