@@ -13,7 +13,7 @@
         "ccfg.signed.bin": {
             "source": "@file:ccfg_list.json",
             "version": 1,
-            "fourcc": "ccfg",
+            "fourcc": "ccfx",
             "cert": "",
             "customer_cert": "",
             "key_index": 0,
