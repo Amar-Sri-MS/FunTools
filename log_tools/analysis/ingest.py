@@ -364,6 +364,13 @@ def build_input_pipeline(path, frn_info, filters={}):
                 })
         )
 
+    elif source in ['pfm']:
+        file_pattern = f'{path}/*.log*' if resource_type == 'folder' else path
+        blocks.extend(
+            controller_input_pipeline(frn_info, source, file_pattern,
+                parse_block='KeyValueInput')
+        )
+
     elif source in ['telemetry-service', 'tms']:
         if resource_type == 'folder':
             log_files = glob.glob(f'{path}/*.log*')
@@ -514,7 +521,7 @@ def _should_ingest_source(source, source_filters=[]):
     Returns True if the source needs to be ingested.
     Allows all sources if no source filters provided.
     """
-    # These are parent sources which contain indiviual sources.
+    # These are parent sources which contain individual sources.
     # node-service contains FunOS, Storage and Platform agent logs.
     allowed_sources = ['cclinux', 'node-service']
 
