@@ -28,6 +28,9 @@ endif
 
 BUILD_ROOT ?= build_$(MACHINE)
 
+BUILD_INFO_SDK       := $(SDKDIR)/build_info.txt
+BUILD_INFO_WORKSPACE := $(SDKDIR)/../build_info.txt
+
 # To track version, see if there's a build info in the workspace
 # (ie. in Jenkins) otherwise, pull it out of FunSDK. If that doesn't
 # work, make it up
@@ -74,7 +77,7 @@ ifneq ($(TOOLCHAIN_PREFIX),)
 CC := $(TOOLCHAIN_PREFIX)gcc$(GCC_SUFFIX)
 endif
 
-# default target goes first 
+# default target goes first
 all: dpcsh
 
 $(BUILD_ROOT):
