@@ -2,9 +2,6 @@
 #
 # This script creates a SDK tarball using FunOSPackageDemo and FunSDK source
 # code suitable to give to customers.
-#
-# Optionally it create a MIPS toolchain tarball
-#
 
 # Output tarball
 tarball_name=""
@@ -16,9 +13,9 @@ readme_file="README"
 branch_funsdk=""
 branch_funos=""
 build_id=""
-include_mips=""
-toolchain_dir=""
 build_funos="no"
+
+bundle_name="dev_signed_setup_bundle_s1-rootfs-ro.squashfs.sh"
 
 # Top level directory
 root_dir=`pwd`
@@ -30,9 +27,8 @@ show_usage()
     echo "  -h:                 Display this information."
     echo "  -b <branch>         Specify the FunSDK branch to use"
     echo "  -f <branch>         Specify the FunOS branch to use"
-    echo "  -m                  Include MIPS and MIPS toolchain"
     echo "  -v <build_id>       Specify the FunSDK and FunOS build ID/version to use"
-    echo "  -r <version>        Specify the release version to assign to the SDK"
+    echo "  -r <sdk-version>    Specify the release version to assign to the SDK"
     echo "                      Defaults to the FunSDK build_id"
 }
 
@@ -64,6 +60,7 @@ sudo apt-get install python3-pyelftools
 MIPS toolchain installation
 ===========================
 
+Download toolchain tarball (linux-mips64-gcc-8.2.tar.gz)
 sudo mkdir -p /opt/cross
 cd /opt/cross
 sudo tar zxvf linux-mips64-gcc-8.2.tar.gz
@@ -110,12 +107,55 @@ cd FunOSPackageDemo
 ./build/funospkg-s1-posix app=timer_test
 
 
+Running sample workerpool package
+====================================
+
+cd FunOSPackageDemo
+./build/funospkg-s1-posix app=workerpool_test_init
+
+
 Running sample NVMe memory volume package
 =========================================
 
 cd FunOSPackageDemo
 ./build/funospkg-s1-posix app=pkg_memvol_module_init,epnvme_test voltype=VOL_TYPE_SDK_BLK_MEMORY numios=100 nvfile=nvfile
+
+
+Running sample NVMe replication volume package
+==============================================
+
+cd FunOSPackageDemo
+./build/funospkg-s1-posix app=pkg_repvol_template_module_init,mdt_test,volsetup_cp,voltest,vol_teardown --serial voltype=VOL_TYPE_BLK_REPLICA_TEMPLATE  numios=40 UUID=repvol-000000000 transport=TCP --csr-replay localip=29.1.1.2 remoteip=29.1.1.2 rdstype=funtcp nplex=2 remote_plex_count=0
+
+
+Building development bundle
+===========================
+
+make -j8 MACHINE=s1-release
+make MACHINE=s1-release install
+make MACHINE=s1-release dev_bundle
 EOM
+}
+
+# Gather the files needed to create a developemnt bundle
+create_dev_bundle_environment()
+{
+    cd $root_dir/FunSDK
+
+    # Development bundle directory
+    mkdir -p bundle/development
+
+    # Populate the bundle development directory
+    ./bin/flash_tools/release.py --action sdk-prepare --destdir bundle/development --chip s1 bin/flash_tools/mmc_config_dev_funos.json bin/flash_tools/key_bag_config.json --force-version $build_id --force-description "SDK development bundle" --dev-image
+    cd bundle/development/
+    ./release.py --chip s1  --destdir . --action sign --default-config-files
+
+    # Remove unneeded files
+    rm -rf __pycache__
+    find . -name '*.pyc' -delete
+    rm funos.signed.bin
+    rm funos*.stripped
+    rm *rootfs*
 }
 
 # FunSDK download and setup
@@ -126,7 +166,7 @@ funsdk_setup()
     # There can't be a FunSDK directory already present
     if [ -d FunSDK ]; then
 	echo ""
-	echo "Error: FunSDK already present. Remove and try again"
+	echo "Error: FunSDK already present. Remove it and try again"
 	echo ""
 	exit 1
     fi
@@ -141,45 +181,51 @@ funsdk_setup()
 
     cd FunSDK
 
-    # Checkout the build_id if passed as argument
+    # Checkout the build_id if passed as an argument
     if [ "$build_id" != "" ]; then
 	git checkout tags/bld_$build_id
     fi
 
     # Download SDK packages
-    if [ "$build_id" == "" ]; then
-	./scripts/bob --sdkup --including sdk
-	if [ "$include_mips" != "" ]; then
-	    ./scripts/bob --sdkup --including deps-funos.mips64
-	fi
-    else
+    if [ "$build_id" != "" ]; then
 	./scripts/bob --sdkup -v $build_id --including sdk
-	if [ "$include_mips" != "" ]; then
-	    ./scripts/bob --sdkup -v $build_id --including deps-funos.mips64
-	fi
+	./scripts/bob --sdkup -v $build_id --including deps-funos.mips64
+	./scripts/bob --sdkup -v $build_id release
+	./scripts/bob -v $build_id --deploy-up
+    else
+	./scripts/bob --sdkup --including sdk
+	./scripts/bob --sdkup --including deps-funos.mips64
+	./scripts/bob --sdkup release
+	./scripts/bob --deploy-up
     fi
 
+    # Extract the build id from the downloaded FunSDK packages
+    file="build_info.txt"
+    build_id=$(cat "$file")
+
+    # Download the packages needed to create bundles
+    create_dev_bundle_environment
+
     # Remove unneeded files
+    cd $root_dir/FunSDK
     find . -name .git |xargs rm -rf
     find . -name .gitignore |xargs rm -rf
     rm -rf FunSDK/chip/f1d1
     rm -rf FunSDK/chip/s2
     rm -rf palladium_test
-    rm -rf bin/funos-f1d1*
-    rm -rf bin/funos-f1*
-    rm -rf bin/funos-s1-posix
-    mv bin/funos-s1-posix.stripped bin/funos-s1-posix
-    rm -rf bin/funos-posix*
-    rm -rf bin/funos-s1-qemu*
     rm -rf FunQemu-Linux
     rm -rf gpl
     rm -rf integration_test
     rm -rf silicon_tests
     rm -rf static
-
-    # Extract the build id from the downloaded FunSDK packages
-    file="build_info.txt"
-    build_id=$(cat "$file")
+    rm -rf bin/flash_tools/__pycache__
+    rm -rf bin/funos*
+    rm -rf bin/cc-linux-yocto
+    rm -rf FunSDK/u-boot
+    rm -rf FunSDK/sbpfw
+    rm -rf FunSDK/nvdimm_fw
+    rm -rf deployments
+    rm -rf fdc_cbs
 }
 
 # FunOSPackageDemo download and setup
@@ -219,7 +265,7 @@ funos_setup()
 	exit 1
     fi
 
-    # Clone FunSDK repository
+    # Clone FunOS repository
     if [ "$branch_funos" == "" ]; then
         # Clone FunOS and checkout using the tag bld_<build_id>
         tag=bld_$build_id
@@ -229,19 +275,22 @@ funos_setup()
     else
         git clone ssh://git@github.com/fungible-inc/FunOS -b $branch_funos --depth 1
     fi
-
 }
 
-# Build FunOS and export the libraries and header files
-funos_export_lib_headers()
+# Build FunOS and install the libraries and header files
+funos_install_lib_headers()
 {
     cd $root_dir/FunOS
+
+    # Install makefiles and header files
     if ! make -j8 install-funosrt-makefiles install-headers; then
 	echo ""
 	echo "FunOS headers fails to build"
 	echo ""
 	exit 1
     fi
+
+    # Build and install posix funos library
     if ! make -j8 MACHINE=s1-posix install-libfunosrt; then
 	echo ""
 	echo "FunOS s1-posix fails to build"
@@ -249,14 +298,12 @@ funos_export_lib_headers()
 	exit 1
     fi
 
-    # Check MIPS builds if requested
-    if [ "$include_mips" != "" ]; then
-	if ! make -j8 MACHINE=s1 install-libfunosrt; then
-	    echo ""
-	    echo "FunOS s1 fails to build"
-	    echo ""
-	    exit 1
-	fi
+    # Build and install s1 funos library
+    if ! make -j8 MACHINE=s1 install-libfunosrt; then
+	echo ""
+	echo "FunOS s1 fails to build"
+	echo ""
+	exit 1
     fi
 }
 
@@ -271,24 +318,12 @@ funos_package_demo_build()
 	exit 1
     fi
 
-    # Build the MIPS packages if requested
-    if [ "$include_mips" != "" ]; then
-	if ! make -j8 MACHINE=s1; then
-	    echo ""
-	    echo "FunOSPackageDemo s1 fails to build"
-	    echo ""
-	    exit 1
-	fi
+    if ! make -j8 MACHINE=s1; then
+	echo ""
+	echo "FunOSPackageDemo s1 fails to build"
+	echo ""
+	exit 1
     fi
-}
-
-# MIPS toolchain setup
-mips_toolchain_setup()
-{
-    cd $root_dir
-    mkdir $toolchain_dir
-    cd $toolchain_dir
-    wget http://dochub.fungible.local/doc/sw/tools/mips/linux-mips64-gcc-8.2.tar.gz
 }
 
 # Verify the posix packages run to completion
@@ -316,6 +351,13 @@ run_posix()
 	exit 1
     fi
 
+    if ! ./build/funospkg-s1-posix app=workerpool_test_init; then
+	echo ""
+	echo "s1-posix workerpool package fails to run to completion"
+	echo ""
+	exit 1
+    fi
+
     if ! ./build/funospkg-s1-posix app=pkg_memvol_module_init,epnvme_test voltype=VOL_TYPE_SDK_BLK_MEMORY numios=100 nvfile=nvfile; then
 	echo ""
 	echo "s1-posix memvol package fails to run to completion"
@@ -324,8 +366,17 @@ run_posix()
     fi
 }
 
+# Clean the FunOSPackageDemo
+funos_package_demo_clean()
+{
+    cd $root_dir/FunOSPackageDemo
+    make clean
+    rm -f .map
+    rm -f nvfile
+}
+
 # Parse the options
-while getopts "hb:f:mv:r:" option; do
+while getopts "hb:f:v:r:" option; do
     case "$option" in
 	h)
 	    show_usage
@@ -338,10 +389,6 @@ while getopts "hb:f:mv:r:" option; do
 	f)
 	    branch_funos=$OPTARG
         build_funos="yes"
-	    ;;
-	m)
-	    include_mips="yes"
-	    toolchain_dir="toolchain"
 	    ;;
 	v)
 	    build_id=$OPTARG
@@ -365,18 +412,13 @@ funos_package_demo_setup
 
 # Setup the FunOS source code
 if [ "$build_funos" == "yes" ]; then
-echo "Building FunOS"
-funos_setup
+    echo "Building FunOS"
+    funos_setup
 
-# Verify the software builds and export libraries and header files to FunSDK
-funos_export_lib_headers
+    # Verify the software builds and install libraries and header files to FunSDK
+    funos_install_lib_headers
 else
-echo "Using FunOS from SDK"
-fi
-
-# Download the MIPS toolchain if requested
-if [ "$include_mips" != "" ]; then
-    mips_toolchain_setup
+    echo "Using FunOS from SDK"
 fi
 
 # Create README file
@@ -387,9 +429,16 @@ if [ "$tarball_name" == "" ]; then
     tarball_name="Fungible-SDK-v$build_id.tgz"
 fi
 
+# Remove FunOSPackageDemo build objects
+funos_package_demo_clean
+
 # Create tarball
-cd root_dir
-tar zcvf $tarball_name FunSDK FunOSPackageDemo $toolchain_dir $readme_file
+cd $root_dir
+tar zcvf $tarball_name FunSDK FunOSPackageDemo $readme_file
+
+# Download accompanying S1 bundle
+wget http://dochub.fungible.local/doc/jenkins/master/funsdk/$build_id/Linux/$bundle_name
+mv $bundle_name dev_signed_setup_bundle_s1-rootfs-ro.squashfs-v$build_id.sh
 
 # Build the FunOSPackageDemo packages
 funos_package_demo_build
@@ -397,6 +446,8 @@ funos_package_demo_build
 # Verify software runs
 run_posix
 
+echo ""
+echo "Accompanying S1 dev bundle (dev_signed_setup_bundle_s1-rootfs-ro.squashfs-v$build_id.sh) is ready"
 echo ""
 echo "$tarball_name is ready"
 echo ""
