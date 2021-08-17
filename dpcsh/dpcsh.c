@@ -1309,34 +1309,62 @@ static void terminal_set_per_character(bool enable)
 	tcsetattr(STDIN_FILENO, TCSANOW, &tios);
 }
 
-static void _do_session(struct dpcsock_connection *funos,
+static bool _read_and_send_command(struct dpcsock_connection *funos,
 			    struct dpcsock_connection *cmd)
 {
 	ssize_t read;
-	int r, nfds = 0;
-	bool ok;
+	char *line = _read_a_line(cmd, &read);
 
+	if (read <= 0 || line == NULL) /* user ^D or connection closed*/
+		return false;
+
+	/* in loopback mode, check if this is output from
+		* the other end & decode that & don't send it.
+		*/
+	if (_is_loopback_command(funos->socket, line, read))
+		return true;
+
+	bool ok = _do_send_cmd(funos, cmd, line, read);
+	free(line);
+	if (!ok) {
+		log_error("error sending command\n");
+	}
+
+	return true;
+}
+
+static void _do_session(struct dpcsock_connection *funos,
+			    struct dpcsock_connection *cmd)
+{
 	if (cmd->socket->mode == SOCKMODE_TERMINAL) {
 		/* enable per-character input for interactive input */
 		terminal_set_per_character(true);
 	}
 
+	// no select looping, only one fd
+	if (funos->socket->mode == SOCKMODE_TERMINAL || funos->socket->mode == SOCKMODE_NVME || funos->socket->mode == SOCKMODE_FUNQ) {
+		while (_read_and_send_command(funos, cmd)) {
+			if (funos->socket->mode == SOCKMODE_NVME)
+				_do_recv_cmd(funos, cmd, false);
+		}
 
+		goto restore_term;
+	}
+
+
+	// select loop, TODO: incomplete input may block it
 	fd_set fds;
+	int r, max_fd = 0;
 	while (1) {
 		/* configure the fd set */
 		FD_ZERO(&fds);
 		FD_SET(cmd->fd, &fds);
-		nfds = cmd->fd;
-		if (funos->socket->mode != SOCKMODE_TERMINAL && funos->socket->mode != SOCKMODE_NVME && funos->socket->mode != SOCKMODE_FUNQ) {
-			FD_SET(funos->fd, &fds);
+		FD_SET(funos->fd, &fds);
 
-			if (funos->fd > nfds)
-				nfds = funos->fd;
-		}
+		max_fd = funos->fd > cmd->fd ? funos->fd : cmd->fd;
 
 		/* wait on our input(s) */
-		r = select(nfds+1, &fds, NULL, NULL, NULL);
+		r = select(max_fd+1, &fds, NULL, NULL, NULL);
 
 		if (r <= 0) {
 			perror("select");
@@ -1344,35 +1372,15 @@ static void _do_session(struct dpcsock_connection *funos,
 		}
 
 		if (FD_ISSET(cmd->fd, &fds)) {
-			char *line = _read_a_line(cmd, &read);
-
-			if (read <= 0 || line == NULL) /* user ^D or connection closed*/
-				break;
-
-			/* in loopback mode, check if this is output from
-			 * the other end & decode that & don't send it.
-			 */
-			if (_is_loopback_command(funos->socket, line, read))
-				continue;
-
-			ok = _do_send_cmd(funos, cmd, line, read);
-			free(line);
-			if (!ok) {
-				log_error("error sending command\n");
-			}
+			if (!_read_and_send_command(funos, cmd)) break;
 		}
 
-		/* SOCKMODE_FUNQ is handled asynchronously  */
-		if (funos->socket->mode == SOCKMODE_FUNQ) {
-			continue;
-		}
-
-		if (funos->socket->mode == SOCKMODE_NVME || (FD_ISSET(funos->fd, &fds)
-		    && (!funos->socket->loopback))) {
+		if (FD_ISSET(funos->fd, &fds) && (!funos->socket->loopback)) {
 			_do_recv_cmd(funos, cmd, false);
 		}
 	}
 
+restore_term:
 	if (cmd->socket->mode == SOCKMODE_TERMINAL) {
 		/* reset terminal */
 		terminal_set_per_character(false);

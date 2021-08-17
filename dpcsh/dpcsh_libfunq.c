@@ -249,7 +249,6 @@ extern bool dpc_funq_close_connection(struct dpc_funq_connection *connection)
 
 	if (ret != 0) {
 		log_error("failed to close the connection, code = %d\n", ret);
-		pthread_mutex_unlock(&connection->receive_lock);
 		return false;
 	}
 
@@ -260,6 +259,7 @@ extern bool dpc_funq_close_connection(struct dpc_funq_connection *connection)
 			log_error("failed to wait for receiver to stop, code = %d\n", ret);
 		}
 	}
+	connection->receiver_closing_connection = false;
 	pthread_mutex_unlock(&connection->receive_lock);
 
 	log_debug(connection->dpc_handle->debug, "dpc_close_connection successful\n");
@@ -436,6 +436,11 @@ static bool dpc_init_buffers(int **allocations, int *allocations_n,
 static void dpc_reallocate_buffers(int **allocations, int *allocations_n,
 	struct dpc_funq_handle *dpc_handle, int data_buffers_n)
 {
+	// most frequent case, no need to allocate or deallocate anything
+	if (*allocations_n == 1 && data_buffers_n == 1) {
+		return;
+	}
+
 	pthread_mutex_lock(&dpc_handle->lock);
 
 	if (data_buffers_n > FIRST_LEVEL_SGL_N) {
@@ -480,25 +485,28 @@ static void free_context(struct dpc_funq_context *context)
 	free(context);
 }
 
+static void dpc_funq_stop_receiver(struct dpc_funq_context *context)
+{
+	pthread_mutex_lock(&context->connection->receive_lock);
+
+	if (context->connection->receiver_closing_connection) {
+		pthread_cond_signal(&context->connection->receiver_closed);
+	} else {
+		log_error("stopping the receiver unexpectedly\n");
+	}
+
+	context->connection->receiver_alive = false;
+	pthread_mutex_unlock(&context->connection->receive_lock);
+}
+
 static void dpc_proccess_recv_response(void *response, void *ctx)
 {
 	struct dpc_funq_context *context = ctx;
 	struct fun_admin_dpc_rsp *r = response;
-	pthread_mutex_lock(&context->connection->receive_lock);
-
-	if (context->connection->receiver_closing_connection) {
-		context->connection->receiver_alive = false;
-		pthread_cond_signal(&context->connection->receiver_closed);
-		pthread_mutex_unlock(&context->connection->receive_lock);
-		log_debug("stopping the receiver\n");
-		free_context(context);
-		return;
-	}
+	log_debug(context->connection->dpc_handle->debug, "starting the receive\n");
 
 	if (r->u.receive.code == FUN_ADMIN_DPC_ISSUE_CMD_RESP_FAIL) {
-		context->connection->receiver_alive = false;
-		pthread_mutex_unlock(&context->connection->receive_lock);
-		log_error("unsuccessful receive, stopping the receiver\n");
+		dpc_funq_stop_receiver(context);
 		free_context(context);
 		return;
 	}
@@ -510,9 +518,8 @@ static void dpc_proccess_recv_response(void *response, void *ctx)
 		context->response.ptr = malloc(r->u.receive.resp_full_size);
 		context->response.size = r->u.receive.resp_full_size;
 		if (!context->response.ptr) {
-			context->connection->receiver_alive = false;
-			pthread_mutex_unlock(&context->connection->receive_lock);
 			log_error("oom when allocating space for the response\n");
+			dpc_funq_stop_receiver(context);
 			free_context(context);
 			return;
 		}
@@ -520,9 +527,8 @@ static void dpc_proccess_recv_response(void *response, void *ctx)
 	}
 
 	if (r->u.receive.resp_offset != context->response_offset) {
-		context->connection->receiver_alive = false;
-		pthread_mutex_unlock(&context->connection->receive_lock);
 		log_error("unexpected offset when processing response %" PRIu32 " != %zu\n", r->u.receive.resp_offset, context->response_offset);
+		dpc_funq_stop_receiver(context);
 		free_context(context);
 		return;
 	}
@@ -554,13 +560,10 @@ static void dpc_proccess_recv_response(void *response, void *ctx)
 	dpc_split_sgl_layers(context);
 
 	if (!dpc_recv_data_cmd(context)) {
-		context->connection->receiver_alive = false;
-		pthread_mutex_unlock(&context->connection->receive_lock);
+		dpc_funq_stop_receiver(context);
 		free_context(context);
 		return;
 	}
-
-	pthread_mutex_unlock(&context->connection->receive_lock);
 }
 
 static bool dpc_recv_data_cmd(struct dpc_funq_context *context)
