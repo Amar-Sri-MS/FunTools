@@ -150,6 +150,15 @@ if [[ $ccfg_only == 'true' ]]; then
 	echo "CCFG update only!"
 elif [[ "$DEV_IMAGE" -eq 1 ]]; then
 	echo "Dev image upgrade!"
+
+	dpcsh -Q peek config/chip_info/images/mmc1 | jq -Mre "[.result|.[]|.version | .==$funos_sdk_version] | any" > /dev/null
+	RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
+	if [ $EXIT_STATUS -ne 0 ]; then
+		bundles_found=$(dpcsh -Q peek config/chip_info/images/mmc1 | jq -Mr " [.result|.[]|.version] | @csv")
+		log_msg "No matching release bundle found installed in the flash"
+		log_msg "This bundle requires release bundle $funos_sdk_version to be installed, but only $bundles_found were found."
+		exit 1
+	fi
 	./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file mmcx=mmc1_image.bin
 	CCFG_IMAGE_ID='ccfx'
 else
