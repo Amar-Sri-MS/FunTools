@@ -1322,14 +1322,14 @@ static bool _read_and_send_command(struct dpcsock_connection *funos,
 		* the other end & decode that & don't send it.
 		*/
 	if (_is_loopback_command(funos->socket, line, read))
-		return true;
+		goto out;
 
-	bool ok = _do_send_cmd(funos, cmd, line, read);
-	free(line);
-	if (!ok) {
+	if (!_do_send_cmd(funos, cmd, line, read)) {
 		log_error("error sending command\n");
 	}
 
+out:
+	free(line);
 	return true;
 }
 
