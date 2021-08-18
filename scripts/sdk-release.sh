@@ -55,6 +55,7 @@ sudo apt-get install llvm
 sudo apt-get install python-yaml
 sudo apt-get install python3-asn1crypto
 sudo apt-get install python3-pyelftools
+sudo apt-get install makeself
 
 
 MIPS toolchain installation
@@ -128,12 +129,62 @@ cd FunOSPackageDemo
 ./build/funospkg-s1-posix app=pkg_repvol_template_module_init,mdt_test,volsetup_cp,voltest,vol_teardown --serial voltype=VOL_TYPE_BLK_REPLICA_TEMPLATE  numios=40 UUID=repvol-000000000 transport=TCP --csr-replay localip=29.1.1.2 remoteip=29.1.1.2 rdstype=funtcp nplex=2 remote_plex_count=0
 
 
-Building development bundle
-===========================
+Signing server
+==============
+
+Development bundles are signed during the build phase. This requires a
+signing server to be accessible by the build system.
+
+1. Installing a signing server
+   . sudo ./signing_server.run
+
+2. Configuring the build system to use the signing server
+   . cd FunSDK
+   . config_sdk_signing_server.sh http://<IP address of signing server>
+   . Examples:
+       . config_sdk_signing_server.sh http://192.168.122.22
+       . config_sdk_signing_server.sh http://localhost
+
+
+Building development bundles
+============================
+
+Development bundles are required to install custom FunOS binaries in the
+hardware.
+
+make -j8 MACHINE=s1
+make MACHINE=s1 install
+make MACHINE=s1 dev_bundle
+
+Alternatevely, release images can also be installed
 
 make -j8 MACHINE=s1-release
 make MACHINE=s1-release install
 make MACHINE=s1-release dev_bundle
+
+
+Installing development bundles
+==============================
+
+Before installing a development bundle, the matching release bundle must be
+installed. This guarantees all the APIs across the complete system match. Note
+that development bundles only include FunOS whereas release bundles include all
+the system's binaries.
+Installation of the release bundle is done only once for each new version of
+the SDK.
+
+1. scp release bundle to ccLinux's /tmp directory and install it
+   . scp dev_signed_setup_bundle_s1-rootfs-ro.squashfs-v15578.sh root@10.1.1.20:/tmp
+   . ssh root@10.1.1.20
+   . cd /tmp
+   . ./dev_signed_setup_bundle_s1-rootfs-ro.squashfs-v15578.sh root@10.1.1.20:/tmp
+   . reboot
+2. scp development bundle to ccLinux's /tmp directory and install it
+   . scp setup_bundle_development_image.sh root@10.1.1.20:/tmp
+   . ssh root@10.1.1.20
+   . cd /tmp
+   . ./setup_bundle_development_image.sh root@10.1.1.20:/tmp
+   . reboot
 EOM
 }
 
@@ -147,7 +198,7 @@ create_dev_bundle_environment()
 
     # Populate the bundle development directory
     ./bin/flash_tools/release.py --action sdk-prepare --destdir bundle/development --chip s1 bin/flash_tools/mmc_config_dev_funos.json bin/flash_tools/key_bag_config.json --force-version $build_id --force-description "SDK development bundle" --dev-image
-    cd bundle/development/
+    cd bundle/development
     ./release.py --chip s1  --destdir . --action sign --default-config-files
 
     # Remove unneeded files
@@ -447,7 +498,7 @@ funos_package_demo_build
 run_posix
 
 echo ""
-echo "Accompanying S1 dev bundle (dev_signed_setup_bundle_s1-rootfs-ro.squashfs-v$build_id.sh) is ready"
+echo "Accompanying S1 release bundle (dev_signed_setup_bundle_s1-rootfs-ro.squashfs-v$build_id.sh) is ready"
 echo ""
 echo "$tarball_name is ready"
 echo ""
