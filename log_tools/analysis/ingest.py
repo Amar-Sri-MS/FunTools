@@ -23,6 +23,17 @@ from utils import manifest_parser
 from utils import timeline
 
 
+# The manifest file can have different names for a source.
+# This is mapping of source name with its aliases.
+SOURCE_ALIASES = {
+    'funos': ['dpu'],
+    'storage_agent': ['storage-agent'],
+    'platform_agent': ['platform-agent'],
+    'telemetry-service': ['tms'],
+    'node-service': ['nms'],
+    'sns': ['network-service', 'network_service']
+}
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('build_id', help='Unique build ID')
@@ -344,7 +355,7 @@ def build_input_pipeline(path, frn_info, filters={}):
             )
         )
 
-    elif source == 'sns':
+    elif source in ['sns', 'network-service']:
         file_pattern = f'{path}/sns*' if resource_type == 'folder' else path
         blocks.extend(
             controller_input_pipeline(frn_info, source, file_pattern,
@@ -525,11 +536,15 @@ def _should_ingest_source(source, source_filters=[]):
     # node-service contains FunOS, Storage and Platform agent logs.
     allowed_sources = ['cclinux', 'node-service']
 
+    allowed_source_aliases = list()
+    for source_filter in source_filters:
+        allowed_source_aliases.extend(SOURCE_ALIASES.get(source_filter, []))
+
     # No source filters provided or source in allowed sources.
     if not source_filters or len(source_filters) == 0 or source in allowed_sources:
         return True
 
-    return source in source_filters
+    return (source in source_filters or source in allowed_source_aliases)
 
 
 def funos_input_pipeline(frn_info, path):
