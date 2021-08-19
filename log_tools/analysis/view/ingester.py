@@ -175,6 +175,33 @@ def upload():
     return jsonify('Chunk upload successful'), 200
 
 
+@ingester_page.route('/remove_file', methods=['DELETE'])
+def remove_uploaded_file():
+    """
+    Removes the uploaded file saved under the given "job_id".
+
+    Request Args:
+    job_id
+    filename: name of the file to delete
+    """
+    job_id = request.args.get('job_id')
+    filename = request.args.get('filename')
+    LOG_ID = _get_log_id(job_id, ingest_type='techsupport')
+
+    log_dir = os.path.join(DOWNLOAD_DIRECTORY, LOG_ID)
+    log_path = os.path.join(log_dir, filename)
+
+    if not os.path.exists(log_path):
+        return jsonify('Could not find the uploaded file'), 500
+
+    try:
+        os.remove(log_path)
+    except Exception as e:
+        logging.exception(f'Error while deleting the uploaded file: {filename} from {LOG_ID}')
+        return jsonify('Error while deleting the uploaded file'), 500
+
+    return jsonify('success')
+
 @ingester_page.route('/ingest', methods=['GET'])
 def render_ingest_page():
     """ UI for ingesting logs """
