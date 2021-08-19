@@ -11,10 +11,8 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-# install python modules used by the cgi-bin script
-pip3 install cryptography asn1crypto
-# install apache
-apt-get install apache2
+# install all required packages
+apt-get -y install python3-cryptography python3-asn1crypto apache2
 # enable cgi
 a2enmod cgid
 # install script and key files (optional argument for tar.gz file)
