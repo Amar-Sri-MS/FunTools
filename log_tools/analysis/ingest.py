@@ -537,8 +537,9 @@ def _should_ingest_source(source, source_filters=[]):
     allowed_sources = ['cclinux', 'node-service']
 
     allowed_source_aliases = list()
-    for source_filter in source_filters:
-        allowed_source_aliases.extend(SOURCE_ALIASES.get(source_filter, []))
+    if source_filters:
+        for source_filter in source_filters:
+            allowed_source_aliases.extend(SOURCE_ALIASES.get(source_filter, []))
 
     # No source filters provided or source in allowed sources.
     if not source_filters or len(source_filters) == 0 or source in allowed_sources:
