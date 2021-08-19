@@ -23,6 +23,9 @@ class AppFpk(mmap.mmap):
             raise Exception("Wrong marker offset: {}".format(pos2-pos1))
         return pos1
 
+    def get_key_loc(self, n):
+        return self.__find_key_loc(n) + 4 # point to length area
+
     def validate(self, n):
         init_modulus = bytearray([16*n + n] * 4)
         pos = self.__find_key_loc(n)
@@ -99,6 +102,14 @@ def check_file(file, number, app):
     except Exception as e:
         print("Key {} not found in {}. Error: {}".format(number, file, e))
         return 1
+
+@app_fpk_process
+def get_key_loc(file, number, app):
+    try:
+        return app.get_key_loc(number)
+    except Exception as e:
+        print("Key {} not found in {}. Error: {}".format(number, file, e))
+        return 0xFFFF_FFFF
 
 
 def main():

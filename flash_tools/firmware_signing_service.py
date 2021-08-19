@@ -21,8 +21,8 @@ RSA_KEY_SIZE_IN_BITS = 2048
 SIGNING_INFO_SIZE = 2048
 MAX_SIGNATURE_SIZE = 512
 HEADER_RESERVED_SIZE = SIGNING_INFO_SIZE - (8 + 4 + MAX_SIGNATURE_SIZE)
-SIGNED_ATTRIBUTES_CHIP_ID = 3
-SIGNED_ATTRIBUTES_SIZE = 29 # currently undefined/unused
+SIGNED_ATTRIBUTES_CHIP_ID_SIZE = 4
+SIGNED_ATTRIBUTES_PAD_SIZE = 28 # zero pad + key_addrs
 SIGNED_DESCRIPTION_SIZE = 32
 SERIAL_INFO_NUMBER_SIZE = 24
 CERT_PUB_KEY_POS = 64
@@ -291,16 +291,17 @@ def add_cert_and_signature_to_image(image, cert, signature, magic):
     return append_signature_to_binary(image, signature)
 
 def image_gen(outfile, infile, ftype, version, description, sign_key,
-              certfile, customer_certfile, key_index, chip_type=None, pad=1):
+              certfile, customer_certfile, key_index, locations=[],
+              chip_type=None, pad=1, **kwargs):
     ''' generate signed firmware image '''
 
     chip_type_map = {
-        # chip name : [ family, device, revision ]
+        # chip name : [ family, device, revision, zero(reserved-alignment) ]
         # see https://docs.google.com/document/d/1qojY63VZvkhmbDenbl6J2j51yeA_9FfhU8s_aTUhvJs
-        'f1'   : [1, 1, 0],
-        's1'   : [2, 1, 0],
-        'f1d1' : [1, 1, 1],
-        's2'   : [2, 2, 0]
+        'f1'   : [1, 1, 0, 0],
+        's1'   : [2, 1, 0, 0],
+        'f1d1' : [1, 1, 1, 0],
+        's2'   : [2, 2, 0, 0]
     }
 
     if ((pad == 0) or (pad is None)):
@@ -309,10 +310,25 @@ def image_gen(outfile, infile, ftype, version, description, sign_key,
     to_be_signed = struct.pack('<2I', len(binary), version)
     to_be_signed += struct.pack('4s', ftype.encode())
     if chip_type:
-        to_be_signed += struct.pack('3B', *chip_type_map[chip_type])
+        to_be_signed += struct.pack('4B', *chip_type_map[chip_type])
     else:
-        to_be_signed += b'\x00' * SIGNED_ATTRIBUTES_CHIP_ID
-    to_be_signed += b'\x00' * SIGNED_ATTRIBUTES_SIZE
+        to_be_signed += b'\x00' * (SIGNED_ATTRIBUTES_CHIP_ID_SIZE)
+
+    # optional locations
+    num_locs = len(locations)
+    if num_locs > 2:
+        print("****** Warning: more than 2 pointers in authenticated headers")
+
+    for loc in locations:
+        to_be_signed += struct.pack("<I", loc)
+
+    # zero pad
+    zero_pad_len = SIGNED_ATTRIBUTES_PAD_SIZE - 4 * num_locs
+    if zero_pad_len < 0:
+        raise(Exception("Too many locations {} ({}) specified for header of {}".
+                        format(num_locs, locations, ftype)))
+    to_be_signed += b'\x00' * zero_pad_len
+
     if description:
         # Max allowed size is (block size - 1) to allow for terminating null
         if len(description) > SIGNED_DESCRIPTION_SIZE - 1:

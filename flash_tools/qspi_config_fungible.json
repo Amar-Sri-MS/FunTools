@@ -86,6 +86,7 @@
             "fourcc": "pufr",
             "cert": "start_certificate.bin",
             "customer_cert": "",
+            "keys_in_header": [4],
             "description": ""
         },
         "esecure_firmware_packed.bin": {
@@ -149,9 +150,9 @@
     },
     "certificates": {
         "start_certificate.bin" : {
-	    "public": "fpk2",
-	    "serial_number": "000000000000000000000000000000000000000000000000"
-	}
+            "public": "fpk2",
+            "serial_number": "000000000000000000000000000000000000000000000000"
+        }
     },
     "key_injection": {
         "firmware_m5150.keys.bin": {
