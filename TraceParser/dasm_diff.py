@@ -9,6 +9,7 @@ static check:
 format:
 % python3 -m black myfile.py
 """
+from re import M
 from typing import List, Optional, Type, Dict, Any, Tuple, Set
 import argparse
 import parse_dasm
@@ -42,7 +43,7 @@ def sorted_calls_by_size(func) -> List[Tuple[int, str]]:
 
         clist = [(cd[sym], sym) for sym in cd.keys()]
 
-        return clist
+        return sorted(clist, reverse=True)
 
 def func_insn(func) -> int:
         return (func.end_address - func.start_address) / 4
@@ -50,6 +51,7 @@ def func_insn(func) -> int:
 ###
 ##  printing
 #
+MAX_FUNC_STR = 200
 
 def printsym(dasm, sym: str, prefix = "", sympr:Optional[str]=None) -> None:
         
@@ -62,10 +64,12 @@ def printsym(dasm, sym: str, prefix = "", sympr:Optional[str]=None) -> None:
 
         # sorted list of calls by size
         clist = sorted_calls_by_size(func)
-        clist.sort()
 
         # make it a string
         s = ", ".join("%s[%d]" % (y, x) for (x, y) in clist)
+
+        if (len(s) > MAX_FUNC_STR):
+                s = s[:MAX_FUNC_STR] + "..."
 
         print("%s%s[%d ins]: %s" % (prefix, sympr, icount, s))
 
@@ -85,19 +89,19 @@ def dump_full_set(title: str, dasm, funcset: Set[str]) -> None:
 ##  diffing
 #
 
-def check_diff(func1, func2) -> bool:
+def check_diff(func1, func2) -> Optional[int]:
 
-        idelta = abs(func_insn(func1) - func_insn(func2))
+        idelta = func_insn(func2) - func_insn(func1)
         callsame = sorted_calls_by_size(func1) == sorted_calls_by_size(func2)
 
         if ((idelta == 0) and callsame):
-                return -1
+                return None
 
         return idelta
 
 
-def dump_diff(dasm1, dasm2, idelta: int, sym: str, func1, func2):
-        print("Function %s changed by %d instructions" % (sym, idelta))
+def dump_diff(dasm1, dasm2, absdelta: int, sym: str, idelta: int, func1, func2):
+        print("Function %s changed by %+d instructions" % (sym, idelta))
 
         printsym(dasm1, sym, "\tdasm1", "")
         printsym(dasm2, sym, "\tdasm2", "")
@@ -111,11 +115,11 @@ def dump_diffs(d1name: str, d2name: str, dasm1, dasm2, common: Set[str]) -> None
 
                 idelta = check_diff(func1, func2)
 
-                if (idelta < 0):
+                if (idelta is None):
                         continue
 
                 # put it in a list
-                dlist.append((idelta, sym, func1, func2))
+                dlist.append((abs(idelta), sym, idelta, func1, func2))
 
         if (len(dlist) == 0):
                 print("No differences in common function sizes or calls")
