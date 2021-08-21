@@ -34,7 +34,7 @@ def parse_args() -> argparse.Namespace:
 #
 
 def sorted_calls_by_size(func) -> List[Tuple[int, str]]:
-        cd = {}
+        cd : Dict[str, int] = {}
         for (addr, instr, callsym) in func.calls:
                 if (callsym is None):
                         cd.setdefault("<unknown>", 1)
