@@ -197,10 +197,10 @@ class FunctionInfo(object):
                 
             calls_str = ', '.join([symbol for (addr, instr, symbol) in
                                   self.calls if symbol])
-        print 'Function %s:\n' % self.name
-        print '  Range: 0x%x-0x%0x' % (start_addr, end_addr)
+        print('Function %s:\n' % self.name)
+        print('  Range: 0x%x-0x%0x' % (start_addr, end_addr))
         if self.other_ranges:
-            print '  Also seen at %s' % duplicates_str
+            print('  Also seen at %s' % duplicates_str)
         # returns win over calls.
         if self.returns:
             for (addr, instr, args) in self.returns:
@@ -211,7 +211,7 @@ class FunctionInfo(object):
         if self.jumps:
             for (addr, instr, symbol) in self.jumps:
                 print('  JUMP %x: %s %s' % (addr, instr, symbol))
-            print '  Calls: %s' % calls_str
+            print('  Calls: %s' % calls_str)
     
 class DasmInfo(object):
     """Parses disassembly, and serves data about the disassembled program."""
@@ -243,11 +243,11 @@ class DasmInfo(object):
         # For one of Bertrand's traces (24M cycles), we saw
         # 6 missed returns, 5 missed jumps, 29 missed calls,
         # 7 missed1's, 0 missed2's.
-        print 'Missed returns: %d' % self.missed_return
-        print 'Missed jumps: %d' % self.missed_jump
-        print 'Missed calls: %d' % self.missed_call
-        print 'Missed1: %d' % self.missed1
-        print 'Missed2: %d' % self.missed2
+        print('Missed returns: %d' % self.missed_return)
+        print('Missed jumps: %d' % self.missed_jump)
+        print('Missed calls: %d' % self.missed_call)
+        print('Missed1: %d' % self.missed1)
+        print('Missed2: %d' % self.missed2)
 
     def Read(self, contents):
         """Reads disassembly from a stream of data."""
@@ -426,7 +426,7 @@ class DasmInfo(object):
                 (not symbol or symbol == last_func.name)):
                 # Missed the return instruction, but we've got it.
                 self.missed_return += 1
-                print 'LOST: Missed return instruction.'
+                print('LOST: Missed return instruction.')
                 return 'RET'
 
         # If there's a jump at a different address to this function,
@@ -436,7 +436,7 @@ class DasmInfo(object):
                 if (last_addr == addr and symbol != next_func.name or
                     last_addr != addr and symbol == next_func.name):
                     self.missed_jump += 1
-                    print 'LOST: Missed jump instruction.'
+                    print('LOST: Missed jump instruction.')
                     return 'JUMP'
         # Same for calls.
         if last_func.calls:
@@ -447,7 +447,7 @@ class DasmInfo(object):
                     (last_addr == addr + 4 and 
                      (symbol == next_func.name or not symbol)) or
                     (last_addr != addr and symbol == next_func.name)):
-                    print 'LOST: Missed call instruction.'
+                    print('LOST: Missed call instruction.')
                     self.missed_call += 1
                     return 'CALL'
 
@@ -459,7 +459,7 @@ class DasmInfo(object):
         ret = self.GetBranchKindForAddr(last_func, last_addr + 4,
                                         next_func, next_addr)
         if ret:
-            print 'LOST: Return went one instruction beyond.'
+            print('LOST: Return went one instruction beyond.')
             self.missed1 += 1
             return ret
 
@@ -467,7 +467,7 @@ class DasmInfo(object):
         ret = self.GetBranchKindForAddr(last_func, last_addr,
                                         next_func, next_addr - 4)
         if ret:
-            print 'LOST: Lost first instruction in called function.'
+            print('LOST: Lost first instruction in called function.')
             self.missed2 += 1
             return ret
 
@@ -529,8 +529,8 @@ class DasmInfo(object):
                 if match:
                     symbol = match.group(1)
                     if not IsLocalSymbol(symbol):
-                        print 'Missed %s' % instruction
-                        print line
+                        print('Missed %s' % instruction)
+                        print(line)
         return False
 
     def ParseLabel(self, line):
@@ -584,7 +584,7 @@ class DasmInfo(object):
             return False
 
         if not self.current_function:
-            print 'No idea where call came from\n'
+            print('No idea where call came from\n')
             return False
 
         if (instruction in branch_instructions or 
@@ -607,7 +607,7 @@ class DasmInfo(object):
                                           symbol)
             return True
         else:
-            print 'How to handle %s?' % instruction
+            print('How to handle %s?' % instruction)
 
         return False
 
