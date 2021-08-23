@@ -40,6 +40,11 @@ def sorted_calls_by_size(func) -> List[Tuple[int, str]]:
                         cd.setdefault("<unknown>", 1)
                         continue
                 cd[callsym] = cd.setdefault(callsym, 0) + 1
+        for (addr, instr, callsym) in func.jumps:
+                if (callsym is None):
+                        cd.setdefault("<unknown>", 1)
+                        continue
+                cd[callsym] = cd.setdefault(callsym, 0) + 1
 
         clist = [(cd[sym], sym) for sym in cd.keys()]
 
@@ -47,6 +52,18 @@ def sorted_calls_by_size(func) -> List[Tuple[int, str]]:
 
 def func_insn(func) -> int:
         return (func.end_address - func.start_address) / 4
+
+
+def anon_constprop(scalls:List[Tuple[int, str]]) -> List[Tuple[int, str]]:
+
+        rcalls = []
+        for (n, s) in scalls:
+                p = s.find(".")
+                if (p != -1):
+                        s = s[:p] + "<constprop>"
+                rcalls.append((n, s))
+
+        return rcalls
 
 ###
 ##  printing
@@ -92,7 +109,9 @@ def dump_full_set(title: str, dasm, funcset: Set[str]) -> None:
 def check_diff(func1, func2) -> Optional[int]:
 
         idelta = func_insn(func2) - func_insn(func1)
-        callsame = sorted_calls_by_size(func1) == sorted_calls_by_size(func2)
+        anon1 = anon_constprop(sorted_calls_by_size(func1))
+        anon2 = anon_constprop(sorted_calls_by_size(func2))
+        callsame = anon1 == anon2
 
         if ((idelta == 0) and callsame):
                 return None
