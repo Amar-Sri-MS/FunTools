@@ -100,16 +100,27 @@ def main():
             ingestion_status = ingest_qa_logs(job_id, test_index, metadata, filters)
         elif ingest_type == 'techsupport':
             metadata['techsupport_ingest_type'] = techsupport_ingest_type
+            LOG_ID = _get_log_id(job_id, ingest_type)
+            log_dir = os.path.join(DOWNLOAD_DIRECTORY, LOG_ID)
+            os.makedirs(log_dir, exist_ok=True)
+
             if techsupport_ingest_type == 'upload':
-                LOG_ID = _get_log_id(job_id, ingest_type)
-                log_path = os.path.join(DOWNLOAD_DIRECTORY, LOG_ID, file_name)
+                log_path = os.path.join(log_dir, file_name)
                 ingestion_status = ingest_techsupport_logs(job_id, log_path, metadata, filters)
             elif techsupport_ingest_type == 'mount_path':
                 # Check if the mount path exists
                 if not os.path.exists(log_path):
                     raise Exception('Could not find the mount path')
                 metadata['mount_path'] = log_path
-                ingestion_status = ingest_techsupport_logs(job_id, log_path, metadata, filters)
+
+                archive_name = os.path.basename(log_path)
+                path = os.path.join(log_dir, archive_name)
+
+                # Copying the log archive to download directory to avoid write
+                # permission issue when unarchiving the archive.
+                shutil.copy(log_path, log_dir)
+
+                ingestion_status = ingest_techsupport_logs(job_id, path, metadata, filters)
             else:
                 raise Exception('Wrong techsupport ingest type')
         else:

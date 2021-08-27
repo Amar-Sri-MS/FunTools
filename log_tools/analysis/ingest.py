@@ -463,7 +463,7 @@ def build_input_pipeline(path, frn_info, filters={}):
 
             # TODO(Sourabh): Reach out to relevant folks to standardize
             # log formats. funapisvr logs are in JSON.
-            if 'funapisvr' in source:
+            if 'funapisvr' in source or 'funapisvr' in path:
                 blocks.extend(
                     controller_input_pipeline(frn_info,
                         updated_source,
