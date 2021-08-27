@@ -25,7 +25,7 @@ import config_loader
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 LOGS_DIRECTORY = os.path.abspath(os.path.join(CURRENT_DIR, 'logs'))
-DEFAULT_LOG_FORMAT = '%(asctime)s %(module)s %(levelname)s %(message)s'
+DEFAULT_LOG_FORMAT = '%(asctime)s %(module)s %(levelname)s %(message).1000s'
 MEGABYTE = 1000000
 
 config = config_loader.get_config()
