@@ -117,7 +117,8 @@
                 })
                 .catch(error => {
                     toggleLoader(false);
-                    alert(`Error: ${error}`);
+                    console.log(error.stack);
+                    alert(`${error.stack ? 'UI' : 'Backend'} Error: ${error}`);
                 });
         }
 
@@ -293,15 +294,15 @@
                 }
 
                 const location = is_local_plex ? "local" : "remote";
-                let status = plex_number in plex_status ? plex_status[plex_number]["status"] : "NA";
-                if (status !== "active" && plex_number in plex_status) {
+                let status = plex_status && plex_number in plex_status ? plex_status[plex_number]["status"] : "NA";
+                if (status !== "active" && plex_status && plex_number in plex_status) {
                     const timestamp = plex_status[plex_number]["info"]["_source"]["@timestamp"];
                     const URL = formLogURL(timestamp, plex_status[plex_number]["info"]["_id"]);
                     status = formAnchorTag(URL, status);
                 }
 
                 let fail_plex_ack = "";
-                if (plex_uuid in fail_plex_ack_info) {
+                if (fail_plex_ack_info && plex_uuid in fail_plex_ack_info) {
                     const timestamp = fail_plex_ack_info[plex_uuid]["@timestamp"];
                     const URL = formLogURL(timestamp, fail_plex_ack_info[plex_uuid]["_id"]);
                     fail_plex_ack = formAnchorTag(URL, timestamp);
@@ -309,7 +310,7 @@
 
                 let rebuld_time = "";
                 let spare_uuid = "";
-                if (plex_uuid in plex_rebuild_info) {
+                if (plex_rebuild_info && plex_uuid in plex_rebuild_info) {
                     const timestamp = plex_rebuild_info[plex_uuid]["@timestamp"];
                     const URL = formLogURL(timestamp, plex_rebuild_info[plex_uuid]["_id"]);
                     rebuld_time = formAnchorTag(URL, timestamp);
