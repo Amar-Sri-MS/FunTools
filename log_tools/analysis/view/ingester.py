@@ -47,8 +47,9 @@ QA_STATIC_ENDPOINT = 'http://integration.fungible.local/static/logs'
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--ingest_type', help='Ingestion type', choices=['qa', 'upload'])
+    parser.add_argument('--ingest_type', help='Ingestion type', choices=['qa', 'techsupport'])
     parser.add_argument('job_id', help='Job ID')
+    parser.add_argument('--log_path', help='Log archive path', default=None)
     parser.add_argument('--test_index', type=int, help='Test index of the QA job', default=0)
     parser.add_argument('--tags', nargs='*', help='Tags for the ingestion', default=[])
     parser.add_argument('--start_time', type=int, help='Epoch start time to filter logs', default=None)
@@ -56,18 +57,21 @@ def main():
     parser.add_argument('--sources', nargs='*', help='Sources to filter the logs during ingestion', default=None)
     parser.add_argument('--file_name', help='File name of the uploaded log archive', default=None)
     parser.add_argument('--submitted_by', help='Email address of the submitter', default=None)
+    parser.add_argument('--techsupport_ingest_type', help='Techsupport ingestion type', choices=['mount_path', 'upload'])
 
     try:
         args = parser.parse_args()
         ingest_type = args.ingest_type
         job_id = args.job_id
         test_index = args.test_index
+        log_path = args.log_path
         file_name = args.file_name
         tags = args.tags
         submitted_by = args.submitted_by
         start_time = args.start_time
         end_time = args.end_time
         sources = args.sources
+        techsupport_ingest_type = args.techsupport_ingest_type
 
         LOG_ID = _get_log_id(job_id, ingest_type, test_index=test_index)
         es_metadata = ElasticsearchMetadata()
@@ -94,8 +98,31 @@ def main():
         # Start ingestion
         if ingest_type == 'qa':
             ingestion_status = ingest_qa_logs(job_id, test_index, metadata, filters)
-        elif ingest_type == 'upload':
-            ingestion_status = ingest_techsupport_logs(job_id, file_name, metadata, filters)
+        elif ingest_type == 'techsupport':
+            metadata['techsupport_ingest_type'] = techsupport_ingest_type
+            LOG_ID = _get_log_id(job_id, ingest_type)
+            log_dir = os.path.join(DOWNLOAD_DIRECTORY, LOG_ID)
+            os.makedirs(log_dir, exist_ok=True)
+
+            if techsupport_ingest_type == 'upload':
+                log_path = os.path.join(log_dir, file_name)
+                ingestion_status = ingest_techsupport_logs(job_id, log_path, metadata, filters)
+            elif techsupport_ingest_type == 'mount_path':
+                # Check if the mount path exists
+                if not os.path.exists(log_path):
+                    raise Exception('Could not find the mount path')
+                metadata['mount_path'] = log_path
+
+                archive_name = os.path.basename(log_path)
+                path = os.path.join(log_dir, archive_name)
+
+                # Copying the log archive to download directory to avoid write
+                # permission issue when unarchiving the archive.
+                shutil.copy(log_path, log_dir)
+
+                ingestion_status = ingest_techsupport_logs(job_id, path, metadata, filters)
+            else:
+                raise Exception('Wrong techsupport ingest type')
         else:
             raise Exception('Wrong ingest type')
 
@@ -132,7 +159,7 @@ def upload():
     """
     job_id = request.form.get('job_id')
     file = request.files['file']
-    LOG_ID = _get_log_id(job_id, ingest_type='upload')
+    LOG_ID = _get_log_id(job_id, ingest_type='techsupport')
 
     save_dir = os.path.join(DOWNLOAD_DIRECTORY, LOG_ID)
     os.makedirs(save_dir, exist_ok=True)
@@ -175,11 +202,43 @@ def upload():
     return jsonify('Chunk upload successful'), 200
 
 
+@ingester_page.route('/remove_file', methods=['DELETE'])
+def remove_uploaded_file():
+    """
+    Removes the uploaded file saved under the given "job_id".
+
+    Request Args:
+    job_id
+    filename: name of the file to delete
+    """
+    job_id = request.args.get('job_id')
+    filename = request.args.get('filename')
+    LOG_ID = _get_log_id(job_id, ingest_type='techsupport')
+
+    log_dir = os.path.join(DOWNLOAD_DIRECTORY, LOG_ID)
+    log_path = os.path.join(log_dir, filename)
+
+    if not os.path.exists(log_path):
+        return jsonify('Could not find the uploaded file'), 500
+
+    try:
+        os.remove(log_path)
+    except Exception as e:
+        logging.exception(f'Error while deleting the uploaded file: {filename} from {LOG_ID}')
+        return jsonify('Error while deleting the uploaded file'), 500
+
+    return jsonify('success')
+
 @ingester_page.route('/ingest', methods=['GET'])
 def render_ingest_page():
     """ UI for ingesting logs """
     ingest_type = request.args.get('ingest_type', 'qa')
-    return render_template('ingester.html', feedback={}, ingest_type=ingest_type)
+    techsupport_ingest_type = request.args.get('techsupport_ingest_type', 'mount_path')
+    return render_template(
+        'ingester.html',
+        feedback={},
+        ingest_type=ingest_type,
+        techsupport_ingest_type=techsupport_ingest_type)
 
 
 @ingester_page.route('/ingest', methods=['POST'])
@@ -190,32 +249,47 @@ def ingest():
     """
     try:
         ingest_type = request.form.get('ingest_type', 'qa')
+        techsupport_ingest_type = request.form.get('techsupport_ingest_type')
         job_id = request.form.get('job_id')
         test_index = request.form.get('test_index', 0)
         tags = request.form.get('tags')
         tags_list = [tag.strip() for tag in tags.split(',') if tag.strip() != '']
         file_name = request.form.get('filename')
+        mount_path = request.form.get('mount_path')
         submitted_by = request.form.get('submitted_by', None)
 
         start_time = request.form.get('start_time', None)
         end_time = request.form.get('end_time', None)
         sources = request.form.getlist('sources', None)
 
-        if not job_id:
+        job_id = job_id.strip()
+
+        LOG_ID = _get_log_id(job_id, ingest_type, test_index=test_index)
+
+        def render_error_template(msg=None):
             return render_template('ingester.html', feedback={
                 'success': False,
+                'started': False,
+                'log_id': LOG_ID,
                 'job_id': job_id,
+                'test_index': test_index,
                 'tags': tags,
                 'submitted_by': submitted_by,
                 'start_time': start_time,
                 'end_time': end_time,
                 'sources': sources,
-                'msg': 'Missing JOB ID'
-            }, ingest_type=ingest_type)
+                'mount_path': mount_path,
+                'msg': msg if msg else 'Some error occurred'
+            }, ingest_type=ingest_type,
+               techsupport_ingest_type=techsupport_ingest_type)
 
-        job_id = job_id.strip()
+        if not job_id:
+            return render_error_template('Missing JOB ID')
 
-        LOG_ID = _get_log_id(job_id, ingest_type, test_index=test_index)
+        if techsupport_ingest_type == 'mount_path' and not mount_path:
+            return render_error_template('Missing mount path')
+        elif techsupport_ingest_type == 'upload' and not file_name:
+            return render_error_template('Missing filename')
 
         es_metadata = ElasticsearchMetadata()
         metadata = es_metadata.get(LOG_ID)
@@ -243,9 +317,15 @@ def ingest():
             if ingest_type == 'qa':
                 cmd.append('--test_index')
                 cmd.append(str(test_index))
-            elif ingest_type == 'upload':
-                cmd.append('--file_name')
-                cmd.append(file_name)
+            elif ingest_type == 'techsupport':
+                cmd.append('--techsupport_ingest_type')
+                cmd.append(techsupport_ingest_type)
+                if techsupport_ingest_type == 'mount_path':
+                    cmd.append('--log_path')
+                    cmd.append(mount_path)
+                elif techsupport_ingest_type == 'upload':
+                    cmd.append('--file_name')
+                    cmd.append(file_name)
 
             if submitted_by:
                 cmd.append('--submitted_by')
@@ -265,23 +345,13 @@ def ingest():
             'start_time': start_time,
             'end_time': end_time,
             'sources': sources,
+            'mount_path': mount_path,
             'metadata': metadata
-        }, ingest_type=ingest_type)
+        }, ingest_type=ingest_type,
+           techsupport_ingest_type=techsupport_ingest_type)
     except Exception as e:
         current_app.logger.exception(f'Error when starting ingestion for job: {job_id}')
-        return render_template('ingester.html', feedback={
-            'started': False,
-            'success': False,
-            'log_id': LOG_ID,
-            'job_id': job_id,
-            'test_index': test_index,
-            'tags': tags,
-            'submitted_by': submitted_by,
-            'start_time': start_time,
-            'end_time': end_time,
-            'sources': sources,
-            'msg': str(e)
-        }, ingest_type=ingest_type), 500
+        return render_error_template(str(e)), 500
 
 
 @ingester_page.route('/ingest/<log_id>/status', methods=['GET'])
@@ -310,7 +380,7 @@ def _get_log_id(job_id, ingest_type, **additional_data):
     if ingest_type == 'qa':
         test_index = additional_data.get('test_index', 0)
         return f'log_qa-{job_id}-{test_index}'
-    elif ingest_type == 'upload':
+    elif ingest_type == 'techsupport':
         return f'log_techsupport-{job_id}'
 
 
@@ -558,37 +628,36 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
         })
 
 
-def ingest_techsupport_logs(job_id, file_name, metadata, filters):
+def ingest_techsupport_logs(job_id, log_path, metadata, filters):
     """
     Ingesting logs using an uploaded techsupport log archive.
 
     This function ingest logs to the Log Analyzer from the log
-    archive uploaded with the name provided as "file_name".
+    archive in the given "log_path".
     """
     es_metadata = ElasticsearchMetadata()
     LOG_ID = _get_log_id(job_id, ingest_type='upload')
-    LOG_DIR = os.path.join(DOWNLOAD_DIRECTORY, LOG_ID, file_name)
 
     try:
         # Extract if the file is an archive
-        if archive_extractor.is_archive(LOG_DIR):
-            archive_extractor.extract(LOG_DIR)
-            LOG_DIR = os.path.splitext(LOG_DIR)[0]
+        if archive_extractor.is_archive(log_path):
+            archive_extractor.extract(log_path)
+            log_path = os.path.splitext(log_path)[0]
 
         # TODO(Sourabh): Techsupport archive does not have the manifest
         # at the root but one level down.
-        if not manifest_parser.has_manifest(LOG_DIR):
-            folders = next(os.walk(os.path.join(LOG_DIR,'.')))[1]
+        if not manifest_parser.has_manifest(log_path):
+            folders = next(os.walk(os.path.join(log_path,'.')))[1]
 
             # TODO(Sourabh): This is an assumption that there will only
             # be techsupport folder.
             log_folder_name = folders[0]
-            LOG_DIR = os.path.join(LOG_DIR, log_folder_name)
+            log_path = os.path.join(log_path, log_folder_name)
 
             # TODO(Sourabh): Temp workaround until David G's fix to ingest
             # storage agent logs collected by node-service since it is the
             # only source for storage agent debug logs.
-            manifest = manifest_parser.parse(LOG_DIR)
+            manifest = manifest_parser.parse(log_path)
 
             contents = list()
             # TODO(Sourabh) Temp workaround for techsupport dumps generated
@@ -601,10 +670,10 @@ def ingest_techsupport_logs(job_id, file_name, metadata, filters):
                 'frn:plaform:DPU::system:storage_agent:textfile:other:*storageagent.log*'
             ])
 
-            _create_manifest(LOG_DIR, manifest['metadata'], contents)
+            _create_manifest(log_path, manifest['metadata'], contents)
 
         # Start the ingestion
-        return ingest_handler.start_pipeline(LOG_DIR,
+        return ingest_handler.start_pipeline(log_path,
                                          f'techsupport-{job_id}',
                                          metadata=metadata,
                                          filters=filters)
