@@ -445,7 +445,10 @@ def _filter_qa_log_files(job_logs, suite_info, test_index=None):
         # _{test_index}script_helper.py
         log_filename_starts = (f'_{test_index}{test_script_name}', f'_{test_index}script_helper.py')
 
-    log_filenames_to_ingest = ('fc_log.tgz', 'fcs_log.tgz')
+    # These are the log archives from QA platform to ingest.
+    # fc_log.tgz & fcs_log.tgz are from single & HA node setup.
+    # cs_all_logs_techsupport.tar.gz is collected from devices attached to a controller.
+    log_filenames_to_ingest = ('fc_log.tgz', 'fcs_log.tgz', 'cs_all_logs_techsupport.tar.gz')
     log_files = list()
     for job_log in job_logs['data']:
         log = job_log['data']
@@ -519,8 +522,33 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
             url = f'{QA_STATIC_ENDPOINT}{log_dir}'
             if check_and_download_logs(url, path):
                 found_logs = True
+                # techsupport log archive
+                if log_file.endswith('cs_all_logs_techsupport.tar.gz'):
+                    filename = log_file.split('/')[-1].replace(' ', '_')
+                    manifest_contents.append(f'frn::::::archive::"{filename}"')
+                    # TODO(Sourabh): This is a temp workaround to get QA ingestion working.
+                    # This will be removed after the fixes to manifest creation by David G.
+                    archive_name = os.path.splitext(filename)[0]
+                    manifest_contents.extend([
+                        f'frn:composer:controller::host:apigateway:folder:"{archive_name}/techsupport/cs":apigateway',
+                        f'frn:composer:controller::host:cassandra:folder:"{archive_name}/techsupport/cs":cassandra',
+                        f'frn:composer:controller::host:kafka:folder:"{archive_name}/techsupport/cs":kafka',
+                        f'frn:composer:controller::host:node-service:folder:"{archive_name}/techsupport/cs":nms',
+                        f'frn:composer:controller::host:pfm:folder:"{archive_name}/techsupport/cs":pfm',
+                        f'frn:composer:controller::host:telemetry-service:folder:"{archive_name}/techsupport/cs":tms',
+                        f'frn:composer:controller::host:dataplacement:folder:var/"{archive_name}/techsupport/cs"logs:dataplacement',
+                        f'frn:composer:controller::host:discovery:folder:var/"{archive_name}/techsupport/cs"logs:discovery',
+                        f'frn:composer:controller::host:lrm_consumer:folder:var/"{archive_name}/techsupport/cs"logs:lrm_consumer',
+                        f'frn:composer:controller::host:expansion_rebalance:folder:var/"{archive_name}/techsupport/cs"logs:expansion_rebalance',
+                        f'frn:composer:controller::host:metrics_manager:folder:var/"{archive_name}/techsupport/cs"logs:metrics_manager',
+                        f'frn:composer:controller::host:metrics_server:folder:var/"{archive_name}/techsupport/cs"logs:metrics_server',
+                        f'frn:composer:controller::host:scmscv:folder:var/"{archive_name}/techsupport/cs"logs:scmscv',
+                        f'frn:composer:controller::host:setup_db:folder:var/"{archive_name}/techsupport/cs"logs:setup_db',
+                        f'frn:composer:controller::host:sns:folder:"{archive_name}/techsupport/cs":sns'
+                    ])
+
                 # single node FC
-                if log_file.endswith('_fc_log.tgz'):
+                elif log_file.endswith('_fc_log.tgz'):
                     filename = log_file.split('/')[-1].replace(' ', '_')
                     archive_path = f'{path}/{filename}'
                     archive_extractor.extract(archive_path)
