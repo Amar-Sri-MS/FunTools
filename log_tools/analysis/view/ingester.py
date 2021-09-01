@@ -532,18 +532,19 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
                     manifest_contents.extend([
                         f'frn:composer:controller::host:apigateway:folder:"{archive_name}/techsupport/cs":apigateway',
                         f'frn:composer:controller::host:cassandra:folder:"{archive_name}/techsupport/cs":cassandra',
-                        f'frn:composer:controller::host:kafka:folder:"{archive_name}/techsupport/cs":kafka',
+                        f'frn:composer:controller::host:kafka:textfile:"{archive_name}/techsupport/cs/container":kafka.log',
+                        f'frn:composer:controller::host:kapacitor:folder:"{archive_name}/techsupport/cs":container',
                         f'frn:composer:controller::host:node-service:folder:"{archive_name}/techsupport/cs":nms',
                         f'frn:composer:controller::host:pfm:folder:"{archive_name}/techsupport/cs":pfm',
                         f'frn:composer:controller::host:telemetry-service:folder:"{archive_name}/techsupport/cs":tms',
-                        f'frn:composer:controller::host:dataplacement:folder:var/"{archive_name}/techsupport/cs"logs:dataplacement',
-                        f'frn:composer:controller::host:discovery:folder:var/"{archive_name}/techsupport/cs"logs:discovery',
-                        f'frn:composer:controller::host:lrm_consumer:folder:var/"{archive_name}/techsupport/cs"logs:lrm_consumer',
-                        f'frn:composer:controller::host:expansion_rebalance:folder:var/"{archive_name}/techsupport/cs"logs:expansion_rebalance',
-                        f'frn:composer:controller::host:metrics_manager:folder:var/"{archive_name}/techsupport/cs"logs:metrics_manager',
-                        f'frn:composer:controller::host:metrics_server:folder:var/"{archive_name}/techsupport/cs"logs:metrics_server',
-                        f'frn:composer:controller::host:scmscv:folder:var/"{archive_name}/techsupport/cs"logs:scmscv',
-                        f'frn:composer:controller::host:setup_db:folder:var/"{archive_name}/techsupport/cs"logs:setup_db',
+                        f'frn:composer:controller::host:dataplacement:folder:"{archive_name}/techsupport/cs/sclogs":dataplacement',
+                        f'frn:composer:controller::host:discovery:folder:"{archive_name}/techsupport/cs/sclogs":discovery',
+                        f'frn:composer:controller::host:lrm_consumer:folder:"{archive_name}/techsupport/cs/sclogs":lrm_consumer',
+                        f'frn:composer:controller::host:expansion_rebalance:folder:"{archive_name}/techsupport/cs/sclogs":expansion_rebalance',
+                        f'frn:composer:controller::host:metrics_manager:folder:"{archive_name}/techsupport/cs/sclogs":metrics_manager',
+                        f'frn:composer:controller::host:metrics_server:folder:"{archive_name}/techsupport/cs/sclogs":metrics_server',
+                        f'frn:composer:controller::host:scmscv:folder:"{archive_name}/techsupport/cs/sclogs":scmscv',
+                        f'frn:composer:controller::host:setup_db:folder:"{archive_name}/techsupport/cs/sclogs":setup_db',
                         f'frn:composer:controller::host:sns:folder:"{archive_name}/techsupport/cs":sns'
                     ])
 
