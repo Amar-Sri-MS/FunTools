@@ -284,11 +284,11 @@ def mkmisses(raw_misses, lineinfo, regioninfo, gdbinfo):
         symvague = find_vague(miss["pa"], gdbinfo)
         k = raw_miss["pc"]
         if (k):
-            srclines = lineinfo.get(k)["srclines"]
+            srclines = lineinfo.get(k, {}).get("srclines")
             if (srclines is not None):
                 srclines = "".join(srclines)
             else:
-                srclines = "foo: %s" % k
+                srclines = "unknown src: %s" % k
         
         miss["srclines"] = srclines
         miss["pa_region"] = pa_region
