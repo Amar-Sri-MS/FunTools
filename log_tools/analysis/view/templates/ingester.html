@@ -35,11 +35,11 @@
                                 <input
                                     type="radio"
                                     name="ingest_type"
-                                    value="upload"
-                                    {{"checked" if ingest_type == "upload" else ""}}
+                                    value="techsupport"
+                                    {{"checked" if ingest_type == "techsupport" else ""}}
                                     onchange="onChangeIngestType(this)"
                                 />
-                                Upload techsupport archive
+                                Techsupport archive
                             </label>
                         </h3>
                         {% if ingest_type == "qa" %}
@@ -51,7 +51,7 @@
                                 <label>QA Test Index (Default is 0)</label>
                                 <input type="text" id="test_index" name="test_index" placeholder="Enter the Test Index" value="{{feedback.test_index if feedback else 0}}">
                             </div>
-                        {% elif ingest_type == "upload" %}
+                        {% elif ingest_type == "techsupport" %}
                             <div class="form-group">
                                 <label>
                                     Job ID
@@ -60,8 +60,29 @@
                                 <input type="text" id="job_id" name="job_id" placeholder="Enter the JOB ID" value="{{feedback.job_id if feedback else null}}">
                             </div>
                             <div class="form-group">
-                                <div class="dropzone" id="uploader"></div>
-                                <input type="text" id="filename" name="filename" hidden />
+                                <label>Techsupport archive from</label>
+                                <label>
+                                    <input
+                                        type="radio"
+                                        name="techsupport_ingest_type"
+                                        value="mount_path"
+                                        {{"checked" if techsupport_ingest_type is not defined or techsupport_ingest_type == "mount_path" else ""}}
+                                        onchange="onChangeTechsupportIngestType(this.value)"
+                                    />
+                                    Mounted NFS
+                                </label>
+                                <label>
+                                    <input
+                                        type="radio"
+                                        name="techsupport_ingest_type"
+                                        value="upload"
+                                        {{"checked" if techsupport_ingest_type == "upload" else ""}}
+                                        onchange="onChangeTechsupportIngestType(this.value)"
+                                    />
+                                    Local Upload
+                                </label>
+                            </div>
+                            <div id="techsupport_ingest_type">
                             </div>
                         {% endif %}
                         <div class="form-group">
@@ -70,7 +91,7 @@
                         </div>
                         <div class="form-group">
                             <label>Sumbitted By</label>
-                            <input type="email" id="submitted_by" name="submitted_by" placeholder="Enter email" value="{{feedback.submitted_by if feedback else null}}">
+                            <input type="email" id="submitted_by" name="submitted_by" class="medium-input" placeholder="Enter email" value="{{feedback.submitted_by if feedback else null}}">
                         </div>
                         <hr />
                         <h3>Ingestion Filters</h3>
@@ -145,6 +166,15 @@
                                 <label class="source-title">
                                     <input type="checkbox" name="sources" id="expansion_rebalance" value="expansion_rebalance">Expansion Rebalance
                                 </label>
+                                <label class="source-title">
+                                    <input type="checkbox" name="sources" id="pfm" value="pfm">PFM
+                                </label>
+                                <label class="source-title">
+                                    <input type="checkbox" name="sources" id="node-service" value="node-service">NMS
+                                </label>
+                                <label class="source-title">
+                                    <input type="checkbox" name="sources" id="telemetry-service" value="telemetry-service">TMS
+                                </label>
                             </div>
                         </div>
                         <hr />
@@ -173,6 +203,7 @@
 
     <script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.4.0/min/dropzone.min.js"></script>
     <script type="text/javascript">
+        let ingestType = "{{ingest_type}}", techsupportIngestType = "{{techsupport_ingest_type}}";
 
         // Dropzone.js object to track the uploading of files.
         let dropzone = null;
@@ -186,6 +217,9 @@
             });
             $("#start_time_picker").on("dp.change", onChangeTimeFilter);
             $("#end_time_picker").on("dp.change", onChangeTimeFilter);
+            if (ingestType === "techsupport") {
+                onChangeTechsupportIngestType(techsupportIngestType);
+            }
         });
 
         // Avoid resubmitting POST from form on refresh or page navigation
@@ -194,16 +228,37 @@
         }
 
         const feedback = {{feedback|tojson}};
-        let ingestType = "{{ingest_type}}";
         const statusContainer = document.getElementById("status-container");
         const statusElement = document.getElementById("status");
         const feedbackElement = document.getElementById("feedback");
+        const techsupportIngestTypeElement = document.getElementById("techsupport_ingest_type");
 
-        if (ingestType && ingestType === "upload") {
+        function onChangeTechsupportIngestType(ingestType) {
             let params = new URLSearchParams();
-            params.set("ingest_type", "upload");
-            window.history.pushState(null, null, `?${params.toString()}`);
+            params.set("ingest_type", "techsupport");
+            if (ingestType) params.set("techsupport_ingest_type", ingestType);
+            window.history.replaceState(null, null, `?${params.toString()}`);
 
+            if (ingestType === "upload") {
+                techsupportIngestTypeElement.innerHTML = `
+                    <div class="form-group">
+                        <div class="dropzone" id="uploader"></div>
+                        <input type="text" id="filename" name="filename" hidden />
+                    </div>
+                `;
+                initializeDropzone();
+            }
+            else {
+                techsupportIngestTypeElement.innerHTML = `
+                    <div class="form-group">
+                        <label>Log Archive mounted volume path</label>
+                        <input type="text" id="mount_path" name="mount_path" class="medium-input" placeholder="/project/users/bugbits" value="{{feedback.mount_path if feedback else null}}">
+                    </div>
+                `;
+            }
+        }
+
+        function initializeDropzone() {
             dropzone = new Dropzone("div#uploader", {
                 url: 'upload',
                 paramName: 'file',
@@ -211,6 +266,7 @@
                 chunking: true,
                 retryChunks: true,
                 forceChunking: true,
+                autoQueue: false,
                 autoProcessQueue: false,
                 processingmultiple: false,
                 uploadMultiple: false,
@@ -239,6 +295,19 @@
 
             dropzone.on("error", (file, error) => {
                 alert(`UPLOAD FAILED: ${error}`);
+            });
+
+            // Delete the uploaded files on the server
+            dropzone.on("removedfile", (file) => {
+                const job_id = document.getElementById("job_id").value;
+                const params = new URLSearchParams();
+                params.set("job_id", job_id);
+                params.set("filename", file.name);
+                const url = `remove_file?${params.toString()}`;
+                fetchWrapper.delete(url)
+                    .catch(error => {
+                        alert(`Error deleting the uploaded file: ${error}`);
+                    });
             });
         }
 
@@ -319,18 +388,26 @@
                 event.elements["end_time"].value = Math.ceil(end_time.getTime()/1000);
             }
 
-            if (ingestType === "upload" && dropzone) {
-                const files = dropzone.files;
-                if (files.length === 0 || files[0].status == "error") {
-                    alert("Please upload an archive");
-                    return false;
+            if (ingestType === "techsupport") {
+                if (techsupportIngestType === "upload" && dropzone) {
+                    const files = dropzone.files;
+                    if (files.length === 0 || files[0].status == "error") {
+                        alert("Please upload an archive");
+                        return false;
+                    }
+                    const file = files[0];
+                    if (file.status == "uploading") {
+                        alert("Please wait for the archive to be uploaded.")
+                        return false;
+                    }
+                    event.elements["filename"].value = file.name;
                 }
-                const file = files[0];
-                if (file.status == "uploading") {
-                    alert("Please wait for the archive to be uploaded.")
-                    return false;
+                else {
+                    if (event.elements["mount_path"].value == "") {
+                        alert("Please enter the mount path.");
+                        return false;
+                    }
                 }
-                event.elements["filename"].value = file.name;
             }
 
             statusElement.innerHTML = "<p>Ingesting.. Please wait.</p>";

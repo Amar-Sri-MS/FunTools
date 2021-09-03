@@ -251,6 +251,14 @@ input[type="search"] {
     width: 700px;
 }
 
+.medium-input {
+    width: 300px;
+}
+
+.large-input {
+    width: 500px;
+}
+
 #loader {
     display: none;
     position: fixed;

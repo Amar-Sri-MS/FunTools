@@ -168,7 +168,7 @@ def int_to_bytes(x):
 def x509_serial_number(hash_input):
     # serial number is going to be hash of input with the current time
     hash = hashlib.sha1(hash_input)
-    ts = datetime.datetime.utcnow().timestamp()
+    ts = datetime.datetime.now(datetime.timezone.utc).timestamp()
     hash.update(struct.pack('>d', ts))
     # return digest as integer
     return int.from_bytes(hash.digest(),byteorder='big')
@@ -237,9 +237,10 @@ def x509_tbs_cert(values, parent_cert):
 
     # validity
     not_before = x509.UTCTime()
-    not_before.set(datetime.datetime.utcnow())
+    start_dt = datetime.datetime.now(datetime.timezone.utc)
+    not_before.set(start_dt)
     not_after = x509.UTCTime()
-    not_after.set(datetime.datetime.utcnow()+datetime.timedelta(days=DEFAULT_DAYS_VALID))
+    not_after.set(start_dt + datetime.timedelta(days=DEFAULT_DAYS_VALID))
     validity = x509.Validity()
     validity['not_before'] = not_before
     validity['not_after'] = not_after

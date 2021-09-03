@@ -231,7 +231,7 @@ class AnalyticsOutput(Block):
             # Kibana query should be enclosed within quotations for exact match
             # Removing special characters
             # TODO(Sourabh): Better approach for handling special characters
-            query = '"{}"'.format(msg['line'].replace('\\','').replace('"',' ').replace('\'', '!\'')).replace('!', '!!')
+            query = '"{}"'.format(msg['line'].replace('\\','').replace('"',' ').replace('\'', '!\'')).replace('!', '!!').replace('%', ' ').replace('/', ' ').replace('(', ' ').replace(')', ' ').replace("'", ' ')
             search_query = { 'query': query.strip() }
             log_view_url = f'{self.log_view_base_url}?search={quote(json.dumps(search_query))}'
 

@@ -22,6 +22,7 @@
 #define FIRST_LEVEL_SGL_N			(5)
 #define MAX_BUFFERS_PER_OPERATION (FUNQ_MAX_DMA_BUFFERS / 4)
 #define FUNQ_SYNC_CMD_TIMEOUT_MS	(0) // no timeout
+#define FUNQ_CONNECT_CMD_TIMEOUT_MS	(1000 * 60)
 
 static_assert((FUNQ_MAX_CONNECTIONS*2 <= ASQ_DEPTH) && (FUNQ_MAX_CONNECTIONS*2 <= ACQ_DEPTH),
 	"Queue must be deep enough to support all the context");
@@ -283,7 +284,7 @@ static int dpc_create_cmd(funq_handle_t handle)
 			FUN_ADMIN_RES_CREATE_FLAG_ALLOCATOR /* flag */, 0 /* id */);
 
 	return funq_admin_submit_sync_cmd(handle,
-			&c.common, &r.common, sizeof(r), FUNQ_SYNC_CMD_TIMEOUT_MS);
+			&c.common, &r.common, sizeof(r), FUNQ_CONNECT_CMD_TIMEOUT_MS);
 }
 
 static size_t fun_admin_request_size(size_t first_level_sgl_n)
