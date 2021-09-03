@@ -275,10 +275,13 @@ def x509_tbs_cert(values, parent_cert):
 
     # extensions
     extensions = x509.Extensions()
-    extensions.append(x509_basic_constraints(True, False))
+    # for DICE/RIoT, make it a CA cert
+    extensions.append(x509_basic_constraints(critical=True, ca=True))
     extensions.append(x509_key_usage(True,
                                      set(['digital_signature',
-                                          'key_agreement'])))
+                                          'key_agreement',
+                                          'key_cert_sign',
+                                          'crl_sign'])))
     extensions.append(x509_key_identifier(public_key_info))
 
     parent_key_identifier = parent_cert.key_identifier_value
@@ -352,17 +355,24 @@ def send_certificate_response(cert):
 def send_x509_certificate_response(cert, parent_cert_file):
     ''' send back a X509 certificate '''
     cert = x509_from_fungible_cert(cert, parent_cert_file)
+    cn = cert.subject.native['common_name']
     # return the PEM encoded value
     x509_pem = pem.armor('CERTIFICATE', cert.dump())
-    send_response_body(x509_pem.decode('ascii'))
+    send_response_body(x509_pem.decode('ascii'),
+                       cn + '.pem')
 
 
 def send_x509_root_certificate_response(parent_cert_file):
     ''' send back the X509 certificate '''
     x509_pem = open(parent_cert_file, 'rb').read()
+    root_file_name = os.path.splitext(
+        os.path.basename(parent_cert_file))[0]
+
     if not pem.detect(x509_pem):
         x509_pem = pem.armor('CERTIFICATE', x509_pem)
-    send_response_body(x509_pem.decode('ascii'))
+    send_response_body(x509_pem.decode('ascii'),
+                       root_file_name + '.pem')
+
 
 
 ##########################################################################

@@ -59,14 +59,16 @@ def safe_form_get(form, key, default):
         return default
 
 
-def send_response_body(body):
+def send_response_body(body, filename=None):
     print("Status: 200 OK")
+    if filename:
+        print("Content-Disposition: attachment; filename = %s" %
+              filename)
     print("Content-length: %d\n" % len(body))
     print("%s\n" % body)
 
 
-
-def send_binary_buffer(bin_buffer, form_values):
+def send_binary_buffer(bin_buffer, form_values, filename=None):
 
     format = safe_form_get(form_values, "format", "hex")
     if format == "hex":
@@ -89,7 +91,7 @@ def send_binary_buffer(bin_buffer, form_values):
     else:
         raise ValueError("Unknown format: %s" % format)
 
-    send_response_body(bin_str)
+    send_response_body(bin_str, filename)
 
 
 
