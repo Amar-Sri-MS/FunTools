@@ -1,0 +1,343 @@
+<html>
+    <head>
+        <title>Log Analyzer: Virtual Switch Tool</title>
+        <link rel="stylesheet" type="text/css" href="/static/css/index.css">
+    </head>
+    <body>
+        {% include "nav_bar.html" ignore missing %}
+        <div class="content" id="lifecycle" style="display: none;">
+            <div class="container">
+                <h3>Created vSwitches</h3>
+                <pre id="create_phase"></pre>
+            </div>
+            <div class="container" style="display: none;">
+                <h3>vSwitch Info</h3>
+                <pre id="vswitch_info"></pre>
+            </div>
+            <div class="container" style="display: none;">
+                <h3>vSwitch Logs</h3>
+                <pre id="vswitch_logs"></pre>
+            </div>
+        </div>
+        {% include "loader.html" %}
+    </body>
+    <script type="text/javascript" src="/static/js/fetchWrapper.js"></script>
+    <script type="text/javascript" src="/static/js/tracker.js"></script>
+    <script src="/static/js/ascii-table.js"></script>
+    <script type="text/javascript">
+        const logID = "{{log_id}}";
+        const lifecycle_element = document.getElementById("lifecycle");
+        const create_phase_element = document.getElementById("create_phase");
+        const vswitch_info_element = document.getElementById("vswitch_info");
+        const vswitch_logs_element = document.getElementById("vswitch_logs");
+        const LOG_PAGE_URL = `${window.location.origin}/log/${logID}`;
+
+        // List of search queries for fetching logs
+        const SEARCHES_QUERIES = {
+            "CREATED_VSWITCH_REQUEST": `"method:POST" AND create-virtual-fabric`,
+            "CREATED_VSWITCH_ACK": `"Creating new VF DB Entry"`,
+            "CREATED_VSWITCH_STATUS": `("Create VirtualFabric completed" OR "Create VirtualFabric completed, updated state as Completed")`,
+
+            "DELETED_VSWITCHES_REQUEST": `"method:DELETE" AND delete-virtual-fabric`,
+            "DELETED_VSWITCH_ACK": `"Deleted virtual fabric DB entry"`,
+            "DELETED_VSWITCH_STATUS": `("Validation successful for All FCP tunnel delete APIs" OR "Validation successfull for All FCP tunnel delete APIs")`
+        };
+
+        // Self invocation function
+        (async function() {
+            const results = await handleSearch(SEARCHES_QUERIES["CREATED_VSWITCH_ACK"]);
+            showLifecycle(results);
+        })();
+
+        // Extracts ReqID & VFID from the log message
+        function extractID(message) {
+            if (!message || message === "" || !message.startsWith("[")) {
+                return {
+                    "reqID": null,
+                    "VFID": null,
+                    "message": message
+                };
+            }
+            const IDPair = message.slice(1, message.search("]")).split(", ");
+            function extract(IDStr) {
+                const IDValuePair = IDStr.split(": ");
+                return IDValuePair[1] !== "" ? IDValuePair[1] : null;
+            }
+            const reqID = extract(IDPair[0]);
+            const VFID = extract(IDPair[1]);
+            return {
+                "reqID": reqID,
+                "VFID": VFID,
+                "message": message.slice(message.search("]")+1).trim()
+            }
+        }
+
+        async function showLifecycle(results) {
+            if (!results || results.length === 0) {
+                alert("Could not find any vswitch creations");
+                return;
+            }
+            toggleElementDisplay(lifecycle_element, true);
+
+            let table = new window.AsciiTable("VSwitches Creation Requests");
+            table.setHeading("Timestamp", "Req-ID", "VF-ID", "Name", "down_port_id_max", "", "");
+
+            for (const result of results) {
+                const timestamp = result["@timestamp"];
+                const URL = formLogURL(timestamp, result["_id"]);
+                const message = result["message"];
+                const info = message.slice(message.search(":")+4).split(" ");
+                const reqIDURL = formSearchURL(`"${result['reqID']}"`);
+                const VFID = result["VFID"] ? result["VFID"] : info[0];
+                const vfIDURL = formSearchURL(`"${VFID}"`);
+
+                table.addRow(
+                    formAnchorTag(URL, result["@timestamp"]),
+                    formAnchorTag(reqIDURL, result["reqID"]),
+                    formAnchorTag(vfIDURL, VFID),
+                    info[1],
+                    info[2],
+                    formHTMLButton("Show info", `showInfo("${result['reqID']}", "${VFID}", "${message}")`),
+                    formHTMLButton("Show all logs", `showLogs("${result['reqID']}", "${VFID}")`)
+                )
+            }
+
+            addTableToElement(create_phase_element, table);
+        }
+
+        async function showInfo(reqID, VFID, log) {
+            vswitch_info_element.innerHTML = "";
+            const responses = await asyncFetch([
+                // Create Validation
+                handleSearch(`${SEARCHES_QUERIES["CREATED_VSWITCH_STATUS"]} AND "${VFID}"`),
+                // Delete Request
+                handleSearch(`${SEARCHES_QUERIES["DELETED_VSWITCHES_REQUEST"]} AND "${VFID}"`),
+                // Delete Validation
+                handleSearch(`${SEARCHES_QUERIES["DELETED_VSWITCH_STATUS"]} AND "${VFID}"`)
+            ]);
+
+            // Function to convert responses into HTML anchor tag with timestamp as text
+            const formURLFromResponse = response => {
+                const timestamp = response["@timestamp"];
+                const URL = formLogURL(timestamp, response["_id"]);
+                return `<a href="${URL}" target="_blank">${timestamp}</a>`;
+            }
+
+            const createValidation = responses[0].map(formURLFromResponse);
+            let errorLogsDuringCreation = "";
+
+            if (createValidation.length === 0) {
+                const errorLogs = await handleSearch(`${reqID} AND level:error`);
+                const title = `Error Logs during vSwitch Creation`;
+                errorLogsDuringCreation = getTableForLogs(title, errorLogs);
+            }
+
+            const deleteRequests = responses[1].map(formURLFromResponse);
+            const deleteValidations = responses[2].map(formURLFromResponse);
+            let errorLogsDuringDelete = "";
+
+            if (deleteRequests.length > 1 || (deleteRequests.length !== 0 && deleteValidations.length === 0)) {
+                const time = {
+                    "after": responses[1][0]["@timestamp"],
+                    "before": deleteValidations.length > 0 ? responses[2][0]["@timestamp"] : null
+                };
+                const errorLogs = await handleSearch(`${VFID} AND level:error`, time);
+                const title = `Error Logs during vSwitch deletion between ${time["after"]} and ${time["before"]}`;
+                errorLogsDuringDelete = getTableForLogs(title, errorLogs);
+            }
+
+            // Function to join timestamps
+            const displayTimestamps = (ts, joinStr=", ") => ts.length === 0
+                                                                ? "Not Found" : ts.join(joinStr);
+
+            vswitch_info_element.innerHTML += `
+                <div>VFID: ${VFID}</div>
+                <div>Creation Log: ${log}</div>
+                <div>Create Validation: ${displayTimestamps(createValidation)}</div>
+                <div>${errorLogsDuringCreation}</div>
+                <div>Delete Request: ${displayTimestamps(deleteRequests)}</div>
+                <div>Delete Validation: ${displayTimestamps(deleteValidations)}</div>
+                <div>${errorLogsDuringDelete}</div>
+            `;
+
+            toggleElementDisplay(vswitch_info_element.parentElement, true);
+            vswitch_info_element.parentElement.scrollIntoView();
+        }
+
+        async function showLogs(reqID, VFID) {
+            const results = await handleSearch(`"${reqID}" OR "${VFID}"`);
+            vswitch_logs_element.innerHTML = "";
+
+            const title = `vSwitch logs for VF-ID: ${VFID}`;
+            const table = getTableForLogs(title, results);
+            addTableToElement(vswitch_logs_element, table);
+
+            toggleElementDisplay(vswitch_logs_element.parentElement, true);
+            vswitch_logs_element.parentElement.scrollIntoView();
+        }
+
+        function getTableForLogs(title, results) {
+            let table = new window.AsciiTable(title);
+            table.setHeading("Source", "Timestamp", "Level", "Log Message");
+
+            if (!results || results.length === 0) {
+                return "No logs found!";
+            }
+
+            results.forEach(result => {
+                const timestamp = result["@timestamp"];
+                const URL = formLogURL(timestamp, result["_id"]);
+                table.addRow(
+                    result["src"],
+                    result["@timestamp"],
+                    result["level"],
+                    formAnchorTag(URL, result["message"])
+                )
+            });
+            return table;
+        }
+
+        /*
+            Constructs a search string, for use in a request,
+            from search query and search state.
+        */
+        function buildSearchOption(searchPayload) {
+            if (
+                searchPayload == null ||
+                (Object.keys(searchPayload).length === 0 && searchPayload.constructor === Object) ||
+                searchPayload["query"] === ""
+            ) {
+                return null;
+            }
+            return JSON.stringify({
+                "query": encodeURIComponent(searchPayload["query"]),
+                "state": JSON.stringify(searchPayload["state"]),
+                "page": searchPayload["page"],
+                "next": true,
+                // Setting size to a ES limit of 10k results per request
+                "size": 10000
+            });
+        }
+
+        async function handleSearch(searchText, time) {
+            if (!searchText || searchText === "") {
+                alert("Search box is empty");
+                return;
+            }
+            toggleLoader(true);
+            let searchPayload = {};
+
+            // Updating the search term on searchPayload
+            searchPayload["query"] = searchText;
+
+            if (time) {
+                searchPayload["state"] = formSearchState(time["before"], time["after"]);
+            }
+
+            const filterString = "";
+            const searchString = buildSearchOption(searchPayload);
+
+            // Filters not selected
+            if (filterString === null) {
+                return;
+            }
+
+            let params = new URLSearchParams();
+            if (filterString != "") {
+                params.set("filter", filterString);
+            }
+            if (searchString != "") {
+                params.set("search", searchString);
+            }
+
+            const search_url = `${LOG_PAGE_URL}/search?${params.toString()}${location.hash}`;
+            return fetchWrapper.get(search_url)
+                .then(data => {
+                    toggleLoader(false);
+                    const formattedData = data["results"].map(result => ({
+                        ...result,
+                        ...result["_source"],
+                        ...extractID(result["_source"]["msg"])
+                    }));
+                    return formattedData;
+                })
+                .catch(error => {
+                    toggleLoader(false);
+                    alert(`An error occurred: ${error}`);
+                    return;
+                });
+        }
+
+        // Util function to perform API requests in parallel
+        async function asyncFetch (requests) {
+            let result = [];
+            await Promise.all(requests)
+                    .then(responses => result = responses);
+            return result;
+        }
+
+        // Generic function to toggle any HTML element's display property
+        function toggleElementDisplay(element, flag) {
+            if (flag) {
+                element.style = "display: block";
+            }
+            else {
+                element.style = "display: none";
+            }
+        }
+
+        function formSearchState(before, after) {
+            return {
+                "before": before,
+                "after": after
+            }
+        }
+
+        function formSearchURL(query) {
+            const searchPayload = JSON.stringify({
+                "query": query
+            });
+            let params = new URLSearchParams();
+            params.set("search", searchPayload);
+            const url = `${LOG_PAGE_URL}?${params.toString()}`;
+            return url;
+        }
+
+        function formLogURL(timestamp, docID) {
+            const state = formSearchState(timestamp, timestamp);
+            let params = new URLSearchParams();
+            params.set("next", true);
+            params.set("prev", true);
+            if (state) params.set("state", JSON.stringify(state));
+            if (docID) params.set("include", docID);
+            const url = `${LOG_PAGE_URL}?${params.toString()}#0`;
+            return url;
+        }
+
+        function formAnchorTag(href, text, openNewTab=true) {
+            let a = document.createElement("a");
+            let linkText = document.createTextNode(text);
+            a.appendChild(linkText);
+            a.href = href;
+            a.target = openNewTab ? "_blank" : "_self";
+            return a;
+        }
+
+        function formHTMLButton(text, onclickCallback) {
+            let button = document.createElement("button");
+            let buttonText = document.createTextNode(text);
+            button.appendChild(buttonText);
+            button.setAttribute("onclick", onclickCallback);
+            button.setAttribute("style", "margin: 2px 0px;")
+            return button;
+        }
+
+        function addTableToElement(element, table, spacing=2) {
+            element.innerHTML += table.toString();
+            for (let i=0; i<spacing; i++) {
+                element.innerHTML += "\n";
+            }
+        }
+
+    </script>
+</html>
