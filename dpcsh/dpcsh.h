@@ -9,7 +9,9 @@
 
 #define PLATFORM_POSIX	1
 
+#include "dpcsh_ptr_queue.h"
 #include <FunSDK/utils/threaded/fun_json.h>
+#include <pthread.h>
 
 /* handy socket abstraction */
 enum sockmode {
@@ -29,6 +31,7 @@ enum parsingmode {
 };
 
 struct dpcsock {
+	const char *verbose_log_name;
 
 	/* configuration */
 	enum sockmode mode;      /* whether & how this is used */
@@ -55,6 +58,21 @@ struct dpcsock_connection {
 	uint32_t nvme_session_id;
 	uint32_t nvme_seq_num;
 	void *funq_connection;
+
+	bool closing;
+
+	struct fun_ptr_and_size read_buffer;
+	size_t read_buffer_position;
+
+	// since one of the ends is always binary json,
+	// it would never lead to a double-transcoding
+	struct dpcsh_ptr_queue *binary_json_queue;
+
+	// for libfunq and NVMe only
+	pthread_mutex_t nvme_lock;
+	pthread_mutex_t funq_queue_lock;
+	pthread_cond_t data_available;
+	bool nvme_data_written;
 };
 
 // Flag that controls how JSON is printed

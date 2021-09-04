@@ -552,7 +552,6 @@ static void dpc_proccess_recv_response(void *response, void *ctx)
 
 	if (r->u.receive.code == FUN_ADMIN_DPC_ISSUE_CMD_RESP_COMPLETE) {
 		context->connection->callback(context->response, context->connection->callback_context);
-		free(context->response.ptr);
 		context->response.ptr = NULL;
 		new_buffers_n = 1;
 	}
@@ -742,6 +741,27 @@ bool dpc_funq_send(struct dpc_funq_connection *connection, struct fun_ptr_and_si
 	return result;
 }
 
+size_t dpc_funq_send_batch(struct dpc_funq_connection *connection,
+	struct fun_ptr_and_size *data, size_t n)
+{
+	if (n == 0) return 0;
+
+	if ((n > 1) && (data[0].size + data[1].size <= DMA_BUFSIZE_BYTES)) {
+		struct fun_ptr_and_size batch = {.ptr = malloc(DMA_BUFSIZE_BYTES), .size = 0};
+		if (!batch.ptr) return 0;
+		size_t i = 0;
+		for (; i < n && (batch.size + data[i].size < DMA_BUFSIZE_BYTES); i++) {
+			memcpy(batch.ptr + batch.size, data[i].ptr, data[i].size);
+			batch.size += data[i].size;
+		}
+		bool success = dpc_funq_send(connection, batch);
+		free(batch.ptr);
+		return success ? i : 0;
+	}
+
+	return dpc_funq_send(connection, data[0]) ? 1 : 0;
+}
+
 bool dpc_funq_register_receive_callback(struct dpc_funq_connection *connection,
 	dpc_funq_callback_t callback, void *context)
 {
@@ -798,6 +818,11 @@ bool dpc_funq_register_receive_callback(struct dpc_funq_connection *connection,
 	dpc_funq_callback_t callback, void *context)
 {
 	return false;
+}
+
+size_t dpc_funq_send_batch(struct dpc_funq_connection *connection, struct fun_ptr_and_size *data, size_t n)
+{
+	return 0;
 }
 
 #endif
