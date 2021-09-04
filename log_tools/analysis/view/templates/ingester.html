@@ -300,14 +300,16 @@
             // Delete the uploaded files on the server
             dropzone.on("removedfile", (file) => {
                 const job_id = document.getElementById("job_id").value;
-                const params = new URLSearchParams();
-                params.set("job_id", job_id);
-                params.set("filename", file.name);
-                const url = `remove_file?${params.toString()}`;
-                fetchWrapper.delete(url)
-                    .catch(error => {
-                        alert(`Error deleting the uploaded file: ${error}`);
-                    });
+                if (job_id) {
+                    const params = new URLSearchParams();
+                    params.set("job_id", job_id);
+                    params.set("filename", file.name);
+                    const url = `remove_file?${params.toString()}`;
+                    fetchWrapper.delete(url)
+                        .catch(error => {
+                            alert(`Error deleting the uploaded file: ${error}`);
+                        });
+                }
             });
         }
 
