@@ -105,10 +105,10 @@
         }
 
         // Check if time is present in the url
-        const dt_start = document.getElementById("dt_start");
-        const dt_end = document.getElementById("dt_end");
         const queryParams = new URLSearchParams(location.search.substring(1));
         if (queryParams.get('filter')) {
+            const dt_start = document.getElementById("dt_start");
+            const dt_end = document.getElementById("dt_end");
             const filters = JSON.parse(queryParams.get('filter'));
             const timeFilter = filters['time'];
             if (timeFilter && timeFilter.length === 2) {
@@ -315,9 +315,8 @@
         if (searchString != null && searchString != "") {
             params.set("search", searchString);
         }
-        params.delete("include");
 
-        const search_url = `${LOG_VIEW_BASE_URL}?${params.toString()}`;
+        const search_url = `${LOG_VIEW_BASE_URL}?${params.toString()}${location.hash}`;
         window.open(search_url, "_self");
         trackWebEvent("FILTER_LOGS");
     }
