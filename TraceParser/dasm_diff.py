@@ -14,6 +14,8 @@ from typing import List, Optional, Type, Dict, Any, Tuple, Set
 import argparse
 import parse_dasm
 
+EXTRA_DETAIL: bool = False
+
 SLOWPATH_SYMBOLS = [
         "printf",
         "vfprintf",
@@ -46,6 +48,8 @@ SLOWPATH_SYMBOLS = [
 def parse_args() -> argparse.Namespace:
         parser = argparse.ArgumentParser()
 
+        global EXTRA_DETAIL
+
         # First dasm file
         parser.add_argument("dasm1", help="First DASM file")
 
@@ -55,10 +59,15 @@ def parse_args() -> argparse.Namespace:
         # All functions instead of just WU handlers
         parser.add_argument("-a", "--all", action="store_true", default=False)
 
+        # Extra details. Don't short-circuit the slow path.
+        parser.add_argument("-x", "--extra", action="store_true", default=False)
+
         # Max depth of recursion (0=flat) 
         parser.add_argument("-d", "--depth", action="store", default=5)
 
         args: argparse.Namespace = parser.parse_args()
+        EXTRA_DETAIL = args.extra
+
         return args
 
 
@@ -67,6 +76,8 @@ def parse_args() -> argparse.Namespace:
 #
 
 def is_slowpath(sym):
+        if (EXTRA_DETAIL):
+                return False
         for ssym in SLOWPATH_SYMBOLS:
                 if (sym.startswith(ssym)):
                         return True
@@ -287,7 +298,7 @@ class Fingerprint:
                 self.fstat:FuncStats  = fstat
                 self.insns:int = fstat.insns
                 self.totalins: int = fstat.total_insns()
-                self._fp = (self.insns, self.totalins, self.fstat.name, self.fstat.children_fp())
+                self._fp = (self.insns, self.totalins, self.fstat.fingername(), self.fstat.children_fp())
 
         def idelta(self, other:"Fingerprint") -> int:
                 return self.insns - other.insns
