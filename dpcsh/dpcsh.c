@@ -1237,7 +1237,7 @@ static bool _write_dequeue(struct dpcsock_connection *dest,
 
 		do {
 			if (!_write_to_fd(dest, write_buffer, &write_buffer_position)) {
-				log_error("write error");
+				log_error("write error\n");
 				_unlock_queue_if_needed(source);
 				return false;
 			}
@@ -1538,7 +1538,7 @@ static bool _do_cli(int argc, char *argv[],
 
 	ok = ok && _wait_read(funos);
 	ok = ok && _read_enqueue(funos);
-	ok = ok && _write_dequeue(cmd, funos);
+	ok = ok && (_write_dequeue(cmd, funos) || _write_dequeue(cmd, funos));
 
 connect_fail:
 	close_connections(funos, cmd);
