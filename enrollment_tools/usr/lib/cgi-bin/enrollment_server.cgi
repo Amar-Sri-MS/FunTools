@@ -236,10 +236,11 @@ def x509_tbs_cert(values, parent_cert):
     tbs['issuer'] = parent_cert.subject
 
     # validity
-    not_before = x509.UTCTime()
+    not_before = x509.GeneralizedTime()
     start_dt = datetime.datetime.now(datetime.timezone.utc)
+    start_dt = start_dt.replace(microsecond = 0) # asn1 crypto bug
     not_before.set(start_dt)
-    not_after = x509.UTCTime()
+    not_after = x509.GeneralizedTime()
     not_after.set(start_dt + datetime.timedelta(days=DEFAULT_DAYS_VALID))
     validity = x509.Validity()
     validity['not_before'] = not_before
