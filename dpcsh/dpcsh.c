@@ -15,9 +15,9 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <netdb.h>
 #include <sys/un.h>
 #include <termios.h>          	// termios, TCSANOW, ECHO, ICANON
-#include <sys/types.h>
 #include <signal.h>          	// termios, TCSANOW, ECHO, ICANON
 #include <netinet/in.h>		// TCP socket
 #include <arpa/inet.h>
@@ -40,7 +40,7 @@
 
 #define SOCK_NAME	"/tmp/funos-dpc.sock"      /* default FunOS socket */
 #define PROXY_NAME      "/tmp/funos-dpc-text.sock" /* default unix proxy name */
-#define DPC_PORT        20110   /* default FunOS port */
+#define DPC_PORT_STR    "20110"   /* default FunOS port */
 #define DPC_PROXY_PORT  40221   /* default TCP proxy port */
 #define DPC_B64_PORT    40222   /* default dpcuart port in qemu */
 #define DPC_B64SRV_PORT 40223   /* default dpcuart listen port */
@@ -243,26 +243,54 @@ static char *getline_with_history(OUT ssize_t *nbytes)
 // ===============  SOCKET HANDLING ===============
 
 /* socket routines */
-static int _open_sock_inet(uint16_t port)
+static int _open_sock_inet(const char *host_port, uint16_t port)
 {
 	int sock = 0;
 	int r, tries = 0;
-	struct sockaddr_in serv_addr;
+	struct addrinfo hints;
+	struct addrinfo *result, *rp;
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_INET;
+
+	if (host_port == NULL) {
+		char port_str[6];
+		sprintf(port_str, "%" PRIu16, port);
+		int s = getaddrinfo("127.0.0.1", port_str, &hints, &result);
+		if (s != 0) {
+				log_error("getaddrinfo: %s\n", gai_strerror(s));
+				exit(EXIT_FAILURE);
+		}
+	} else {
+		char *host_port_d = strdup(host_port);
+		if (!host_port_d) {
+			log_error("failed to copy host_port string");
+			exit(EXIT_FAILURE);
+		}
+
+		char *delimiter = strstr(host_port_d, ":");
+		char *port = (delimiter == NULL) ? host_port_d : delimiter + 1;
+		char *host = (delimiter == NULL) ? "127.0.0.1" : host_port_d;
+
+		if (delimiter != NULL) *delimiter = 0;
+
+		int s = getaddrinfo(host, port, &hints, &result);
+		if (s != 0) {
+			log_error("getaddrinfo: %s\n", gai_strerror(s));
+			exit(EXIT_FAILURE);
+		}
+		free(host_port_d);
+	}
 
 	do {
-		if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-			log_error("socket creation error \n");
-			return sock;
-		}
-		memset(&serv_addr, '0', sizeof(serv_addr));
+		for (rp = result; rp != NULL; rp = rp->ai_next) {
+				sock = socket(rp->ai_family, rp->ai_socktype,
+										rp->ai_protocol);
+				if (sock == -1)
+						continue;
 
-		serv_addr.sin_family = AF_INET;
-		serv_addr.sin_port = htons(port);
-
-		// Convert IPv4 and IPv6 addresses from text to binary form
-		if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr)<=0) {
-			log_error("invalid address/ Address not supported \n");
-			return -1;
+				r = connect(sock, rp->ai_addr, rp->ai_addrlen);
+				if (r != -1) break;
 		}
 
 		if (tries > 0) {
@@ -270,8 +298,6 @@ static int _open_sock_inet(uint16_t port)
 			sleep(1);
 		}
 
-		r = connect(sock, (struct sockaddr *)&serv_addr,
-			    sizeof(serv_addr));
 		tries++;
 	} while ((r < 0) && (tries < connect_retries));
 
@@ -985,7 +1011,7 @@ bool dpcsocket_open(struct dpcsock_connection *connection)
 	}
 
 	if (sock->mode == SOCKMODE_IP) {
-		connection->fd = _open_sock_inet(sock->port_num);
+		connection->fd = _open_sock_inet(sock->socket_name, sock->port_num);
 	}
 
 	if (connection->fd > 0) {
@@ -1573,39 +1599,39 @@ static void usage(const char *argv0)
 {
 	printf("usage: %s [<mode> [option]]", argv0);
 	printf("       by default connect over TCP\n");
-	printf("       -h, --help                  this text\n");
-	printf("       -D, --dev[=device]          open device and read/write base64 to FunOS UART\n");
-	printf("       -F, --no_flow_control       no flow control in uart. send char one by one with delay\n");
-	printf("       -B, --base64_srv[=port]     listen as a server port on IP using base64 (dpcuart to qemu)\n");
-	printf("       -b, --base64_sock[=port]    connect as a client port on IP using base64 (dpcuart to qemu)\n");
-	printf("       -i, --inet_sock[=port]      connect as a client port over IP\n");
-	printf("       -u, --unix_sock[=sockname]  connect as a client port over unix sockets\n");
+	printf("       -h, --help                    this text\n");
+	printf("       -D, --dev[=device]            open device and read/write base64 to FunOS UART\n");
+	printf("       -F, --no_flow_control         no flow control in uart. send char one by one with delay\n");
+	printf("       -B, --base64_srv[=port]       listen as a server port on IP using base64 (dpcuart to qemu)\n");
+	printf("       -b, --base64_sock[=port]      connect as a client port on IP using base64 (dpcuart to qemu)\n");
+	printf("       -i, --inet_sock[=[host:]port] connect as a client port over IP\n");
+	printf("       -u, --unix_sock[=sockname]    connect as a client port over unix sockets\n");
 // DPC over NVMe is needed only in Linux
 #ifdef __linux__
-	printf("       -p, --pcie_nvme_sock[=sockname]  connect as a client port over nvme pcie device\n");
+	printf("       -p, --pcie_nvme_sock[=sockname] connect as a client port over nvme pcie device\n");
 #endif //__linux__
 #ifdef WITH_LIBFUNQ
-	printf("       -q, --libfunq_sock[=sockname]  connect as a client port over libfunq pcie device, put \"auto\" for auto-discover\n");
+	printf("       -q, --libfunq_sock[=sockname] connect as a client port over libfunq pcie device, put \"auto\" for auto-discover\n");
 #endif
-	printf("       -H, --http_proxy[=port]     listen as an http proxy\n");
-	printf("       -T, --tcp_proxy[=port]      listen as a tcp proxy\n");
-	printf("       -T, --text_proxy[=port]     same as \"--tcp_proxy\"\n");
-	printf("       -t, --unix_proxy[=port]     listen as a unix proxy\n");
+	printf("       -H, --http_proxy[=port]       listen as an http proxy\n");
+	printf("       -T, --tcp_proxy[=port]        listen as a tcp proxy\n");
+	printf("       -T, --text_proxy[=port]       same as \"--tcp_proxy\"\n");
+	printf("       -t, --unix_proxy[=port]       listen as a unix proxy\n");
 #ifdef __linux__
-	printf("       -I, --inet_interface=name   listen only on <name> interface\n");
+	printf("       -I, --inet_interface=name     listen only on <name> interface\n");
 #endif // __linux__
-	printf("       -n, --nocli                 issue request from command-line arguments and terminate\n");
-	printf("       -Q, --nocli-quiet           issue request from command-line arguments and terminate, only print response\n");
-	printf("       -S, --oneshot               don't reconnect after command side disconnect\n");
-	printf("       -N, --manual_base64         just translate base64 back and forward\n");
-	printf("       -X, --no_dev_init           don't init the UART device, use as-is\n");
-	printf("       -R, --baud=rate             specify non-standard baud rate (default=" DEFAULT_BAUD ")\n");
-	printf("       -L, --legacy_b64            support old-style base64 encoding, despite issues\n");
-	printf("       -v, --verbose               log all json transactions in proxy mode\n");
-	printf("       -d, --debug                 print debugging information\n");
-	printf("       -l, --log[=filename]        log to a file\n");
-	printf("       -Y, --retry[=N]             retry every seconds for N seconds for first socket connection\n");
-	printf("       -V, --version               display version info and exit\n");
+	printf("       -n, --nocli                   issue request from command-line arguments and terminate\n");
+	printf("       -Q, --nocli-quiet             issue request from command-line arguments and terminate, only print response\n");
+	printf("       -S, --oneshot                 don't reconnect after command side disconnect\n");
+	printf("       -N, --manual_base64           just translate base64 back and forward\n");
+	printf("       -X, --no_dev_init             don't init the UART device, use as-is\n");
+	printf("       -R, --baud=rate               specify non-standard baud rate (default=" DEFAULT_BAUD ")\n");
+	printf("       -L, --legacy_b64              support old-style base64 encoding, despite issues\n");
+	printf("       -v, --verbose                 log all json transactions in proxy mode\n");
+	printf("       -d, --debug                   print debugging information\n");
+	printf("       -l, --log[=filename]          log to a file\n");
+	printf("       -Y, --retry[=N]               retry every seconds for N seconds for first socket connection\n");
+	printf("       -V, --version                 display version info and exit\n");
 #ifdef __linux__
 	printf("       --nvme_cmd_timeout=timeout specify cmd timeout in ms (default=" DEFAULT_NVME_CMD_TIMEOUT_MS ")\n");
 #endif //__linux__
@@ -1717,8 +1743,8 @@ int main(int argc, char *argv[])
 			/* in case this got stamped over... */
 			funos_sock.mode = SOCKMODE_IP;
 			funos_sock.server = false;
-			funos_sock.port_num = opt_portnum(optarg,
-							  DPC_PORT);
+			funos_sock.socket_name = opt_sockname(optarg,
+							  DPC_PORT_STR);
 			autodetect_input_device = false;
 			break;
 		case 'u':  /* unix domain client */
@@ -1883,7 +1909,7 @@ int main(int argc, char *argv[])
 			/* default connection to FunOS posix simulator dpcsock */
 			funos_sock.mode = SOCKMODE_IP;
 			funos_sock.server = false;
-			funos_sock.port_num = DPC_PORT;
+			funos_sock.socket_name = DPC_PORT_STR;
 			funos_sock.retries = UINT32_MAX;
 		}
 	}
