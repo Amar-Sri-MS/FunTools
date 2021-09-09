@@ -245,17 +245,19 @@ static char *getline_with_history(OUT ssize_t *nbytes)
 /* socket routines */
 static int _open_sock_inet(const char *host_port, uint16_t port)
 {
-	int sock = 0;
-	int r, tries = 0;
+	int sock = -1;
+	int r = -1, tries = 0;
 	struct addrinfo hints;
 	struct addrinfo *result, *rp;
 
 	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_INET;
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
 
 	if (host_port == NULL) {
 		char port_str[6];
 		sprintf(port_str, "%" PRIu16, port);
+		log_debug(_debug_log, "trying 127.0.01:%s\n", port_str);
 		int s = getaddrinfo("127.0.0.1", port_str, &hints, &result);
 		if (s != 0) {
 				log_error("getaddrinfo: %s\n", gai_strerror(s));
@@ -269,12 +271,13 @@ static int _open_sock_inet(const char *host_port, uint16_t port)
 		}
 
 		char *delimiter = strstr(host_port_d, ":");
-		char *port = (delimiter == NULL) ? host_port_d : delimiter + 1;
-		char *host = (delimiter == NULL) ? "127.0.0.1" : host_port_d;
-
+		char *port_s = (delimiter == NULL) ? host_port_d : delimiter + 1;
+		char *host_s = (delimiter == NULL) ? "127.0.0.1" : host_port_d;
 		if (delimiter != NULL) *delimiter = 0;
 
-		int s = getaddrinfo(host, port, &hints, &result);
+		log_debug(_debug_log, "trying %s:%s\n", host_s, port_s);
+
+		int s = getaddrinfo(host_s, port_s, &hints, &result);
 		if (s != 0) {
 			log_error("getaddrinfo: %s\n", gai_strerror(s));
 			exit(EXIT_FAILURE);
@@ -286,11 +289,13 @@ static int _open_sock_inet(const char *host_port, uint16_t port)
 		for (rp = result; rp != NULL; rp = rp->ai_next) {
 				sock = socket(rp->ai_family, rp->ai_socktype,
 										rp->ai_protocol);
-				if (sock == -1)
-						continue;
+				if (sock == -1) {
+					continue;
+				}
 
 				r = connect(sock, rp->ai_addr, rp->ai_addrlen);
 				if (r != -1) break;
+				close(sock);
 		}
 
 		if (tries > 0) {
@@ -301,10 +306,18 @@ static int _open_sock_inet(const char *host_port, uint16_t port)
 		tries++;
 	} while ((r < 0) && (tries < connect_retries));
 
-	if (r < 0) {
+	freeaddrinfo(result);
+
+	if (r < 0 || sock < 0) {
 		log_error("can't connect\n");
 		perror("connect");
 		exit(1);
+	}
+
+	if (host_port == NULL) {
+		log_info("connected to %" PRIu16 "\n", port);
+	} else {
+		log_info("connected to %s\n", host_port);
 	}
 
 	return sock;
@@ -962,6 +975,12 @@ struct dpcsock_connection *dpcsocket_new(struct dpcsock *sock)
 	return connection;
 }
 
+bool switch_to_binary(int fd)
+{
+	const char *switch_cmd = "{\"verb\":\"encoding_binary_json\", \"args\":[], \"tid\":0}\n";
+	return write(fd, switch_cmd, strlen(switch_cmd)) == strlen(switch_cmd);
+}
+
 bool dpcsocket_open(struct dpcsock_connection *connection)
 {
 	static size_t nvme_session_counter = 0;
@@ -1016,6 +1035,10 @@ bool dpcsocket_open(struct dpcsock_connection *connection)
 
 	if (connection->fd > 0) {
 		set_nonblocking_fd(connection->fd);
+	}
+
+	if (sock->dpcsh_connection) {
+		return switch_to_binary(connection->fd);
 	}
 
 	/* connection->fd < 0 in the case of failure*/
@@ -1557,6 +1580,7 @@ static struct option longopts[] = {
 	{ "base64_sock",     optional_argument, NULL, 'b' },
 	{ "dev",             required_argument, NULL, 'D' },
 	{ "inet_sock",       optional_argument, NULL, 'i' },
+	{ "connect_dpc",     required_argument, NULL, 'c' },
 	{ "unix_sock",       optional_argument, NULL, 'u' },
 // DPC over NVMe is needed only in Linux
 #ifdef __linux__
@@ -1604,7 +1628,8 @@ static void usage(const char *argv0)
 	printf("       -F, --no_flow_control         no flow control in uart. send char one by one with delay\n");
 	printf("       -B, --base64_srv[=port]       listen as a server port on IP using base64 (dpcuart to qemu)\n");
 	printf("       -b, --base64_sock[=port]      connect as a client port on IP using base64 (dpcuart to qemu)\n");
-	printf("       -i, --inet_sock[=[host:]port] connect as a client port over IP\n");
+	printf("       -i, --inet_sock[=port]        connect as a client port over IP\n");
+	printf("       -c, --connect_dpc[=host:port] connect as a client to another dpcsh\n");
 	printf("       -u, --unix_sock[=sockname]    connect as a client port over unix sockets\n");
 // DPC over NVMe is needed only in Linux
 #ifdef __linux__
@@ -1694,9 +1719,9 @@ int main(int argc, char *argv[])
 
 	while ((ch = getopt_long(argc, argv,
 #ifdef __linux__
-				 "hB::b::D:i::u::p::q::T::t::I:nQSNXFR:LvdVYW",
+				 "hB::b::D:i::c::u::p::q::T::t::I:nQSNXFR:LvdVYW",
 #else
-				 "hB::b::D:i::u::T::t::nQSNXFR:LvdVY",
+				 "hB::b::D:i::c::u::T::t::nQSNXFR:LvdVY",
 #endif
 				 longopts, NULL)) != -1) {
 
@@ -1745,6 +1770,14 @@ int main(int argc, char *argv[])
 			funos_sock.server = false;
 			funos_sock.socket_name = opt_sockname(optarg,
 							  DPC_PORT_STR);
+			autodetect_input_device = false;
+			break;
+		case 'c':  /* inet dpc client */
+
+			funos_sock.dpcsh_connection = true;
+			funos_sock.mode = SOCKMODE_IP;
+			funos_sock.server = false;
+			funos_sock.socket_name = optarg;
 			autodetect_input_device = false;
 			break;
 		case 'u':  /* unix domain client */

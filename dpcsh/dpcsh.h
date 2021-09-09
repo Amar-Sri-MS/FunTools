@@ -38,6 +38,7 @@ struct dpcsock {
 	bool server;             /* listen/accept instead of connect */
 	bool base64;             /* talk base64 over this socket */
 	bool loopback;           /* if this socket is ignored */
+	bool dpcsh_connection;   /* socket is connected to another dpcsh */
 	const char *socket_name; /* unix socket name */
 	const char *eth_name;    /* eth interface to listen on */
 	uint16_t port_num;       /* TCP port number */
