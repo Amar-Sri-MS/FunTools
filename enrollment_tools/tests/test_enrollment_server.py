@@ -15,6 +15,8 @@ import re
 import binascii
 import configparser
 
+CGI_SCRIPT="enrollment_server.cgi"
+
 RECV_ROOT_CERT_FILE = 'recv_root_cert.pem'
 RECV_CERT_FILE = 'recv_cert.pem'
 
@@ -39,7 +41,7 @@ def compare_with_expected(text_result, expected_output):
 
 def enroll_cert_gen(server, infile, expected_output, tls_verify):
 
-    url_str = "https://" + server + "/cgi-bin/enrollment_server.cgi"
+    url_str = "https://" + server + "/cgi-bin/" + CGI_SCRIPT
 
     response = requests.put(url_str,
                             data=open(infile, 'rb').read(),
@@ -50,7 +52,7 @@ def enroll_cert_gen(server, infile, expected_output, tls_verify):
 
 def retrieve_enroll_cert(server, sn, expected_output, tls_verify):
 
-    url_str = "https://" + server + "/cgi-bin/enrollment_server.cgi"
+    url_str = "https://" + server + "/cgi-bin/" + CGI_SCRIPT
 
     response = requests.get(url_str,
                             params={'cmd':'cert', 'sn':sn},
@@ -60,7 +62,7 @@ def retrieve_enroll_cert(server, sn, expected_output, tls_verify):
 
 def retrieve_modulus(server, expected_output, tls_verify):
 
-    url_str = "https://" + server + "/cgi-bin/enrollment_server.cgi"
+    url_str = "https://" + server + "/cgi-bin/" + CGI_SCRIPT
 
     response = requests.get(url_str,
                             params={'cmd':'modulus', 'format':'hex'},
@@ -81,7 +83,7 @@ def retrieve_modulus(server, expected_output, tls_verify):
 
 def retrieve_x509_root_cert(server, expected_modulus, tls_verify):
 
-    url_str = "https://" + server + "/cgi-bin/enrollment_server.cgi"
+    url_str = "https://" + server + "/cgi-bin/" + CGI_SCRIPT
 
     response = requests.get(url_str,
                             params={'cmd':'x509'},
@@ -130,7 +132,7 @@ def retrieve_x509_cert(server, sn, enroll_cert, tls_verify):
     pub_key_bin = cert_bin[KEY_OFFSET:KEY_OFFSET+KEY_LENGTH]
     pub_key_hex = binascii.b2a_hex(pub_key_bin).decode('ascii')
 
-    url_str = "https://" + server + "/cgi-bin/enrollment_server.cgi"
+    url_str = "https://" + server + "/cgi-bin/" + CGI_SCRIPT
 
     response = requests.get(url_str,
                             params={'cmd':'x509', 'sn': sn },
