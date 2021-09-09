@@ -492,6 +492,11 @@ static bool _write_to_fd(struct dpcsock_connection *connection,
 	struct fun_ptr_and_size w = write_buffer;
 	w.ptr += *position;
 	w.size -= *position;
+	int fd = connection->fd;
+
+	if (connection->socket->mode == SOCKMODE_TERMINAL) {
+		fd = STDOUT_FILENO;
+	}
 
 	if (!_no_flow_control) {
 		r = write(connection->fd, w.ptr, w.size);
@@ -1538,7 +1543,7 @@ static bool _do_cli(int argc, char *argv[],
 
 	ok = ok && _wait_read(funos);
 	ok = ok && _read_enqueue(funos);
-	ok = ok && (_write_dequeue(cmd, funos) || _write_dequeue(cmd, funos));
+	ok = ok && _write_dequeue(cmd, funos);
 
 connect_fail:
 	close_connections(funos, cmd);
