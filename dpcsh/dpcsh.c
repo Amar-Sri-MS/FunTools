@@ -499,24 +499,24 @@ static bool _write_to_fd(struct dpcsock_connection *connection,
 	}
 
 	if (!_no_flow_control) {
-		r = write(connection->fd, w.ptr, w.size);
+		r = write(fd, w.ptr, w.size);
 
 		if (r < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
 			perror("write");
 			return false;
 		}
 
-		fsync(connection->fd);
+		fsync(fd);
 
 		*position += r;
 		return true;
 	}
 
 	for (size_t i = 0; i < w.size; i++) {
-		r = write(connection->fd, w.ptr + i, 1);
+		r = write(fd, w.ptr + i, 1);
 		if (r < 0)
 			return false;
-		fsync(connection->fd);
+		fsync(fd);
 		usleep(NO_FLOW_CTRL_DELAY_USEC);
 	}
 	*position += w.size;
