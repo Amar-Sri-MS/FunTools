@@ -315,9 +315,9 @@ static int _open_sock_inet(const char *host_port, uint16_t port)
 	}
 
 	if (host_port == NULL) {
-		log_info("connected to %" PRIu16 "\n", port);
+		log_debug(_debug_log, "connected to %" PRIu16 "\n", port);
 	} else {
-		log_info("connected to %s\n", host_port);
+		log_debug(_debug_log, "connected to %s\n", host_port);
 	}
 
 	return sock;
