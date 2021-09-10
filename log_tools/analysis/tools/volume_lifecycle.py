@@ -20,6 +20,7 @@ from elasticsearch7 import Elasticsearch
 
 # Mapping of volume types
 VOLUME_TYPES = {
+    'SNAPSHOT': 'VOL_TYPE_BLK_SNAP',
     'PV': 'VOL_TYPE_BLK_PART_VOL',
     'PVG': 'VOL_TYPE_BLK_PART_VG',
     'LSV': 'VOL_TYPE_BLK_LSV',
@@ -181,6 +182,23 @@ class Volume(object):
     def get_mount_info(self):
         """ Returns info of MOUNT operation """
         return self.get_info('MOUNT')
+
+    def get_snapshot_info(self, uuid, operation='CREATE'):
+        queries = self._build_query(operation, VOLUME_TYPES.get('SNAPSHOT'), uuid)
+        if operation == 'CREATE':
+            # CHECK: Do we need this?
+            queries.append('"user_created: true"')
+
+        results = self._perform_es_search(queries)
+        return results
+
+    def get_clone_info(self, uuid, operation='CREATE'):
+        # Base volume of clones can be either snapshots or RDS
+        snapshot_info = self.get_snapshot_info(uuid, operation)
+        if snapshot_info:
+            return snapshot_info
+        rds_info = self.get_plex_info(uuid, operation=operation)
+        return rds_info
 
     def get_pv_info(self, pv_id, operation='CREATE'):
         """ Returns results for Part Volume creation/mount """
@@ -400,8 +418,19 @@ class Volume(object):
         jvol_uuid = None
         result_data = None
 
+        snapshot_info = self.get_snapshot_info(self.pvol_id, operation)
+        if snapshot_info:
+            # Snapshot have PV as their base_uuid
+            self.pvol_id = get_value_from_params(snapshot_info, 'base_uuid')
+
         pv_info_list = self.get_pv_info(self.pvol_id, operation)
         for pv_info in pv_info_list:
+            is_clone = get_value_from_params(pv_info, 'clone')
+            clone_info = None
+            if is_clone:
+                # Check for base volume info
+                base_uuid = get_value_from_params(pv_info, 'base_uuid')
+                clone_info = self.get_clone_info(base_uuid, operation)
             pvg_uuid = get_value_from_params(pv_info, 'partvg_uuid')
             self.op_time = convert_datetime_str(pv_info['@timestamp'])
             primary_dpu = get_value_from_params(pv_info, 'Dpu')
@@ -495,6 +524,8 @@ class Volume(object):
                 self.prev_op_time = self.op_time
 
             result_data = {
+                'snapshot_info': snapshot_info,
+                'clone_info': clone_info,
                 'pv_info': pv_result_data,
                 'pvg_info': pvg_result_data,
                 'lsv_info': lsv_result_data
