@@ -419,7 +419,7 @@ class Volume(object):
         result_data = None
 
         snapshot_info = self.get_snapshot_info(self.pvol_id, operation)
-        if snapshot_info and len(snapshot_info) == 1:
+        if snapshot_info:
             # Snapshot have PV as their base_uuid
             self.pvol_id = get_value_from_params(snapshot_info[0], 'base_uuid')
 
