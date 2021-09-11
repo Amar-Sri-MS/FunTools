@@ -19,13 +19,15 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		A773255826EC53F500EF84F3 /* security */ = {isa = PBXFileReference; lastKnownFileType = folder; name = security; path = ../../FunOS/security; sourceTree = "<group>"; };
+		A773255926EC541200EF84F3 /* crunch */ = {isa = PBXFileReference; lastKnownFileType = folder; name = crunch; path = ../../FunOS/crunch; sourceTree = "<group>"; };
+		A773255A26EC542A00EF84F3 /* functions */ = {isa = PBXFileReference; lastKnownFileType = folder; name = functions; path = ../../FunOS/functions; sourceTree = "<group>"; };
 		A7D64B9F2505521700DB0693 /* funos_xcode */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = funos_xcode; sourceTree = BUILT_PRODUCTS_DIR; };
 		A7D64BA9250552A700DB0693 /* apps */ = {isa = PBXFileReference; lastKnownFileType = folder; name = apps; path = ../../FunOS/apps; sourceTree = "<group>"; };
 		A7D64BAA250552A700DB0693 /* devices */ = {isa = PBXFileReference; lastKnownFileType = folder; name = devices; path = ../../FunOS/devices; sourceTree = "<group>"; };
 		A7D64BAB250552A700DB0693 /* nucleus */ = {isa = PBXFileReference; lastKnownFileType = folder; name = nucleus; path = ../../FunOS/nucleus; sourceTree = "<group>"; };
 		A7D64BAC250552A700DB0693 /* kv */ = {isa = PBXFileReference; lastKnownFileType = folder; name = kv; path = ../../FunOS/kv; sourceTree = "<group>"; };
 		A7D64BAD250552A700DB0693 /* accelerators */ = {isa = PBXFileReference; lastKnownFileType = folder; name = accelerators; path = ../../FunOS/accelerators; sourceTree = "<group>"; };
-		A7D64BAE250552A700DB0693 /* datakit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = datakit; path = ../../FunOS/datakit; sourceTree = "<group>"; };
 		A7D64BAF250552A700DB0693 /* flows */ = {isa = PBXFileReference; lastKnownFileType = folder; name = flows; path = ../../FunOS/flows; sourceTree = "<group>"; };
 		A7D64BB0250552A700DB0693 /* storage */ = {isa = PBXFileReference; lastKnownFileType = folder; name = storage; path = ../../FunOS/storage; sourceTree = "<group>"; };
 		A7D64BB1250552A700DB0693 /* utils */ = {isa = PBXFileReference; lastKnownFileType = folder; name = utils; path = ../../FunOS/utils; sourceTree = "<group>"; };
@@ -35,10 +37,8 @@
 		A7D64BB5250552A700DB0693 /* networking */ = {isa = PBXFileReference; lastKnownFileType = folder; name = networking; path = ../../FunOS/networking; sourceTree = "<group>"; };
 		A7D64BB6250552A800DB0693 /* scripts */ = {isa = PBXFileReference; lastKnownFileType = folder; name = scripts; path = ../../FunOS/scripts; sourceTree = "<group>"; };
 		A7D64BB7250552A800DB0693 /* tests */ = {isa = PBXFileReference; lastKnownFileType = folder; name = tests; path = ../../FunOS/tests; sourceTree = "<group>"; };
-		A7D64BB8250552A800DB0693 /* datacode */ = {isa = PBXFileReference; lastKnownFileType = folder; name = datacode; path = ../../FunOS/datacode; sourceTree = "<group>"; };
 		A7D64BB9250552A800DB0693 /* props_bridges */ = {isa = PBXFileReference; lastKnownFileType = folder; name = props_bridges; path = ../../FunOS/props_bridges; sourceTree = "<group>"; };
 		A7D64BBA250552A800DB0693 /* services */ = {isa = PBXFileReference; lastKnownFileType = folder; name = services; path = ../../FunOS/services; sourceTree = "<group>"; };
-		A7D64BBB250552A800DB0693 /* hci */ = {isa = PBXFileReference; lastKnownFileType = folder; name = hci; path = ../../FunOS/hci; sourceTree = "<group>"; };
 		A7D64BBC250552A800DB0693 /* cfg */ = {isa = PBXFileReference; lastKnownFileType = folder; name = cfg; path = ../../FunOS/cfg; sourceTree = "<group>"; };
 		A7D64BBD250552A800DB0693 /* hw */ = {isa = PBXFileReference; lastKnownFileType = folder; name = hw; path = ../../FunOS/hw; sourceTree = "<group>"; };
 		A7D64BBE250552A800DB0693 /* configs */ = {isa = PBXFileReference; lastKnownFileType = folder; name = configs; path = ../../FunOS/configs; sourceTree = "<group>"; };
@@ -63,24 +63,23 @@
 				A7D64BA9250552A700DB0693 /* apps */,
 				A7D64BBC250552A800DB0693 /* cfg */,
 				A7D64BBE250552A800DB0693 /* configs */,
-				A7D64BB8250552A800DB0693 /* datacode */,
-				A7D64BAE250552A700DB0693 /* datakit */,
+				A773255926EC541200EF84F3 /* crunch */,
 				A7D64BAA250552A700DB0693 /* devices */,
 				A7D64BB4250552A700DB0693 /* docs */,
 				A7D64BAF250552A700DB0693 /* flows */,
-				A7D64BBB250552A800DB0693 /* hci */,
+				A773255A26EC542A00EF84F3 /* functions */,
 				A7D64BBD250552A800DB0693 /* hw */,
 				A7D64BAC250552A700DB0693 /* kv */,
 				A7D64BB5250552A700DB0693 /* networking */,
 				A7D64BB2250552A700DB0693 /* platform */,
 				A7D64BB9250552A800DB0693 /* props_bridges */,
 				A7D64BB6250552A800DB0693 /* scripts */,
+				A773255826EC53F500EF84F3 /* security */,
 				A7D64BBA250552A800DB0693 /* services */,
 				A7D64BB3250552A700DB0693 /* stats */,
 				A7D64BB0250552A700DB0693 /* storage */,
 				A7D64BB7250552A800DB0693 /* tests */,
 				A7D64BB1250552A700DB0693 /* utils */,
-				A7D64BA12505521700DB0693 /* funos_xcode */,
 				A7D64BA02505521700DB0693 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -91,13 +90,6 @@
 				A7D64B9F2505521700DB0693 /* funos_xcode */,
 			);
 			name = Products;
-			sourceTree = "<group>";
-		};
-		A7D64BA12505521700DB0693 /* funos_xcode */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = funos_xcode;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
