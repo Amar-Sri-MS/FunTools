@@ -76,7 +76,7 @@ struct bin_ctl_connection {
 
 struct bin_ctl_context {
 	struct bin_ctl_connection *connection;
-	struct fun_admin_dpc_req *request;
+	struct fun_admin_bin_ctl_req *request;
 
 	int sgl_first_n;
 	int sgl_second_n;
@@ -153,8 +153,8 @@ static void dpc_add_pending(struct bin_ctl_handle *h, struct dpc_pending_allocat
 
 struct bin_ctl_connection *bin_ctl_open_connection(struct bin_ctl_handle *dpc_handle)
 {
-	struct fun_admin_dpc_req c = {};
-	struct fun_admin_dpc_rsp r = {};
+	struct fun_admin_bin_ctl_req c = {};
+	struct fun_admin_bin_ctl_rsp r = {};
 
 	struct bin_ctl_connection *connection = (struct bin_ctl_connection *)calloc(1, sizeof(struct bin_ctl_connection));
 	connection->dpc_handle = dpc_handle;
@@ -166,14 +166,14 @@ struct bin_ctl_connection *bin_ctl_open_connection(struct bin_ctl_handle *dpc_ha
 		return NULL;
 	}
 
-	fun_admin_req_common_init(&c.common, FUN_ADMIN_OP_DPC,
+	fun_admin_req_common_init(&c.common, FUN_ADMIN_OP_BIN_CTL,
 			sizeof (c) >> 3, 0 /* flags */, 0 /* suboff8 */, 0 /* cid */);
-	fun_admin_dpc_open_connection_req_init(&c, FUN_ADMIN_DPC_SUBOP_OPEN_CONNECTION, 0, 0);
+	fun_admin_bin_ctl_open_connection_req_init(&c, FUN_ADMIN_BIN_CTL_SUBOP_OPEN_CONNECTION, 0, 0);
 
 	int ret = funq_admin_submit_sync_cmd(dpc_handle->handle,
 			&c.common, &r.common, sizeof(r), FUNQ_SYNC_CMD_TIMEOUT_MS);
 
-	if (ret != 0 || r.u.open.code != FUN_ADMIN_DPC_ISSUE_CMD_RESP_COMPLETE) {
+	if (ret != 0 || r.u.open.code != FUN_ADMIN_BIN_CTL_ISSUE_CMD_RESP_COMPLETE) {
 		log_error("failed to open the connection, ret = %d, code = %" PRId8 "\n", ret, r.u.open.code);
 		free(connection);
 		return NULL;
@@ -234,14 +234,14 @@ fail:
 
 extern bool bin_ctl_close_connection(struct bin_ctl_connection *connection)
 {
-	struct fun_admin_dpc_req c = {};
-	struct fun_admin_dpc_rsp r = {};
+	struct fun_admin_bin_ctl_req c = {};
+	struct fun_admin_bin_ctl_rsp r = {};
 
 	connection->receiver_closing_connection = true;
 
-	fun_admin_req_common_init(&c.common, FUN_ADMIN_OP_DPC,
+	fun_admin_req_common_init(&c.common, FUN_ADMIN_OP_BIN_CTL,
 			sizeof (c) >> 3, 0 /* flags */, 0 /* suboff8 */, 0 /* cid */);
-	fun_admin_dpc_close_connection_req_init(&c, FUN_ADMIN_DPC_SUBOP_CLOSE_CONNECTION,
+	fun_admin_bin_ctl_close_connection_req_init(&c, FUN_ADMIN_BIN_CTL_SUBOP_CLOSE_CONNECTION,
 			0, 0, cpu_to_dpu16(connection->id));
 
 	funq_handle_t handle = connection->dpc_handle->handle;
@@ -275,12 +275,12 @@ extern bool bin_ctl_close_connection(struct bin_ctl_connection *connection)
 
 static int dpc_create_cmd(funq_handle_t handle, uint16_t handler_id)
 {
-	struct fun_admin_dpc_req c = {};
-	struct fun_admin_dpc_rsp r = {};
+	struct fun_admin_bin_ctl_req c = {};
+	struct fun_admin_bin_ctl_rsp r = {};
 
-	fun_admin_req_common_init(&c.common, FUN_ADMIN_OP_DPC,
+	fun_admin_req_common_init(&c.common, FUN_ADMIN_OP_BIN_CTL,
 			sizeof (c) >> 3, 0 /* flags */, 0 /* suboff8 */, 0 /* cid */);
-	fun_admin_dpc_create_req_init(&c, FUN_ADMIN_SUBOP_CREATE,
+	fun_admin_bin_ctl_create_req_init(&c, FUN_ADMIN_SUBOP_CREATE,
 			FUN_ADMIN_RES_CREATE_FLAG_ALLOCATOR /* flag */, 0 /* id */, handler_id);
 
 	return funq_admin_submit_sync_cmd(handle,
@@ -290,7 +290,7 @@ static int dpc_create_cmd(funq_handle_t handle, uint16_t handler_id)
 static size_t fun_admin_request_size(size_t first_level_sgl_n)
 {
 	size_t total_sgl_len = sizeof(struct fun_subop_sgl) * first_level_sgl_n;
-	return sizeof(struct fun_admin_dpc_req) + total_sgl_len;
+	return sizeof(struct fun_admin_bin_ctl_req) + total_sgl_len;
 }
 
 static void fill_sgl_request_header(struct bin_ctl_context *context, bool send)
@@ -301,7 +301,7 @@ static void fill_sgl_request_header(struct bin_ctl_context *context, bool send)
 	bool direct = context->sgl_second_n == 0;
 
 	fun_admin_req_common_init(&context->request->common,
-			FUN_ADMIN_OP_DPC, fun_admin_request_size(context->sgl_first_n) >> 3,
+			FUN_ADMIN_OP_BIN_CTL, fun_admin_request_size(context->sgl_first_n) >> 3,
 			0 /* flags */, 0 /* suboff8 */, 0 /* cid */);
 
 	for (size_t i = 0; i < context->sgl_first_n; i++) {
@@ -330,8 +330,8 @@ static void fill_send_request_header(struct bin_ctl_context *context,
 	log_debug(dpc_handle->debug, "preparing send request connection_id=%" PRIu16 ", size=%zu, offset=%zu, full_size=%zu\n", context->connection->id, size, offset, full_size);
 	log_debug(dpc_handle->debug, "sgl_n=%d, sgl_first_n=%d, sgl_second_n=%d\n", context->sgl_n, context->sgl_first_n, context->sgl_second_n);
 
-	fun_admin_dpc_send_data_req_init(context->request,
-			FUN_ADMIN_DPC_SUBOP_SEND_DATA, 0, 0,
+	fun_admin_bin_ctl_send_data_req_init(context->request,
+			FUN_ADMIN_BIN_CTL_SUBOP_SEND_DATA, 0, 0,
 			cpu_to_dpu16(context->connection->id),
 			cpu_to_dpu32(full_size), cpu_to_dpu32(offset), cpu_to_dpu32(size));
 }
@@ -347,8 +347,8 @@ static void fill_recv_request_header(struct bin_ctl_context *context)
 	log_debug(dpc_handle->debug, "preparing receive request connection_id=%" PRIu16 ", size=%zu\n", context->connection->id, buffer_size);
 	log_debug(dpc_handle->debug, "sgl_n=%d, sgl_first_n=%d, sgl_second_n=%d\n", context->sgl_n, context->sgl_first_n, context->sgl_second_n);
 
-	fun_admin_dpc_receive_data_req_init(context->request,
-		FUN_ADMIN_DPC_SUBOP_RECEIVE_DATA, 0, 0,
+	fun_admin_bin_ctl_receive_data_req_init(context->request,
+		FUN_ADMIN_BIN_CTL_SUBOP_RECEIVE_DATA, 0, 0,
 		cpu_to_dpu16(context->connection->id),
 		cpu_to_dpu32(buffer_size));
 }
@@ -377,7 +377,7 @@ static void dpc_split_sgl_layers(struct bin_ctl_context *context)
 static bool dpc_send_data_cmd(size_t *position, struct bin_ctl_connection *connection,
 	struct fun_ptr_and_size data, int *allocations, int allocations_n)
 {
-	struct fun_admin_dpc_rsp response = {};
+	struct fun_admin_bin_ctl_rsp response = {};
 	struct bin_ctl_context context = {};
 	bool direct = (allocations_n <= FIRST_LEVEL_SGL_N);
 	int data_buffers_n = allocations_n;
@@ -415,8 +415,8 @@ static bool dpc_send_data_cmd(size_t *position, struct bin_ctl_connection *conne
 	}
 
 	bool last_buffer = (data.size <= *position + chunk.size);
-	if ((response.u.cmd.code == FUN_ADMIN_DPC_ISSUE_CMD_RESP_COMPLETE && last_buffer)
-		|| (response.u.cmd.code == FUN_ADMIN_DPC_ISSUE_CMD_RESP_PARTIAL && !last_buffer)) {
+	if ((response.u.cmd.code == FUN_ADMIN_BIN_CTL_ISSUE_CMD_RESP_COMPLETE && last_buffer)
+		|| (response.u.cmd.code == FUN_ADMIN_BIN_CTL_ISSUE_CMD_RESP_PARTIAL && !last_buffer)) {
 		*position += chunk.size;
 		return true;
 	}
@@ -503,10 +503,10 @@ static void bin_ctl_stop_receiver(struct bin_ctl_context *context)
 static void dpc_proccess_recv_response(void *response, void *ctx)
 {
 	struct bin_ctl_context *context = ctx;
-	struct fun_admin_dpc_rsp *r = response;
+	struct fun_admin_bin_ctl_rsp *r = response;
 	log_debug(context->connection->dpc_handle->debug, "starting the receive\n");
 
-	if (r->u.receive.code == FUN_ADMIN_DPC_ISSUE_CMD_RESP_FAIL) {
+	if (r->u.receive.code == FUN_ADMIN_BIN_CTL_ISSUE_CMD_RESP_FAIL) {
 		bin_ctl_stop_receiver(context);
 		free_context(context);
 		return;
@@ -550,7 +550,7 @@ static void dpc_proccess_recv_response(void *response, void *ctx)
 
 	int new_buffers_n = CEILING(context->response.size - context->response_offset, DMA_BUFSIZE_BYTES);
 
-	if (r->u.receive.code == FUN_ADMIN_DPC_ISSUE_CMD_RESP_COMPLETE) {
+	if (r->u.receive.code == FUN_ADMIN_BIN_CTL_ISSUE_CMD_RESP_COMPLETE) {
 		context->connection->callback(context->response, context->connection->callback_context);
 		context->response.ptr = NULL;
 		new_buffers_n = 1;
@@ -600,11 +600,11 @@ static bool dpc_first_recv_data_cmd(struct bin_ctl_connection *connection)
 
 static int dpc_destroy_cmd(funq_handle_t handle)
 {
-	struct fun_admin_dpc_req c = {};
-	struct fun_admin_dpc_rsp r = {};
-	fun_admin_req_common_init(&c.common, FUN_ADMIN_OP_DPC,
+	struct fun_admin_bin_ctl_req c = {};
+	struct fun_admin_bin_ctl_rsp r = {};
+	fun_admin_req_common_init(&c.common, FUN_ADMIN_OP_BIN_CTL,
 			sizeof (c) >> 3, 0 /* flags */, 0 /* suboff8 */, 0 /* cid */);
-	fun_admin_dpc_destroy_req_init(&c, FUN_ADMIN_SUBOP_DESTROY,
+	fun_admin_bin_ctl_destroy_req_init(&c, FUN_ADMIN_SUBOP_DESTROY,
 			0 /* flag */, 0 /* id */);
 
 	return funq_admin_submit_sync_cmd(handle,
