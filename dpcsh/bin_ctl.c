@@ -1,13 +1,13 @@
 /*
- *  dpcsh_libfunq.c
+ *  bin_ctl.c
  *
- *  Created by Shweta on 2018-02-12.
- *  Copyright © 2016 Fungible. All rights reserved.
+ *  Created by Renat on 2021-09-12.
+ *  Copyright © 2021 Fungible. All rights reserved.
  */
 
 #include <stdio.h>
 #include <unistd.h>
-#include "dpcsh_libfunq.h"
+#include "bin_ctl.h"
 #include "dpcsh_log.h"
 
 // libfunq is supported only for Linux
@@ -38,16 +38,16 @@ struct dpc_pending_allocation {
 	struct dpc_pending_allocation *next;
 };
 
-struct dpc_funq_buffer {
+struct bin_ctl_buffer {
 	void *dma_addr_local;
 	dma_addr_t dma_addr_dpu;
 	bool used;
 };
 
-struct dpc_funq_handle {
+struct bin_ctl_handle {
 	funq_handle_t handle;
 
-	struct dpc_funq_buffer buffers[FUNQ_MAX_DMA_BUFFERS];
+	struct bin_ctl_buffer buffers[FUNQ_MAX_DMA_BUFFERS];
 
 	int free_buffers_n;
 	struct dpc_pending_allocation *pending;
@@ -57,8 +57,8 @@ struct dpc_funq_handle {
 	bool debug;
 };
 
-struct dpc_funq_connection {
-	struct dpc_funq_handle *dpc_handle;
+struct bin_ctl_connection {
+	struct bin_ctl_handle *dpc_handle;
 
 	uint16_t id;
 
@@ -70,12 +70,12 @@ struct dpc_funq_connection {
 	pthread_mutex_t receive_lock;
 	pthread_cond_t receiver_closed;
 
-	dpc_funq_callback_t callback;
+	bin_ctl_callback_t callback;
 	void *callback_context;
 };
 
-struct dpc_funq_context {
-	struct dpc_funq_connection *connection;
+struct bin_ctl_context {
+	struct bin_ctl_connection *connection;
 	struct fun_admin_dpc_req *request;
 
 	int sgl_first_n;
@@ -88,7 +88,7 @@ struct dpc_funq_context {
 	size_t response_offset;
 };
 
-static int dpc_allocate_buffer(struct dpc_funq_handle *h)
+static int dpc_allocate_buffer(struct bin_ctl_handle *h)
 {
 	if (!h->free_buffers_n) return -1;
 	for (int i = 0; i < FUNQ_MAX_DMA_BUFFERS; i++) {
@@ -100,7 +100,7 @@ static int dpc_allocate_buffer(struct dpc_funq_handle *h)
 	return -1;
 }
 
-static void dpc_free_buffer(struct dpc_funq_handle *h, int idx)
+static void dpc_free_buffer(struct bin_ctl_handle *h, int idx)
 {
 	if (idx < 0) return;
 
@@ -129,19 +129,19 @@ static void dpc_free_buffer(struct dpc_funq_handle *h, int idx)
 	free(p);
 }
 
-static void dpc_allocate_rx_tx(struct dpc_funq_connection *connection)
+static void dpc_allocate_rx_tx(struct bin_ctl_connection *connection)
 {
 	connection->send_buffer_idx = dpc_allocate_buffer(connection->dpc_handle);
 	connection->recv_buffer_idx = dpc_allocate_buffer(connection->dpc_handle);
 }
 
-static void dpc_deallocate_rx_tx(struct dpc_funq_connection *connection)
+static void dpc_deallocate_rx_tx(struct bin_ctl_connection *connection)
 {
 	dpc_free_buffer(connection->dpc_handle, connection->send_buffer_idx);
 	dpc_free_buffer(connection->dpc_handle, connection->recv_buffer_idx);
 }
 
-static void dpc_add_pending(struct dpc_funq_handle *h, struct dpc_pending_allocation *p)
+static void dpc_add_pending(struct bin_ctl_handle *h, struct dpc_pending_allocation *p)
 {
 	struct dpc_pending_allocation **last;
 	last = &h->pending;
@@ -151,12 +151,12 @@ static void dpc_add_pending(struct dpc_funq_handle *h, struct dpc_pending_alloca
 	*last = p;
 }
 
-struct dpc_funq_connection *dpc_funq_open_connection(struct dpc_funq_handle *dpc_handle)
+struct bin_ctl_connection *bin_ctl_open_connection(struct bin_ctl_handle *dpc_handle)
 {
 	struct fun_admin_dpc_req c = {};
 	struct fun_admin_dpc_rsp r = {};
 
-	struct dpc_funq_connection *connection = (struct dpc_funq_connection *)calloc(1, sizeof(struct dpc_funq_connection));
+	struct bin_ctl_connection *connection = (struct bin_ctl_connection *)calloc(1, sizeof(struct bin_ctl_connection));
 	connection->dpc_handle = dpc_handle;
 
 	if (pthread_cond_init(&connection->receiver_closed, NULL) != 0 ||
@@ -232,7 +232,7 @@ fail:
 	return NULL;
 }
 
-extern bool dpc_funq_close_connection(struct dpc_funq_connection *connection)
+extern bool bin_ctl_close_connection(struct bin_ctl_connection *connection)
 {
 	struct fun_admin_dpc_req c = {};
 	struct fun_admin_dpc_rsp r = {};
@@ -273,7 +273,7 @@ extern bool dpc_funq_close_connection(struct dpc_funq_connection *connection)
 	return true;
 }
 
-static int dpc_create_cmd(funq_handle_t handle)
+static int dpc_create_cmd(funq_handle_t handle, uint16_t handler_id)
 {
 	struct fun_admin_dpc_req c = {};
 	struct fun_admin_dpc_rsp r = {};
@@ -281,7 +281,7 @@ static int dpc_create_cmd(funq_handle_t handle)
 	fun_admin_req_common_init(&c.common, FUN_ADMIN_OP_DPC,
 			sizeof (c) >> 3, 0 /* flags */, 0 /* suboff8 */, 0 /* cid */);
 	fun_admin_dpc_create_req_init(&c, FUN_ADMIN_SUBOP_CREATE,
-			FUN_ADMIN_RES_CREATE_FLAG_ALLOCATOR /* flag */, 0 /* id */);
+			FUN_ADMIN_RES_CREATE_FLAG_ALLOCATOR /* flag */, 0 /* id */, handler_id);
 
 	return funq_admin_submit_sync_cmd(handle,
 			&c.common, &r.common, sizeof(r), FUNQ_CONNECT_CMD_TIMEOUT_MS);
@@ -293,11 +293,11 @@ static size_t fun_admin_request_size(size_t first_level_sgl_n)
 	return sizeof(struct fun_admin_dpc_req) + total_sgl_len;
 }
 
-static void fill_sgl_request_header(struct dpc_funq_context *context, bool send)
+static void fill_sgl_request_header(struct bin_ctl_context *context, bool send)
 {
 	struct fun_subop_sgl *sgl = context->request->sgl;
-	struct dpc_funq_handle *dpc_handle = context->connection->dpc_handle;
-	struct dpc_funq_buffer *buffers = dpc_handle->buffers;
+	struct bin_ctl_handle *dpc_handle = context->connection->dpc_handle;
+	struct bin_ctl_buffer *buffers = dpc_handle->buffers;
 	bool direct = context->sgl_second_n == 0;
 
 	fun_admin_req_common_init(&context->request->common,
@@ -320,10 +320,10 @@ static void fill_sgl_request_header(struct dpc_funq_context *context, bool send)
 	}
 }
 
-static void fill_send_request_header(struct dpc_funq_context *context,
+static void fill_send_request_header(struct bin_ctl_context *context,
 	size_t full_size, size_t offset, size_t size)
 {
-	struct dpc_funq_handle *dpc_handle = context->connection->dpc_handle;
+	struct bin_ctl_handle *dpc_handle = context->connection->dpc_handle;
 
 	fill_sgl_request_header(context, true);
 
@@ -336,9 +336,9 @@ static void fill_send_request_header(struct dpc_funq_context *context,
 			cpu_to_dpu32(full_size), cpu_to_dpu32(offset), cpu_to_dpu32(size));
 }
 
-static void fill_recv_request_header(struct dpc_funq_context *context)
+static void fill_recv_request_header(struct bin_ctl_context *context)
 {
-	struct dpc_funq_handle *dpc_handle = context->connection->dpc_handle;
+	struct bin_ctl_handle *dpc_handle = context->connection->dpc_handle;
 
 	fill_sgl_request_header(context, false);
 
@@ -353,7 +353,7 @@ static void fill_recv_request_header(struct dpc_funq_context *context)
 		cpu_to_dpu32(buffer_size));
 }
 
-static void fill_sgl_buffers(struct dpc_funq_buffer *buffers, int *sgl_idx, struct fun_ptr_and_size data)
+static void fill_sgl_buffers(struct bin_ctl_buffer *buffers, int *sgl_idx, struct fun_ptr_and_size data)
 {
 	size_t output_buffers_n = CEILING(data.size, DMA_BUFSIZE_BYTES);
 	for (size_t index = 0; index < output_buffers_n; index++) {
@@ -361,7 +361,7 @@ static void fill_sgl_buffers(struct dpc_funq_buffer *buffers, int *sgl_idx, stru
 	}
 }
 
-static void dpc_split_sgl_layers(struct dpc_funq_context *context)
+static void dpc_split_sgl_layers(struct bin_ctl_context *context)
 {
 	bool direct = (context->sgl_n <= FIRST_LEVEL_SGL_N);
 	context->sgl_first_n = context->sgl_n;
@@ -374,11 +374,11 @@ static void dpc_split_sgl_layers(struct dpc_funq_context *context)
 	}
 }
 
-static bool dpc_send_data_cmd(size_t *position, struct dpc_funq_connection *connection,
+static bool dpc_send_data_cmd(size_t *position, struct bin_ctl_connection *connection,
 	struct fun_ptr_and_size data, int *allocations, int allocations_n)
 {
 	struct fun_admin_dpc_rsp response = {};
-	struct dpc_funq_context context = {};
+	struct bin_ctl_context context = {};
 	bool direct = (allocations_n <= FIRST_LEVEL_SGL_N);
 	int data_buffers_n = allocations_n;
 
@@ -398,7 +398,7 @@ static bool dpc_send_data_cmd(size_t *position, struct dpc_funq_connection *conn
 
 	fill_send_request_header(&context, data.size, *position, chunk.size);
 
-	struct dpc_funq_buffer *buffers = &(connection->dpc_handle->buffers[0]);
+	struct bin_ctl_buffer *buffers = &(connection->dpc_handle->buffers[0]);
 	int *sgl_idx = context.sgl_idx;
 	if (!direct) sgl_idx += context.sgl_first_n;
 
@@ -426,7 +426,7 @@ static bool dpc_send_data_cmd(size_t *position, struct dpc_funq_connection *conn
 }
 
 static bool dpc_init_buffers(int **allocations, int *allocations_n,
-	struct dpc_funq_handle *handle, int reserved_idx) {
+	struct bin_ctl_handle *handle, int reserved_idx) {
 	*allocations_n = 1;
 	*allocations = malloc(sizeof(int *) * MAX_BUFFERS_PER_OPERATION);
 	if (!*allocations) return false;
@@ -435,7 +435,7 @@ static bool dpc_init_buffers(int **allocations, int *allocations_n,
 }
 
 static void dpc_reallocate_buffers(int **allocations, int *allocations_n,
-	struct dpc_funq_handle *dpc_handle, int data_buffers_n)
+	struct bin_ctl_handle *dpc_handle, int data_buffers_n)
 {
 	// most frequent case, no need to allocate or deallocate anything
 	if (*allocations_n == 1 && data_buffers_n == 1) {
@@ -466,7 +466,7 @@ static void dpc_reallocate_buffers(int **allocations, int *allocations_n,
 	pthread_mutex_unlock(&dpc_handle->lock);
 }
 
-static void dpc_free_buffers(int *allocations, int allocations_n, struct dpc_funq_handle *dpc_handle)
+static void dpc_free_buffers(int *allocations, int allocations_n, struct bin_ctl_handle *dpc_handle)
 {
 	pthread_mutex_lock(&dpc_handle->lock);
 	for (int i = 1; i < allocations_n; i++) { // first buffer is reserved
@@ -476,9 +476,9 @@ static void dpc_free_buffers(int *allocations, int allocations_n, struct dpc_fun
 	pthread_mutex_unlock(&dpc_handle->lock);
 }
 
-static bool dpc_recv_data_cmd(struct dpc_funq_context *context);
+static bool dpc_recv_data_cmd(struct bin_ctl_context *context);
 
-static void free_context(struct dpc_funq_context *context)
+static void free_context(struct bin_ctl_context *context)
 {
 	dpc_free_buffers(context->sgl_idx, context->sgl_n, context->connection->dpc_handle);
 	free(context->request);
@@ -486,7 +486,7 @@ static void free_context(struct dpc_funq_context *context)
 	free(context);
 }
 
-static void dpc_funq_stop_receiver(struct dpc_funq_context *context)
+static void bin_ctl_stop_receiver(struct bin_ctl_context *context)
 {
 	pthread_mutex_lock(&context->connection->receive_lock);
 
@@ -502,12 +502,12 @@ static void dpc_funq_stop_receiver(struct dpc_funq_context *context)
 
 static void dpc_proccess_recv_response(void *response, void *ctx)
 {
-	struct dpc_funq_context *context = ctx;
+	struct bin_ctl_context *context = ctx;
 	struct fun_admin_dpc_rsp *r = response;
 	log_debug(context->connection->dpc_handle->debug, "starting the receive\n");
 
 	if (r->u.receive.code == FUN_ADMIN_DPC_ISSUE_CMD_RESP_FAIL) {
-		dpc_funq_stop_receiver(context);
+		bin_ctl_stop_receiver(context);
 		free_context(context);
 		return;
 	}
@@ -520,7 +520,7 @@ static void dpc_proccess_recv_response(void *response, void *ctx)
 		context->response.size = r->u.receive.resp_full_size;
 		if (!context->response.ptr) {
 			log_error("oom when allocating space for the response\n");
-			dpc_funq_stop_receiver(context);
+			bin_ctl_stop_receiver(context);
 			free_context(context);
 			return;
 		}
@@ -529,7 +529,7 @@ static void dpc_proccess_recv_response(void *response, void *ctx)
 
 	if (r->u.receive.resp_offset != context->response_offset) {
 		log_error("unexpected offset when processing response %" PRIu32 " != %zu\n", r->u.receive.resp_offset, context->response_offset);
-		dpc_funq_stop_receiver(context);
+		bin_ctl_stop_receiver(context);
 		free_context(context);
 		return;
 	}
@@ -560,16 +560,16 @@ static void dpc_proccess_recv_response(void *response, void *ctx)
 	dpc_split_sgl_layers(context);
 
 	if (!dpc_recv_data_cmd(context)) {
-		dpc_funq_stop_receiver(context);
+		bin_ctl_stop_receiver(context);
 		free_context(context);
 		return;
 	}
 }
 
-static bool dpc_recv_data_cmd(struct dpc_funq_context *context)
+static bool dpc_recv_data_cmd(struct bin_ctl_context *context)
 {
 	fill_recv_request_header(context);
-	struct dpc_funq_handle *dpc_handle = context->connection->dpc_handle;
+	struct bin_ctl_handle *dpc_handle = context->connection->dpc_handle;
 
 	int rv = funq_admin_submit_async_cmd(dpc_handle->handle,
 			&context->request->common, dpc_proccess_recv_response, fun_admin_request_size(FIRST_LEVEL_SGL_N), context);
@@ -582,9 +582,9 @@ static bool dpc_recv_data_cmd(struct dpc_funq_context *context)
 	return true;
 }
 
-static bool dpc_first_recv_data_cmd(struct dpc_funq_connection *connection)
+static bool dpc_first_recv_data_cmd(struct bin_ctl_connection *connection)
 {
-	struct dpc_funq_context *context = calloc(1, sizeof(struct dpc_funq_context));
+	struct bin_ctl_context *context = calloc(1, sizeof(struct bin_ctl_context));
 	context->sgl_first_n = 1;
 	context->connection = connection;
 	context->request = calloc(1, fun_admin_request_size(FIRST_LEVEL_SGL_N));
@@ -641,12 +641,17 @@ static funq_handle_t dpc_admin_queue_init(const char *devname)
 	return handle;
 }
 
-struct dpc_funq_handle *dpc_funq_init(const char *devname, bool debug)
+struct bin_ctl_handle *bin_ctl_init_dpc(const char *devname, bool debug)
 {
-	struct dpc_funq_handle *handle = calloc(1, sizeof(struct dpc_funq_handle));
+	return bin_ctl_init(devname, debug, FUN_ADMIN_BIN_CTL_HANDLER_DPC);
+}
+
+struct bin_ctl_handle *bin_ctl_init(const char *devname, bool debug, uint16_t handler_id)
+{
+	struct bin_ctl_handle *handle = calloc(1, sizeof(struct bin_ctl_handle));
 
 	if (handle == NULL) {
-		log_error("oom when allocating dpc_funq_handle\n");
+		log_error("oom when allocating bin_ctl_handle\n");
 		return NULL;
 	}
 
@@ -662,7 +667,7 @@ struct dpc_funq_handle *dpc_funq_init(const char *devname, bool debug)
 
 	log_debug(handle->debug, "admin_queue_init successful\n");
 
-	if (dpc_create_cmd(handle->handle) != 0) {
+	if (dpc_create_cmd(handle->handle, handler_id) != 0) {
 		free(handle);
 		log_error("failed to run create command\n");
 		return NULL;
@@ -674,7 +679,7 @@ struct dpc_funq_handle *dpc_funq_init(const char *devname, bool debug)
 		handle->buffers[i].dma_addr_local = (uint8_t *)funq_dma_alloc(handle->handle, DMA_BUFSIZE_BYTES, &(handle->buffers[i].dma_addr_dpu));
 		if (!handle->buffers[i].dma_addr_local) {
 			log_error("failed to allocate dma buffers\n");
-			dpc_funq_destroy(handle);
+			bin_ctl_destroy(handle);
 			return NULL;
 		}
 	}
@@ -685,7 +690,7 @@ struct dpc_funq_handle *dpc_funq_init(const char *devname, bool debug)
 	return handle;
 }
 
-bool dpc_funq_destroy(struct dpc_funq_handle *dpc_handle)
+bool bin_ctl_destroy(struct bin_ctl_handle *dpc_handle)
 {
 	pthread_mutex_lock(&dpc_handle->lock);
 
@@ -711,7 +716,7 @@ bool dpc_funq_destroy(struct dpc_funq_handle *dpc_handle)
 	return result;
 }
 
-bool dpc_funq_send(struct dpc_funq_connection *connection, struct fun_ptr_and_size data)
+bool bin_ctl_send(struct bin_ctl_connection *connection, struct fun_ptr_and_size data)
 {
 	int allocations_n;
 	int *allocations;
@@ -741,7 +746,7 @@ bool dpc_funq_send(struct dpc_funq_connection *connection, struct fun_ptr_and_si
 	return result;
 }
 
-size_t dpc_funq_send_batch(struct dpc_funq_connection *connection,
+size_t bin_ctl_send_batch(struct bin_ctl_connection *connection,
 	struct fun_ptr_and_size *data, size_t n)
 {
 	if (n == 0) return 0;
@@ -754,16 +759,16 @@ size_t dpc_funq_send_batch(struct dpc_funq_connection *connection,
 			memcpy(batch.ptr + batch.size, data[i].ptr, data[i].size);
 			batch.size += data[i].size;
 		}
-		bool success = dpc_funq_send(connection, batch);
+		bool success = bin_ctl_send(connection, batch);
 		free(batch.ptr);
 		return success ? i : 0;
 	}
 
-	return dpc_funq_send(connection, data[0]) ? 1 : 0;
+	return bin_ctl_send(connection, data[0]) ? 1 : 0;
 }
 
-bool dpc_funq_register_receive_callback(struct dpc_funq_connection *connection,
-	dpc_funq_callback_t callback, void *context)
+bool bin_ctl_register_receive_callback(struct bin_ctl_connection *connection,
+	bin_ctl_callback_t callback, void *context)
 {
 	pthread_mutex_lock(&connection->receive_lock);
 	if (connection->receiver_alive) {
@@ -781,46 +786,51 @@ bool dpc_funq_register_receive_callback(struct dpc_funq_connection *connection,
 
 #else
 
-struct dpc_funq_handle {
+struct bin_ctl_handle {
 	void *handle;
 };
 
-struct dpc_funq_connection {
-	struct dpc_funq_handle *h;
+struct bin_ctl_connection {
+	struct bin_ctl_handle *h;
 };
 
-struct dpc_funq_handle *dpc_funq_init(const char *devname, bool debug)
+struct bin_ctl_handle *bin_ctl_init(const char *devname, bool debug, uint16_t handler_id)
 {
 	return NULL;
 }
 
-bool dpc_funq_destroy(struct dpc_funq_handle *dpc_handle)
-{
-	return false;
-}
-
-struct dpc_funq_connection *dpc_funq_open_connection(struct dpc_funq_handle *dpc_handle)
+struct bin_ctl_handle *bin_ctl_init_dpc(const char *devname, bool debug)
 {
 	return NULL;
 }
 
-extern bool dpc_funq_close_connection(struct dpc_funq_connection *connection)
+bool bin_ctl_destroy(struct bin_ctl_handle *dpc_handle)
 {
 	return false;
 }
 
-bool dpc_funq_send(struct dpc_funq_connection *connection, struct fun_ptr_and_size data)
+struct bin_ctl_connection *bin_ctl_open_connection(struct bin_ctl_handle *dpc_handle)
+{
+	return NULL;
+}
+
+extern bool bin_ctl_close_connection(struct bin_ctl_connection *connection)
 {
 	return false;
 }
 
-bool dpc_funq_register_receive_callback(struct dpc_funq_connection *connection,
-	dpc_funq_callback_t callback, void *context)
+bool bin_ctl_send(struct bin_ctl_connection *connection, struct fun_ptr_and_size data)
 {
 	return false;
 }
 
-size_t dpc_funq_send_batch(struct dpc_funq_connection *connection, struct fun_ptr_and_size *data, size_t n)
+bool bin_ctl_register_receive_callback(struct bin_ctl_connection *connection,
+	bin_ctl_callback_t callback, void *context)
+{
+	return false;
+}
+
+size_t bin_ctl_send_batch(struct bin_ctl_connection *connection, struct fun_ptr_and_size *data, size_t n)
 {
 	return 0;
 }
