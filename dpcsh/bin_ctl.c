@@ -281,7 +281,7 @@ static int dpc_create_cmd(funq_handle_t handle, uint16_t handler_id)
 	fun_admin_req_common_init(&c.common, FUN_ADMIN_OP_BIN_CTL,
 			sizeof (c) >> 3, 0 /* flags */, 0 /* suboff8 */, 0 /* cid */);
 	fun_admin_bin_ctl_create_req_init(&c, FUN_ADMIN_SUBOP_CREATE,
-			FUN_ADMIN_RES_CREATE_FLAG_ALLOCATOR /* flag */, 0 /* id */, handler_id);
+			FUN_ADMIN_RES_CREATE_FLAG_ALLOCATOR /* flag */, 0 /* id */, cpu_to_dpu16(handler_id));
 
 	return funq_admin_submit_sync_cmd(handle,
 			&c.common, &r.common, sizeof(r), FUNQ_CONNECT_CMD_TIMEOUT_MS);
