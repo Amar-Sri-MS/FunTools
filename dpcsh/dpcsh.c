@@ -750,7 +750,7 @@ static bool _decode_jsons_from_buffer(struct dpcsock_connection *connection)
 
 			if (_verbose_log && transcoded.ptr) {
 				struct fun_json *json = fun_json_create_from_binary_with_options(transcoded.ptr, transcoded.size, true);
-				log_info("parsed binary json from %s\n", connection->socket->verbose_log_name);
+				log_debug(_debug_log, "parsed binary json from %s\n", connection->socket->verbose_log_name);
 				fun_json_printf_with_flags(INPUT_COLORIZE "%s" NORMAL_COLORIZE "\n",
 						json, FUN_JSON_PRETTY_PRINT_HUMAN_READABLE_STRINGS);
 				fun_json_release(json);
@@ -770,7 +770,7 @@ static bool _decode_jsons_from_buffer(struct dpcsock_connection *connection)
 			}
 			if (json) {
 				if (_verbose_log) {
-					log_info("parsed json from %s\n", connection->socket->verbose_log_name);
+					log_debug(_debug_log, "parsed json from %s\n", connection->socket->verbose_log_name);
 					fun_json_printf_with_flags(INPUT_COLORIZE "%s" NORMAL_COLORIZE "\n",
 							json, FUN_JSON_PRETTY_PRINT_HUMAN_READABLE_STRINGS);
 				}
