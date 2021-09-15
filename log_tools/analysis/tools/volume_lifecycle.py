@@ -45,22 +45,29 @@ def convert_to_json(log_line):
     """
     log_levels = ('NOTICE', 'ERR', 'CRIT', 'ALERT', 'WDT:', 'WARNING')
     json_list = list()
-    for line in log_line.split('\n'):
-        line = line.strip()
-        # Start of the json
-        if any(level in line for level in log_levels):
-            continue
-        if line != "" and line != '--':
-            # End of the json
-            if line != '}"':
-                json_list.append(line)
-
-    json_str = ' '.join(json_list)
     try:
+        for line in log_line.split('\n'):
+            line = line.strip()
+            # JSON logs could be multiline or single line.
+            # Start of the json
+            if any(level in line for level in log_levels):
+                pos = line.find('{')
+                # Parses single line JSON logs.
+                if pos != -1 and line.endswith('}"'):
+                    decoder = json.JSONDecoder()
+                    return decoder.raw_decode(line[pos:])[0]
+                else:
+                    continue
+            if line != "" and line != '--':
+                # End of the json
+                if line != '}"':
+                    json_list.append(line)
+        json_str = ' '.join(json_list)
+
         ret_json = json.loads('{' + json_str + '}')
         return ret_json
     except:
-        logging.warning(f'Malformed JSON: {log_line}')
+        logging.exception(f'Malformed JSON: {log_line}')
         return None
 
 def build_search_body(queries, time_filters=None, operator='AND'):
@@ -100,7 +107,7 @@ def build_search_body(queries, time_filters=None, operator='AND'):
 
 def get_value_from_params(info, key, default=None):
     """ Extracts value from the FunOS JSON log """
-    if (info and 'msg' in info and 'params' in info['msg']
+    if (info and info.get('msg') and 'params' in info['msg']
         and key in info['msg']['params']):
         return info['msg']['params'][key]
     return default
@@ -461,7 +468,7 @@ class Volume(object):
                     result.append(result_data)
 
             pvg_info = self.get_pvg_info(pvg_uuid, end_time=self.op_time, operation=operation)
-            lsv_uuids = get_value_from_params(pvg_info, 'svol_uuid')
+            lsv_uuids = get_value_from_params(pvg_info, 'svol_uuid', [])
 
             pvg_result_data = {
                 'timestamp': pvg_info['@timestamp'],
