@@ -1204,20 +1204,32 @@ static void _unlock_queue_if_needed(struct dpcsock_connection *connection)
 static bool _wait_write_unlocked(struct dpcsock_connection *dest,
 			 struct dpcsock_connection *source)
 {
+	int r;
 	_unlock_queue_if_needed(source);
-	fd_set fds;
 
-	FD_ZERO(&fds);
-	FD_SET(dest->fd, &fds);
+	do {
+		fd_set fds;
+		struct timeval tv;
 
-	int r = select(dest->fd+1, NULL, &fds, NULL, NULL);
+		tv.tv_sec = 1;
+		tv.tv_usec = 0;
 
-	if (r <= 0) {
-		if (!dest->closing)
+		FD_ZERO(&fds);
+		FD_SET(dest->fd, &fds);
+
+		r = select(dest->fd+1, NULL, &fds, NULL, &tv);
+
+		if (dest->closing) {
+			_lock_queue_if_needed(source);
+			return false;
+		}
+
+		if (r < 0) {
 			perror("select");
-		_lock_queue_if_needed(source);
-		return false;
-	}
+			_lock_queue_if_needed(source);
+			return false;
+		}
+	} while (r == 0);
 
 	_lock_queue_if_needed(source);
 	return true;
@@ -1340,19 +1352,27 @@ static bool _wait_read(struct dpcsock_connection *source)
 	}
 
 	if (source->fd > 0) {
-		/* wait on our input(s) */
-		fd_set fds;
+		int r;
+		do {
+			/* wait on our input(s) */
+			fd_set fds;
+			struct timeval tv;
 
-		FD_ZERO(&fds);
-		FD_SET(source->fd, &fds);
+			tv.tv_sec = 1;
+			tv.tv_usec = 0;
 
-		int r = select(source->fd+1, &fds, NULL, NULL, NULL);
+			FD_ZERO(&fds);
+			FD_SET(source->fd, &fds);
 
-		if (r <= 0) {
-			if (!source->closing)
+			r = select(source->fd+1, &fds, NULL, NULL, &tv);
+
+			if (source->closing) return false;
+
+			if (r < 0) {
 				perror("select");
-			return false;
-		}
+				return false;
+			}
+		} while (r == 0);
 
 		return true;
 	}
