@@ -477,6 +477,7 @@ static struct fun_ptr_and_size _transcode(struct fun_ptr_and_size source,
 	} else {
 		json_text = fun_json_to_text_oneline(json, &unused);
 	}
+	fun_json_release(json);
 	size_t json_length = strlen(json_text);
 	struct fun_ptr_and_size result = {.ptr = (uint8_t *)json_text, .size = json_length + 1};
 	json_text[json_length] = '\n';
