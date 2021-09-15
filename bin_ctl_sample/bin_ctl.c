@@ -263,7 +263,7 @@ extern bool bin_ctl_close_connection(struct bin_ctl_connection *connection)
 	connection->receiver_closing_connection = false;
 	pthread_mutex_unlock(&connection->receive_lock);
 
-	log_debug(connection->dpc_handle->debug, "dpc_close_connection successful\n");
+	log_debug(connection->dpc_handle->debug, "bin_ctl_close_connection successful\n");
 
 	pthread_mutex_lock(&connection->dpc_handle->lock);
 	dpc_deallocate_rx_tx(connection);
