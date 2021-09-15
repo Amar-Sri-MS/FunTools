@@ -29,7 +29,7 @@
 #include "dpcsh_log.h"
 #include "dpcsh_nvme.h"
 #include "csr_command.h"
-#include "dpcsh_libfunq.h"
+#include "bin_ctl.h"
 
 #include <FunSDK/utils/threaded/fun_map_threaded.h>
 #include <FunSDK/services/commander/fun_commander.h>
@@ -928,7 +928,7 @@ bool dpcsocket_init(struct dpcsock *sock)
 	}
 
 	if(sock->mode == SOCKMODE_FUNQ) {
-		sock->funq_handle = dpc_funq_init(sock->socket_name, _debug_log);
+		sock->funq_handle = bin_ctl_init_dpc(sock->socket_name, _debug_log);
 		return sock->funq_handle != NULL;
 	}
 
@@ -938,7 +938,7 @@ bool dpcsocket_init(struct dpcsock *sock)
 static void dpcsocket_destroy(struct dpcsock *sock)
 {
 	if(sock->mode == SOCKMODE_FUNQ) {
-		dpc_funq_destroy(sock->funq_handle);
+		bin_ctl_destroy(sock->funq_handle);
 		free(sock->funq_handle);
 	}
 }
@@ -1012,7 +1012,7 @@ bool dpcsocket_open(struct dpcsock_connection *connection)
 	}
 
 	if (sock->mode == SOCKMODE_FUNQ) {
-		connection->funq_connection = dpc_funq_open_connection(sock->funq_handle);
+		connection->funq_connection = bin_ctl_open_connection(sock->funq_handle);
 		if (!connection->funq_connection) {
 			return false;
 		}
@@ -1061,8 +1061,8 @@ void dpcsocket_close(struct dpcsock_connection *connection)
 	}
 
 	if (connection->socket->mode == SOCKMODE_FUNQ) {
-		if (!dpc_funq_close_connection(connection->funq_connection)) {
-			perror("dpc_funq_close_connection");
+		if (!bin_ctl_close_connection(connection->funq_connection)) {
+			perror("bin_ctl_close_connection");
 		}
 		pthread_cond_signal(&connection->data_available);
 	}
@@ -1144,7 +1144,7 @@ static bool _write_dequeue_funq(struct dpcsock_connection *dest,
 		if (!queue_size) break;
 
 		struct fun_ptr_and_size *head = dpcsh_ptr_queue_first(source->binary_json_queue);
-		size_t sent = dpc_funq_send_batch(dest->funq_connection, head, queue_size);
+		size_t sent = bin_ctl_send_batch(dest->funq_connection, head, queue_size);
 
 		if (!sent && queue_size) {
 			log_error("unable to send a batch with libfunq\n");
@@ -1416,7 +1416,7 @@ static void open_new_connections(struct dpcsock *funos_socket,
 	}
 
 	if (funos_socket->mode == SOCKMODE_FUNQ) {
-		if (!dpc_funq_register_receive_callback((*funos)->funq_connection, _recv_callback, *funos)) {
+		if (!bin_ctl_register_receive_callback((*funos)->funq_connection, _recv_callback, *funos)) {
 			log_error("can't register a callback for libfunq\n");
 		}
 	}
