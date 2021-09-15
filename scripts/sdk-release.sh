@@ -177,13 +177,13 @@ the SDK.
    . scp dev_signed_setup_bundle_s1-rootfs-ro.squashfs-v15578.sh root@10.1.1.20:/tmp
    . ssh root@10.1.1.20
    . cd /tmp
-   . ./dev_signed_setup_bundle_s1-rootfs-ro.squashfs-v15578.sh root@10.1.1.20:/tmp
+   . ./dev_signed_setup_bundle_s1-rootfs-ro.squashfs-v15578.sh
    . reboot
 2. scp development bundle to ccLinux's /tmp directory and install it
    . scp setup_bundle_development_image.sh root@10.1.1.20:/tmp
    . ssh root@10.1.1.20
    . cd /tmp
-   . ./setup_bundle_development_image.sh root@10.1.1.20:/tmp
+   . ./setup_bundle_development_image.sh
    . reboot
 EOM
 }

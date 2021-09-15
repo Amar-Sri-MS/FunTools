@@ -108,7 +108,7 @@ def test_get_customer_cert(server, tls_verify):
 
     customer_cert = get_customer_cert(server, tls_verify, "cpk1")
 
-    customer_cert_exp = open('../cpk1_certificate.bin', 'rb').read()
+    customer_cert_exp = open('../development_keys_certs/cpk1_certificate.bin', 'rb').read()
 
     if customer_cert == customer_cert_exp:
         return 0

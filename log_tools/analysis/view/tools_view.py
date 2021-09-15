@@ -45,3 +45,8 @@ def get_volume_lifecycle(log_id):
             'error': str(e)
         }), 500
     return jsonify(lifecycle)
+
+@tools_page.route('/<log_id>/vswitch', methods=['GET'])
+def render_vswitch_tool(log_id):
+    """ UI for Virtual Switch Tool """
+    return render_template('vswitch_tool.html', log_id=log_id)

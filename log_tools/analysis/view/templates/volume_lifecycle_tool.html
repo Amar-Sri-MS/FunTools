@@ -11,10 +11,10 @@
     <body>
         {% include "nav_bar.html" ignore missing %}
         <div class="container">
-            <h2 class="center-align">Lifecycle of a Part Volume</h2>
+            <h2 class="center-align">Lifecycle of a Volume</h2>
             <div class="form-group">
-                <label for="volume_id">Part Volume ID</label>
-                <input type="search" id="volume_id" placeholder="Enter part volume ID" />
+                <label for="volume_id">Volume UUID (PV, Snapshot or Clone)</label>
+                <input type="search" id="volume_id" placeholder="Enter volume UUID" />
             </div>
             <div class="form-group">
                 <button type="submit" class="btn btn-primary" onclick="onSubmit()">Submit</button>
@@ -176,6 +176,14 @@
                 if (phases.length > 1) {
                     element.innerHTML += `<b>${operation} #${phaseIndex+1}</b>\n`;
                 }
+                if (phase["snapshot_info"] && phase["snapshot_info"].length > 0) {
+                    const snapshotInfoTable = getSnapshotInfoTable(phase["snapshot_info"][0]);
+                    addTableToElement(element, snapshotInfoTable);
+                }
+                if (phase["clone_info"] && phase["clone_info"].length > 0) {
+                    const cloneInfoTable = getCloneInfoTable(phase["clone_info"]);
+                    addTableToElement(element, cloneInfoTable);
+                }
                 const pvInfoTable = getPVInfoTable(phase["pv_info"]);
                 addTableToElement(element, pvInfoTable);
                 const lsvInfo = phase["lsv_info"];
@@ -202,6 +210,60 @@
             for (let i=0; i<spacing; i++) {
                 element.innerHTML += "\n";
             }
+        }
+
+        function getSnapshotInfoTable(snapshotInfo) {
+            const timestamp = snapshotInfo["@timestamp"];
+            const URL = formLogURL(timestamp, snapshotInfo["_id"]);
+            const title = formAnchorTag(URL, "Snapshot Info");
+            let table = new window.AsciiTable(title);
+            table.setHeading("Timestamp", "PV UUID", "Primary DPU", "Secondary DPU", "View Logs");
+            table.addRow(
+                timestamp,
+                getValueFromParams(snapshotInfo, "base_uuid"),
+                getValueFromParams(snapshotInfo, "dpu"),
+                getValueFromParams(snapshotInfo, "secondary")
+            );
+            // Adding the snapshot UUID.
+            uuids.add(getValueFromParams(snapshotInfo, "uuid"));
+            return table;
+        }
+
+        function getCloneInfoTable(cloneInfo) {
+            const timestamp = cloneInfo[0]["@timestamp"];
+            const URL = formLogURL(timestamp, cloneInfo[0]["_id"]);
+            const title = formAnchorTag(URL, "Clone Info");
+            let table = new window.AsciiTable(title);
+            table.setHeading("Location", "Local UUID", "Remote UUID", "Hosting DPU", "Remote IP");
+            const uuid = getValueFromParams(cloneInfo[0], "uuid");
+            let remote_uuid = uuid;
+            let is_local_plex = true;
+
+            let hostingDPU = "";
+            let remoteIP = getValueFromParams(cloneInfo[0], "remote_ip");
+            // For remote plexes, it will contain two entries for type
+            // RDS and NV_MEMORY each
+            if (cloneInfo.length > 1) {
+                const timestamp = cloneInfo[1]["@timestamp"];
+                const URL = formLogURL(timestamp, cloneInfo[1]["_id"]);
+
+                remote_uuid = formAnchorTag(URL, getValueFromParams(cloneInfo[1], "uuid"));
+                hostingDPU = convertSystemIDtoMAC(cloneInfo[1]["system_id"]);
+                is_local_plex = false;
+                // Adding the remote Plex UUID.
+                uuids.add(getValueFromParams(cloneInfo[1], "uuid"));
+            }
+
+            const location = is_local_plex ? "local" : "remote";
+            table.addRow(
+                location,
+                formAnchorTag(URL, uuid),
+                remote_uuid,
+                hostingDPU,
+                remoteIP
+            );
+            uuids.add(uuid);
+            return table;
         }
 
         function getPVInfoTable(pvInfo) {
