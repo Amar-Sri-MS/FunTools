@@ -46,7 +46,7 @@ CFLAGS += -I $(SDKDIR) -I $(SDKDIR)/FunSDK -g -Wall -Werror -Wno-multichar $(BRA
 #LDFLAGS += -L $(SDKDIR)/lib/${OS}/x86_64 -lfunclient -fsanitize=address
 LDFLAGS += -lpthread -L $(SDKDIR)/lib/$(OS)/$(SDK_LIB_SUBDIR)/$(MACHINE) -lfunclient -ldl
 
-SRCS = bin_ctl_sample.c ../dpcsh/bin_ctl.c
+SRCS = bin_ctl_sample.c bin_ctl.c bin_ctl_log.c
 OBJS = $(addprefix $(BUILD_ROOT)/,$(SRCS:.c=.o))
 
 # default target goes first
@@ -59,7 +59,7 @@ $(BUILD_ROOT)/%.o: %.c $(DEPS) | $(BUILD_ROOT)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 .PHONY: bin_ctl_sample
-dpcsh: $(BUILD_ROOT)/bin_ctl_sample
+bin_ctl_sample: $(BUILD_ROOT)/bin_ctl_sample
 
 $(BUILD_ROOT)/bin_ctl_sample: $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)

@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
     exit(1);
   }
 
-  if (!bin_ctl_register_receive_callback()) {
+  if (!bin_ctl_register_receive_callback(c, callback_function, NULL)) {
     printf("error registering callback\n");
     exit(1);
   }
