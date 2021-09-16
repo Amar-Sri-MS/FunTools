@@ -37,22 +37,64 @@ def get_entries(fname):
 
     return ret
 
+def image_details(fname, fourcc, offset):
+    res = {}
+    valid = False
+    with open(fname, 'r+b') as f:
+        f.seek(offset + 4096, os.SEEK_SET)
+        funhdr = f.read(76)
+        vals = struct.unpack('<2I4s3B29s32s', funhdr)
+        keys = ( 'size', 'version', 'fourcc', 'dpu_family', 'dpu_device', 'dpu_revision',
+            'attributes', 'description')
+        assert len(keys) == len(vals)
+        for i, k in enumerate(keys):
+            res[keys[i]] = vals[i]
+
+    try:
+        res['fourcc'] = res['fourcc'].decode()
+        if res['fourcc'] == fourcc:
+            valid = True
+            # fixup empty bytes for readability
+            if res['attributes'] == b'\xff' * 29 or res['attributes'] == b'\x00' * 29:
+                res['attributes'] = ""
+            res['description'] = res['description'].decode().rstrip('\x00')
+            res['offset'] = offset
+    except:
+        # this doesn't look like a valid nor flash entry so
+        # just create a dummy entry without usual details
+        res = {}
+        res['fourcc'] = fourcc
+        res['offset'] = offset
+        pass
+
+    return valid, res
+
+
+
+def save_image_as_file(fname, section, id):
+    with open(fname, 'rb') as f:
+        with open('{}_{}_{}'.format(fname, section['fourcc'], id), 'w+b') as out:
+            f.seek(section['offset'], os.SEEK_SET)
+            out.write(f.read(section['size'] + 4172)) # size + sizeof(header)
+
 
 def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-i', '--input-file', help='Input flash image', required=True)
     parser.add_argument('-f', '--fourcc', help='Use only selected fourcc code')
+    parser.add_argument('-d', '--dump', action='store_true', help='Dump image section to a file')
     args = parser.parse_args()
 
     entries = get_entries(args.input_file)
     entries.sort(key=lambda x: x[1])
 
-    for e in filter(lambda f: f[0] == args.fourcc if args.fourcc else True, entries):
-        if args.fourcc:
-            print("{}".format(e[1]))
-        else:
-            print("{}: {}".format(e[0], e[1]))
+    for i, e in enumerate(filter(lambda f: f[0] == args.fourcc if args.fourcc else True, entries)):
+        valid, value = image_details(args.input_file, e[0], e[1])
+        print("{}: {}".format(e[0], value))
+
+        if args.dump and valid:
+            save_image_as_file(args.input_file, value, i)
 
 
 if __name__ == "__main__":
