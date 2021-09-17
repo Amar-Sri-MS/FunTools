@@ -298,7 +298,7 @@ def main():
 
     args = parser.parse_args()
 
-    print args
+    #print args
     if args.bmc_ip_addr and (args.dut_name or args.dut_file):
         print('bmc_ip_addr and dut arguments are mutually exclusive!')
         sys.exit(1)
