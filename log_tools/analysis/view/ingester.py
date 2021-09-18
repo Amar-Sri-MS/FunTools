@@ -35,8 +35,9 @@ from utils import mail
 from utils import timeline
 import ingest as ingest_handler
 import logger
+import config_loader
 
-
+config = config_loader.get_config()
 ingester_page = Blueprint('ingester_page', __name__)
 
 DOWNLOAD_DIRECTORY = 'downloads'
@@ -816,7 +817,7 @@ def email_notify(logID):
         subject = f'Ingestion of {logID} is successful.'
         body = f"""
             Ingestion of {logID} is successful.
-            Log Analyzer Dashboard: {current_app.config['LOG_VIEW_BASE_URL'].replace('LOG_ID', logID)}/dashboard
+            Log Analyzer Dashboard: {config['LOG_VIEW_BASE_URL'].replace('LOG_ID', logID)}/dashboard
 
             Time to ingest logs: {metadata.get('ingestion_time')} seconds
         """
