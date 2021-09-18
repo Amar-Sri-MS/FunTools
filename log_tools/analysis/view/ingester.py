@@ -31,6 +31,7 @@ from flask import Blueprint, jsonify, request, render_template
 from flask import current_app
 
 from utils import archive_extractor, manifest_parser
+from utils import mail
 from utils import timeline
 import ingest as ingest_handler
 import logger
@@ -142,6 +143,9 @@ def main():
     finally:
         # Clean up the downloaded files
         clean_up(LOG_ID)
+
+        # Notify via email
+        email_notify(LOG_ID)
 
         # Backing up the logs generated during ingestion
         logger.backup_ingestion_logs(LOG_ID)
@@ -780,6 +784,46 @@ def _update_metadata(metadata_handler, log_id, status, additional_data={}):
         'ingestion_status': status
     }
     return metadata_handler.update(log_id, metadata)
+
+
+def email_notify(logID):
+    """ Notifying via email at the end of the ingestion """
+    es_metadata = ElasticsearchMetadata()
+    metadata = es_metadata.get(logID)
+
+    if not metadata:
+        current_app.logger.warn('Sending email aborted: metadata not found.')
+        return
+    submitted_by = metadata.get('submitted_by')
+    if not submitted_by:
+        current_app.logger.warn('Sending email aborted: submitted_by email not found.')
+        return
+
+    is_failed = metadata.get('ingestion_status') == 'FAILED'
+    logID = metadata.get('logID')
+
+    if not logID:
+        current_app.logger.warn('Sending email aborted: logID not found.')
+        return
+
+    if is_failed:
+        subject = f'Ingestion of {logID} failed.'
+        body = f"""
+            Ingestion of {logID} failed. Please email tools-pals@fungible.com for help!
+            Reason: {metadata.get('ingestion_error')}
+        """
+    else:
+        subject = f'Ingestion of {logID} is successful.'
+        body = f"""
+            Ingestion of {logID} is successful.
+            Log Analyzer Dashboard: {current_app.config['LOG_VIEW_BASE_URL'].replace('LOG_ID', logID)}/dashboard
+
+            Time to ingest logs: {metadata.get('ingestion_time')} seconds
+        """
+
+    status = mail.Mail(submitted_by, subject, body)
+    if not status:
+        current_app.logger.error(f'Failed to send email to {submitted_by}')
 
 
 def clean_up(log_id):
