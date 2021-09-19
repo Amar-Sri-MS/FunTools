@@ -2002,8 +2002,6 @@ int main(int argc, char *argv[])
 	switch (mode) {
 	case MODE_INTERACTIVE:
 		/* do nothing */
-		if (!_nocli_script_mode)
-			_verbose_log = true;
 		break;
 	case MODE_PROXY:
 		log_debug(_debug_log, "socket proxy mode");
