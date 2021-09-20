@@ -123,18 +123,34 @@
                 return `<a href="${URL}" target="_blank">${timestamp}</a>`;
             }
 
+            // Function to join timestamps
+            const displayTimestamps = (ts, joinStr=", ") => ts.length === 0
+                                                                ? "Not Found" : ts.join(joinStr);
+
             const createValidation = responses[0].map(formURLFromResponse);
             let errorLogsDuringCreation = "";
+
+            vswitch_info_element.innerHTML += `
+                <div>VFID: ${VFID}</div>
+                <div>Creation Log: ${log}</div>
+                <div>Create Validation: ${displayTimestamps(createValidation)}</div>
+            `;
 
             if (createValidation.length === 0) {
                 const errorLogs = await handleSearch(`${reqID} AND level:error`);
                 const title = `Error Logs during vSwitch Creation`;
                 errorLogsDuringCreation = getTableForLogs(title, errorLogs);
+                addTableToElement(errorLogsDuringCreation, vswitch_info_element);
             }
 
             const deleteRequests = responses[1].map(formURLFromResponse);
             const deleteValidations = responses[2].map(formURLFromResponse);
             let errorLogsDuringDelete = "";
+
+            vswitch_info_element.innerHTML += `
+                <div>Delete Request: ${displayTimestamps(deleteRequests)}</div>
+                <div>Delete Validation: ${displayTimestamps(deleteValidations)}</div>
+            `;
 
             if (deleteRequests.length > 1 || (deleteRequests.length !== 0 && deleteValidations.length === 0)) {
                 const time = {
@@ -144,21 +160,10 @@
                 const errorLogs = await handleSearch(`${VFID} AND level:error`, time);
                 const title = `Error Logs during vSwitch deletion between ${time["after"]} and ${time["before"]}`;
                 errorLogsDuringDelete = getTableForLogs(title, errorLogs);
+                addTableToElement(errorLogsDuringDelete, vswitch_info_element);
             }
 
-            // Function to join timestamps
-            const displayTimestamps = (ts, joinStr=", ") => ts.length === 0
-                                                                ? "Not Found" : ts.join(joinStr);
 
-            vswitch_info_element.innerHTML += `
-                <div>VFID: ${VFID}</div>
-                <div>Creation Log: ${log}</div>
-                <div>Create Validation: ${displayTimestamps(createValidation)}</div>
-                <div>${errorLogsDuringCreation}</div>
-                <div>Delete Request: ${displayTimestamps(deleteRequests)}</div>
-                <div>Delete Validation: ${displayTimestamps(deleteValidations)}</div>
-                <div>${errorLogsDuringDelete}</div>
-            `;
 
             toggleElementDisplay(vswitch_info_element.parentElement, true);
             vswitch_info_element.parentElement.scrollIntoView();
@@ -254,11 +259,16 @@
             return fetchWrapper.get(search_url)
                 .then(data => {
                     toggleLoader(false);
-                    const formattedData = data["results"].map(result => ({
-                        ...result,
-                        ...result["_source"],
-                        ...extractID(result["_source"]["msg"])
-                    }));
+                    const formattedData = data["results"].map(result => {
+                        const IDs = result["_source"]["src"] === "pfm"
+                                        ? extractID(result["_source"]["msg"])
+                                        : {"message": result["_source"]["msg"]};
+                        return {
+                            ...result,
+                            ...result["_source"],
+                            ...IDs
+                        }
+                    });
                     return formattedData;
                 })
                 .catch(error => {
@@ -333,7 +343,7 @@
         }
 
         function addTableToElement(element, table, spacing=2) {
-            element.innerHTML += table.toString();
+            element.innerHTML += `<div>${table.toString()}</div>`;
             for (let i=0; i<spacing; i++) {
                 element.innerHTML += "\n";
             }
