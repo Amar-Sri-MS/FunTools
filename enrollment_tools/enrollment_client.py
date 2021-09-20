@@ -13,6 +13,9 @@ import array
 import binascii
 import argparse
 import requests
+import json
+from os import path
+from pathlib import Path
 
 from probeutils.dut import *
 from probeutils.dbgclient import *
@@ -32,6 +35,9 @@ class CMD(object):
 
 # Chip must report being in this boot step for enrollment
 BOOT_STEP_PUF_INIT = (0x1A<<2)
+
+#Default i2c clock speed
+I2C_CLOCK_SPEED_DEFAULT = 500
 
 ###########################################################################
 #
@@ -79,16 +85,15 @@ def byte_str_to_int_list(s):
 class DBG_Chal(object):
     ''' i2c connection object '''
     def __init__(self, dut, chip_inst=0):
-
-        self.probe_ip_addr = dut.get("probe_ip_addr", None)
-        self.probe_id = dut.get("probe_id", None)
+        self.i2c_proxy_ip = dut.get("i2c_proxy_ip", None)
+        self.i2c_probe_serial = dut.get("i2c_probe_serial", None)
         self.i2c_slave_addr = dut.get("i2c_slave_addr",None)
         self.bmc_ip_addr = dut.get("bmc_ip_addr", None)
+        self.i2c_bitrate = dut.get('i2c_bitrate', I2C_CLOCK_SPEED_DEFAULT)
 
         self.connected = False
         self.dbgprobe = None
         self.chip_inst = chip_inst
-
 
     def __del__(self):
         print('Destroying the connection!')
@@ -102,19 +107,25 @@ class DBG_Chal(object):
 
         dbgprobe = DBG_Client()
         if self.bmc_ip_addr is None:
-            if self.probe_ip_addr is None:
-                print('Invalid ip addr: {0}'.format(self.probe_ip_addr))
+            if self.i2c_proxy_ip is None:
+                print('Invalid proxy ip addr(None)!')
                 return False
-            if self.probe_id is None:
-                print('Invalid probe_id: {0}'.format(self.probe_id))
+            if self.i2c_probe_serial is None:
+                print('Invalid i2c probe serial(None)!')
                 return False
             if not self.i2c_slave_addr:
-                print('Invalid slave_addr: {0}'.format(self.i2c_slave_addr))
+                print('Invalid slave_addr(None)!')
                 return False
+            if (self.i2c_bitrate  < 1) or (self.i2c_bitrate > I2C_CLOCK_SPEED_DEFAULT):
+                print('Invalid bus clock speed: {}'.format(self.i2c_bitrate))
+                return False
+
             status = dbgprobe.connect(mode='i2c', bmc_board=False,
-                                      probe_ip_addr=self.probe_ip_addr,
-                                      probe_id=self.probe_id,
-                                      slave_addr=self.i2c_slave_addr)
+                                      probe_ip_addr=self.i2c_proxy_ip,
+                                      probe_id=self.i2c_probe_serial,
+                                      slave_addr=int(self.i2c_slave_addr, 0),
+                                      i2c_bitrate=self.i2c_bitrate,
+                                      force=True)
         else:
             status = dbgprobe.connect(mode='i2c', bmc_board=True,
                                       bmc_ip_address=self.bmc_ip_addr)
@@ -240,8 +251,36 @@ def get_cert_of_serial_number(sn, verbose=False):
 #
 #########################################################################
 
-def main():
+def dut_info_get(dut_name, dut_file):
+    if not dut_file:
+        dut_file = dut_cfg_file = pkg_resources.resource_filename('probeutils', 'dut.cfg')
+        #print('Using pre-installed dut config file: {}'.format(dut_file))
+    else:
+        dut_file = str(Path(dut_file).resolve())
 
+    print('Using dut config file: {}'.format(dut_file))
+    dut_json = json.load(open(dut_file))
+    dut_info = dut_json.get(dut_name, None)
+    if not dut_info:
+        return None
+
+    bmc_ip = dut_info.get('bmc_ip', None)
+    if bmc_ip:
+        print('bmc info is not expected in non-bmc mode for dut {}. Ignoring...'.format(dut_name))
+    i2c_proxy_ip = dut_info.get('i2c_proxy_ip', None)
+    i2c_slave_addr = dut_info.get('i2c_slave_addr', None)
+    i2c_probe_serial = dut_info.get('i2c_probe_serial', None)
+    try:
+        i2c_proxy_ip = socket.gethostbyname(i2c_proxy_ip)
+    except socket.error:
+        logger.error('Invalid i2c proxy: {}'.format(i2c_proxy_ip))
+        i2c_proxy_ip = None
+    if not i2c_probe_serial or not i2c_slave_addr or not i2c_proxy_ip:
+        logger.error('Invalid dut config for dut: {}'.format(dut_name))
+        return None
+    return dut_info
+
+def main():
     parser = argparse.ArgumentParser(
         description="Perform enrollment via I2C",
         epilog="Challenge Interface must be accessible via debug probe "\
@@ -249,21 +288,35 @@ def main():
 
     # can either do enrollment using a dut-file or a bmc-ip_addr
 
-    conn_group = parser.add_mutually_exclusive_group()
-    conn_group.add_argument("--dut-file", help="Dut file (JSON)")
-    conn_group.add_argument("--bmc-ip-addr", help="BMC IP Address")
+    #parser.add_argument("--dut-file", help="Dut file (JSON)")
+    parser.add_argument('--dut-file', help='JSON dut config input file', type=Path)
+    parser.add_argument("--dut-name", help="Dut name")
+    parser.add_argument("--bmc-ip-addr", help="BMC IP Address")
 
-    parser.add_argument("--chip", type=int, default=0, choices=xrange(0, 2),
-                        help="chip instance number")
+    parser.add_argument("--chip", type=int, required=True, choices=xrange(0, 2),
+            help='chip instance number. For boards with signle dpu, it should be \"0\"')
 
     args = parser.parse_args()
 
-    if args.dut_file is not None:
-        dut = json.load(open(args.dut_file, "rb"))
+    #print args
+    if args.bmc_ip_addr and (args.dut_name or args.dut_file):
+        print('bmc_ip_addr and dut arguments are mutually exclusive!')
+        sys.exit(1)
+
+    dut = None
+    if not args.bmc_ip_addr:
+        if not args.dut_name:
+            print('dut name is required!')
+            sys.exit(1)
+        dut = dut_info_get(args.dut_name, args.dut_file)
     else:
         dut = { 'bmc_ip_addr' : args.bmc_ip_addr }
 
-    print(dut)
+    if not dut:
+        print('Failed to get the dut info for {}'.format(args.dut_name))
+        sys.exit(1)
+
+    #print(dut)
 
     # get enrollment info
     # check for connection
