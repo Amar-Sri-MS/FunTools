@@ -217,7 +217,7 @@
             const URL = formLogURL(timestamp, snapshotInfo["_id"]);
             const title = formAnchorTag(URL, "Snapshot Info");
             let table = new window.AsciiTable(title);
-            table.setHeading("Timestamp", "PV UUID", "Primary DPU", "Secondary DPU", "View Logs");
+            table.setHeading("Timestamp", "PV UUID", "Primary DPU", "Secondary DPU");
             table.addRow(
                 timestamp,
                 getValueFromParams(snapshotInfo, "base_uuid"),
@@ -271,7 +271,7 @@
             const URL = formLogURL(timestamp, pvInfo["pv_info"]["_id"]);
             const title = formAnchorTag(URL, "PV Info");
             let table = new window.AsciiTable(title);
-            table.setHeading("Timestamp", "PVG UUID", "Primary DPU", "Secondary DPU", "View Logs");
+            table.setHeading("Timestamp", "PVG UUID", "Primary DPU", "Secondary DPU");
             table.addRow(
                 pvInfo["timestamp"],
                 pvInfo["pvg_uuid"],

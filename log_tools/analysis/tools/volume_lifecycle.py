@@ -193,8 +193,9 @@ class Volume(object):
     def get_snapshot_info(self, uuid, operation='CREATE'):
         queries = self._build_query(operation, VOLUME_TYPES.get('SNAPSHOT'), uuid)
         if operation == 'CREATE':
+            pass
             # CHECK: Do we need this?
-            queries.append('"user_created: true"')
+            # queries.append('"user_created: true"')
 
         results = self._perform_es_search(queries)
         return results
@@ -269,6 +270,14 @@ class Volume(object):
 
         return result
 
+    def get_primary_info_from_rds(self, rds_info, operation='CREATE'):
+        """ Returns primary volume info from RDS volume info """
+        subsys_nqn = get_value_from_params(rds_info, 'subsys_nqn')
+        # Primary volume ID can be parsed from the subsys_nqn
+        vol_id = self._parse_nqn(subsys_nqn)
+        replica_info = self.get_plex_info(vol_id, end_time=self.op_time, operation=operation)
+        return replica_info
+
     def _parse_nqn(self, nqn):
         return nqn.split(':')[-1]
 
@@ -283,7 +292,8 @@ class Volume(object):
 
         results = self._perform_es_search(queries, time_filters)
         if len(results) == 0:
-            raise Exception(f'Could not find Plex Info for UUID: {pvol_id} from time: {start_time} till time: {end_time}')
+            logging.error(f'Could not find Plex Info for UUID: {pvol_id} from time: {start_time} till time: {end_time}')
+            return None
 
         type = get_value_from_params(results[0], 'type')
         info = list()
@@ -291,10 +301,7 @@ class Volume(object):
         # Getting info for primary volume if it is replica volume.
         if type == VOLUME_TYPES.get('RDS'):
             # CHECK: What if there are more than 1 entry?
-            subsys_nqn = get_value_from_params(results[0], 'subsys_nqn')
-            # Primary volume ID can be parsed from the subsys_nqn
-            vol_id = self._parse_nqn(subsys_nqn)
-            replica_plex_info = self.get_plex_info(vol_id, end_time=self.op_time, operation=operation)
+            replica_plex_info = self.get_primary_info_from_rds(results[0], operation)
             info.extend(replica_plex_info)
 
         return info
