@@ -793,18 +793,18 @@ def email_notify(logID):
     metadata = es_metadata.get(logID)
 
     if not metadata:
-        current_app.logger.warn('Sending email aborted: metadata not found.')
+        logging.warn('Sending email aborted: metadata not found.')
         return
     submitted_by = metadata.get('submitted_by')
     if not submitted_by:
-        current_app.logger.warn('Sending email aborted: submitted_by email not found.')
+        logging.warn('Sending email aborted: submitted_by email not found.')
         return
 
     is_failed = metadata.get('ingestion_status') == 'FAILED'
     logID = metadata.get('logID')
 
     if not logID:
-        current_app.logger.warn('Sending email aborted: logID not found.')
+        logging.warn('Sending email aborted: logID not found.')
         return
 
     if is_failed:
@@ -824,7 +824,7 @@ def email_notify(logID):
 
     status = mail.Mail(submitted_by, subject, body)
     if not status:
-        current_app.logger.error(f'Failed to send email to {submitted_by}')
+        logging.error(f'Failed to send email to {submitted_by}')
 
 
 def clean_up(log_id):

@@ -339,6 +339,7 @@
                 let remote_plex_uuid = plex_uuid;
                 let is_local_plex = true;
                 const plex_info = info["plex_info"][plex_uuid];
+                if (!plex_info) return;
 
                 let hostingDPU = "";
                 let remoteIP = getValueFromParams(plex_info[0], "remote_ip");
