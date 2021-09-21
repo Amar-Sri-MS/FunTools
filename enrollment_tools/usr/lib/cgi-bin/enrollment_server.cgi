@@ -251,9 +251,8 @@ def x509_tbs_cert(values, parent_cert):
     serial_info_hex = binascii.b2a_hex(serial_info)
     serial_nr_hex = binascii.b2a_hex(serial_nr)
     full_serial_nr = (serial_info_hex + serial_nr_hex).decode('utf-8')
-    subject_names = { "common_name" : "FUNGIBLE_" + full_serial_nr,
-                      "serial_number" : full_serial_nr,
-                      "organization_name" : "Fungible,Inc." }
+    subject_names = { "serial_number" : full_serial_nr,
+                      "organization_name" : "Fungible" }
     tbs['subject'] = x509.Name.build(subject_names)
 
     # subject public key info
@@ -356,11 +355,11 @@ def send_certificate_response(cert):
 def send_x509_certificate_response(cert, parent_cert_file):
     ''' send back a X509 certificate '''
     cert = x509_from_fungible_cert(cert, parent_cert_file)
-    cn = cert.subject.native['common_name']
+    sn = cert.subject.native['serial_number']
     # return the PEM encoded value
     x509_pem = pem.armor('CERTIFICATE', cert.dump())
     send_response_body(x509_pem.decode('ascii'),
-                       cn + '.pem')
+                       'FUNGIBLE_' + sn + '.pem')
 
 
 def send_x509_root_certificate_response(parent_cert_file):
