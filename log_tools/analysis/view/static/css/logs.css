@@ -67,3 +67,7 @@ td {
     color: blue;
     cursor: pointer;
 }
+
+.table-msg {
+    white-space: normal;
+}

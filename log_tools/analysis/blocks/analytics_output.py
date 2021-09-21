@@ -176,7 +176,7 @@ class AnalyticsOutput(Block):
     def set_config(self, cfg):
         self.cfg = cfg
         build_id = cfg['env'].get('build_id')
-        self.log_id = f'log_{build_id}'
+        self.log_id = f'log_{build_id}'.lower()
 
         self.log_view_base_url = self.config['LOG_VIEW_BASE_URL'].replace('LOG_ID', self.log_id)
 
