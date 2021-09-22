@@ -44,6 +44,19 @@ app.register_blueprint(web_usage, url_prefix='/events')
 app.register_blueprint(tools_page, url_prefix='/tools')
 
 
+config = config_loader.get_config()
+
+log_handler = logger.get_logger(filename='es_view.log')
+
+# Get the flask logger and add our custom handler
+flask_logger = logging.getLogger('werkzeug')
+flask_logger.setLevel(logging.INFO)
+flask_logger.addHandler(log_handler)
+flask_logger.propagate = False
+
+# Updating Flask's config with the configs from file
+app.config.update(config)
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--port', type=int, default=5000,
@@ -52,18 +65,6 @@ def main():
     args = parser.parse_args()
     port = args.port
 
-    config = config_loader.get_config()
-
-    log_handler = logger.get_logger(filename='es_view.log')
-
-    # Get the flask logger and add our custom handler
-    flask_logger = logging.getLogger('werkzeug')
-    flask_logger.setLevel(logging.INFO)
-    flask_logger.addHandler(log_handler)
-    flask_logger.propagate = False
-
-    # Updating Flask's config with the configs from file
-    app.config.update(config)
     app.run(host='0.0.0.0', port=port)
 
 

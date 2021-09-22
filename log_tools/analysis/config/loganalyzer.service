@@ -1,0 +1,12 @@
+[Unit]
+Description=Gunicorn instance to serve Log Analyzer
+After=network.target
+
+[Service]
+Group=www-data
+WorkingDirectory=/home/localadmin/Fun/FunTools/log_tools/analysis/view
+Environment="PATH=/home/localadmin/Fun/FunTools/log_tools/analysis/.venv/bin"
+ExecStart=/home/localadmin/Fun/FunTools/log_tools/analysis/.venv/bin/gunicorn --workers 3 --bind unix:loganalyzer.sock -m 007 wsgi:app
+
+[Install]
+WantedBy=multi-user.target
