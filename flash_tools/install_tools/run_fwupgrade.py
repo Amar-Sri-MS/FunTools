@@ -100,6 +100,9 @@ def prepare_offline(args, path='', select=None):
 
     return images
 
+def using_custom_funcp(args):
+    return args.image_url == BASE_URL and args.arch == 'posix'
+
 
 def prepare(args):
     """
@@ -118,13 +121,17 @@ def prepare(args):
     release_file = '{}_dev_signed.tgz'.format(args.chip)
 
     if args.image_url == BASE_URL:
-        args.image_url = args.image_url + SDK_FLASH_PATH
+        url = args.image_url + SDK_FLASH_PATH
+    else:
+        url = args.image_url
 
     files = {
-        funcp_file : args.image_url,
-        release_file : args.image_url,
-        libfunq_file : args.image_url
+        release_file : url,
     }
+
+    if using_custom_funcp(args):
+        files[funcp_file] = url
+        files[libfunq_file] = url
 
     for f, url in files.items():
         wget(url + '/' + f)
@@ -151,7 +158,7 @@ def run_upgrade(args, release_images):
         pcidevs_string = subprocess.check_output(['lspci', '-d', args.pci_devid, '-mmn'])
 
     sudo = [] if platform.machine() == 'mips64' else ['sudo']
-    if args.offline:
+    if args.offline or not using_custom_funcp(args):
         if platform.machine() == 'mips64':
             # defaults for CCLinux
             binpath = '/usr/bin'
