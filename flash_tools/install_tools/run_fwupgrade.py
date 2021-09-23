@@ -493,7 +493,8 @@ def main():
             help='workspace path, temp location will be used if not specified or'
                  '<offline-root>/funos if offline is set')
     arg_parser.add_argument('--arch', action='store', choices=['mips64', 'posix'],
-            default='posix', help='ControlPlane architecture')
+            default='mips64' if platform.machine() == 'mips64' else 'posix',
+            help='ControlPlane architecture')
 
     upgrade_group = arg_parser.add_mutually_exclusive_group()
     upgrade_group.add_argument('-u', '--upgrade', action='append', metavar='FOURCC',
