@@ -8,5 +8,8 @@ WorkingDirectory=/home/localadmin/Fun/FunTools/log_tools/analysis/view
 Environment="PATH=/home/localadmin/Fun/FunTools/log_tools/analysis/.venv/bin"
 ExecStart=/home/localadmin/Fun/FunTools/log_tools/analysis/.venv/bin/gunicorn --workers 3 --bind unix:loganalyzer.sock -m 007 wsgi:app
 
+Restart=on-failure
+RestartPreventExitStatus=1
+
 [Install]
 WantedBy=multi-user.target
