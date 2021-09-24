@@ -25,11 +25,7 @@ import pkcs11
 import pkcs11.util.rsa
 import pkcs11.util.ec
 
-# FIXME: this should be a shared constants file with SBPFirmware
-RSA_KEY_SIZE_IN_BITS = 2048
-SIGNING_INFO_SIZE = 2048
 MAX_SIGNATURE_SIZE = 512
-HEADER_RESERVED_SIZE = SIGNING_INFO_SIZE - (4 + MAX_SIGNATURE_SIZE)
 SIGNED_ATTRIBUTES_SIZE = 32
 SIGNED_DESCRIPTION_SIZE = 32
 SERIAL_INFO_NUMBER_SIZE = 24
@@ -120,10 +116,10 @@ def get_modulus_from_public_key_bytes(pub_info_der):
 # libraries in order of preference -- second argument: prompt for password
 LIBSOFTHSM2_PATHS = [
     ("/usr/safenet/lunaclient/lib/libCryptoki2_64.so", True), # Safenet ubuntu 14/16
-    ("/usr/lib/softhsm/libsofthsm2.so", False), # Ubuntu-17, 18
-    ("/usr/lib/x86_64-linux-gnu/softhsm/libsofthsm2.so", False), # Ubuntu-16
-    ("/usr/local/lib/softhsm/libsofthsm2.so", False), # macOS brew
-    ("/project/tools/softhsm-2.3.0/lib/softhsm/libsofthsm2.so", False), # shared vnc machines for verification team
+    ("/usr/lib/softhsm/libsofthsm2.so", True), # Ubuntu-17, 18
+    ("/usr/lib/x86_64-linux-gnu/softhsm/libsofthsm2.so", True), # Ubuntu-16
+    ("/usr/local/lib/softhsm/libsofthsm2.so", True), # macOS brew
+    ("/project/tools/softhsm-2.3.0/lib/softhsm/libsofthsm2.so", True), # shared vnc machines for verification team
 ]
 
 def get_token_label():
@@ -214,15 +210,15 @@ def get_exponent(pub):
     return pub[pkcs11.Attribute.PUBLIC_EXPONENT]
 
 
-def generate_rsa_key_pair(rw_session, label):
+def generate_rsa_key_pair(rw_session, label, key_size_in_bits):
     ''' Create and returns a new RSA key pair in the store '''
     return rw_session.generate_keypair(key_type=pkcs11.KeyType.RSA,
-                                       key_length=RSA_KEY_SIZE_IN_BITS,
+                                       key_length=key_size_in_bits,
                                        id=binascii.hexlify(label.encode()),
                                        label=label,
                                        store=True)
 
-def get_create_rsa(label):
+def get_create_rsa(label, key_size_in_bits):
     public = None
 
     hsm = HSM()
@@ -233,7 +229,7 @@ def get_create_rsa(label):
 
     if public is None:
         print("Generating key " + label)
-        public, _ = generate_rsa_key_pair(hsm.session, label)
+        public, _ = generate_rsa_key_pair(hsm.session, label, key_size_in_bits)
 
     return public
 
@@ -312,9 +308,9 @@ def remove_key(label):
     remove_key_aux(hsm.session, label)
 
 
-def export_pub_key(outfile, label):
+def export_pub_key(outfile, label, key_size_in_bits):
     ''' export a PEM file with key; create it if it does not exists '''
-    pub = get_create_rsa(label)
+    pub = get_create_rsa(label, key_size_in_bits)
 
     # export as PEM file
     der_bytes = pkcs11.util.rsa.encode_rsa_public_key(pub)
@@ -402,10 +398,8 @@ def parse_and_execute():
     parser.add_argument("-p", "--public-key-file", metavar="FILE",
                         help="public key file in PEM or binary format (certificate)")
 
-    parser.add_argument("-s", "--source", dest="c_source",
-                        action='store_true',
-                        help="ouput key in C hexadecimal format (modulus)")
-
+    parser.add_argument("-s", "--size_in_bits", dest="key_size_in_bits", default="4096",
+                        help="key size in bits if key has to be created (modulus)")
 
     options = parser.parse_args()
 
@@ -431,7 +425,9 @@ def parse_and_execute():
             print('\nKey name required.')
             sys.exit(1)
 
-        export_pub_key(options.out_path, options.sign_key)
+        export_pub_key(options.out_path,
+                       options.sign_key,
+                       int(options.key_size_in_bits, 0))
         sys.exit(0)
 
     elif options.command == 'certificate':
