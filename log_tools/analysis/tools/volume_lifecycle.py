@@ -293,7 +293,7 @@ class Volume(object):
         results = self._perform_es_search(queries, time_filters)
         if len(results) == 0:
             logging.error(f'Could not find Plex Info for UUID: {pvol_id} from time: {start_time} till time: {end_time}')
-            return None
+            return []
 
         type = get_value_from_params(results[0], 'type')
         info = list()

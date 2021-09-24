@@ -30,7 +30,7 @@ def Mail(owner_email, subject, mail_body):
 
     from_email = 'Log Analyzer<localadmin@funlogs01.fungible.local>'
 
-    cmd = f'echo "{mail_body}" | mail -s "{subject}" {owner_email} -aFrom:"{from_email}"'
+    cmd = f'echo "{mail_body}" | /usr/bin/mail -s "{subject}" {owner_email} -aFrom:"{from_email}"'
 
     logging.debug(f'Will execute {cmd}')
     try:

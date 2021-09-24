@@ -177,7 +177,7 @@
             const deleteValidations = responses[2].map(formURLFromResponse);
             let errorLogsDuringDelete = "";
 
-            if (deleteRequests.length > 1) {
+            if (deleteRequests.length > 0) {
                 vswitch_info_element.innerHTML += `
                     <div>Delete Request: ${displayTimestamps(deleteRequests)}</div>
                     <div>Delete Validation: ${displayTimestamps(deleteValidations)}</div>
