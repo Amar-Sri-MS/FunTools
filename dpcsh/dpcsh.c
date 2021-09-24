@@ -645,7 +645,7 @@ static char *_get_line(uint8_t *start, size_t max)
 		&& start[position] != '\n' && start[position] != '\0') {
 			position++;
 		}
-	
+
 	if (position < max) {
 		start[position] = 0;
 		return (char *)start;
@@ -1065,6 +1065,10 @@ void dpcsocket_close(struct dpcsock_connection *connection)
 		if (!bin_ctl_close_connection(connection->funq_connection)) {
 			perror("bin_ctl_close_connection");
 		}
+		pthread_cond_signal(&connection->data_available);
+	}
+
+	if (connection->socket->mode == SOCKMODE_NVME) {
 		pthread_cond_signal(&connection->data_available);
 	}
 }
