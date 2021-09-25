@@ -498,7 +498,7 @@ def main():
     parser.add_argument('--fail-on-error', action='store_true',
                         help='Always fail when encountering errors')
     parser.add_argument('--enroll-cert', metavar = 'FILE', help='Enrollment certificate')
-    parser.add_argument('--chip', choices=['f1', 's1', 'f1d1'], help='Target chip')
+    parser.add_argument('--chip', choices=['f1', 's1', 'f1d1', 's2'], help='Target chip')
 
     args = parser.parse_args()
 
@@ -640,15 +640,12 @@ def run(arg_action, arg_enroll_cert = None, *args, **kwargs):
             else:
                 argmap = {
                     'public':'cert_key',
-                    'public_file':'cert_key_file',
-                    'key':'sign_key',
-                    'serial_number':'serial_number',
-                    'serial_number_mask':'serial_number_mask',
-                    'debugger_flags':'debugger_flags',
+                    'security_group':'security_group'
                  }
-
                 cert_args = map_method_args(argmap, v)
-                fsi.cert_gen(outfile=k, **cert_args)
+                fsi.get_cert(outfile=k,
+                             chip_type=chip_type,
+                             **cert_args)
 
     if wanted('key_injection') and config.get('key_injection'):
         keep_outfile = kwargs.get("keep_output", False)

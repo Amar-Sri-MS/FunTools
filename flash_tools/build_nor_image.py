@@ -99,6 +99,7 @@ def generate_nor_image(args, script_directory,
     run_args = ["python3",
                 os.path.join(script_directory, "generate_flash.py"),
                 "--fail-on-error",
+                "--chip", args.chip,
                 "--config-type", "json",
                 "--source-dir", images_directory,
                 "--source-dir", eeprom_directory,
@@ -292,7 +293,7 @@ def parse_args():
                             help='''root for name of sub directory in which SPB will be built
                             default is "image_build" ''')
     arg_parser.add_argument("-c", "--chip", action='store',
-                            default='f1', choices=['f1', 's1'],
+                            default='f1', choices=['f1', 's1', 'f1d1', 's2'],
                             help="Machine (f1,s1), default = f1")
     arg_parser.add_argument("-e", "--eeprom", action='store',
                             help="eeprom type")
