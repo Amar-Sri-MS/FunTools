@@ -111,6 +111,7 @@ def main():
     parser.add_argument('--debug-build', dest='release', action='store_false', help='Use debug application binary')
     parser.add_argument('--default-config-files', dest='default_cfg', action='store_true')
     parser.add_argument('--dev-image', action='store_true', help='Create a development image installer')
+    parser.add_argument('--extra-funos-suffix', action='append', help='Extra funos elf suffix to use')
 
     args = parser.parse_args()
 
@@ -120,6 +121,9 @@ def main():
     funos_suffixes = ['', args.chip]
     if args.release:
         funos_suffixes.append('release')
+
+    if args.extra_funos_suffix:
+        funos_suffixes.extend(args.extra_funos_suffix)
 
     args.sdkdir = os.path.abspath(args.sdkdir) # later processing fails if relative path is given
     funos_appname = "funos{}.stripped".format('-'.join(funos_suffixes))
@@ -439,7 +443,7 @@ def main():
             with open("mmc_image.json") as f:
                 images = json.load(f)
                 bundle_images.extend([key for key,value in images.get('generated_images',{}).items()
-                                    if not value.get("no_export", False)])
+                                    if not (value.get("no_export", False) or value.get("no_bundle", False)) ])
 
             bundle_images.extend([
                 'install_tools/run_fwupgrade.py',
