@@ -1,3 +1,8 @@
+/**
+ *	snap_diff.c - tool to get changed blocks between two snapshots
+ *	Copyright © 2021 Fungible. All rights reserved.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
