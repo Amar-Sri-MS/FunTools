@@ -22,7 +22,7 @@ fi
 mkdir -p OTP
 
 ######################## OTP #################################
-python $DEVTOOLS_DIR/generate_otp.py \
+$DEVTOOLS_DIR/generate_otp.py \
         --cm_input $DEVTOOLS_DIR/otp_templates/OTP_content_CM.txt \
         --sm_input $DEVTOOLS_DIR/otp_templates/OTP_content_SM.txt \
         --ci_input $DEVTOOLS_DIR/otp_templates/OTP_content_CI_${CHIP_NAME}.txt \
@@ -31,7 +31,7 @@ python $DEVTOOLS_DIR/generate_otp.py \
 
 ### generate the real ones : secure and unsecure  (with or without customer key)
 for mode in secure unsecure; do
-    python $DEVTOOLS_DIR/generate_otp.py \
+    $DEVTOOLS_DIR/generate_otp.py \
         --cm_input $DEVTOOLS_DIR/otp_templates/OTP_content_CM.txt \
         --sm_input $DEVTOOLS_DIR/otp_templates/OTP_content_SM.txt \
         --ci_input $DEVTOOLS_DIR/otp_templates/OTP_content_CI_${CHIP_NAME}.txt \
