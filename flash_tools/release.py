@@ -443,7 +443,7 @@ def main():
             with open("mmc_image.json") as f:
                 images = json.load(f)
                 bundle_images.extend([key for key,value in images.get('generated_images',{}).items()
-                                    if not value.get("no_export", False)])
+                                    if not (value.get("no_export", False) or value.get("no_bundle", False)) ])
 
             bundle_images.extend([
                 'install_tools/run_fwupgrade.py',
