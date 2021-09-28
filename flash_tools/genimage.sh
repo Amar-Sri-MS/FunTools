@@ -19,7 +19,7 @@ WORKSPACE=${WORKSPACE:-/build}
 
 print_usage_and_exit()
 {
-	echo "Usage: genimage.sh -v <variant> -s {unsecure|no,fungible|yes,customer} -f <firmware_for_host> -e <0/1> -c <f1|s1>"
+	echo "Usage: genimage.sh -v <variant> -s {unsecure|no,fungible|yes,customer} -f <firmware_for_host> -e <0/1> -c <f1|s1|f1d1|s2>"
 	echo -n " <firmware_for_host> is path to the host software to be embedded in flash"
 	echo -e "\nExample: build.sh -v fungible_eeprom_zynq6 -s fungible -f u_boot.bin -e\n"
 	exit $1
@@ -31,6 +31,12 @@ validate_process_input()
 		echo " -v variant option is missing"
 		print_usage_and_exit -1
 	fi
+
+	if [ -z $CHIP ]; then
+	        echo " -c chip option is missing"
+	    	print_usage_and_exit -1
+	fi
+
 	case "$BOOT_SIG_TYPE" in
 		customer)
 			SECURE_BOOT=yes
@@ -142,6 +148,7 @@ if [ $EMULATION == 0 ]; then
 		--source-dir $SBP_INSTALL_DIR \
 		--source-dir $WORKSPACE/FunSDK/FunSDK/sbpfw/eeproms \
 		--fail-on-error \
+		--chip $CHIP \
 		$WORKSPACE/FunSDK/bin/flash_tools/qspi_config_fungible.json \
 		$WORKSPACE/FunSDK/bin/flash_tools/key_bag_config.json \
 		$CUSTOMER_CONFIG_JSON \
@@ -163,6 +170,7 @@ else
 		--source-dir $WORKSPACE/FunSDK/FunSDK/sbpfw/eeproms \
 		--enroll-cert ${WORKSPACE}/enroll_cert.bin \
 		--fail-on-error \
+		--chip $CHIP \
 		$WORKSPACE/FunSDK/bin/flash_tools/qspi_config_fungible.json \
 		$WORKSPACE/FunSDK/bin/flash_tools/key_bag_config.json \
 		$CUSTOMER_CONFIG_JSON \

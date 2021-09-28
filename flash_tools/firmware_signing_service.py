@@ -37,8 +37,25 @@ MAGIC_STRING_CUSTOMER_SIGN = b'FunCustS'
 
 SIGNING_SERVER_URL = "https://f1reg.fungible.com:4443"
 SIGNING_SERVICE_URL = SIGNING_SERVER_URL + "/cgi-bin/signing_server.cgi"
-CERTIFICATE_SERVICE_URL = SIGNING_SERVER_URL + "/"
-PRODUCTION_CERTIFICATE_SERVICE_URL = SIGNING_SERVER_URL + "/production/"
+# Certificate files hierarchy:
+#.
+# ├── development
+# │   ├── f1
+# │   │   ├── cpk1_certificate.bin
+# │   │   └── fpk2_certificate.bin
+# │   ├── f1d1 -> f1
+# │   ├── s1 -> f1
+# │   └── s2
+# └── production
+#     ├── f1
+#     │   ├── fpk2_certificate_0000.bin
+#     │   └── fpk2_certificate_0001.bin
+#     ├── f1d1 -> f1
+#     ├── s1 -> f1
+#     └── s2
+
+DEVELOPMENT_CERTIFICATE_ROOT_URL = SIGNING_SERVER_URL + "/development/"
+PRODUCTION_CERTIFICATE_ROOT_URL = SIGNING_SERVER_URL + "/production/"
 
 
 DEFAULT_HTTP_TIMEOUT = 180
@@ -170,26 +187,27 @@ def get_result(reply):
 
 
 #########################################################################
-# Production server access
+# server certificate retrieval2
+def retrieve_cert(production, chip_type, cert_key, security_group):
 
-def production_get_cert(outfile, cert_key, cert_key_file, sign_key, serial_number,
-                        serial_number_mask, debugger_flags):
+    if production:
+        request = "".join([PRODUCTION_CERTIFICATE_ROOT_URL,
+                           "/", chip_type, "/",
+                           cert_key, "_certificate_",  security_group, ".bin"])
+    else:
+        request = "".join([DEVELOPMENT_CERTIFICATE_ROOT_URL,
+                           "/", chip_type, "/",
+                           cert_key, "_certificate.bin"])
 
-    # There are several production security certificates, one for
-    # each security group in the serial number. All these quantities are
-    # passed as hex strings so double the coordinates 1 byte=2 hexadecimal chars
-    security_group = serial_number[SEC_GRP_POS*2:
-                                   (SEC_GRP_POS+SEC_GRP_SIZE)*2]
-
-    response = requests.get(PRODUCTION_CERTIFICATE_SERVICE_URL + cert_key +
-                            "_certificate_" + security_group + ".bin",
-                            timeout=DEFAULT_HTTP_TIMEOUT)
+    response = requests.get(request, timeout=DEFAULT_HTTP_TIMEOUT)
 
     if response.status_code == requests.codes.ok:
-        write(outfile, response.content)
-    else:
-        raise(Exception("Failed to obtain certificate for security group {}, key {}, err {}".
-                        format(security_group, cert_key, response.status_code)))
+        return response.content
+
+    raise(Exception("Failed to obtain certificate at {} for "
+                    "chip {}, security group {}, key {}: err: {}".
+                    format(request, chip_type, security_group, cert_key,
+                           response.status_code)))
 
 
 #########################################################################
@@ -207,7 +225,8 @@ def get_modulus(name):
     if SigningEnv().auth_token:
         params['production'] = '1'
 
-    response = requests.get(SIGNING_SERVICE_URL, params=params, timeout=DEFAULT_HTTP_TIMEOUT)
+    response = requests.get(SIGNING_SERVICE_URL, params=params,
+                            timeout=DEFAULT_HTTP_TIMEOUT)
     if response.status_code != requests.codes.ok:
         raise RuntimeError("Server responded with [{}]:\n{}\n".format(
             response.status_code, response.content).replace("\\n", "\n"))
@@ -385,34 +404,20 @@ def image_gen(outfile, infile, ftype, version, description, sign_key,
     write(outfile, image)
 
 
-def cert_gen(outfile, cert_key, cert_key_file, sign_key, serial_number,
-             serial_number_mask, debugger_flags):
-
-    # This is fine for the moment. Eventually, the signing server should
-    # have a database of certificates and be passed all these arguments
-    # and return the proper certificate. There is a SQLite implementation
-    # of this in the SBPFirmware repository that is probably overkill for
-    # the signing server but this would be similar
-
-    print("WARNING: Using firmware signing service to provide a certificate.\n"
-          "Currently the server does not generate certificates on the fly "
-          "but only provides a pre-generated certificate associated with a given "
-          "key name <{}>. This may not be desired so if a different certificate "
-          "is required, a certificate must be generated using local hsm mode instead.".
-          format(cert_key))
+def get_cert(outfile, chip_type, cert_key, security_group):
+    ''' retrieve the desired start certificate and store it in outfile '''
+    if chip_type not in ['f1', 's1', 'f1d1', 's2']:
+        raise Exception("Start certificate: Unknown chip type %s" % chip_type)
 
     if SigningEnv().auth_token:
-        production_get_cert(outfile, cert_key, cert_key_file, sign_key, serial_number,
-                            serial_number_mask, debugger_flags)
-        return
-
-    response = requests.get(CERTIFICATE_SERVICE_URL + cert_key + "_certificate.bin",
-                            timeout=DEFAULT_HTTP_TIMEOUT)
-    if response.status_code == requests.codes.ok:
-        write(outfile, response.content)
+        content = retrieve_cert(True, chip_type, cert_key, security_group)
+    elif security_group == 0:
+        content = retrieve_cert(False, chip_type, cert_key, security_group)
     else:
-        raise(Exception("Failed to obtain certificate for key {}, err {}".
-                        format(cert_key, response.status_code)))
+        raise Exception("No current production authentication token and "
+                        "a non-zero security group was specified")
+
+    write(outfile, content)
 
 
 def export_pub_key_hash(outfile, label):
