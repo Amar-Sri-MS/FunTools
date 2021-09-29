@@ -192,11 +192,11 @@ def retrieve_cert(production, chip_type, cert_key, security_group):
 
     if production:
         request = "".join([PRODUCTION_CERTIFICATE_ROOT_URL,
-                           "/", chip_type, "/",
+                           chip_type, "/",
                            cert_key, "_certificate_",  security_group, ".bin"])
     else:
         request = "".join([DEVELOPMENT_CERTIFICATE_ROOT_URL,
-                           "/", chip_type, "/",
+                           chip_type, "/",
                            cert_key, "_certificate.bin"])
 
     response = requests.get(request, timeout=DEFAULT_HTTP_TIMEOUT)

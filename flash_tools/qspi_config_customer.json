@@ -40,11 +40,7 @@
     "certificates": {
         "customer_certificate.bin": {
             "public": "cpk1",
-            "key": "cpk1",
-            "tamper_flags": "00000000",
-            "debugger_flags": "00000000",
-            "serial_number": "000000000000000000000000000000000000000000000000",
-            "serial_number_mask": "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0000"
+            "security_group": 0
         }
     }
 }
