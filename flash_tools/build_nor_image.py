@@ -62,7 +62,7 @@ NOR_IMAGE_FILE_NAME = "qspi_image_hw.bin"
 BMC_INSTALL_DIR = "/mnt/sdmmc0p1/scripts"
 
 #destination
-DOCHUB_REPO_DIR_USER_FMT = '/project/users/doc/sbp_images/{0}/{1}'
+DOCHUB_REPO_DIR_USER_FMT = '/project-fe/doc/sbp_images/{0}/{1}'
 
 LOCAL_DIR_FMT = '/var/www/html/sbp_images/{0}'
 
