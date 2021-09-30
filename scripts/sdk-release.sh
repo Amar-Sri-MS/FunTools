@@ -261,20 +261,15 @@ funsdk_setup()
     # Checkout the build_id if passed as an argument
     if [ "$build_id" != "" ]; then
 	git checkout tags/bld_$build_id
+    build_str = -v $build_id
     fi
 
     # Download SDK packages
-    if [ "$build_id" != "" ]; then
-	./scripts/bob --sdkup -v $build_id --including sdk
-	./scripts/bob --sdkup -v $build_id --including deps-funos.mips64
-	./scripts/bob --sdkup -v $build_id release
-	./scripts/bob -v $build_id --deploy-up
-    else
-	./scripts/bob --sdkup --including sdk
-	./scripts/bob --sdkup --including deps-funos.mips64
-	./scripts/bob --sdkup release
-	./scripts/bob --deploy-up
-    fi
+	./scripts/bob --sdkup $build_str --including sdk
+	./scripts/bob --sdkup $build_str --including deps-funos.mips64
+	./scripts/bob --sdkup $build_str release
+	./scripts/bob --sdkup $build_str nu.csrreplay
+	./scripts/bob $build_str --deploy-up
 
     # Extract the build id from the downloaded FunSDK packages
     file="build_info.txt"
