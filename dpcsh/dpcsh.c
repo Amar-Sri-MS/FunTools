@@ -520,7 +520,8 @@ static bool _write_to_fd(struct dpcsock_connection *connection,
 
 		fsync(fd);
 
-		*position += r;
+		if (r > 0) *position += r;
+
 		return true;
 	}
 
