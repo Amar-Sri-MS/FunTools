@@ -284,6 +284,7 @@ funsdk_setup()
     find . -name .gitignore |xargs rm -rf
     rm -rf FunSDK/chip/f1d1
     rm -rf FunSDK/chip/s2
+    rm -rf FunSDK/config/pipeline/*f1d1*
     rm -rf palladium_test
     rm -rf FunQemu-Linux
     rm -rf gpl
