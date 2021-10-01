@@ -266,7 +266,11 @@ def append_modulus_to_binary(binary, modulus):
 def get_modulus_from_public_key_bytes(pub_info_der):
     ''' extract the modulus from the ASN.1 structure '''
     pub_key_info = keys.PublicKeyInfo.load(pub_info_der)
-    rsa_pub_key = pub_key_info.unwrap()
+
+    if pub_key_info.algorithm != 'rsa':
+        raise Exception("Not an RSA key")
+
+    rsa_pub_key = pub_key_info['public_key'].parsed
     modulus_integer = rsa_pub_key['modulus']
     raw_modulus = modulus_integer.contents
     # the raw modulus might have an extra 0 (ASN.1 integer encoding)
