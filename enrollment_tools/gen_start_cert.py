@@ -72,7 +72,7 @@ def read(filename, nbytes=None, verbose=False):
 def write(filename, content, overwrite=True, tohex=False, tobyte=False,
           verbose=False):
     if not filename:
-        return
+        filename = '-'
     if verbose:
         print("Writing %s" % filename)
     # Overwrite
@@ -97,22 +97,8 @@ def write(filename, content, overwrite=True, tohex=False, tobyte=False,
     else:
         f.write(content)
 
-
-#####################################################################
-# ASN1crypto
-
-def get_modulus_from_public_key_bytes(pub_info_der):
-    ''' extract the modulus from the ASN.1 structure '''
-    pub_key_info = keys.PublicKeyInfo.load(pub_info_der)
-    rsa_pub_key = pub_key_info.unwrap()
-    modulus_integer = rsa_pub_key['modulus']
-    raw_modulus = modulus_integer.contents
-    # the raw modulus might have an extra 0 (ASN.1 integer encoding)
-    if raw_modulus[0] == 0:
-        return raw_modulus[1:]
-    return raw_modulus
-
-
+##############################################################################
+# HSM
 
 # libraries in order of preference -- second argument: prompt for password
 LIBSOFTHSM2_PATHS = [
@@ -165,9 +151,6 @@ def get_token():
         if token.label == token_label:
             return token, password
     return None, ''
-
-
-### HSM  #############################
 
 class HSM:
 
@@ -265,7 +248,6 @@ def sign_with_key(label, data):
 
     return private.sign(data, mechanism=mechanism)
 
-
 def append_signature_to_binary(binary, signature):
     binary += struct.pack('<I', len(signature))
     binary += signature
@@ -277,6 +259,45 @@ def append_modulus_to_binary(binary, modulus):
     # same structure as signature and MAX_SIGNATURE_SIZE == MAX_MODULUS_SIZE
     return append_signature_to_binary(binary, modulus)
 
+
+##############################################################################
+# ASN1crypto
+
+def get_modulus_from_public_key_bytes(pub_info_der):
+    ''' extract the modulus from the ASN.1 structure '''
+    pub_key_info = keys.PublicKeyInfo.load(pub_info_der)
+
+    if pub_key_info.algorithm != 'rsa':
+        raise Exception("Not an RSA key")
+
+    rsa_pub_key = pub_key_info['public_key'].parsed
+    modulus_integer = rsa_pub_key['modulus']
+    raw_modulus = modulus_integer.contents
+    # the raw modulus might have an extra 0 (ASN.1 integer encoding)
+    if raw_modulus[0] == 0:
+        return raw_modulus[1:]
+    return raw_modulus
+
+def encode_public_key(pub_key):
+    ''' generate a public key '''
+    modulus = get_modulus(pub_key)
+    pub_exp = get_exponent(pub_key)
+    rsa_pub_key = keys.RSAPublicKey()
+    rsa_pub_key['modulus'] = int.from_bytes(modulus, byteorder='big')
+    rsa_pub_key['public_exponent'] = int.from_bytes(pub_exp, byteorder='big')
+
+    public_key_algo = keys.PublicKeyAlgorithm()
+    public_key_algo['algorithm'] = 'rsa'
+
+    public_key_info = keys.PublicKeyInfo()
+    public_key_info['algorithm'] = public_key_algo
+    public_key_info['public_key'] = rsa_pub_key
+
+    return public_key_info.dump()
+
+
+##############################################################################
+# Commands
 
 def list_all_keys():
     ''' list all the keys in the session '''
@@ -313,9 +334,10 @@ def export_pub_key(outfile, label, key_size_in_bits):
     ''' export a PEM file with key; create it if it does not exists '''
     pub = get_create_rsa(label, key_size_in_bits)
 
-    # export as PEM file
-    der_bytes = pkcs11.util.rsa.encode_rsa_public_key(pub)
-    pem_content = pem.armor('RSA PUBLIC KEY', der_bytes)
+    # export as PEM file: the PKCS11 library exports as RSA PUBLIC KEY
+    # using the PUBLIC KEY format makes the file more useful
+    der_bytes = encode_public_key(pub)
+    pem_content = pem.armor('PUBLIC KEY', der_bytes)
 
     write(outfile, pem_content)
 
