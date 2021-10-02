@@ -1,3 +1,3 @@
 #!/bin/sh
 
-lspci
+lspci -d 1dad:
