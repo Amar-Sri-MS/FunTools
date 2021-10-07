@@ -23,7 +23,7 @@ def extract(path):
         opener, mode = zipfile.ZipFile, 'r'
     elif path.endswith('.tar'):
         opener, mode = tarfile.open, 'r'
-    elif path.endswith(('.tar.gz', '.tgz')):
+    elif path.endswith(('.tar.gz', '.tgz', '.gz')):
         opener, mode = tarfile.open, 'r'
     elif path.endswith(('.tar.bz2', '.tbz', '.tbz2', '.tz2', '.tb2', '.bz2')):
         opener, mode = tarfile.open, 'r'
