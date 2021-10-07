@@ -37,7 +37,7 @@ class AnchorMatch:
 
         # If this is a regular expression anchor, fill all the values in the
         # short representation with the matchgroups.
-        short_desc = anchor['short']
+        short_desc = anchor.get('short', '')
         if 'rematch' in anchor:
             for key, value in match.groupdict().items():
                 short_desc = re.sub(f'<{key}>', value, short_desc)
@@ -262,6 +262,7 @@ class AnalyticsOutput(Block):
         for match in self.anchor_matches:
             es_doc_id = match.msg_dict['doc_id']
             is_failure = match.anchor.get('is_failure', False)
+            anchor_text = match.short_desc if match.short_desc else match.msg_dict['line']
 
             # ES format for bulk operations where _op_type defines
             # the type of operation
@@ -272,7 +273,7 @@ class AnalyticsOutput(Block):
                 'doc': {
                     'is_anchor': True,
                     'is_failure': is_failure,
-                    'anchor_text': match.short_desc
+                    'anchor_text': anchor_text
                 }
             })
 
