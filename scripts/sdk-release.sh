@@ -363,16 +363,16 @@ funos_install_lib_headers()
 	exit 1
     fi
 
-    # Build and install posix funos library
-    if ! make -j8 MACHINE=s1-posix install-libfunosrt; then
+    # Build and install posix funos library & config
+    if ! make -j8 MACHINE=s1-posix install-libfunosrt install-defaultcfg; then
 	echo ""
 	echo "FunOS s1-posix fails to build"
 	echo ""
 	exit 1
     fi
 
-    # Build and install s1 funos library
-    if ! make -j8 MACHINE=s1 install-libfunosrt; then
+    # Build and install s1 funos library & config
+    if ! make -j8 MACHINE=s1 install-libfunosrt install-defaultcfg; then
 	echo ""
 	echo "FunOS s1 fails to build"
 	echo ""
