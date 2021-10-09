@@ -11,6 +11,8 @@
 
 #define REQEST_N	(100)
 
+#define CONNECTION_N	(3)
+
 struct bin_ctl_sample_request {
 	size_t reply_bytes;
 	size_t request_bytes;
@@ -74,53 +76,55 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	struct bin_ctl_connection *c = bin_ctl_open_connection(h);
+	for (size_t connection_i = 0; connection_i < CONNECTION_N; connection_i++) {
+		struct bin_ctl_connection *c = bin_ctl_open_connection(h);
 
-	if (!c) {
-		printf("error opening connection\n");
-		exit(1);
-	}
-
-	if (!bin_ctl_register_receive_callback(c, callback_function, NULL)) {
-		printf("error registering callback\n");
-		exit(1);
-	}
-
-	struct fun_ptr_and_size p;
-
-	for (size_t i = 0; i < REQEST_N; i++) {
-		size_t request_size = MIN_REQUEST_LENGTH + (rand() % (MAX_REQUEST_LENGTH - MIN_REQUEST_LENGTH));
-		size_t response_size = MIN_RESPONSE_LENGTH + (rand() % (MAX_RESPONSE_LENGTH - MIN_RESPONSE_LENGTH));
-		size_t request_complete_size = sizeof(struct bin_ctl_sample_request) + request_size;
-		struct bin_ctl_sample_request *request = malloc(request_complete_size);
-
-		if (!request) {
-			printf("OOM while allocating %zu\n", request_complete_size);
+		if (!c) {
+			printf("error opening connection\n");
 			exit(1);
 		}
 
-		request->reply_bytes = response_size;
-		request->request_bytes = request_size;
-		for (int j = 0; j < request_size; j++) {
-			request->data[j] = rand() % 256;
+		if (!bin_ctl_register_receive_callback(c, callback_function, NULL)) {
+			printf("error registering callback\n");
+			exit(1);
 		}
 
-		dump_request(request, i);
+		struct fun_ptr_and_size p;
 
-		p.ptr = (void *)request;
-		p.size = request_complete_size;
+		for (size_t i = 0; i < REQEST_N; i++) {
+			size_t request_size = MIN_REQUEST_LENGTH + (rand() % (MAX_REQUEST_LENGTH - MIN_REQUEST_LENGTH));
+			size_t response_size = MIN_RESPONSE_LENGTH + (rand() % (MAX_RESPONSE_LENGTH - MIN_RESPONSE_LENGTH));
+			size_t request_complete_size = sizeof(struct bin_ctl_sample_request) + request_size;
+			struct bin_ctl_sample_request *request = malloc(request_complete_size);
 
-		printf("sending\n");
-		if (!bin_ctl_send(c, p)) {
-			printf("send unsuccessful\n");
+			if (!request) {
+				printf("OOM while allocating %zu\n", request_complete_size);
+				exit(1);
+			}
+
+			request->reply_bytes = response_size;
+			request->request_bytes = request_size;
+			for (int j = 0; j < request_size; j++) {
+				request->data[j] = rand() % 256;
+			}
+
+			dump_request(request, i);
+
+			p.ptr = (void *)request;
+			p.size = request_complete_size;
+
+			printf("sending\n");
+			if (!bin_ctl_send(c, p)) {
+				printf("send unsuccessful\n");
+			}
+
+			free(request);
 		}
 
-		free(request);
-	}
-
-	if (!bin_ctl_close_connection(c)) {
-		printf("error while closing connection\n");
-		exit(1);
+		if (!bin_ctl_close_connection(c)) {
+			printf("error while closing connection\n");
+			exit(1);
+		}
 	}
 
 	if (!bin_ctl_destroy(h)) {
