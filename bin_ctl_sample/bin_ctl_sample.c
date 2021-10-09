@@ -43,7 +43,7 @@ void dump_reply(struct fun_ptr_and_size data)
 
 void dump_request(struct bin_ctl_sample_request *request, size_t i)
 {
-	printf("%zu: request_bytes = %zu, reply_bytes = %zu\n", i, request->reply_bytes, request->request_bytes);
+	printf("%zu: request_bytes = %zu, reply_bytes = %zu\n", i, request->request_bytes, request->reply_bytes);
 
 	for (size_t i = 0; i < request->request_bytes && i < 10;i++) {
 		printf("%d ", request->data[i]);
