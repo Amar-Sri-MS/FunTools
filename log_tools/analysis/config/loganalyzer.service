@@ -1,6 +1,7 @@
 [Unit]
 Description=Gunicorn instance to serve Log Analyzer
-After=network.target fileserver.service elasticsearch.service
+After=network.target elasticsearch.service fileserver.service
+Requires=elasticsearch.service fileserver.service
 
 [Service]
 Group=www-data
