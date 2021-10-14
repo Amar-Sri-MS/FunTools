@@ -246,7 +246,7 @@ def parse_manifest(path, parent_frn={}, filters={}):
                         metadata_key: content_metadata
                     }
                 else:
-                    frn_info['resource_type'] = 'folder'
+                    frn_info['resource_type'] = 'folder' if os.path.isdir(resource_path) else 'textfile'
                     content_path = resource_path
 
             # Check for logs in the folder or textfile based on the source
