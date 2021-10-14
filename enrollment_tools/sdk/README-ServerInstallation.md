@@ -13,7 +13,7 @@ The Simple Signing Server can be installed on each developer machine or a single
 
 ## Installation
 
-To install the signing server, just execute the `signing_server.run` script as root:
+To install the signing server, execute the `signing_server.run` script as root:
 
 ```sh
 sudo ./signing_server.run
@@ -72,4 +72,45 @@ Saving to: ‘STDOUT’
 
 2021-07-29 10:02:23 (314 MB/s) - written to stdout [1576/1576]
 ```
+
+### FAQ & Troubleshooting
+
+The installation script can report some errors on some preexisting Linux installations.
+
+#### The Linux installation is not using systemd as the init sytem
+
+```
+$ sudo systemctl restart apache2
+System has not been booted with systemd as init system (PID 1). Can't operate.
+Failed to connect to bus: Host is down
+```
+
+##### Solution:
+Restart apache2 using the appropriate command for the sytem. 
+Example:
+```
+$ sudo service apache2 restart
+```
+
+#### Port 80 cannot be used by Apache2 httpd
+
+```
+* Restarting Apache httpd web server apache2 (13)Permission denied: AH00072: make_sock: could not bind to address [::]:80
+(13)Permission denied: AH00072: make_sock: could not bind to address 0.0.0.0:80
+no listening sockets available, shutting down
+AH00015: Unable to open logs
+Action 'start' failed.
+The Apache error log may have more information.
+```
+
+Most likely, there is another process using port 80 on the machine that conflicts with the default Apache2 http installation.
+
+##### Solution:
+This can be fixed by at least 3 different methods:
+
+
+1. stop/remove the process using port 80 on that machine.
+1. if that process is an HTTP server, use it as the signing server instead of Apache2 httpd. It might be necessary to move the files `*.pem, signing_server.cgi` that are now in the `/usr/lib/cgi-bin` to that other HTTP server cgi-bin directory. Consult that HTTP server documentation.
+1. reconfigure the Apache HTTP server NOT to use port 80 but another port (8080/8081/etc...) by editing the Apache configuration files (/etc/apache2/ports.conf and /etc/apache2/sites-enabled/000-default.conf). Consult the Apache2 documentation.
+
 
