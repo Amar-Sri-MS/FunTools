@@ -121,6 +121,7 @@ void LOG(enum log_type type, char *format, ...)
 		va_start (args, format);
 		vfprintf (g_params.log_fp, format, args);
 		va_end (args);
+		fflush(g_params.log_fp);
 	}
 }
 
