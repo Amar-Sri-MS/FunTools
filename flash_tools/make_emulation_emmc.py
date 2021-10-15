@@ -264,6 +264,7 @@ def gen_fs(files):
         pad_file(output_fs, f.name, 1124 * MB)
         cmd = [ os_utils.path_fixup('sfdisk'),
             '-X', 'dos',  # partition label
+            '--color=never',
             f.name]
         p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
         sfdiskcmds = ['start=4KiB, size=32MiB, type=83, bootable', #32MB@4KB
