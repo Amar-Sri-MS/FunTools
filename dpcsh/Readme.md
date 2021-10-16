@@ -204,7 +204,7 @@ Then the variable can be used and the json or blob will be sent to FunOS.
 
 Example:
 
-// A json text file
+```// A json text file
 > cat /tmp/x.json
 [1 2 3 { foo: bar }]
 
@@ -218,19 +218,24 @@ Example:
 json_file $j "/tmp/x.json"
 Successfully read file '/tmp/x.json' as text JSON and stored in environment variable '$j': [1, 2, 3, {"foo": "bar"}]
 {"result": true, "tid": 1}
+
 getenv
 {"result": {"$j": [1, 2, 3, {"foo": "bar"}], "_connection": "socket_14"}, "tid": 1}
+
 blob_file $b "/tmp/x.bin"
 Successfully read file '/tmp/x.bin' as blob and stored in environment variable '$b'
 {"result": true, "tid": 2}
+
 getenv
 {
 "result": {"$b": [[49, 50, 51, 52, 10]], "$j": [1, 2, 3, {"foo": "bar"}], "_connection": "socket_14"},
 "tid": 3
 }
+
 blob_file $c "/tmp/x.bin"
 Successfully read file '/tmp/x.bin' as blob and stored in environment variable '$c'
 {"result": true, "tid": 3}
+
 getenv
 {
 "result": {
@@ -241,6 +246,8 @@ getenv
 },
 "tid": 5
 }
+
 eval $b
 {"result": [[49, 50, 51, 52, 10]], "tid": 6}
 
+```
