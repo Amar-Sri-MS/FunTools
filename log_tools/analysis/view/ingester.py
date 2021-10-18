@@ -254,6 +254,8 @@ def ingest():
     Required QA "job_id"
     """
     try:
+        accept_type = request.headers.get('Accept', 'text/html')
+
         ingest_type = request.form.get('ingest_type', 'qa')
         techsupport_ingest_type = request.form.get('techsupport_ingest_type')
         job_id = request.form.get('job_id')
@@ -273,7 +275,7 @@ def ingest():
         LOG_ID = _get_log_id(job_id, ingest_type, test_index=test_index)
 
         def render_error_template(msg=None):
-            return render_template('ingester.html', feedback={
+            feedback = {
                 'success': False,
                 'started': False,
                 'log_id': LOG_ID,
@@ -286,8 +288,15 @@ def ingest():
                 'sources': sources,
                 'mount_path': mount_path,
                 'msg': msg if msg else 'Some error occurred'
-            }, ingest_type=ingest_type,
-               techsupport_ingest_type=techsupport_ingest_type)
+            }
+            if accept_type == 'application/json':
+                return jsonify(feedback)
+            return render_template(
+                'ingester.html',
+                feedback=feedback,
+                ingest_type=ingest_type,
+                techsupport_ingest_type=techsupport_ingest_type
+            )
 
         if not job_id:
             return render_error_template('Missing JOB ID')
@@ -339,7 +348,7 @@ def ingest():
 
             ingestion = subprocess.Popen(cmd)
 
-        return render_template('ingester.html', feedback={
+        feedback = {
             'started': True,
             'log_id': LOG_ID,
             'success': metadata.get('ingestion_status') == 'COMPLETED',
@@ -353,8 +362,16 @@ def ingest():
             'sources': sources,
             'mount_path': mount_path,
             'metadata': metadata
-        }, ingest_type=ingest_type,
-           techsupport_ingest_type=techsupport_ingest_type)
+        }
+
+        if accept_type == 'application/json':
+            return jsonify(feedback)
+        return render_template(
+            'ingester.html',
+            feedback=feedback,
+            ingest_type=ingest_type,
+            techsupport_ingest_type=techsupport_ingest_type
+        )
     except Exception as e:
         current_app.logger.exception(f'Error when starting ingestion for job: {job_id}')
         return render_error_template(str(e)), 500
