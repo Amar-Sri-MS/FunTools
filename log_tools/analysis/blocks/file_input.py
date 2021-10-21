@@ -49,16 +49,19 @@ class TextFileInput(Block):
         file_size = 0
 
         for file in input_files:
-
             # Extracting info from filename using the regex pattern
             self._set_info_from_filename(file, self.cfg.get('file_info_match'))
 
             logging.info(f'Parsing {file}')
             if file.endswith('.gz'):
-                with gzip.open(file, mode='rt', encoding='ascii', errors='replace') as f:
-                    yield from self.read_logs(f)
-                    f.seek(0,2)
-                    file_size += f.tell()
+                try:
+                    with gzip.open(file, mode='rt', encoding='ascii', errors='replace') as f:
+                        yield from self.read_logs(f)
+                        f.seek(0,2)
+                        file_size += f.tell()
+                except:
+                    # TODO(Sourabh): Let users know about this.
+                    logging.exception(f'Error while parsing zipped file: {file}')
             else:
                 with open(file, 'r', encoding='ascii', errors='replace') as f:
                     yield from self.read_logs(f)
