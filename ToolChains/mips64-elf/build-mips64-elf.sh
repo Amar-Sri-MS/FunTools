@@ -22,13 +22,17 @@ gdb_url="http://ftpmirror.gnu.org/gdb/${gdb_archive}"
 gdb_patches=0001-Fix-Python3.9-related-runtime-problems.patch
 
 if [ $(uname) = 'Linux' ] ; then
-    build_ldflags="LDFLAGS='-static-libstdc++ -static-libgcc'"
+    host_binutils_config=--with-static-standard-libraries
+    host_gcc_config=--with-static-standard-libraries
+    host_gdb_config=
 else
     # Assume it is MacOS
     export PATH=/usr/local/opt/gnu-sed/libexec/gnubin:$PATH
     # sed --version will fail and kill the script if not gnu-sed
     sed --version
-    build_ldflags=
+    host_binutils_config=
+    host_gcc_config=
+    host_gdb_config=
 fi
 
 mkdir -p build
@@ -54,7 +58,7 @@ binutils_dir=mips64-${binutils_version}
 
 mkdir -p $binutils_dir
 pushd $binutils_dir
-$build_ldflags ../${binutils_version}/configure --target=mips64-unknown-elf --prefix=$dest_dir
+../${binutils_version}/configure --target=mips64-unknown-elf --prefix=$dest_dir $host_binutils_config
 make -j4
 make -j4 install
 popd
@@ -69,7 +73,9 @@ gcc_dir=mips64-${gcc_version}
 
 mkdir -p $gcc_dir
 pushd $gcc_dir
-$build_ldflags ../${gcc_version}/configure --target=mips64-unknown-elf --prefix=$dest_dir --enable-languages=c,c++ --without-headers \
+../${gcc_version}/configure --target=mips64-unknown-elf --prefix=$dest_dir $host_gcc_config \
+    --enable-languages=c,c++		\
+    --without-headers			\
     --disable-shared			\
     --disable-libssp			\
     --disable-libsanitizer		\
@@ -79,7 +85,7 @@ $build_ldflags ../${gcc_version}/configure --target=mips64-unknown-elf --prefix=
     --disable-libstdcxx			\
     --enable-plugin			\
     --enable-targets=64			\
-    --with-arch=mips64r6 --with-abi=64
+    --with-arch=i6500 --with-abi=64
 make -j4
 make -j4 install
 popd
@@ -98,7 +104,7 @@ orig_path=$PATH
 export PATH=$PATH:$dest_dir/bin
 mkdir -p $gdb_dir
 pushd $gdb_dir
-../${gdb_version}/configure --disable-sim --target=mips64-unknown-elf --prefix=$dest_dir
+../${gdb_version}/configure --disable-sim --target=mips64-unknown-elf --prefix=$dest_dir $host_gdb_config
 make -j4
 make -j4 install
 popd
