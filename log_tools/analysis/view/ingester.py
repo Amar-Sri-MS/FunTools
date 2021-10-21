@@ -813,7 +813,7 @@ def ingest_techsupport_logs(job_id, log_path, metadata, filters):
 
         # Start the ingestion
         return ingest_handler.start_pipeline(ingest_path,
-                                         LOG_ID,
+                                         f'techsupport-{job_id}',
                                          metadata=metadata,
                                          filters=filters)
     except Exception as e:
