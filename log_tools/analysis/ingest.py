@@ -252,6 +252,9 @@ def parse_manifest(path, parent_frn={}, filters={}):
             # Check for logs in the folder or textfile based on the source
             if frn_info['resource_type'] == 'folder' or frn_info['resource_type'] == 'textfile':
                 logging.info(f'Checking for logs in {content_path}')
+                # Setting source if not present on FUNLOG_MANIFEST
+                if 'system_log.tar.gz' in frn_info['prefix_path'] or 'system_log.tar.gz' in frn_info['sub_path']:
+                    frn_info['source'] = 'cclinux'
                 pipeline_cfg.extend(build_input_pipeline(content_path, frn_info, filters))
 
         else:
