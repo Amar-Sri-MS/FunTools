@@ -68,8 +68,7 @@ curl -X PUT "localhost:9200/_index_template/metadata_template" -H 'Content-Type:
                     "type": "text"
                 },
                 "submitted_by": {
-                    "type": "keyword",
-                    "doc_values": false
+                    "type": "keyword"
                 }
             }
         }
