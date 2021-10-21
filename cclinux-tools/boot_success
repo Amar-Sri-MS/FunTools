@@ -1,0 +1,36 @@
+#!/bin/sh
+
+PokeBootSuccess()
+{
+	local FINAL_STATUS=0
+	# only poke boot success when we've reached end of init (this script should be
+	# executed as the last of all init scripts) and all services have started properly.
+	if [ -d /etc/boot-success-hooks.d ]; then
+		for f in `find /etc/boot-success-hooks.d/ -follow -type f`; do
+			echo "Running boot success hook: " $(basename $f)
+			$f
+			if [ $? -ne 0 ]; then
+				echo " ... FAILED"
+				FINAL_STATUS=1
+			else
+				echo " .... OK"
+			fi
+		done
+	fi
+
+	if [ $FINAL_STATUS -eq 0 ]; then
+		/usr/bin/dpcsh --pcie_nvme_sock=/dev/nvme0 --nocli uboot boot { "success":true }
+	fi
+}
+
+case "$1" in
+	start)
+		PokeBootSuccess
+		;;
+	stop)
+		echo -n "Do nothing here for now"
+		;;
+esac
+
+exit 0
+

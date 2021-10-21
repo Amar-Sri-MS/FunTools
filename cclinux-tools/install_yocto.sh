@@ -55,3 +55,4 @@ install -t $scripts_dir miscinit
 runtime_target_dir=$SDK_INSTALL_DIR/bin/mips64/Linux
 mkdir -p $runtime_target_dir
 install -t $runtime_target_dir -m 0644 vfio.conf
+install -t $runtime_target_dir -m 0644 boot_success
