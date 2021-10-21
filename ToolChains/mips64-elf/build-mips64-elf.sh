@@ -94,3 +94,7 @@ pushd $gdb_dir
 make -j4
 make -j4 install
 popd
+
+pushd $dest_dir
+tar cJf ../toolchain.tar.xz *
+popd
