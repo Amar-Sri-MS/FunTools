@@ -21,7 +21,15 @@ gdb_url="http://ftpmirror.gnu.org/gdb/${gdb_archive}"
 
 gdb_patches=0001-Fix-Python3.9-related-runtime-problems.patch
 
-build_ldflags="-static-libstdc++ -static-libgcc"
+if [ $(uname) = 'Linux' ] ; then
+    build_ldflags="LDFLAGS='-static-libstdc++ -static-libgcc'"
+else
+    # Assume it is MacOS
+    export PATH=/usr/local/opt/gnu-sed/libexec/gnubin:$PATH
+    # sed --version will fail and kill the script if not gnu-sed
+    sed --version
+    build_ldflags=
+fi
 
 mkdir -p build
 cd build
@@ -46,7 +54,7 @@ binutils_dir=mips64-${binutils_version}
 
 mkdir -p $binutils_dir
 pushd $binutils_dir
-LDFLAGS=$build_ldflags ../${binutils_version}/configure --target=mips64-unknown-elf --prefix=$dest_dir
+$build_ldflags ../${binutils_version}/configure --target=mips64-unknown-elf --prefix=$dest_dir
 make -j4
 make -j4 install
 popd
@@ -61,7 +69,7 @@ gcc_dir=mips64-${gcc_version}
 
 mkdir -p $gcc_dir
 pushd $gcc_dir
-LDFLAGS=$build_ldflags ../${gcc_version}/configure --target=mips64-unknown-elf --prefix=$dest_dir --enable-languages=c,c++ --without-headers \
+$build_ldflags ../${gcc_version}/configure --target=mips64-unknown-elf --prefix=$dest_dir --enable-languages=c,c++ --without-headers \
     --disable-shared			\
     --disable-libssp			\
     --disable-libsanitizer		\
@@ -90,7 +98,7 @@ orig_path=$PATH
 export PATH=$PATH:$dest_dir/bin
 mkdir -p $gdb_dir
 pushd $gdb_dir
-../${gdb_version}/configure --target=mips64-unknown-elf --prefix=$dest_dir
+../${gdb_version}/configure --disable-sim --target=mips64-unknown-elf --prefix=$dest_dir
 make -j4
 make -j4 install
 popd
