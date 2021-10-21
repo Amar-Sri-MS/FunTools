@@ -67,8 +67,8 @@
                 const IDValuePair = IDStr.split(": ");
                 return IDValuePair[1] !== "" ? IDValuePair[1] : null;
             }
-            const reqID = extract(IDPair[0]);
-            const VFID = extract(IDPair[1]);
+            const reqID = IDPair.length >= 1 ? extract(IDPair[0]) : null;
+            const VFID = IDPair.length >= 2 ? extract(IDPair[1]) : null;
             return {
                 "reqID": reqID,
                 "VFID": VFID,
@@ -267,14 +267,14 @@
             ) {
                 return null;
             }
-            return JSON.stringify({
+            return {
                 "query": encodeURIComponent(searchPayload["query"]),
                 "state": JSON.stringify(searchPayload["state"]),
                 "page": searchPayload["page"],
                 "next": true,
                 // Setting size to a ES limit of 10k results per request
                 "size": 10000
-            });
+            };
         }
 
         async function handleSearch(searchText, time) {
@@ -292,24 +292,16 @@
                 searchPayload["state"] = formSearchState(time["before"], time["after"]);
             }
 
-            const filterString = "";
+            const filterString = {};
             const searchString = buildSearchOption(searchPayload);
 
-            // Filters not selected
-            if (filterString === null) {
-                return;
+            const searchBody = {
+                "search": searchString,
+                "filters": filterString
             }
 
-            let params = new URLSearchParams();
-            if (filterString != "") {
-                params.set("filter", filterString);
-            }
-            if (searchString != "") {
-                params.set("search", searchString);
-            }
-
-            const search_url = `${LOG_PAGE_URL}/search?${params.toString()}${location.hash}`;
-            return fetchWrapper.get(search_url)
+            const search_url = `${LOG_PAGE_URL}/search`;
+            return fetchWrapper.post(search_url, searchBody)
                 .then(data => {
                     toggleLoader(false);
                     const formattedData = data["results"].map(result => {
