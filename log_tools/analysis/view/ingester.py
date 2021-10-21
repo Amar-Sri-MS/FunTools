@@ -254,6 +254,8 @@ def ingest():
     Required QA "job_id"
     """
     try:
+        accept_type = request.headers.get('Accept', 'text/html')
+
         ingest_type = request.form.get('ingest_type', 'qa')
         techsupport_ingest_type = request.form.get('techsupport_ingest_type')
         job_id = request.form.get('job_id')
@@ -273,7 +275,7 @@ def ingest():
         LOG_ID = _get_log_id(job_id, ingest_type, test_index=test_index)
 
         def render_error_template(msg=None):
-            return render_template('ingester.html', feedback={
+            feedback = {
                 'success': False,
                 'started': False,
                 'log_id': LOG_ID,
@@ -286,8 +288,15 @@ def ingest():
                 'sources': sources,
                 'mount_path': mount_path,
                 'msg': msg if msg else 'Some error occurred'
-            }, ingest_type=ingest_type,
-               techsupport_ingest_type=techsupport_ingest_type)
+            }
+            if accept_type == 'application/json':
+                return jsonify(feedback)
+            return render_template(
+                'ingester.html',
+                feedback=feedback,
+                ingest_type=ingest_type,
+                techsupport_ingest_type=techsupport_ingest_type
+            )
 
         if not job_id:
             return render_error_template('Missing JOB ID')
@@ -339,7 +348,7 @@ def ingest():
 
             ingestion = subprocess.Popen(cmd)
 
-        return render_template('ingester.html', feedback={
+        feedback = {
             'started': True,
             'log_id': LOG_ID,
             'success': metadata.get('ingestion_status') == 'COMPLETED',
@@ -353,8 +362,16 @@ def ingest():
             'sources': sources,
             'mount_path': mount_path,
             'metadata': metadata
-        }, ingest_type=ingest_type,
-           techsupport_ingest_type=techsupport_ingest_type)
+        }
+
+        if accept_type == 'application/json':
+            return jsonify(feedback)
+        return render_template(
+            'ingester.html',
+            feedback=feedback,
+            ingest_type=ingest_type,
+            techsupport_ingest_type=techsupport_ingest_type
+        )
     except Exception as e:
         current_app.logger.exception(f'Error when starting ingestion for job: {job_id}')
         return render_error_template(str(e)), 500
@@ -700,7 +717,9 @@ def ingest_techsupport_logs(job_id, log_path, metadata, filters):
     archive in the given "log_path".
     """
     es_metadata = ElasticsearchMetadata()
-    LOG_ID = _get_log_id(job_id, ingest_type='upload')
+    LOG_ID = _get_log_id(job_id, ingest_type='techsupport')
+    path = f'{DOWNLOAD_DIRECTORY}/{LOG_ID}'
+    ingest_path = log_path
 
     try:
         # Extract if the file is an archive
@@ -736,8 +755,64 @@ def ingest_techsupport_logs(job_id, log_path, metadata, filters):
 
             _create_manifest(log_path, manifest['metadata'], contents)
 
+        else:
+            manifest_contents = list()
+            filename = log_path.split('/')[-1].replace(' ', '_')
+            manifest_contents.append(f'frn::::::bundle::"{filename}"')
+
+            # TODO(Sourabh): This is a temp workaround to get techsupport ingestion working.
+            # This will be removed after the fixes to manifest creation by David G.
+            archive_name = os.path.basename(filename)
+
+            # Get the folders of each node in the cluster
+            folders = glob.glob(f'{log_path}/techsupport/*[!devices][!other]')
+            # HA logs
+            if len(folders) == 3:
+                for folder in folders:
+                    folder_name = folder.split('/')[-1].replace(' ', '_')
+                    manifest_contents.extend([
+                        f'frn:composer:cluster:{folder_name}:host:apigateway:folder:"{archive_name}/techsupport/{folder_name}":apigateway',
+                        f'frn:composer:cluster:{folder_name}:host:cassandra:folder:"{archive_name}/techsupport/{folder_name}":cassandra',
+                        f'frn:composer:cluster:{folder_name}:host:kafka:folder:"{archive_name}/techsupport/{folder_name}":kafka',
+                        f'frn:composer:cluster:{folder_name}:host:kapacitor:folder:"{archive_name}/techsupport/{folder_name}":kapacitor',
+                        f'frn:composer:cluster:{folder_name}:host:node-service:folder:"{archive_name}/techsupport/{folder_name}":nms',
+                        f'frn:composer:cluster:{folder_name}:host:pfm:folder:"{archive_name}/techsupport/{folder_name}":pcie',
+                        f'frn:composer:cluster:{folder_name}:host:telemetry-service:folder:"{archive_name}/techsupport/{folder_name}":tms',
+                        f'frn:composer:cluster:{folder_name}:host:dataplacement:folder:"{archive_name}/techsupport/{folder_name}/sc":dataplacement',
+                        f'frn:composer:cluster:{folder_name}:host:discovery:folder:"{archive_name}/techsupport/{folder_name}/sc":discovery',
+                        f'frn:composer:cluster:{folder_name}:host:lrm_consumer:folder:"{archive_name}/techsupport/{folder_name}/sc":lrm_consumer',
+                        f'frn:composer:cluster:{folder_name}:host:expansion_rebalance:folder:"{archive_name}/techsupport/{folder_name}/sc":expansion_rebalance',
+                        f'frn:composer:cluster:{folder_name}:host:metrics_manager:folder:"{archive_name}/techsupport/{folder_name}/sc":metrics_manager',
+                        f'frn:composer:cluster:{folder_name}:host:metrics_server:folder:"{archive_name}/techsupport/{folder_name}/sc":metrics_server',
+                        f'frn:composer:cluster:{folder_name}:host:scmscv:folder:"{archive_name}/techsupport/{folder_name}/sc":scmscv',
+                        f'frn:composer:cluster:{folder_name}:host:setup_db:folder:"{archive_name}/techsupport/{folder_name}/sc":setup_db',
+                        f'frn:composer:cluster:{folder_name}:host:sns:folder:"{archive_name}/techsupport/{folder_name}":sns'
+                    ])
+            else:
+                manifest_contents.extend([
+                    f'frn:composer:controller::host:apigateway:folder:"{archive_name}/techsupport/cs":apigateway',
+                    f'frn:composer:controller::host:cassandra:folder:"{archive_name}/techsupport/cs":cassandra',
+                    f'frn:composer:controller::host:kafka:textfile:"{archive_name}/techsupport/cs/container":kafka.log',
+                    f'frn:composer:controller::host:kapacitor:folder:"{archive_name}/techsupport/cs":container',
+                    f'frn:composer:controller::host:node-service:folder:"{archive_name}/techsupport/cs":nms',
+                    f'frn:composer:controller::host:pfm:folder:"{archive_name}/techsupport/cs":pfm',
+                    f'frn:composer:controller::host:telemetry-service:folder:"{archive_name}/techsupport/cs":tms',
+                    f'frn:composer:controller::host:dataplacement:folder:"{archive_name}/techsupport/cs/sclogs":dataplacement',
+                    f'frn:composer:controller::host:discovery:folder:"{archive_name}/techsupport/cs/sclogs":discovery',
+                    f'frn:composer:controller::host:lrm_consumer:folder:"{archive_name}/techsupport/cs/sclogs":lrm_consumer',
+                    f'frn:composer:controller::host:expansion_rebalance:folder:"{archive_name}/techsupport/cs/sclogs":expansion_rebalance',
+                    f'frn:composer:controller::host:metrics_manager:folder:"{archive_name}/techsupport/cs/sclogs":metrics_manager',
+                    f'frn:composer:controller::host:metrics_server:folder:"{archive_name}/techsupport/cs/sclogs":metrics_server',
+                    f'frn:composer:controller::host:scmscv:folder:"{archive_name}/techsupport/cs/sclogs":scmscv',
+                    f'frn:composer:controller::host:setup_db:folder:"{archive_name}/techsupport/cs/sclogs":setup_db',
+                    f'frn:composer:controller::host:sns:folder:"{archive_name}/techsupport/cs":sns'
+                ])
+
+        _create_manifest(path, contents=manifest_contents)
+        ingest_path = path
+
         # Start the ingestion
-        return ingest_handler.start_pipeline(log_path,
+        return ingest_handler.start_pipeline(ingest_path,
                                          f'techsupport-{job_id}',
                                          metadata=metadata,
                                          filters=filters)
