@@ -74,6 +74,7 @@ gcc_dir=mips64-${gcc_version}
 mkdir -p $gcc_dir
 pushd $gcc_dir
 ../${gcc_version}/configure --target=mips64-unknown-elf --prefix=$dest_dir $host_gcc_config \
+    --enable-checking=release		\
     --enable-languages=c,c++		\
     --without-headers			\
     --disable-shared			\
