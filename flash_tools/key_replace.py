@@ -10,25 +10,37 @@ import sys
 
 
 class AppFpk(mmap.mmap):
-    def __find_key_loc(self, n):
-        m1 = bytearray([0xF0 + n] * 4)
-        m2 = bytearray([0x0F + (n << 4)] * 4)
+
+    def __find_pattern(self, n, marker):
+        m1 = bytearray([(marker << 4) + n] * 4)
+        m2 = bytearray([marker + (n << 4)] * 4)
         pos1 = self.rfind(m1)
         pos2 = self.rfind(m2)
         if pos2 == -1:
             raise Exception("Missing trailing marker")
         if pos1 == -1:
             raise Exception("Missing initial marker")
-        if pos2 - pos1 != 512 + 4 + 4:
-            raise Exception("Wrong marker offset: {}".format(pos2-pos1))
-        return pos1
+        return pos1+4, pos2 - (pos1+4) # point past the m1 marker
 
     def get_key_loc(self, n):
-        return self.__find_key_loc(n) + 4 # point to length area
+        # "F" pattern, size=4, modulus=512
+        start,size = self.__find_pattern(n, 0x0F)
+        if size != 512+4:
+            raise Exception("Size between markers: {} expected 516".
+                            format(size))
+        return start
+
+    def get_dice_loc(self):
+        # "D" pattern, multiple of key=48, cert=640
+        start,size = self.__find_pattern(0x0C, 0x0D)
+        if size % (640+48):
+            raise Exception("Size between markers: {} expected multiple of 688".
+                            format(size))
+        return start
 
     def validate(self, n):
         init_modulus = bytearray([16*n + n] * 4)
-        pos = self.__find_key_loc(n)
+        pos = self.get_key_loc(n)
         if self.find(init_modulus, pos) - pos != 4:
             # default length placeholder not found, check if something that
             # looks like a real length is stored
@@ -47,7 +59,7 @@ class AppFpk(mmap.mmap):
 
     def update_key(self, n, key):
         ret = 0
-        pos = self.__find_key_loc(n)
+        pos = self.get_key_loc(n)
         self.seek(pos+4)
         if not key:
             key = "fpk" + str(n)
@@ -109,6 +121,14 @@ def get_key_loc(file, number, app):
         return app.get_key_loc(number)
     except Exception as e:
         print("Key {} not found in {}. Error: {}".format(number, file, e))
+        return 0xFFFF_FFFF
+
+@app_fpk_process
+def get_dice_loc(file, number, app):
+    try:
+        return app.get_dice_loc()
+    except Exception as e:
+        # swallow the exception: just looking and not expecting anything
         return 0xFFFF_FFFF
 
 
