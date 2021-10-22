@@ -73,6 +73,10 @@ mkdir -p $DEPLOY_ROOT/etc/modprobe.d/
 cp bin/mips64/Linux/vfio.conf $DEPLOY_ROOT/etc/modprobe.d/vfio.conf
 chmod 0444 $DEPLOY_ROOT/etc/modprobe.d/vfio.conf
 
+cp bin/mips64/Linux/boot_success $DEPLOY_ROOT/etc/init.d
+chmod 0555 $DEPLOY_ROOT/etc/init.d/boot_success
+ln -s ../init.d/boot_success $DEPLOY_ROOT/etc/rc5.d/S98boot_success
+
 # if we are building inside Jenkins, then store some build
 # details in the rootfs
 
