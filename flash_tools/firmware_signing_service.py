@@ -334,14 +334,12 @@ def image_gen(outfile, infile, ftype, version, description, sign_key,
         to_be_signed += b'\x00' * (SIGNED_ATTRIBUTES_CHIP_ID_SIZE)
 
     # optional locations -- restrict to 1 for the moment -- easy to add more
-    num_locs = 0
-    if locations:
-        num_locs = len(locations)
-        if num_locs > 1:
-            print("****** Warning: more than 1 pointers in authenticated headers")
+    num_locs = len(locations)
+    if num_locs > 1:
+        print("****** Warning: more than 1 pointers in authenticated headers")
 
-        for loc in locations:
-            to_be_signed += struct.pack("<I", loc)
+    for loc in locations:
+        to_be_signed += struct.pack("<I", loc)
 
     # zero pad
     zero_pad_len = SIGNED_ATTRIBUTES_PAD_SIZE - 4 * num_locs
