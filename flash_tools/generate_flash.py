@@ -99,15 +99,6 @@ def map_method_args(argmap, attrs):
 
     return args
 
-def add_dice_location(args):
-    dice_loc = kr.get_dice_loc(args['infile'], 0)
-    if dice_loc == 0xFFFF_FFFF:
-        return
-    if (dice_loc & 0x3):
-        raise Exception("DICE location is not 32 bit aligned")
-    args['locations'].append(dice_loc >> 2)
-
-
 def gen_fw_image(filename, attrs):
     global fail_on_err
     global chip_type
@@ -117,6 +108,7 @@ def gen_fw_image(filename, attrs):
         'fourcc':'ftype',
         'key':'sign_key',
         'key_index':'key_index',
+        'keys_in_header': 'keys_in_header',
         'source':'infile',
         'version':'version',
         'pad':'pad',
@@ -137,13 +129,12 @@ def gen_fw_image(filename, attrs):
     args['certfile'] = find_file_in_srcdirs(args['certfile'])
     args['customer_certfile'] = find_file_in_srcdirs(args['customer_certfile'])
     args['chip_type'] = chip_type
-    args['locations'] = []
 
     if args['infile']:
         try:
-            # look for a DICE location only for single file
-            if not tmpfile:
-                add_dice_location(args)
+            # list of locations to put in header if specified: (id | offset in words)
+            args['locations'] = [(keyid << 24) | (kr.get_key_loc(args['infile'], keyid) >> 2)
+                                 for keyid in args['keys_in_header'] or []]
 
             fsi.image_gen(outfile=filename, **args)
         except Exception as e:
