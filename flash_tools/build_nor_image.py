@@ -307,6 +307,8 @@ def parse_args():
                             help="Production build")
     bld_type.add_argument("-V", "--verbose", action='store_const', const='_verbose', dest='debug',
                             help="Production build with verbose logging")
+    bld_type.add_argument("-T", "--test", action='store_const', const='_test', dest='debug',
+                            help="Production build with all tests")
     bld_type.add_argument("--debug", action='store_const', const='_debug',
                             help="Debug build")
     # default to --debug
