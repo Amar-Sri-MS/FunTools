@@ -45,7 +45,7 @@ def main():
         format='json',
         s='creation.date:desc'
     )
-    log_ids = [index['index'] for index in indices]
+    log_ids = {index['index'] for index in indices}
 
     # List of the subdirectories inside the files directory
     dirs = next(os.walk(FILES_DIRECTORY))[1]

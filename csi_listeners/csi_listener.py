@@ -32,6 +32,7 @@
 #
 
 import argparse
+import datetime
 import glob
 import http.server
 import json
@@ -132,6 +133,9 @@ class CSIMessageHandler(socketserver.BaseRequestHandler):
         sock = self.request
         self.writer = CSIWriter(self.client_address[0], self.server.dir_lookup)
 
+        if self.server.auto_dir:
+            self.create_auto_dir()
+
         try:
             while True:
                 ready_for_read, _, _ = select.select([sock], [], [], TIMEOUT_INTERVAL)
@@ -162,6 +166,21 @@ class CSIMessageHandler(socketserver.BaseRequestHandler):
             logging.error(str(e))
             sock.close()
             return
+        finally:
+            if self.server.auto_dir:
+                self.server.dir_lookup.remove(self.client_address[0])
+
+    def create_auto_dir(self):
+        """
+        Creates an automatically named directory based on client IP and time.
+        TODO(jimmy): consider adding some form of UID to CSI configuration
+        """
+        current_time = datetime.datetime.utcnow().strftime('%Y_%m_%d_%H:%M:%SZ')
+        dirname = '%s_UTC%s' % (self.client_address[0], current_time)
+        dirpath = os.path.join('csi_raw_data', dirname)
+
+        os.makedirs(dirpath, exist_ok=True)
+        self.server.dir_lookup.put(self.client_address[0], dirpath)
 
     def process_one_recv(self, sock):
         """
@@ -375,6 +394,9 @@ def main():
                              'client can be silent before we assume it has'
                              'dropped the connection',
                         default=100)
+    parser.add_argument('--auto-dir', action='store_true',
+                        help='Stores client data in an automatically-created'
+                             'directory.')
 
     args = parser.parse_args()
     logging.basicConfig(filename='csi_listener_%d.log' % args.http_port,
@@ -394,6 +416,7 @@ def main():
     csi_serv = socketserver.ThreadingTCPServer(('', args.csi_port),
                                                CSIMessageHandler)
     csi_serv.dir_lookup = dir_lookup
+    csi_serv.auto_dir = args.auto_dir
 
     http_serv = ThreadingHTTPServer(('', args.http_port),
                                     HTTPRequestHandler)

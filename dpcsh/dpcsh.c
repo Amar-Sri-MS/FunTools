@@ -29,6 +29,7 @@
 #include "dpcsh_log.h"
 #include "dpcsh_nvme.h"
 #include "csr_command.h"
+#include "file_commands.h"
 #include "bin_ctl.h"
 
 #include <FunSDK/utils/threaded/fun_map_threaded.h>
@@ -467,8 +468,14 @@ static struct fun_ptr_and_size _transcode(struct fun_ptr_and_size source,
 
 	// transcode to text json
 	size_t unused;
-	char *json_text;
-	if (dest->socket->mode == SOCKMODE_TERMINAL) {
+	char *json_text = NULL;
+	struct fun_ptr_and_size result = {};
+
+	if (fun_json_is_error_message(json)) {
+		const char *msg = NULL;
+		fun_json_fill_error_message(json, &msg);
+		log_info("Transcode error: %s\n", msg);
+	} else if (dest->socket->mode == SOCKMODE_TERMINAL) {
 		uint32_t flags = use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0;
 		json_text = fun_json_pretty_print(json,
 							  0, "    ",
@@ -478,9 +485,14 @@ static struct fun_ptr_and_size _transcode(struct fun_ptr_and_size source,
 		json_text = fun_json_to_text_oneline(json, &unused);
 	}
 	fun_json_release(json);
-	size_t json_length = strlen(json_text);
-	struct fun_ptr_and_size result = {.ptr = (uint8_t *)json_text, .size = json_length + 1};
-	json_text[json_length] = '\n';
+
+	if (json_text) {
+		size_t json_length = strlen(json_text);
+		result.ptr = (uint8_t *)json_text;
+		result.size = json_length + 1;
+		json_text[json_length] = '\n';
+	}
+
 	return result;
 }
 
@@ -509,7 +521,8 @@ static bool _write_to_fd(struct dpcsock_connection *connection,
 
 		fsync(fd);
 
-		*position += r;
+		if (r > 0) *position += r;
+
 		return true;
 	}
 
@@ -645,7 +658,7 @@ static char *_get_line(uint8_t *start, size_t max)
 		&& start[position] != '\n' && start[position] != '\0') {
 			position++;
 		}
-	
+
 	if (position < max) {
 		start[position] = 0;
 		return (char *)start;
@@ -1065,6 +1078,10 @@ void dpcsocket_close(struct dpcsock_connection *connection)
 		if (!bin_ctl_close_connection(connection->funq_connection)) {
 			perror("bin_ctl_close_connection");
 		}
+		pthread_cond_signal(&connection->data_available);
+	}
+
+	if (connection->socket->mode == SOCKMODE_NVME) {
 		pthread_cond_signal(&connection->data_available);
 	}
 }
@@ -1715,6 +1732,7 @@ int main(int argc, char *argv[])
 	dpcsh_path = argv[0];
 	dpcsh_load_macros();
 	register_csr_macro();
+	register_file_commands();
 
 	// help should list both local and distant commands
 	fun_commander_register_help_command();
@@ -1986,8 +2004,6 @@ int main(int argc, char *argv[])
 	switch (mode) {
 	case MODE_INTERACTIVE:
 		/* do nothing */
-		if (!_nocli_script_mode)
-			_verbose_log = true;
 		break;
 	case MODE_PROXY:
 		log_debug(_debug_log, "socket proxy mode");

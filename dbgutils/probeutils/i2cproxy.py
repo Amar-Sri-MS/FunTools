@@ -343,7 +343,7 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                             logger.debug('status: {0} resp_data: {1}'.format(status, resp_data))
                             resp = dict()
                             resp["STATUS"] = [True, "dbg cmd success!"]
-                            if not resp_data:
+                            if resp_data:
                                 resp["DATA"] = list(resp_data)
                             logger.debug(resp)
                             self.send_obj(resp)

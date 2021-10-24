@@ -13,11 +13,13 @@
 // We must define PLATFORM_POSIX to get fun_json_write_to_fd()
 #define PLATFORM_POSIX 1
 #include <FunSDK/utils/threaded/fun_json.h>
+#include <FunSDK/services/commander/fun_commander.h>
 
 #define NOMODE      (0)
 #define TEXT        (1)
 #define BINARY      (2)
 #define TEXTONELINE (3)
+#define FUNJSON     (4)
 
 
 static void oom(void)
@@ -113,6 +115,28 @@ static struct fun_json *_read_json(int fd)
 	return input;
 }
 
+static struct fun_json *_read_funjson(int fd)
+{
+	struct fun_json *input = NULL;
+	char *buf;
+	size_t size = 0;
+	bool parsed_all;
+	const char *error = NULL;
+	uint64_t tid = 0;
+
+	buf = _read_input_file(fd, &size);
+	assert(buf);
+
+	input = fun_commander_line_to_command(buf, &tid, &error);
+
+	if (input == NULL) {
+		input = fun_json_create_error("Error parsing JSON command", fun_json_no_copy_no_own);
+	}
+
+	free(buf);
+	return input;
+}
+
 static struct fun_json *_read_bjson(int fd)
 {
 	struct fun_json *input = NULL;
@@ -182,6 +206,7 @@ _usage(const char *fname)
 	fprintf(stderr, "    options\n");
 	fprintf(stderr, "        -i <file>      input <file> as text json\n");
 	fprintf(stderr, "        -I <file>      input <file> as binary json\n");
+	fprintf(stderr, "        -f <file>      input <file> as a fun json command\n");
 	fprintf(stderr, "        -o <file>      output <file> as text json\n");
 	fprintf(stderr, "        -O <file>      output <file> as binary json\n");
 	fprintf(stderr, "        -l <file>      output <file> as single-line text json\n");
@@ -212,10 +237,11 @@ main(int argc, char *argv[])
 			{"line", required_argument, 0,  'l' },
 			{"inb",  required_argument, 0,  'I' },
 			{"outb", required_argument, 0,  'O' },
+			{"inf",  required_argument, 0,  'f' },
 		};
 
 		
-		c = getopt_long(argc, argv, "i:o:l:I:O:",
+		c = getopt_long(argc, argv, "i:o:l:I:O:f:",
 				long_options, NULL);
 		if (c == -1)
 			break;
@@ -231,6 +257,10 @@ main(int argc, char *argv[])
 			break;
 		case 'I':
 			inmode = _setmode(inmode, BINARY);
+			infile = optarg;
+			break;
+		case 'f':
+			inmode = _setmode(inmode, FUNJSON);
 			infile = optarg;
 			break;
 		case 'O':
@@ -285,10 +315,16 @@ main(int argc, char *argv[])
 
 	/* read in some json */
 	struct fun_json *input = NULL;
-	if (inmode == TEXT)
+	if (inmode == TEXT) {
 		input = _read_json(infd);
-	else
+	} else if (inmode == BINARY) {
 		input = _read_bjson(infd);
+	} else if (inmode == FUNJSON) {
+		input = _read_funjson(infd);
+	} else {
+		/* bad input */
+		abort();
+	}
 
 	if (!input) {
 		fprintf(stderr, "failed to read a JSON\n");

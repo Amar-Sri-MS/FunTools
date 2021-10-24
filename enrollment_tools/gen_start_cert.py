@@ -8,6 +8,7 @@
 # modulus: export the modulus of a RSA key, in binary or in C source code format
 # certificate: generate a certificate
 # remove: remove the key from the HSM
+# pem2c: convert a PEM file into C format
 
 
 import os
@@ -25,11 +26,7 @@ import pkcs11
 import pkcs11.util.rsa
 import pkcs11.util.ec
 
-# FIXME: this should be a shared constants file with SBPFirmware
-RSA_KEY_SIZE_IN_BITS = 2048
-SIGNING_INFO_SIZE = 2048
 MAX_SIGNATURE_SIZE = 512
-HEADER_RESERVED_SIZE = SIGNING_INFO_SIZE - (4 + MAX_SIGNATURE_SIZE)
 SIGNED_ATTRIBUTES_SIZE = 32
 SIGNED_DESCRIPTION_SIZE = 32
 SERIAL_INFO_NUMBER_SIZE = 24
@@ -75,7 +72,7 @@ def read(filename, nbytes=None, verbose=False):
 def write(filename, content, overwrite=True, tohex=False, tobyte=False,
           verbose=False):
     if not filename:
-        return
+        filename = '-'
     if verbose:
         print("Writing %s" % filename)
     # Overwrite
@@ -100,30 +97,16 @@ def write(filename, content, overwrite=True, tohex=False, tobyte=False,
     else:
         f.write(content)
 
-
-#####################################################################
-# ASN1crypto
-
-def get_modulus_from_public_key_bytes(pub_info_der):
-    ''' extract the modulus from the ASN.1 structure '''
-    pub_key_info = keys.PublicKeyInfo.load(pub_info_der)
-    rsa_pub_key = pub_key_info.unwrap()
-    modulus_integer = rsa_pub_key['modulus']
-    raw_modulus = modulus_integer.contents
-    # the raw modulus might have an extra 0 (ASN.1 integer encoding)
-    if raw_modulus[0] == 0:
-        return raw_modulus[1:]
-    return raw_modulus
-
-
+##############################################################################
+# HSM
 
 # libraries in order of preference -- second argument: prompt for password
 LIBSOFTHSM2_PATHS = [
     ("/usr/safenet/lunaclient/lib/libCryptoki2_64.so", True), # Safenet ubuntu 14/16
-    ("/usr/lib/softhsm/libsofthsm2.so", False), # Ubuntu-17, 18
-    ("/usr/lib/x86_64-linux-gnu/softhsm/libsofthsm2.so", False), # Ubuntu-16
-    ("/usr/local/lib/softhsm/libsofthsm2.so", False), # macOS brew
-    ("/project/tools/softhsm-2.3.0/lib/softhsm/libsofthsm2.so", False), # shared vnc machines for verification team
+    ("/usr/lib/softhsm/libsofthsm2.so", True), # Ubuntu-17, 18
+    ("/usr/lib/x86_64-linux-gnu/softhsm/libsofthsm2.so", True), # Ubuntu-16
+    ("/usr/local/lib/softhsm/libsofthsm2.so", True), # macOS brew
+    ("/project/tools/softhsm-2.3.0/lib/softhsm/libsofthsm2.so", True), # shared vnc machines for verification team
 ]
 
 def get_token_label():
@@ -169,9 +152,6 @@ def get_token():
             return token, password
     return None, ''
 
-
-### HSM  #############################
-
 class HSM:
 
     __session = None
@@ -214,15 +194,15 @@ def get_exponent(pub):
     return pub[pkcs11.Attribute.PUBLIC_EXPONENT]
 
 
-def generate_rsa_key_pair(rw_session, label):
+def generate_rsa_key_pair(rw_session, label, key_size_in_bits):
     ''' Create and returns a new RSA key pair in the store '''
     return rw_session.generate_keypair(key_type=pkcs11.KeyType.RSA,
-                                       key_length=RSA_KEY_SIZE_IN_BITS,
+                                       key_length=key_size_in_bits,
                                        id=binascii.hexlify(label.encode()),
                                        label=label,
                                        store=True)
 
-def get_create_rsa(label):
+def get_create_rsa(label, key_size_in_bits):
     public = None
 
     hsm = HSM()
@@ -233,7 +213,7 @@ def get_create_rsa(label):
 
     if public is None:
         print("Generating key " + label)
-        public, _ = generate_rsa_key_pair(hsm.session, label)
+        public, _ = generate_rsa_key_pair(hsm.session, label, key_size_in_bits)
 
     return public
 
@@ -268,7 +248,6 @@ def sign_with_key(label, data):
 
     return private.sign(data, mechanism=mechanism)
 
-
 def append_signature_to_binary(binary, signature):
     binary += struct.pack('<I', len(signature))
     binary += signature
@@ -280,6 +259,45 @@ def append_modulus_to_binary(binary, modulus):
     # same structure as signature and MAX_SIGNATURE_SIZE == MAX_MODULUS_SIZE
     return append_signature_to_binary(binary, modulus)
 
+
+##############################################################################
+# ASN1crypto
+
+def get_modulus_from_public_key_bytes(pub_info_der):
+    ''' extract the modulus from the ASN.1 structure '''
+    pub_key_info = keys.PublicKeyInfo.load(pub_info_der)
+
+    if pub_key_info.algorithm != 'rsa':
+        raise Exception("Not an RSA key")
+
+    rsa_pub_key = pub_key_info['public_key'].parsed
+    modulus_integer = rsa_pub_key['modulus']
+    raw_modulus = modulus_integer.contents
+    # the raw modulus might have an extra 0 (ASN.1 integer encoding)
+    if raw_modulus[0] == 0:
+        return raw_modulus[1:]
+    return raw_modulus
+
+def encode_public_key(pub_key):
+    ''' generate a public key '''
+    modulus = get_modulus(pub_key)
+    pub_exp = get_exponent(pub_key)
+    rsa_pub_key = keys.RSAPublicKey()
+    rsa_pub_key['modulus'] = int.from_bytes(modulus, byteorder='big')
+    rsa_pub_key['public_exponent'] = int.from_bytes(pub_exp, byteorder='big')
+
+    public_key_algo = keys.PublicKeyAlgorithm()
+    public_key_algo['algorithm'] = 'rsa'
+
+    public_key_info = keys.PublicKeyInfo()
+    public_key_info['algorithm'] = public_key_algo
+    public_key_info['public_key'] = rsa_pub_key
+
+    return public_key_info.dump()
+
+
+##############################################################################
+# Commands
 
 def list_all_keys():
     ''' list all the keys in the session '''
@@ -312,13 +330,14 @@ def remove_key(label):
     remove_key_aux(hsm.session, label)
 
 
-def export_pub_key(outfile, label):
+def export_pub_key(outfile, label, key_size_in_bits):
     ''' export a PEM file with key; create it if it does not exists '''
-    pub = get_create_rsa(label)
+    pub = get_create_rsa(label, key_size_in_bits)
 
-    # export as PEM file
-    der_bytes = pkcs11.util.rsa.encode_rsa_public_key(pub)
-    pem_content = pem.armor('RSA PUBLIC KEY', der_bytes)
+    # export as PEM file: the PKCS11 library exports as RSA PUBLIC KEY
+    # using the PUBLIC KEY format makes the file more useful
+    der_bytes = encode_public_key(pub)
+    pem_content = pem.armor('PUBLIC KEY', der_bytes)
 
     write(outfile, pem_content)
 
@@ -329,7 +348,50 @@ def sign_binary(binary, sign_key):
     return append_signature_to_binary(binary, signature)
 
 
-def cert_gen(outfile, sign_key, cert_key_file,
+def read_public_key_file(pub_key_file):
+    # READ modulus from file
+    contents = read(pub_key_file)
+    # if PEM file, decode it
+    if pem.detect(contents):
+        obj_name, _, der_bytes = pem.unarmor(contents)
+        if obj_name == 'RSA PRIVATE KEY':
+            cert_rsa_key = pkcs11.util.rsa.decode_rsa_private_key(der_bytes)
+            modulus = get_modulus(cert_rsa_key)
+        elif obj_name == 'RSA PUBLIC KEY':
+            cert_rsa_key = pkcs11.util.rsa.decode_rsa_public_key(der_bytes)
+            modulus = get_modulus(cert_rsa_key)
+        elif obj_name == 'PUBLIC KEY':
+            modulus = get_modulus_from_public_key_bytes(der_bytes)
+        else:
+            raise RuntimeError("Cannot use PEM file with '%s' as modulus source" %
+                               obj_name)
+    elif all(chr(c) in string.hexdigits for c in contents.strip()):
+        modulus = binascii.a2b_hex(contents.strip())
+    else:
+        raise RuntimeError("Not a valid PEM file: %s" % pub_key_file)
+
+    return modulus
+
+
+def pem_to_c(pub_key_file, outfile):
+
+    modulus = read_public_key_file(pub_key_file)
+    len_modulus = len(modulus)
+
+    c_modulus = "%d,\n{\n" % len_modulus
+
+    for pos in range(0, len_modulus):
+        c_modulus += "0x%02x, " % modulus[pos]
+        if pos % 8 == 7:
+            c_modulus += "\n"
+    if len_modulus % 8 != 0:
+        c_modulus += "\n"
+    c_modulus += "}"
+    write(outfile, c_modulus.encode())
+
+
+
+def cert_gen(outfile, sign_key, pub_key_file,
              serial_number, serial_number_mask, debugger_flags):
 
     # MAGIC NUMBER, DEBUG FLAGS, 0, TAMPER FLAGS=0
@@ -351,25 +413,7 @@ def cert_gen(outfile, sign_key, cert_key_file,
     to_be_signed += s_num_mask
 
     # READ modulus from file
-    modulus = read(cert_key_file)
-    # if PEM file, decode it
-    if pem.detect(modulus):
-        obj_name, _, der_bytes = pem.unarmor(modulus)
-        if obj_name == 'RSA PRIVATE KEY':
-            cert_rsa_key = pkcs11.util.rsa.decode_rsa_private_key(der_bytes)
-            modulus = get_modulus(cert_rsa_key)
-        elif obj_name == 'RSA PUBLIC KEY':
-            cert_rsa_key = pkcs11.util.rsa.decode_rsa_public_key(der_bytes)
-            modulus = get_modulus(cert_rsa_key)
-        elif obj_name == 'PUBLIC KEY':
-            modulus = get_modulus_from_public_key_bytes(der_bytes)
-        else:
-            raise RuntimeError("Cannot use PEM file with '%s' as modulus source" %
-                               obj_name)
-    elif all(chr(c) in string.hexdigits for c in modulus.strip()):
-        modulus = binascii.a2b_hex(modulus.strip())
-    else:
-        raise RuntimeError("Not a valid PEM file: %s" % cert_key_file)
+    modulus = read_public_key_file(pub_key_file)
 
     assert len(to_be_signed) == CERT_PUB_KEY_POS
     to_be_signed = append_modulus_to_binary(to_be_signed, modulus)
@@ -388,7 +432,7 @@ def parse_and_execute():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("command",
-                        help="command to execute: list, remove, modulus, certificate")
+                        help="command to execute: list, remove, modulus, pem2c, certificate")
 
     parser.add_argument("-c", "--certificate-values-file", metavar="FILE",
                         help="file with the certificate values (certificate)")
@@ -397,19 +441,24 @@ def parse_and_execute():
                         help="key name (remove, modulus, certificate)")
 
     parser.add_argument("-o", "--output", dest="out_path", metavar="FILE",
-                        help="location to output to (modulus, certificate)")
+                        help="location to output to (modulus, pem2c, certificate)")
 
     parser.add_argument("-p", "--public-key-file", metavar="FILE",
-                        help="public key file in PEM or binary format (certificate)")
+                        help="public key file in PEM or binary format (pem2c, certificate)")
 
-    parser.add_argument("-s", "--source", dest="c_source",
-                        action='store_true',
-                        help="ouput key in C hexadecimal format (modulus)")
-
+    parser.add_argument("-s", "--size_in_bits", dest="key_size_in_bits", default="4096",
+                        help="key size in bits if key has to be created (modulus)")
 
     options = parser.parse_args()
 
-    if options.command == 'list':
+    if options.command == 'pem2c':
+        if options.public_key_file is None:
+            err_msg += '\nPublic key file required for certificate command.'
+
+        pem_to_c(options.public_key_file, options.out_path)
+        sys.exit(0)
+
+    elif options.command == 'list':
 
         list_all_keys()
         sys.exit(0)
@@ -431,7 +480,9 @@ def parse_and_execute():
             print('\nKey name required.')
             sys.exit(1)
 
-        export_pub_key(options.out_path, options.sign_key)
+        export_pub_key(options.out_path,
+                       options.sign_key,
+                       int(options.key_size_in_bits, 0))
         sys.exit(0)
 
     elif options.command == 'certificate':

@@ -43,6 +43,7 @@
 {"key": "mdt_test_done", "short": "MDT test complete, drives formatted", "match": "Formatted  all drive(s)", "color": "green"}
 {"key": "wrong_format_version", "short": "Drive not formatted correctly", "match": "Please run MDT app to format the drive", "color": "red"}
 {"key": "cmh_fatal_interrupt", "short": "Fatal interrupt handler invoked", "match": "FATAL interrupt wu handler invoked", "color": "red"}
+{"key": "non_fatal_interrupt", "rematch": "non_fatal interrupt", "color": "red", "is_failure": true}
 {"key": "end_emulation", "short": "RTL Timeout", "rematch": "END_EMULATION [0-9]+ ([-0-9]+) ([:0-9]+)", "color": "red"}
 {"key": "funtcp_connection_abort", "short": "FunTCP connection aborted State: <STATE> Remote: <REMOTE> Local <LOCAL> Reason: <REASON>", "rematch": "aborting: (?P<STATE>TCP.*),.*(?P<REMOTE>\\d+\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}:(\\d+)*).* (?P<LOCAL>\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}:(\\d+)*).*reason (?P<REASON>\\d+)?", "is_failure": true}
 {"key": "rcnvme_is_ready", "short": "RCNVMe #<ID> is ready for IO", "rematch": "INFO rcnvme \"(?P<ID>[0-9]+): rcnvme is ready for IOs\"", "color": "green"}
@@ -100,3 +101,7 @@
 {"key": "perst_error_remove", "short": "BIOS removed the reset", "match": "PCIE perst 0 -> 1", "is_failure": false}
 {"key": "rootfs_nfs_error", "short": "Unable to load Linux filesystem from NFS", "match": "Unable to mount root fs", "color": "red", "is_failure": true}
 {"key": "uboot-reset", "short": "Netconsole detected that card reset", "match": "U-BOOT-NETCONSOLE ", "color": "red", "is_failure": true}
+# Search for SBP Boot timeout 1 instead of 0 because the last one doesn't always show.
+{"key": "sbp_reset", "short": "SBP rebooted the machine because it wasn't notified that booting was successful", "match": "\"SBP Boot timeout 1\"", "color": "red", "is_failure": true}
+{"key": "funvisor_panic", "short": "Funvisor/CC-Linux shut down or panicked.", "match": "NOTICE funvisor \"Exiting Bye...\"", "is_failure": "true"}
+{"key": "dpc_command", "short": "DPC command <CMD>", "rematch": "===== WILL EXECUTE (?P<CMD>.*)"}

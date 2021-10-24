@@ -100,6 +100,9 @@ def prepare_offline(args, path='', select=None):
 
     return images
 
+def using_custom_funcp(args):
+    return args.image_url == BASE_URL and args.arch == 'posix'
+
 
 def prepare(args):
     """
@@ -111,24 +114,28 @@ def prepare(args):
     if args.offline:
         return prepare_offline(args)
 
-    funcp_file = 'functrlp_{}.tgz'.format(args.arch)
+    funcp_file = 'funcp.{}.tgz'.format(args.arch)
+    libfunq_file = 'libfunq.{}{}.tgz'.format(args.arch, '_palladium' if args.arch == 'posix' else '')
 
     SDK_FLASH_PATH = '/{}/funsdk/{}/Linux'.format(args.sdk_devline, args.version)
     release_file = '{}_dev_signed.tgz'.format(args.chip)
 
     if args.image_url == BASE_URL:
-        args.image_url = args.image_url + SDK_FLASH_PATH
+        url = args.image_url + SDK_FLASH_PATH
+    else:
+        url = args.image_url
 
     files = {
-        funcp_file : BASE_URL + '/{}/funcontrolplane/latest'.format(args.sdk_devline),
-        release_file : args.image_url
+        release_file : url,
     }
+
+    if using_custom_funcp(args):
+        files[funcp_file] = url
+        files[libfunq_file] = url
 
     for f, url in files.items():
         wget(url + '/' + f)
-
-    run(['tar', '-xf', funcp_file])
-    run(['tar', '-xf', release_file])
+        run(['tar', '-xf', f])
 
     release_dir = '{}_dev_signed'.format(args.chip)
 
@@ -151,7 +158,7 @@ def run_upgrade(args, release_images):
         pcidevs_string = subprocess.check_output(['lspci', '-d', args.pci_devid, '-mmn'])
 
     sudo = [] if platform.machine() == 'mips64' else ['sudo']
-    if args.offline:
+    if args.offline or not using_custom_funcp(args):
         if platform.machine() == 'mips64':
             # defaults for CCLinux
             binpath = '/usr/bin'
@@ -165,7 +172,7 @@ def run_upgrade(args, release_images):
             funqpath = binpath
     else:
         newroot = os.path.join(args.ws, 'FunSDK/host-drivers/x86_64/user/{}_palladium'.format(args.arch))
-        binpath = os.path.join(args.ws, 'build', args.arch, 'bin')
+        binpath = os.path.join(args.ws, 'FunCP', 'build', args.arch, 'bin')
         ldpath = ['LD_LIBRARY_PATH=${{LD_LIBRARY_PATH}}:{}:{}'.format(
                     os.path.join(args.ws, 'build', args.arch, 'lib'),
                     os.path.join(newroot, 'lib'))]
@@ -492,8 +499,9 @@ def main():
     arg_parser.add_argument('--ws', action='store', metavar='path',
             help='workspace path, temp location will be used if not specified or'
                  '<offline-root>/funos if offline is set')
-    arg_parser.add_argument('--arch', action='store', choices=['mips', 'posix', 'x86_yocto'],
-            default='posix', help='ControlPlane architecture')
+    arg_parser.add_argument('--arch', action='store', choices=['mips64', 'posix'],
+            default='mips64' if platform.machine() == 'mips64' else 'posix',
+            help='ControlPlane architecture')
 
     upgrade_group = arg_parser.add_mutually_exclusive_group()
     upgrade_group.add_argument('-u', '--upgrade', action='append', metavar='FOURCC',

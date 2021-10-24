@@ -106,17 +106,18 @@
 
         // Check if time is present in the url
         const queryParams = new URLSearchParams(location.search.substring(1));
-        if (queryParams.get('filter')) {
+        if (queryParams.get("filter")) {
             const dt_start = document.getElementById("dt_start");
             const dt_end = document.getElementById("dt_end");
-            const filters = JSON.parse(queryParams.get('filter'));
-            const timeFilter = filters['time'];
+            const filters = JSON.parse(queryParams.get("filter"));
+            const timeFilter = filters["time"];
             if (timeFilter && timeFilter.length === 2) {
                 startTime = timeFilter[0];
                 endTime = timeFilter[1];
-                // Setting values of date picker
-                dt_start.value = startTime;
-                dt_end.value = endTime;
+                // Setting values of date picker. Epoch in milliseconds
+                // is converted to seconds.
+                dt_start.value = startTime ? startTime/1000 : startTime;
+                dt_end.value = endTime ? endTime/1000 : endTime;
             }
         }
 
@@ -179,11 +180,12 @@
     function handleTimeFilters(element, type="start") {
         const datetimeStr = element.value;
         validateTimeFilter(datetimeStr);
+        // ES supports epoch in milliseconds.
         if (type === "start") {
-            startTime = datetimeStr;
+            startTime = datetimeStr !== "" ? datetimeStr * 1000 : "";
         }
         else {
-            endTime = datetimeStr;
+            endTime = datetimeStr !== "" ? datetimeStr * 1000 : "";
         }
     }
 
@@ -701,7 +703,7 @@
                 <div class="content">
                     <label>
                         <b>Wrap log message?</b>
-                        <input type="checkbox" id="wrap_log_message" onchange="toggleWrapLogMessage(this.checked)">
+                        <input type="checkbox" id="wrap_log_message" onchange="toggleWrapLogMessage(this.checked)" checked>
                     </label>
                 </div>
                 <div class="pagination" id="prev_button">

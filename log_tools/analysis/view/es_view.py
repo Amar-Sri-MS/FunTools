@@ -44,6 +44,11 @@ app.register_blueprint(web_usage, url_prefix='/events')
 app.register_blueprint(tools_page, url_prefix='/tools')
 
 
+config = config_loader.get_config()
+
+# Updating Flask's config with the configs from file
+app.config.update(config)
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--port', type=int, default=5000,
@@ -52,18 +57,6 @@ def main():
     args = parser.parse_args()
     port = args.port
 
-    config = config_loader.get_config()
-
-    log_handler = logger.get_logger(filename='es_view.log')
-
-    # Get the flask logger and add our custom handler
-    flask_logger = logging.getLogger('werkzeug')
-    flask_logger.setLevel(logging.INFO)
-    flask_logger.addHandler(log_handler)
-    flask_logger.propagate = False
-
-    # Updating Flask's config with the configs from file
-    app.config.update(config)
     app.run(host='0.0.0.0', port=port)
 
 
@@ -787,12 +780,12 @@ def _render_log_page(log_id, jinja_env, template):
                                                     log_id,
                                                     include_hyperlinks=False
                                                 )
-        search_payload = get_search_results(log_id)
+        search_results = get_search_results(log_id)
 
         template_dict['body'] = ''.join(table_body)
         template_dict['total_search_hits'] = total_search_hits
         template_dict['state'] = state.to_json_str()
-        template_dict['search_results'] = json.dumps(search_payload)
+        template_dict['search_results'] = json.dumps(search_results)
     except Exception as e:
         app.logger.exception('Error while rendering log page')
         template_dict['error'] = str(e)
@@ -803,21 +796,27 @@ def _render_log_page(log_id, jinja_env, template):
     return result
 
 
-@app.route('/log/<log_id>/search', methods=['GET'])
+@app.route('/log/<log_id>/search', methods=['GET', 'POST'])
 def search(log_id):
     """
     Returns a JSON payload containing search results and search state.
     """
-    search_str = request.args.get('search', None)
-    search_payload = {}
-    if not search_str:
-        return jsonify({
-            'error': 'Could not find the search query parameter'
-        }), 400
-
     try:
-        search_payload = get_search_results(log_id)
-        return jsonify(search_payload)
+        if request.method == 'GET':
+            search_str = request.args.get('search', None)
+            if not search_str:
+                return jsonify({
+                    'error': 'Could not find the search query parameter'
+                }), 400
+        else:
+            search_payload = request.get_json(force=True).get('search', None)
+            if not search_payload:
+                return jsonify({
+                    'error': 'Could not find the search payload'
+                }), 400
+
+        search_results = get_search_results(log_id)
+        return jsonify(search_results)
     except Exception as e:
         app.logger.exception('Error while searching for logs')
         return jsonify({
@@ -830,13 +829,23 @@ def get_search_results(log_id):
     Returns a dict payload containing search results and search state.
 
     Parameters on the flask request object control which lines are returned.
-    Request parameters includes search which contains:
+    Request parameters includes "search" which contains:
 
-        next=true: Get up to 20 log lines with timestamps greater than the
+        query=str: Search string
+        page=int : Page number of search results
+        size=int : Number of results per page
+        next=true: Get up to 1000 log lines with timestamps greater than the
                    current state.
-        prev=true: Get up to 20 log lines with timestamps smaller than the
+        prev=true: Get up to 1000 log lines with timestamps smaller than the
                    current state.
         state=dict: state object for searching
+
+    Request parameters also includes "filters" which contains:
+
+        text=str : Query to filter search results
+        sources=dict: hierarchical data of system_type, system_id
+                      and sources to filter on
+        time=list: 2 elements list containing start and end timestamp
 
     Returns a dict containing:
         query: searched query
@@ -848,17 +857,24 @@ def get_search_results(log_id):
     """
     es = ElasticLogSearcher(log_id)
 
-    search_str = request.args.get('search', None)
-    search_payload = {}
-    if not search_str:
-        return None
+    if request.method == 'GET':
+        search_str = request.args.get('search', None)
+        if not search_str:
+            return None
+        search_payload = json.loads(search_str)
+    else:
+        search_payload = request.get_json(force=True).get('search')
+        if not search_payload:
+            return None
 
     filters = {}
-    filter_str = request.args.get('filter', None)
-    if filter_str:
-        filters = json.loads(filter_str)
+    if request.method == 'GET':
+        filter_str = request.args.get('filter', None)
+        if filter_str:
+            filters = json.loads(filter_str)
+    else:
+        filters = request.get_json(force=True).get('filters', {})
 
-    search_payload = json.loads(search_str)
     query = unquote_plus(search_payload.get('query'))
     page = int(search_payload.get('page', 1))
     size = int(search_payload.get('size', 20))
@@ -1316,4 +1332,15 @@ def save_notes(log_id):
 
 
 if __name__ == '__main__':
+    log_handler = logger.get_logger(filename='es_view.log')
+
+    # Get the flask logger and add our custom handler
+    flask_logger = logging.getLogger('werkzeug')
+    flask_logger.setLevel(logging.INFO)
+    flask_logger.addHandler(log_handler)
+    flask_logger.propagate = False
     main()
+else:
+    gunicorn_logger = logging.getLogger('gunicorn.error')
+    app.logger.handlers = gunicorn_logger.handlers
+    app.logger.setLevel(gunicorn_logger.level)

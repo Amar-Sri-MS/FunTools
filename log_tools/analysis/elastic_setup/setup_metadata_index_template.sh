@@ -14,6 +14,7 @@ curl -X PUT "localhost:9200/_index_template/metadata_template" -H 'Content-Type:
             "number_of_replicas": 1
         },
         "mappings": {
+            "dynamic": false,
             "properties": {
                 "logID": {
                     "type": "keyword"
@@ -30,9 +31,44 @@ curl -X PUT "localhost:9200/_index_template/metadata_template" -H 'Content-Type:
                     "type": "object",
                     "enabled": false
                 },
+                "download_time": {
+                    "type": "float"
+                },
+                "filters": {
+                    "type": "object",
+                    "dynamic": true
+                },
+                "ingest_type": {
+                    "type": "keyword"
+                },
+                "ingestion_error": {
+                    "type": "text"
+                },
+                "ingestion_status": {
+                    "type": "keyword"
+                },
+                "ingestion_time": {
+                    "type": "float"
+                },
+                "is_partial_ingestion": {
+                    "type": "boolean"
+                },
+                "job_id": {
+                    "type": "text"
+                },
                 "metadata": {
                     "type": "object",
+                    "dynamic": true,
                     "enabled": false
+                },
+                "mount_path": {
+                    "type": "text"
+                },
+                "sources": {
+                    "type": "text"
+                },
+                "submitted_by": {
+                    "type": "keyword"
                 }
             }
         }

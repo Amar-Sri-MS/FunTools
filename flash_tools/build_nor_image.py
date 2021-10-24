@@ -62,7 +62,7 @@ NOR_IMAGE_FILE_NAME = "qspi_image_hw.bin"
 BMC_INSTALL_DIR = "/mnt/sdmmc0p1/scripts"
 
 #destination
-DOCHUB_REPO_DIR_USER_FMT = '/project/users/doc/sbp_images/{0}/{1}'
+DOCHUB_REPO_DIR_USER_FMT = '/project-fe/doc/sbp_images/{0}/{1}'
 
 LOCAL_DIR_FMT = '/var/www/html/sbp_images/{0}'
 
@@ -99,6 +99,7 @@ def generate_nor_image(args, script_directory,
     run_args = ["python3",
                 os.path.join(script_directory, "generate_flash.py"),
                 "--fail-on-error",
+                "--chip", args.chip,
                 "--config-type", "json",
                 "--source-dir", images_directory,
                 "--source-dir", eeprom_directory,
@@ -292,7 +293,7 @@ def parse_args():
                             help='''root for name of sub directory in which SPB will be built
                             default is "image_build" ''')
     arg_parser.add_argument("-c", "--chip", action='store',
-                            default='f1', choices=['f1', 's1'],
+                            default='f1', choices=['f1', 's1', 'f1d1', 's2'],
                             help="Machine (f1,s1), default = f1")
     arg_parser.add_argument("-e", "--eeprom", action='store',
                             help="eeprom type")
@@ -306,6 +307,8 @@ def parse_args():
                             help="Production build")
     bld_type.add_argument("-V", "--verbose", action='store_const', const='_verbose', dest='debug',
                             help="Production build with verbose logging")
+    bld_type.add_argument("-T", "--test", action='store_const', const='_test', dest='debug',
+                            help="Production build with all tests")
     bld_type.add_argument("--debug", action='store_const', const='_debug',
                             help="Debug build")
     # default to --debug

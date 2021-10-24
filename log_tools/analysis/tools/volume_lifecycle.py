@@ -45,22 +45,29 @@ def convert_to_json(log_line):
     """
     log_levels = ('NOTICE', 'ERR', 'CRIT', 'ALERT', 'WDT:', 'WARNING')
     json_list = list()
-    for line in log_line.split('\n'):
-        line = line.strip()
-        # Start of the json
-        if any(level in line for level in log_levels):
-            continue
-        if line != "" and line != '--':
-            # End of the json
-            if line != '}"':
-                json_list.append(line)
-
-    json_str = ' '.join(json_list)
     try:
+        for line in log_line.split('\n'):
+            line = line.strip()
+            # JSON logs could be multiline or single line.
+            # Start of the json
+            if any(level in line for level in log_levels):
+                pos = line.find('{')
+                # Parses single line JSON logs.
+                if pos != -1 and line.endswith('}"'):
+                    decoder = json.JSONDecoder()
+                    return decoder.raw_decode(line[pos:])[0]
+                else:
+                    continue
+            if line != "" and line != '--':
+                # End of the json
+                if line != '}"':
+                    json_list.append(line)
+        json_str = ' '.join(json_list)
+
         ret_json = json.loads('{' + json_str + '}')
         return ret_json
     except:
-        logging.warning(f'Malformed JSON: {log_line}')
+        logging.exception(f'Malformed JSON: {log_line}')
         return None
 
 def build_search_body(queries, time_filters=None, operator='AND'):
@@ -100,7 +107,7 @@ def build_search_body(queries, time_filters=None, operator='AND'):
 
 def get_value_from_params(info, key, default=None):
     """ Extracts value from the FunOS JSON log """
-    if (info and 'msg' in info and 'params' in info['msg']
+    if (info and info.get('msg') and 'params' in info['msg']
         and key in info['msg']['params']):
         return info['msg']['params'][key]
     return default
@@ -186,8 +193,9 @@ class Volume(object):
     def get_snapshot_info(self, uuid, operation='CREATE'):
         queries = self._build_query(operation, VOLUME_TYPES.get('SNAPSHOT'), uuid)
         if operation == 'CREATE':
+            pass
             # CHECK: Do we need this?
-            queries.append('"user_created: true"')
+            # queries.append('"user_created: true"')
 
         results = self._perform_es_search(queries)
         return results
@@ -262,6 +270,14 @@ class Volume(object):
 
         return result
 
+    def get_primary_info_from_rds(self, rds_info, operation='CREATE'):
+        """ Returns primary volume info from RDS volume info """
+        subsys_nqn = get_value_from_params(rds_info, 'subsys_nqn')
+        # Primary volume ID can be parsed from the subsys_nqn
+        vol_id = self._parse_nqn(subsys_nqn)
+        replica_info = self.get_plex_info(vol_id, end_time=self.op_time, operation=operation)
+        return replica_info
+
     def _parse_nqn(self, nqn):
         return nqn.split(':')[-1]
 
@@ -276,7 +292,8 @@ class Volume(object):
 
         results = self._perform_es_search(queries, time_filters)
         if len(results) == 0:
-            raise Exception(f'Could not find Plex Info for UUID: {pvol_id} from time: {start_time} till time: {end_time}')
+            logging.error(f'Could not find Plex Info for UUID: {pvol_id} from time: {start_time} till time: {end_time}')
+            return []
 
         type = get_value_from_params(results[0], 'type')
         info = list()
@@ -284,10 +301,7 @@ class Volume(object):
         # Getting info for primary volume if it is replica volume.
         if type == VOLUME_TYPES.get('RDS'):
             # CHECK: What if there are more than 1 entry?
-            subsys_nqn = get_value_from_params(results[0], 'subsys_nqn')
-            # Primary volume ID can be parsed from the subsys_nqn
-            vol_id = self._parse_nqn(subsys_nqn)
-            replica_plex_info = self.get_plex_info(vol_id, end_time=self.op_time, operation=operation)
+            replica_plex_info = self.get_primary_info_from_rds(results[0], operation)
             info.extend(replica_plex_info)
 
         return info
@@ -421,7 +435,7 @@ class Volume(object):
         snapshot_info = self.get_snapshot_info(self.pvol_id, operation)
         if snapshot_info:
             # Snapshot have PV as their base_uuid
-            self.pvol_id = get_value_from_params(snapshot_info, 'base_uuid')
+            self.pvol_id = get_value_from_params(snapshot_info[0], 'base_uuid')
 
         pv_info_list = self.get_pv_info(self.pvol_id, operation)
         for pv_info in pv_info_list:
@@ -461,7 +475,7 @@ class Volume(object):
                     result.append(result_data)
 
             pvg_info = self.get_pvg_info(pvg_uuid, end_time=self.op_time, operation=operation)
-            lsv_uuids = get_value_from_params(pvg_info, 'svol_uuid')
+            lsv_uuids = get_value_from_params(pvg_info, 'svol_uuid', [])
 
             pvg_result_data = {
                 'timestamp': pvg_info['@timestamp'],

@@ -129,6 +129,32 @@ cd FunOSPackageDemo
 ./build/funospkg-s1-posix app=pkg_repvol_template_module_init,mdt_test,volsetup_cp,voltest,vol_teardown --serial voltype=VOL_TYPE_BLK_REPLICA_TEMPLATE  numios=40 UUID=repvol-000000000 transport=TCP --csr-replay localip=29.1.1.2 remoteip=29.1.1.2 rdstype=funtcp nplex=2 remote_plex_count=0
 
 
+Running sample CRC package
+==========================
+
+cd FunOSPackageDemo
+./build/funospkg-s1-posix app=crc64_all_pkg
+./build/funospkg-s1-posix app=crc_check_32_pkg
+./build/funospkg-s1-posix app=crc_check_32c_pkg
+./build/funospkg-s1-posix app=crc_tcp_csum_pkg
+./build/funospkg-s1-posix app=crc_t10_test_pkg
+./build/funospkg-s1-posix app=crc16_random_pkg
+./build/funospkg-s1-posix app=crc32c_random_pkg
+./build/funospkg-s1-posix app=crc32_fixed_pkg
+./build/funospkg-s1-posix app=crc32_fixed_default_seed_pkg
+./build/funospkg-s1-posix app=crc32c_fixed_pkg
+./build/funospkg-s1-posix app=crc16_fixed_pkg
+./build/funospkg-s1-posix app=crc16_fixed_default_seed_pkg
+./build/funospkg-s1-posix app=crc32c_iscsi_payload_pkg
+
+
+Running sample ZIP package
+==========================
+
+cd FunOSPackageDemo
+./build/funospkg-s1-posix app=ziptest_pkg
+
+
 Signing server
 ==============
 
@@ -235,20 +261,15 @@ funsdk_setup()
     # Checkout the build_id if passed as an argument
     if [ "$build_id" != "" ]; then
 	git checkout tags/bld_$build_id
+    build_str = -v $build_id
     fi
 
     # Download SDK packages
-    if [ "$build_id" != "" ]; then
-	./scripts/bob --sdkup -v $build_id --including sdk
-	./scripts/bob --sdkup -v $build_id --including deps-funos.mips64
-	./scripts/bob --sdkup -v $build_id release
-	./scripts/bob -v $build_id --deploy-up
-    else
-	./scripts/bob --sdkup --including sdk
-	./scripts/bob --sdkup --including deps-funos.mips64
-	./scripts/bob --sdkup release
-	./scripts/bob --deploy-up
-    fi
+	./scripts/bob --sdkup $build_str --including sdk
+	./scripts/bob --sdkup $build_str --including deps-funos.mips64
+	./scripts/bob --sdkup $build_str release
+	./scripts/bob --sdkup $build_str nu.csrreplay
+	./scripts/bob $build_str --deploy-up
 
     # Extract the build id from the downloaded FunSDK packages
     file="build_info.txt"
@@ -263,6 +284,7 @@ funsdk_setup()
     find . -name .gitignore |xargs rm -rf
     rm -rf FunSDK/chip/f1d1
     rm -rf FunSDK/chip/s2
+    rm -rf FunSDK/config/pipeline/*f1d1*
     rm -rf palladium_test
     rm -rf FunQemu-Linux
     rm -rf gpl
@@ -341,16 +363,16 @@ funos_install_lib_headers()
 	exit 1
     fi
 
-    # Build and install posix funos library
-    if ! make -j8 MACHINE=s1-posix install-libfunosrt; then
+    # Build and install posix funos library & config
+    if ! make -j8 MACHINE=s1-posix install-libfunosrt install-defaultcfg; then
 	echo ""
 	echo "FunOS s1-posix fails to build"
 	echo ""
 	exit 1
     fi
 
-    # Build and install s1 funos library
-    if ! make -j8 MACHINE=s1 install-libfunosrt; then
+    # Build and install s1 funos library & config
+    if ! make -j8 MACHINE=s1 install-libfunosrt install-defaultcfg; then
 	echo ""
 	echo "FunOS s1 fails to build"
 	echo ""
@@ -412,6 +434,39 @@ run_posix()
     if ! ./build/funospkg-s1-posix app=pkg_memvol_module_init,epnvme_test voltype=VOL_TYPE_SDK_BLK_MEMORY numios=100 nvfile=nvfile; then
 	echo ""
 	echo "s1-posix memvol package fails to run to completion"
+	echo ""
+	exit 1
+    fi
+
+    if ! ./build/funospkg-s1-posix app=pkg_repvol_template_module_init,mdt_test,volsetup_cp,voltest,vol_teardown --serial voltype=VOL_TYPE_BLK_REPLICA_TEMPLATE  numios=40 UUID=repvol-000000000 transport=TCP --csr-replay localip=29.1.1.2 remoteip=29.1.1.2 rdstype=funtcp nplex=2 remote_plex_count=0; then
+	echo ""
+	echo "s1-posix repvol package fails to run to completion"
+	echo ""
+	exit 1
+    fi
+
+    if  ! ./build/funospkg-s1-posix app=crc64_all_pkg ||
+	! ./build/funospkg-s1-posix app=crc_check_32_pkg ||
+	! ./build/funospkg-s1-posix app=crc_check_32c_pkg ||
+	! ./build/funospkg-s1-posix app=crc_tcp_csum_pkg ||
+	! ./build/funospkg-s1-posix app=crc_t10_test_pkg ||
+	! ./build/funospkg-s1-posix app=crc16_random_pkg ||
+	! ./build/funospkg-s1-posix app=crc32c_random_pkg ||
+	! ./build/funospkg-s1-posix app=crc32_fixed_pkg ||
+	! ./build/funospkg-s1-posix app=crc32_fixed_default_seed_pkg ||
+	! ./build/funospkg-s1-posix app=crc32c_fixed_pkg ||
+	! ./build/funospkg-s1-posix app=crc16_fixed_pkg ||
+	! ./build/funospkg-s1-posix app=crc16_fixed_default_seed_pkg ||
+	! ./build/funospkg-s1-posix app=crc32c_iscsi_payload_pkg; then
+	echo ""
+	echo "s1-posix CRC package fails to run to completion"
+	echo ""
+	exit 1
+    fi
+
+    if ! ./build/funospkg-s1-posix app=ziptest_pkg; then
+	echo ""
+	echo "s1-posix ZIP package fails to run to completion"
 	echo ""
 	exit 1
     fi

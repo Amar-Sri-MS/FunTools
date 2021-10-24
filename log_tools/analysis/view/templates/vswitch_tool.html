@@ -40,7 +40,11 @@
 
             "DELETED_VSWITCHES_REQUEST": `"method:DELETE" AND delete-virtual-fabric`,
             "DELETED_VSWITCH_ACK": `"Deleted virtual fabric DB entry"`,
-            "DELETED_VSWITCH_STATUS": `("Validation successful for All FCP tunnel delete APIs" OR "Validation successfull for All FCP tunnel delete APIs")`
+            "DELETED_VSWITCH_STATUS": `("Validation successful for All FCP tunnel delete APIs" OR "Validation successfull for All FCP tunnel delete APIs")`,
+
+            "CREATED_TUNNEL_REQUEST": `"Sending NS API with data" AND "create_pcie_fcp_tunnel"`,
+            "DELETED_TUNNEL_REQUEST": `"Sending NS API with data" AND "delete_pcie_fcp_tunnel"`,
+            "TUNNEL_REQUEST_STATUS": `"Received NS api response over channel" AND "status:true"`,
         };
 
         // Self invocation function
@@ -63,8 +67,8 @@
                 const IDValuePair = IDStr.split(": ");
                 return IDValuePair[1] !== "" ? IDValuePair[1] : null;
             }
-            const reqID = extract(IDPair[0]);
-            const VFID = extract(IDPair[1]);
+            const reqID = IDPair.length >= 1 ? extract(IDPair[0]) : null;
+            const VFID = IDPair.length >= 2 ? extract(IDPair[1]) : null;
             return {
                 "reqID": reqID,
                 "VFID": VFID,
@@ -80,7 +84,7 @@
             toggleElementDisplay(lifecycle_element, true);
 
             let table = new window.AsciiTable("VSwitches Creation Requests");
-            table.setHeading("Timestamp", "Req-ID", "VF-ID", "Name", "down_port_id_max", "", "");
+            table.setHeading("Timestamp", "Req-ID", "VF-ID", "Name", "down_port_id_max", "");
 
             for (const result of results) {
                 const timestamp = result["@timestamp"];
@@ -98,7 +102,6 @@
                     info[1],
                     info[2],
                     formHTMLButton("Show info", `showInfo("${result['reqID']}", "${VFID}", "${message}")`),
-                    formHTMLButton("Show all logs", `showLogs("${result['reqID']}", "${VFID}")`)
                 )
             }
 
@@ -107,13 +110,18 @@
 
         async function showInfo(reqID, VFID, log) {
             vswitch_info_element.innerHTML = "";
+            vswitch_logs_element.innerHTML = "";
             const responses = await asyncFetch([
                 // Create Validation
                 handleSearch(`${SEARCHES_QUERIES["CREATED_VSWITCH_STATUS"]} AND "${VFID}"`),
                 // Delete Request
                 handleSearch(`${SEARCHES_QUERIES["DELETED_VSWITCHES_REQUEST"]} AND "${VFID}"`),
                 // Delete Validation
-                handleSearch(`${SEARCHES_QUERIES["DELETED_VSWITCH_STATUS"]} AND "${VFID}"`)
+                handleSearch(`${SEARCHES_QUERIES["DELETED_VSWITCH_STATUS"]} AND "${VFID}"`),
+                // Tunnel Creation
+                handleSearch(`${SEARCHES_QUERIES["CREATED_TUNNEL_REQUEST"]} AND "${VFID}"`),
+                // Tunnel Deletion
+                handleSearch(`${SEARCHES_QUERIES["DELETED_TUNNEL_REQUEST"]} AND "${VFID}"`),
             ]);
 
             // Function to convert responses into HTML anchor tag with timestamp as text
@@ -123,57 +131,89 @@
                 return `<a href="${URL}" target="_blank">${timestamp}</a>`;
             }
 
+            // Function to join timestamps
+            const displayTimestamps = (ts, joinStr=", ") => ts.length === 0
+                                                                ? "Not Found" : ts.join(joinStr);
+
+            // Set of all the request IDs for tunnel creation/deletion
+            let tunnelIDs = new Set();
+            const getTunnelsInfo = tunnels => (
+                tunnels.map(tunnel => {
+                    const msg = tunnel["message"];
+                    const jsonStr = msg.slice(msg.indexOf("{"), msg.lastIndexOf("}")+1);
+                    const requestJSON = JSON.parse(`"${jsonStr}"`);
+                    const request = JSON.parse(requestJSON);
+                    // Request ID for tunnel requests
+                    tunnelIDs.add(request["request_id"]);
+                    return request;
+                })
+            );
+
             const createValidation = responses[0].map(formURLFromResponse);
             let errorLogsDuringCreation = "";
 
+            vswitch_info_element.innerHTML += `
+                <div>VFID: ${VFID}</div>
+                <div>Creation Log: ${log}</div>
+                <div>Create Validation: ${displayTimestamps(createValidation)}</div>
+            `;
+
+            // Showing error logs during vSwitch Creation
             if (createValidation.length === 0) {
                 const errorLogs = await handleSearch(`${reqID} AND level:error`);
                 const title = `Error Logs during vSwitch Creation`;
                 errorLogsDuringCreation = getTableForLogs(title, errorLogs);
+                addTableToElement(vswitch_info_element, errorLogsDuringCreation);
+            }
+
+            // Tunnel Creation
+            if (responses[3].length > 0) {
+                const tunnels = getTunnelsInfo(responses[3]);
+                const table = await getTableForTunnels(tunnels, "Created Tunnels");
+                addTableToElement(vswitch_info_element, table);
             }
 
             const deleteRequests = responses[1].map(formURLFromResponse);
             const deleteValidations = responses[2].map(formURLFromResponse);
             let errorLogsDuringDelete = "";
 
-            if (deleteRequests.length > 1 || (deleteRequests.length !== 0 && deleteValidations.length === 0)) {
-                const time = {
-                    "after": responses[1][0]["@timestamp"],
-                    "before": deleteValidations.length > 0 ? responses[2][0]["@timestamp"] : null
-                };
-                const errorLogs = await handleSearch(`${VFID} AND level:error`, time);
-                const title = `Error Logs during vSwitch deletion between ${time["after"]} and ${time["before"]}`;
-                errorLogsDuringDelete = getTableForLogs(title, errorLogs);
+            if (deleteRequests.length > 0) {
+                vswitch_info_element.innerHTML += `
+                    <div>Delete Request: ${displayTimestamps(deleteRequests)}</div>
+                    <div>Delete Validation: ${displayTimestamps(deleteValidations)}</div>
+                `;
+
+                // Showing error logs during vSwitch deletion
+                if (deleteValidations.length === 0) {
+                    const time = {
+                        "after": responses[1][0]["@timestamp"],
+                        "before": deleteValidations.length > 0 ? responses[2][0]["@timestamp"] : null
+                    };
+                    const errorLogs = await handleSearch(`${VFID} AND level:error`, time);
+                    const title = `Error Logs during vSwitch deletion between ${time["after"]} and ${time["before"]}`;
+                    errorLogsDuringDelete = getTableForLogs(title, errorLogs);
+                    addTableToElement(vswitch_info_element, errorLogsDuringDelete);
+                }
+
+                // Tunnel Deletion
+                if (responses[4].length > 0) {
+                    const tunnels = getTunnelsInfo(responses[4]);
+                    const table = await getTableForTunnels(tunnels, "Deleted Tunnels");
+                    addTableToElement(vswitch_info_element, table);
+                }
             }
-
-            // Function to join timestamps
-            const displayTimestamps = (ts, joinStr=", ") => ts.length === 0
-                                                                ? "Not Found" : ts.join(joinStr);
-
-            vswitch_info_element.innerHTML += `
-                <div>VFID: ${VFID}</div>
-                <div>Creation Log: ${log}</div>
-                <div>Create Validation: ${displayTimestamps(createValidation)}</div>
-                <div>${errorLogsDuringCreation}</div>
-                <div>Delete Request: ${displayTimestamps(deleteRequests)}</div>
-                <div>Delete Validation: ${displayTimestamps(deleteValidations)}</div>
-                <div>${errorLogsDuringDelete}</div>
-            `;
 
             toggleElementDisplay(vswitch_info_element.parentElement, true);
             vswitch_info_element.parentElement.scrollIntoView();
-        }
 
-        async function showLogs(reqID, VFID) {
-            const results = await handleSearch(`"${reqID}" OR "${VFID}"`);
-            vswitch_logs_element.innerHTML = "";
+            // Showing logs for all the request IDs
+            const tunnelIDStr = Array.from(tunnelIDs).reduce((prev, curr) => (`${prev} OR "${curr}" OR "req_id:${curr}"`), "");
+            const results = await handleSearch(`"${reqID}" OR "${VFID}" ${tunnelIDStr}`);
 
             const title = `vSwitch logs for VF-ID: ${VFID}`;
             const table = getTableForLogs(title, results);
             addTableToElement(vswitch_logs_element, table);
-
             toggleElementDisplay(vswitch_logs_element.parentElement, true);
-            vswitch_logs_element.parentElement.scrollIntoView();
         }
 
         function getTableForLogs(title, results) {
@@ -197,6 +237,24 @@
             return table;
         }
 
+        async function getTableForTunnels(tunnels, title="Tunnels") {
+            let table = new window.AsciiTable(title);
+            table.setHeading("Req-ID", "Port 1", "Port 2", "Status");
+
+            for(const tunnel of tunnels) {
+                const reqID = tunnel["request_id"];
+                const reqIDURL = formSearchURL(`"${reqID}" OR "request_id:${reqID}"`);
+                const status = await handleSearch(`${SEARCHES_QUERIES["TUNNEL_REQUEST_STATUS"]} AND "request_id:${reqID}"`);
+
+                table.addRow(
+                    formAnchorTag(reqIDURL, reqID),
+                    ...tunnel["fabric_ports"].map(port => ( `${port["dpuname"]}, Port:${port["port"]}` )),
+                    status.length !== 0
+                )
+            };
+            return table;
+        }
+
         /*
             Constructs a search string, for use in a request,
             from search query and search state.
@@ -209,14 +267,14 @@
             ) {
                 return null;
             }
-            return JSON.stringify({
+            return {
                 "query": encodeURIComponent(searchPayload["query"]),
                 "state": JSON.stringify(searchPayload["state"]),
                 "page": searchPayload["page"],
                 "next": true,
                 // Setting size to a ES limit of 10k results per request
                 "size": 10000
-            });
+            };
         }
 
         async function handleSearch(searchText, time) {
@@ -234,31 +292,28 @@
                 searchPayload["state"] = formSearchState(time["before"], time["after"]);
             }
 
-            const filterString = "";
+            const filterString = {};
             const searchString = buildSearchOption(searchPayload);
 
-            // Filters not selected
-            if (filterString === null) {
-                return;
+            const searchBody = {
+                "search": searchString,
+                "filters": filterString
             }
 
-            let params = new URLSearchParams();
-            if (filterString != "") {
-                params.set("filter", filterString);
-            }
-            if (searchString != "") {
-                params.set("search", searchString);
-            }
-
-            const search_url = `${LOG_PAGE_URL}/search?${params.toString()}${location.hash}`;
-            return fetchWrapper.get(search_url)
+            const search_url = `${LOG_PAGE_URL}/search`;
+            return fetchWrapper.post(search_url, searchBody)
                 .then(data => {
                     toggleLoader(false);
-                    const formattedData = data["results"].map(result => ({
-                        ...result,
-                        ...result["_source"],
-                        ...extractID(result["_source"]["msg"])
-                    }));
+                    const formattedData = data["results"].map(result => {
+                        const IDs = result["_source"]["src"] === "pfm"
+                                        ? extractID(result["_source"]["msg"])
+                                        : {"message": result["_source"]["msg"]};
+                        return {
+                            ...result,
+                            ...result["_source"],
+                            ...IDs
+                        }
+                    });
                     return formattedData;
                 })
                 .catch(error => {
@@ -333,7 +388,7 @@
         }
 
         function addTableToElement(element, table, spacing=2) {
-            element.innerHTML += table.toString();
+            element.innerHTML += `<div>${table.toString()}</div>`;
             for (let i=0; i<spacing; i++) {
                 element.innerHTML += "\n";
             }

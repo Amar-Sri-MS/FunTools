@@ -111,6 +111,7 @@ def main():
     parser.add_argument('--debug-build', dest='release', action='store_false', help='Use debug application binary')
     parser.add_argument('--default-config-files', dest='default_cfg', action='store_true')
     parser.add_argument('--dev-image', action='store_true', help='Create a development image installer')
+    parser.add_argument('--extra-funos-suffix', action='append', help='Extra funos elf suffix to use')
 
     args = parser.parse_args()
 
@@ -121,10 +122,12 @@ def main():
     if args.release:
         funos_suffixes.append('release')
 
+    if args.extra_funos_suffix:
+        funos_suffixes.extend(args.extra_funos_suffix)
+
     args.sdkdir = os.path.abspath(args.sdkdir) # later processing fails if relative path is given
     funos_appname = "funos{}.stripped".format('-'.join(funos_suffixes))
     rootfs_files = ALL_ROOTFS_FILES[args.chip]
-    chip_specific_files = CHIP_SPECIFIC_FILES.get(args.chip, ())
 
     def wanted(action):
         if args.action == 'all':
@@ -200,6 +203,8 @@ def main():
     curdir = os.getcwd()
 
     config_sdk_package = config['global_config'].get('sdk_package') if config.get('global_config') else False
+
+    chip_specific_files = () if config_sdk_package else CHIP_SPECIFIC_FILES.get(args.chip, ())
 
     if wanted('prepare') or wanted('sdk-prepare'):
         # paths to application binaries in SDK tree
@@ -368,12 +373,13 @@ def main():
                 '--signed' ]
         subprocess.check_call(cmd)
 
-        for rootfs in rootfs_files:
-            cmd = [ 'python3', 'gen_hash_tree.py',
-                    '-O', _rootfs('fvht.bin', rootfs),
-                    'insert',
-                    '--signed', _rootfs('fvht.signed', rootfs) ]
-            subprocess.call(cmd)
+        if not args.dev_image:
+            for rootfs in rootfs_files:
+                cmd = [ 'python3', 'gen_hash_tree.py',
+                        '-O', _rootfs('fvht.bin', rootfs),
+                        'insert',
+                        '--signed', _rootfs('fvht.signed', rootfs) ]
+                subprocess.call(cmd)
 
         try:
             output_image = config['output_format']['output']
@@ -429,17 +435,26 @@ def main():
             os.mkdir('bundle_installer')
             bundle_images = []
 
+            def skip_entry(e):
+                if e.get("no_export", False):
+                    return True
+                if e.get("no_bundle", False):
+                    return True
+                if args.dev_image and e.get("skip_in_dev_bundle", False):
+                    return True
+                return False
+
             with open("image.json") as f:
                 images = json.load(f)
                 bundle_images.extend([key for key,value in images.get('signed_images',{}).items()
-                                    if not value.get("no_export", False)])
+                                    if not skip_entry(value)])
                 bundle_images.extend([key for key,value in images.get('signed_meta_images', {}).items()
-                                    if not value.get("no_export", False)])
+                                    if not skip_entry(value)])
 
             with open("mmc_image.json") as f:
                 images = json.load(f)
                 bundle_images.extend([key for key,value in images.get('generated_images',{}).items()
-                                    if not value.get("no_export", False)])
+                                    if not skip_entry(value)])
 
             bundle_images.extend([
                 'install_tools/run_fwupgrade.py',

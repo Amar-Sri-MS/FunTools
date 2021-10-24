@@ -1,9 +1,12 @@
 #!/bin/sh
 
+# This is a drop-in replacement for dpc which runs over NVMe
+
 BIN_PATH="/usr/bin"
 ST_STP_D=/sbin/start-stop-daemon
 DPC_SOCKET=/tmp/dpc.sock
 DPC_PID_FILE=/tmp/dpc.pid
+DEVICE_ID="1dad:0108:ff00"
 LOGS_FOLDER=/persist/logs
 
 if [[ ! -f ${ST_STP_D} ]]; then
@@ -17,8 +20,16 @@ start_dpc_proxy()
 
 	mkdir -p ${LOGS_FOLDER}
 
+	DEVICE_SLOT=`lspci -d ${DEVICE_ID} | awk '{print $1}'`
+
+	if lspci -k -d ${DEVICE_ID} | grep "in use"; then
+		echo "Device is already in use, no need for bind"
+	else
+		/usr/bin/funq-setup bind funq ${DEVICE_SLOT}
+	fi
+
 	OPTS="--background --make-pidfile --pidfile ${DPC_PID_FILE} --startas ${BIN_PATH}/dpcsh"
-	CMD="--start -- --pcie_nvme_sock=/dev/nvme0 --nvme_cmd_timeout=10000 --unix_proxy=${DPC_SOCKET} --log=${LOGS_FOLDER}/dpcsh.log"
+	CMD="--start -- -q${DEVICE_SLOT} --unix_proxy=${DPC_SOCKET} --log=${LOGS_FOLDER}/dpcsh-funq.log"
 
 	${ST_STP_D} ${OPTS} ${CMD}
 

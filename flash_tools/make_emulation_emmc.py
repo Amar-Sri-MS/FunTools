@@ -264,6 +264,7 @@ def gen_fs(files):
         pad_file(output_fs, f.name, 1124 * MB)
         cmd = [ os_utils.path_fixup('sfdisk'),
             '-X', 'dos',  # partition label
+            '--color=never',
             f.name]
         p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
         sfdiskcmds = ['start=4KiB, size=32MiB, type=83, bootable', #32MB@4KB
@@ -353,9 +354,9 @@ def run():
             gen_hex_file(f[1], outfile_hex, bool(f[0]), g.hex_width)
 
     output_descr = {
-        'emmc_image.bin' : 'complete eMMC image',
-        'mmc0_image.bin' : 'eMMC partition table',
-        'mmc1_image.bin' : 'eMMC boot partition and FunOS'
+        'emmc_image.bin' : { 'description':'complete eMMC image', 'no_bundle':True },
+        'mmc0_image.bin' : { 'description':'eMMC partition table', 'no_bundle':False },
+        'mmc1_image.bin' : { 'description':'eMMC boot partition and FunOS', 'no_bundle':False },
     }
 
     os.remove(g.work_file)
@@ -363,7 +364,8 @@ def run():
     with open("mmc_image.json", "w") as f:
         config = { 'generated_images' : {}}
         for k,v in output_descr.items():
-            config['generated_images'][k] = { 'description' : v }
+            config['generated_images'][k] = { 'description' : v['description'],
+                'no_bundle' : v['no_bundle'] }
         json.dump(config, f, indent=4)
 
 if __name__ == '__main__':

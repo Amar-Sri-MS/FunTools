@@ -40,7 +40,7 @@ class DpcClient(object):
 
         if (unix_sock):
             if (server_address is None):
-                server_address = '/tmp/funos-dpc-text.sock'
+                server_address = '/tmp/dpc.sock'
             self.__sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         else:
             if (server_address is None):
