@@ -38,6 +38,8 @@ import fileinput
 import re
 import sys
 
+from __future__ import print_function
+
 # Number of bytes per bucket for the page map.
 # Making this smaller shortens the number of lookups to find
 # the function at an address.
