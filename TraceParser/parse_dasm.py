@@ -34,11 +34,12 @@
 # This code doesn't care about local jumps within functions, but does
 # need to handle recursive functions.  It also needs to handle jumps and calls
 # to registers (function pointers).
+from __future__ import print_function
+
 import fileinput
 import re
 import sys
 
-from __future__ import print_function
 
 # Number of bytes per bucket for the page map.
 # Making this smaller shortens the number of lookups to find
