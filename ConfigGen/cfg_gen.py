@@ -392,7 +392,7 @@ def _load_workerpool_config(wpconfig):
     wp_cfg = {}
 
     # modules/nucleus/workerpools/policies in nucleus 
-    wp_cfg = {"modules": {"nucleus": {"workerpools": {"policies": js}}}}
+    wp_cfg = {"modules": {"workerpool": {"policies": js}}}
 
     return wp_cfg
 
