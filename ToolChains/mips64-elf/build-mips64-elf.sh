@@ -52,7 +52,7 @@ if [ ! -e $gdb_archive ] ; then
     wget $gdb_url
 fi
 
-common_config='--enable-lto --enable-64-bit-bfd --enable-targets=mips64-sde-elf'
+common_config='--enable-lto --enable-64-bit-bfd --enable-targets=all'
 
 tar Jxf $binutils_archive
 
