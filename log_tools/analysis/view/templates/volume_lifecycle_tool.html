@@ -44,6 +44,7 @@
         {% include 'loader.html' %}
     </body>
     <script type="text/javascript" src="/static/js/fetchWrapper.js"></script>
+    <script type="text/javascript" src="/static/js/tracker.js"></script>
     <script src="/static/js/ascii-table.js"></script>
     <script type="text/javascript">
         const logID = "{{log_id}}";
@@ -63,6 +64,7 @@
             const uuid = params.get("uuid");
             if (uuid) {
                 document.getElementById("volume_id").value = uuid;
+                trackWebEvent("STORAGE_TOOL");
                 getVolumeLifecycle(uuid);
             }
         })();

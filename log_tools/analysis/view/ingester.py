@@ -30,6 +30,7 @@ from elastic_metadata import ElasticsearchMetadata
 from flask import Blueprint, jsonify, request, render_template
 from flask import current_app
 
+from common import login_required
 from utils import archive_extractor, manifest_parser
 from utils import mail
 from utils import timeline
@@ -153,6 +154,7 @@ def main():
 
 
 @ingester_page.route('/upload', methods=['POST'])
+@login_required
 def upload():
     """
     Upload API for uploading techsupport log archive. Using the
@@ -236,6 +238,7 @@ def remove_uploaded_file():
     return jsonify('success')
 
 @ingester_page.route('/ingest', methods=['GET'])
+@login_required
 def render_ingest_page():
     """ UI for ingesting logs """
     ingest_type = request.args.get('ingest_type', 'qa')
@@ -248,6 +251,7 @@ def render_ingest_page():
 
 
 @ingester_page.route('/ingest', methods=['POST'])
+@login_required
 def ingest():
     """
     Handling ingestion of logs from QA jobs.
@@ -315,7 +319,7 @@ def ingest():
             cmd = ['./ingester.py', job_id, '--ingest_type', ingest_type]
             if len(tags_list) > 0:
                 cmd.append('--tags')
-                cmd.append(' '.join(tags_list))
+                cmd.extend(tags_list)
 
             if start_time:
                 cmd.append('--start_time')

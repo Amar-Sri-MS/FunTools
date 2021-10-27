@@ -30,6 +30,7 @@ from requests.exceptions import HTTPError
 from urllib.parse import quote, quote_plus
 from urllib.parse import unquote, unquote_plus
 
+from common import login_required
 from elastic_metadata import ElasticsearchMetadata
 from ingester import ingester_page
 from web_usage import web_usage
@@ -65,7 +66,23 @@ def main():
     app.run(host='0.0.0.0', port=port)
 
 
+# Checking for user session before processing
+# the request.
+@app.before_request
+def load_user():
+    g.user = None
+
+    if 'user_email' in session:
+        g.user = session['user_email']
+
+    # Allowing users to ingest using API without maintaining session
+    # provided users sends email in 'submitted_by' field.
+    if request.endpoint in ('ingest', 'upload') and request.method == 'POST':
+        g.user = request.form.get('submitted_by', None)
+
+
 @app.route('/')
+@login_required
 def root():
     """ Serves the root page, which shows a list of logs """
     ELASTICSEARCH_HOSTS = app.config['ELASTICSEARCH']['hosts']
@@ -606,6 +623,7 @@ class ElasticLogSearcher(object):
         return count
 
 @app.route('/log/<log_id>', methods=['GET'])
+@login_required
 def get_log_page(log_id):
     """
     Displays a log page for a particular log_id.
@@ -942,6 +960,7 @@ def get_search_results(log_id):
 
 
 @app.route('/log/<log_id>/dashboard', methods=['GET'])
+@login_required
 def dashboard(log_id):
     """ Renders the dashboard page for a particular log_id """
     # Assume our template is right next door to us.
@@ -1340,6 +1359,7 @@ def _format_datetime(timestamp, format="%a, %d %b %Y %I:%M:%S %Z"):
 
 
 @app.route('/log/<log_id>/dashboard/notes', methods=['POST'])
+@login_required
 def save_notes(log_id):
     try:
         note = request.get_json()

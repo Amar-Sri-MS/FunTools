@@ -24,6 +24,9 @@ curl -X PUT "localhost:9200/_index_template/web_stats_template" -H 'Content-Type
                 "logID": {
                     "type": "keyword"
                 },
+                "user_email": {
+                    "type": "keyword"
+                },
                 "data": {
                     "type": "nested",
                     "properties": {

@@ -109,6 +109,8 @@
         }
 
         async function showInfo(reqID, VFID, log) {
+            trackWebEvent("VSWITCH_INFO");
+
             vswitch_info_element.innerHTML = "";
             vswitch_logs_element.innerHTML = "";
             const responses = await asyncFetch([
