@@ -267,6 +267,7 @@ funsdk_setup()
 	./scripts/bob --sdkup $build_str --including deps-funos.mips64
 	./scripts/bob --sdkup $build_str release
 	./scripts/bob --sdkup $build_str nu.csrreplay
+	./scripts/bob --sdkup $build_str funos.fundoc
 	./scripts/bob $build_str --deploy-up
 
     # Extract the build id from the downloaded FunSDK packages
