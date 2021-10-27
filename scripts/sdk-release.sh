@@ -179,14 +179,12 @@ Development bundles are required to install custom FunOS binaries in the
 hardware.
 
 make -j8 MACHINE=s1
-make MACHINE=s1 install
-make MACHINE=s1 dev_bundle
+make MACHINE=s1 install dev_bundle
 
 Alternatevely, release images can also be installed
 
 make -j8 MACHINE=s1-release
-make MACHINE=s1-release install
-make MACHINE=s1-release dev_bundle
+make MACHINE=s1-release install dev_bundle
 
 
 Installing development bundles
