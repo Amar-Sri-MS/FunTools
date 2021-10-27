@@ -77,7 +77,7 @@ def load_user():
 
     # Allowing users to ingest using API without maintaining session
     # provided users sends email in 'submitted_by' field.
-    if request.endpoint in ('ingest', 'upload') and request.method == 'POST':
+    if request.endpoint in ('ingester_page.ingest') and request.method == 'POST':
         g.user = request.form.get('submitted_by', None)
 
 
