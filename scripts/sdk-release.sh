@@ -481,6 +481,9 @@ funos_package_demo_clean()
     rm -f nvfile
 }
 
+# default to latest master
+build_id="latest"
+
 # Parse the options
 while getopts "hb:f:v:r:" option; do
     case "$option" in
@@ -509,6 +512,13 @@ while getopts "hb:f:v:r:" option; do
     esac
 done
 shift $((OPTIND-1))
+
+# check for "latest" build
+if [ "$build_id" = "latest" ]; then
+    echo "Retrieving latest build version"
+    build_id=`wget -q -O - http://dochub.fungible.local/doc/jenkins/master/funsdk/latest/build_info.txt`
+    echo "Latest build version is $build_id"
+fi
 
 # Setup the FunSDK source code
 funsdk_setup
