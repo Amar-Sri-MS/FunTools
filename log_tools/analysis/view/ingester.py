@@ -28,7 +28,7 @@ sys.path.insert(0, '.')
 
 from elastic_metadata import ElasticsearchMetadata
 from flask import Blueprint, jsonify, request, render_template
-from flask import current_app
+from flask import current_app, g
 
 from common import login_required
 from utils import archive_extractor, manifest_parser
@@ -268,7 +268,7 @@ def ingest():
         tags_list = [tag.strip() for tag in tags.split(',') if tag.strip() != '']
         file_name = request.form.get('filename')
         mount_path = request.form.get('mount_path')
-        submitted_by = request.form.get('submitted_by', None)
+        submitted_by = g.user
 
         start_time = request.form.get('start_time', None)
         end_time = request.form.get('end_time', None)
