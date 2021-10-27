@@ -22,6 +22,9 @@ from elasticsearch7 import Elasticsearch
 from flask import Flask
 from flask import jsonify
 from flask import request
+from flask import g, redirect, session
+from flask_session import Session
+
 from pathlib import Path
 from requests.exceptions import HTTPError
 from urllib.parse import quote, quote_plus
@@ -48,6 +51,8 @@ config = config_loader.get_config()
 
 # Updating Flask's config with the configs from file
 app.config.update(config)
+
+Session(app)
 
 def main():
     parser = argparse.ArgumentParser()
@@ -139,6 +144,25 @@ def _render_root_page(log_ids, metadata, jinja_env, template):
     result = template.render(template_dict, env=jinja_env)
     return result
 
+
+@app.route('/login', methods=['POST', 'GET'])
+def login():
+    # if login form is submitted
+    if request.method == 'POST':
+        # record the user email
+        session['user_email'] = request.form.get('user_email')
+        # redirect to the root page
+        return redirect('/')
+
+    # Assume our template is right next door to us.
+    dir = os.path.join(_get_script_dir(), 'templates')
+
+    jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(dir),
+                             trim_blocks=True,
+                             lstrip_blocks=True)
+    template = jinja_env.get_template('login.html')
+
+    return template.render(env=jinja_env)
 
 class ElasticLogState(object):
     """
