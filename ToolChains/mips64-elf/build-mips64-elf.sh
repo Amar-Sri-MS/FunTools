@@ -6,7 +6,7 @@
 #
 set -e
 
-binutils_version=binutils-2.37
+binutils_version=binutils-2.35.2
 gcc_version=gcc-11.2.0
 gdb_version=gdb-9.2
 
