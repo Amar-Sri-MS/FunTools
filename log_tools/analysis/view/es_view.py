@@ -77,7 +77,7 @@ def load_user():
 
     # Allowing users to ingest using API without maintaining session
     # provided users sends email in 'submitted_by' field.
-    if request.endpoint in ('ingester_page.ingest') and request.method == 'POST':
+    if request.endpoint == 'ingester_page.ingest' and request.method == 'POST':
         g.user = request.form.get('submitted_by', None)
 
 
@@ -169,6 +169,9 @@ def login():
         # record the user email
         session['user_email'] = request.form.get('user_email')
         # redirect to the root page
+        return redirect('/')
+
+    if g.user:
         return redirect('/')
 
     # Assume our template is right next door to us.
