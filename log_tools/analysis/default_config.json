@@ -24,5 +24,7 @@
         }
     },
     "FILE_SERVER_URL": "http://funlogs.fungible.local:11000",
-    "LOG_VIEW_BASE_URL": "http://funlogs.fungible.local/log/LOG_ID"
+    "LOG_VIEW_BASE_URL": "http://funlogs.fungible.local/log/LOG_ID",
+    "SESSION_PERMANENT": true,
+    "SESSION_TYPE": "filesystem"
 }
