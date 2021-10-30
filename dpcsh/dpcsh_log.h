@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <stdio.h>
+
 #define BLACK	"0;30"
 #define RED	"0;31"
 #define GREEN	"0;32"
