@@ -388,9 +388,6 @@ def _load_workerpool_config(wpconfig):
     fl = open(wpconfig)
     js = json.load(fl)
 
-    # bury it into the appropriate place in the tree
-    wp_cfg = {}
-
     # modules/nucleus/workerpools/policies in nucleus 
     wp_cfg = {"modules": {"workerpool": {"policies": js}}}
 
