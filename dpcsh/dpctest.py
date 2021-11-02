@@ -11,6 +11,7 @@ import os
 import sys
 import socket
 import subprocess
+import tempfile
 import dpc_client
 import time
 import unittest
@@ -115,6 +116,15 @@ class TestDPCCommands(unittest.TestCase):
 
         self.assertEqual(r2, r1)
         self.assertEqual(r3, r1)
+
+    def testBlob(self):
+        with tempfile.NamedTemporaryFile() as fp:
+            original_data = 'b' * 100000
+            fp.write(original_data)
+            fp.flush()
+            uuid = self.client.execute('blob', ['store', ['quote', self.client.blob_from_file(fp.name)]])
+            data = self.client.blob_to_string(self.client.execute('blob', ['retrieve', uuid]))
+            self.assertEqual(original_data, data)
 
 
 def run_tests_client(client, exclude):
