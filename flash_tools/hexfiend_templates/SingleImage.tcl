@@ -12,7 +12,16 @@ set image_size [uint32 "size"]
 uint32 "version"
 ascii 4 "type"
 section "attributes" {
-    ascii 32 "reserved"
+    section "Part Number" {
+	hex 1 "Family"
+	hex 1 "Device"
+	hex 1 "Revision"
+	hex 1 "Alignment"
+    }
+    section AuthLocation {
+	hex 4 "Location"
+    }
+    hex 24 "padding"
     ascii 32 "description"
 }
 entry "payload" bytes  $image_size
