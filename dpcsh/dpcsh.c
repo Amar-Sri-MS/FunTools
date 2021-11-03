@@ -1819,7 +1819,7 @@ int main(int argc, char *argv[])
 		case 'c':  /* inet dpc client */
 
 			funos_sock.dpcsh_connection = true;
-			funos_sock.mode = strchr(optarg, '.') == NULL ? SOCKMODE_UNIX : SOCKMODE_IP;
+			funos_sock.mode = strchr(optarg, ':') == NULL ? SOCKMODE_UNIX : SOCKMODE_IP;
 			funos_sock.server = false;
 			funos_sock.socket_name = optarg;
 			autodetect_input_device = false;
