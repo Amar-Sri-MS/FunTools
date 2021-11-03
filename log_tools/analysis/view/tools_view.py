@@ -16,17 +16,20 @@ sys.path.insert(0, '.')
 from flask import Blueprint, jsonify, request
 from flask import render_template
 
+from common import login_required
 from tools.volume_lifecycle import Volume
 
 tools_page = Blueprint('tools_page', __name__)
 
 @tools_page.route('/<log_id>/volume', methods=['GET'])
+@login_required
 def render_volume_lifecycle_tool(log_id):
     """ UI for Volume lifecycle tool """
     return render_template('volume_lifecycle_tool.html', log_id=log_id)
 
 
 @tools_page.route('/<log_id>/volume', methods=['POST'])
+@login_required
 def get_volume_lifecycle(log_id):
     """ Returns the lifecycle of the given volume """
     request_data = request.get_json(force=True)
@@ -47,6 +50,7 @@ def get_volume_lifecycle(log_id):
     return jsonify(lifecycle)
 
 @tools_page.route('/<log_id>/vswitch', methods=['GET'])
+@login_required
 def render_vswitch_tool(log_id):
     """ UI for Virtual Switch Tool """
     return render_template('vswitch_tool.html', log_id=log_id)

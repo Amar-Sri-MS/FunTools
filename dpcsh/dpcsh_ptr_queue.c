@@ -7,8 +7,10 @@
 
 #include "dpcsh_ptr_queue.h"
 
+#include "dpcsh_log.h"
 #include <stdlib.h>
 #define MIN_QUEUE_SIZE (16)
+#define QUEUE_WARNING_QUANTUM (100*1024*1024)
 
 struct dpcsh_ptr_queue *dpcsh_ptr_queue_new()
 {
@@ -29,6 +31,12 @@ static void dpcsh_ptr_queue_set_advance(struct dpcsh_ptr_queue *q,
 {
 	q->owners[q->last] = owner;
 	q->buffer[q->last++] = element;
+
+	if ((q->complete_size / QUEUE_WARNING_QUANTUM) != ((q->complete_size + element.size) / QUEUE_WARNING_QUANTUM)) {
+		log_info("internal queue size is %zu\n", q->complete_size + element.size);
+	}
+
+	q->complete_size += element.size;
 }
 
 bool dpcsh_ptr_queue_enqueue(struct dpcsh_ptr_queue *q,
@@ -83,6 +91,7 @@ bool dpcsh_ptr_queue_dequeue(struct dpcsh_ptr_queue *q, size_t n)
 	for (size_t i = q->first; i < q->first + n; i++) {
 		if ((i + 1) == q->last || q->owners[i] != q->owners[i + 1])
 			free(q->owners[i]);
+		q->complete_size -= q->buffer[i].size;
 	}
 
 	q->first += n;

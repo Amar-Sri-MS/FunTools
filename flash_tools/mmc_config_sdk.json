@@ -38,7 +38,8 @@
             "customer_cert": "",
             "key_index": 0,
             "description": "",
-            "delete_after_sign": true
+            "delete_after_sign": true,
+            "skip_in_dev_bundle": true
         },
         "fvos.signed": {
             "source": "fvos.unsigned",
@@ -48,7 +49,8 @@
             "customer_cert": "",
             "key_index": 0,
             "description": "",
-            "delete_after_sign": true
+            "delete_after_sign": true,
+            "skip_in_dev_bundle": true
         },
         "FVHT": {
             "source": "INVALID_TO_BE_OVERWRITTEN",
@@ -59,7 +61,8 @@
             "key_index": 0,
             "description": "",
             "no_export": true,
-            "delete_after_sign": true
+            "delete_after_sign": true,
+            "skip_in_dev_bundle": true
         }
     },
     "global_config": {

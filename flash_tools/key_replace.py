@@ -8,47 +8,64 @@ import firmware_signing_service as fss
 import struct
 import sys
 
+SIZEOF_MODULUS_SIZE=4
+MARKER_SIZE=4
 
 class AppFpk(mmap.mmap):
-    def __find_key_loc(self, n):
-        m1 = bytearray([0xF0 + n] * 4)
-        m2 = bytearray([0x0F + (n << 4)] * 4)
+
+    def __find_pattern(self, n, marker):
+        m1 = bytearray([(marker << 4) + n] * MARKER_SIZE)
+        m2 = bytearray([marker + (n << 4)] * MARKER_SIZE)
         pos1 = self.rfind(m1)
         pos2 = self.rfind(m2)
         if pos2 == -1:
             raise Exception("Missing trailing marker")
         if pos1 == -1:
             raise Exception("Missing initial marker")
-        if pos2 - pos1 != 512 + 4 + 4:
-            raise Exception("Wrong marker offset: {}".format(pos2-pos1))
-        return pos1
+        return pos1+MARKER_SIZE, pos2 - (pos1+MARKER_SIZE) # point past the m1 marker
 
     def get_key_loc(self, n):
-        return self.__find_key_loc(n) + 4 # point to length area
+        # "F" pattern, size=4, modulus=512
+        start,size = self.__find_pattern(n, 0x0F)
+        if size != SIZEOF_MODULUS_SIZE+512:
+            raise Exception("Size between markers: {} expected 516".
+                            format(size))
+        return start
+
+    def get_dice_loc(self):
+        # "D" pattern, multiple of key=48, cert=640
+        start,size = self.__find_pattern(0x0C, 0x0D)
+        if size % (640+48):
+            raise Exception("Size between markers: {} expected multiple of 688".
+                            format(size))
+        return start
 
     def validate(self, n):
-        init_modulus = bytearray([16*n + n] * 4)
-        pos = self.__find_key_loc(n)
-        if self.find(init_modulus, pos) - pos != 4:
+        # place holder for size example: 0x5555_5555
+        init_modulus = bytearray([16*n + n] * MARKER_SIZE)
+        pos = self.get_key_loc(n)
+        if self.find(init_modulus, pos) != pos:
             # default length placeholder not found, check if something that
             # looks like a real length is stored
-            val = struct.unpack("<l", self[pos+4:pos+8])[0]
+            val = struct.unpack("<l", self[pos:pos+SIZEOF_MODULUS_SIZE])[0]
             if(val > 512):
                 raise Exception("Invalid modulus length: {:x}".format(val))
             return 1
         else:
             # default length placeholder, so the modulus should be
             # filled in with placeholder data 0xDEADC0DE
-            for offset in range(pos+8, pos+8+512, 4):
-                if self[offset:offset+4] != bytearray([0xDE, 0xAD, 0xC0, 0xDE]):
+            for offset in range(pos+SIZEOF_MODULUS_SIZE,
+                                pos+SIZEOF_MODULUS_SIZE+512, MARKER_SIZE):
+                if self[offset:offset+MARKER_SIZE] != bytearray([0xDE, 0xAD,
+                                                                 0xC0, 0xDE]):
                     raise Exception(
                         "Modulus length unset, data placeholder missing")
         return 0
 
     def update_key(self, n, key):
         ret = 0
-        pos = self.__find_key_loc(n)
-        self.seek(pos+4)
+        pos = self.get_key_loc(n)
+        self.seek(pos)
         if not key:
             key = "fpk" + str(n)
 
@@ -66,7 +83,7 @@ class AppFpk(mmap.mmap):
            (stored_mod == modulus):
            ret = 1
         else:
-            self.seek(pos+4)
+            self.seek(pos)
             self.write(struct.pack("<l", len(modulus)))
             self.write(modulus)
         self.seek(0)
@@ -109,6 +126,14 @@ def get_key_loc(file, number, app):
         return app.get_key_loc(number)
     except Exception as e:
         print("Key {} not found in {}. Error: {}".format(number, file, e))
+        return 0xFFFF_FFFF
+
+@app_fpk_process
+def get_dice_loc(file, number, app):
+    try:
+        return app.get_dice_loc()
+    except Exception as e:
+        # swallow the exception: just looking and not expecting anything
         return 0xFFFF_FFFF
 
 

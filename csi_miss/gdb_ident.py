@@ -270,16 +270,26 @@ def mksymlist(block):
             continue
 
         if (sym.addr_class == gdb.SYMBOL_LOC_CONST_BYTES):
-            print "const bytes!: ", sym.name
+            if (debug):
+                print "const bytes!"
             continue
 
         if (debug):
             print sym, sym.value()
             print sym.value().address
-        if (sym.value().address is not None):
-            address = sym.value().address.cast(gdb.lookup_type("uintptr_t"))
+
+        # Work around the thread-local variables in FunOS because gdb won't
+        # handle them without register context.
+        try:
+            v = sym.value()
+        except gdb.error as e:
+            if "without registers" in str(e):
+                continue
+
+        if (v.address is not None):
+            address = v.address.cast(gdb.lookup_type("uintptr_t"))
         else:
-            address = sym.value().cast(gdb.lookup_type("uintptr_t"))
+            address = v.cast(gdb.lookup_type("uintptr_t"))
             
         start = int(address) & 0xffffffffffffffff # sigh python
         end = start + sym.type.sizeof

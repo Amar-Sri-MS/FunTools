@@ -28,6 +28,12 @@ img {
     font-size: 32px;
     color: #4d4d4d;
 }
+#nav_help_container {
+    position: absolute;
+    top: 20px;
+    right: 40px;
+    font-size: 16px;
+}
 th {
     text-align: left;
 }

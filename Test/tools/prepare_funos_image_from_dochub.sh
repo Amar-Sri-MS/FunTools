@@ -44,17 +44,19 @@ done
 download_images() {
     cd $TMPLOC
     rm -rf *
-    wget http://dochub.fungible.local/doc/jenkins/master/funsdk/${VERSION}/Linux/funos.mips64-extra.tgz  -q --show-progress
+    wget http://dochub.fungible.local/doc/jenkins/master/funsdk/${VERSION}/Linux/funos~${CHIP}-release.tgz  -q --show-progress
     wget http://dochub.fungible.local/doc/jenkins/master/funsdk/${VERSION}/build_info.txt -q
+    wget http://dochub.fungible.local/doc/jenkins/master/funsdk/latest/Linux/cc-linux-yocto.mips64.tgz
 }
 
 create_funos_image() {
     cd $TMPLOC
     VER=$(cat ./build_info.txt)
     touch $VER.txt    
-    tar xf funos.mips64-extra.tgz
-
-    $WORKSPACE/FunSDK/bin/scripts/xdata.py $TMPLOC/bin/funos-$CHIP-release.stripped add $WORKSPACE/FunSDK/bin/cc-linux-yocto/mips64hv/vmlinux.bin
+    tar xf funos~${CHIP}-release.tgz
+    tar xf cc-linux-yocto.mips64.tgz
+    
+    $WORKSPACE/FunSDK/bin/scripts/xdata.py $TMPLOC/bin/funos-$CHIP-release.stripped add $TMPLOC/bin/cc-linux-yocto/mips64hv/vmlinux.bin
     $WORKSPACE/FunSDK/bin/flash_tools/sign_for_development.py --fourcc fun1 --chip $CHIP -o $TMPLOC/funos-$CHIP-release.signed $TMPLOC/bin/funos-$CHIP-release.stripped
     gzip $TMPLOC/funos-$CHIP-release.signed
     filename=funos-$CHIP.signed.${VER}.gz

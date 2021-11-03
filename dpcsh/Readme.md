@@ -189,3 +189,65 @@ Don't forget to run funos-posix and a dpcsh text proxy before you run your clien
 ...
 ~/fundev/MyClient % ./my_dpc.py
 ```
+
+
+## Sending Files to FunOS
+
+Two commands, json_file and blob_file, facilitate sending files to FunOS.
+
+Both commands take 2 arguments:
+- an environment variable name, such as $myvar
+- a file path, such as "/tmp/myfile.json"
+
+The file will be open, converted to json (text or binary) or to a blob, and stuffed into the variable.
+Then the variable can be used and the json or blob will be sent to FunOS.
+
+Example:
+
+```// A json text file
+> cat /tmp/x.json
+[1 2 3 { foo: bar }]
+
+// An arbitrary binary file
+> cat /tmp/x.bin
+1234
+
+// Launch dpcsh
+> build_x86_64/dpcsh
+2021-10-15T22:48:09.889520Z INF FunSDK version bld_16178, branch: c083101
+json_file $j "/tmp/x.json"
+Successfully read file '/tmp/x.json' as text JSON and stored in environment variable '$j': [1, 2, 3, {"foo": "bar"}]
+{"result": true, "tid": 1}
+
+getenv
+{"result": {"$j": [1, 2, 3, {"foo": "bar"}], "_connection": "socket_14"}, "tid": 1}
+
+blob_file $b "/tmp/x.bin"
+Successfully read file '/tmp/x.bin' as blob and stored in environment variable '$b'
+{"result": true, "tid": 2}
+
+getenv
+{
+"result": {"$b": [[49, 50, 51, 52, 10]], "$j": [1, 2, 3, {"foo": "bar"}], "_connection": "socket_14"},
+"tid": 3
+}
+
+blob_file $c "/tmp/x.bin"
+Successfully read file '/tmp/x.bin' as blob and stored in environment variable '$c'
+{"result": true, "tid": 3}
+
+getenv
+{
+"result": {
+"$b": [[49, 50, 51, 52, 10]],
+"$c": [[49, 50, 51, 52, 10]],
+"$j": [1, 2, 3, {"foo": "bar"}],
+"_connection": "socket_14"
+},
+"tid": 5
+}
+
+eval $b
+{"result": [[49, 50, 51, 52, 10]], "tid": 6}
+
+```

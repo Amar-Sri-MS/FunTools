@@ -16,20 +16,19 @@
 # Copyright (c) 2021 Fungible Inc.  All rights reserved.
 
 import argparse
-import json
 import logging
 import os
 import shutil
 
 from flask import Flask
 from flask import request, jsonify, send_file
-from pathlib import Path
 from werkzeug.utils import secure_filename
 
 import logger
 
 
 ALLOWED_EXTENSIONS = {'json'}
+DEFAULT_UPLOAD_DIRECTORY = 'files/analytics'
 
 app = Flask(__name__)
 
@@ -39,19 +38,11 @@ def main():
     parser.add_argument('-p', '--port', type=int, default=11000,
                         help='port for HTTP file server')
 
-    parser.add_argument('--dir', type=str, default='files/analytics',
+    parser.add_argument('--dir', type=str, default=DEFAULT_UPLOAD_DIRECTORY,
                         help='path to upload directory')
 
     args = parser.parse_args()
     port = args.port
-
-    log_handler = logger.get_logger(filename='file_server.log')
-
-    # Get the flask logger and add our custom handler
-    flask_logger = logging.getLogger('werkzeug')
-    flask_logger.setLevel(logging.INFO)
-    flask_logger.addHandler(log_handler)
-    flask_logger.propagate = False
 
     app.config.update({
         'UPLOAD_DIRECTORY': args.dir
@@ -169,4 +160,19 @@ def delete_dir(log_id):
 
 
 if __name__ == '__main__':
+    log_handler = logger.get_logger(filename='file_server.log')
+
+    # Get the flask logger and add our custom handler
+    flask_logger = logging.getLogger('werkzeug')
+    flask_logger.setLevel(logging.INFO)
+    flask_logger.addHandler(log_handler)
+    flask_logger.propagate = False
     main()
+else:
+    gunicorn_logger = logging.getLogger('gunicorn.error')
+    app.logger.handlers = gunicorn_logger.handlers
+    app.logger.setLevel(gunicorn_logger.level)
+
+    app.config.update({
+        'UPLOAD_DIRECTORY': DEFAULT_UPLOAD_DIRECTORY
+    })

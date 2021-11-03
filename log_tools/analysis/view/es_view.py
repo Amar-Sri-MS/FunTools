@@ -22,11 +22,15 @@ from elasticsearch7 import Elasticsearch
 from flask import Flask
 from flask import jsonify
 from flask import request
+from flask import g, redirect, session
+from flask_session import Session
+
 from pathlib import Path
 from requests.exceptions import HTTPError
 from urllib.parse import quote, quote_plus
 from urllib.parse import unquote, unquote_plus
 
+from common import login_required
 from elastic_metadata import ElasticsearchMetadata
 from ingester import ingester_page
 from web_usage import web_usage
@@ -49,6 +53,8 @@ config = config_loader.get_config()
 # Updating Flask's config with the configs from file
 app.config.update(config)
 
+Session(app)
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--port', type=int, default=5000,
@@ -60,7 +66,23 @@ def main():
     app.run(host='0.0.0.0', port=port)
 
 
+# Checking for user session before processing
+# the request.
+@app.before_request
+def load_user():
+    g.user = None
+
+    if 'user_email' in session:
+        g.user = session['user_email']
+
+    # Allowing users to ingest using API without maintaining session
+    # provided users sends email in 'submitted_by' field.
+    if request.endpoint == 'ingester_page.ingest' and request.method == 'POST':
+        g.user = request.form.get('submitted_by', None)
+
+
 @app.route('/')
+@login_required
 def root():
     """ Serves the root page, which shows a list of logs """
     ELASTICSEARCH_HOSTS = app.config['ELASTICSEARCH']['hosts']
@@ -139,6 +161,28 @@ def _render_root_page(log_ids, metadata, jinja_env, template):
     result = template.render(template_dict, env=jinja_env)
     return result
 
+
+@app.route('/login', methods=['POST', 'GET'])
+def login():
+    # if login form is submitted
+    if request.method == 'POST':
+        # record the user email
+        session['user_email'] = request.form.get('user_email')
+        # redirect to the root page
+        return redirect('/')
+
+    if g.user:
+        return redirect('/')
+
+    # Assume our template is right next door to us.
+    dir = os.path.join(_get_script_dir(), 'templates')
+
+    jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(dir),
+                             trim_blocks=True,
+                             lstrip_blocks=True)
+    template = jinja_env.get_template('login.html')
+
+    return template.render(env=jinja_env)
 
 class ElasticLogState(object):
     """
@@ -582,6 +626,7 @@ class ElasticLogSearcher(object):
         return count
 
 @app.route('/log/<log_id>', methods=['GET'])
+@login_required
 def get_log_page(log_id):
     """
     Displays a log page for a particular log_id.
@@ -780,12 +825,12 @@ def _render_log_page(log_id, jinja_env, template):
                                                     log_id,
                                                     include_hyperlinks=False
                                                 )
-        search_payload = get_search_results(log_id)
+        search_results = get_search_results(log_id)
 
         template_dict['body'] = ''.join(table_body)
         template_dict['total_search_hits'] = total_search_hits
         template_dict['state'] = state.to_json_str()
-        template_dict['search_results'] = json.dumps(search_payload)
+        template_dict['search_results'] = json.dumps(search_results)
     except Exception as e:
         app.logger.exception('Error while rendering log page')
         template_dict['error'] = str(e)
@@ -796,21 +841,27 @@ def _render_log_page(log_id, jinja_env, template):
     return result
 
 
-@app.route('/log/<log_id>/search', methods=['GET'])
+@app.route('/log/<log_id>/search', methods=['GET', 'POST'])
 def search(log_id):
     """
     Returns a JSON payload containing search results and search state.
     """
-    search_str = request.args.get('search', None)
-    search_payload = {}
-    if not search_str:
-        return jsonify({
-            'error': 'Could not find the search query parameter'
-        }), 400
-
     try:
-        search_payload = get_search_results(log_id)
-        return jsonify(search_payload)
+        if request.method == 'GET':
+            search_str = request.args.get('search', None)
+            if not search_str:
+                return jsonify({
+                    'error': 'Could not find the search query parameter'
+                }), 400
+        else:
+            search_payload = request.get_json(force=True).get('search', None)
+            if not search_payload:
+                return jsonify({
+                    'error': 'Could not find the search payload'
+                }), 400
+
+        search_results = get_search_results(log_id)
+        return jsonify(search_results)
     except Exception as e:
         app.logger.exception('Error while searching for logs')
         return jsonify({
@@ -823,13 +874,23 @@ def get_search_results(log_id):
     Returns a dict payload containing search results and search state.
 
     Parameters on the flask request object control which lines are returned.
-    Request parameters includes search which contains:
+    Request parameters includes "search" which contains:
 
-        next=true: Get up to 20 log lines with timestamps greater than the
+        query=str: Search string
+        page=int : Page number of search results
+        size=int : Number of results per page
+        next=true: Get up to 1000 log lines with timestamps greater than the
                    current state.
-        prev=true: Get up to 20 log lines with timestamps smaller than the
+        prev=true: Get up to 1000 log lines with timestamps smaller than the
                    current state.
         state=dict: state object for searching
+
+    Request parameters also includes "filters" which contains:
+
+        text=str : Query to filter search results
+        sources=dict: hierarchical data of system_type, system_id
+                      and sources to filter on
+        time=list: 2 elements list containing start and end timestamp
 
     Returns a dict containing:
         query: searched query
@@ -841,17 +902,24 @@ def get_search_results(log_id):
     """
     es = ElasticLogSearcher(log_id)
 
-    search_str = request.args.get('search', None)
-    search_payload = {}
-    if not search_str:
-        return None
+    if request.method == 'GET':
+        search_str = request.args.get('search', None)
+        if not search_str:
+            return None
+        search_payload = json.loads(search_str)
+    else:
+        search_payload = request.get_json(force=True).get('search')
+        if not search_payload:
+            return None
 
     filters = {}
-    filter_str = request.args.get('filter', None)
-    if filter_str:
-        filters = json.loads(filter_str)
+    if request.method == 'GET':
+        filter_str = request.args.get('filter', None)
+        if filter_str:
+            filters = json.loads(filter_str)
+    else:
+        filters = request.get_json(force=True).get('filters', {})
 
-    search_payload = json.loads(search_str)
     query = unquote_plus(search_payload.get('query'))
     page = int(search_payload.get('page', 1))
     size = int(search_payload.get('size', 20))
@@ -895,6 +963,7 @@ def get_search_results(log_id):
 
 
 @app.route('/log/<log_id>/dashboard', methods=['GET'])
+@login_required
 def dashboard(log_id):
     """ Renders the dashboard page for a particular log_id """
     # Assume our template is right next door to us.
@@ -1293,6 +1362,7 @@ def _format_datetime(timestamp, format="%a, %d %b %Y %I:%M:%S %Z"):
 
 
 @app.route('/log/<log_id>/dashboard/notes', methods=['POST'])
+@login_required
 def save_notes(log_id):
     try:
         note = request.get_json()

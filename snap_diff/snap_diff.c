@@ -1,3 +1,8 @@
+/**
+ *	snap_diff.c - tool to get changed blocks between two snapshots
+ *	Copyright © 2021 Fungible. All rights reserved.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -116,6 +121,7 @@ void LOG(enum log_type type, char *format, ...)
 		va_start (args, format);
 		vfprintf (g_params.log_fp, format, args);
 		va_end (args);
+		fflush(g_params.log_fp);
 	}
 }
 

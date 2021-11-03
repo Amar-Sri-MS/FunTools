@@ -28,8 +28,9 @@ sys.path.insert(0, '.')
 
 from elastic_metadata import ElasticsearchMetadata
 from flask import Blueprint, jsonify, request, render_template
-from flask import current_app
+from flask import current_app, g
 
+from common import login_required
 from utils import archive_extractor, manifest_parser
 from utils import mail
 from utils import timeline
@@ -153,6 +154,7 @@ def main():
 
 
 @ingester_page.route('/upload', methods=['POST'])
+@login_required
 def upload():
     """
     Upload API for uploading techsupport log archive. Using the
@@ -236,6 +238,7 @@ def remove_uploaded_file():
     return jsonify('success')
 
 @ingester_page.route('/ingest', methods=['GET'])
+@login_required
 def render_ingest_page():
     """ UI for ingesting logs """
     ingest_type = request.args.get('ingest_type', 'qa')
@@ -248,12 +251,15 @@ def render_ingest_page():
 
 
 @ingester_page.route('/ingest', methods=['POST'])
+@login_required
 def ingest():
     """
     Handling ingestion of logs from QA jobs.
     Required QA "job_id"
     """
     try:
+        accept_type = request.headers.get('Accept', 'text/html')
+
         ingest_type = request.form.get('ingest_type', 'qa')
         techsupport_ingest_type = request.form.get('techsupport_ingest_type')
         job_id = request.form.get('job_id')
@@ -262,7 +268,7 @@ def ingest():
         tags_list = [tag.strip() for tag in tags.split(',') if tag.strip() != '']
         file_name = request.form.get('filename')
         mount_path = request.form.get('mount_path')
-        submitted_by = request.form.get('submitted_by', None)
+        submitted_by = g.user
 
         start_time = request.form.get('start_time', None)
         end_time = request.form.get('end_time', None)
@@ -273,7 +279,7 @@ def ingest():
         LOG_ID = _get_log_id(job_id, ingest_type, test_index=test_index)
 
         def render_error_template(msg=None):
-            return render_template('ingester.html', feedback={
+            feedback = {
                 'success': False,
                 'started': False,
                 'log_id': LOG_ID,
@@ -286,8 +292,15 @@ def ingest():
                 'sources': sources,
                 'mount_path': mount_path,
                 'msg': msg if msg else 'Some error occurred'
-            }, ingest_type=ingest_type,
-               techsupport_ingest_type=techsupport_ingest_type)
+            }
+            if accept_type == 'application/json':
+                return jsonify(feedback)
+            return render_template(
+                'ingester.html',
+                feedback=feedback,
+                ingest_type=ingest_type,
+                techsupport_ingest_type=techsupport_ingest_type
+            )
 
         if not job_id:
             return render_error_template('Missing JOB ID')
@@ -306,7 +319,7 @@ def ingest():
             cmd = ['./ingester.py', job_id, '--ingest_type', ingest_type]
             if len(tags_list) > 0:
                 cmd.append('--tags')
-                cmd.append(' '.join(tags_list))
+                cmd.extend(tags_list)
 
             if start_time:
                 cmd.append('--start_time')
@@ -339,7 +352,7 @@ def ingest():
 
             ingestion = subprocess.Popen(cmd)
 
-        return render_template('ingester.html', feedback={
+        feedback = {
             'started': True,
             'log_id': LOG_ID,
             'success': metadata.get('ingestion_status') == 'COMPLETED',
@@ -353,8 +366,16 @@ def ingest():
             'sources': sources,
             'mount_path': mount_path,
             'metadata': metadata
-        }, ingest_type=ingest_type,
-           techsupport_ingest_type=techsupport_ingest_type)
+        }
+
+        if accept_type == 'application/json':
+            return jsonify(feedback)
+        return render_template(
+            'ingester.html',
+            feedback=feedback,
+            ingest_type=ingest_type,
+            techsupport_ingest_type=techsupport_ingest_type
+        )
     except Exception as e:
         current_app.logger.exception(f'Error when starting ingestion for job: {job_id}')
         return render_error_template(str(e)), 500
@@ -593,7 +614,7 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
                     # Path to the extracted log files
                     LOG_DIR = f'{path}/{archive_name}'
 
-                    if release_train in ('master', '2.0', '2.0.1', '2.0.2', '2.1', '2.2', '2.2.1', '2.3', '3.0'):
+                    if release_train in ('master', '2.0', '2.0.1', '2.0.2', '2.1', '2.2', '2.2.1', '2.3', '3.0', '3.1'):
                         # Copying FUNLOG_MANIFEST file
                         template_path = os.path.join(file_path, '../config/templates/fc/FUNLOG_MANIFEST')
                         shutil.copy(template_path, LOG_DIR)
@@ -614,7 +635,7 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
                     LOG_DIR = f'{path}/{archive_name}/tmp/debug_logs'
 
                     # master release
-                    if release_train in ('master', '2.1', '2.2', '2.2.1', '2.3', '3.0'):
+                    if release_train in ('master', '2.1', '2.2', '2.2.1', '2.3', '3.0', '3.1'):
                         files = _get_valid_files(LOG_DIR)
                         # TODO(Sourabh): This is an assumption that there will not be
                         # other files in this directory
@@ -700,7 +721,9 @@ def ingest_techsupport_logs(job_id, log_path, metadata, filters):
     archive in the given "log_path".
     """
     es_metadata = ElasticsearchMetadata()
-    LOG_ID = _get_log_id(job_id, ingest_type='upload')
+    LOG_ID = _get_log_id(job_id, ingest_type='techsupport')
+    path = f'{DOWNLOAD_DIRECTORY}/{LOG_ID}'
+    ingest_path = log_path
 
     try:
         # Extract if the file is an archive
@@ -736,8 +759,64 @@ def ingest_techsupport_logs(job_id, log_path, metadata, filters):
 
             _create_manifest(log_path, manifest['metadata'], contents)
 
+        else:
+            manifest_contents = list()
+            filename = log_path.split('/')[-1].replace(' ', '_')
+            manifest_contents.append(f'frn::::::bundle::"{filename}"')
+
+            # TODO(Sourabh): This is a temp workaround to get techsupport ingestion working.
+            # This will be removed after the fixes to manifest creation by David G.
+            archive_name = os.path.basename(filename)
+
+            # Get the folders of each node in the cluster
+            folders = glob.glob(f'{log_path}/techsupport/*[!devices][!other]')
+            # HA logs
+            if len(folders) == 3:
+                for folder in folders:
+                    folder_name = folder.split('/')[-1].replace(' ', '_')
+                    manifest_contents.extend([
+                        f'frn:composer:cluster:{folder_name}:host:apigateway:folder:"{archive_name}/techsupport/{folder_name}":apigateway',
+                        f'frn:composer:cluster:{folder_name}:host:cassandra:folder:"{archive_name}/techsupport/{folder_name}":cassandra',
+                        f'frn:composer:cluster:{folder_name}:host:kafka:folder:"{archive_name}/techsupport/{folder_name}":kafka',
+                        f'frn:composer:cluster:{folder_name}:host:kapacitor:folder:"{archive_name}/techsupport/{folder_name}":kapacitor',
+                        f'frn:composer:cluster:{folder_name}:host:node-service:folder:"{archive_name}/techsupport/{folder_name}":nms',
+                        f'frn:composer:cluster:{folder_name}:host:pfm:folder:"{archive_name}/techsupport/{folder_name}":pcie',
+                        f'frn:composer:cluster:{folder_name}:host:telemetry-service:folder:"{archive_name}/techsupport/{folder_name}":tms',
+                        f'frn:composer:cluster:{folder_name}:host:dataplacement:folder:"{archive_name}/techsupport/{folder_name}/sc":dataplacement',
+                        f'frn:composer:cluster:{folder_name}:host:discovery:folder:"{archive_name}/techsupport/{folder_name}/sc":discovery',
+                        f'frn:composer:cluster:{folder_name}:host:lrm_consumer:folder:"{archive_name}/techsupport/{folder_name}/sc":lrm_consumer',
+                        f'frn:composer:cluster:{folder_name}:host:expansion_rebalance:folder:"{archive_name}/techsupport/{folder_name}/sc":expansion_rebalance',
+                        f'frn:composer:cluster:{folder_name}:host:metrics_manager:folder:"{archive_name}/techsupport/{folder_name}/sc":metrics_manager',
+                        f'frn:composer:cluster:{folder_name}:host:metrics_server:folder:"{archive_name}/techsupport/{folder_name}/sc":metrics_server',
+                        f'frn:composer:cluster:{folder_name}:host:scmscv:folder:"{archive_name}/techsupport/{folder_name}/sc":scmscv',
+                        f'frn:composer:cluster:{folder_name}:host:setup_db:folder:"{archive_name}/techsupport/{folder_name}/sc":setup_db',
+                        f'frn:composer:cluster:{folder_name}:host:sns:folder:"{archive_name}/techsupport/{folder_name}":sns'
+                    ])
+            else:
+                manifest_contents.extend([
+                    f'frn:composer:controller::host:apigateway:folder:"{archive_name}/techsupport/cs":apigateway',
+                    f'frn:composer:controller::host:cassandra:folder:"{archive_name}/techsupport/cs":cassandra',
+                    f'frn:composer:controller::host:kafka:textfile:"{archive_name}/techsupport/cs/container":kafka.log',
+                    f'frn:composer:controller::host:kapacitor:folder:"{archive_name}/techsupport/cs":container',
+                    f'frn:composer:controller::host:node-service:folder:"{archive_name}/techsupport/cs":nms',
+                    f'frn:composer:controller::host:pfm:folder:"{archive_name}/techsupport/cs":pfm',
+                    f'frn:composer:controller::host:telemetry-service:folder:"{archive_name}/techsupport/cs":tms',
+                    f'frn:composer:controller::host:dataplacement:folder:"{archive_name}/techsupport/cs/sclogs":dataplacement',
+                    f'frn:composer:controller::host:discovery:folder:"{archive_name}/techsupport/cs/sclogs":discovery',
+                    f'frn:composer:controller::host:lrm_consumer:folder:"{archive_name}/techsupport/cs/sclogs":lrm_consumer',
+                    f'frn:composer:controller::host:expansion_rebalance:folder:"{archive_name}/techsupport/cs/sclogs":expansion_rebalance',
+                    f'frn:composer:controller::host:metrics_manager:folder:"{archive_name}/techsupport/cs/sclogs":metrics_manager',
+                    f'frn:composer:controller::host:metrics_server:folder:"{archive_name}/techsupport/cs/sclogs":metrics_server',
+                    f'frn:composer:controller::host:scmscv:folder:"{archive_name}/techsupport/cs/sclogs":scmscv',
+                    f'frn:composer:controller::host:setup_db:folder:"{archive_name}/techsupport/cs/sclogs":setup_db',
+                    f'frn:composer:controller::host:sns:folder:"{archive_name}/techsupport/cs":sns'
+                ])
+
+        _create_manifest(path, contents=manifest_contents)
+        ingest_path = path
+
         # Start the ingestion
-        return ingest_handler.start_pipeline(log_path,
+        return ingest_handler.start_pipeline(ingest_path,
                                          f'techsupport-{job_id}',
                                          metadata=metadata,
                                          filters=filters)
@@ -780,6 +859,9 @@ def check_and_download_logs(url, path):
 
 def _update_metadata(metadata_handler, log_id, status, additional_data={}):
     """ Updating the ingestion status in the metadata """
+    if not log_id or not metadata_handler:
+        logging.error('log_id or metadata_handler is None')
+        return
     metadata = {
         **additional_data,
         'ingestion_status': status
@@ -793,18 +875,18 @@ def email_notify(logID):
     metadata = es_metadata.get(logID)
 
     if not metadata:
-        logging.warn('Sending email aborted: metadata not found.')
+        logging.warning('Sending email aborted: metadata not found.')
         return
     submitted_by = metadata.get('submitted_by')
     if not submitted_by:
-        logging.warn('Sending email aborted: submitted_by email not found.')
+        logging.warning('Sending email aborted: submitted_by email not found.')
         return
 
     is_failed = metadata.get('ingestion_status') == 'FAILED'
     logID = metadata.get('logID')
 
     if not logID:
-        logging.warn('Sending email aborted: logID not found.')
+        logging.warning('Sending email aborted: logID not found.')
         return
 
     if is_failed:

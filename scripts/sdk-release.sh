@@ -179,14 +179,12 @@ Development bundles are required to install custom FunOS binaries in the
 hardware.
 
 make -j8 MACHINE=s1
-make MACHINE=s1 install
-make MACHINE=s1 dev_bundle
+make MACHINE=s1 install dev_bundle
 
 Alternatevely, release images can also be installed
 
 make -j8 MACHINE=s1-release
-make MACHINE=s1-release install
-make MACHINE=s1-release dev_bundle
+make MACHINE=s1-release install dev_bundle
 
 
 Installing development bundles
@@ -269,6 +267,7 @@ funsdk_setup()
 	./scripts/bob --sdkup $build_str --including deps-funos.mips64
 	./scripts/bob --sdkup $build_str release
 	./scripts/bob --sdkup $build_str nu.csrreplay
+	./scripts/bob --sdkup $build_str funos.fundoc
 	./scripts/bob $build_str --deploy-up
 
     # Extract the build id from the downloaded FunSDK packages
@@ -363,16 +362,16 @@ funos_install_lib_headers()
 	exit 1
     fi
 
-    # Build and install posix funos library
-    if ! make -j8 MACHINE=s1-posix install-libfunosrt; then
+    # Build and install posix funos library & config
+    if ! make -j8 MACHINE=s1-posix install-libfunosrt install-defaultcfg; then
 	echo ""
 	echo "FunOS s1-posix fails to build"
 	echo ""
 	exit 1
     fi
 
-    # Build and install s1 funos library
-    if ! make -j8 MACHINE=s1 install-libfunosrt; then
+    # Build and install s1 funos library & config
+    if ! make -j8 MACHINE=s1 install-libfunosrt install-defaultcfg; then
 	echo ""
 	echo "FunOS s1 fails to build"
 	echo ""
@@ -481,6 +480,9 @@ funos_package_demo_clean()
     rm -f nvfile
 }
 
+# default to latest master
+build_id="latest"
+
 # Parse the options
 while getopts "hb:f:v:r:" option; do
     case "$option" in
@@ -509,6 +511,13 @@ while getopts "hb:f:v:r:" option; do
     esac
 done
 shift $((OPTIND-1))
+
+# check for "latest" build
+if [ "$build_id" = "latest" ]; then
+    echo "Retrieving latest build version"
+    build_id=`wget -q -O - http://dochub.fungible.local/doc/jenkins/master/funsdk/latest/build_info.txt`
+    echo "Latest build version is $build_id"
+fi
 
 # Setup the FunSDK source code
 funsdk_setup

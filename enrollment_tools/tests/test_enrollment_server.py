@@ -120,12 +120,15 @@ def retrieve_x509_root_cert(server, expected_modulus, tls_verify):
     return errors
 
 
-def retrieve_x509_cert(server, sn, enroll_cert, tls_verify):
+def retrieve_x509_cert(server, sn, enroll_cert, tls_verify, sn_is_hex=False):
 
     errors = 0
 
-    sn_bin = binascii.a2b_base64(sn)
-    sn_hex = binascii.b2a_hex(sn_bin).decode('ascii')
+    if sn_is_hex:
+        sn_hex = sn.decode('ascii')
+    else:
+        sn_bin = binascii.a2b_base64(sn)
+        sn_hex = binascii.b2a_hex(sn_bin).decode('ascii')
 
     cert_64 = open(enroll_cert, 'r').read()
     cert_bin = binascii.a2b_base64(cert_64)
@@ -209,13 +212,22 @@ def main_program():
 
     tls_verify = True if options.server == "f1reg.fungible.com" else False
 
+    sn_64 = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAABI0'
+    sn_hex = binascii.b2a_hex(binascii.a2b_base64(sn_64))
+    print("Hex = '%s'" % sn_hex)
+
     try:
         errors += enroll_cert_gen(options.server,
                                   './tbs_enrollment_cert.txt',
                                   './enrollment_cert.txt',
                                   tls_verify)
         errors += retrieve_enroll_cert(options.server,
-                                       'AAAAAAAAAAAAAAAAAAAAAAAAAAAAABI0',
+                                       sn_64,
+                                       './enrollment_cert.txt',
+                                       tls_verify)
+
+        errors += retrieve_enroll_cert(options.server,
+                                       sn_hex,
                                        './enrollment_cert.txt',
                                        tls_verify)
 
@@ -228,10 +240,15 @@ def main_program():
                                           tls_verify)
 
         errors += retrieve_x509_cert(options.server,
-                                     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAABI0',
+                                     sn_64,
                                      './enrollment_cert.txt',
                                      tls_verify)
 
+
+        errors += retrieve_x509_cert(options.server,
+                                     sn_hex,
+                                     './enrollment_cert.txt',
+                                     tls_verify, True)
 
     except Exception as ex:
         traceback.print_exc()

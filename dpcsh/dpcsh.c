@@ -29,6 +29,7 @@
 #include "dpcsh_log.h"
 #include "dpcsh_nvme.h"
 #include "csr_command.h"
+#include "file_commands.h"
 #include "bin_ctl.h"
 
 #include <FunSDK/utils/threaded/fun_map_threaded.h>
@@ -1731,6 +1732,7 @@ int main(int argc, char *argv[])
 	dpcsh_path = argv[0];
 	dpcsh_load_macros();
 	register_csr_macro();
+	register_file_commands();
 
 	// help should list both local and distant commands
 	fun_commander_register_help_command();
@@ -2002,8 +2004,6 @@ int main(int argc, char *argv[])
 	switch (mode) {
 	case MODE_INTERACTIVE:
 		/* do nothing */
-		if (!_nocli_script_mode)
-			_verbose_log = true;
 		break;
 	case MODE_PROXY:
 		log_debug(_debug_log, "socket proxy mode");

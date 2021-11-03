@@ -12,6 +12,7 @@ import sys
 import binascii
 import struct
 import os
+import string
 import datetime
 import hashlib
 import json
@@ -416,19 +417,27 @@ def do_enroll():
 # certificate
 #
 ########################################################################
+
+def get_sn_from_form(form_values):
+    sn = safe_form_get(form_values, "sn", None)
+    if not sn:
+        return sn
+    if len(sn) == 48 and all(c in string.hexdigits for c in sn):
+        return binascii.a2b_hex(sn)
+    return binascii.a2b_base64(sn)
+
+
 def send_certificate(form_values, x509_format=False):
 
-    sn_64 = safe_form_get(form_values, "sn", None)
-    if not sn_64:
+    sn = get_sn_from_form(form_values)
+    if not sn:
         # if there is no serial number, return the X509 root cert
         if x509_format:
             send_x509_root_certificate_response(ROOT_CERTIFICATE_PATH_NAME)
             return
 
-
         raise ValueError("Missing parameter")
 
-    sn = binascii.a2b_base64(sn_64)
     if len(sn) != SN_LEN:
         raise ValueError("SN length = %d" % len(sn))
 

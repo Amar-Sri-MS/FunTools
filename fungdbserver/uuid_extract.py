@@ -46,7 +46,7 @@ READELF = find_default_readelf()
 def output4command(cmd):
     VPRINT("running command '%s'" % cmd)
     # use Popen because python2.6
-    output = subprocess.Popen(cmd, stdout=subprocess.PIPE).communicate()[0].decode().strip()
+    output = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0].decode().strip()
     VPRINT("results are '%s'" % output)
 
     return output
@@ -109,7 +109,8 @@ def uuid_extract(fname, readelf=None, silent=False):
         READELF = readelf
 
     # run a shell command and get the output
-    cmd = ["file", fname]
+    # Apple "file" barfs if it cannot decode the ELF notes.
+    cmd = ["file", "--parameter", "elf_notes=0", fname]
     output = output4command(cmd)
 
     # check if it's an ELF file
