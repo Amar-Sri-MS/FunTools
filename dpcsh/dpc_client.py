@@ -219,6 +219,38 @@ class DpcClient(object):
         self.__send_line(json_str, custom_timeout, timeout_seconds)
 
     @staticmethod
+    def blob_from_string(data):
+        """
+        makes blob suitable to use with FunOS blob services from a given string
+        """
+        BLOB_CHUNK_SIZE = 32 * 1024
+        blob_array = []
+        position = 0
+        while position < len(data):
+            next_position = position + BLOB_CHUNK_SIZE
+            blob_array.append(map(ord, list(data[position:next_position])))
+            position = next_position
+        return blob_array
+
+    @staticmethod
+    def blob_from_file(filename):
+        """
+        makes blob suitable to use with FunOS blob services from a given string
+        """
+        with open(filename, 'r') as f:
+            return DpcClient.blob_from_string(f.read())
+
+    @staticmethod
+    def blob_to_string(data):
+        """
+        makes binary from blob returned by FunOS blob services, see dpctest.py for details
+        """
+        result = b''
+        for chunk in data:
+            result += bytes(bytearray(chunk))
+        return result
+
+    @staticmethod
     def __handle_response(r):
         """
         the response returned by dpcsh should contain either an 'error' key, or

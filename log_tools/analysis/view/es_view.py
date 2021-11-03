@@ -22,11 +22,15 @@ from elasticsearch7 import Elasticsearch
 from flask import Flask
 from flask import jsonify
 from flask import request
+from flask import g, redirect, session
+from flask_session import Session
+
 from pathlib import Path
 from requests.exceptions import HTTPError
 from urllib.parse import quote, quote_plus
 from urllib.parse import unquote, unquote_plus
 
+from common import login_required
 from elastic_metadata import ElasticsearchMetadata
 from ingester import ingester_page
 from web_usage import web_usage
@@ -49,6 +53,8 @@ config = config_loader.get_config()
 # Updating Flask's config with the configs from file
 app.config.update(config)
 
+Session(app)
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--port', type=int, default=5000,
@@ -60,7 +66,23 @@ def main():
     app.run(host='0.0.0.0', port=port)
 
 
+# Checking for user session before processing
+# the request.
+@app.before_request
+def load_user():
+    g.user = None
+
+    if 'user_email' in session:
+        g.user = session['user_email']
+
+    # Allowing users to ingest using API without maintaining session
+    # provided users sends email in 'submitted_by' field.
+    if request.endpoint == 'ingester_page.ingest' and request.method == 'POST':
+        g.user = request.form.get('submitted_by', None)
+
+
 @app.route('/')
+@login_required
 def root():
     """ Serves the root page, which shows a list of logs """
     ELASTICSEARCH_HOSTS = app.config['ELASTICSEARCH']['hosts']
@@ -139,6 +161,28 @@ def _render_root_page(log_ids, metadata, jinja_env, template):
     result = template.render(template_dict, env=jinja_env)
     return result
 
+
+@app.route('/login', methods=['POST', 'GET'])
+def login():
+    # if login form is submitted
+    if request.method == 'POST':
+        # record the user email
+        session['user_email'] = request.form.get('user_email')
+        # redirect to the root page
+        return redirect('/')
+
+    if g.user:
+        return redirect('/')
+
+    # Assume our template is right next door to us.
+    dir = os.path.join(_get_script_dir(), 'templates')
+
+    jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(dir),
+                             trim_blocks=True,
+                             lstrip_blocks=True)
+    template = jinja_env.get_template('login.html')
+
+    return template.render(env=jinja_env)
 
 class ElasticLogState(object):
     """
@@ -582,6 +626,7 @@ class ElasticLogSearcher(object):
         return count
 
 @app.route('/log/<log_id>', methods=['GET'])
+@login_required
 def get_log_page(log_id):
     """
     Displays a log page for a particular log_id.
@@ -918,6 +963,7 @@ def get_search_results(log_id):
 
 
 @app.route('/log/<log_id>/dashboard', methods=['GET'])
+@login_required
 def dashboard(log_id):
     """ Renders the dashboard page for a particular log_id """
     # Assume our template is right next door to us.
@@ -1316,6 +1362,7 @@ def _format_datetime(timestamp, format="%a, %d %b %Y %I:%M:%S %Z"):
 
 
 @app.route('/log/<log_id>/dashboard/notes', methods=['POST'])
+@login_required
 def save_notes(log_id):
     try:
         note = request.get_json()

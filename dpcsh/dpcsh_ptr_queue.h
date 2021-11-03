@@ -15,6 +15,8 @@ struct dpcsh_ptr_queue {
 	size_t allocated;
 	size_t first;
 	size_t last;
+
+	size_t complete_size;
 };
 
 // get a new empty queue
