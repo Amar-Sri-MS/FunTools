@@ -1672,7 +1672,7 @@ static void usage(const char *argv0)
 	printf("       -B, --base64_srv[=port]       listen as a server port on IP using base64 (dpcuart to qemu)\n");
 	printf("       -b, --base64_sock[=port]      connect as a client port on IP using base64 (dpcuart to qemu)\n");
 	printf("       -i, --inet_sock[=port]        connect as a client port over IP\n");
-	printf("       -c, --connect_dpc[=host:port] connect as a client to another dpcsh\n");
+	printf("       -c, --connect_dpc[=host:port|=sockname] connect as a client to another dpcsh\n");
 	printf("       -u, --unix_sock[=sockname]    connect as a client port over unix sockets\n");
 // DPC over NVMe is needed only in Linux
 #ifdef __linux__
@@ -1819,7 +1819,7 @@ int main(int argc, char *argv[])
 		case 'c':  /* inet dpc client */
 
 			funos_sock.dpcsh_connection = true;
-			funos_sock.mode = SOCKMODE_IP;
+			funos_sock.mode = strchr(optarg, ':') == NULL ? SOCKMODE_UNIX : SOCKMODE_IP;
 			funos_sock.server = false;
 			funos_sock.socket_name = optarg;
 			autodetect_input_device = false;
