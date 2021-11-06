@@ -47,8 +47,8 @@ class Sample():
         va_line = addr2line(self.va)
         if va_line is None:
             va_line = '<unknown>'
-        return ('pc: %016x (%s)\n'
-                'va: %016x (%s)\n'
+        return ('pc: 0x%016x (%s)\n'
+                'va: 0x%016x (%s)\n'
                 'wu: %s vp: %d' % (self.pc, code_line, self.va,
                                    va_line, self.wu, self.vp))
 
@@ -126,6 +126,10 @@ def parse_pcssample(sample, pcssample):
     if new_sample == 0:
         return
 
+    completed = (pcssample >> 62)
+    if completed == 0:
+        return
+
     va_56_downto_0 = pcssample & 0x1ffffffffffffff
     va_58_downto_57 = 0
     va_63_downto_59 = (pcssample >> 57) & 0x1f
@@ -143,6 +147,7 @@ def parse_pcsdataaddr(sample, pcsdataaddr):
         return
 
     va = pcsdataaddr & 0xffffffffffff
+    miss = (pcsdataaddr >> 49) & 0x1
     load_store = (pcsdataaddr >> 48) & 0x1
     sample.load = (load_store == 0)
     sample.store = (load_store == 1)
@@ -170,7 +175,7 @@ def parse_pcscyclecounts(sample, pcscyclecounts):
     if new_sample == 0:
         return
 
-    loadcycles = (pcscyclecounts >> 16) & 0x3ff
+    loadcycles = (pcscyclecounts >> 16) & 0x7fff
     completed = (pcscyclecounts >> 31) & 0x1
 
     sample.load_cycles = loadcycles
