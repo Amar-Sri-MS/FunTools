@@ -33,13 +33,21 @@ from asn1crypto import pem, core, keys, x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
 
-from common import *
+from common import (
+    log,
+    safe_form_get,
+    send_response_body,
+    send_modulus,
+    get_ro_session,
+    sign_with_key,
+    sign_binary
+)
 
 # serial number validation
 import sn_validation
 
 
-PUF_KEY_COORD_LEN = 32
+
 ROOT_CERTIFICATE_PATH_NAME = 'enrollment_root_cert.der'
 
 #################################################################################
@@ -52,20 +60,34 @@ SN_DESC = (
     ('serial_info', 8),
     ('serial_nr', 16))
 
-TBS_CERT_DESC = (
-    ('magic', 4),
-    ('flags', 4),
-) + SN_DESC + (
-    ('puf_key', 2 * PUF_KEY_COORD_LEN),
-    ('nonce', 48),
-    ('activation_code', 888),
-)
-
-CERT_DESC = TBS_CERT_DESC + (('rsa_signature', 516),)
-
 SN_LEN = sum([desc[1] for desc in SN_DESC])
-TBS_CERT_LEN = sum([desc[1] for desc in TBS_CERT_DESC])
-CERT_LEN = sum([desc[1] for desc in CERT_DESC])
+
+PUF_KEY_COORD_LENS = [32, 48]
+
+TBS_CERT_DESCS = [
+    (
+        ('magic', 4),
+        ('flags', 4),
+    ) + SN_DESC + (
+        ('puf_key', 2 * coord_len),
+        ('nonce', 48),
+        ('activation_code', 888),
+    ) for coord_len in PUF_KEY_COORD_LENS]
+
+CERT_DESCS = [ tbs_cert_desc + (('rsa_signature', 516),)
+               for tbs_cert_desc in TBS_CERT_DESCS]
+
+TBS_CERT_LEN_MAP = {sum([desc[1] for desc in tbs_cert_desc]) : tbs_cert_desc
+                 for tbs_cert_desc in TBS_CERT_DESCS}
+
+CERT_LEN_MAP = {sum([desc[1] for desc in cert_desc]) : cert_desc
+             for cert_desc in CERT_DESCS}
+
+def get_desc_for_cert(cert):
+    return CERT_LEN_MAP.get(len(cert))
+
+def get_desc_for_tbs_cert(tbs_cert):
+    return TBS_CERT_LEN_MAP.get(len(tbs_cert))
 
 
 def make_slicer_of(b):
@@ -81,7 +103,18 @@ def make_slicer_of(b):
     return make_buff
 
 
-FIELDS = [desc[0] for desc in CERT_DESC]
+def get_cert_values(cert):
+    ''' slice the cert into constituent buffers dictionary '''
+    slicer = make_slicer_of(cert)
+    return {desc[0]: slicer(desc[1]) for desc in get_desc_for_cert(cert) }
+
+def get_sn_values(sn):
+    slicer = make_slicer_of(sn)
+    return {desc[0]: slicer(desc[1]) for desc in SN_DESC }
+
+
+# fields are the same so used CERT_DESCS[0]
+FIELDS = [desc[0] for desc in CERT_DESCS[0]]
 FIELDS_LIST = ",".join(FIELDS)
 FIELDS_CONCAT = " || ".join(FIELDS)
 ARGS_LIST = ",".join(["%({0})s".format(fld) for fld in FIELDS])
@@ -93,18 +126,14 @@ RETRIEVE_STMT = "SELECT " + FIELDS_CONCAT + """ FROM enrollment WHERE serial_nr 
 
 def db_store_cert(conn, cert):
     ''' store the full certificate in the database '''
-    # slice the cert into constituent buffers
-    slicer = make_slicer_of(cert)
-    values = {desc[0]: slicer(desc[1]) for desc in CERT_DESC}
-
+    values = get_cert_values(cert)
     with conn.cursor() as cur:
         cur.execute(INSERT_STMT, values)
-
     conn.commit()
 
 
 def db_retrieve_cert(conn, values_dict):
-
+    ''' retrive the certificate based on serial number '''
     with conn.cursor() as cur:
         cur.execute(RETRIEVE_STMT,
                     (values_dict['serial_nr'],
@@ -112,6 +141,7 @@ def db_retrieve_cert(conn, values_dict):
         if cur.rowcount > 0:
             return cur.fetchone()[0]
     return None
+
 
 def db_print_summary(conn):
     print("[")
@@ -134,26 +164,39 @@ def db_print_summary(conn):
 #
 ###########################################################################
 
-def validate_tbs_cert(values_dict):
+def pt_to_curve(pt):
+    coord_len = len(pt)//2
+    x = int.from_bytes(pt[:coord_len], byteorder='big')
+    y = int.from_bytes(pt[coord_len:], byteorder='big')
+    curve = ec.SECP256R1 if coord_len == 32 else ec.SECP384R1
+    return x, y, curve
+
+def validate_tbs_cert(tbs_cert):
     ''' perform some validation on the input '''
 
+    tbs_desc = get_desc_for_tbs_cert(tbs_cert)
+
+    if not tbs_desc:
+        raise ValueError("Invalid length for TBS enrollment certificate")
+
+    slicer = make_slicer_of(tbs_cert)
+    values = {desc[0]: slicer(desc[1]) for desc in tbs_desc}
+
     # check magic
-    if values_dict['magic'] != b'\x1e\x5c\x00\xb1':
-        raise ValueError("Bad Magic: %s" % values_dict)
+    if values['magic'] != b'\x1e\x5c\x00\xb1':
+        raise ValueError("Bad Magic: %s" % values)
 
-    # check the point is on the P256 curve
-    ec_pt = values_dict['puf_key']
-    x = int.from_bytes(ec_pt[:PUF_KEY_COORD_LEN], byteorder='big')
-    y = int.from_bytes(ec_pt[PUF_KEY_COORD_LEN:], byteorder='big')
-
-    # this will raise a ValueError if x and y do not represent a point on the curve
-    pub_key = ec.EllipticCurvePublicNumbers(x,
-                                            y,
-                                            ec.SECP256R1()).public_key(backend=default_backend())
+    # check the point is on the correct curve
+    x, y, curve = pt_to_curve(values['puf_key'])
+    # will raise a ValueError if x and y do not represent a point on the curve
+    _ = ec.EllipticCurvePublicNumbers(x, y, curve()).public_key(
+        backend=default_backend())
 
     # validate serial info: this routines should raise a ValueError
     # if the serial number is not correct
-    sn_validation.check(values_dict['serial_info'], values_dict['serial_nr'])
+    sn_validation.check(values['serial_info'], values['serial_nr'])
+
+    return values
 
 
 ###########################################################################
@@ -257,13 +300,11 @@ def x509_tbs_cert(values, parent_cert):
     tbs['subject'] = x509.Name.build(subject_names)
 
     # subject public key info
-    Qx = int.from_bytes(key[:PUF_KEY_COORD_LEN], byteorder='big')
-    Qy = int.from_bytes(key[PUF_KEY_COORD_LEN:], byteorder='big')
-
+    Qx, Qy, curve = pt_to_curve(key)
     ecpt_bit_string = keys.ECPointBitString().from_coords(Qx,Qy)
 
     named_curve = keys.NamedCurve()
-    named_curve.set('secp256r1')
+    named_curve.set(curve.name)
     public_key_algo = keys.PublicKeyAlgorithm()
     public_key_algo['algorithm'] = 'ec'
     public_key_algo['parameters'] = named_curve
@@ -301,19 +342,7 @@ def x509_cert(values, parent_cert):
     cert['tbs_certificate'] = tbs
     cert['signature_algorithm'] = tbs['signature']
 
-    # sign with key in parent cert -- TODO
-    parent_pub_key = parent_cert.public_key
-    # do not use wrap/unwrap because asn1crypto has deprecated them
-    # in some versions
-    if parent_pub_key.algorithm != 'rsa':
-        raise ValueError("Signing Certificate: unsupported algorithm")
-
-    # pub key is a ParsableOctetBitString and parsed will retunr an rsa pub key
-    rsa_pub_key = parent_pub_key['public_key'].parsed
-    modulus = int_to_bytes(int(rsa_pub_key['modulus']))
-
     with get_ro_session() as session:
-        private = get_private_rsa_with_modulus(session, modulus)
         raw_signature = sign_with_key(session, 'fpk4', tbs.dump())
 
     # package the raw signature
@@ -334,9 +363,7 @@ def x509_from_fungible_cert(cert, parent_cert_file):
         _,_,parent_cert_bytes = pem.unarmor(parent_cert_bytes)
 
     parent_cert = x509.Certificate.load(parent_cert_bytes)
-
-    slicer = make_slicer_of(cert)
-    values = {desc[0]: slicer(desc[1]) for desc in CERT_DESC}
+    values =  get_cert_values(cert)
 
     return x509_cert(values, parent_cert)
 
@@ -382,7 +409,7 @@ def send_x509_root_certificate_response(parent_cert_file):
 #
 ##########################################################################
 
-def hsm_sign( tbs_cert):
+def hsm_sign(tbs_cert):
     with get_ro_session() as session:
         return sign_binary(session, 'fpk4', tbs_cert)
 
@@ -392,17 +419,10 @@ def do_enroll():
     request = sys.stdin.read()
     tbs_cert = binascii.a2b_base64( request)
 
-    if len(tbs_cert) != TBS_CERT_LEN:
-        raise ValueError("TBS length = %d" % len(tbs_cert))
-
-    # slice the tbs cert into constituent buffers
-    slicer = make_slicer_of(tbs_cert)
-    values_dict = {desc[0]: slicer(desc[1]) for desc in TBS_CERT_DESC}
-
-    validate_tbs_cert(values_dict)
+    values = validate_tbs_cert(tbs_cert)
 
     with closing(psycopg2.connect("dbname=enrollment_db")) as db_conn:
-        cert = db_retrieve_cert(db_conn, values_dict)
+        cert = db_retrieve_cert(db_conn, values)
         if cert is None:
             # sign the tbs_cert
             cert = hsm_sign(tbs_cert)
@@ -442,8 +462,7 @@ def send_certificate(form_values, x509_format=False):
         raise ValueError("SN length = %d" % len(sn))
 
     # slice the sn into constituent buffers
-    slicer = make_slicer_of(sn)
-    values_dict = {desc[0]: slicer(desc[1]) for desc in SN_DESC }
+    values_dict = get_sn_values(sn)
 
     with closing(psycopg2.connect("dbname=enrollment_db")) as db_conn:
         cert = db_retrieve_cert(db_conn, values_dict)
