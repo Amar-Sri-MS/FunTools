@@ -146,11 +146,18 @@ def construct_sample(record_bytes, wu_table):
     return sample
 
 
+#
+# PCS sampling register constants.
+# (see MIPS debug specification for details)
+#
+PCS_NEW_SHIFT = 63
+
+
 def parse_pcssample(sample, pcssample):
     """
     compressed va is [61:0], where bits 57 and 58 have been omitted.
     """
-    new_sample = (pcssample >> 63)
+    new_sample = (pcssample >> PCS_NEW_SHIFT)
     if new_sample == 0:
         return
 
@@ -170,7 +177,7 @@ def parse_pcssample(sample, pcssample):
 
 
 def parse_pcsdataaddr(sample, pcsdataaddr):
-    new_sample = (pcsdataaddr >> 63)
+    new_sample = (pcsdataaddr >> PCS_NEW_SHIFT)
     if new_sample == 0:
         return
 
@@ -199,7 +206,7 @@ def parse_pcsdataaddr(sample, pcsdataaddr):
 
 
 def parse_pcscyclecounts(sample, pcscyclecounts):
-    new_sample = (pcscyclecounts >> 63)
+    new_sample = (pcscyclecounts >> PCS_NEW_SHIFT)
     if new_sample == 0:
         return
 
