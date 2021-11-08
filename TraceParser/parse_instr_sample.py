@@ -7,6 +7,7 @@
 
 import argparse
 import json
+import os
 import struct
 import subprocess
 import traceback
@@ -39,7 +40,21 @@ class Sample():
         return (self.pc == other.pc and self.va == other.va and
                 self.load == other.load and self.wu == other.wu)
 
-    def process(self):
+    def to_cache_miss_format(self):
+        """
+        Returns a string representing an entry in a cache_miss.txt file.
+
+        Note that information is lost: this needs to be fixed by changing
+        the cache_miss file format.
+        """
+        s = 'load' if self.load else 'store'
+        return '%016x    %016x    %s' % (self.pc, self.va, s)
+
+    def to_debug_string(self):
+        """
+        Returns a human readable string about this sample:
+        meant for debugging the parser.
+        """
         code_line = addr2line(self.pc)
         if code_line is None:
             code_line = '<unknown>'
@@ -52,19 +67,14 @@ class Sample():
                 'wu: %s vp: %d' % (self.pc, code_line, self.va,
                                    va_line, self.wu, self.vp))
 
-    def __str__(self):
-        if not self.is_valid():
-            return 'invalid sample'
-
-        return 'pc: %016x va: %016x cycles: %d wu: %s' % (self.pc,
-                                                          self.va,
-                                                          self.load_cycles,
-                                                          self.wu)
-
 
 def addr2line(addr):
+    """ Only used for debugging the tool: not supported on all platforms """
+    ws = os.environ['WORKSPACE']
+    binary = os.path.join(ws, 'FunOS/build/funos-f1')
+
     cmd = ['/Users/Shared/cross/mips64/bin/mips64-unknown-elf-addr2line',
-           '-e', '/Users/jimmyyeap/Fun/FunOS/build/funos-f1',
+           '-e', binary,
            '-ip', '%s' % hex(addr)]
     try:
         out = subprocess.check_output(cmd)
@@ -81,20 +91,38 @@ def main():
     parser.add_argument('--output-dir', type=str,
                         help='path to output directory',
                         default='testoutput')
+    parser.add_argument('--debug', action='store_true',
+                        help='Print sample summaries for debugging')
     args = parser.parse_args()
 
-    with open('wu_table.json', 'r') as jfh:
-        js = json.load(jfh)
-        wu_table = js['wu_table']
+    wu_table = load_wu_table_if_present()
 
     with open(args.input_file, 'rb') as fh:
         parse_trace_record.drop_cluster_byte(fh)
-        samples = read_file(fh, wu_table)
-        sort_samples(samples)
-        summarize_samples(samples)
+        samples = read_samples_from_file(fh, wu_table)
+        write_cache_miss_files(args.output_dir, samples)
+
+        if args.debug:
+            sort_samples(samples)
+            summarize_samples(samples)
 
 
-def read_file(fh, wu_table):
+def load_wu_table_if_present():
+    """
+    Loads a WU table dict if the source file is available, otherwise returns
+    an empty dict.
+    """
+    wu_table = {}
+
+    if os.path.exists('wu_table.json'):
+        with open('wu_table.json', 'r') as jfh:
+            js = json.load(jfh)
+            wu_table = js['wu_table']
+
+    return wu_table
+
+
+def read_samples_from_file(fh, wu_table):
     samples = []
     for _, record_bytes in parse_trace_record.generate_trace_record(fh):
         sample = construct_sample(record_bytes, wu_table)
@@ -184,7 +212,50 @@ def parse_pcscyclecounts(sample, pcscyclecounts):
 
 def parse_wu(sample, dcid, wu_table):
     wuid = dcid & 0xffff
-    sample.wu = 'missing'# wu_table[wuid]['name']
+    if wu_table:
+        sample.wu = wu_table[wuid]['name']
+    else:
+        sample.wu = 'missing'
+
+
+def write_cache_miss_files(dir, samples):
+    """ Write the raw cache miss files for missmap, one per core """
+
+    samples.sort(key=lambda sample: sample.vp)
+
+    curr_cluster = 0
+    curr_core = 0
+    samples_this_cc = []
+
+    os.makedirs(dir, exist_ok=True)
+
+    for s in samples:
+        cl = s.vp // parse_trace_record.TOPO_MAX_VPS_PER_CLUSTER
+        offset = s.vp % parse_trace_record.TOPO_MAX_VPS_PER_CLUSTER
+        co = offset // parse_trace_record.TOPO_MAX_VPS_PER_CORE
+
+        if cl == curr_cluster and co == curr_core:
+            samples_this_cc.append(s.to_cache_miss_format())
+        else:
+            write_samples_to_file(curr_cluster, curr_core, dir, samples_this_cc)
+
+            samples_this_cc = [s.to_cache_miss_format()]
+            curr_cluster = cl
+            curr_core = co
+
+    write_samples_to_file(cl, co, dir, samples_this_cc)
+
+
+def write_samples_to_file(curr_cluster, curr_core, dir, samples_this_cc):
+    """ Write a single cache miss file """
+    if not samples_this_cc:
+        return
+
+    fname = os.path.join(dir, 'cache_miss_%d_%d.txt' % (curr_cluster,
+                                                        curr_core))
+    with open(fname, 'w') as f:
+        f.write('\n'.join(samples_this_cc))
+        f.write('\n')
 
 
 def sort_samples(samples):
@@ -197,6 +268,7 @@ def sort_samples(samples):
 
 
 def summarize_samples(samples):
+    """ Print a debug summary of all samples """
 
     if not samples:
         return
@@ -222,12 +294,10 @@ def summarize_samples(samples):
     # sort by average
     summary.sort(key=lambda t : t[2], reverse=True)
 
-    for t in summary:
-        print(t[0].process())
-        print('Average cycle count: %f Occurrences: %d' % (t[2], len(t[1])))
+    for s in summary:
+        print(s[0].to_debug_string())
+        print('Average cycle count: %f Occurrences: %d' % (s[2], len(s[1])))
         print()
-
-    return summary
 
 
 if __name__ == '__main__':
