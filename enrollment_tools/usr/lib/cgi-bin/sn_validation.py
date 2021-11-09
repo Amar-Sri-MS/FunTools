@@ -23,6 +23,6 @@ def check(serial_info, serial_nr):
         if b != 0:
             raise ValueError("Serial Info must be zero")
 
-    for b in serial_nr[:-2]:
+    for b in serial_nr[8:12]:
         if b != 0:
-            raise ValueError("First 14 bytes of Serial Number must be zero")
+            raise ValueError("Reserved of Serial Number must be zero")
