@@ -151,6 +151,7 @@ def construct_sample(record_bytes, wu_table):
 # (see MIPS debug specification for details)
 #
 PCS_NEW_SHIFT = 63
+PCS_COMPLETED_SHIFT = 62
 
 
 def parse_pcssample(sample, pcssample):
@@ -161,7 +162,8 @@ def parse_pcssample(sample, pcssample):
     if new_sample == 0:
         return
 
-    completed = (pcssample >> 62)
+    # TODO(jimmy): clarify meaning of this register bit
+    completed = (pcssample >> PCS_COMPLETED_SHIFT) & 0x1
     if completed == 0:
         return
 
@@ -181,7 +183,11 @@ def parse_pcsdataaddr(sample, pcsdataaddr):
     if new_sample == 0:
         return
 
-    va = pcsdataaddr & 0xffffffffffff
+    completed = (pcsdataaddr >> PCS_COMPLETED_SHIFT) & 0x1
+    if completed == 0:
+        return
+
+    va = pcsdataaddr & 0xffffffffffff  # 48-bits
     miss = (pcsdataaddr >> 49) & 0x1
     load_store = (pcsdataaddr >> 48) & 0x1
     sample.load = (load_store == 0)
@@ -304,6 +310,7 @@ def summarize_samples(samples):
     for s in summary:
         print(s[0].to_debug_string())
         print('Average cycle count: %f Occurrences: %d' % (s[2], len(s[1])))
+        print(s[1])
         print()
 
 
