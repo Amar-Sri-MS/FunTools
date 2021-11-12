@@ -77,7 +77,7 @@ def load_user():
 
     # Allowing users to ingest using API without maintaining session
     # provided users sends email in 'submitted_by' field.
-    if request.endpoint == 'ingester_page.ingest' and request.method == 'POST':
+    elif request.endpoint == 'ingester_page.ingest' and request.method == 'POST':
         g.user = request.form.get('submitted_by', None)
 
 
@@ -244,7 +244,12 @@ class ElasticLogSearcher(object):
     def __init__(self, index):
         """ New searcher, looking at a specific index """
         ELASTICSEARCH_HOSTS = app.config['ELASTICSEARCH']['hosts']
-        self.es = Elasticsearch(ELASTICSEARCH_HOSTS)
+        ELASTICSEARCH_TIMEOUT = app.config['ELASTICSEARCH']['timeout']
+        ELASTICSEARCH_MAX_RETRIES = app.config['ELASTICSEARCH']['max_retries']
+        self.es = Elasticsearch(ELASTICSEARCH_HOSTS,
+                                timeout=ELASTICSEARCH_TIMEOUT,
+                                max_retries=ELASTICSEARCH_MAX_RETRIES,
+                                retry_on_timeout=True)
         self.index = index
 
         # Check if index does not exist
