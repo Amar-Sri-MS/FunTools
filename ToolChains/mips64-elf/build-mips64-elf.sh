@@ -110,7 +110,8 @@ export PATH=$PATH:$dest_dir/bin
 mkdir -p $gdb_dir
 pushd $gdb_dir
 ../${gdb_version}/configure --disable-sim --target=mips64-unknown-elf --prefix=$dest_dir $host_gdb_config \
-   $common_config
+   $common_config \
+   --with-python=python3
 make -j4
 make -j4 install
 popd
