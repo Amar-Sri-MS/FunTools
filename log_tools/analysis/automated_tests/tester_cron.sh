@@ -12,4 +12,6 @@ program_dir=$(dirname "$0")
 
 source "../.venv/bin/activate"
 
+export PYTHONPATH="../"
+
 "${program_dir}/qa_tester.py"
