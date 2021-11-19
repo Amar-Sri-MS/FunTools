@@ -40,13 +40,11 @@ def Mail(owner_email, subject, mail_body, cc_list=[]):
 
     from_email = 'Log Analyzer<localadmin@funlogs01.fungible.local>'
 
-    cmd = f'/usr/bin/mail -s "{subject}" "{recipient_emails}" -aFrom:"{from_email}"'
+    cmd = f'echo "{mail_body}" | /usr/bin/mail -s "{subject}" "{recipient_emails}" -aFrom:"{from_email}"'
 
     if len(cc_list) > 0:
         cc_emails = ','.join(cc_list)
         cmd = f'{cmd} -c {cc_emails}'
-
-    cmd = f'{cmd} <<< {mail_body}'
 
     logging.info(f'Will execute {cmd}')
     try:
