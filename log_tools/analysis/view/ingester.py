@@ -768,6 +768,7 @@ def ingest_techsupport_logs(job_id, log_path, metadata, filters):
             ])
 
             _create_manifest(log_path, manifest['metadata'], contents)
+            ingest_path = log_path
 
         else:
             manifest_contents = list()
@@ -822,8 +823,8 @@ def ingest_techsupport_logs(job_id, log_path, metadata, filters):
                     f'frn:composer:controller::host:sns:folder:"{archive_name}/techsupport/cs":sns'
                 ])
 
-        _create_manifest(path, contents=manifest_contents)
-        ingest_path = path
+            _create_manifest(path, contents=manifest_contents)
+            ingest_path = path
 
         # Start the ingestion
         return ingest_handler.start_pipeline(ingest_path,
