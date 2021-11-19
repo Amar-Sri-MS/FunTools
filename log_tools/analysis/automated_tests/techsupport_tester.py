@@ -28,21 +28,25 @@ def main():
     TEST_COUNT = 3
 
     # List all the directories sorted by latest creation date.
-    folders = glob.glob(f'{LOGS_DIRECTORY}/*')
-    folders.sort(key=os.path.getmtime)
+    # folders = glob.glob(f'{LOGS_DIRECTORY}/*')
+    folders = [f.path for f in os.scandir(LOGS_DIRECTORY) if f.is_dir()]
+    folders.sort(key=os.path.getmtime, reverse=True)
 
     # Loop over them and search if they contain a techsupport archive
     techsupport_archives = list()
     for folder in folders:
         logging.info(f'Looking for techsupport in {folder}')
-        for file in os.listdir(folder):
-            if isfile(join(folder, file)) and is_techsupport(file):
-                logging.info(f'Found techsupport {file}')
-                techsupport_archives.append(f'{folder}/{file}')
+        try:
+            for file in os.listdir(folder):
+                if isfile(join(folder, file)) and is_techsupport(file):
+                    logging.info(f'Found techsupport {file}')
+                    techsupport_archives.append(f'{folder}/{file}')
+                    break
+            # Stop searching if we found TEST_COUNT number of archives
+            if len(techsupport_archives) == TEST_COUNT:
                 break
-        # Stop searching if we found TEST_COUNT number of archives
-        if len(techsupport_archives) == TEST_COUNT:
-            break
+        except Exception as e:
+            logging.exception('Error while finding techsupport archive')
 
     # Start ingestion
     for techsupport_archive in techsupport_archives:
@@ -71,7 +75,7 @@ class TechsupportTester(Tester):
     """
     def __init__(self, job_id, mount_path):
         super().__init__()
-        self.job_id = str(job_id)
+        self.job_id = str(job_id).lower()
         self.log_id = None
         self.mount_path = mount_path
 
