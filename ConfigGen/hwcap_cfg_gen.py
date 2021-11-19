@@ -279,7 +279,11 @@ class HWCAPCodeGen():
         emu_skuids = self.get_emu_sku_ids(all_target_chips)
         hwcap_config = self._get_hwcap_config(all_target_chips)
         for sku in emu_skuids.keys():
-            sku_cfg = hwcap_config.get(sku, None).get('hwcap', None)
+            try:
+                sku_cfg = hwcap_config.get(sku, None).get('hwcap', None)
+            except:
+                logger.error("Error processing config for sku: {}".format(sku))
+                raise
             sbp_cfg = sku_cfg.get('sbp', None)
             sbp_valid = 0
             if sbp_cfg:
