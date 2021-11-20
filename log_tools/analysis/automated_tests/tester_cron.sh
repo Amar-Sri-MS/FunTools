@@ -14,4 +14,8 @@ source "../.venv/bin/activate"
 
 export PYTHONPATH="../"
 
+# Running tests for QA job ingestion
 "${program_dir}/qa_tester.py"
+
+# Running tests for techsupport archive ingestion from bugbits
+"${program_dir}/techsupport_tester.py"
