@@ -8,8 +8,18 @@ import os
 import sys
 import threading
 import shutil
+import shlex
 import socket
 from http.server import BaseHTTPRequestHandler, HTTPServer
+
+### List of API endpoints
+API_VERSION = 'http://{target}/version'
+API_BOOT_DEFAULTS = 'http://{target}/boot_defaults'
+API_FAST_RESTART = 'http://{target}/fast_restart'
+API_UPGRADE_INIT = 'http://{target}/upgrade/init'
+API_UPGRADE_START = 'http://{target}/upgrade/{proc}/start'
+API_UPGRADE_STATUS = 'http://{target}/upgrade/{proc}/status'
+API_UPGRADE_COMPLETE = 'http://{target}/upgrade/{proc}/complete'
 
 ###
 ##  quick helpers
@@ -22,7 +32,7 @@ def wait_for_version():
         #curl -s  http://$TARGET:9332/platform/version | jq -r ".FunSDK,.debug"
         #r = requests.post('http://{}:9332/platform/version'.format(TARGET), json={"key": "value"})
         try:
-            r = requests.post('http://{}:9332/platform/version'.format(TARGET))
+            r = requests.post(API_VERSION.format(target=TARGET))
             print("# Return stats %s" % r.status_code)
             pp.pprint(r.json())
             break
@@ -35,13 +45,13 @@ def wait_for_version():
 
 def check_boot_defaults():
     # Check boot defaults
-    r = requests.post('http://{}:9332/platform/boot_defaults'.format(TARGET))
+    r = requests.post(API_BOOT_DEFAULTS.format(target=TARGET))
     print(r.status_code)
     pp.pprint(r.json())
 
 
 def dpu_restart():
-    url = 'http://{}:9332/storage_agent/fast_restart'.format(TARGET)
+    url = API_FAST_RESTART.format(target=TARGET)
     try:
         requests.post(url, timeout=0.01)
     except requests.exceptions.ReadTimeout: 
@@ -153,6 +163,10 @@ parser.add_argument('--host',
                     action='store', default=None,
                     help='override automatic server address')
 
+parser.add_argument('--ccfg',
+                    action='store', default=None,
+                    help='specify a feature set (ccfg)')
+
 parser.add_argument('--restart',
                     action='store_true', default=False,
                     help='restart the device')
@@ -167,8 +181,13 @@ if (args.dpu is None):
     print("Required --dpu option missing")
     sys.exit(1)
 
-TARGET = args.dpu
+# host/ip : port
+TARGET = args.dpu + ":9332"
 filename = args.filename
+
+CCFG=None
+if (args.ccfg is not None):
+    CCFG = "ccfg=%s" % shlex.quote(args.ccfg)
 
 print("Target: %s" % TARGET)
 print("Bundle: %s" % filename)
@@ -212,7 +231,8 @@ BUNDLE = url
 print("Initiating update to URL %s" % BUNDLE)
 
 # start the update process
-r = requests.post('http://{}:9332/platform/upgrade/init'.format(TARGET), json={"URL": BUNDLE})
+js = {"URL": BUNDLE}
+r = requests.post(API_UPGRADE_INIT.format(target=TARGET), json=js)
 
 print("# Return stats %s" % r.status_code)
 if (r.status_code != 200):
@@ -229,14 +249,18 @@ if (local_server):
 
 pp.pprint(r.json())
 PROC = r.json()["process_id"]
-pp.pprint("PROC is %s" % PROC)
+pp.pprint("Upgrade process ID is %s" % PROC)
 
-r = requests.post('http://{}:9332/platform/upgrade/{}/start'.format(TARGET, PROC))
+# setup ccfg
+js = None
+if (CCFG is not None):
+    js = {"args": CCFG}
+r = requests.post(API_UPGRADE_START.format(target=TARGET, proc=PROC), json=js)
 print(r.status_code)
 pp.pprint(r.json())
 
 while (True):
-        url = 'http://{}:9332/platform/upgrade/{}/status'.format(TARGET, PROC)
+        url = API_UPGRADE_STATUS.format(target=TARGET, proc=PROC)
         #print("url is %s" % url)
         r = requests.get(url)
         if (r.status_code != 200):
@@ -254,7 +278,7 @@ while (True):
 
 pp.pprint(r.json())
 
-r = requests.post('http://{}:9332/platform/upgrade/{}/complete'.format(TARGET, PROC))
+r = requests.post(API_UPGRADE_COMPLETE.format(target=TARGET, proc=PROC))
 print(r.status_code)
 pp.pprint(r.json())
 
