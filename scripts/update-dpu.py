@@ -13,13 +13,13 @@ import socket
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 ### List of API endpoints
-API_VERSION = 'http://{target}/version'
-API_BOOT_DEFAULTS = 'http://{target}/boot_defaults'
-API_FAST_RESTART = 'http://{target}/fast_restart'
-API_UPGRADE_INIT = 'http://{target}/upgrade/init'
-API_UPGRADE_START = 'http://{target}/upgrade/{proc}/start'
-API_UPGRADE_STATUS = 'http://{target}/upgrade/{proc}/status'
-API_UPGRADE_COMPLETE = 'http://{target}/upgrade/{proc}/complete'
+API_VERSION = 'http://{target}/platform/version'
+API_BOOT_DEFAULTS = 'http://{target}/platform/boot_defaults'
+API_FAST_RESTART = 'http://{target}/storage_agent/fast_restart'
+API_UPGRADE_INIT = 'http://{target}/platform/upgrade/init'
+API_UPGRADE_START = 'http://{target}/platform/upgrade/{proc}/start'
+API_UPGRADE_STATUS = 'http://{target}/platform/upgrade/{proc}/status'
+API_UPGRADE_COMPLETE = 'http://{target}/platform/upgrade/{proc}/complete'
 
 ###
 ##  quick helpers
@@ -98,7 +98,7 @@ def server_loop(httpd):
     httpd.handle_request()
     print("Shutting down server...")
 
-def setup_http_server(target, filename, host=None):
+def setup_http_server(targetip, filename, host=None):
 
     httpd = server(('',0), handler)
     httpd.timeout = 30
@@ -108,7 +108,7 @@ def setup_http_server(target, filename, host=None):
     # the target on so we can construct the URL
     if (args.host is None):
         sq = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sq.connect((target, 1234))
+        sq.connect((targetip, 1234))
         ip = sq.getsockname()[0]
         sq.close()
     else:
@@ -211,19 +211,24 @@ if (filename is not None):
 # start communicating with the dpu
 print("Querying dpu version and boot defaults...")
 wait_for_version()
-check_boot_defaults()
 
 if (filename is None):    
     if (args.restart):
+        # restart without checking boot defaults
         print("Restarting device...")
         dpu_restart()
     else:
+        # poll boot default info and exit
+        check_boot_defaults()
         print("No update bundle, exiting")
     sys.exit(0)
 
+# poll boot default info and continue
+check_boot_defaults()
+
 # stand up the http server if we need to
 if (local_server):
-    httpd = setup_http_server(TARGET, filename, args.host)
+    httpd = setup_http_server(args.dpu, filename, args.host)
     url = httpd.url
 
 # name for the rest of the script
@@ -247,18 +252,21 @@ if (local_server):
     else:
         raise RuntimeError("Bad http server state: %s" % httpd.request_state)
 
-pp.pprint(r.json())
 PROC = r.json()["process_id"]
 pp.pprint("Upgrade process ID is %s" % PROC)
 
 # setup ccfg
-js = None
+js = {}
 if (CCFG is not None):
-    js = {"args": CCFG}
+    js["args"] = [CCFG]
 r = requests.post(API_UPGRADE_START.format(target=TARGET, proc=PROC), json=js)
 print(r.status_code)
+if (r.status_code != 200):
+    print("Upgrade start failed... %s" % r.reason)
+    sys.exit(1)
 pp.pprint(r.json())
 
+fail = False
 while (True):
         url = API_UPGRADE_STATUS.format(target=TARGET, proc=PROC)
         #print("url is %s" % url)
@@ -273,19 +281,26 @@ while (True):
                 continue
         if (status == "failed"):
                 print("FAILED")
+                fail = True
                 break
         break
 
 pp.pprint(r.json())
 
+# clean up the update, regardless of success
 r = requests.post(API_UPGRADE_COMPLETE.format(target=TARGET, proc=PROC))
+
+if (fail):
+    print("ERROR: DPU update operation FAILED. Exiting")
+    sys.exit(1)
+
 print(r.status_code)
 pp.pprint(r.json())
 
 if (args.restart):    
     dpu_restart()
-    print("Done, device restart issued...")
+    print("Update successful, device restart issued...")
 else:
-    print("Done, but did not restart device")
+    print("Update successful, but did not restart device")
 
 
