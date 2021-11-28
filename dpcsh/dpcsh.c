@@ -707,10 +707,10 @@ static void apply_command_locally(const struct fun_json *json,
 		return;
 	}
 
-	struct fun_json_command_environment *env = fun_json_command_environment_create();
+	struct fun_command_environment *env = fun_command_environment_create();
 	struct fun_json *j = fun_commander_execute(env, json);
 
-	fun_json_command_environment_release(env);
+	fun_command_environment_release(env);
 	if (!j || fun_json_fill_error_message(j, NULL)) {
 		return;
 	}
