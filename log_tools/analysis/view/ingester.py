@@ -30,7 +30,7 @@ from elastic_metadata import ElasticsearchMetadata
 from flask import Blueprint, jsonify, request, render_template
 from flask import current_app, g
 
-from common import login_required
+from view.common import login_required
 from utils import archive_extractor, manifest_parser
 from utils import mail
 from utils import timeline
@@ -41,7 +41,8 @@ import config_loader
 config = config_loader.get_config()
 ingester_page = Blueprint('ingester_page', __name__)
 
-DOWNLOAD_DIRECTORY = 'downloads'
+FILE_PATH = os.path.abspath(os.path.dirname(__file__))
+DOWNLOAD_DIRECTORY = os.path.join(FILE_PATH, 'downloads')
 QA_REGRESSION_BASE_ENDPOINT = 'http://integration.fungible.local/api/v1/regression'
 QA_JOB_INFO_ENDPOINT = f'{QA_REGRESSION_BASE_ENDPOINT}/suite_executions'
 QA_LOGS_ENDPOINT = f'{QA_REGRESSION_BASE_ENDPOINT}/test_case_time_series'
@@ -64,6 +65,8 @@ def main():
     parser.add_argument('--techsupport_ingest_type', help='Techsupport ingestion type', choices=['mount_path', 'upload'])
 
     try:
+        status = True
+        status_msg = None
         args = parser.parse_args()
         ingest_type = args.ingest_type
         job_id = args.job_id
@@ -131,13 +134,13 @@ def main():
             raise Exception('Wrong ingest type')
 
         if ingestion_status and not ingestion_status['success']:
-            _update_metadata(es_metadata, LOG_ID, 'FAILED', {
-                **metadata,
-                'ingestion_error': ingestion_status.get('msg')
-            })
+            status = False
+            status_msg = ingestion_status.get('msg')
 
     except Exception as e:
         logging.exception(f'Error when starting ingestion for job: {job_id}')
+        status = False
+        status_msg = str(e)
         _update_metadata(es_metadata, LOG_ID, 'FAILED', {
             'ingestion_error': str(e),
             **metadata
@@ -152,6 +155,9 @@ def main():
         # Backing up the logs generated during ingestion
         logger.backup_ingestion_logs(LOG_ID)
 
+    if not status:
+        exit_msg = status_msg if status_msg else 'Some error occurred.'
+        sys.exit(exit_msg)
 
 @ingester_page.route('/upload', methods=['POST'])
 @login_required
@@ -711,6 +717,10 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
             **metadata,
             'ingestion_error': str(e)
         })
+        return {
+            'success': False,
+            'msg': str(e)
+        }
 
 
 def ingest_techsupport_logs(job_id, log_path, metadata, filters):
@@ -758,6 +768,7 @@ def ingest_techsupport_logs(job_id, log_path, metadata, filters):
             ])
 
             _create_manifest(log_path, manifest['metadata'], contents)
+            ingest_path = log_path
 
         else:
             manifest_contents = list()
@@ -812,8 +823,8 @@ def ingest_techsupport_logs(job_id, log_path, metadata, filters):
                     f'frn:composer:controller::host:sns:folder:"{archive_name}/techsupport/cs":sns'
                 ])
 
-        _create_manifest(path, contents=manifest_contents)
-        ingest_path = path
+            _create_manifest(path, contents=manifest_contents)
+            ingest_path = path
 
         # Start the ingestion
         return ingest_handler.start_pipeline(ingest_path,
@@ -823,8 +834,13 @@ def ingest_techsupport_logs(job_id, log_path, metadata, filters):
     except Exception as e:
         logging.exception('Error while ingesting the logs')
         _update_metadata(es_metadata, LOG_ID, 'FAILED', {
+            **metadata,
             'ingestion_error': str(e)
         })
+        return {
+            'success': False,
+            'msg': str(e)
+        }
 
 
 def _create_manifest(path, metadata={}, contents=[]):

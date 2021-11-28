@@ -382,6 +382,18 @@ def _generate_profiles_config(config_root_dir, target_chip, target_boards):
 
     return profiles_config
 
+def _load_workerpool_config(wpconfig):
+
+    # read the input file
+    fl = open(wpconfig)
+    js = json.load(fl)
+
+    # modules/nucleus/workerpool/policies in nucleus 
+    wp_cfg = {"modules": {"workerpool": {"policies": js}}}
+
+    return wp_cfg
+
+
 def build_target_is_posix(target_machine):
     if 'posix' in target_machine:
         return True
@@ -399,7 +411,7 @@ def build_target_is_qemu(target_machine):
 
 # Generate funos config
 def _generate_funos_default_config(config_root_dir, sdk_dir, output_dir,
-                                   target_chip, target_machine):
+                                   target_chip, target_machine, wpconfig):
     logger.info('Generating funos default config')
     funos_default_config = dict()
 
@@ -434,7 +446,7 @@ def _generate_funos_default_config(config_root_dir, sdk_dir, output_dir,
     ## assemble into main config
     funos_default_config = jsonutils.merge_dicts(funos_default_config,
                                                  modules_cfg)
-
+       
     ## process module config -- per-sku
     for sku in list(funos_default_config[SKUCfgGen.get_sku_path()].keys()):
         config_sku_dir = os.path.join(config_root_dir,
@@ -457,6 +469,16 @@ def _generate_funos_default_config(config_root_dir, sdk_dir, output_dir,
     funos_default_config = jsonutils.merge_dicts(funos_default_config,
                                                  profiles_cfg)
 
+    ## process workerpool config, if requested
+    if (wpconfig is not None):
+        wp_cfg = _load_workerpool_config(wpconfig)
+
+        ## assemble into main config
+        funos_default_config = jsonutils.merge_dicts_recursive(
+                                                     funos_default_config,
+                                                     wp_cfg)
+
+    # write the output
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
@@ -542,6 +564,9 @@ def main():
     arg_parser.add_argument("--chip", required=True, nargs=1, type=str,
                             help="Target chip type")
 
+    arg_parser.add_argument("--wpcfg", action='store', default=None,
+                            help="Workerpool configuration file for funoscfg")
+
     parser = arg_parser.add_mutually_exclusive_group(required=True)
 
     parser.add_argument("--funoscfg", action='store_true',
@@ -565,8 +590,10 @@ def main():
     logger.debug('Command line args: {}'.format(args))
 
     if args.funoscfg:
-        _generate_funos_default_config(args.in_dir[0], args.sdk_dir, args.out_dir[0],
-                                       args.chip[0], args.machine[0])
+        _generate_funos_default_config(args.in_dir[0],
+                                       args.sdk_dir, args.out_dir[0],
+                                       args.chip[0], args.machine[0],
+                                       args.wpcfg)
         _generate_sku_config_code(args.in_dir[0], args.sdk_dir, args.out_dir[0],
                                   args.chip[0], args.machine[0])
         _generate_hu_config_code(args.in_dir[0], args.out_dir[0])

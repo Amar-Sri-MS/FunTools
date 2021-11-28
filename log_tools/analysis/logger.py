@@ -39,6 +39,9 @@ def get_logger(name=None, filename=None):
     # Get the default logger
     custom_logger = logging.getLogger(name)
 
+    # Setting the default log level to INFO
+    custom_logger.setLevel(logging.INFO)
+
     formatter = logging.Formatter(fmt=DEFAULT_LOG_FORMAT)
     # Timestamps to be GMT
     formatter.converter = time.gmtime
@@ -50,7 +53,6 @@ def get_logger(name=None, filename=None):
 
         handler.setFormatter(formatter)
         custom_logger.addHandler(handler)
-        custom_logger.setLevel(logging.INFO)
 
     # Checking if the logger needs and already has RotatingFileHandler.
     if filename and not _has_handler(custom_logger.handlers, logging.handlers.RotatingFileHandler):
