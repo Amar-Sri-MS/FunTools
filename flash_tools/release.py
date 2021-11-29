@@ -76,7 +76,8 @@ ALL_ROOTFS_FILES = {
 }
 
 CHIP_SPECIFIC_FILES = {
-    "s1" : [ 'fdc_cbs/composer-boot-services-emmc.img' ]
+    "s1" : [ 'fdc_cbs/composer-boot-services-emmc.img',
+             'fdc_oprom/ComposerOptionRom.rom' ]
 }
 
 def _rootfs(f, rootfs):
@@ -566,6 +567,7 @@ def main():
         elif args.chip == 's1':
             mfgxdata['ccfg'] = ('mmc', 'ccfg-s1-demo-10g_mpg.signed.bin')
             mfgxdata['dcc0'] = ('mmc', 'composer-boot-services-emmc.img')
+            mfgxdata['dcc1'] = ('mmc', 'ComposerOptionRom.rom')
 
         mfgxdata_lists = {
             'fw_upgrade_all': 'all',
