@@ -1,6 +1,6 @@
 /*
  *      MCTP Daemon - FC mctp slave implementation
- *      Copyright © 2021 Fung ible. All rights reserved.
+ *      Copyright © 2021 Fungible. All rights reserved.
  */
 #ifndef _INC_UTILS_HDR_
 #define _INC_UTILS_HDR_
