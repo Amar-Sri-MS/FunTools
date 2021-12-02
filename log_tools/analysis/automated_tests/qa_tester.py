@@ -7,6 +7,7 @@
 # Copyright (c) 2021 Fungible Inc.  All rights reserved.
 
 import logging
+import os
 import requests
 import subprocess
 
@@ -16,6 +17,8 @@ from automated_tests.tester import Tester
 from utils.cleanup import clean
 from view.ingester import _get_log_id
 
+
+FILE_PATH = os.path.abspath(os.path.dirname(__file__))
 
 def main():
     # Setting up the logger.
@@ -92,7 +95,7 @@ class QATester(Tester):
         logging.info(f'Ingesting: {self.job_id}')
         logging.info('*'*100)
 
-        cmd = ['../view/ingester.py', self.job_id,
+        cmd = [f'{FILE_PATH}/../view/ingester.py', self.job_id,
                '--ingest_type', 'qa',
                '--test_index', str(self.test_index),
                '--tags', 'automated_testing']

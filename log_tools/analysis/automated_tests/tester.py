@@ -86,6 +86,8 @@ class Tester(object):
 
             Ingestion Status: {self.ingestion_status}
 
+            Full log URL: {config['FILE_SERVER_URL']}/{self.log_id}/file/{self.log_id}.log
+
             Ingestion Output:
             {self.ingestion_status_msg}
         """
