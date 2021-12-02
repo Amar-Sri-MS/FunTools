@@ -1,6 +1,6 @@
 /*
  *      MCTP Daemon - FC PCIE VDM implementation
- *      Copyright © 2021 Fung ible. All rights reserved.
+ *      Copyright © 2021 Fungible. All rights reserved.
  */
 #include <stdio.h>
 #include <stdint.h>
