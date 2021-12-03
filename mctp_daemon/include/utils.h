@@ -144,6 +144,5 @@ extern char *manuallog_file;
 void hexdump(uint8_t *addr, int len);
 uint32_t crc32(uint8_t  *data_buf, uint32_t byte_cnt, uint32_t crc_in);
 void print_version(char *name);
-void manual_log(char *str);
 
 #endif /* _INC_UTILS_HDR_ */
