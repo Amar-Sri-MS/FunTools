@@ -270,8 +270,8 @@ class FileCorpse:
         return b"\xde\xad\xbe\xef\xde\xad\xbe\xef"[:n]
 
     def va_clean(self, addr):
-        # truncate remaining bits to 8gb
-        addr &= (8<<30)-1
+        # truncate remaining bits to the physical address
+        addr &= (1<<42)-1
         if (addr < self.memoffset):
             return None
 
