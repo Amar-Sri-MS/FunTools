@@ -6,4 +6,4 @@ Log_Analyzer.egg-info*
 downloads*
 logs/*
 
-view/flask_session*
+flask_session*
