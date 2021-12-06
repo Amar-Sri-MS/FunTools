@@ -4,4 +4,4 @@
 elastic_setup/SETUP_ELASTICSEARCH.sh
 
 cd view
-python es_view.py
+gunicorn --workers 3 --bind 0.0.0.0:5000 wsgi:app
