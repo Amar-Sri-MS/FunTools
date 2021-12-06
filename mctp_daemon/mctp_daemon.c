@@ -32,6 +32,21 @@ struct server_cfg_stc cfg = {
 
 uint16_t saved_timeout = 10;
 
+static void usage()
+{
+	fprintf(stderr, "usage: mctp_daemon [options]\n");
+	fprintf(stderr, "\t-b | --daemon : Run in background\n");
+	fprintf(stderr, "\t-h | --help   : Print this help\n");
+	fprintf(stderr, "\t-l | --log    : Specify logfile\n");
+	fprintf(stderr, "\t-n | --nosu   : Run as non-root\n");
+	fprintf(stderr, "\t-v | --verbose: Be verbose\n");
+	fprintf(stderr, "\t-D | --debug  : Turn on debug mode\n");
+	fprintf(stderr, "\t-L | --lock   : Specify lockfile\n");
+	fprintf(stderr, "\t-V | --version: Print current version\n");
+
+	exit(EXIT_SUCCESS);
+}
+
 int main(int argc, char *argv[])
 {
 	pid_t pid, sid;
@@ -40,6 +55,7 @@ int main(int argc, char *argv[])
 	char *log = cfg.logfile, *lock = cfg.lockfile;
         struct option long_args[] = {
                 {"daemon",      1, 0, 'b'},
+                {"help",        1, 0, 'h'},
                 {"log",         1, 0, 'l'},
 		{"nosu",	0, 0, 'n'},
                 {"verbose",     1, 0, 'v'},
@@ -51,8 +67,12 @@ int main(int argc, char *argv[])
         opterr = 0;
         optind = 1;
 
-        while ((c = getopt_long(argc, argv, "bl:nvDL:V", long_args, &index)) != -1) {
+        while ((c = getopt_long(argc, argv, "bhl:nvDL:V", long_args, &index)) != -1) {
 		switch (c) {
+		case 'h':
+			usage();
+			break;
+
 		case 'l':
 			log = optarg;
 			break;

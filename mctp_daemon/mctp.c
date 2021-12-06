@@ -302,11 +302,16 @@ static void mctp_incr_stats(enum mctp_stats_enum sts)
 	}
 }
 
-#define CHECK_FOR_SUPPORT(ep, n)						\
-	if (!MCTP_SUPPORT_TYPE(ep, n)) {					\
-		mctp_err("msg type %02x is not supported\n", ep->msgtype);	\
-		return -1;							\
+static int check_for_unsupport(mctp_endpoint_stct *ep, int n)
+{
+	if (!MCTP_SUPPORT_TYPE(ep, n)) {					
+		mctp_err("msg type %02x is not supported\n", ep->msgtype);
+		return -1;
 	}
+
+	return 0;
+}
+
 /* Common MCTP packet handler */
 static int handle_mctp_pkt(mctp_endpoint_stct *ep)
 {
@@ -314,31 +319,36 @@ static int handle_mctp_pkt(mctp_endpoint_stct *ep)
 
 	switch (ep->msgtype) {
 	case MCTP_MSG_CONTROL:
-		CHECK_FOR_SUPPORT(ep, SUPPORT_MCTP_CNTROL_MSG);
+		if (check_for_unsupport(ep, SUPPORT_MCTP_CNTROL_MSG))
+			return -1;
 		rc = mctp_control_handler(ep);
 		break;
 
 #ifdef CONFIG_PLDM_SUPPORT
 	case MCTP_MSG_PLDM:
-		CHECK_FOR_SUPPORT(ep, SUPPORT_PLDM_OVER_MCTP);
+		if (check_for_unsupport(ep, SUPPORT_PLDM_OVER_MCTP))
+			return -1;
 		rc = pldm_handler(ep->rx_ptr, ep->rx_len, NULL);
 		break;
 #endif
 
 #ifdef CONFIG_NCSI_SUPPORT
 	case MCTP_MSG_NCSI:
-		CHECK_FOR_SUPPORT(ep, SUPPORT_NCSI_OVER_MCTP);
+		if (check_for_unsupport(ep, SUPPORT_NCSI_OVER_MCTP))
+			return -1;
 		rc = ncsi_handler(ep->rx_ptr, ep->retain->iid);
 		break;
 #endif
 
 	case MCTP_MSG_VDM_PCI:
-		CHECK_FOR_SUPPORT(ep, SUPPORT_VDM_OVER_MCTP);
+		if (check_for_unsupport(ep, SUPPORT_VDM_OVER_MCTP))
+			return -1;
 		rc = vdm_pci_handler(ep->rx_ptr, ep->rx_len);
 		break;
 
 	case MCTP_MSG_VDM_IANA:
-		CHECK_FOR_SUPPORT(ep, SUPPORT_OEM_OVER_MCTP);
+		if (check_for_unsupport(ep, SUPPORT_OEM_OVER_MCTP))
+			return -1;
 		rc = vdm_iana_handler(ep->rx_ptr, ep->rx_len);
 		break;
 

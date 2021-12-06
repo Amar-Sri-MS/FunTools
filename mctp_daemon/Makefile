@@ -50,7 +50,7 @@ endif
 BUILD_ROOT ?= build_$(MACHINE)
 
 # define header and library location in FunSDK
-CFLAGS += -I./ -I./include -I -I$(BUILD_ROOT) -g -Wall -Werror -Wno-multichar 
+CFLAGS += -I./ -I./include -I./$(BUILD_ROOT) -g -Wall -Werror -Wno-multichar 
 
 SRCS = smbus.c pcie_vdm.c utils.c pldm.c pldm_mcd.c pldm_pmc.c mctp.c mctp_daemon.c main_loop.c
 OBJS = $(addprefix $(BUILD_ROOT)/,$(SRCS:.c=.o))
