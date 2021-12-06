@@ -611,7 +611,7 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
                         ])
 
                 # single node FC
-                elif log_file.endswith('_fc_log.tgz'):
+                elif log_file.endswith('_fc_log.tgz') and not log_file.endswith('_tm_fc_log.tgz'):
                     filename = log_file.split('/')[-1].replace(' ', '_')
                     archive_path = f'{path}/{filename}'
                     archive_extractor.extract(archive_path)
