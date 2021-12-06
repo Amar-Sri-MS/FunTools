@@ -9,6 +9,8 @@
 
 import logging
 
+from elasticsearch7 import Elasticsearch
+
 import config_loader
 from utils.mail import Mail
 
@@ -37,6 +39,10 @@ class Tester(object):
         self.email_watchers = ['sourabh.jain@fungible.com']
         self.email_cc_watchers = ['tools-pals@fungible.com']
 
+        # Elasticsearch client
+        ELASTICSEARCH_HOSTS = config['ELASTICSEARCH']['hosts']
+        self.es = Elasticsearch(ELASTICSEARCH_HOSTS)
+
     def setup(self):
         """ Setting up the test ingestion """
         pass
@@ -45,6 +51,11 @@ class Tester(object):
         """
         Starting the tester.
         """
+        # Skipping tests if the log_id already exists.
+        if not self.es.indices.exists(self.log_id):
+            logging.warning(f'Skipping tests on {self.log_id}. The log_id already exists.')
+            return
+
         self.setup()
         self.run()
         self.validate()
