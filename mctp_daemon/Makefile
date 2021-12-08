@@ -24,12 +24,10 @@ ifeq ($(MACHINE),x86_64)
  TOOLCHAIN_PREFIX :=
  SDK_LIB_SUBDIR := noasan
  SDK_INSTALL_PREFIX :=
- LD_SCRIPT = script_x86.ld
 else ifeq ($(MACHINE),mips64)
  SDK_LIB_SUBDIR :=
  SDK_INSTALL_PREFIX := mips64
- LD_SCRIPT = script_mips64.ld
-ifeq ($(SDKTARGETSYSROOT),)
+ifeq ($(PRIVATE_BUILD),y)
  SDKTARGETSYSROOT=/opt/poky/3.0.2/sysroots/mipsisa64r6-poky-linux
  PATH:=$(PATH):/opt/poky/3.0.2/sysroots/x86_64-pokysdk-linux/usr/bin/mipsisa64r6-poky-linux:/opt/poky/3.0.2/sysroots/x86_64-pokysdk-linux/usr/bin/mipsisa64r6-poky-linux-musl
  CC=mipsisa64r6-poky-linux-gcc  -meb -mabi=64 -mhard-float -march=mips64r6 --sysroot=$(SDKTARGETSYSROOT)
@@ -80,7 +78,7 @@ $(BUILD_ROOT)/pldm_repo.h: FORCE
 
 
 $(BUILD_ROOT)/mctp_daemon: $(BUILD_ROOT) $(BUILD_ROOT)/auto_conf.h $(BUILD_ROOT)/pldm_repo.h version $(OBJS)
-	$(QUIET_LD)$(CC) -o $@ $(OBJS) -Wl,-T$(LD_SCRIPT)
+	$(QUIET_LD)$(CC) -o $@ $(OBJS) 
 
 $(BUILD_ROOT)/%.o: %.c 
 	$(QUIET_CC)$(CC) -c -o $@ $< $(CFLAGS)

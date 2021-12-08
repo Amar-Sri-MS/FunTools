@@ -388,17 +388,6 @@ exit:
 	return rc;
 }
 
-#if 1
-REGISTER_PMC_CMD(PLDM_PMC_SET_NUMERIC_SENSOR_ENABLE, sizeof(struct pldm_set_num_sens_en_req), pldm_set_sensor_en)
-REGISTER_PMC_CMD(PLDM_PMC_GET_SENSOR_READING, sizeof(struct pldm_get_sens_rd_req), pldm_get_sensor_rd)
-REGISTER_PMC_CMD(PLDM_PMC_GET_SENSOR_THRESHOLDS, sizeof(struct pldm_get_sens_th_req), pldm_get_sensor_th)
-REGISTER_PMC_CMD(PLDM_PMC_GET_SENSOR_HYSTERESIS, sizeof(struct pldm_get_sens_th_req), pldm_get_sensor_hy)
-#ifdef CONFIG_PLDM_STATE_SONSORS_SUPPORT
-REGISTER_PMC_CMD(PLDM_PMC_GET_STATES_SENSOR_READINGS, sizeof(struct pldm_get_state_rd_req), pldm_get_state_rd)
-#endif
-REGISTER_PMC_CMD(PLDM_PMC_GET_PDR_REPOSITORY_INFO, 0, pldm_get_repo_info)
-REGISTER_PMC_CMD(PLDM_PMC_GETPDR, sizeof(struct pldm_get_pdr_req), pldm_get_pdr)
-#else
 pldm_cmd_hdlr_stct pldm_pmc_cmds[] = {
 	{PLDM_PMC_SET_NUMERIC_SENSOR_ENABLE, sizeof(struct pldm_set_num_sens_en_req), pldm_set_sensor_en},
 	{PLDM_PMC_GET_SENSOR_READING, sizeof(struct pldm_get_sens_rd_req), pldm_get_sensor_rd},
@@ -413,4 +402,3 @@ pldm_cmd_hdlr_stct pldm_pmc_cmds[] = {
 	{PLDM_PMC_GETPDR, sizeof(struct pldm_get_pdr_req), pldm_get_pdr},
 	PLDM_LAST_CMD,
 };
-#endif

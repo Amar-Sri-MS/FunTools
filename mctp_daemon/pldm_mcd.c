@@ -150,13 +150,6 @@ static int pldm_get_cmds(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 	return PLDM_PAYLOAD_SIZE;
 }
 
-#if 1
-REGISTER_MCD_CMD(PLDM_MCD_SETTID, sizeof(struct pldm_set_tid_req_stc), pldm_set_tid)
-REGISTER_MCD_CMD(PLDM_MCD_GETTID, 0, pldm_get_tid)
-REGISTER_MCD_CMD(PLDM_MCD_GET_VERSION, sizeof(struct pldm_get_ver_req_stc), pldm_get_ver)
-REGISTER_MCD_CMD(PLDM_MCD_GET_TYPE, 0, pldm_get_type)
-REGISTER_MCD_CMD(PLDM_MCD_GET_CMDS, sizeof(struct pldm_cmds_req_stc), pldm_get_cmds)
-#else
 pldm_cmd_hdlr_stct pldm_mcd_cmds[] = {
 	{PLDM_MCD_SETTID, sizeof(struct pldm_set_tid_req_stc), pldm_set_tid},
 	{PLDM_MCD_GETTID, 0, pldm_get_tid},
@@ -165,4 +158,3 @@ pldm_cmd_hdlr_stct pldm_mcd_cmds[] = {
 	{PLDM_MCD_GET_CMDS, sizeof(struct pldm_cmds_req_stc), pldm_get_cmds},
 	PLDM_LAST_CMD,
 };
-#endif

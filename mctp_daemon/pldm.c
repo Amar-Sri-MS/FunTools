@@ -17,10 +17,12 @@ struct pldm_global_stc pldm_vars;
 
 static pldm_cmd_hdlr_stct *search_handler(pldm_hdr_stct *hdr)
 {
-        pldm_cmd_hdlr_stct *ptr= (pldm_cmd_hdlr_stct *)&__pldm_cmds_start;
+        pldm_cmd_hdlr_stct *ptr;
 
-        for(; ptr != (pldm_cmd_hdlr_stct *)&__pldm_cmds_end; ptr++) {
-                if (ptr->type == hdr->type && ptr->cmd == hdr->cmd)
+	ptr = (hdr->type == 0) ? pldm_mcd_cmds : pldm_pmc_cmds;
+
+        for(; ptr->hdlr ; ptr++) {
+                if (ptr->cmd == hdr->cmd)
                         return ptr;
         }
 

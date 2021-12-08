@@ -137,21 +137,12 @@ struct pldm_null_rspn_stc {
 
 /* pldm handler structure */
 typedef struct {
-	uint8_t type;
 	uint8_t cmd;
 	uint16_t len;
 	int (*hdlr)(pldm_hdr_stct *hdr, pldm_hdr_stct *resp);
 } pldm_cmd_hdlr_stct;
 
 #define PLDM_LAST_CMD		{-1, -1, NULL}
-#define __PLDM_CMDS		__attribute__((section(".pldm_cmds")))
-#define REGISTER_MCD_CMD(_cmd, _len, _hdlr)     \
-	pldm_cmd_hdlr_stct __PLDM_CMDS  CONCAT(_pldm_mcd_, _cmd) = {.type = PLDM_MCD_TYPE, .cmd = _cmd, .len = _len, .hdlr = &_hdlr};
-#define REGISTER_PMC_CMD(_cmd, _len, _hdlr)     \
-	pldm_cmd_hdlr_stct __PLDM_CMDS  CONCAT(_pldm_pmc_, _cmd) = {.type = PLDM_PMC_TYPE, .cmd = _cmd, .len = _len, .hdlr = &_hdlr};
-
-// exrternal poniters to pldm cmds
-extern uint64_t __pldm_cmds_start, __pldm_cmds_end;
 
 void set_bit(uint32_t, bit_arr_t *);
 int pldm_response(pldm_hdr_stct *, uint8_t);
