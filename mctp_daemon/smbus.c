@@ -40,8 +40,11 @@ static int rx_fifo_fd, tx_fifo_fd;
 
 static void reset_ep(void)
 {
-        smbus_ep.rx_cnt = 0;
-        smbus_ep.tx_cnt = 0;
+        vdm_ep.rx_cnt = vdm_ep.rx_len = 0;
+        vdm_ep.tx_cnt = vdm_ep.tx_len = 0;
+
+        vdm_ep.rxseq = vdm_ep.txseq = 0;
+
         smbus_ep.flags |= MCTP_COMPLETE;
         smbus_ep.flags &= ~MCTP_IN_FLIGHT;
 }
@@ -84,7 +87,10 @@ static int __receive(uint8_t *buf, int len)
 
 	hexdump(buf, len);
 
-	return mctp_recieve(&smbus_ep);
+        if (mctp_recieve(&vdm_ep) < 0) {
+                reset_ep();
+                return -1;
+        }
 }
 
 static void set_smbus_hdr(int *len)
