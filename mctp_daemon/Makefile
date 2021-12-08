@@ -72,8 +72,15 @@ $(BUILD_ROOT)/auto_conf.h: $(MCTP_CONFIG)
 $(BUILD_ROOT)/pldm_repo.h: FORCE
 	$(Q)echo "#ifndef _INC_PLDM_REPO_HDR_" > $@
 	$(Q)echo "#define _INC_PLDM_REPO_HDR_" >> $@
-	$(Q)echo "struct pldm_timestamp oem_update = {`date +%-z`, `date +%-S`, `date +%-M`, `date +%-H`, `date +%-d`, `date +%-M`, `date +%Y`, 1};" >> $@
-	$(Q)echo "const struct pldm_timestamp repo_update = {`date +%-z`, `date +%-S`, `date +%-M`, `date +%-H`, `date +%-d`, `date +%-M`, `date +%Y`, 1};" >> $@
+	$(Q)echo "#define REPO_BUILD_SEC            `date +%-S`" >> $@
+	$(Q)echo "#define REPO_BUILD_MIN            `date +%-M`" >> $@
+	$(Q)echo "#define REPO_BUILD_HOUR           `date +%-H`" >> $@
+	$(Q)echo "#define REPO_BUILD_DAY            `date +%-d`" >> $@
+	$(Q)echo "#define REPO_BUILD_MONTH          `date +%-m`" >> $@
+	$(Q)echo "#define REPO_BUILD_YEAR           `date +%-Y`" >> $@
+	$(Q)echo "#define REPO_BUILD_TZ             `date +%-z`" >> $@
+	$(Q)echo "struct pldm_timestamp oem_update = {REPO_BUILD_TZ, REPO_BUILD_SEC, REPO_BUILD_MIN, REPO_BUILD_HOUR, REPO_BUILD_DAY, REPO_BUILD_MONTH, REPO_BUILD_YEAR, 1};" >> $@
+	$(Q)echo "const struct pldm_timestamp repo_update = {REPO_BUILD_TZ, REPO_BUILD_SEC, REPO_BUILD_MIN, REPO_BUILD_HOUR, REPO_BUILD_DAY, REPO_BUILD_MONTH, REPO_BUILD_YEAR, 1};" >> $@
 	$(Q)echo "#endif /* _INC_PLDM_REPO_HDR_ */" >> $@
 
 
