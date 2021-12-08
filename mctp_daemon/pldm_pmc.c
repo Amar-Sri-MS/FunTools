@@ -66,12 +66,12 @@ static int pldm_get_repo_info(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 	rspn->repo_state = AVAILABLE_REPO;
 
 	ASSIGN16_LE(rspn->update_time.utc_offset, (2 * 60));
-	ASSIGN32_LE(rspn->update_time.seconds, 0);
-	rspn->update_time.minute = 2;
-	rspn->update_time.hour = 10;
-	rspn->update_time.day = 23;
-	rspn->update_time.month = 2;
-	ASSIGN16_LE(rspn->update_time.year, 2017);
+	ASSIGN32_LE(rspn->update_time.seconds, REPO_BUILD_SEC);
+	rspn->update_time.minute = REPO_BUILD_MIN;
+	rspn->update_time.hour = REPO_BUILD_HOUR;
+	rspn->update_time.day = REPO_BUILD_DAY;
+	rspn->update_time.month = REPO_BUILD_MONTH;
+	ASSIGN16_LE(rspn->update_time.year, REPO_BUILD_YEAR);
 	
 	memcpy((uint8_t *)&rspn->oem_update_time, (uint8_t *)&rspn->update_time,sizeof(struct pldm_timestamp));
 	ASSIGN32_LE(rspn->count, num_of_sensors);
