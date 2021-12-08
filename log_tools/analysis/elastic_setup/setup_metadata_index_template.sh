@@ -5,7 +5,14 @@
 # Any index created with the prefix "metadata" will get this template.
 #
 
-curl -X PUT "localhost:9200/_index_template/metadata_template" -H 'Content-Type: application/json' -d'
+# Fetching elasticsearch URL from env
+if [[ -z "${ELASTICSEARCH_URL}" ]]; then
+  URL="localhost:9200"
+else
+  URL="${ELASTICSEARCH_URL}"
+fi
+
+curl -X PUT "${URL}/_index_template/metadata_template" -H 'Content-Type: application/json' -d'
 {
     "index_patterns": ["metadata*"],
     "template": {

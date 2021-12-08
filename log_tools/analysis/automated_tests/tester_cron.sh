@@ -10,9 +10,9 @@ set -e  # Exit on first error
 
 program_dir=$(dirname "$0")
 
-source "../.venv/bin/activate"
+source "${program_dir}/../.venv/bin/activate"
 
-export PYTHONPATH="../"
+export PYTHONPATH="${program_dir}/../"
 
 # Running tests for QA job ingestion
 "${program_dir}/qa_tester.py"

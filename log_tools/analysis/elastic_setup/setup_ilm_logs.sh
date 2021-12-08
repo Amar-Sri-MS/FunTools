@@ -9,7 +9,14 @@
 # Owner: Sourabh Jain (sourabh.jain@fungible.com)
 # Copyright (c) 2021 Fungible Inc.  All rights reserved.
 
-curl -X PUT "localhost:9200/_ilm/policy/logs" -H 'Content-Type: application/json' -d'
+# Fetching elasticsearch URL from env
+if [[ -z "${ELASTICSEARCH_URL}" ]]; then
+  URL="localhost:9200"
+else
+  URL="${ELASTICSEARCH_URL}"
+fi
+
+curl -X PUT "${URL}:9200/_ilm/policy/logs" -H 'Content-Type: application/json' -d'
 {
   "policy": {
     "phases": {
@@ -62,7 +69,7 @@ curl -X PUT "localhost:9200/_ilm/policy/logs" -H 'Content-Type: application/json
 '
 
 # Attaching the created policy with all the logs
-curl -X PUT "localhost:9200/log_*/_settings" -H 'Content-Type: application/json' -d'
+curl -X PUT "${URL}/log_*/_settings" -H 'Content-Type: application/json' -d'
 {
   "index": {
     "lifecycle": {
