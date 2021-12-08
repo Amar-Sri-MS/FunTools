@@ -3,6 +3,9 @@
 # This script creates a SDK tarball using FunOSPackageDemo and FunSDK source
 # code suitable to give to customers.
 
+# fail if anything fails
+set -e
+
 # Output tarball
 tarball_name=""
 
@@ -32,7 +35,7 @@ show_usage()
     echo "                      Defaults to the FunSDK build_id"
 }
 
-# This is the text tha goes into the README file
+# This is the text that goes into the FunSDK README file
 readme_setup()
 {
     cd $root_dir
@@ -56,7 +59,6 @@ sudo apt-get install python-yaml
 sudo apt-get install python3-asn1crypto
 sudo apt-get install python3-pyelftools
 sudo apt-get install makeself
-
 
 MIPS toolchain installation
 ===========================
@@ -259,7 +261,7 @@ funsdk_setup()
     # Checkout the build_id if passed as an argument
     if [ "$build_id" != "" ]; then
 	git checkout tags/bld_$build_id
-    build_str = -v $build_id
+    build_str="-v $build_id"
     fi
 
     # Download SDK packages
@@ -396,6 +398,39 @@ funos_package_demo_build()
 	echo ""
 	exit 1
     fi
+}
+
+# fungible-host-drivers download and setup
+fungible_host_drivers_setup()
+{
+    cd $root_dir
+
+    # There can't be a FunOS directory already present
+    if [ -d fungible-host-drivers ]; then
+	echo ""
+	echo "Error: fungible-host-drivers already present. Remove and try again"
+	echo ""
+	exit 1
+    fi
+
+    # Clone FunOS and checkout using the tag bld_<build_id>
+    tag=bld_$build_id
+    git clone git@github.com:fungible-inc/fungible-host-drivers.git
+    cd fungible-host-drivers
+    git checkout tags/$tag
+}
+
+# Build the FunOSPackageDemo packages
+package_host_drivers()
+{
+    cd $root_dir/fungible-host-drivers/linux/kernel
+
+    # package it into the distro directory
+    PKG_NAME=fungible_drv_v${build_id}.tgz
+    make PKG_PATH=$root_dir/$PKG_NAME PKG_NAME=$PKG_NAMAE package_tgz
+
+    # build the whole thing
+    make   
 }
 
 # Verify the posix packages run to completion
@@ -536,6 +571,9 @@ else
     echo "Using FunOS from SDK"
 fi
 
+# Setup the fungible-host-driver source code
+fungible_host_drivers_setup
+
 # Create README file
 readme_setup
 
@@ -560,6 +598,9 @@ funos_package_demo_build
 
 # Verify software runs
 run_posix
+
+# Package and build test the host drivers
+package_host_drivers
 
 echo ""
 echo "Accompanying S1 release bundle (dev_signed_setup_bundle_s1-rootfs-ro.squashfs-v$build_id.sh) is ready"
