@@ -3,10 +3,12 @@
 little_endian
 
 bytes 1096 "customer certificate"
-bytes 436 "padding"
+bytes 428 "padding"
+bytes 8   "customer magic"
 bytes 516 "customer signature"
 bytes 1096 "signing info"
-bytes 436 "padding"
+bytes 428 "padding"
+bytes 8    "fungible magic"
 bytes 516 "signature"
 set image_size [uint32 "size"]
 uint32 "version"
