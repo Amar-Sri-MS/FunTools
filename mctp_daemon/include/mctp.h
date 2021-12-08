@@ -174,6 +174,7 @@ typedef struct __attribute__((__packed__)) {
 #define ERR_BAD_SEID			-7
 #define ERR_BAD_DEID			-8
 #define ERR_NO_RETAIN			-9
+#define ERR_BUFFER_OVERFLOW		-10
 
 struct mctp_ops_stc {
 	int (*init)(void);

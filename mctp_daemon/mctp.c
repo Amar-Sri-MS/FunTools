@@ -420,13 +420,17 @@ int mctp_recieve(mctp_endpoint_stct *ep)
 		buf++;
 		len--;
 	} else if (((ep->rxseq + 1) & 0x3) != hdr->seq) {
-			mctp_err("fragment lost\n");
-			return ERR_BAD_SEQ_NUM;
+		mctp_err("fragment lost\n");
+		return ERR_BAD_SEQ_NUM;
 	}
 
-	ep->rxseq = hdr->seq;
+        if (ep->rx_len + len > MCTP_MAX_MESSAGE_DATA) {
+                mctp_err("payload exceeds buffer size\n");
+                return ERR_BUFFER_OVERFLOW;
+        }
 
 	// Concatinate the incoming chunk
+	ep->rxseq = hdr->seq;
 	memcpy(&ep->rx_ptr[ep->rx_len], buf, len);
 	ep->rx_len += len;
 

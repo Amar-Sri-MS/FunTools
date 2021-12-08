@@ -40,8 +40,11 @@ static struct mctp_ep_retain_stc vdm_retain = {
 
 static void reset_ep(void)
 {
-        vdm_ep.rx_cnt = 0;
-        vdm_ep.tx_cnt = 0;
+        vdm_ep.rx_cnt = vdm_ep.rx_len = 0;
+        vdm_ep.tx_cnt = vdm_ep.tx_len = 0;
+
+	vdm_ep.rxseq = vdm_ep.txseq = 0;
+
         vdm_ep.flags |= MCTP_COMPLETE;
         vdm_ep.flags &= ~MCTP_IN_FLIGHT;
 }
@@ -91,7 +94,12 @@ static int __receive(uint8_t *buf, int len)
 
 	hexdump(buf, len);
 
-	return mctp_recieve(&vdm_ep);
+        if (mctp_recieve(&vdm_ep) < 0) {
+                reset_ep();
+                return -1;
+	}
+
+	return 0;
 }
 
 static void set_pcie_vdm_hdr(int *len)
