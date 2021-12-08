@@ -65,6 +65,6 @@ struct pldm_cmds_rspn_stc {
     uint8_t cmds[32];
 } __attribute__((packed));
 
-//extern pldm_cmd_hdlr_stct pldm_mcd_cmds[];
+extern pldm_cmd_hdlr_stct pldm_mcd_cmds[];
 
 #endif /* _INC_PLDM_MCD_HDR_ */
