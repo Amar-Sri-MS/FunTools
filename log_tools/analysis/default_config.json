@@ -1,16 +1,13 @@
 {
     "ELASTICSEARCH": {
         "hosts": [
-            {"host": "10.1.22.206", "port": 9200},
-            {"host": "10.1.80.252", "port": 9200}
+            "10.1.22.206:9200",
+            "10.1.80.252:9200"
         ],
         "timeout": 60,
         "max_retries": 3
     },
-    "KIBANA": {
-        "host": "10.1.22.206",
-        "port": 5601
-    },
+    "KIBANA": ["10.1.22.206:5601"],
     "LEVEL_KEYWORDS": {
         "critical": ["crit"],
         "error": ["error", "err"],

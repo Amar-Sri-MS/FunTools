@@ -8,7 +8,14 @@
 # Owner: Sourabh Jain (sourabh.jain@fungible.com)
 # Copyright (c) 2021 Fungible Inc.  All rights reserved.
 
-curl -X PUT "localhost:9200/_slm/policy/fod" -H 'Content-Type: application/json' -d'
+# Fetching elasticsearch URL from env
+if [[ -z "${ELASTICSEARCH_URL}" ]]; then
+  URL="localhost:9200"
+else
+  URL="${ELASTICSEARCH_URL}"
+fi
+
+curl -X PUT "${URL}/_slm/policy/fod" -H 'Content-Type: application/json' -d'
 {
     "schedule": "0 30 1 * * ?",
     "name": "<fod-{now/d}>",
