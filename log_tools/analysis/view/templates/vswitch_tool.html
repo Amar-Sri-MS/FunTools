@@ -36,9 +36,13 @@
         const SEARCHES_QUERIES = {
             "CREATED_VSWITCH_REQUEST": `"method:POST" AND create-virtual-fabric`,
             "CREATED_VSWITCH_ACK": `"Creating new VF DB Entry"`,
-            "CREATED_VSWITCH_STATUS": `("Create VirtualFabric completed" OR "Create VirtualFabric completed, updated state as Completed")`,
+            "CREATED_VSWITCH_STATUS": `(
+                "Create VirtualFabric completed" OR
+                "Create VirtualFabric completed, updated state as Completed" OR
+                "Vfabric:<VF_ID> becomes online "
+            )`,
 
-            "DELETED_VSWITCHES_REQUEST": `"method:DELETE" AND delete-virtual-fabric`,
+            "DELETED_VSWITCHES_REQUEST": `"method:DELETE" AND delete-virtual-fabric AND "VF msgHandler"`,
             "DELETED_VSWITCH_ACK": `"Deleted virtual fabric DB entry"`,
             "DELETED_VSWITCH_STATUS": `("Validation successful for All FCP tunnel delete APIs" OR "Validation successfull for All FCP tunnel delete APIs")`,
 
@@ -116,7 +120,7 @@
             vswitch_logs_element.innerHTML = "";
             const responses = await asyncFetch([
                 // Create Validation
-                handleSearch(`${SEARCHES_QUERIES["CREATED_VSWITCH_STATUS"]} AND "${VFID}"`),
+                handleSearch(`${SEARCHES_QUERIES["CREATED_VSWITCH_STATUS"].replace("<VF_ID>", VFID)} AND "${VFID}"`),
                 // Delete Request
                 handleSearch(`${SEARCHES_QUERIES["DELETED_VSWITCHES_REQUEST"]} AND "${VFID}"`),
                 // Delete Validation
@@ -391,6 +395,10 @@
         }
 
         function addTableToElement(element, table, spacing=2) {
+            if (!table || table.length === 0) {
+                return;
+            }
+
             element.innerHTML += `<div>${table.toString()}</div>`;
             for (let i=0; i<spacing; i++) {
                 element.innerHTML += "\n";
