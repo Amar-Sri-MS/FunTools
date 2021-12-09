@@ -59,7 +59,7 @@ LFUNQ_PATH = $(SDKDIR)/FunSDK/host-drivers/$(MACHINE)/user/native
 endif
 
 CFLAGS += -I $(LFUNQ_PATH)/include -DWITH_LIBFUNQ
-LDFLAGS += -L $(LFUNQ_PATH)/lib -lfunq -lbin_ctl
+LDFLAGS += -L $(LFUNQ_PATH)/lib -lbin_ctl -lfunq
 endif
 
 # define header and library location in FunSDK
