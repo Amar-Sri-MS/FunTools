@@ -80,6 +80,20 @@
             }
         }
 
+        // Extracts the ports involved from the vswitch creation request log
+        function extractPortsInfo(message) {
+            // HACK: Depends on the current structure of the log message.
+            // The JSON is at the end of the log message.
+            const portsInfoStr = message.slice(message.search(" {"));
+            try {
+                // The JSON ends with an extra braces at the end which needs to be ignored.
+                return JSON.parse(portsInfoStr.slice(1, portsInfoStr.length-2));
+            }
+            catch {
+                return {"ports": []};
+            }
+        }
+
         async function showLifecycle(results) {
             trackWebEvent("VSWITCH_TOOL");
             if (!results || results.length === 0) {
@@ -165,6 +179,11 @@
                 <div>Create Validation: ${displayTimestamps(createValidation)}</div>
             `;
 
+            // Showing the ports involved in the vSwitch
+            const portsInfo = extractPortsInfo(log);
+            const portsTable = getTableForVSwitchPorts(portsInfo);
+            addTableToElement(vswitch_info_element, portsTable);
+
             // Showing error logs during vSwitch Creation
             if (createValidation.length === 0) {
                 const errorLogs = await handleSearch(`${reqID} AND level:error`);
@@ -215,12 +234,30 @@
 
             // Showing logs for all the request IDs
             const tunnelIDStr = Array.from(tunnelIDs).reduce((prev, curr) => (`${prev} OR "${curr}" OR "req_id:${curr}"`), "");
-            const results = await handleSearch(`"${reqID}" OR "${VFID}" ${tunnelIDStr}`);
+            const portNameStr = Object.entries(portsInfo["ports"]).reduce(
+                (prev, [port, portInfo]) =>
+                    (`${prev} OR "${port}:${portInfo['name']}" OR ${portInfo['name']}`)
+                , "");
+            const results = await handleSearch(`"${reqID}" OR "${VFID}" ${tunnelIDStr} ${portNameStr}`);
 
             const title = `vSwitch logs for VF-ID: ${VFID}`;
             const table = getTableForLogs(title, results);
             addTableToElement(vswitch_logs_element, table);
             toggleElementDisplay(vswitch_logs_element.parentElement, true);
+        }
+
+        function getTableForVSwitchPorts(portsInfo) {
+            if (portsInfo["ports"].length === 0) {
+                return null;
+            }
+
+            let table = new window.AsciiTable("Ports");
+            table.setHeading("DPU", "Name", "Port");
+
+            for (const [port, portInfo] of Object.entries(portsInfo["ports"])) {
+                table.addRow(portInfo["dpu"], portInfo["name"], port);
+            }
+            return table;
         }
 
         function getTableForLogs(title, results) {
