@@ -43,7 +43,7 @@ def main():
         tests = tests_json['data']
 
         # Filter out the needed tests (FS1600/FS800 Bundle Sanity, FS1600/FS800 HA Sanity)
-        needed_tests = [test for test in tests if test['name'] in NEEDED_TESTS]
+        needed_tests = [test for test in tests if test['name'] in NEEDED_TESTS and test['paused'] != True]
 
         # Get the recent 5 runs of a test in a particular release
         for test in needed_tests:
