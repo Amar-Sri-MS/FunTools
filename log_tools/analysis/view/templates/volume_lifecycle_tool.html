@@ -60,11 +60,11 @@
 
         // Self invocation function
         (function() {
+            trackWebEvent("STORAGE_TOOL");
             const params = new URLSearchParams(location.search);
             const uuid = params.get("uuid");
             if (uuid) {
                 document.getElementById("volume_id").value = uuid;
-                trackWebEvent("STORAGE_TOOL");
                 getVolumeLifecycle(uuid);
             }
         })();

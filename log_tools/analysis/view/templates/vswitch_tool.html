@@ -77,6 +77,7 @@
         }
 
         async function showLifecycle(results) {
+            trackWebEvent("VSWITCH_TOOL");
             if (!results || results.length === 0) {
                 alert("Could not find any vswitch creations");
                 return;
