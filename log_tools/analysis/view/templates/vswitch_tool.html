@@ -251,9 +251,17 @@
             const tunnelIDStr = Array.from(tunnelIDs).reduce((prev, curr) => (`${prev} OR "${curr}" OR "req_id:${curr}"`), "");
             const portNameStr = Object.entries(portsInfo["ports"]).reduce(
                 (prev, [port, portInfo]) =>
-                    (`${prev} OR "${port}:${portInfo['name']}" OR ${portInfo['name']}`)
+                    prev === ""
+                        ? (`"${port}:${portInfo['name']}" OR ${portInfo['name']}`)
+                        : (`${prev} OR "${port}:${portInfo['name']}" OR ${portInfo['name']}`)
                 , "");
-            const results = await handleSearch(`"${reqID}" OR "${VFID}" ${tunnelIDStr} ${portNameStr}`);
+
+            // HACK: to ignore funos logs before NTP sync.
+            const time = {
+                "after": "1970-01-02",
+                "before": null
+            };
+            const results = await handleSearch(`"${reqID}" OR "${VFID}" ${tunnelIDStr} (NOT src:pfm AND (${portNameStr}))`, time);
 
             const title = `vSwitch logs for VF-ID: ${VFID}`;
             const table = getTableForLogs(title, results);
