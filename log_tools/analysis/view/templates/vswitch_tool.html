@@ -37,17 +37,17 @@
             "CREATED_VSWITCH_REQUEST": `"method:POST" AND create-virtual-fabric`,
             "CREATED_VSWITCH_ACK": `"Creating new VF DB Entry"`,
             "CREATED_VSWITCH_STATUS": `(
-                "Create VirtualFabric completed" OR
-                "Create VirtualFabric completed, updated state as Completed" OR
+                ("Create VirtualFabric completed" AND "<VF_ID>") OR
+                ("Create VirtualFabric completed, updated state as Completed" AND "<VF_ID>") OR
                 "Vfabric:<VF_ID> becomes online "
             )`,
 
-            "DELETED_VSWITCHES_REQUEST": `"method:DELETE" AND delete-virtual-fabric AND "VF msgHandler"`,
-            "DELETED_VSWITCH_ACK": `"Deleted virtual fabric DB entry"`,
+            "DELETED_VSWITCHES_REQUEST": `"method:DELETE" AND delete-virtual-fabric AND "<VF_ID>"`,
+            "DELETED_VSWITCH_ACK": `"Deleted virtual fabric DB entry" AND "<VF_ID>"`,
             "DELETED_VSWITCH_STATUS": `("Validation successful for All FCP tunnel delete APIs" OR "Validation successfull for All FCP tunnel delete APIs")`,
 
-            "CREATED_TUNNEL_REQUEST": `"Sending NS API with data" AND "create_pcie_fcp_tunnel"`,
-            "DELETED_TUNNEL_REQUEST": `"Sending NS API with data" AND "delete_pcie_fcp_tunnel"`,
+            "CREATED_TUNNEL_REQUEST": `"Sending NS API with data" AND "create_pcie_fcp_tunnel" AND "<VF_ID>"`,
+            "DELETED_TUNNEL_REQUEST": `"Sending NS API with data" AND "delete_pcie_fcp_tunnel" AND "<VF_ID>"`,
             // "TUNNEL_REQUEST_STATUS": `"Received NS api response over channel" AND "status:true"`,
             // "TUNNEL_REQUEST_STATUS": `"NS Tunnel msgHandler" AND "request_id:<REQUEST_ID>" AND "status:true"`,
             "TUNNEL_REQUEST_STATUS": `(
@@ -57,12 +57,12 @@
 
             "PORT_CONNECT_STATUS": `
                 "Executing action for event port-connect-success" AND
-                "<VFID>" AND "<PORT_0> - <PORT_1>"
+                "<VF_ID>" AND "<PORT_0> - <PORT_1>"
             `,
 
             "PORT_DISCONNECT_STATUS": `
                 "Executing action for event port-disconnect-success" AND
-                "<VFID>" AND "<PORT_0> - <PORT_1>"
+                "<VF_ID>" AND "<PORT_0> - <PORT_1>"
             `,
         };
 
@@ -149,15 +149,15 @@
             vswitch_logs_element.innerHTML = "";
             const responses = await asyncFetch([
                 // Create Validation
-                handleSearch(`${SEARCHES_QUERIES["CREATED_VSWITCH_STATUS"].replace("<VF_ID>", VFID)} AND "${VFID}"`),
+                handleSearch(`${SEARCHES_QUERIES["CREATED_VSWITCH_STATUS"].replace("<VF_ID>", VFID)}`),
                 // Delete Request
-                handleSearch(`${SEARCHES_QUERIES["DELETED_VSWITCHES_REQUEST"]} AND "${VFID}"`),
+                handleSearch(`${SEARCHES_QUERIES["DELETED_VSWITCHES_REQUEST"].replace("<VF_ID>", VFID)}`),
                 // Delete Validation
-                handleSearch(`${SEARCHES_QUERIES["DELETED_VSWITCH_ACK"]} AND "${VFID}"`),
+                handleSearch(`${SEARCHES_QUERIES["DELETED_VSWITCH_ACK"].replace("<VF_ID>", VFID)}`),
                 // Tunnel Creation
-                handleSearch(`${SEARCHES_QUERIES["CREATED_TUNNEL_REQUEST"]} AND "${VFID}"`),
+                handleSearch(`${SEARCHES_QUERIES["CREATED_TUNNEL_REQUEST"].replace("<VF_ID>", VFID)}`),
                 // Tunnel Deletion
-                handleSearch(`${SEARCHES_QUERIES["DELETED_TUNNEL_REQUEST"]} AND "${VFID}"`),
+                handleSearch(`${SEARCHES_QUERIES["DELETED_TUNNEL_REQUEST"].replace("<VF_ID>", VFID)}`),
             ]);
 
             // Function to convert responses into HTML anchor tag with timestamp as text
@@ -320,7 +320,7 @@
                     await handleSearch(`${SEARCHES_QUERIES["TUNNEL_REQUEST_STATUS"].replace("<REQ_ID>", reqID)}`),
                     await handleSearch(`
                         ${SEARCHES_QUERIES[PORT_STATUS_KEY]
-                            .replace("<VFID>", VFID)
+                            .replace("<VF_ID>", VFID)
                             .replace("<PORT_0>", ports[0]["port"])
                             .replace("<PORT_1>", ports[1]["port"])}`
                     )
