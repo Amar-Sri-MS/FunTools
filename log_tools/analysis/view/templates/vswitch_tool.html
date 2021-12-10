@@ -49,7 +49,21 @@
             "CREATED_TUNNEL_REQUEST": `"Sending NS API with data" AND "create_pcie_fcp_tunnel"`,
             "DELETED_TUNNEL_REQUEST": `"Sending NS API with data" AND "delete_pcie_fcp_tunnel"`,
             // "TUNNEL_REQUEST_STATUS": `"Received NS api response over channel" AND "status:true"`,
-            "TUNNEL_REQUEST_STATUS": `"NS Tunnel msgHandler" AND "request_id:<REQUEST_ID>" AND "status:true"`,
+            // "TUNNEL_REQUEST_STATUS": `"NS Tunnel msgHandler" AND "request_id:<REQUEST_ID>" AND "status:true"`,
+            "TUNNEL_REQUEST_STATUS": `(
+                "Executing action for event tunnel-create-success" OR
+                "Executing action for event tunnel-delete-success"
+            ) AND "<REQ_ID>"`,
+
+            "PORT_CONNECT_STATUS": `
+                "Executing action for event port-connect-success" AND
+                "<VFID>" AND "<PORT_0> - <PORT_1>"
+            `,
+
+            "PORT_DISCONNECT_STATUS": `
+                "Executing action for event port-disconnect-success" AND
+                "<VFID>" AND "<PORT_0> - <PORT_1>"
+            `,
         };
 
         // Self invocation function
@@ -139,7 +153,7 @@
                 // Delete Request
                 handleSearch(`${SEARCHES_QUERIES["DELETED_VSWITCHES_REQUEST"]} AND "${VFID}"`),
                 // Delete Validation
-                handleSearch(`${SEARCHES_QUERIES["DELETED_VSWITCH_STATUS"]} AND "${VFID}"`),
+                handleSearch(`${SEARCHES_QUERIES["DELETED_VSWITCH_ACK"]} AND "${VFID}"`),
                 // Tunnel Creation
                 handleSearch(`${SEARCHES_QUERIES["CREATED_TUNNEL_REQUEST"]} AND "${VFID}"`),
                 // Tunnel Deletion
@@ -196,7 +210,7 @@
             // Tunnel Creation
             if (responses[3].length > 0) {
                 const tunnels = getTunnelsInfo(responses[3]);
-                const table = await getTableForTunnels(tunnels, "Created Tunnels");
+                const table = await getTableForTunnels(VFID, tunnels, "Created Tunnels");
                 addTableToElement(vswitch_info_element, table);
             }
 
@@ -225,7 +239,7 @@
                 // Tunnel Deletion
                 if (responses[4].length > 0) {
                     const tunnels = getTunnelsInfo(responses[4]);
-                    const table = await getTableForTunnels(tunnels, "Deleted Tunnels");
+                    const table = await getTableForTunnels(VFID, tunnels, "Deleted Tunnels");
                     addTableToElement(vswitch_info_element, table);
                 }
             }
@@ -282,34 +296,54 @@
             return table;
         }
 
-        async function getTableForTunnels(tunnels, title="Tunnels") {
+        async function getTableForTunnels(VFID, tunnels, title="Tunnels") {
             let table = new window.AsciiTable(title);
-            table.setHeading("Req-ID", "Port 1", "Port 2", "Status");
+            table.setHeading("Req-ID", "Port 1", "Port 2", "Tunnnel Status", "Port Status");
 
             for(const tunnel of tunnels) {
                 const reqID = tunnel["request_id"];
                 const reqIDURL = formSearchURL(`"${reqID}" OR "request_id:${reqID}"`);
-                const status = await handleSearch(`${SEARCHES_QUERIES["TUNNEL_REQUEST_STATUS"].replace("<REQUEST_ID>", reqID)}`);
-                let statusURL = status.length !== 0;
-                let tunnelInfo = [];
-                if (status.length !== 0) {
-                    statusURL = formAnchorTag(
-                                    formLogURL(status[0]["@timestamp"], status[0]["_id"]),
-                                    status.length !== 0
-                                );
+                const ports = tunnel["fabric_ports"];
+                const PORT_STATUS_KEY = tunnel["action"] === "create_pcie_fcp_tunnel" ?
+                                            "PORT_CONNECT_STATUS" :
+                                            "PORT_DISCONNECT_STATUS";
 
-                    const statusLog = status[0]["message"];
-                    // HACK: Depends on the current structure of the log message.
-                    // Map objects are logged between square brackets and key value pairs
-                    // separated by a space.
-                    tunnelInfo = statusLog.slice(statusLog.indexOf("fabric_ports:["), statusLog.lastIndexOf("]]")).split("map[").slice(1);
+                const statuses = await asyncFetch([
+                    await handleSearch(`${SEARCHES_QUERIES["TUNNEL_REQUEST_STATUS"].replace("<REQ_ID>", reqID)}`),
+                    await handleSearch(`
+                        ${SEARCHES_QUERIES[PORT_STATUS_KEY]
+                            .replace("<VFID>", VFID)
+                            .replace("<PORT_0>", ports[0]["port"])
+                            .replace("<PORT_1>", ports[1]["port"])}`
+                    )
+                ]);
+
+                // Showing the status of tunnel creation/deletion
+                const tunnelStatus = statuses[0];
+                let tunnelStatusURL = tunnelStatus.length !== 0;
+                if (tunnelStatus.length !== 0) {
+                    tunnelStatusURL = formAnchorTag(
+                                    formLogURL(tunnelStatus[0]["@timestamp"], tunnelStatus[0]["_id"]),
+                                    tunnelStatus.length !== 0
+                                );
+                }
+
+                // Showing the status of tunnel port creation/deletion
+                const portStatus = statuses[1];
+                let portStatusURL = portStatus.length !== 0;
+                if (portStatus.length !== 0) {
+                    portStatusURL = formAnchorTag(
+                                    formLogURL(portStatus[0]["@timestamp"], portStatus[0]["_id"]),
+                                    portStatus.length !== 0
+                                );
                 }
 
                 table.addRow(
                     formAnchorTag(reqIDURL, reqID),
-                    // ...tunnel["fabric_ports"].map(port => ( `${port["dpuname"]}, Port:${port["port"]}` )),
-                    ...tunnelInfo.map(tunnelInfo => tunnelInfo.split(" ")),
-                    statusURL
+                    `${ports[0]["dpuname"]}, Port:${ports[0]["port"]}`,
+                    `${ports[1]["dpuname"]}, Port:${ports[1]["port"]}`,
+                    tunnelStatusURL,
+                    portStatusURL
                 )
             };
             return table;
