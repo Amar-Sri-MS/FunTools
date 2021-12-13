@@ -317,9 +317,9 @@ struct pldm_get_pdr_rspn {
     uint8_t data[0];
 } __attribute__((packed));
 
-#define UPPER_WARNING_TH        95
-#define UPPER_CRITICAL_TH       100
-#define UPPER_FATAL_TH          105
+#define UPPER_WARNING_TH        70
+#define UPPER_CRITICAL_TH       85
+#define UPPER_FATAL_TH          95
 #define LOWER_WARNING_TH        10
 #define LOWER_CRITICAL_TH       5
 #define LOWER_FATAL_TH          0
