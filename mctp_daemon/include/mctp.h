@@ -184,6 +184,7 @@ struct mctp_ops_stc {
 	int (*error)(void);
 	int (*exit)(void);
 	int (*get_rx_fifo)(void);
+	int (*get_min_payload)(void);
 };
 
 #define DEFAULT_MCTP_FRAGMENT_SIZE		68

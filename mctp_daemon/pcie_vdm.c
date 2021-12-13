@@ -178,6 +178,11 @@ static int __get_rx_fifo(void)
 	return rx_fifo_fd;
 }
 
+static int __get_min_payload(void)
+{
+	return sizeof(struct pcie_vdm_hdr_stc) + sizeof(mctp_hdr_stct);
+}
+
 /* PCIE interface handlers*/
 struct mctp_ops_stc pcie_vdm_ops = {
         .init = &__init,
@@ -187,4 +192,5 @@ struct mctp_ops_stc pcie_vdm_ops = {
         .error = NULL,
 	.exit = &__exit,
 	.get_rx_fifo = &__get_rx_fifo,
+	.get_min_payload = &__get_min_payload,
 };
