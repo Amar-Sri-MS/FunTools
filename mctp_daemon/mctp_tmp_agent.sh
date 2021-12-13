@@ -34,13 +34,14 @@ fi
 
 POLL_INTERVAL=${1}
 MCTP_FIFO="/tmp/mctp_sensors_fifo"
-PLATFORM_LOG_DIR="/tmp/.platform"
-mkdir -p ${PLATFORM_LOG_DIR}
-MCTP_TEMP_LOG="$PLATFORM_LOG_DIR/mctp_temp.log"
 MAX_TEMP=127
 MIN_TEMP=-127
-DPCSH_CMD="/usr/bin/dpcsh --pcie_nvme_sock=/dev/nvme0 --nocli-quiet --nvme_cmd_timeout=10 --nvme_cmd_timeout=5 --"
+DPCSH_CMD="/usr/bin/dpcsh --pcie_nvme_sock=/dev/nvme0 --nocli-quiet --nvme_cmd_timeout=10 --nvme_cmd_timeout=5"
 DPU_HIGH_THRESHOLD=95
+
+PLATFORM_LOG_DIR="/tmp/.platform"
+/bin/mkdir -p ${PLATFORM_LOG_DIR}
+MCTP_TEMP_LOG="$PLATFORM_LOG_DIR/mctp_temp.log"
 
 SendEventToMCTP() {
 	if [ -z "${1}" -o -z "${2}" -o -z "${3}" ]; then
@@ -52,16 +53,20 @@ SendEventToMCTP() {
 	local TS_WARN_TEMP=${3}
 	local TS_TEMP_WAR_ASSERT=0
 
-	if [ ${MAX_TS_TEMP} -gt ${TS_WARN_TEMP} ]; then
-		/bin/echo "${TS_TEMP_INDEX} ${MAX_TS_TEMP}" > ${MCTP_FIFO}
-		TS_TEMP_WAR_ASSERT=1
-	elif [ ${MAX_TS_TEMP} -lt ${TS_WARN_TEMP} -a $TS_TEMP_WAR_ASSERT ]; then
-		/bin/echo "${TS_TEMP_INDEX} ${MAX_TS_TEMP}" > ${MCTP_FIFO}
-		TS_TEMP_WAR_ASSERT=0
+	#Write to MCTP Named FIFO, if it exists
+	if [ -p ${MCTP_FIFO} ]; then
+		if [ ${MAX_TS_TEMP} -gt ${TS_WARN_TEMP} ]; then
+			/bin/echo "${TS_TEMP_INDEX} ${MAX_TS_TEMP}" > ${MCTP_FIFO}
+			TS_TEMP_WAR_ASSERT=1
+			echo "Insyde ..."
+		elif [ ${MAX_TS_TEMP} -lt ${TS_WARN_TEMP} -a ${TS_TEMP_WAR_ASSERT} -eq 1 ]; then
+			/bin/echo "${TS_TEMP_INDEX} ${MAX_TS_TEMP}" > ${MCTP_FIFO}
+			TS_TEMP_WAR_ASSERT=0
+		fi
 	fi
 
-	#Reset the ${MCTP_TEMP_LOG}
-	if [ TS_TEMP_INDEX -eq 1 ]; then
+	#Log to a File as well
+	if [ ${TS_TEMP_INDEX} -eq 1 ]; then
 		/bin/echo "${TS_TEMP_INDEX} ${MAX_TS_TEMP}" > ${MCTP_TEMP_LOG}
 	else 
 		/bin/echo "${TS_TEMP_INDEX} ${MAX_TS_TEMP}" >> ${MCTP_TEMP_LOG}
@@ -73,18 +78,23 @@ GetDPUMRSensorsThermal() {
 		return 1
 	fi
 
-	local SENSOR_ID=${1}
+	local TS_ID=${1}
 	local MAX_DPU_TEMP=-127
 	local DPU_SNR_CNT=9
 	local CNT=0
 	#DPU TS Thresolds as per System's team
-	local DPU_WARN_TEMP=$(($(DPU_HIGH_THRESHOLD) - 25))
-	local DPU_CRIT_TEMP=$(($(DPU_HIGH_THRESHOLD) - 10))
-	local DPU_FATAL_TEMP=$(($(DPU_HIGH_THRESHOLD) - 3))
+	local DPU_WARN_TEMP=$((DPU_HIGH_THRESHOLD - 25))
+	local DPU_CRIT_TEMP=$((DPU_HIGH_THRESHOLD - 10))
+	local DPU_FATAL_TEMP=$((DPU_HIGH_THRESHOLD - 3))
 
 	while [ ${CNT} -lt ${DPU_SNR_CNT} ]; do
-		QT=".result.temperature"
-		DPU_TEMP=$(/bin/echo ${DPCSH_CMD} | /usr/bin/jq -r $QT)
+		DPU_TS_GET_CMD=$(${DPCSH_CMD} temperature dpu ${CNT})
+		if [ ${?} -eq 0 ]; then
+			DPU_TEMP=$(/bin/echo ${DPU_TS_GET_CMD} | /usr/bin/jq -r .result.temperature)
+		else
+			continue
+		fi
+
 		if [ ! -z "${DPU_TEMP}" ]; then
 			#Ignore All Read Temp which are <-127*C or > 127*C
 			if [ ${DPU_TEMP} -lt ${MAX_TEMP} -a ${DPU_TEMP} -gt ${MIN_TEMP} ]; then
@@ -95,12 +105,12 @@ GetDPUMRSensorsThermal() {
 		fi
 		CNT=$((CNT + 1))
 	done
-	SendEventToMCTP ${SENSOR_ID} ${MAX_DPU_TEMP} ${DPU_WARN_TEMP} 
+	SendEventToMCTP ${TS_ID} ${MAX_DPU_TEMP} ${DPU_WARN_TEMP}
 }
 
 #Poll every $POLL_INTERVAL
 while true; do
-	local SENSOR_ID=1
-	GetDPUMRSensorsThermal SENSOR_ID
+	SENSOR_ID=1
+	GetDPUMRSensorsThermal ${SENSOR_ID}
 	sleep $POLL_INTERVAL
 done
