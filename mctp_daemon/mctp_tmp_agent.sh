@@ -89,12 +89,11 @@ GetDPUMRSensorsThermal() {
 
 	while [ ${CNT} -lt ${DPU_SNR_CNT} ]; do
 		DPU_TS_GET_CMD=$(${DPCSH_CMD} temperature dpu ${CNT})
-		if [ ${?} -eq 0 ]; then
-			DPU_TEMP=$(/bin/echo ${DPU_TS_GET_CMD} | /usr/bin/jq -r .result.temperature)
-		else
+		if [ ${?} -ne 0 ]; then
 			continue
 		fi
 
+		DPU_TEMP=$(/bin/echo ${DPU_TS_GET_CMD} | /usr/bin/jq -r .result.temperature)
 		if [ ! -z "${DPU_TEMP}" ]; then
 			#Ignore All Read Temp which are <-127*C or > 127*C
 			if [ ${DPU_TEMP} -lt ${MAX_TEMP} -a ${DPU_TEMP} -gt ${MIN_TEMP} ]; then
