@@ -341,7 +341,7 @@ class StorageCommands(object):
                                 for _key in sorted(result[key]):
                                     if result[key][_key] == ctrlr_uuid:
                                         for _key in sorted(result[key]):
-                                            if _key == "Name spaces":
+                                            if _key == "name_spaces":
                                                 continue
                                             else:
                                                 table_obj.add_row([_key, result[key][_key], diff_result[key][_key]])
@@ -355,7 +355,7 @@ class StorageCommands(object):
                                 for _key in sorted(result[key]):
                                     if result[key][_key] == ctrlr_uuid:
                                         for _key in sorted(result[key]):
-                                            if _key == "Name spaces":
+                                            if _key == "name_spaces":
                                                 continue
                                             else:
                                                 table_obj.add_row([_key, result[key][_key]])
