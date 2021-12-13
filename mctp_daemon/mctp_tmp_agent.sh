@@ -82,7 +82,7 @@ GetDPUMRSensorsThermal() {
 	local MAX_DPU_TEMP=-127
 	local DPU_SNR_CNT=9
 	local CNT=0
-	#DPU TS Thresolds as per System's team
+	#DPU TS Thresolds as per System team
 	local DPU_WARN_TEMP=$((DPU_HIGH_THRESHOLD - 25))
 	local DPU_CRIT_TEMP=$((DPU_HIGH_THRESHOLD - 10))
 	local DPU_FATAL_TEMP=$((DPU_HIGH_THRESHOLD - 3))
