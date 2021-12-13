@@ -1,0 +1,106 @@
+#!/bin/bash
+#
+# File: mctp_tmp_agent.sh
+# Purpose: 
+# Periodically Update MAX_TS_TEMP_VAL in following format to /tmp/.platform/mctp_temp.log.
+# This would be consumed by MCTP Daemon to serve HostServer's "GetSensorReading PLDM Command"
+# 	Format:
+#	<SensorID_1> <MAX_TS_TEMP_VAL_1>
+#	<SensorID_2> <TEMP_VAL_2>
+#	... so on ...
+# Also whenever MAX_TEMP_VAL crosses warning, critical or fatal temperature threshold values,
+# it would also periodically writes to MCTP Daemon's /tmp/mctp_sensors_fifo (in same above format)
+# till that condition goes off.
+# Once such conditions totally goes off then it would write only once last time to this FIFO to
+# indicate MCTP to clear the temp_condition and then never write to that FIFO again till such
+# condition arises in future.
+#
+# Created by Karnik Jain (karnik.jain@fungible.com)
+# Copyright © 2021 Fungible. All rights reserved.
+#
+#
+
+MINARGS=1
+MAXARGS=1
+
+Usage() {
+	echo "${0} <Thermal Polling Interval in Seconds>"
+}
+
+if [ ${#} -lt ${MINARGS} -o ${#} -gt ${MAXARGS} ]; then
+	Usage
+	exit 1
+fi
+
+POLL_INTERVAL=${1}
+MCTP_FIFO="/tmp/mctp_sensors_fifo"
+PLATFORM_LOG_DIR="/tmp/.platform"
+mkdir -p ${PLATFORM_LOG_DIR}
+MCTP_TEMP_LOG="$PLATFORM_LOG_DIR/mctp_temp.log"
+MAX_TEMP=127
+MIN_TEMP=-127
+DPCSH_CMD="/usr/bin/dpcsh --pcie_nvme_sock=/dev/nvme0 --nocli-quiet --nvme_cmd_timeout=10 --nvme_cmd_timeout=5 --"
+DPU_HIGH_THRESHOLD=95
+
+SendEventToMCTP() {
+	if [ -z "${1}" -o -z "${2}" -o -z "${3}" ]; then
+		return 1
+	fi
+
+	local TS_TEMP_INDEX=${1}
+	local MAX_TS_TEMP=${2}
+	local TS_WARN_TEMP=${3}
+	local TS_TEMP_WAR_ASSERT=0
+
+	if [ ${MAX_TS_TEMP} -gt ${TS_WARN_TEMP} ]; then
+		/bin/echo "${TS_TEMP_INDEX} ${MAX_TS_TEMP}" > ${MCTP_FIFO}
+		TS_TEMP_WAR_ASSERT=1
+	elif [ ${MAX_TS_TEMP} -lt ${TS_WARN_TEMP} -a $TS_TEMP_WAR_ASSERT ]; then
+		/bin/echo "${TS_TEMP_INDEX} ${MAX_TS_TEMP}" > ${MCTP_FIFO}
+		TS_TEMP_WAR_ASSERT=0
+	fi
+
+	#Reset the ${MCTP_TEMP_LOG}
+	if [ TS_TEMP_INDEX -eq 1 ]; then
+		/bin/echo "${TS_TEMP_INDEX} ${MAX_TS_TEMP}" > ${MCTP_TEMP_LOG}
+	else 
+		/bin/echo "${TS_TEMP_INDEX} ${MAX_TS_TEMP}" >> ${MCTP_TEMP_LOG}
+	fi
+}
+
+GetDPUMRSensorsThermal() {
+	if [ -z "${1}" ]; then
+		return 1
+	fi
+
+	local SENSOR_ID=${1}
+	local MAX_DPU_TEMP=-127
+	local DPU_SNR_CNT=9
+	local CNT=0
+	#DPU TS Thresolds as per System's team
+	local DPU_WARN_TEMP=$(($(DPU_HIGH_THRESHOLD) - 25))
+	local DPU_CRIT_TEMP=$(($(DPU_HIGH_THRESHOLD) - 10))
+	local DPU_FATAL_TEMP=$(($(DPU_HIGH_THRESHOLD) - 3))
+
+	while [ ${CNT} -lt ${DPU_SNR_CNT} ]; do
+		QT=".result.temperature"
+		DPU_TEMP=$(/bin/echo ${DPCSH_CMD} | /usr/bin/jq -r $QT)
+		if [ ! -z "${DPU_TEMP}" ]; then
+			#Ignore All Read Temp which are <-127*C or > 127*C
+			if [ ${DPU_TEMP} -lt ${MAX_TEMP} -a ${DPU_TEMP} -gt ${MIN_TEMP} ]; then
+				if [ ${DPU_TEMP} -gt ${MAX_DPU_TEMP} ]; then
+					MAX_DPU_TEMP=${DPU_TEMP}
+				fi
+			fi
+		fi
+		CNT=$((CNT + 1))
+	done
+	SendEventToMCTP ${SENSOR_ID} ${MAX_DPU_TEMP} ${DPU_WARN_TEMP} 
+}
+
+#Poll every $POLL_INTERVAL
+while true; do
+	local SENSOR_ID=1
+	GetDPUMRSensorsThermal SENSOR_ID
+	sleep $POLL_INTERVAL
+done
