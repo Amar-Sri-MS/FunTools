@@ -36,7 +36,7 @@ POLL_INTERVAL=${1}
 MCTP_FIFO="/tmp/mctp_sensors_fifo"
 MAX_TEMP=127
 MIN_TEMP=-127
-DPCSH_CMD="/usr/bin/dpcsh --pcie_nvme_sock=/dev/nvme0 --nocli-quiet --nvme_cmd_timeout=10 --nvme_cmd_timeout=5"
+DPCSH_CMD="/usr/bin/dpcsh --pcie_nvme_sock=/dev/nvme0 --nocli-quiet --nvme_cmd_timeout=10"
 DPU_HIGH_THRESHOLD=95
 
 PLATFORM_LOG_DIR="/tmp/.platform"
