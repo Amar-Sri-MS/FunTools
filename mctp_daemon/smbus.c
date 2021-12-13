@@ -163,7 +163,12 @@ static int __get_rx_fifo(void)
 	return rx_fifo_fd;
 }
 
-/* PCIE interface handlers*/
+static int __get_min_payload(void)
+{
+	return sizeof(struct smbus_hdr_stc) + sizeof(mctp_hdr_stct);
+}
+
+/* SMBUS interface handlers*/
 struct mctp_ops_stc smbus_ops = {
         .init = &__init,
         .recv = &__receive,
@@ -172,4 +177,5 @@ struct mctp_ops_stc smbus_ops = {
         .error = NULL,
 	.exit = &__exit,
 	.get_rx_fifo = &__get_rx_fifo,
+	.get_min_payload = &__get_min_payload,
 };

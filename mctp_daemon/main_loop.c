@@ -64,7 +64,7 @@ static int init(void)
 
 int main_loop()
 {
-        int len, rc = -1;
+        int len = 0, rc = -1, rd_len;
         struct timeval timeout;
         fd_set read_fds;
 	int rx_fifo_fd;
@@ -103,12 +103,16 @@ int main_loop()
                 if ((select(rx_fifo_fd + 1, &read_fds, NULL, NULL, &timeout)) != 1) 
                         continue;
 
-		len = read(rx_fifo_fd, buf, sizeof(buf));
+		rd_len = read(rx_fifo_fd, buf, sizeof(buf));
 
-		if (len <= 0)
+		if (rd_len <= 0)
 			continue;
 
-		mctp_ops[PCIE_EP_ID]->recv(buf, len);
+		len += rd_len;
+		if (len >= mctp_ops[PCIE_EP_ID]->get_min_payload()) {
+			mctp_ops[PCIE_EP_ID]->recv(buf, len);
+			len = 0;
+		}
         }
 
 exit:

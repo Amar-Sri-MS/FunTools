@@ -21,6 +21,7 @@ extern int main_loop();
 
 FILE *log_fd;
 int flags = 0;
+char *lock;
 
 struct server_cfg_stc cfg = {
 	.sleep = 60,
@@ -30,7 +31,12 @@ struct server_cfg_stc cfg = {
 	.debug = 0,
 };
 
-uint16_t saved_timeout = 10;
+static void segfault_handler()
+{
+        remove(lock);
+        fclose(log_fd);
+        exit(0);
+}
 
 static void usage()
 {
@@ -53,6 +59,8 @@ int main(int argc, char *argv[])
 	uid_t uid=getuid(), euid=geteuid();
         int c, index = 0;
 	char *log = cfg.logfile, *lock = cfg.lockfile;
+	struct sigaction sa;
+
         struct option long_args[] = {
                 {"daemon",      1, 0, 'b'},
                 {"help",        1, 0, 'h'},
@@ -66,6 +74,17 @@ int main(int argc, char *argv[])
 
         opterr = 0;
         optind = 1;
+
+	log = cfg.logfile;
+	lock = cfg.lockfile;
+
+        // install sigfault handler
+        memset(&sa, 0, sizeof(struct sigaction));
+        sigemptyset(&sa.sa_mask);
+        sa.sa_sigaction = segfault_handler;
+        sa.sa_flags   = SA_SIGINFO;
+        sigaction(SIGSEGV, &sa, NULL);
+
 
         while ((c = getopt_long(argc, argv, "bhl:nvDL:V", long_args, &index)) != -1) {
 		switch (c) {
