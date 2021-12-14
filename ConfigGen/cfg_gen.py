@@ -175,8 +175,7 @@ def _read_json_file(fname):
         sjs = jsonutils.standardize_json(fls)
         js = json.loads(sjs)
     except:
-        print("Exception occurred reading/parsing json file %s" % fname)
-        print(sjs)
+        logger.error("Exception occurred reading/parsing json file {}\n{}".format(fname, sjs))
         raise
 
     return js
@@ -187,7 +186,7 @@ def _read_json_file_as_dict(fname):
     try:
         assert(isinstance(js, dict))
     except:
-        print("JSON file %s is not a dict" % fname)
+        logger.error("JSON file {} is not a dict".format(fname))
         raise
 
     return js
@@ -206,9 +205,9 @@ def _validate_subprofile_cfg(fname, js):
     assert(isinstance(js, dict))
     if ("key_path" not in js):
         raise RuntimeError("subprofile %s is missing key_path" % fname)
-    print(js)
-    print(js["key_path"])
-    print(type(js["key_path"]))
+    logger.debug(js)
+    logger.debug(js["key_path"])
+    logger.debug(type(js["key_path"]))
 
     assert(isinstance(js["key_path"], basestring))
 
@@ -261,7 +260,7 @@ def _load_subprofiles_and_fragments(spglob, subprofiles, stype, sval):
     sglob = os.path.join(spglob, "*_profile")
     for subprof in glob.glob(sglob):
         if (not os.path.isdir(subprof)):
-            print("WARNING: %s is not a directory, ignoring" % subprof)
+            logger.warning("%s is not a directory, ignoring" % subprof)
             continue
 
         # get the name
@@ -286,7 +285,7 @@ def _generate_profiles_config(config_root_dir, target_chip, target_boards):
     sglob = os.path.join(pdir, "subprofiles", "*_profile")
     for subdir in glob.glob(sglob):
         if (not os.path.isdir(subdir)):
-            print("WARNING: %s is not a directory, ignoring" % subdir)
+            logger.warning("%s is not a directory, ignoring" % subdir)
             continue
 
         # get the name
@@ -308,7 +307,7 @@ def _generate_profiles_config(config_root_dir, target_chip, target_boards):
             raise RuntimeError("error: subprofile %s has multiple descriptor files: %s" %s (subdir, cfgs))
 
         descfilename = cfgs[0]
-        print("subprofile %s using descriptor %s" % (subdir, descfilename))
+        logger.debug("subprofile %s using descriptor %s" % (subdir, descfilename))
 
         # parse it
         js = _read_json_file_as_dict(descfilename)
@@ -335,7 +334,7 @@ def _generate_profiles_config(config_root_dir, target_chip, target_boards):
     bglob = os.path.join(pdir, "board", "*")
     for boarddir in glob.glob(bglob):
         if (not os.path.isdir(boarddir)):
-            print("WARNING: %s is not a directory, ignoring" % boarddir)
+            logger.warning("%s is not a directory, ignoring" % boarddir)
             continue
 
         # get the name
@@ -365,8 +364,9 @@ def _generate_profiles_config(config_root_dir, target_chip, target_boards):
             raise RuntimeError("profiles %s missing required subprofiles" % pname)
 
         # validate all the keys & values that we can do statically
-        print("found profile %s" % pname)
+        logger.debug("found profile %s" % pname)
         _validate_profile_cfg(pname, js)
+        logger.info("Added new profile {}".format(pname))
 
         # add it to the list
         profiles[pname] = js
