@@ -388,7 +388,7 @@ def _load_workerpool_config(wpconfig):
     fl = open(wpconfig)
     js = json.load(fl)
 
-    # modules/nucleus/workerpool/policies in nucleus 
+    # modules/nucleus/workerpool/policies in nucleus
     wp_cfg = {"modules": {"workerpool": {"policies": js}}}
 
     return wp_cfg
@@ -446,7 +446,7 @@ def _generate_funos_default_config(config_root_dir, sdk_dir, output_dir,
     ## assemble into main config
     funos_default_config = jsonutils.merge_dicts(funos_default_config,
                                                  modules_cfg)
-       
+
     ## process module config -- per-sku
     for sku in list(funos_default_config[SKUCfgGen.get_sku_path()].keys()):
         config_sku_dir = os.path.join(config_root_dir,
@@ -561,7 +561,7 @@ def main():
     arg_parser.add_argument("--machine", required=True, nargs=1, type=str,
                             help="Target machine type")
 
-    arg_parser.add_argument("--chip", required=True, nargs=1, type=str,
+    arg_parser.add_argument("--chip", required=True, type=str,
                             help="Target chip type")
 
     arg_parser.add_argument("--wpcfg", action='store', default=None,
@@ -592,10 +592,10 @@ def main():
     if args.funoscfg:
         _generate_funos_default_config(args.in_dir[0],
                                        args.sdk_dir, args.out_dir[0],
-                                       args.chip[0], args.machine[0],
+                                       args.chip, args.machine[0],
                                        args.wpcfg)
         _generate_sku_config_code(args.in_dir[0], args.sdk_dir, args.out_dir[0],
-                                  args.chip[0], args.machine[0])
+                                  args.chip, args.machine[0])
         _generate_hu_config_code(args.in_dir[0], args.out_dir[0])
 
     if args.hucfg:
@@ -603,15 +603,15 @@ def main():
 
     if args.skucfg:
         _generate_sku_config_code(args.in_dir[0], args.sdk_dir, args.out_dir[0],
-                                  args.chip[0], args.machine[0])
+                                  args.chip, args.machine[0])
 
     if args.nucsr_replaycfg:
         _generate_nu_csr_replay_config(args.in_dir[0], args.out_dir[0],
-                                       args.chip[0], args.machine[0])
+                                       args.chip, args.machine[0])
 
     if args.eeprom:
         _generate_sku_eeprom_files(args.in_dir[0], args.sdk_dir, args.out_dir[0],
-                                   args.chip[0], args.machine[0])
+                                   args.chip, args.machine[0])
 
 if __name__ == "__main__":
     main()

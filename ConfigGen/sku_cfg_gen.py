@@ -20,7 +20,7 @@ from default_cfg_gen import DefaultCfgGen
 from sku_board_layer_cfg_gen import BoardLayer
 
 logger = logging.getLogger('sku_cfg_gen')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 class SKUCfgGen():
     sku_h_tmpl = 'platform_sku_h.j2'
@@ -90,7 +90,7 @@ class SKUCfgGen():
             if 'chip' not in sku_json['skus'].get(key, {}).get('PlatformInfo', {}):
                 continue
             chip = sku_json['skus'][key]['PlatformInfo']['chip']
-            if chip not in self.target_chip:
+            if chip != self.target_chip:
                 return False
             # Next check the configuration file is for a board
             if 'machine' not in sku_json['skus'].get(key, {}).get('PlatformInfo', {}):
@@ -134,9 +134,6 @@ class SKUCfgGen():
                         logger.error("Failed to load config file: {}".format(cfg))
                         raise
 
-                    if not self.is_cfg_target_board(sku_json):
-                        continue
-
                     if len(sku_json['skus']) > 1:
                         logger.error("Only single sku per file supported")
                         raise
@@ -148,6 +145,13 @@ class SKUCfgGen():
                         # add this config to the list for processing later, as the parent
                         # configuration might not be available at this time
                         remaining_board_configs.append(sku_json)
+                        continue
+
+                    # skip processing if the board is not for a given target
+                    # this is not done earlier to allow inherited boards to override
+                    # target choice, so a board for a 'wrong' target may still be added
+                    # to 'raw_board_configs'
+                    if not self.is_cfg_target_board(sku_json):
                         continue
 
                     # Apply defaults to the SKU file
@@ -162,6 +166,11 @@ class SKUCfgGen():
         for sku_json in remaining_board_configs:
             sku = sku_json['skus'].keys()[0]
             parent = self.get_board_config_parent(sku_json)
+
+            # check if the board is for a given target - if this is a 'base' board that was
+            # used for inheriting a config, then it may be targeting a different dpu
+            if not self.is_cfg_target_board(sku_json):
+                continue
 
             # Create new sku based on the parent sku but retain original PlatformInfo
             sku_json['skus'][sku] = jsonutils.merge_dicts_recursive(
