@@ -47,12 +47,9 @@ class NUCfgGen():
 
         for cfg in glob.glob(os.path.join(self.input_dir, 'nu_config/*csr*.cfg')):
             logger.debug('Processing {}'.format(cfg))
-            with open(cfg, 'r') as f:
-                cfg_json = f.read()
-                cfg_json = jsonutils.standardize_json(cfg_json)
-                cfg_json = json.loads(cfg_json)
-                nu_csr_replay_cfg = self._nu_merge_dicts(
-                    nu_csr_replay_cfg, cfg_json)
+            cfg_json = jsonutils.load_fungible_json(cfg)
+            nu_csr_replay_cfg = self._nu_merge_dicts(
+                nu_csr_replay_cfg, cfg_json)
         return nu_csr_replay_cfg
 
     # Merges nu pipeline config
@@ -61,9 +58,6 @@ class NUCfgGen():
 
         for cfg in glob.glob(os.path.join(self.input_dir, 'nu_config/*.cfg')):
             logger.debug('Processing {}'.format(cfg))
-            with open(cfg, 'r') as f:
-                cfg_json = f.read()
-                cfg_json = jsonutils.standardize_json(cfg_json)
-                cfg_json = json.loads(cfg_json)
-                nu_cfg = self._nu_merge_dicts(nu_cfg, cfg_json)
+            cfg_json = jsonutils.load_fungible_json(cfg)
+            nu_cfg = self._nu_merge_dicts(nu_cfg, cfg_json)
         return nu_cfg

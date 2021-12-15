@@ -31,10 +31,7 @@ class HWCAPDataCatalog():
         hwcap_schema  = os.path.join(
             self.input_dir, 'hwcap_config/hwcap_schema.cfg')
         logger.debug('Processing hwcap catalog: {}'.format(hwcap_schema))
-        with open(hwcap_schema, 'r') as f:
-            cfg_json = f.read()
-            cfg_json = jsonutils.standardize_json(cfg_json)
-            self.hwcap_data_catalog = json.loads(cfg_json)
+        self.hwcap_data_catalog = jsonutils.load_fungible_json(hwcap_schema)
 
         for k, v in list(self.hwcap_data_catalog.get('hw_blocks', None).items()):
             self.hw_block_inst_cnts[k] = v["inst_cnt"]
@@ -51,10 +48,7 @@ class HWCAPDataCatalog():
             self.input_dir, 'hwcap_config/emu_sku_ids.cfg')
         logger.debug('Processing emulation sku ids file: {}'.format(
             emu_sku_cfg_file))
-        with open(emu_sku_cfg_file, 'r') as f:
-            cfg_json = f.read()
-            cfg_json = jsonutils.standardize_json(cfg_json)
-            self.emu_sku_ids = json.loads(cfg_json)
+        self.emu_sku_ids = jsonutils.load_fungible_json(emu_sku_cfg_file)
 
     def _get_hwcap_data_catalog(self):
         return self.hwcap_data_catalog
@@ -145,11 +139,8 @@ class HWCAPCodeGen():
         for pattern in patterns:
             for cfg in glob.glob(os.path.join(self.input_dir, pattern)):
                 logger.debug('Processing hwcap config:{}'.format(cfg))
-                with open(cfg, 'r') as f:
-                    cfg_json = f.read()
-                    cfg_json = jsonutils.standardize_json(cfg_json)
-                    cfg_json = json.loads(cfg_json)
-                    hwcap_cfg = jsonutils.merge_dicts(hwcap_cfg, cfg_json)
+                cfg_json = jsonutils.load_fungible_json(cfg)
+                hwcap_cfg = jsonutils.merge_dicts(hwcap_cfg, cfg_json)
 
         hwcap_cfg = hwcap_cfg.get('skus', None)
 

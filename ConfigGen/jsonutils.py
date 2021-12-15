@@ -132,3 +132,15 @@ def merge_dicts_recursive(cfg1, cfg2):
             cfg2[k] = v
 
     return cfg2
+
+
+def load_fungible_json(fname):
+    with open(fname, 'r') as f:
+        this_json = f.read()
+        this_json = standardize_json(this_json)
+        try:
+            return json.loads(this_json)
+        except ValueError as e:
+            raise ValueError("Error processing {}:{}".format(fname, str(e)))
+
+    return None
