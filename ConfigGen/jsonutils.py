@@ -133,13 +133,26 @@ def merge_dicts_recursive(cfg1, cfg2):
 
     return cfg2
 
+# Raise an error when duplicate keys are found
+# Otherwise the default loader silently loads the last value, which
+#  can lead to subtle and hard to find errors
+def _json_ordered_pair_handler(pairs):
+    d = {}
+    for k, v in pairs:
+        if k in d:
+           raise ValueError("Duplicate key: {}".format(k))
+        else:
+           d[k] = v
+    return d
 
+# Load a Fungible-style json
+# A Fungible-style json may contain C-style comments, unquoted values etc
 def load_fungible_json(fname):
     with open(fname, 'r') as f:
         this_json = f.read()
         this_json = standardize_json(this_json)
         try:
-            return json.loads(this_json)
+            return json.loads(this_json, object_pairs_hook=_json_ordered_pair_handler)
         except ValueError as e:
             raise ValueError("Error processing {}:{}".format(fname, str(e)))
 
