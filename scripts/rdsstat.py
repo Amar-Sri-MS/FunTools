@@ -135,10 +135,10 @@ def find_all_nsids(d):
         return []
     
     # terminal
-    if ("Name spaces" in d):
+    if ("name_spaces" in d):
         r = []
         dflt_uuid = d.get("contoller UUID", "<unknown>")
-        for ns in d["Name spaces"]:
+        for ns in d["name_spaces"]:
             UUID = ns.get('UUID', dflt_uuid)
             if (UUID == ''):
                 UUID = dflt_uuid
