@@ -16,6 +16,7 @@
 #include<signal.h>
 
 #include "utils.h"
+#include "mctp.h"
 
 extern int main_loop();
 
@@ -33,6 +34,10 @@ struct server_cfg_stc cfg = {
 
 static void segfault_handler()
 {
+	for(int i = 0; i < NUMBER_OF_EPS; i++)
+                if (mctp_ops[i]->exit)
+                        mctp_ops[i]->exit();
+
         remove(lock);
         fclose(log_fd);
         exit(0);
