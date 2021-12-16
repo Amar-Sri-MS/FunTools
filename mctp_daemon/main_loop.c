@@ -24,7 +24,7 @@
 #define NUMBER_OF_EPS	2
 
 static int terminate = 0;
-static struct mctp_ops_stc *mctp_ops[NUMBER_OF_EPS] = {
+struct mctp_ops_stc *mctp_ops[NUMBER_OF_EPS] = {
 	&pcie_vdm_ops,
 	&smbus_ops,
 };
@@ -62,19 +62,41 @@ static int init(void)
 	return 0;
 }
 
+static void get_temp(int fd)
+{
+}
+
+#define SENSOR_FIFO		"/tmp/mctp_sensors"
+#define SET_FDS(_fifo, _fds, _timeout)		\
+	do {					\
+		FD_ZERO(&(_fds));		\
+		FD_SET((_fifo), &(_fds));	\
+		(_timeout).tv_sec = cfg.sleep;	\
+		(_timeout).tv_usec = 0;		\
+	} while (0)
+
+
 int main_loop()
 {
         int len = 0, rc = -1, rd_len;
-        struct timeval timeout;
-        fd_set read_fds;
-	int rx_fifo_fd;
+        struct timeval timeout, sensor_timeout;
+        fd_set read_fds, sensor_fds;
+	int rx_fifo_fd, sensor_fifo_fd;
 	uint8_t buf[128];
 
 	umask(0);
 
-	if (init()) {
+	// open sensor name fifo
+	mkfifo(SENSOR_FIFO, 0666);
+	if ((sensor_fifo_fd = open(SENSOR_FIFO, O_RDWR | O_CREAT)) < 0) {
+                log_err("cannot open %s\n", SENSOR_FIFO);
+                remove(SENSOR_FIFO);
 		return -1;
-	}
+        }
+
+	if (init()) 
+		goto exit;
+	
 
         if (signal(SIGTERM , sig_handler) == SIG_ERR) {
                 log_err("can't catch SIGTERM\n");
@@ -83,22 +105,23 @@ int main_loop()
 
 	if (signal(SIGINT , sig_handler) == SIG_ERR) {
 		log_err("can't catch SIGINT\n");
-		return -1;
+		goto exit;
 	}
 
 	rx_fifo_fd = mctp_ops[PCIE_EP_ID]->get_rx_fifo();
 
 	// for now, assume only one ep (pcie-vdm)
 	while (1) {
-		FD_ZERO(&read_fds);
-		FD_SET(rx_fifo_fd, &read_fds);
-		timeout.tv_sec = cfg.sleep;
-		timeout.tv_usec = 0;
+		SET_FDS(rx_fifo_fd, read_fds, timeout);
+		SET_FDS(sensor_fifo_fd, sensor_fds, sensor_timeout);
 
 		if (terminate) {
 			log("Terminated ...\n");
 			goto exit;
 		}
+
+                if ((select(sensor_fifo_fd + 1, &sensor_fds, NULL, NULL, &sensor_timeout)) == 1) 
+                        get_temp(sensor_fifo_fd);
 
                 if ((select(rx_fifo_fd + 1, &read_fds, NULL, NULL, &timeout)) != 1) 
                         continue;
@@ -120,5 +143,9 @@ exit:
 	for(int i = 0; i < NUMBER_OF_EPS; i++)
 		if (mctp_ops[i]->exit)
 			mctp_ops[i]->exit();
+
+	close(sensor_fifo_fd);
+	remove(SENSOR_FIFO);
+
 	return rc;
 }

@@ -236,6 +236,11 @@ typedef struct {
 	uint32_t bad_msg;
 } mctp_stats_t;
 
+#define PCIE_EP_ID      0
+#define SMBUS_EP_ID     1
+#define NUMBER_OF_EPS   2
+extern struct mctp_ops_stc *mctp_ops[NUMBER_OF_EPS];
+
 mctp_stats_t *get_mctp_sts(void);
 int mctp_recieve(mctp_endpoint_stct *);
 int mctp_transmit(mctp_endpoint_stct *);
