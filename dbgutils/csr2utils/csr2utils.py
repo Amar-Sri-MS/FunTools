@@ -28,7 +28,7 @@ if WS is None:
     sys.exit(1)
 sys.path.append(os.path.join(WS, 'FunHW/csr2api/v2'))
 
-import csr2
+import csr2py2
 
 #
 # Use a global logger to match the convention set by related modules.
@@ -187,7 +187,7 @@ class RegisterFinder(object):
 
     def _descend(self, cursor, remaining_parts):
         if not remaining_parts:
-            if isinstance(cursor.typ, csr2.Arrayed):
+            if isinstance(cursor.typ, csr2py2.Arrayed):
                 logger.debug("bounds: {0}".format(cursor.typ.bounds[0]))
                 logger.debug("count_stride: {0}".format(cursor.typ.count_stride))
                 logger.debug("count: {0}".format(cursor.typ.count))
@@ -196,7 +196,7 @@ class RegisterFinder(object):
                 logger.debug("width: {0}".format(cursor.size('addr')))
             # Found the target register if all parts have been matched and
             # we landed on a register.
-            if isinstance(cursor.typ, csr2.Reg):
+            if isinstance(cursor.typ, csr2py2.Reg):
                 return cursor, None
             return None, 'Failed to find the register(possibly incomplete path?)'
 
@@ -220,7 +220,7 @@ class RegisterFinder(object):
         # Walk all children of the register, but only look at Logic and Union
         # types which represent the lowest level (i.e. bitfields).
         for child in reg_cursor.child().walk(explode=True):
-            if isinstance(child.typ, (csr2.Logic, csr2.Union)):
+            if isinstance(child.typ, (csr2py2.Logic, csr2py2.Union)):
                 fname = child.crumb.name
                 msb = reg_width - child.offset('bit') - 1
                 lsb = reg_width - (child.offset('bit') + child.size('bit'))
@@ -306,7 +306,7 @@ class RegisterNames(object):
         # Avoid exploding the graph: we typically do not need to expand
         # arrays to search for a partial path.
         for cursor in root_cursor.walk():
-            if isinstance(cursor.typ, csr2.Reg):
+            if isinstance(cursor.typ, csr2py2.Reg):
                 reg_name = ''
                 for precursor in cursor.trail():
                     crumb = precursor.crumb
@@ -325,13 +325,13 @@ class RegisterNames(object):
         For a named crumb, add a dotted fragment. For an indexed crumb,
         add the bounds [left..right].
         """
-        if isinstance(crumb, csr2.NamedCrumb):
+        if isinstance(crumb, csr2py2.NamedCrumb):
             fragment = crumb.prettyname
             if fragment:
                 if reg_name:
                     reg_name += '.'
                 reg_name += fragment
-        elif isinstance(crumb, csr2.IndexedCrumb):
+        elif isinstance(crumb, csr2py2.IndexedCrumb):
             for left, right in crumb.arr.bounds:
                 reg_name += '[%d..%d]' % (left, right)
         return reg_name
@@ -531,7 +531,7 @@ def load_csr_spec(chip_type):
         return False
 
     logger.info('Loading CSR2 bundle from %s' % bundle_path)
-    bundle = csr2.load_bundle(bundle_path)
+    bundle = csr2py2.load_bundle(bundle_path)
     csr_names = RegisterNames(bundle)
     return True
 
