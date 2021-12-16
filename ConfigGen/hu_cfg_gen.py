@@ -573,11 +573,8 @@ class HUCfgGen():
         for file_pattern in file_pattern_list:
             for cfg in glob.glob(os.path.join(self.input_dir, file_pattern)):
                 logger.debug('Processing {}'.format(cfg))
-                with open(cfg, 'r') as f:
-                    cfg_json = f.read()
-                    cfg_json = jsonutils.standardize_json(cfg_json)
-                    cfg_json = json.loads(cfg_json)
-                    hu_cfg = jsonutils.merge_dicts(hu_cfg, cfg_json)
+                cfg_json = jsonutils.load_fungible_json(cfg)
+                hu_cfg = jsonutils.merge_dicts(hu_cfg, cfg_json)
         logger.debug("DONE: Generating HU C code: generate_hu_cfg")
         return hu_cfg
 
@@ -591,11 +588,8 @@ class HUCfgGen():
         for file_pattern in file_pattern_list:
             for cfg in glob.glob(os.path.join(self.input_dir, file_pattern)):
                 logger.debug('Processing {}'.format(cfg))
-                with open(cfg, 'r') as f:
-                    cfg_json = f.read()
-                    cfg_json = jsonutils.standardize_json(cfg_json)
-                    cfg_json = json.loads(cfg_json)
-                    hu_cfg = jsonutils.merge_dicts(hu_cfg, cfg_json)
+                cfg_json = jsonutils.load_fungible_json(cfg)
+                hu_cfg = jsonutils.merge_dicts(hu_cfg, cfg_json)
 
         # get the schema dict
         self.schema_dict = hu_cfg["Schema"]

@@ -74,11 +74,8 @@ def _generate_stats_config(config_root_dir):
 
     for cfg in glob.glob(os.path.join(config_root_dir, 'generated/*.cfg')):
         logger.debug('Processing {}'.format(cfg))
-        with open(cfg, 'r') as f:
-            cfg_json = f.read()
-            cfg_json = jsonutils.standardize_json(cfg_json)
-            cfg_json = json.loads(cfg_json)
-            stats_cfg = jsonutils.merge_dicts(stats_cfg, cfg_json)
+        cfg_json = jsonutils.load_fungible_json(cfg)
+        stats_cfg = jsonutils.merge_dicts(stats_cfg, cfg_json)
     return stats_cfg
 
 # creates module specific configs. from the config root dir, modules can
@@ -129,10 +126,7 @@ def _generate_modules_config(config_root_dir):
     for cfg in _find_modules_configs():
         logger.info('Processing {}'.format(cfg))
 
-        with open(cfg, 'r') as f:
-            cfg_json = f.read()
-            cfg_json = jsonutils.standardize_json(cfg_json)
-            cfg_json = json.loads(cfg_json)
+        cfg_json = jsonutils.load_fungible_json(cfg)
 
         # Gets the path relative to the config root, e.g.
         #   'tcp/tcp.cfg'
@@ -166,23 +160,9 @@ def _generate_storage_config(config_root_dir, output_dir,
 
     return storage_cfg
 
-# filename -> arbitrary json
-def _read_json_file(fname):
-    try:
-        sjs=None
-        fl = open(fname)
-        fls = fl.read()
-        sjs = jsonutils.standardize_json(fls)
-        js = json.loads(sjs)
-    except:
-        logger.error("Exception occurred reading/parsing json file {}\n{}".format(fname, sjs))
-        raise
-
-    return js
-
 # filename -> dict, or die trying
 def _read_json_file_as_dict(fname):
-    js = _read_json_file(fname)
+    js = jsonutils.load_fungible_json(fname)
     try:
         assert(isinstance(js, dict))
     except:
@@ -246,7 +226,7 @@ def _load_subprofile_fragments(subdir, global_path):
             continue
 
         # read the json file -- any json is valid
-        js = _read_json_file(fname)
+        js = jsonutils.load_fungible_json(fname)
 
         # append it to the list
         if (pname in fragments):

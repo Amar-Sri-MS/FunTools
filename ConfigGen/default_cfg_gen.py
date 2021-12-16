@@ -46,6 +46,9 @@ import json
 import jsonutils
 import collections
 
+logger = logging.getLogger('cfg_gen')
+logger.setLevel(logging.INFO)
+
 class DefaultCfgGen():
     def __init__(self, input_dir, target_chip):
         self.input_dir = input_dir
@@ -107,14 +110,11 @@ class DefaultCfgGen():
         # Process every single default configuration file
         for file_pat in file_patterns:
             for def_file in glob.glob(os.path.join(self.input_dir, file_pat)):
-                with open(def_file, 'r') as f:
-                    def_json = f.read()
-                    def_json = jsonutils.standardize_json(def_json)
-                    try:
-                        def_json = json.loads(def_json)
-                    except:
-                        logger.error("Failed to load defaults file: {}".format(def_file))
-                        raise
+                try:
+                    def_json = jsonutils.load_fungible_json(def_file)
+                except:
+                    logger.error("Failed to load defaults file: {}".format(def_file))
+                    raise
 
                 self.process_default_file(def_json, def_cfg)
 
