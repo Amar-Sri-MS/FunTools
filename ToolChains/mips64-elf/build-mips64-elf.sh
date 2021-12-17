@@ -8,7 +8,7 @@ set -e
 
 binutils_version=binutils-2.35.2
 gcc_version=gcc-11.2.0
-gdb_version=gdb-9.2
+gdb_version=gdb-11.1
 
 binutils_archive=${binutils_version}.tar.xz
 binutils_url="http://ftpmirror.gnu.org/binutils/${binutils_archive}"
@@ -19,7 +19,9 @@ gcc_url="http://ftpmirror.gnu.org/gcc/${gcc_version}/${gcc_archive}"
 gdb_archive=${gdb_version}.tar.xz
 gdb_url="http://ftpmirror.gnu.org/gdb/${gdb_archive}"
 
-gdb_patches=0001-Fix-Python3.9-related-runtime-problems.patch
+# Fix-Python for gdb-9.2 only.
+#gdb_patches=0001-Fix-Python3.9-related-runtime-problems.patch
+gdb_patches=fungible-enable-tls.patch
 
 if [ $(uname) = 'Linux' ] ; then
     host_binutils_config=--with-static-standard-libraries
