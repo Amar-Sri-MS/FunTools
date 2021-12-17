@@ -18,7 +18,7 @@ endif
 SDKDIR ?= ../../FunSDK
 SDK_INSTALL_DIR ?= $(SDKDIR)
 
-MACHINE ?= $(shell uname -m)
+MACHINE ?= mips64
 
 ifeq ($(MACHINE),x86_64)
  TOOLCHAIN_PREFIX :=
