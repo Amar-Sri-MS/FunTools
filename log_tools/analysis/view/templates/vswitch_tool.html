@@ -39,7 +39,7 @@
             "CREATED_VSWITCH_STATUS": `(
                 ("Create VirtualFabric completed" AND "<VF_ID>") OR
                 ("Create VirtualFabric completed, updated state as Completed" AND "<VF_ID>") OR
-                "Vfabric:<VF_ID> becomes online "
+                "Vfabric:<VF_ID> becomes online"
             )`,
 
             "DELETED_VSWITCHES_REQUEST": `"method:DELETE" AND delete-virtual-fabric AND "<VF_ID>"`,
@@ -149,15 +149,15 @@
             vswitch_logs_element.innerHTML = "";
             const responses = await asyncFetch([
                 // Create Validation
-                handleSearch(`${SEARCHES_QUERIES["CREATED_VSWITCH_STATUS"].replace("<VF_ID>", VFID)}`),
+                handleSearch(`${SEARCHES_QUERIES["CREATED_VSWITCH_STATUS"].replaceAll("<VF_ID>", VFID)}`),
                 // Delete Request
-                handleSearch(`${SEARCHES_QUERIES["DELETED_VSWITCHES_REQUEST"].replace("<VF_ID>", VFID)}`),
+                handleSearch(`${SEARCHES_QUERIES["DELETED_VSWITCHES_REQUEST"].replaceAll("<VF_ID>", VFID)}`),
                 // Delete Validation
-                handleSearch(`${SEARCHES_QUERIES["DELETED_VSWITCH_ACK"].replace("<VF_ID>", VFID)}`),
+                handleSearch(`${SEARCHES_QUERIES["DELETED_VSWITCH_ACK"].replaceAll("<VF_ID>", VFID)}`),
                 // Tunnel Creation
-                handleSearch(`${SEARCHES_QUERIES["CREATED_TUNNEL_REQUEST"].replace("<VF_ID>", VFID)}`),
+                handleSearch(`${SEARCHES_QUERIES["CREATED_TUNNEL_REQUEST"].replaceAll("<VF_ID>", VFID)}`),
                 // Tunnel Deletion
-                handleSearch(`${SEARCHES_QUERIES["DELETED_TUNNEL_REQUEST"].replace("<VF_ID>", VFID)}`),
+                handleSearch(`${SEARCHES_QUERIES["DELETED_TUNNEL_REQUEST"].replaceAll("<VF_ID>", VFID)}`),
             ]);
 
             // Function to convert responses into HTML anchor tag with timestamp as text
@@ -317,12 +317,12 @@
                                             "PORT_DISCONNECT_STATUS";
 
                 const statuses = await asyncFetch([
-                    await handleSearch(`${SEARCHES_QUERIES["TUNNEL_REQUEST_STATUS"].replace("<REQ_ID>", reqID)}`),
+                    await handleSearch(`${SEARCHES_QUERIES["TUNNEL_REQUEST_STATUS"].replaceAll("<REQ_ID>", reqID)}`),
                     await handleSearch(`
                         ${SEARCHES_QUERIES[PORT_STATUS_KEY]
-                            .replace("<VF_ID>", VFID)
-                            .replace("<PORT_0>", ports[0]["port"])
-                            .replace("<PORT_1>", ports[1]["port"])}`
+                            .replaceAll("<VF_ID>", VFID)
+                            .replaceAll("<PORT_0>", ports[0]["port"])
+                            .replaceAll("<PORT_1>", ports[1]["port"])}`
                     )
                 ]);
 
