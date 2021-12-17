@@ -6,7 +6,6 @@
 # Owner: Sourabh Jain (sourabh.jain@fungible.com)
 # Copyright (c) 2021 Fungible Inc.  All rights reserved.
 
-import glob
 import logging
 import os
 import subprocess
@@ -19,6 +18,8 @@ from automated_tests.tester import Tester
 from utils.cleanup import clean
 from view.ingester import _get_log_id
 
+
+FILE_PATH = os.path.abspath(os.path.dirname(__file__))
 
 def main():
     # Setting up the logger.
@@ -91,7 +92,7 @@ class TechsupportTester(Tester):
         logging.info(f'Ingesting: {self.job_id}')
         logging.info('*'*100)
 
-        cmd = ['../view/ingester.py', self.job_id,
+        cmd = [f'{FILE_PATH}/../view/ingester.py', self.job_id,
                '--ingest_type', 'techsupport',
                '--techsupport_ingest_type', 'mount_path',
                '--log_path', str(self.mount_path),

@@ -59,7 +59,7 @@ LFUNQ_PATH = $(SDKDIR)/FunSDK/host-drivers/$(MACHINE)/user/native
 endif
 
 CFLAGS += -I $(LFUNQ_PATH)/include -DWITH_LIBFUNQ
-LDFLAGS += -L $(LFUNQ_PATH)/lib -lfunq
+LDFLAGS += -L $(LFUNQ_PATH)/lib -lbin_ctl -lfunq
 endif
 
 # define header and library location in FunSDK
@@ -69,7 +69,7 @@ CFLAGS += -I $(SDKDIR) -I $(SDKDIR)/FunSDK -g -Wall -Werror -Wno-multichar $(BRA
 #LDFLAGS += -L $(SDKDIR)/lib/${OS}/x86_64 -lfunclient -fsanitize=address
 LDFLAGS += -lpthread -L $(SDKDIR)/lib/$(OS)/$(SDK_LIB_SUBDIR)/$(MACHINE) -lfunclient -ldl
 
-SRCS = dpcsh.c dpcsh_nvme.c bin_ctl.c dpcsh_macros.c csr_command.c file_commands.c dpcsh_log.c dpcsh_ptr_queue.c
+SRCS = dpcsh.c dpcsh_nvme.c dpcsh_macros.c csr_command.c file_commands.c dpcsh_log.c dpcsh_ptr_queue.c
 OBJS = $(addprefix $(BUILD_ROOT)/,$(SRCS:.c=.o))
 
 # Deal with gcc versioning for ASAN

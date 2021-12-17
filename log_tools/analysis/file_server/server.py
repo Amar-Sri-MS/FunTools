@@ -28,7 +28,8 @@ import logger
 
 
 ALLOWED_EXTENSIONS = {'json'}
-DEFAULT_UPLOAD_DIRECTORY = 'files/analytics'
+FILE_PATH = os.path.abspath(os.path.dirname(__file__))
+DEFAULT_UPLOAD_DIRECTORY = f'{FILE_PATH}/files/analytics'
 
 app = Flask(__name__)
 

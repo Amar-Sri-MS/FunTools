@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include "../dpcsh/bin_ctl.h"
+#include "bin_ctl.h"
 
 #define MIN_REQUEST_LENGTH	(1)
 #define MAX_REQUEST_LENGTH	(102400)

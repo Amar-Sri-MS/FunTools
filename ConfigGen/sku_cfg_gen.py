@@ -20,7 +20,7 @@ from default_cfg_gen import DefaultCfgGen
 from sku_board_layer_cfg_gen import BoardLayer
 
 logger = logging.getLogger('sku_cfg_gen')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 class SKUCfgGen():
     sku_h_tmpl = 'platform_sku_h.j2'
@@ -38,10 +38,7 @@ class SKUCfgGen():
         board_id_cfg = dict()
         file_name = os.path.join(self.input_dir, 'sku_config/fungible_boards.cfg')
         logger.debug('Processing fungible boards file: {}'.format(file_name))
-        with open(file_name, 'r') as f:
-            cfg_json = f.read()
-            cfg_json = jsonutils.standardize_json(cfg_json)
-            board_id_cfg = json.loads(cfg_json)
+        board_id_cfg = jsonutils.load_fungible_json(file_name)
 
         return board_id_cfg.get('fungible_boards', None)
 
@@ -67,17 +64,15 @@ class SKUCfgGen():
         for file_pat in file_patterns:
             for cfg in glob.glob(os.path.join(self.input_dir, file_pat)):
                 logger.debug('Processing posix or emu per sku config: {}'.format(cfg))
-                with open(cfg, 'r') as f:
-                    sku_json = f.read()
-                    sku_json = jsonutils.standardize_json(sku_json)
-                    try:
-                        sku_json = json.loads(sku_json)
-                    except:
-                        logger.error("Failed to load config file: {}".format(cfg))
-                        raise
 
-                    default_cfg_gen.apply_defaults(sku_json, def_cfg)
-                    board_cfg = jsonutils.merge_dicts(board_cfg, copy.deepcopy(sku_json))
+                try:
+                    sku_json = jsonutils.load_fungible_json(cfg)
+                except:
+                    logger.error("Failed to load config file: {}".format(cfg))
+                    raise
+
+                default_cfg_gen.apply_defaults(sku_json, def_cfg)
+                board_cfg = jsonutils.merge_dicts(board_cfg, copy.deepcopy(sku_json))
 
         return board_cfg
 
@@ -90,7 +85,7 @@ class SKUCfgGen():
             if 'chip' not in sku_json['skus'].get(key, {}).get('PlatformInfo', {}):
                 continue
             chip = sku_json['skus'][key]['PlatformInfo']['chip']
-            if chip not in self.target_chip:
+            if chip != self.target_chip:
                 return False
             # Next check the configuration file is for a board
             if 'machine' not in sku_json['skus'].get(key, {}).get('PlatformInfo', {}):
@@ -125,43 +120,50 @@ class SKUCfgGen():
                 if 'sku_config/defaults' in cfg:
                     continue
                 logger.debug('Processing board per sku config: {}'.format(cfg))
-                with open(cfg, 'r') as f:
-                    sku_json = f.read()
-                    sku_json = jsonutils.standardize_json(sku_json)
-                    try:
-                        sku_json = json.loads(sku_json)
-                    except:
-                        logger.error("Failed to load config file: {}".format(cfg))
-                        raise
 
-                    if not self.is_cfg_target_board(sku_json):
-                        continue
+                try:
+                    sku_json = jsonutils.load_fungible_json(cfg)
+                except:
+                    logger.error("Failed to load config file: {}".format(cfg))
+                    raise
 
-                    if len(sku_json['skus']) > 1:
-                        logger.error("Only single sku per file supported")
-                        raise
+                if len(sku_json['skus']) > 1:
+                    logger.error("Only single sku per file supported")
+                    raise
 
-                    # stash this board config for processing inherited configs
-                    raw_board_configs[sku_json['skus'].keys()[0]] = copy.deepcopy(sku_json)
+                # stash this board config for processing inherited configs
+                raw_board_configs[sku_json['skus'].keys()[0]] = copy.deepcopy(sku_json)
 
-                    if self.get_board_config_parent(sku_json):
-                        # add this config to the list for processing later, as the parent
-                        # configuration might not be available at this time
-                        remaining_board_configs.append(sku_json)
-                        continue
+                if self.get_board_config_parent(sku_json):
+                    # add this config to the list for processing later, as the parent
+                    # configuration might not be available at this time
+                    remaining_board_configs.append(sku_json)
+                    continue
 
-                    # Apply defaults to the SKU file
-                    default_cfg_gen.apply_defaults(sku_json, def_cfg)
+                # skip processing if the board is not for a given target
+                # this is not done earlier to allow inherited boards to override
+                # target choice, so a board for a 'wrong' target may still be added
+                # to 'raw_board_configs'
+                if not self.is_cfg_target_board(sku_json):
+                    continue
 
-                    # Apply the board layer configuration to the SKU file
-                    board_layer = BoardLayer(self.input_dir, self.target_chip)
-                    board_layer.apply_board_layer(sku_json, def_cfg)
+                # Apply defaults to the SKU file
+                default_cfg_gen.apply_defaults(sku_json, def_cfg)
 
-                    board_cfg = jsonutils.merge_dicts(board_cfg, copy.deepcopy(sku_json))
+                # Apply the board layer configuration to the SKU file
+                board_layer = BoardLayer(self.input_dir, self.target_chip)
+                board_layer.apply_board_layer(sku_json, def_cfg)
+
+                board_cfg = jsonutils.merge_dicts(board_cfg, copy.deepcopy(sku_json))
 
         for sku_json in remaining_board_configs:
             sku = sku_json['skus'].keys()[0]
             parent = self.get_board_config_parent(sku_json)
+
+            # check if the board is for a given target - if this is a 'base' board that was
+            # used for inheriting a config, then it may be targeting a different dpu
+            if not self.is_cfg_target_board(sku_json):
+                continue
 
             # Create new sku based on the parent sku but retain original PlatformInfo
             sku_json['skus'][sku] = jsonutils.merge_dicts_recursive(
@@ -187,23 +189,20 @@ class SKUCfgGen():
         for file_pat in file_patterns:
             for cfg in glob.glob(os.path.join(self.input_dir, file_pat)):
                 logger.debug('Processing additions for per sku config: {}'.format(cfg))
-                with open(cfg, 'r') as f:
-                    sku_json = f.read()
-                    sku_json = jsonutils.standardize_json(sku_json)
-                    try:
-                        sku_json = json.loads(sku_json)
-                    except:
-                        logger.error("Failed to load config file: {}".format(cfg))
-                        raise
+                try:
+                    sku_json = jsonutils.load_fungible_json(cfg)
+                except:
+                    logger.error("Failed to load config file: {}".format(cfg))
+                    raise
 
-                    # Check the additional file is for the machine being built
-                    if 'machine' not in sku_json['PlatformInfo'].keys():
-                        continue
-                    machine = sku_json['PlatformInfo']['machine']
-                    if machine != addition_machine:
-                        continue;
+                # Check the additional file is for the machine being built
+                if 'machine' not in sku_json['PlatformInfo'].keys():
+                    continue
+                machine = sku_json['PlatformInfo']['machine']
+                if machine != addition_machine:
+                    continue;
 
-                    board_cfg = jsonutils.merge_dicts(board_cfg, sku_json)
+                board_cfg = jsonutils.merge_dicts(board_cfg, sku_json)
 
         return board_cfg
 

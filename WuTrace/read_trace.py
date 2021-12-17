@@ -264,6 +264,9 @@ class TraceFileParser(object):
         wfh = None
         if output_file:
             wfh = open(output_file, 'w')
+        # strip initial cluster byte
+        fh.read(1)
+
         while True:
             hdr = fh.read(HDR_LEN)
             count += 1
@@ -347,7 +350,8 @@ class WuListExtractor(object):
                        '--eval-command', 'set print elements 100000',
                        '--eval-command', 'set print repeats 0',
                        '--eval-command', 'set print array on',
-                       '--eval-command', 'p wu_handlers_default',
+                       '--eval-command', 'set max-value-size 262144',
+                       '--eval-command', 'p *wu_handlers_default@16384',
                        self.funos_image_path]
 
         gdb_command_string = ' '.join(gdb_command).replace(' -', ' \\\n-')

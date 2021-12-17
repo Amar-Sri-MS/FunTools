@@ -27,14 +27,11 @@ class BoardLayer():
         # Read the chip layer config and convert it to json
         file_name = self.input_dir + '/sku_config/defaults'
         file_name += '/chip_layer_%s.cfg' % self.target_chip
-        with open(file_name, 'r') as f:
-            cl_json = f.read()
-            cl_json = jsonutils.standardize_json(cl_json)
-            try:
-                cl_json = json.loads(cl_json)
-            except:
-                logger.error("Failed to read file: {}".format(file_name))
-                raise
+        try:
+            cl_json = jsonutils.load_fungible_json(file_name)
+        except:
+            logger.error("Failed to read file: {}".format(file_name))
+            raise
 
         return cl_json
 
@@ -45,14 +42,11 @@ class BoardLayer():
         # Read the board layer config and convert it to json
         file_name = self.input_dir + '/sku_config/defaults'
         file_name += '/board_layer_%s.cfg' % board
-        with open(file_name, 'r') as f:
-            bl_json = f.read()
-            bl_json = jsonutils.standardize_json(bl_json)
-            try:
-                bl_json = json.loads(bl_json)
-            except:
-                logger.error("Failed to read file: {}".format(file_name))
-                raise
+        try:
+            bl_json = jsonutils.load_fungible_json(file_name)
+        except:
+            logger.error("Failed to read file: {}".format(file_name))
+            raise
 
         return bl_json
 

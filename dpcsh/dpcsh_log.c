@@ -1,3 +1,10 @@
+/*
+ *  dpcsh_log.h
+ *
+ *  Created by Renat Idrisov on 2021-06-29.
+ *  Copyright © 2021 Fungible. All rights reserved.
+ */
+
 #include "dpcsh_log.h"
 
 #include <time.h>

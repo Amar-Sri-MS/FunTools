@@ -30,7 +30,10 @@
 #include "dpcsh_nvme.h"
 #include "csr_command.h"
 #include "file_commands.h"
+
+#ifdef WITH_LIBFUNQ
 #include "bin_ctl.h"
+#endif
 
 #include <FunSDK/utils/threaded/fun_map_threaded.h>
 #include <FunSDK/services/commander/fun_commander.h>
@@ -707,10 +710,10 @@ static void apply_command_locally(const struct fun_json *json,
 		return;
 	}
 
-	struct fun_json_command_environment *env = fun_json_command_environment_create();
+	struct fun_command_environment *env = fun_command_environment_create();
 	struct fun_json *j = fun_commander_execute(env, json);
 
-	fun_json_command_environment_release(env);
+	fun_command_environment_release(env);
 	if (!j || fun_json_fill_error_message(j, NULL)) {
 		return;
 	}
@@ -941,20 +944,24 @@ bool dpcsocket_init(struct dpcsock *sock)
 		_listen_sock_init(sock);
 	}
 
+#ifdef WITH_LIBFUNQ
 	if(sock->mode == SOCKMODE_FUNQ) {
 		sock->funq_handle = bin_ctl_init_dpc(sock->socket_name, _debug_log);
 		return sock->funq_handle != NULL;
 	}
+#endif
 
 	return true;
 }
 
 static void dpcsocket_destroy(struct dpcsock *sock)
 {
+#ifdef WITH_LIBFUNQ
 	if(sock->mode == SOCKMODE_FUNQ) {
 		bin_ctl_destroy(sock->funq_handle);
 		free(sock->funq_handle);
 	}
+#endif
 }
 
 static void set_nonblocking_fd(int fd)
@@ -1025,12 +1032,14 @@ bool dpcsocket_open(struct dpcsock_connection *connection)
 		return true;
 	}
 
+#ifdef WITH_LIBFUNQ
 	if (sock->mode == SOCKMODE_FUNQ) {
 		connection->funq_connection = bin_ctl_open_connection(sock->funq_handle);
 		if (!connection->funq_connection) {
 			return false;
 		}
 	}
+#endif
 
 	/* unused == no-op */
 	if (sock->mode == SOCKMODE_TERMINAL) {
@@ -1074,12 +1083,14 @@ void dpcsocket_close(struct dpcsock_connection *connection)
 		close(connection->fd);
 	}
 
+#ifdef WITH_LIBFUNQ
 	if (connection->socket->mode == SOCKMODE_FUNQ) {
 		if (!bin_ctl_close_connection(connection->funq_connection)) {
 			perror("bin_ctl_close_connection");
 		}
 		pthread_cond_signal(&connection->data_available);
 	}
+#endif
 
 	if (connection->socket->mode == SOCKMODE_NVME) {
 		pthread_cond_signal(&connection->data_available);
@@ -1153,6 +1164,7 @@ void dpcsh_unregister_pretty_printer(uint64_t tid, void *context)
 
 // ===============  RUN LOOP ===============
 
+#ifdef WITH_LIBFUNQ
 static bool _write_dequeue_funq(struct dpcsock_connection *dest,
 			 struct dpcsock_connection *source)
 {
@@ -1176,6 +1188,7 @@ static bool _write_dequeue_funq(struct dpcsock_connection *dest,
 	}
 	return true;
 }
+#endif
 
 static bool _write_dequeue_nvme(struct dpcsock_connection *dest,
 			 struct dpcsock_connection *source)
@@ -1259,7 +1272,9 @@ static bool _write_dequeue(struct dpcsock_connection *dest,
 			 struct dpcsock_connection *source)
 {
 
+#ifdef WITH_LIBFUNQ
 	if (dest->socket->mode == SOCKMODE_FUNQ) return _write_dequeue_funq(dest, source);
+#endif
 	if (dest->socket->mode == SOCKMODE_NVME) return _write_dequeue_nvme(dest, source);
 
 	_lock_queue_if_needed(source);
@@ -1291,6 +1306,7 @@ static bool _write_dequeue(struct dpcsock_connection *dest,
 	return true;
 }
 
+#ifdef WITH_LIBFUNQ
 static void _recv_callback(struct fun_ptr_and_size response, void *context)
 {
 	struct dpcsock_connection *connection = (struct dpcsock_connection *)context;
@@ -1319,6 +1335,7 @@ static void _recv_callback(struct fun_ptr_and_size response, void *context)
 	pthread_cond_signal(&connection->data_available);
 	pthread_mutex_unlock(&connection->funq_queue_lock);
 }
+#endif
 
 static void terminal_set_per_character(bool enable)
 {
@@ -1453,11 +1470,13 @@ static void open_new_connections(struct dpcsock *funos_socket,
 		log_error("unable to open connection");
 	}
 
+#ifdef WITH_LIBFUNQ
 	if (funos_socket->mode == SOCKMODE_FUNQ) {
 		if (!bin_ctl_register_receive_callback((*funos)->funq_connection, _recv_callback, *funos)) {
 			log_error("can't register a callback for libfunq\n");
 		}
 	}
+#endif
 }
 
 static void _finalize_worker(struct dpc_worker *worker, bool force_terminate)
@@ -1847,7 +1866,7 @@ int main(int argc, char *argv[])
 			funos_sock.mode = SOCKMODE_FUNQ;
 			funos_sock.server = false;
 			funos_sock.socket_name = opt_sockname(optarg,
-							      FUNQ_DEV_NAME);
+							      BIN_CTL_DEFAULT_DEVICE);
 			autodetect_input_device = false;
 			break;
 #endif

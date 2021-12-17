@@ -74,11 +74,8 @@ def _generate_stats_config(config_root_dir):
 
     for cfg in glob.glob(os.path.join(config_root_dir, 'generated/*.cfg')):
         logger.debug('Processing {}'.format(cfg))
-        with open(cfg, 'r') as f:
-            cfg_json = f.read()
-            cfg_json = jsonutils.standardize_json(cfg_json)
-            cfg_json = json.loads(cfg_json)
-            stats_cfg = jsonutils.merge_dicts(stats_cfg, cfg_json)
+        cfg_json = jsonutils.load_fungible_json(cfg)
+        stats_cfg = jsonutils.merge_dicts(stats_cfg, cfg_json)
     return stats_cfg
 
 # creates module specific configs. from the config root dir, modules can
@@ -129,10 +126,7 @@ def _generate_modules_config(config_root_dir):
     for cfg in _find_modules_configs():
         logger.info('Processing {}'.format(cfg))
 
-        with open(cfg, 'r') as f:
-            cfg_json = f.read()
-            cfg_json = jsonutils.standardize_json(cfg_json)
-            cfg_json = json.loads(cfg_json)
+        cfg_json = jsonutils.load_fungible_json(cfg)
 
         # Gets the path relative to the config root, e.g.
         #   'tcp/tcp.cfg'
@@ -166,28 +160,13 @@ def _generate_storage_config(config_root_dir, output_dir,
 
     return storage_cfg
 
-# filename -> arbitrary json
-def _read_json_file(fname):
-    try:
-        sjs=None
-        fl = open(fname)
-        fls = fl.read()
-        sjs = jsonutils.standardize_json(fls)
-        js = json.loads(sjs)
-    except:
-        print("Exception occurred reading/parsing json file %s" % fname)
-        print(sjs)
-        raise
-
-    return js
-
 # filename -> dict, or die trying
 def _read_json_file_as_dict(fname):
-    js = _read_json_file(fname)
+    js = jsonutils.load_fungible_json(fname)
     try:
         assert(isinstance(js, dict))
     except:
-        print("JSON file %s is not a dict" % fname)
+        logger.error("JSON file {} is not a dict".format(fname))
         raise
 
     return js
@@ -206,9 +185,9 @@ def _validate_subprofile_cfg(fname, js):
     assert(isinstance(js, dict))
     if ("key_path" not in js):
         raise RuntimeError("subprofile %s is missing key_path" % fname)
-    print(js)
-    print(js["key_path"])
-    print(type(js["key_path"]))
+    logger.debug(js)
+    logger.debug(js["key_path"])
+    logger.debug(type(js["key_path"]))
 
     assert(isinstance(js["key_path"], basestring))
 
@@ -247,7 +226,7 @@ def _load_subprofile_fragments(subdir, global_path):
             continue
 
         # read the json file -- any json is valid
-        js = _read_json_file(fname)
+        js = jsonutils.load_fungible_json(fname)
 
         # append it to the list
         if (pname in fragments):
@@ -261,7 +240,7 @@ def _load_subprofiles_and_fragments(spglob, subprofiles, stype, sval):
     sglob = os.path.join(spglob, "*_profile")
     for subprof in glob.glob(sglob):
         if (not os.path.isdir(subprof)):
-            print("WARNING: %s is not a directory, ignoring" % subprof)
+            logger.warning("%s is not a directory, ignoring" % subprof)
             continue
 
         # get the name
@@ -286,7 +265,7 @@ def _generate_profiles_config(config_root_dir, target_chip, target_boards):
     sglob = os.path.join(pdir, "subprofiles", "*_profile")
     for subdir in glob.glob(sglob):
         if (not os.path.isdir(subdir)):
-            print("WARNING: %s is not a directory, ignoring" % subdir)
+            logger.warning("%s is not a directory, ignoring" % subdir)
             continue
 
         # get the name
@@ -308,7 +287,7 @@ def _generate_profiles_config(config_root_dir, target_chip, target_boards):
             raise RuntimeError("error: subprofile %s has multiple descriptor files: %s" %s (subdir, cfgs))
 
         descfilename = cfgs[0]
-        print("subprofile %s using descriptor %s" % (subdir, descfilename))
+        logger.debug("subprofile %s using descriptor %s" % (subdir, descfilename))
 
         # parse it
         js = _read_json_file_as_dict(descfilename)
@@ -335,7 +314,7 @@ def _generate_profiles_config(config_root_dir, target_chip, target_boards):
     bglob = os.path.join(pdir, "board", "*")
     for boarddir in glob.glob(bglob):
         if (not os.path.isdir(boarddir)):
-            print("WARNING: %s is not a directory, ignoring" % boarddir)
+            logger.warning("%s is not a directory, ignoring" % boarddir)
             continue
 
         # get the name
@@ -365,8 +344,9 @@ def _generate_profiles_config(config_root_dir, target_chip, target_boards):
             raise RuntimeError("profiles %s missing required subprofiles" % pname)
 
         # validate all the keys & values that we can do statically
-        print("found profile %s" % pname)
+        logger.debug("found profile %s" % pname)
         _validate_profile_cfg(pname, js)
+        logger.info("Added new profile {}".format(pname))
 
         # add it to the list
         profiles[pname] = js
@@ -388,7 +368,7 @@ def _load_workerpool_config(wpconfig):
     fl = open(wpconfig)
     js = json.load(fl)
 
-    # modules/nucleus/workerpool/policies in nucleus 
+    # modules/nucleus/workerpool/policies in nucleus
     wp_cfg = {"modules": {"workerpool": {"policies": js}}}
 
     return wp_cfg
@@ -446,7 +426,7 @@ def _generate_funos_default_config(config_root_dir, sdk_dir, output_dir,
     ## assemble into main config
     funos_default_config = jsonutils.merge_dicts(funos_default_config,
                                                  modules_cfg)
-       
+
     ## process module config -- per-sku
     for sku in list(funos_default_config[SKUCfgGen.get_sku_path()].keys()):
         config_sku_dir = os.path.join(config_root_dir,
@@ -561,7 +541,7 @@ def main():
     arg_parser.add_argument("--machine", required=True, nargs=1, type=str,
                             help="Target machine type")
 
-    arg_parser.add_argument("--chip", required=True, nargs=1, type=str,
+    arg_parser.add_argument("--chip", required=True, type=str,
                             help="Target chip type")
 
     arg_parser.add_argument("--wpcfg", action='store', default=None,
@@ -592,10 +572,10 @@ def main():
     if args.funoscfg:
         _generate_funos_default_config(args.in_dir[0],
                                        args.sdk_dir, args.out_dir[0],
-                                       args.chip[0], args.machine[0],
+                                       args.chip, args.machine[0],
                                        args.wpcfg)
         _generate_sku_config_code(args.in_dir[0], args.sdk_dir, args.out_dir[0],
-                                  args.chip[0], args.machine[0])
+                                  args.chip, args.machine[0])
         _generate_hu_config_code(args.in_dir[0], args.out_dir[0])
 
     if args.hucfg:
@@ -603,15 +583,15 @@ def main():
 
     if args.skucfg:
         _generate_sku_config_code(args.in_dir[0], args.sdk_dir, args.out_dir[0],
-                                  args.chip[0], args.machine[0])
+                                  args.chip, args.machine[0])
 
     if args.nucsr_replaycfg:
         _generate_nu_csr_replay_config(args.in_dir[0], args.out_dir[0],
-                                       args.chip[0], args.machine[0])
+                                       args.chip, args.machine[0])
 
     if args.eeprom:
         _generate_sku_eeprom_files(args.in_dir[0], args.sdk_dir, args.out_dir[0],
-                                   args.chip[0], args.machine[0])
+                                   args.chip, args.machine[0])
 
 if __name__ == "__main__":
     main()

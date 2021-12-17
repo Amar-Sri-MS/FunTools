@@ -5,7 +5,14 @@
 # Any index created with the prefix "web_stats" will get this template.
 #
 
-curl -X PUT "localhost:9200/_index_template/web_stats_template" -H 'Content-Type: application/json' -d'
+# Fetching elasticsearch URL from env
+if [[ -z "${ELASTICSEARCH_URL}" ]]; then
+  URL="localhost:9200"
+else
+  URL="${ELASTICSEARCH_URL}"
+fi
+
+curl -X PUT "${URL}:9200/_index_template/web_stats_template" -H 'Content-Type: application/json' -d'
 {
     "index_patterns": ["web_stats*"],
     "template": {

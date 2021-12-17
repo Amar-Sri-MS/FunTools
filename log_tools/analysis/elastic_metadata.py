@@ -48,6 +48,9 @@ class ElasticsearchMetadata(object):
 
     def get_by_log_ids(self, log_ids):
         """ Fetches all the metadata for the given log_ids """
+        if not log_ids or len(log_ids) == 0:
+            return {}
+
         body = {
             'ids': log_ids
         }
