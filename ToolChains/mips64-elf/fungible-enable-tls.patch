@@ -1,0 +1,25 @@
+--- gdb-11.1/gdb/mips-tdep.c.orig	2021-12-16 13:15:52.886233657 -0800
++++ gdb-11.1/gdb/mips-tdep.c	2021-12-16 13:28:20.686579238 -0800
+@@ -8036,6 +8036,12 @@
+   return value_of_register (*reg_p, frame);
+ }
+ 
++static CORE_ADDR my_dummy_fetch_tls_load_module_address(struct objfile *objfile)
++{
++  /* Just a dummy value, it will not be used. */
++  return 0;
++}
++
+ static struct gdbarch *
+ mips_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
+ {
+@@ -8779,6 +8785,9 @@
+ 		  value_of_mips_user_reg, 
+ 		  &mips_numeric_register_aliases[i].regnum);
+ 
++  /* Enable TLS support. hack!  */
++  set_gdbarch_fetch_tls_load_module_address (gdbarch,
++					     my_dummy_fetch_tls_load_module_address);
+   return gdbarch;
+ }
+ 
