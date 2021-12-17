@@ -135,14 +135,14 @@
                     formAnchorTag(vfIDURL, VFID),
                     info[1],
                     info[2],
-                    formHTMLButton("Show info", `showInfo("${result['reqID']}", "${VFID}", "${message}")`),
+                    formHTMLButton("Show info", `showInfo("${timestamp}", "${result['reqID']}", "${VFID}", "${message}")`),
                 )
             }
 
             addTableToElement(create_phase_element, table);
         }
 
-        async function showInfo(reqID, VFID, log) {
+        async function showInfo(timestamp, reqID, VFID, log) {
             trackWebEvent("VSWITCH_INFO");
 
             vswitch_info_element.innerHTML = "";
@@ -230,7 +230,11 @@
                         "after": responses[1][0]["@timestamp"],
                         "before": deleteValidations.length > 0 ? responses[2][0]["@timestamp"] : null
                     };
-                    const errorLogs = await handleSearch(`${VFID} AND level:error`, time);
+                    const errorLogs = await handleSearch(
+                        `${VFID} AND level:error`,
+                        null,
+                        filters={"time": time}
+                    );
                     const title = `Error Logs during vSwitch deletion between ${time["after"]} and ${time["before"]}`;
                     errorLogsDuringDelete = getTableForLogs(title, errorLogs);
                     addTableToElement(vswitch_info_element, errorLogsDuringDelete);
@@ -256,12 +260,17 @@
                         : (`${prev} OR "${port}:${portInfo['name']}" OR ${portInfo['name']}`)
                 , "");
 
-            // HACK: to ignore funos logs before NTP sync.
+            const createValidationTime = createValidation.length > 0 ? responses[0][responses[0].length-1]["@timestamp"] : null;
+            const deleteValidationTime = deleteValidations.length > 0 ? responses[2][0]["@timestamp"] : null;
             const time = {
-                "after": "1970-01-02",
-                "before": null
+                "after": timestamp,
+                "before": deleteValidationTime ? deleteValidationTime : createValidationTime
             };
-            const results = await handleSearch(`"${reqID}" OR "${VFID}" ${tunnelIDStr} (NOT src:pfm AND (${portNameStr}))`, time);
+            const results = await handleSearch(
+                `"${reqID}" OR "${VFID}" ${tunnelIDStr} OR (NOT src:pfm AND (${portNameStr}))`,
+                null,
+                filters={"time": time}
+            );
 
             const title = `vSwitch logs for VF-ID: ${VFID}`;
             const table = getTableForLogs(title, results);
@@ -379,7 +388,48 @@
             };
         }
 
-        async function handleSearch(searchText, time) {
+        function validateTimeFilter(datetimeStr) {
+            // Default time format of ES is either epoch in millis
+            // or yyyy-MM-dd'T'HH:mm:ss.SSSZ
+            if (datetimeStr && datetimeStr !== "") {
+                // Check for epoch millis
+                if (!isNaN(datetimeStr)) datetimeStr = +datetimeStr;
+                const date = new Date(datetimeStr);
+                let isValid = (date != "Invalid Date");
+                if (isValid) {
+                    // Date & time should be separated by T
+                    if (date.getUTCHours() == 0 && datetimeStr.includes(":")) isValid = datetimeStr.includes("T");
+                    if (!isValid) alert("Date & time should be separated by T");
+                }
+                else alert(`Time filter: ${datetimeStr} is not valid.`);
+                return isValid;
+            }
+            return true;
+        }
+
+        function buildFilterOption(filters) {
+            if (!filters) {
+                return {};
+            }
+
+            let allFilters = {};
+            if (filters["sources"]) {
+                allFilters["sources"] = filters["sources"];
+            }
+
+            if (filters["time"]) {
+                const startTime = filters["time"]["after"];
+                const endTime = filters["time"]["before"];
+                if (!validateTimeFilter(startTime) || !validateTimeFilter(endTime)) {
+                    return null;
+                }
+                allFilters["time"] = [startTime, endTime];
+            }
+
+            return allFilters;
+        }
+
+        async function handleSearch(searchText, time, filters) {
             if (!searchText || searchText === "") {
                 alert("Search box is empty");
                 return;
@@ -394,7 +444,7 @@
                 searchPayload["state"] = formSearchState(time["before"], time["after"]);
             }
 
-            const filterString = {};
+            const filterString = buildFilterOption(filters);
             const searchString = buildSearchOption(searchPayload);
 
             const searchBody = {
