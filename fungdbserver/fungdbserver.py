@@ -221,6 +221,9 @@ class FileCorpse:
             "_topo_vp",
             "exception_stack_memory",
             "stack_memory",
+            "tls_mem_block",
+            "tls_stride",
+            "tls_mem_block_size",
             "PLATFORM_DEBUG_CONSTANT_vplocal_stride",
             "PLATFORM_DEBUG_CONSTANT_debug_context_offset",
             "PLATFORM_DEBUG_CONSTANT_ccv_state_invalid",
@@ -533,6 +536,26 @@ class FileCorpse:
         co = int((tid % 100) / 10)
         vp = tid % 10
         return "ccv %d.%d.%d" % (cl, co, vp)
+
+    def GetTLSBase(self, tid):
+        cl = int(tid / 100) % 10
+        co = int(tid / 10) % 10
+        vp = tid % 10
+        vpnum = self.ccv_vpnum(cl, co, vp)
+        tls_mem_block_va = self.symbols["tls_mem_block"]
+        tls_stride_va = self.symbols["tls_stride"]
+        tls_mem_block_size_va = self.symbols["tls_mem_block_size"]
+        if (tls_mem_block_va == 0 or tls_stride_va == 0 or tls_mem_block_size_va == 0):
+            ERROR("No tls_mem_block in image")
+            return 0
+        tls_mem_block = self.ReadMemory64(self.virt2phys(tls_mem_block_va), True)
+        tls_stride = self.ReadMemory32(self.virt2phys(tls_stride_va), True)
+        tls_mem_block_size = self.ReadMemory32(self.virt2phys(tls_mem_block_size_va), True)
+
+        if (tls_stride * vpnum >= tls_mem_block_size):
+            ERROR("Thread out of range of tls_mem_block in image")
+            return 0
+        return tls_mem_block + (tls_stride * vpnum)
 
     def GetSymbolsNeeded(self):
         return self.symbollist
@@ -1017,6 +1040,9 @@ def checksum(data):
 
 
 DEF_SYMS = {
+    "tls_mem_block": 0,
+    "tls_stride": 0,
+    "tls_mem_block_size": 0,
     "PLATFORM_DEBUG_CONSTANT_vplocal_stride": 4160,
     "PLATFORM_DEBUG_CONSTANT_debug_context_offset": 376,
     "PLATFORM_DEBUG_CONSTANT_ccv_state_invalid": 0,
@@ -1096,6 +1122,18 @@ def deal_withsymbols(obj, reply):
     LOG("asking for symbol: %s [%s]" % (SYMLIST[0], s))
     obj.send(s)
 
+def deal_withTLSAddr(obj, cmd):
+    toks = cmd.split(":")
+    args = toks[1].split(",")
+    tid = int(args[0], 16)
+    cmd_offset = int(args[1], 16)
+
+    tls_base = corpse.GetTLSBase(tid)
+    if (tls_base == 0):
+        obj.send("E42")
+        return
+    tls_offset = tls_base + cmd_offset
+    obj.send("%X" % tls_offset)
 
 IGNORE_Q = ["TfV", "TfP"]
 
@@ -1175,6 +1213,8 @@ class GDBClientHandler(object):
                     tid = int(subcmd.split(",")[1], 16)
                     info = jtag_GetThreadInfo(tid)
                     self.send(hexstr(info))
+                elif (subcmd.startswith("GetTLSAddr:")):
+                    deal_withTLSAddr(self, subcmd)
                 elif (subcmd in IGNORE_Q):
                     DEBUG('This subcommand %r is ignored in q' % subcmd)
                     self.send('')
