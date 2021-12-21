@@ -7,13 +7,16 @@
 import argparse
 import datetime
 import glob
+import json
 import logging
 import os
+import requests
 import sys
 import time
 
 sys.path.append('.')
 
+import config_loader
 import pipeline
 import logger
 
@@ -157,11 +160,44 @@ def start_pipeline(base_path, build_id, filters={}, metadata={}, output_block='E
 
     timeline.generate_timeline()
     timeline.backup_timeline_files()
+    backup_pipeline_cfg(LOG_ID, cfg)
 
     return {
         'success': True,
         'time_taken': time_taken
     }
+
+
+def backup_pipeline_cfg(log_id, cfg):
+    """
+    Backing up the pipeline cfg built during the start of
+    ingestion of the given "log_id" for debugging purpose.
+
+    Sending the json cfg to FILE_SERVER.
+    """
+    try:
+        config = config_loader.get_config()
+        FILE_SERVER_URL = config['FILE_SERVER_URL']
+        url = f'{FILE_SERVER_URL}/{log_id}/file'
+
+        filename = f'{log_id}_cfg.json'
+        path = os.path.join(logger.LOGS_DIRECTORY, filename)
+
+        with open(path, 'w') as f:
+            json.dump(cfg, f, indent=4, sort_keys=True, default=str)
+
+        files = [
+            (filename, (filename, open(path, 'rb')))
+        ]
+
+        response = requests.post(url, files=files)
+        response.raise_for_status()
+        logging.info(f'Pipeline cfg file for {log_id} uploaded!')
+
+        # Removing the temp created cfg json file.
+        os.remove(path)
+    except Exception as e:
+        logging.exception(f'Uploading pipeline cfg for {log_id} failed.')
 
 
 @timeline.timeline_logger('build_pipeline')
