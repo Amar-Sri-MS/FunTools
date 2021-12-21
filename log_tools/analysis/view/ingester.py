@@ -562,6 +562,12 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
                     # TODO(Sourabh): This is a temp workaround to get QA ingestion working.
                     # This will be removed after the fixes to manifest creation by David G.
                     archive_name = os.path.splitext(filename)[0]
+
+                    manifest_contents.extend([
+                        f'frn:plaform:DPU::system:storage_agent:textfile:"{archive_name}/techsupport/other":*storageagent.log*',
+                        f'frn:plaform:DPU::system:platform_agent:textfile:"{archive_name}/techsupport/other":*platformagent.log*',
+                        f'frn:plaform:DPU::system:funos:textfile:"{archive_name}/techsupport/other":*funos.log*'
+                    ])
                     # HA logs
                     if 'FC-HA-cluster' in suite_info.get('custom_test_bed_spec', {}).get('asset_request', {}):
                         archive_path = f'{path}/{filename}'
@@ -821,7 +827,11 @@ def ingest_techsupport_logs(job_id, log_path, metadata, filters):
                     f'frn:composer:controller::host:metrics_server:folder:"{archive_name}/techsupport/cs/sclogs":metrics_server',
                     f'frn:composer:controller::host:scmscv:folder:"{archive_name}/techsupport/cs/sclogs":scmscv',
                     f'frn:composer:controller::host:setup_db:folder:"{archive_name}/techsupport/cs/sclogs":setup_db',
-                    f'frn:composer:controller::host:sns:folder:"{archive_name}/techsupport/cs":sns'
+                    f'frn:composer:controller::host:sns:folder:"{archive_name}/techsupport/cs":sns',
+
+                    f'frn:plaform:DPU::system:storage_agent:textfile:"{archive_name}/techsupport/other":*storageagent.log*',
+                    f'frn:plaform:DPU::system:platform_agent:textfile:"{archive_name}/techsupport/other":*platformagent.log*',
+                    f'frn:plaform:DPU::system:funos:textfile:"{archive_name}/techsupport/other":*funos.log*'
                 ])
 
             _create_manifest(path, contents=manifest_contents)
