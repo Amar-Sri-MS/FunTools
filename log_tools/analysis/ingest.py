@@ -252,9 +252,9 @@ def parse_manifest(path, parent_frn={}, filters={}):
             # Check for logs in the folder or textfile based on the source
             if frn_info['resource_type'] == 'folder' or frn_info['resource_type'] == 'textfile':
                 logging.info(f'Checking for logs in {content_path}')
-                # Setting source if not present on FUNLOG_MANIFEST
-                if 'system_log.tar.gz' in frn_info['prefix_path'] or 'system_log.tar.gz' in frn_info['sub_path']:
-                    frn_info['source'] = 'cclinux'
+                # Setting source for all the logs from CCLinux
+                if 'system_log.tar' in content_path:
+                    frn_info['source'] = f'cclinux_{frn_info["source"]}'
                 pipeline_cfg.extend(build_input_pipeline(content_path, frn_info, filters))
 
         else:
@@ -280,7 +280,8 @@ def build_input_pipeline(path, frn_info, filters={}):
         return blocks
 
     # If the folder does not exist
-    if resource_type  == 'folder' and not os.path.exists(path):
+    if resource_type == 'folder' and not os.path.exists(path):
+        logging.warning(f'Path does not exist: {path}')
         return blocks
 
     # TODO(Sourabh): Have multiple source keywords to check for a source
@@ -471,7 +472,7 @@ def build_input_pipeline(path, frn_info, filters={}):
                     controller_input_pipeline(frn_info,
                         updated_source,
                         path,
-                        parse_block='JSONInput'
+                        parse_block='KeyValueInput'
                     )
                 )
             else:
@@ -483,7 +484,7 @@ def build_input_pipeline(path, frn_info, filters={}):
                 )
 
     elif source == 'cclinux' and resource_type == 'folder':
-        log_files = glob.glob(f'{path}/*.log*')
+        log_files = glob.glob(f'{path}/**/*.log*', recursive=True)
         frn_info['resource_type'] = 'textfile'
         for file in log_files:
             filename = os.path.basename(file)
