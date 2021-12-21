@@ -9,7 +9,7 @@
 #define PLDM_REQ_DATA           2
 
 #define PLDM_MCD_VERSION         0xf1f0f000      /* ver 1.0.0 in BE format */
-#define PLDM_PMC_VERSION         0xf1f1f000      /* ver 1.1.0 in BE format */
+#define PLDM_PMC_VERSION         0xf1f1f100      /* ver 1.1.1 in BE format */
 
 #define CONFIG_DYNAMIC_CRC_CALC
 

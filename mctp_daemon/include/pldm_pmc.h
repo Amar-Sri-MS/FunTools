@@ -108,7 +108,7 @@ typedef uint32_t sensordata_t;
 struct numeric_sensor_pdr {
 	struct pldm_common_pdr_hdr hdr;
 	uint16_t hdl_id;
-	uint8_t sens_id;            /* statically set per PDR # */
+	uint16_t sens_id;            /* statically set per PDR # */
 	uint16_t type;              /* statically set to 0x002C */
 	uint16_t inst_num;          /* statically set to 0x0001 */
 	uint16_t cid;               /* statically set to 0x0000 */
