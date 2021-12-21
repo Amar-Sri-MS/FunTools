@@ -36,15 +36,34 @@
         const SEARCHES_QUERIES = {
             "CREATED_VSWITCH_REQUEST": `"method:POST" AND create-virtual-fabric`,
             "CREATED_VSWITCH_ACK": `"Creating new VF DB Entry"`,
-            "CREATED_VSWITCH_STATUS": `("Create VirtualFabric completed" OR "Create VirtualFabric completed, updated state as Completed")`,
+            "CREATED_VSWITCH_STATUS": `(
+                ("Create VirtualFabric completed" AND "<VF_ID>") OR
+                ("Create VirtualFabric completed, updated state as Completed" AND "<VF_ID>") OR
+                "Vfabric:<VF_ID> becomes online"
+            )`,
 
-            "DELETED_VSWITCHES_REQUEST": `"method:DELETE" AND delete-virtual-fabric`,
-            "DELETED_VSWITCH_ACK": `"Deleted virtual fabric DB entry"`,
+            "DELETED_VSWITCHES_REQUEST": `"method:DELETE" AND delete-virtual-fabric AND "<VF_ID>"`,
+            "DELETED_VSWITCH_ACK": `"Deleted virtual fabric DB entry" AND "<VF_ID>"`,
             "DELETED_VSWITCH_STATUS": `("Validation successful for All FCP tunnel delete APIs" OR "Validation successfull for All FCP tunnel delete APIs")`,
 
-            "CREATED_TUNNEL_REQUEST": `"Sending NS API with data" AND "create_pcie_fcp_tunnel"`,
-            "DELETED_TUNNEL_REQUEST": `"Sending NS API with data" AND "delete_pcie_fcp_tunnel"`,
-            "TUNNEL_REQUEST_STATUS": `"Received NS api response over channel" AND "status:true"`,
+            "CREATED_TUNNEL_REQUEST": `"Sending NS API with data" AND "create_pcie_fcp_tunnel" AND "<VF_ID>"`,
+            "DELETED_TUNNEL_REQUEST": `"Sending NS API with data" AND "delete_pcie_fcp_tunnel" AND "<VF_ID>"`,
+            // "TUNNEL_REQUEST_STATUS": `"Received NS api response over channel" AND "status:true"`,
+            // "TUNNEL_REQUEST_STATUS": `"NS Tunnel msgHandler" AND "request_id:<REQUEST_ID>" AND "status:true"`,
+            "TUNNEL_REQUEST_STATUS": `(
+                "Executing action for event tunnel-create-success" OR
+                "Executing action for event tunnel-delete-success"
+            ) AND "<REQ_ID>"`,
+
+            "PORT_CONNECT_STATUS": `
+                "Executing action for event port-connect-success" AND
+                "<VF_ID>" AND "<PORT_0> - <PORT_1>"
+            `,
+
+            "PORT_DISCONNECT_STATUS": `
+                "Executing action for event port-disconnect-success" AND
+                "<VF_ID>" AND "<PORT_0> - <PORT_1>"
+            `,
         };
 
         // Self invocation function
@@ -76,7 +95,22 @@
             }
         }
 
+        // Extracts the ports involved from the vswitch creation request log
+        function extractPortsInfo(message) {
+            // HACK: Depends on the current structure of the log message.
+            // The JSON is at the end of the log message.
+            const portsInfoStr = message.slice(message.search(" {"));
+            try {
+                // The JSON ends with an extra braces at the end which needs to be ignored.
+                return JSON.parse(portsInfoStr.slice(1, portsInfoStr.length-2));
+            }
+            catch {
+                return {"ports": []};
+            }
+        }
+
         async function showLifecycle(results) {
+            trackWebEvent("VSWITCH_TOOL");
             if (!results || results.length === 0) {
                 alert("Could not find any vswitch creations");
                 return;
@@ -101,29 +135,29 @@
                     formAnchorTag(vfIDURL, VFID),
                     info[1],
                     info[2],
-                    formHTMLButton("Show info", `showInfo("${result['reqID']}", "${VFID}", "${message}")`),
+                    formHTMLButton("Show info", `showInfo("${timestamp}", "${result['reqID']}", "${VFID}", "${message}")`),
                 )
             }
 
             addTableToElement(create_phase_element, table);
         }
 
-        async function showInfo(reqID, VFID, log) {
+        async function showInfo(timestamp, reqID, VFID, log) {
             trackWebEvent("VSWITCH_INFO");
 
             vswitch_info_element.innerHTML = "";
             vswitch_logs_element.innerHTML = "";
             const responses = await asyncFetch([
                 // Create Validation
-                handleSearch(`${SEARCHES_QUERIES["CREATED_VSWITCH_STATUS"]} AND "${VFID}"`),
+                handleSearch(`${SEARCHES_QUERIES["CREATED_VSWITCH_STATUS"].replaceAll("<VF_ID>", VFID)}`),
                 // Delete Request
-                handleSearch(`${SEARCHES_QUERIES["DELETED_VSWITCHES_REQUEST"]} AND "${VFID}"`),
+                handleSearch(`${SEARCHES_QUERIES["DELETED_VSWITCHES_REQUEST"].replaceAll("<VF_ID>", VFID)}`),
                 // Delete Validation
-                handleSearch(`${SEARCHES_QUERIES["DELETED_VSWITCH_STATUS"]} AND "${VFID}"`),
+                handleSearch(`${SEARCHES_QUERIES["DELETED_VSWITCH_ACK"].replaceAll("<VF_ID>", VFID)}`),
                 // Tunnel Creation
-                handleSearch(`${SEARCHES_QUERIES["CREATED_TUNNEL_REQUEST"]} AND "${VFID}"`),
+                handleSearch(`${SEARCHES_QUERIES["CREATED_TUNNEL_REQUEST"].replaceAll("<VF_ID>", VFID)}`),
                 // Tunnel Deletion
-                handleSearch(`${SEARCHES_QUERIES["DELETED_TUNNEL_REQUEST"]} AND "${VFID}"`),
+                handleSearch(`${SEARCHES_QUERIES["DELETED_TUNNEL_REQUEST"].replaceAll("<VF_ID>", VFID)}`),
             ]);
 
             // Function to convert responses into HTML anchor tag with timestamp as text
@@ -160,6 +194,11 @@
                 <div>Create Validation: ${displayTimestamps(createValidation)}</div>
             `;
 
+            // Showing the ports involved in the vSwitch
+            const portsInfo = extractPortsInfo(log);
+            const portsTable = getTableForVSwitchPorts(portsInfo);
+            addTableToElement(vswitch_info_element, portsTable);
+
             // Showing error logs during vSwitch Creation
             if (createValidation.length === 0) {
                 const errorLogs = await handleSearch(`${reqID} AND level:error`);
@@ -171,7 +210,7 @@
             // Tunnel Creation
             if (responses[3].length > 0) {
                 const tunnels = getTunnelsInfo(responses[3]);
-                const table = await getTableForTunnels(tunnels, "Created Tunnels");
+                const table = await getTableForTunnels(VFID, tunnels, "Created Tunnels");
                 addTableToElement(vswitch_info_element, table);
             }
 
@@ -191,7 +230,11 @@
                         "after": responses[1][0]["@timestamp"],
                         "before": deleteValidations.length > 0 ? responses[2][0]["@timestamp"] : null
                     };
-                    const errorLogs = await handleSearch(`${VFID} AND level:error`, time);
+                    const errorLogs = await handleSearch(
+                        `${VFID} AND level:error`,
+                        null,
+                        filters={"time": time}
+                    );
                     const title = `Error Logs during vSwitch deletion between ${time["after"]} and ${time["before"]}`;
                     errorLogsDuringDelete = getTableForLogs(title, errorLogs);
                     addTableToElement(vswitch_info_element, errorLogsDuringDelete);
@@ -200,7 +243,7 @@
                 // Tunnel Deletion
                 if (responses[4].length > 0) {
                     const tunnels = getTunnelsInfo(responses[4]);
-                    const table = await getTableForTunnels(tunnels, "Deleted Tunnels");
+                    const table = await getTableForTunnels(VFID, tunnels, "Deleted Tunnels");
                     addTableToElement(vswitch_info_element, table);
                 }
             }
@@ -210,12 +253,43 @@
 
             // Showing logs for all the request IDs
             const tunnelIDStr = Array.from(tunnelIDs).reduce((prev, curr) => (`${prev} OR "${curr}" OR "req_id:${curr}"`), "");
-            const results = await handleSearch(`"${reqID}" OR "${VFID}" ${tunnelIDStr}`);
+            const portNameStr = Object.entries(portsInfo["ports"]).reduce(
+                (prev, [port, portInfo]) =>
+                    prev === ""
+                        ? (`"${port}:${portInfo['name']}" OR ${portInfo['name']}`)
+                        : (`${prev} OR "${port}:${portInfo['name']}" OR ${portInfo['name']}`)
+                , "");
+
+            const createValidationTime = createValidation.length > 0 ? responses[0][responses[0].length-1]["@timestamp"] : null;
+            const deleteValidationTime = deleteValidations.length > 0 ? responses[2][0]["@timestamp"] : null;
+            const time = {
+                "after": timestamp,
+                "before": deleteValidationTime ? deleteValidationTime : createValidationTime
+            };
+            const results = await handleSearch(
+                `"${reqID}" OR "${VFID}" ${tunnelIDStr} OR (NOT src:pfm AND (${portNameStr}))`,
+                null,
+                filters={"time": time}
+            );
 
             const title = `vSwitch logs for VF-ID: ${VFID}`;
             const table = getTableForLogs(title, results);
             addTableToElement(vswitch_logs_element, table);
             toggleElementDisplay(vswitch_logs_element.parentElement, true);
+        }
+
+        function getTableForVSwitchPorts(portsInfo) {
+            if (portsInfo["ports"].length === 0) {
+                return null;
+            }
+
+            let table = new window.AsciiTable("Ports");
+            table.setHeading("DPU", "Name", "Port");
+
+            for (const [port, portInfo] of Object.entries(portsInfo["ports"])) {
+                table.addRow(portInfo["dpu"], portInfo["name"], port);
+            }
+            return table;
         }
 
         function getTableForLogs(title, results) {
@@ -239,19 +313,54 @@
             return table;
         }
 
-        async function getTableForTunnels(tunnels, title="Tunnels") {
+        async function getTableForTunnels(VFID, tunnels, title="Tunnels") {
             let table = new window.AsciiTable(title);
-            table.setHeading("Req-ID", "Port 1", "Port 2", "Status");
+            table.setHeading("Req-ID", "Port 1", "Port 2", "Tunnnel Status", "Port Status");
 
             for(const tunnel of tunnels) {
                 const reqID = tunnel["request_id"];
                 const reqIDURL = formSearchURL(`"${reqID}" OR "request_id:${reqID}"`);
-                const status = await handleSearch(`${SEARCHES_QUERIES["TUNNEL_REQUEST_STATUS"]} AND "request_id:${reqID}"`);
+                const ports = tunnel["fabric_ports"];
+                const PORT_STATUS_KEY = tunnel["action"] === "create_pcie_fcp_tunnel" ?
+                                            "PORT_CONNECT_STATUS" :
+                                            "PORT_DISCONNECT_STATUS";
+
+                const statuses = await asyncFetch([
+                    await handleSearch(`${SEARCHES_QUERIES["TUNNEL_REQUEST_STATUS"].replaceAll("<REQ_ID>", reqID)}`),
+                    await handleSearch(`
+                        ${SEARCHES_QUERIES[PORT_STATUS_KEY]
+                            .replaceAll("<VF_ID>", VFID)
+                            .replaceAll("<PORT_0>", ports[0]["port"])
+                            .replaceAll("<PORT_1>", ports[1]["port"])}`
+                    )
+                ]);
+
+                // Showing the status of tunnel creation/deletion
+                const tunnelStatus = statuses[0];
+                let tunnelStatusURL = tunnelStatus.length !== 0;
+                if (tunnelStatus.length !== 0) {
+                    tunnelStatusURL = formAnchorTag(
+                                    formLogURL(tunnelStatus[0]["@timestamp"], tunnelStatus[0]["_id"]),
+                                    tunnelStatus.length !== 0
+                                );
+                }
+
+                // Showing the status of tunnel port creation/deletion
+                const portStatus = statuses[1];
+                let portStatusURL = portStatus.length !== 0;
+                if (portStatus.length !== 0) {
+                    portStatusURL = formAnchorTag(
+                                    formLogURL(portStatus[0]["@timestamp"], portStatus[0]["_id"]),
+                                    portStatus.length !== 0
+                                );
+                }
 
                 table.addRow(
                     formAnchorTag(reqIDURL, reqID),
-                    ...tunnel["fabric_ports"].map(port => ( `${port["dpuname"]}, Port:${port["port"]}` )),
-                    status.length !== 0
+                    `${ports[0]["dpuname"]}, Port:${ports[0]["port"]}`,
+                    `${ports[1]["dpuname"]}, Port:${ports[1]["port"]}`,
+                    tunnelStatusURL,
+                    portStatusURL
                 )
             };
             return table;
@@ -279,7 +388,48 @@
             };
         }
 
-        async function handleSearch(searchText, time) {
+        function validateTimeFilter(datetimeStr) {
+            // Default time format of ES is either epoch in millis
+            // or yyyy-MM-dd'T'HH:mm:ss.SSSZ
+            if (datetimeStr && datetimeStr !== "") {
+                // Check for epoch millis
+                if (!isNaN(datetimeStr)) datetimeStr = +datetimeStr;
+                const date = new Date(datetimeStr);
+                let isValid = (date != "Invalid Date");
+                if (isValid) {
+                    // Date & time should be separated by T
+                    if (date.getUTCHours() == 0 && datetimeStr.includes(":")) isValid = datetimeStr.includes("T");
+                    if (!isValid) alert("Date & time should be separated by T");
+                }
+                else alert(`Time filter: ${datetimeStr} is not valid.`);
+                return isValid;
+            }
+            return true;
+        }
+
+        function buildFilterOption(filters) {
+            if (!filters) {
+                return {};
+            }
+
+            let allFilters = {};
+            if (filters["sources"]) {
+                allFilters["sources"] = filters["sources"];
+            }
+
+            if (filters["time"]) {
+                const startTime = filters["time"]["after"];
+                const endTime = filters["time"]["before"];
+                if (!validateTimeFilter(startTime) || !validateTimeFilter(endTime)) {
+                    return null;
+                }
+                allFilters["time"] = [startTime, endTime];
+            }
+
+            return allFilters;
+        }
+
+        async function handleSearch(searchText, time, filters) {
             if (!searchText || searchText === "") {
                 alert("Search box is empty");
                 return;
@@ -294,7 +444,7 @@
                 searchPayload["state"] = formSearchState(time["before"], time["after"]);
             }
 
-            const filterString = {};
+            const filterString = buildFilterOption(filters);
             const searchString = buildSearchOption(searchPayload);
 
             const searchBody = {
@@ -390,6 +540,10 @@
         }
 
         function addTableToElement(element, table, spacing=2) {
+            if (!table || table.length === 0) {
+                return;
+            }
+
             element.innerHTML += `<div>${table.toString()}</div>`;
             for (let i=0; i<spacing; i++) {
                 element.innerHTML += "\n";
