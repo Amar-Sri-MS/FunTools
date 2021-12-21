@@ -90,15 +90,15 @@ def _rootfs(f, rootfs):
 
 def _mfg(f, signed=False):
     if signed:
-        return '{}.{}.{}'.format(f, 'mfginstall','signed')
-    else:
         return '{}.{}'.format(f, 'mfginstall')
+    else:
+        return '{}.{}.{}'.format(f, 'mfginstall', 'unsigned')
 
 def _nor(f, signed=False):
     if signed:
-        return '{}.{}.{}'.format(f, 'norinstall','signed')
-    else:
         return '{}.{}'.format(f, 'norinstall')
+    else:
+        return '{}.{}.{}'.format(f, 'norinstall', 'unsigned')
 
 def main():
     parser = argparse.ArgumentParser()
@@ -268,8 +268,8 @@ def main():
 
         if wanted('prepare'):
             # these files are not needed in sdk-prepare
-            shutil.copy2(funos_appname, funos_appname + ".mfginstall")
-            shutil.copy2(funos_appname, funos_appname + ".norinstall")
+            shutil.copy2(funos_appname, _mfg(funos_appname))
+            shutil.copy2(funos_appname, _nor(funos_appname))
 
             for chip_file in chip_specific_files:
                 shutil.copy2(os.path.join(args.sdkdir, chip_file), os.path.basename(chip_file))
