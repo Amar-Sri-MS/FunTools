@@ -330,7 +330,7 @@ def build_input_pipeline(path, frn_info, filters={}):
             )
         else:
             blocks.extend(
-                funos_input(frn_info, source, path)
+                funos_input(frn_info, source, path, file_info_match='FOS(?P<system_id>([0-9a-fA-F]:?){12})-')
             )
 
     elif source in ['storage-agent', 'storage_agent']:
@@ -609,7 +609,7 @@ def funos_input_pipeline(frn_info, path):
     blocks.extend(funos_input(frn_info, source, f'{path}/dpu_funos.txt*'))
 
     # For the funos logs within nms directory
-    blocks.extend(funos_input(frn_info, source, f'{path}/FOS*-funos.log*'))
+    blocks.extend(funos_input(frn_info, source, f'{path}/FOS*-funos.log*', file_info_match='FOS(?P<system_id>([0-9a-fA-F]:?){12})-'))
 
     return blocks
 
