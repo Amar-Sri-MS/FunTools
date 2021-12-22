@@ -216,7 +216,7 @@ def main():
         # paths to application binaries in SDK tree
         paths = [ "bin",
                 "FunSDK/sbpfw/roms",
-                "FunSDK/sbpfw/eeproms",
+                "FunSDK/dpu_eepr",
                 "FunSDK/nvdimm_fw",
                 "feature_sets",
                 ]
@@ -250,7 +250,7 @@ def main():
                   "bin/Linux/x86_64/mkimage",
                   "bin/scripts/gen_fgpt.py",
                   "bin/scripts/xdata.py" ]
-        utils.append(os.path.join('FunSDK/sbpfw/eeproms', eeprom_list))
+        utils.append(os.path.join('FunSDK/dpu_eepr', eeprom_list))
 
         for app in utils:
             shutil.copy2(os.path.join(args.sdkdir, app), os.path.basename(app))

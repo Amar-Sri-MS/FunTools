@@ -146,7 +146,7 @@ if [ $EMULATION == 0 ]; then
 	# generate flash image for real chip
 	python3 $WORKSPACE/FunSDK/bin/flash_tools/generate_flash.py --config-type json \
 		--source-dir $SBP_INSTALL_DIR \
-		--source-dir $WORKSPACE/FunSDK/FunSDK/sbpfw/eeproms \
+		--source-dir $WORKSPACE/FunSDK/FunSDK/dpu_eepr \
 		--fail-on-error \
 		--chip $CHIP \
 		$WORKSPACE/FunSDK/bin/flash_tools/qspi_config_fungible.json \
@@ -167,7 +167,7 @@ else
 	# generate flash image for emulation
 	python3 $WORKSPACE/FunSDK/bin/flash_tools/generate_flash.py --config-type json \
 		--source-dir $SBP_INSTALL_DIR \
-		--source-dir $WORKSPACE/FunSDK/FunSDK/sbpfw/eeproms \
+		--source-dir $WORKSPACE/FunSDK/FunSDK/dpu_eepr \
 		--enroll-cert ${WORKSPACE}/enroll_cert.bin \
 		--fail-on-error \
 		--chip $CHIP \

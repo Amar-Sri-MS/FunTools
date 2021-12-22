@@ -418,7 +418,7 @@ def main():
     ''' main '''
     script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
     eeproms_dir = os.path.join(os.environ['WORKSPACE'],
-                               'FunSDK/FunSDK/sbpfw/eeproms')
+                               'FunSDK/FunSDK/dpu_eepr')
 
     args = sanitize_args(parse_args(), eeproms_dir)
 
