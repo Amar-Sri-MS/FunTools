@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "hw/csr/ccu.h"
+#include <hw/csr/ccu.h>
 #include "pcieproxy.h"
 #include "endian.h"
 
