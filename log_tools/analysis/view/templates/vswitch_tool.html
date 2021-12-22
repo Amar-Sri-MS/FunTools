@@ -25,12 +25,12 @@
     <script type="text/javascript" src="/static/js/tracker.js"></script>
     <script src="/static/js/ascii-table.js"></script>
     <script type="text/javascript">
-        const logID = "{{log_id}}";
+        const logId = "{{log_id}}";
         const lifecycle_element = document.getElementById("lifecycle");
         const create_phase_element = document.getElementById("create_phase");
         const vswitch_info_element = document.getElementById("vswitch_info");
         const vswitch_logs_element = document.getElementById("vswitch_logs");
-        const LOG_PAGE_URL = `${window.location.origin}/log/${logID}`;
+        const LOG_PAGE_URL = `${window.location.origin}/log/${logId}`;
 
         // List of search queries for fetching logs
         const SEARCHES_QUERIES = {

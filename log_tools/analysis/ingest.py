@@ -7,13 +7,16 @@
 import argparse
 import datetime
 import glob
+import json
 import logging
 import os
+import requests
 import sys
 import time
 
 sys.path.append('.')
 
+import config_loader
 import pipeline
 import logger
 
@@ -157,11 +160,44 @@ def start_pipeline(base_path, build_id, filters={}, metadata={}, output_block='E
 
     timeline.generate_timeline()
     timeline.backup_timeline_files()
+    backup_pipeline_cfg(LOG_ID, cfg)
 
     return {
         'success': True,
         'time_taken': time_taken
     }
+
+
+def backup_pipeline_cfg(log_id, cfg):
+    """
+    Backing up the pipeline cfg built during the start of
+    ingestion of the given "log_id" for debugging purpose.
+
+    Sending the json cfg to FILE_SERVER.
+    """
+    try:
+        config = config_loader.get_config()
+        FILE_SERVER_URL = config['FILE_SERVER_URL']
+        url = f'{FILE_SERVER_URL}/{log_id}/file'
+
+        filename = f'{log_id}_cfg.json'
+        path = os.path.join(logger.LOGS_DIRECTORY, filename)
+
+        with open(path, 'w') as f:
+            json.dump(cfg, f, indent=4, sort_keys=True, default=str)
+
+        files = [
+            (filename, (filename, open(path, 'rb')))
+        ]
+
+        response = requests.post(url, files=files)
+        response.raise_for_status()
+        logging.info(f'Pipeline cfg file for {log_id} uploaded!')
+
+        # Removing the temp created cfg json file.
+        os.remove(path)
+    except Exception as e:
+        logging.exception(f'Uploading pipeline cfg for {log_id} failed.')
 
 
 @timeline.timeline_logger('build_pipeline')
@@ -252,9 +288,9 @@ def parse_manifest(path, parent_frn={}, filters={}):
             # Check for logs in the folder or textfile based on the source
             if frn_info['resource_type'] == 'folder' or frn_info['resource_type'] == 'textfile':
                 logging.info(f'Checking for logs in {content_path}')
-                # Setting source if not present on FUNLOG_MANIFEST
-                if 'system_log.tar.gz' in frn_info['prefix_path'] or 'system_log.tar.gz' in frn_info['sub_path']:
-                    frn_info['source'] = 'cclinux'
+                # Setting source for all the logs from CCLinux
+                if 'system_log.tar' in content_path:
+                    frn_info['source'] = f'cclinux_{frn_info["source"]}'
                 pipeline_cfg.extend(build_input_pipeline(content_path, frn_info, filters))
 
         else:
@@ -280,7 +316,8 @@ def build_input_pipeline(path, frn_info, filters={}):
         return blocks
 
     # If the folder does not exist
-    if resource_type  == 'folder' and not os.path.exists(path):
+    if resource_type == 'folder' and not os.path.exists(path):
+        logging.warning(f'Path does not exist: {path}')
         return blocks
 
     # TODO(Sourabh): Have multiple source keywords to check for a source
@@ -293,7 +330,7 @@ def build_input_pipeline(path, frn_info, filters={}):
             )
         else:
             blocks.extend(
-                funos_input(frn_info, source, path)
+                funos_input(frn_info, source, path, file_info_match='FOS(?P<system_id>([0-9a-fA-F]:?){12})-')
             )
 
     elif source in ['storage-agent', 'storage_agent']:
@@ -471,7 +508,7 @@ def build_input_pipeline(path, frn_info, filters={}):
                     controller_input_pipeline(frn_info,
                         updated_source,
                         path,
-                        parse_block='JSONInput'
+                        parse_block='KeyValueInput'
                     )
                 )
             else:
@@ -483,7 +520,7 @@ def build_input_pipeline(path, frn_info, filters={}):
                 )
 
     elif source == 'cclinux' and resource_type == 'folder':
-        log_files = glob.glob(f'{path}/*.log*')
+        log_files = glob.glob(f'{path}/**/*.log*', recursive=True)
         frn_info['resource_type'] = 'textfile'
         for file in log_files:
             filename = os.path.basename(file)
@@ -572,7 +609,7 @@ def funos_input_pipeline(frn_info, path):
     blocks.extend(funos_input(frn_info, source, f'{path}/dpu_funos.txt*'))
 
     # For the funos logs within nms directory
-    blocks.extend(funos_input(frn_info, source, f'{path}/FOS*-funos.log*'))
+    blocks.extend(funos_input(frn_info, source, f'{path}/FOS*-funos.log*', file_info_match='FOS(?P<system_id>([0-9a-fA-F]:?){12})-'))
 
     return blocks
 
