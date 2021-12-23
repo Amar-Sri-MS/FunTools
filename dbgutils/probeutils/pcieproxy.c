@@ -71,7 +71,7 @@
 #include <arpa/inet.h>
 #include <syslog.h>
 
-#include "platform/mips64/ccu.h"
+#include <FunOS/hw/csr/ccu.h>
 #include "endian.h"
 #include "pcieproxy.h"
 

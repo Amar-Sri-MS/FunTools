@@ -134,7 +134,7 @@ swab16(uint16_t u16)
 
 /*
  * =======================================================
- * START: Code extracted from FunOS: platform/mips64/ccu.h
+ * START: Code extracted from FunOS: hw/csr/ccu.h
  * =======================================================
  */
 
@@ -231,7 +231,7 @@ swab16(uint16_t u16)
 
 /*
  * =====================================================
- * END: Code extracted from FunOS: platform/mips64/ccu.h
+ * END: Code extracted from FunOS: hw/csr/ccu.h
  * =====================================================
  */
 
