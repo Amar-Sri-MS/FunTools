@@ -11,7 +11,7 @@
 
 // We must define PLATFORM_POSIX to get fun_json_write_to_fd()
 #define PLATFORM_POSIX 1
-#include <FunSDK/utils/threaded/fun_json.h>
+#include <FunOS/utils/threaded/fun_json.h>
 
 
 int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {

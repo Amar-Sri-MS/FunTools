@@ -7,7 +7,7 @@
 
 #pragma once
 #include <stddef.h>
-#include <FunSDK/FunOS/nucleus/types.h>
+#include <FunOS/nucleus/types.h>
 
 struct dpcsh_ptr_queue {
 	struct fun_ptr_and_size *buffer;
