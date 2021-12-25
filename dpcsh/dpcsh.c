@@ -35,12 +35,12 @@
 #include "bin_ctl.h"
 #endif
 
-#include <FunSDK/utils/threaded/fun_map_threaded.h>
-#include <FunSDK/services/commander/fun_commander.h>
-#include <FunSDK/services/commander/fun_commander_basic_commands.h>
-#include <FunSDK/utils/threaded/fun_malloc_threaded.h>
-#include <FunSDK/utils/common/base64.h>
-#include <FunSDK/platform/include/platform/utils_platform.h>
+#include <FunOS/utils/threaded/fun_map_threaded.h>
+#include <FunOS/services/commander/fun_commander.h>
+#include <FunOS/services/commander/fun_commander_basic_commands.h>
+#include <FunOS/utils/threaded/fun_malloc_threaded.h>
+#include <FunOS/utils/common/base64.h>
+#include <FunOS/platform/include/platform/utils_platform.h>
 
 #define SOCK_NAME	"/tmp/funos-dpc.sock"      /* default FunOS socket */
 #define PROXY_NAME      "/tmp/funos-dpc-text.sock" /* default unix proxy name */

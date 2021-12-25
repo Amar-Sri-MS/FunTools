@@ -12,8 +12,8 @@
 
 // We must define PLATFORM_POSIX to get fun_json_write_to_fd()
 #define PLATFORM_POSIX 1
-#include <FunSDK/utils/threaded/fun_json.h>
-#include <FunSDK/services/commander/fun_commander.h>
+#include <FunOS/utils/threaded/fun_json.h>
+#include <FunOS/services/commander/fun_commander.h>
 
 #define NOMODE      (0)
 #define TEXT        (1)

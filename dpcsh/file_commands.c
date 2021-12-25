@@ -11,8 +11,8 @@
 #include <unistd.h>
 #include <unistd.h>
 #include <sys/stat.h>
-#include <services/commander/fun_commander.h>
-#include <utils/threaded/fun_malloc_threaded.h>
+#include <FunOS/services/commander/fun_commander.h>
+#include <FunOS/utils/threaded/fun_malloc_threaded.h>
 
 #include "dpcsh.h"
 #include "file_commands.h"
