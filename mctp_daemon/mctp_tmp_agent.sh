@@ -9,7 +9,7 @@
 #	<SensorID_2> <TEMP_VAL_2>
 #	... so on ...
 # Also whenever MAX_TEMP_VAL crosses warning, critical or fatal temperature threshold values,
-# it would also periodically writes to MCTP Daemon's /tmp/mctp_sensors_fifo (in same above format)
+# it would also periodically writes to MCTP Daemon's /tmp/mctp_sensors (in same above format)
 # till that condition goes off.
 # Once such conditions totally goes off then it would write only once last time to this FIFO to
 # indicate MCTP to clear the temp_condition and then never write to that FIFO again till such
@@ -33,10 +33,10 @@ if [ ${#} -lt ${MINARGS} -o ${#} -gt ${MAXARGS} ]; then
 fi
 
 POLL_INTERVAL=${1}
-MCTP_FIFO="/tmp/mctp_sensors_fifo"
+MCTP_FIFO="/tmp/mctp_sensors"
 MAX_TEMP=127
 MIN_TEMP=-127
-DPCSH_CMD="/usr/bin/dpcsh --pcie_nvme_sock=/dev/nvme0 --nocli-quiet --nvme_cmd_timeout=10"
+DPCSH_CMD="/usr/bin/dpcsh -c/tmp/dpc.sock --nocli-quiet"
 DPU_HIGH_THRESHOLD=95
 
 PLATFORM_LOG_DIR="/tmp/.platform"
@@ -73,7 +73,7 @@ SendEventToMCTP() {
 	fi
 }
 
-GetDPUMRSensorsThermal() {
+GetDPUSensorsThermal() {
 	if [ -z "${1}" ]; then
 		return 1
 	fi
@@ -110,6 +110,6 @@ GetDPUMRSensorsThermal() {
 #Poll every $POLL_INTERVAL
 while true; do
 	SENSOR_ID=1
-	GetDPUMRSensorsThermal ${SENSOR_ID}
+	GetDPUSensorsThermal ${SENSOR_ID}
 	sleep $POLL_INTERVAL
 done
