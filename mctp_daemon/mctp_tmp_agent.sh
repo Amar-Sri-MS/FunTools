@@ -37,6 +37,7 @@ MCTP_FIFO="/tmp/mctp_sensors"
 MAX_TEMP=127
 MIN_TEMP=-127
 DPCSH_CMD="/usr/bin/dpcsh -c/tmp/dpc.sock --nocli-quiet"
+
 DPU_HIGH_THRESHOLD=95
 
 PLATFORM_LOG_DIR="/tmp/.platform"
