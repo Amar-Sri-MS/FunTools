@@ -2,7 +2,7 @@
 #
 # File: mctp_tmp_agent.sh
 # Purpose: 
-# Periodically Update MAX_TS_TEMP_VAL in following format to /tmp/.platform/MAX_DPU_TS_VAL.
+# Periodically Update MAX_TS_TEMP_VAL in following format to /tmp/.platform/MCTP_MAX_TS_VAL.
 # This would be consumed by MCTP Daemon to serve HostServer's "GetSensorReading PLDM Command"
 # 	Format:
 #	<SensorID_1> <MAX_TS_TEMP_VAL_1>
@@ -42,7 +42,7 @@ DPU_HIGH_THRESHOLD=95
 
 PLATFORM_LOG_DIR="/tmp/.platform"
 /bin/mkdir -p ${PLATFORM_LOG_DIR}
-MCTP_TEMP_LOG="$PLATFORM_LOG_DIR/MAX_DPU_TS_VAL"
+MCTP_TEMP_LOG="$PLATFORM_LOG_DIR/MCTP_MAX_TS_VAL"
 
 SendEventToMCTP() {
 	if [ -z "${1}" -o -z "${2}" -o -z "${3}" ]; then
