@@ -59,7 +59,6 @@ SendEventToMCTP() {
 		if [ ${MAX_TS_TEMP} -gt ${TS_WARN_TEMP} ]; then
 			/bin/echo "${TS_TEMP_INDEX} ${MAX_TS_TEMP}" > ${MCTP_FIFO}
 			TS_TEMP_WAR_ASSERT=1
-			echo "Insyde ..."
 		elif [ ${MAX_TS_TEMP} -lt ${TS_WARN_TEMP} -a ${TS_TEMP_WAR_ASSERT} -eq 1 ]; then
 			/bin/echo "${TS_TEMP_INDEX} ${MAX_TS_TEMP}" > ${MCTP_FIFO}
 			TS_TEMP_WAR_ASSERT=0
