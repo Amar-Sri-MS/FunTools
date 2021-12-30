@@ -172,6 +172,7 @@ def upload():
     file: binary file of log archive uploaded in chunks
     """
     job_id = request.form.get('job_id')
+    job_id = job_id.strip().lower()
     file = request.files['file']
     LOG_ID = _get_log_id(job_id, ingest_type='techsupport')
 
@@ -269,6 +270,7 @@ def ingest():
         ingest_type = request.form.get('ingest_type', 'qa')
         techsupport_ingest_type = request.form.get('techsupport_ingest_type')
         job_id = request.form.get('job_id')
+        job_id = job_id.strip().lower()
         test_index = request.form.get('test_index', 0)
         tags = request.form.get('tags')
         tags_list = [tag.strip() for tag in tags.split(',') if tag.strip() != '']
@@ -279,8 +281,6 @@ def ingest():
         start_time = request.form.get('start_time', None)
         end_time = request.form.get('end_time', None)
         sources = request.form.getlist('sources', None)
-
-        job_id = job_id.strip()
 
         LOG_ID = _get_log_id(job_id, ingest_type, test_index=test_index)
 
@@ -477,6 +477,8 @@ def _filter_qa_log_files(job_logs, suite_info, test_index=None):
         # File names either start with _{test_index}{test_script_name} or
         # _{test_index}script_helper.py
         log_filename_starts = (f'_{test_index}{test_script_name}', f'_{test_index}script_helper.py')
+    else:
+        raise Exception('Logs not found')
 
     # These are the log archives from QA platform to ingest.
     # fc_log.tgz & fcs_log.tgz are from single & HA node setup.
