@@ -180,7 +180,7 @@ def upload():
     os.makedirs(save_dir, exist_ok=True)
     save_path = os.path.join(save_dir, file.filename)
 
-    current_chunk = int(request.form['dzchunkindex'])
+    current_chunk = int(request.form.get('dzchunkindex', 0))
 
     # If the file already exists it's ok if we are appending to it,
     # but not if it's new file that would overwrite the existing one
@@ -191,22 +191,22 @@ def upload():
 
     try:
         with open(save_path, 'ab') as f:
-            f.seek(int(request.form['dzchunkbyteoffset']))
+            f.seek(int(request.form.get('dzchunkbyteoffset', 0)))
             f.write(file.stream.read())
     except OSError:
         logging.exception('Could not write to file')
         return jsonify("Not sure why,"
                     " but we couldn't write the file to disk"), 500
 
-    total_chunks = int(request.form['dztotalchunkcount'])
+    total_chunks = int(request.form.get('dztotalchunkcount', 0))
 
     if current_chunk + 1 == total_chunks:
         # This was the last chunk, the file should be complete and the size we expect
-        if os.path.getsize(save_path) != int(request.form['dztotalfilesize']):
+        if os.path.getsize(save_path) != int(request.form.get('dztotalfilesize', 0)):
             logging.error(f"File {file.filename} was completed, "
                       f"but has a size mismatch."
                       f"Was {os.path.getsize(save_path)} but we"
-                      f" expected {request.form['dztotalfilesize']}")
+                      f" expected {request.form.get('dztotalfilesize', 0)}")
             return jsonify('Size mismatch after final upload'), 500
         else:
             logging.info(f'File {file.filename} has been uploaded successfully')
@@ -216,6 +216,93 @@ def upload():
 
     return jsonify('Chunk upload successful'), 200
 
+
+@ingester_page.route('/upload_file', methods=['POST'])
+@login_required
+def upload_file():
+    """
+    Example usage with cURL:
+        curl -i -XPOST \
+        -H 'Accept: application/json' \
+        -H 'Content-Type: multipart/form-data' \
+        -F 'job_id=test' \
+        -F 'submitted_by="sourabh.jain@fungible.com"' \
+        -T 'file=@"/bugbits/test/techsupport.tgz"' \
+        'http://funlogs/upload_file'
+    """
+    try:
+        # Accept type could be either text/html or application/json if the
+        # user wants a JSON response instead of the default html response.
+        accept_type = request.headers.get('Accept', 'text/html')
+
+        job_id = request.form.get('job_id')
+        job_id = job_id.strip().lower()
+        tags = request.form.get('tags', '')
+        tags_list = [tag.strip() for tag in tags.split(',') if tag.strip() != '']
+        file = request.files['file']
+        submitted_by = g.user
+
+        start_time = request.form.get('start_time', None)
+        end_time = request.form.get('end_time', None)
+        sources = request.form.getlist('sources', None)
+
+        ingest_type = 'techsupport'
+        techsupport_ingest_type = 'upload'
+        file_name = file.filename
+
+        LOG_ID = _get_log_id(job_id, ingest_type=ingest_type)
+
+        save_dir = os.path.join(DOWNLOAD_DIRECTORY, LOG_ID)
+        os.makedirs(save_dir, exist_ok=True)
+        save_path = os.path.join(save_dir, file_name)
+        file.save(save_path)
+
+        metadata = start_ingestion(job_id,
+                                   ingest_type,
+                                   tags=tags_list,
+                                   techsupport_ingest_type=techsupport_ingest_type,
+                                   file_name=file_name,
+                                   sources=sources,
+                                   start_time=start_time,
+                                   end_time=end_time)
+
+        feedback = {
+            'started': True,
+            'log_id': LOG_ID,
+            'success': metadata.get('ingestion_status') == 'COMPLETED',
+            'is_partial_ingestion': metadata.get('is_partial_ingestion', False),
+            'job_id': job_id,
+            'tags': tags,
+            'submitted_by': submitted_by,
+            'start_time': start_time,
+            'end_time': end_time,
+            'sources': sources,
+            'metadata': metadata
+        }
+
+    except Exception as e:
+        current_app.logger.exception(f'Error when starting ingestion for job: {job_id}')
+        feedback = {
+            'success': False,
+            'started': False,
+            'log_id': LOG_ID,
+            'job_id': job_id,
+            'tags': tags,
+            'submitted_by': submitted_by,
+            'start_time': start_time,
+            'end_time': end_time,
+            'sources': sources,
+            'msg': str(e)
+        }
+
+    if accept_type == 'application/json':
+        return jsonify(feedback)
+    return render_template(
+        'ingester.html',
+        feedback=feedback,
+        ingest_type=ingest_type,
+        techsupport_ingest_type=techsupport_ingest_type
+    )
 
 @ingester_page.route('/remove_file', methods=['DELETE'])
 def remove_uploaded_file():
@@ -261,10 +348,20 @@ def render_ingest_page():
 @login_required
 def ingest():
     """
-    Handling ingestion of logs from QA jobs.
-    Required QA "job_id"
+    Handling ingestion of logs from either QA jobs or
+    techsupport archive.
+
+    For ingesting a QA job, requires:
+        "job_id" and "test_index"
+
+    For ingesting a techsupport archive, requires:
+        unique "job_id" and
+        "mount_path" in case the archive is in NFS mounted volume
+        "file_name" in case the archive is uploaded by the user.
     """
     try:
+        # Accept type could be either text/html or application/json if the
+        # user wants a JSON response instead of the default html response.
         accept_type = request.headers.get('Accept', 'text/html')
 
         ingest_type = request.form.get('ingest_type', 'qa')
@@ -316,47 +413,16 @@ def ingest():
         elif techsupport_ingest_type == 'upload' and not file_name:
             return render_error_template('Missing filename')
 
-        es_metadata = ElasticsearchMetadata()
-        metadata = es_metadata.get(LOG_ID)
-
-        # If metadata exists then either ingestion for this job
-        # is already done or in progress
-        if not metadata or metadata['ingestion_status'] == 'FAILED':
-            cmd = ['./ingester.py', job_id, '--ingest_type', ingest_type]
-            if len(tags_list) > 0:
-                cmd.append('--tags')
-                cmd.extend(tags_list)
-
-            if start_time:
-                cmd.append('--start_time')
-                cmd.append(start_time)
-
-            if end_time:
-                cmd.append('--end_time')
-                cmd.append(end_time)
-
-            if len(sources) > 0:
-                cmd.append('--sources')
-                cmd.extend(sources)
-
-            if ingest_type == 'qa':
-                cmd.append('--test_index')
-                cmd.append(str(test_index))
-            elif ingest_type == 'techsupport':
-                cmd.append('--techsupport_ingest_type')
-                cmd.append(techsupport_ingest_type)
-                if techsupport_ingest_type == 'mount_path':
-                    cmd.append('--log_path')
-                    cmd.append(mount_path)
-                elif techsupport_ingest_type == 'upload':
-                    cmd.append('--file_name')
-                    cmd.append(file_name)
-
-            if submitted_by:
-                cmd.append('--submitted_by')
-                cmd.append(submitted_by)
-
-            ingestion = subprocess.Popen(cmd)
+        metadata = start_ingestion(job_id,
+                                   ingest_type,
+                                   test_index=test_index,
+                                   tags=tags_list,
+                                   techsupport_ingest_type=techsupport_ingest_type,
+                                   mount_path=mount_path,
+                                   file_name=file_name,
+                                   sources=sources,
+                                   start_time=start_time,
+                                   end_time=end_time)
 
         feedback = {
             'started': True,
@@ -386,6 +452,70 @@ def ingest():
         current_app.logger.exception(f'Error when starting ingestion for job: {job_id}')
         return render_error_template(str(e)), 500
 
+
+def start_ingestion(job_id, ingest_type, **addtional_data):
+    """
+    Forming the command and starting the ingestion based on the
+    additional data.
+
+    Returns the metadata if the job_id already exists.
+    """
+    test_index = addtional_data.get('test_index', 0)
+    tags = addtional_data.get('tags')
+    techsupport_ingest_type = addtional_data.get('techsupport_ingest_type')
+    mount_path = addtional_data.get('mount_path')
+    file_name = addtional_data.get('file_name')
+    submitted_by = g.user
+
+    sources = addtional_data.get('sources')
+    start_time = addtional_data.get('start_time')
+    end_time = addtional_data.get('end_time')
+
+    LOG_ID = _get_log_id(job_id, ingest_type, test_index=test_index)
+
+    es_metadata = ElasticsearchMetadata()
+    metadata = es_metadata.get(LOG_ID)
+
+    # If metadata exists then either ingestion for this job
+    # is already done or in progress
+    if not metadata or metadata['ingestion_status'] == 'FAILED':
+        cmd = ['./ingester.py', job_id, '--ingest_type', ingest_type]
+        if len(tags) > 0:
+            cmd.append('--tags')
+            cmd.extend(tags)
+
+        if start_time:
+            cmd.append('--start_time')
+            cmd.append(start_time)
+
+        if end_time:
+            cmd.append('--end_time')
+            cmd.append(end_time)
+
+        if len(sources) > 0:
+            cmd.append('--sources')
+            cmd.extend(sources)
+
+        if ingest_type == 'qa':
+            cmd.append('--test_index')
+            cmd.append(str(test_index))
+        elif ingest_type == 'techsupport':
+            cmd.append('--techsupport_ingest_type')
+            cmd.append(techsupport_ingest_type)
+            if techsupport_ingest_type == 'mount_path':
+                cmd.append('--log_path')
+                cmd.append(mount_path)
+            elif techsupport_ingest_type == 'upload':
+                cmd.append('--file_name')
+                cmd.append(file_name)
+
+        if submitted_by:
+            cmd.append('--submitted_by')
+            cmd.append(submitted_by)
+
+        ingestion = subprocess.Popen(cmd)
+
+    return metadata
 
 @ingester_page.route('/ingest/<log_id>/status', methods=['GET'])
 def check_status(log_id):
