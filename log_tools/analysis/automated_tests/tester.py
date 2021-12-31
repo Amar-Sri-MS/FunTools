@@ -51,12 +51,13 @@ class Tester(object):
         """
         Starting the tester.
         """
+        self.setup()
+
         # Skipping tests if the log_id already exists.
         if self.es.indices.exists(self.log_id):
             logging.warning(f'Skipping tests on {self.log_id}. The log_id already exists.')
             return
 
-        self.setup()
         self.run()
         self.validate()
         self.teardown()

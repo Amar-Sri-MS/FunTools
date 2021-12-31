@@ -7,7 +7,6 @@
 import logging
 import os
 import re
-import sys
 import yaml
 
 MANIFEST_FILE_NAME = 'FUNLOG_MANIFEST'
@@ -20,7 +19,9 @@ def parse(dir):
         manifest_path = os.path.join(dir, MANIFEST_FILE_NAME)
         logging.info(f'Parsing manifest file at {manifest_path}')
         with open(manifest_path) as manifest_file:
-            manifest = yaml.safe_load(manifest_file)
+            # Replacing tab indentation with spaces since YAML does not
+            # support tab indentation.
+            manifest = yaml.safe_load(manifest_file.read().replace('\t', ' '))
         manifest = _format_manifest(manifest)
     except yaml.YAMLError as e:
         logging.exception('Could not parse the manifest file.')

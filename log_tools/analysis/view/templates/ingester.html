@@ -407,6 +407,15 @@
                     }
                 }
             }
+            else if (ingestType === 'qa') {
+                let test_index = event.elements["test_index"].value;
+                test_index = test_index === '' ? 0 : parseInt(test_index);
+                if (isNaN(test_index)) {
+                    alert("Test index should be a number.");
+                    return false;
+                }
+                event.elements["test_index"].value = test_index;
+            }
 
             statusElement.innerHTML = "<p>Ingesting.. Please wait.</p>";
             feedbackElement.innerHTML = "";
