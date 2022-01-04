@@ -1041,26 +1041,26 @@ def email_notify(logID):
         logging.warning('Sending email aborted: submitted_by email not found.')
         return
 
-    is_failed = metadata.get('ingestion_status') == 'FAILED'
+    is_successful = metadata.get('ingestion_status') == 'SUCCESS'
     logID = metadata.get('logID')
 
     if not logID:
         logging.warning('Sending email aborted: logID not found.')
         return
 
-    if is_failed:
-        subject = f'Ingestion of {logID} failed.'
-        body = f"""
-            Ingestion of {logID} failed. Please email tools-pals@fungible.com for help!
-            Reason: {metadata.get('ingestion_error')}
-        """
-    else:
+    if is_successful:
         subject = f'Ingestion of {logID} is successful.'
         body = f"""
             Ingestion of {logID} is successful.
             Log Analyzer Dashboard: {config['LOG_VIEW_BASE_URL'].replace('LOG_ID', logID)}/dashboard
 
             Time to ingest logs: {metadata.get('ingestion_time')} seconds
+        """
+    else:
+        subject = f'Ingestion of {logID} failed.'
+        body = f"""
+            Ingestion of {logID} failed. Please email tools-pals@fungible.com for help!
+            Reason: {metadata.get('ingestion_error')}
         """
 
     status = mail.Mail(submitted_by, subject, body)
