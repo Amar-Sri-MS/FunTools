@@ -17,7 +17,7 @@ SDK_INSTALL_DIR ?= $(SDKDIR)
 all: pcicfgutil
 
 # define header and library location in FunSDK
-CFLAGS ?= -I $(SDKDIR)/FunSDK  \
+CFLAGS ?= -I $(SDKDIR)/FunSDK/funosrt/include  \
 	  -I $(SDKDIR) -Wall -Werror
 
 # XXX: compatibility with FunOS build parameters
