@@ -14,7 +14,7 @@ all: jsonutil
 include build-afl.mk
 
 # define header and library location in FunSDK
-CFLAGS ?= -I $(SDKDIR)/FunSDK  \
+CFLAGS ?= -I $(SDKDIR)/FunSDK/funosrt/include  \
 	-I $(SDKDIR)
 
 # XXX: compatibility with FunOS build parameters
