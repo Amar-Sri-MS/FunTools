@@ -7,6 +7,7 @@
 # Owner: Sourabh Jain (sourabh.jain@fungible.com)
 # Copyright (c) 2021 Fungible Inc.  All rights reserved.
 
+import datetime
 import logging
 
 from elasticsearch7 import Elasticsearch
@@ -27,6 +28,8 @@ class Tester(object):
         # the test ingestion.
         self.log_id = None
         self.job_id = None
+
+        self.ingest_type = None
 
         # Test Status. Will be updated after validation.
         self.ingestion_status = False
@@ -62,6 +65,7 @@ class Tester(object):
         self.validate()
         self.teardown()
         self.notify()
+        self.collect_status()
 
     def run(self):
         """
@@ -104,6 +108,33 @@ class Tester(object):
             {self.ingestion_status_msg}
         """
 
-        status = Mail(self.email_watchers, subject, body)
+        status = Mail(self.email_watchers, subject, body, self.email_cc_watchers)
         if not status:
             logging.error(f'Failed to send email to {self.email_watchers}')
+
+    def collect_status(self):
+        """
+        Storing the test result status for historical analysis.
+        """
+        now = datetime.datetime.utcnow()
+        INDEX_NAME = f'testdata_{now.year}_{now.month}'
+
+        try:
+            data = {
+                '@timestamp': now,
+                'logID': self.log_id,
+                'job_id': self.job_id,
+                'ingest_type': self.ingest_type,
+                'ingestion_status': self.ingestion_status,
+                'ingestion_msg': self.ingestion_status_msg,
+                'validation_status': self.status,
+                'validation_msg': self.status_msg
+            }
+
+            result = self.es.index(INDEX_NAME,
+                                data,
+                                id=self.log_id)
+
+            return result
+        except Exception as e:
+            logging.exception('Error occurred during collecting test status.')

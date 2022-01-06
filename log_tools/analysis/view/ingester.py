@@ -227,7 +227,7 @@ def upload_file():
         -H 'Content-Type: multipart/form-data' \
         -F 'job_id=test' \
         -F 'submitted_by="sourabh.jain@fungible.com"' \
-        -T 'file=@"/bugbits/test/techsupport.tgz"' \
+        -F 'file=@"/bugbits/test/techsupport.tgz"' \
         'http://funlogs/upload_file'
     """
     try:
@@ -238,7 +238,7 @@ def upload_file():
         job_id = request.form.get('job_id')
         job_id = job_id.strip().lower()
         tags = request.form.get('tags', '')
-        tags_list = [tag.strip() for tag in tags.split(',') if tag.strip() != '']
+        tags_list = [tag.strip() for tag in tags.split(',') if tag.strip() != ''] if tags else []
         file = request.files['file']
         submitted_by = g.user
 
@@ -367,10 +367,9 @@ def ingest():
         ingest_type = request.form.get('ingest_type', 'qa')
         techsupport_ingest_type = request.form.get('techsupport_ingest_type')
         job_id = request.form.get('job_id')
-        job_id = job_id.strip().lower()
         test_index = request.form.get('test_index', 0)
-        tags = request.form.get('tags')
-        tags_list = [tag.strip() for tag in tags.split(',') if tag.strip() != '']
+        tags = request.form.get('tags', '')
+        tags_list = [tag.strip() for tag in tags.split(',') if tag.strip() != ''] if tags else []
         file_name = request.form.get('filename')
         mount_path = request.form.get('mount_path')
         submitted_by = g.user
@@ -379,7 +378,7 @@ def ingest():
         end_time = request.form.get('end_time', None)
         sources = request.form.getlist('sources', None)
 
-        LOG_ID = _get_log_id(job_id, ingest_type, test_index=test_index)
+        LOG_ID = None
 
         def render_error_template(msg=None):
             feedback = {
@@ -407,6 +406,9 @@ def ingest():
 
         if not job_id:
             return render_error_template('Missing JOB ID')
+
+        job_id = job_id.strip().lower()
+        LOG_ID = _get_log_id(job_id, ingest_type, test_index=test_index)
 
         if techsupport_ingest_type == 'mount_path' and not mount_path:
             return render_error_template('Missing mount path')
@@ -1041,26 +1043,26 @@ def email_notify(logID):
         logging.warning('Sending email aborted: submitted_by email not found.')
         return
 
-    is_failed = metadata.get('ingestion_status') == 'FAILED'
+    is_successful = metadata.get('ingestion_status') == 'SUCCESS'
     logID = metadata.get('logID')
 
     if not logID:
         logging.warning('Sending email aborted: logID not found.')
         return
 
-    if is_failed:
-        subject = f'Ingestion of {logID} failed.'
-        body = f"""
-            Ingestion of {logID} failed. Please email tools-pals@fungible.com for help!
-            Reason: {metadata.get('ingestion_error')}
-        """
-    else:
+    if is_successful:
         subject = f'Ingestion of {logID} is successful.'
         body = f"""
             Ingestion of {logID} is successful.
             Log Analyzer Dashboard: {config['LOG_VIEW_BASE_URL'].replace('LOG_ID', logID)}/dashboard
 
             Time to ingest logs: {metadata.get('ingestion_time')} seconds
+        """
+    else:
+        subject = f'Ingestion of {logID} failed.'
+        body = f"""
+            Ingestion of {logID} failed. Please email tools-pals@fungible.com for help!
+            Reason: {metadata.get('ingestion_error')}
         """
 
     status = mail.Mail(submitted_by, subject, body)
