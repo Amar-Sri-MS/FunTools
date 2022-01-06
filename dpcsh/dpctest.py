@@ -129,6 +129,8 @@ class TestDPCCommands(unittest.TestCase):
             self.assertEqual(ret['note'], 'test_note_1')
         ret = self.client.execute('notification', ['unregister', 'test_note_1', ticket])
         self.assertEqual(ret, True)
+        ret = self.client.execute('notification', ['test_emit_periodic'])
+        self.assertIsInstance(ret, basestring)
 
 
     def testBlob(self):
