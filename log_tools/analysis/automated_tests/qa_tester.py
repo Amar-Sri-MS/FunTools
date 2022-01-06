@@ -80,12 +80,14 @@ class QATester(Tester):
     def __init__(self, job_id, test_index=0):
         super().__init__()
         self.job_id = str(job_id)
-        self.log_id = _get_log_id(self.job_id, 'qa', test_index=test_index)
         self.test_index = test_index
+        self.ingest_type = 'qa'
 
     def setup(self):
         """ Setting up the test ingestion """
-        pass
+        self.log_id = _get_log_id(self.job_id,
+                                  self.ingest_type,
+                                  test_index=self.test_index)
 
     def run(self):
         """

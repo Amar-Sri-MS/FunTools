@@ -77,12 +77,12 @@ class TechsupportTester(Tester):
     def __init__(self, job_id, mount_path):
         super().__init__()
         self.job_id = str(job_id).lower()
-        self.log_id = None
         self.mount_path = mount_path
+        self.ingest_type = 'techsupport'
 
     def setup(self):
         """ Setting up the test ingestion """
-        self.log_id = _get_log_id(self.job_id, 'techsupport')
+        self.log_id = _get_log_id(self.job_id, self.ingest_type)
 
     def run(self):
         """

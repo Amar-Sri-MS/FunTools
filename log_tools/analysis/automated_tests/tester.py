@@ -28,6 +28,8 @@ class Tester(object):
         self.log_id = None
         self.job_id = None
 
+        self.ingest_type = None
+
         # Test Status. Will be updated after validation.
         self.ingestion_status = False
         self.ingestion_status_msg = None

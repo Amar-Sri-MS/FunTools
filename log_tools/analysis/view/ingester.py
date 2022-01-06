@@ -227,7 +227,7 @@ def upload_file():
         -H 'Content-Type: multipart/form-data' \
         -F 'job_id=test' \
         -F 'submitted_by="sourabh.jain@fungible.com"' \
-        -T 'file=@"/bugbits/test/techsupport.tgz"' \
+        -F 'file=@"/bugbits/test/techsupport.tgz"' \
         'http://funlogs/upload_file'
     """
     try:
