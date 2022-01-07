@@ -590,7 +590,7 @@ cd $root_dir
 tar zcvf $tarball_name FunSDK FunOSPackageDemo $readme_file
 
 # Build the bundle name without the build ID
-bundle_name="dev_signed_setup_bundle_s1-4.0-${build_id}.sh"
+bundle_name="dev_signed_setup_bundle_s1-${build_id}.sh"
 cust_bundle="dev_signed_setup_bundle_s1-rootfs-ro.squashfs-v$build_id.sh"
 
 # Download accompanying S1 bundle
@@ -605,6 +605,13 @@ run_posix
 
 # Package and build test the host drivers
 package_host_drivers
+
+# Assemble a final directory
+cd $root_dir
+mkdir Fungible-SDK-v$build_id
+mv *.sh *.tgz Fungible-SDK-v$build_id
+cd Fungible-SDK-v$build_id
+md5sum * >manifest.txt
 
 echo ""
 echo "Accompanying S1 release bundle ($cust_bundle) is ready"
