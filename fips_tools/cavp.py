@@ -65,6 +65,7 @@ class DPCCAVP(AbsCAVPTestRunner):
     ''' tester using DPC function '''
 
     def __init__(self):
+        port = 4223 # fixed port: used to be dpc_host['tcp_port']
         try:
             with open('./env.json', 'r') as f:
                 env_dict = json.load(f)
@@ -73,13 +74,13 @@ class DPCCAVP(AbsCAVPTestRunner):
             # use the name and TCP port of the DPC proxy for 1st chip
             dpc_host = env_dict['dpc_hosts'][0]
             host = dpc_host['host']
-            port = 4223 # dpc_host['tcp_port']
-            print('Using dpc host at %s:%s' % (host, port))
-            self.dpc_client = dpc_client.DpcClient(server_address=(host, port))
-
         except FileNotFoundError:
-            self.dpc_client = dpc_client.DpcClient()
-            # no file try default
+            # no file assume localhost
+            host = 'localhost'
+
+        print('Using dpc host at %s:%s' % (host, port))
+        self.dpc_client = dpc_client.DpcClient(server_address=(host, port))
+
 
     def test(self, request):
         # package the request as JSON and send to FunOS
