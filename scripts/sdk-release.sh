@@ -397,7 +397,7 @@ funos_package_demo_build()
 
     # copy the bundle to a versioned file in the root
     cd $root_dir
-    cp $root_dir/FunOSPackageDemo/build/s1/setup_bundle_development_image.sh package-demo-bundle-s1-$v{build_id}.sh
+    cp $root_dir/FunOSPackageDemo/build/s1/setup_bundle_development_image.sh package-demo-bundle-s1-v${build_id}.sh
 }
 
 # fungible-host-drivers download and setup
@@ -590,7 +590,7 @@ cd $root_dir
 tar zcvf $tarball_name FunSDK FunOSPackageDemo $readme_file
 
 # Build the bundle name without the build ID
-bundle_name="dev_signed_setup_bundle_s1-${build_id}.sh"
+bundle_name="dev_signed_s1_setup_bundle.sh"
 cust_bundle="dev_signed_setup_bundle_s1-rootfs-ro.squashfs-v$build_id.sh"
 
 # Download accompanying S1 bundle
@@ -607,10 +607,11 @@ run_posix
 package_host_drivers
 
 # Assemble a final directory
+out_dir=Fungible-SDK-v$build_id
 cd $root_dir
-mkdir Fungible-SDK-v$build_id
-mv *.sh *.tgz Fungible-SDK-v$build_id
-cd Fungible-SDK-v$build_id
+mkdir $out_dir
+mv *.sh *.tgz $out_dir
+cd $out_dir
 md5sum * >manifest.txt
 
 echo ""
