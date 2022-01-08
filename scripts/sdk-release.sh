@@ -18,8 +18,6 @@ branch_funos=""
 build_id=""
 build_funos="no"
 
-bundle_name="dev_signed_setup_bundle_s1-rootfs-ro.squashfs.sh"
-
 # Top level directory
 root_dir=`pwd`
 
@@ -180,13 +178,11 @@ Building development bundles
 Development bundles are required to install custom FunOS binaries in the
 hardware.
 
-make -j8 MACHINE=s1
-make MACHINE=s1 install dev_bundle
+make -j8 MACHINE=s1 dev_bundle
 
 Alternatevely, release images can also be installed
 
-make -j8 MACHINE=s1-release
-make MACHINE=s1-release install dev_bundle
+make -j8 MACHINE=s1-release dev_bundle
 
 
 Installing development bundles
@@ -392,12 +388,16 @@ funos_package_demo_build()
 	exit 1
     fi
 
-    if ! make -j8 MACHINE=s1; then
+    if ! make -j8 MACHINE=s1 dev_bundle; then
 	echo ""
 	echo "FunOSPackageDemo s1 fails to build"
 	echo ""
 	exit 1
     fi
+
+    # copy the bundle to a versioned file in the root
+    cd $root_dir
+    cp $root_dir/FunOSPackageDemo/build/s1/setup_bundle_development_image.sh package-demo-bundle-s1-$v{build_id}.sh
 }
 
 # fungible-host-drivers download and setup
@@ -589,9 +589,13 @@ funos_package_demo_clean
 cd $root_dir
 tar zcvf $tarball_name FunSDK FunOSPackageDemo $readme_file
 
+# Build the bundle name without the build ID
+bundle_name="dev_signed_setup_bundle_s1-${build_id}.sh"
+cust_bundle="dev_signed_setup_bundle_s1-rootfs-ro.squashfs-v$build_id.sh"
+
 # Download accompanying S1 bundle
-wget http://dochub.fungible.local/doc/jenkins/master/funsdk/$build_id/Linux/$bundle_name
-mv $bundle_name dev_signed_setup_bundle_s1-rootfs-ro.squashfs-v$build_id.sh
+wget http://dochub.fungible.local/doc/jenkins/master/funsdk/$build_id/$bundle_name
+mv $bundle_name $cust_bundle
 
 # Build the FunOSPackageDemo packages
 funos_package_demo_build
@@ -602,8 +606,15 @@ run_posix
 # Package and build test the host drivers
 package_host_drivers
 
+# Assemble a final directory
+cd $root_dir
+mkdir Fungible-SDK-v$build_id
+mv *.sh *.tgz Fungible-SDK-v$build_id
+cd Fungible-SDK-v$build_id
+md5sum * >manifest.txt
+
 echo ""
-echo "Accompanying S1 release bundle (dev_signed_setup_bundle_s1-rootfs-ro.squashfs-v$build_id.sh) is ready"
+echo "Accompanying S1 release bundle ($cust_bundle) is ready"
 echo ""
 echo "$tarball_name is ready"
 echo ""
