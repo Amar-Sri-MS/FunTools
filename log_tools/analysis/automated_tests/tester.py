@@ -61,11 +61,13 @@ class Tester(object):
             logging.warning(f'Skipping tests on {self.log_id}. The log_id already exists.')
             return
 
-        self.run()
-        self.validate()
-        self.teardown()
-        self.notify()
-        self.collect_status()
+        try:
+            self.run()
+            self.validate()
+            self.teardown()
+        finally:
+            self.notify()
+            self.collect_status()
 
     def run(self):
         """
@@ -91,26 +93,28 @@ class Tester(object):
         # Check to notify on success.
         if self.status and not self.notify_on_success:
             return
+        try:
+            logging.info('Notifying users about the test result.')
 
-        logging.info('Notifying users about the test result.')
+            test_status = 'SUCCESSFUL' if self.status else 'FAILED'
+            subject = f'Automated testing of {self.log_id} on Log Analyzer: {test_status}'
+            body = f"""
+                Automated testing of {self.log_id} on Log Analyzer: {test_status}
+                Log Analyzer Dashboard: {config['LOG_VIEW_BASE_URL'].replace('LOG_ID', self.log_id)}/dashboard
 
-        test_status = 'SUCCESSFUL' if self.status else 'FAILED'
-        subject = f'Automated testing of {self.log_id} on Log Analyzer: {test_status}'
-        body = f"""
-            Automated testing of {self.log_id} on Log Analyzer: {test_status}
-            Log Analyzer Dashboard: {config['LOG_VIEW_BASE_URL'].replace('LOG_ID', self.log_id)}/dashboard
+                Ingestion Status: {self.ingestion_status}
 
-            Ingestion Status: {self.ingestion_status}
+                Full log URL: {config['FILE_SERVER_URL']}/{self.log_id}/file/{self.log_id}.log
 
-            Full log URL: {config['FILE_SERVER_URL']}/{self.log_id}/file/{self.log_id}.log
+                Ingestion Output:
+                {self.ingestion_status_msg}
+            """
 
-            Ingestion Output:
-            {self.ingestion_status_msg}
-        """
-
-        status = Mail(self.email_watchers, subject, body, self.email_cc_watchers)
-        if not status:
-            logging.error(f'Failed to send email to {self.email_watchers}')
+            status = Mail(self.email_watchers, subject, body, self.email_cc_watchers)
+            if not status:
+                logging.error(f'Failed to send email to {self.email_watchers} & {self.email_cc_watchers}')
+        except:
+            logging.exception(f'Failed to send email to {self.email_watchers} & {self.email_cc_watchers}')
 
     def collect_status(self):
         """
@@ -131,9 +135,7 @@ class Tester(object):
                 'validation_msg': self.status_msg
             }
 
-            result = self.es.index(INDEX_NAME,
-                                data,
-                                id=self.log_id)
+            result = self.es.index(INDEX_NAME, data)
 
             return result
         except Exception as e:
