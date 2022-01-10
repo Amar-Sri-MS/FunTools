@@ -352,21 +352,13 @@ def build_input_pipeline(path, frn_info, filters={}):
             fun_agent_input_pipeline(frn_info, source, file_pattern)
         )
 
-    elif source == 'dataplacement':
+    elif source in ['dataplacement', 'discovery', 'metrics_manager', 'scmscv', 'expansion_rebalance']:
         file_pattern = f'{path}/info*' if resource_type == 'folder' else path
         blocks.extend(
             controller_input_pipeline(frn_info, source, file_pattern,
+                # [logger.go:158] 2022-01-10T04:04:31.707689851Z info log level:debug and backupcount:8 in /var/log/dataplacement/info.log
                 multiline_settings={
-                    'pattern': r'(\[.*\])\s+(\d{4}(?:-|/)\d{2}(?:-|/)\d{2})+(?:T|\s)([:0-9]+).([0-9]+)\s?((?:\-|\+)[0-9]{4})'
-                })
-        )
-
-    elif source in ['discovery', 'metrics_manager', 'scmscv', 'expansion_rebalance']:
-        file_pattern = f'{path}/info*' if resource_type == 'folder' else path
-        blocks.extend(
-            controller_input_pipeline(frn_info, source, file_pattern,
-                multiline_settings={
-                    'pattern': r'(\[.*\])\s+(\d{4}(?:-|/)\d{2}(?:-|/)\d{2})+(?:T|\s)([:0-9]+).([0-9]+)\s?((?:\-|\+)[0-9]{4})'
+                    'pattern': r'(\[.*\])\s+(\d{4}(?:-|/)\d{2}(?:-|/)\d{2})+(?:T|\s)([:0-9]+).([0-9]+)(?:Z|)'
                 })
         )
 
@@ -377,6 +369,7 @@ def build_input_pipeline(path, frn_info, filters={}):
                 frn_info,
                 source,
                 file_pattern,
+                # 2022/01/10 04:02:17.957	INFO	Initialized logger with LoggerFile=/var/log/info.log, Verbosity=info
                 multiline_settings={
                     'pattern': r'^(\d{4}(?:-|/)\d{2}(?:-|/)\d{2})+(?:T|\s)([:0-9]+).([0-9]+)'
                 })
@@ -389,6 +382,7 @@ def build_input_pipeline(path, frn_info, filters={}):
                 frn_info,
                 source,
                 file_pattern,
+                # [2022-01-10 04:01:47,491] INFO [ThrottledChannelReaper-Fetch]: Starting (kafka.server.ClientQuotaManager$ThrottledChannelReaper)
                 multiline_settings={
                     'pattern': r'^\[(\d{4}(?:-|/)\d{2}(?:-|/)\d{2})+(?:T|\s)([:0-9]+).([0-9]+)\]'
                 }

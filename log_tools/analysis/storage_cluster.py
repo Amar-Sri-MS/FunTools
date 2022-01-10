@@ -54,8 +54,9 @@ def build_pipeline(machines, output_block):
     pipeline_cfg.extend(
         controller_input_pipeline('dataplacement',
                                   '${logdir}/cs/sclogs/dataplacement/info*',
+                                  # [logger.go:158] 2022-01-10T04:04:31.707689851Z info log level:debug and backupcount:8 in /var/log/dataplacement/info.log 
                                   multiline_settings={
-                                      'pattern': r'(\[.*\])\s+([(-0-9|/0-9)]+)+(?:T|\s)([:0-9]+).([0-9]+)\s?((?:\-|\+)[0-9]{4})'
+                                      'pattern': r'(\[.*\])\s+(\d{4}(?:-|/)\d{2}(?:-|/)\d{2})+(?:T|\s)([:0-9]+).([0-9]+)(?:Z|)'
                                   }))
 
     pipeline_cfg.extend(output_pipeline(output_block))
