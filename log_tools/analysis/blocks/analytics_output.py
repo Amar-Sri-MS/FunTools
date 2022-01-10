@@ -171,7 +171,12 @@ class AnalyticsOutput(Block):
         self.anchor_matches = list()
 
         ELASTICSEARCH_HOSTS = self.config['ELASTICSEARCH']['hosts']
-        self.es = Elasticsearch(ELASTICSEARCH_HOSTS)
+        ELASTICSEARCH_TIMEOUT = self.config['ELASTICSEARCH']['timeout']
+        ELASTICSEARCH_MAX_RETRIES = self.config['ELASTICSEARCH']['max_retries']
+        self.es = Elasticsearch(ELASTICSEARCH_HOSTS,
+                                timeout=ELASTICSEARCH_TIMEOUT,
+                                max_retries=ELASTICSEARCH_MAX_RETRIES,
+                                retry_on_timeout=True)
 
     def set_config(self, cfg):
         self.cfg = cfg
