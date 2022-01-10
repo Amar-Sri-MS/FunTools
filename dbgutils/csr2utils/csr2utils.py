@@ -36,8 +36,6 @@ import csr2py2
 logger = logging.getLogger("csr2utils")
 logger.setLevel(logging.ERROR)
 
-csr2_chip_types = ['s1', 'f1d1']
-
 class Register(object):
     """
     Represents a register.
@@ -506,10 +504,6 @@ def load_csr_spec(chip_type):
     load csr2 metadata spec.
     """
 
-    if chip_type not in csr2_chip_types:
-        logger.error('Invalid chip type: {}'.format(chip_type))
-        sys.exit(1)
-
     global bundle
     global csr_names
 
@@ -520,6 +514,10 @@ def load_csr_spec(chip_type):
     logger.info('Creating CSR2 bundle at %s' % bundle_path)
 
     json_dir = os.path.join(WS, 'FunSDK', 'FunSDK', 'chip', chip_type, 'csr')
+    if not os.path.exists(json_dir):
+        logger.error('csr json spec does not exist! path: {0}'.format(json_dir))
+        sys.exit(1)
+
     bundle_cmd = [bin_path, 'chip_{}::root'.format(chip_type),
                   '-I', json_dir,
                   '-o', bundle_path,
@@ -527,7 +525,7 @@ def load_csr_spec(chip_type):
     try:
         subprocess.check_output(bundle_cmd)
     except subprocess.CalledProcessError as e:
-        logger.error('Failed to create bundle: %s' % e.output)
+        logger.error('Failed to create bundle: {0} cmd: {1}'.format(e.output, bundle_cmd))
         return False
 
     logger.info('Loading CSR2 bundle from %s' % bundle_path)
