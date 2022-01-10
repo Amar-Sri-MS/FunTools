@@ -117,6 +117,22 @@ class TestDPCCommands(unittest.TestCase):
         self.assertEqual(r2, r1)
         self.assertEqual(r3, r1)
 
+    def testSubscription(self):
+        """ Testing subscriptions """
+        ticket = self.client.execute('notification', ['register', 'test_note_1', ''])
+        self.assertIsInstance(ticket, int)
+        ret = self.client.execute('notification', ['test_emit_periodic'])
+        self.assertIsInstance(ret, basestring)
+        for _ in range(0, 3):
+            ret = self.client.async_recv_wait(0, True, 2)
+            self.assertEqual(ret['cookie'], '')
+            self.assertEqual(ret['note'], 'test_note_1')
+        ret = self.client.execute('notification', ['unregister', 'test_note_1', ticket])
+        self.assertEqual(ret, True)
+        ret = self.client.execute('notification', ['test_emit_periodic'])
+        self.assertIsInstance(ret, basestring)
+
+
     def testBlob(self):
         with tempfile.NamedTemporaryFile() as fp:
             original_data = 'b' * 100000
