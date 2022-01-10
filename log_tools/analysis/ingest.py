@@ -352,21 +352,12 @@ def build_input_pipeline(path, frn_info, filters={}):
             fun_agent_input_pipeline(frn_info, source, file_pattern)
         )
 
-    elif source == 'dataplacement':
+    elif source in ['dataplacement', 'discovery', 'metrics_manager', 'scmscv', 'expansion_rebalance']:
         file_pattern = f'{path}/info*' if resource_type == 'folder' else path
         blocks.extend(
             controller_input_pipeline(frn_info, source, file_pattern,
                 multiline_settings={
-                    'pattern': r'(\[.*\])\s+(\d{4}(?:-|/)\d{2}(?:-|/)\d{2})+(?:T|\s)([:0-9]+).([0-9]+)\s?((?:\-|\+)[0-9]{4})'
-                })
-        )
-
-    elif source in ['discovery', 'metrics_manager', 'scmscv', 'expansion_rebalance']:
-        file_pattern = f'{path}/info*' if resource_type == 'folder' else path
-        blocks.extend(
-            controller_input_pipeline(frn_info, source, file_pattern,
-                multiline_settings={
-                    'pattern': r'(\[.*\])\s+(\d{4}(?:-|/)\d{2}(?:-|/)\d{2})+(?:T|\s)([:0-9]+).([0-9]+)\s?((?:\-|\+)[0-9]{4})'
+                    'pattern': r'(\[.*\])\s+(\d{4}(?:-|/)\d{2}(?:-|/)\d{2})+(?:T|\s)([:0-9]+).([0-9]+)(?:Z|)'
                 })
         )
 
