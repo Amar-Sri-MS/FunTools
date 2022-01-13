@@ -220,7 +220,8 @@ class CAVPTest:
         # need to generate a private key
         curve_name = test_group["curve"]
 
-        private_key = ec.generate_private_key(self.CURVE_MAPPING[curve_name]())
+        private_key = ec.generate_private_key(self.CURVE_MAPPING[curve_name](),
+                                              backend=default_backend())
 
         # private components -> input
         # public components -> output
