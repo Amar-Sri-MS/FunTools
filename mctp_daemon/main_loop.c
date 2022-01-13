@@ -13,6 +13,8 @@
 #include <sys/select.h>
 #include <unistd.h>
 #include <signal.h>
+#include <stdlib.h>
+#include <sys/time.h>
 
 #include "utils.h"
 #include "mctp.h"
@@ -28,6 +30,10 @@ struct mctp_ops_stc *mctp_ops[NUMBER_OF_EPS] = {
 	&pcie_vdm_ops,
 	&smbus_ops,
 };
+
+void timer_handler(int sig)
+{
+}
 
 void sig_handler(int signo)
 {
@@ -64,6 +70,22 @@ static int init(void)
 
 static void get_temp(int fd)
 {
+}
+
+int set_timer_interval(int interval)
+{
+	struct itimerval it_val;
+
+        it_val.it_value.tv_sec = interval / 1000;
+        it_val.it_value.tv_usec = (interval * 1000) % 1000000;
+        it_val.it_interval = it_val.it_value;
+
+        if (setitimer(ITIMER_REAL, &it_val, NULL) == -1) {
+                log_err("error calling setitimer()");
+                return -1;
+        }
+
+	return 0;
 }
 
 #define SENSOR_FIFO		"/tmp/mctp_sensors"
@@ -107,6 +129,11 @@ int main_loop()
 		log_err("can't catch SIGINT\n");
 		goto exit;
 	}
+
+        if (signal(SIGALRM, &timer_handler) == SIG_ERR) {
+                log_err("Unable to catch SIGALRM");
+                goto exit;
+        }
 
 	rx_fifo_fd = mctp_ops[PCIE_EP_ID]->get_rx_fifo();
 
