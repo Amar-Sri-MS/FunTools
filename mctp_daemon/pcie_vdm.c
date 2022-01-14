@@ -22,6 +22,8 @@
 
 #define MAX_PCIE_TX_PKT_SIZE	(MAX_MCTP_PKT_SIZE + sizeof(struct pcie_vdm_hdr_stc))
 
+extern uint8_t eid;
+
 static uint8_t tx_buf[MCTP_MAX_MESSAGE_DATA];
 static uint8_t rx_buf[MCTP_MAX_MESSAGE_DATA];
 static uint8_t tx_pkt_buf[MAX_PCIE_TX_PKT_SIZE];
@@ -66,6 +68,9 @@ static int __init(void)
 	vdm_ep.retain = &vdm_retain;
 	vdm_ep.ops = &pcie_vdm_ops;
 
+	if (eid)
+		vdm_retain.eid = eid;
+
 	reset_ep();
 
         if ((tx_fifo_fd = open(TX_FIFO, O_RDWR | O_CREAT)) < 0) {
@@ -93,7 +98,8 @@ static int __receive(uint8_t *buf, int len)
 	vdm_ep.rx_cnt = len - sizeof(struct pcie_vdm_hdr_stc);
 	vdm_ep.rx_pkt_buf = hdr->data;
 
-	hexdump(buf, len);
+	if (cfg.debug) 
+		hexdump(buf, len);
 
         if (mctp_recieve(&vdm_ep) < 0) {
                 reset_ep();
@@ -140,10 +146,12 @@ static int __send(int len)
 	vdm_ep.tx_cnt += vdm_ep.payload;
 
 	set_pcie_vdm_hdr(&len);
+
+	if (cfg.debug)
+		hexdump(tx_pkt_buf, len);
+
 #ifdef CONFIG_USE_PCIE_VDM_INTERFACE
 	write(tx_fifo_fd, tx_pkt_buf, len);
-#else
-	hexdump(tx_pkt_buf, len);
 #endif
 
 	while (vdm_ep.tx_cnt != vdm_ep.tx_len) {
@@ -151,10 +159,11 @@ static int __send(int len)
 		vdm_ep.tx_cnt += vdm_ep.payload;
 		
 		set_pcie_vdm_hdr(&len);
+		if (cfg.debug)
+			hexdump(tx_pkt_buf, len);
+
 #ifdef CONFIG_USE_PCIE_VDM_INTERFACE
 		write(tx_fifo_fd, tx_pkt_buf, len);
-#else
-		hexdump(tx_pkt_buf, len);
 #endif
 	}
 
