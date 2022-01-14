@@ -15,6 +15,7 @@
 #include "utils.h"
 #include "mctp.h"
 #include "pcie_vdm.h"
+#include "auto_conf.h"
 
 #define RX_FIFO         	"/tmp/mctp_pcie_rx"
 #define TX_FIFO         	"/tmp/mctp_pcie_tx"
@@ -139,7 +140,7 @@ static int __send(int len)
 	vdm_ep.tx_cnt += vdm_ep.payload;
 
 	set_pcie_vdm_hdr(&len);
-#ifdef CONFIG_USE_PCIE_VDM_INERFACE
+#ifdef CONFIG_USE_PCIE_VDM_INTERFACE
 	write(tx_fifo_fd, tx_pkt_buf, len);
 #else
 	hexdump(tx_pkt_buf, len);
@@ -150,7 +151,7 @@ static int __send(int len)
 		vdm_ep.tx_cnt += vdm_ep.payload;
 		
 		set_pcie_vdm_hdr(&len);
-#ifdef CONFIG_USE_PCIE_VDM_INERFACE
+#ifdef CONFIG_USE_PCIE_VDM_INTERFACE
 		write(tx_fifo_fd, tx_pkt_buf, len);
 #else
 		hexdump(tx_pkt_buf, len);
