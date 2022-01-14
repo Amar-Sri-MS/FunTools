@@ -22,7 +22,8 @@ extern int main_loop();
 
 FILE *log_fd;
 int flags = 0;
-char *lock;
+char *lock, *log_file;
+uint8_t eid = 0;
 
 struct server_cfg_stc cfg = {
 	.sleep = 60,
@@ -40,6 +41,7 @@ static void segfault_handler()
 
         remove(lock);
         fclose(log_fd);
+
         exit(0);
 }
 
@@ -52,6 +54,7 @@ static void usage()
 	fprintf(stderr, "\t-n | --nosu   : Run as non-root\n");
 	fprintf(stderr, "\t-v | --verbose: Be verbose\n");
 	fprintf(stderr, "\t-D | --debug  : Turn on debug mode\n");
+	fprintf(stderr, "\t-E | --eid    : Set termious EID\n");
 	fprintf(stderr, "\t-L | --lock   : Specify lockfile\n");
 	fprintf(stderr, "\t-V | --version: Print current version\n");
 
@@ -63,7 +66,6 @@ int main(int argc, char *argv[])
 	pid_t pid, sid;
 	uid_t uid=getuid(), euid=geteuid();
         int c, index = 0;
-	char *log = cfg.logfile, *lock = cfg.lockfile;
 	struct sigaction sa;
 
         struct option long_args[] = {
@@ -73,6 +75,7 @@ int main(int argc, char *argv[])
 		{"nosu",	0, 0, 'n'},
                 {"verbose",     1, 0, 'v'},
 		{"debug",	0, 0, 'D'},
+		{"eid",		1, 0, 'E'},
                 {"lock",        1, 0, 'L'},
 		{"version",	0, 0, 'V'},
                 {0, 0, 0, 0}};
@@ -80,7 +83,7 @@ int main(int argc, char *argv[])
         opterr = 0;
         optind = 1;
 
-	log = cfg.logfile;
+	log_file = cfg.logfile;
 	lock = cfg.lockfile;
 
         // install sigfault handler
@@ -91,14 +94,14 @@ int main(int argc, char *argv[])
         sigaction(SIGSEGV, &sa, NULL);
 
 
-        while ((c = getopt_long(argc, argv, "bhl:nvDL:V", long_args, &index)) != -1) {
+        while ((c = getopt_long(argc, argv, "bhl:nvDE:L:V", long_args, &index)) != -1) {
 		switch (c) {
 		case 'h':
 			usage();
 			break;
 
 		case 'l':
-			log = optarg;
+			log_file = optarg;
 			break;
 
 		case 'n':
@@ -121,6 +124,10 @@ int main(int argc, char *argv[])
 			cfg.debug = 1;
 			break;
 
+		case 'E':
+			eid = (uint8_t)strtol(optarg, NULL, 0);
+			break;
+
 		case 'V':
 			print_version("MCTP Daemon");
 			exit(EXIT_SUCCESS);
@@ -131,8 +138,8 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if ((log_fd = fopen(log, "a+")) == NULL) {
-		fprintf(stderr, "Error - cannot open logfile %s\n", log);
+	if ((log_fd = fopen(log_file, "a+")) == NULL) {
+		fprintf(stderr, "Error - cannot open logfile %s\n", log_file);
 		exit(EXIT_FAILURE);
 	}
 
@@ -187,8 +194,9 @@ int main(int argc, char *argv[])
 	log("MCTP Daemon started\n");
 
 	main_loop();
-
+	
 	remove(lock);
 	fclose(log_fd);
+
 	exit(EXIT_SUCCESS);
 } 

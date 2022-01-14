@@ -14,7 +14,6 @@
 #include <unistd.h>
 #include <signal.h>
 #include <stdlib.h>
-#include <sys/time.h>
 
 #include "utils.h"
 #include "mctp.h"
@@ -25,20 +24,22 @@
 #define SMBUS_EP_ID	1
 #define NUMBER_OF_EPS	2
 
+#define SENSOR_FIFO		"/tmp/mctp_sensors"
+
+extern void main_clean_up();
+
 static int terminate = 0;
+
 struct mctp_ops_stc *mctp_ops[NUMBER_OF_EPS] = {
 	&pcie_vdm_ops,
 	&smbus_ops,
 };
 
-void timer_handler(int sig)
-{
-}
-
 void sig_handler(int signo)
 {
-	if (signo == SIGTERM || signo == SIGINT)
+	if (signo == SIGTERM || signo == SIGINT) {
 		terminate = 1;
+	}
 }
 
 static int init_ep()
@@ -68,27 +69,13 @@ static int init(void)
 	return 0;
 }
 
-static void get_temp(int fd)
+void get_temp(uint8_t *buf, int len)
 {
+
+	hexdump(buf, len);
+
 }
 
-int set_timer_interval(int interval)
-{
-	struct itimerval it_val;
-
-        it_val.it_value.tv_sec = interval / 1000;
-        it_val.it_value.tv_usec = (interval * 1000) % 1000000;
-        it_val.it_interval = it_val.it_value;
-
-        if (setitimer(ITIMER_REAL, &it_val, NULL) == -1) {
-                log_err("error calling setitimer()");
-                return -1;
-        }
-
-	return 0;
-}
-
-#define SENSOR_FIFO		"/tmp/mctp_sensors"
 #define SET_FDS(_fifo, _fds, _timeout)		\
 	do {					\
 		FD_ZERO(&(_fds));		\
@@ -101,8 +88,7 @@ int set_timer_interval(int interval)
 int main_loop()
 {
         int len = 0, rc = -1, rd_len;
-        struct timeval timeout, sensor_timeout;
-        fd_set read_fds, sensor_fds;
+        struct timeval timeout;
 	int rx_fifo_fd, sensor_fifo_fd;
 	uint8_t buf[128];
 
@@ -119,7 +105,6 @@ int main_loop()
 	if (init()) 
 		goto exit;
 	
-
         if (signal(SIGTERM , sig_handler) == SIG_ERR) {
                 log_err("can't catch SIGTERM\n");
                 goto exit;
@@ -130,40 +115,47 @@ int main_loop()
 		goto exit;
 	}
 
-        if (signal(SIGALRM, &timer_handler) == SIG_ERR) {
-                log_err("Unable to catch SIGALRM");
-                goto exit;
-        }
-
 	rx_fifo_fd = mctp_ops[PCIE_EP_ID]->get_rx_fifo();
 
 	// for now, assume only one ep (pcie-vdm)
 	while (1) {
-		SET_FDS(rx_fifo_fd, read_fds, timeout);
-		SET_FDS(sensor_fifo_fd, sensor_fds, sensor_timeout);
+		fd_set fds;
+		int maxfd;
+
+		FD_ZERO(&fds);
+		FD_SET(sensor_fifo_fd, &fds);
+		FD_SET(rx_fifo_fd, &fds);
+
+		timeout.tv_sec = 1;
+                timeout.tv_usec = 0; 
+
+		maxfd = sensor_fifo_fd > rx_fifo_fd ? sensor_fifo_fd : rx_fifo_fd;
+		select(maxfd + 1, &fds, NULL, NULL, &timeout);
 
 		if (terminate) {
 			log("Terminated ...\n");
 			goto exit;
 		}
 
-                if ((select(sensor_fifo_fd + 1, &sensor_fds, NULL, NULL, &sensor_timeout)) == 1) 
-                        get_temp(sensor_fifo_fd);
-
-                if ((select(rx_fifo_fd + 1, &read_fds, NULL, NULL, &timeout)) != 1) 
-                        continue;
-
-		rd_len = read(rx_fifo_fd, buf, sizeof(buf));
-
-		if (rd_len <= 0)
-			continue;
-
-		len += rd_len;
-		if (len >= mctp_ops[PCIE_EP_ID]->get_min_payload()) {
-			mctp_ops[PCIE_EP_ID]->recv(buf, len);
-			len = 0;
+		if (FD_ISSET(sensor_fifo_fd, &fds)) {
+			rd_len = read(sensor_fifo_fd, buf, sizeof(buf));
+			if (rd_len > 0)
+				get_temp(buf, rd_len);
 		}
-        }
+
+		if (FD_ISSET(rx_fifo_fd, &fds)) {
+			rd_len = read(rx_fifo_fd, buf, sizeof(buf));
+
+			if (rd_len <= 0)
+				continue;
+
+			len += rd_len;
+			if (len >= mctp_ops[PCIE_EP_ID]->get_min_payload()) {
+				mctp_ops[PCIE_EP_ID]->recv(buf, len);
+				len = 0;
+			}
+		}
+	}
 
 exit:
 
@@ -173,6 +165,6 @@ exit:
 
 	close(sensor_fifo_fd);
 	remove(SENSOR_FIFO);
-
+	
 	return rc;
 }
