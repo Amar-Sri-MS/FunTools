@@ -224,6 +224,8 @@ class DpcClient(object):
         """
         makes blob suitable to use with FunOS blob services from a given string
         """
+        if sys.version_info[0] != 2 and not isinstance(data, bytes):
+            raise RuntimeError("wrong datatype passed to blob_from_string, expecting bytes, got ", type(data))
         BLOB_CHUNK_SIZE = 32 * 1024
         blob_array = []
         position = 0
