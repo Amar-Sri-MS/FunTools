@@ -8,6 +8,7 @@
         "PUF-ROM": {
             "A": "esecure_puf_rom_packed.bin",
             "B": "esecure_puf_rom_packed.bin",
+            "minsize": "0x20000",
             "index": "10"
         },
         "FIRMWARE": {

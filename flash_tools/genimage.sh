@@ -136,6 +136,9 @@ QSPI_EMULATION=$(cat <<-JSON
 		},
 		"FIRMWARE": {
 			"minsize" : "0"
+		},
+		"PUF-ROM": {
+			"minsize" : "0"
 		}
 	}
 }
