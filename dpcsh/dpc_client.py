@@ -9,6 +9,7 @@ from __future__ import print_function
 import json
 import socket
 import time
+import sys
 
 
 # N.B. The user must start a dpcsh in text proxy mode before
@@ -228,7 +229,10 @@ class DpcClient(object):
         position = 0
         while position < len(data):
             next_position = position + BLOB_CHUNK_SIZE
-            blob_array.append(map(ord, list(data[position:next_position])))
+            if sys.version_info[0] == 2:
+                blob_array.append(map(ord, list(data[position:next_position])))
+            else:
+                blob_array.append(list(data[position:next_position]))
             position = next_position
         return blob_array
 
