@@ -230,7 +230,7 @@ class DpcClient(object):
         while position < len(data):
             next_position = position + BLOB_CHUNK_SIZE
             if sys.version_info[0] == 2:
-                blob_array.append(map(ord, list(data[position:next_position])))
+                blob_array.append(map(ord, data[position:next_position]))
             else:
                 blob_array.append(list(data[position:next_position]))
             position = next_position
@@ -241,7 +241,7 @@ class DpcClient(object):
         """
         makes blob suitable to use with FunOS blob services from a given string
         """
-        with open(filename, 'r') as f:
+        with open(filename, 'rb') as f:
             return DpcClient.blob_from_string(f.read())
 
     @staticmethod
