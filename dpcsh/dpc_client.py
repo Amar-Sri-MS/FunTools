@@ -9,6 +9,7 @@ from __future__ import print_function
 import json
 import socket
 import time
+import sys
 
 
 # N.B. The user must start a dpcsh in text proxy mode before
@@ -223,12 +224,17 @@ class DpcClient(object):
         """
         makes blob suitable to use with FunOS blob services from a given string
         """
+        if sys.version_info[0] != 2 and not isinstance(data, bytes):
+            raise RuntimeError("wrong datatype passed to blob_from_string, expecting bytes, got ", type(data))
         BLOB_CHUNK_SIZE = 32 * 1024
         blob_array = []
         position = 0
         while position < len(data):
             next_position = position + BLOB_CHUNK_SIZE
-            blob_array.append(map(ord, list(data[position:next_position])))
+            if sys.version_info[0] == 2:
+                blob_array.append(map(ord, data[position:next_position]))
+            else:
+                blob_array.append(list(data[position:next_position]))
             position = next_position
         return blob_array
 
@@ -237,7 +243,7 @@ class DpcClient(object):
         """
         makes blob suitable to use with FunOS blob services from a given string
         """
-        with open(filename, 'r') as f:
+        with open(filename, 'rb') as f:
             return DpcClient.blob_from_string(f.read())
 
     @staticmethod
