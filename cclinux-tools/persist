@@ -58,20 +58,6 @@ case "$1" in
 	    chmod 0777 /persist/cores
 	fi
 
-	# Default S1 to allow unauthenticated SSH access
-	my_dpu=unknown
-	if [ -e /sys/firmware/devicetree/base/fungible,dpu ] ; then
-	    read -d $'\0' my_dpu rest_of_line < /sys/firmware/devicetree/base/fungible,dpu
-	fi
-	if [ "$my_dpu" = "S1" ] ; then
-		mkdir -p /tmp/sshd_config.d
-		chmod 0700 /tmp/sshd_config.d
-		sshd_file=/tmp/sshd_config.d/s1.conf
-		echo 'Match Address 10.0.0.0/8,192.168.0.0/16,172.16.0.0/12' > $sshd_file
-		echo '   PasswordAuthentication yes' >> $sshd_file
-		echo '   PermitEmptyPasswords yes' >> $sshd_file
-		chmod 0400 $sshd_file
-	fi
 	#
 	# Place to keep transient keys.  Must be mode 0700.
 	# All path components must not set mode bit 0002, so /tmp can't be used

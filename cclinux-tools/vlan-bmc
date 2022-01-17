@@ -28,14 +28,6 @@ case "$1" in
 		echo "    address ${my_dpu_ip}/24"  >> $if_file
 		echo '    broadcast +'  >> $if_file
 		echo '    vlan-raw-device eth0'  >> $if_file
-
-		mkdir -p /tmp/sshd_config.d
-		chmod 0700 /tmp/sshd_config.d
-		sshd_file=/tmp/sshd_config.d/vlan.conf
-		echo 'Match Address 192.168.127.0/24' > $sshd_file
-		echo '   PasswordAuthentication yes' >> $sshd_file
-		echo '   PermitEmptyPasswords yes' >> $sshd_file
-		chmod 0400 $sshd_file
 		;;
 	*)
 		:
