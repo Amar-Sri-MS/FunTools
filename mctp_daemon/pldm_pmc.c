@@ -6,9 +6,15 @@
 #include <string.h>
 
 #include "utils.h"
+#include "mctp.h"
 #include "pldm_pmc.h"
 #include "pldm_repo.h"
 #include "pdr.h"
+
+#define PLDM_SENSOR_EVENT_CLASS		0
+#define PLDM_EFFECTOR_EVENT_CLASS	1
+
+#define PLDM_NUMERIC_SENSOR_STATE	3
 
 #define VALID_SENSOR(id)						\
 	do {								\
@@ -30,9 +36,96 @@
 static uint32_t pldm_state;
 #endif
 
+extern struct pldm_global_stc pldm_vars;
+
 static uint8_t num_of_sensors;
+static uint8_t no_ack_cnt = 0;
 static struct sensors_info sensor[NUMBER_OF_SENSORS];
 
+struct pldm_msg_hdr_stc {
+	uint8_t version;
+	uint8_t tid;
+	uint8_t class;
+	uint8_t data[0];
+} __attribute__((packed));
+
+struct pldm_numeric_sensor_event_stc {
+	uint16_t id;
+	uint8_t class;
+	uint8_t state;
+	uint8_t prv_state;
+	uint8_t data_size;
+	uint8_t data[0];
+} __attribute__((packed));
+
+
+struct numeric_sensor_pdr *get_sensor_pdr(int id)
+{
+	for (int i = 0; i < num_of_sensors; i++) {
+		if (sensor[i].id == id)
+			return (struct numeric_sensor_pdr *)&sensor[i].pdr;
+	}
+
+	return NULL;
+}
+
+#define MAX_NO_ACK_COUNT		5
+int pldm_async_event(uint8_t *buf, int id, int temp)
+{
+	struct numeric_sensor_pdr *pdr;
+	struct pldm_msg_hdr_stc *hdr = (struct pldm_msg_hdr_stc *)buf;
+	struct pldm_numeric_sensor_event_stc *msg = (struct pldm_numeric_sensor_event_stc *)hdr->data;
+	uint8_t state;
+
+	if (pldm_vars.async_tid == 0) {
+		log_err("no async_tid defined\n");
+		return -1;
+	}
+
+	if (!(pldm_vars.flags & MCTP_VDM_ASYNC_ENABLED)) {
+		log_err("async disabled\n");
+		return -1;
+	}
+
+	if (!(pldm_vars.flags & MCTP_VDM_ASYNC_ACK)) {
+		if (++no_ack_cnt != MAX_NO_ACK_COUNT) {
+			log_err("no ack received\n");
+			return -1;
+		}
+		no_ack_cnt = 0;
+	}
+
+	if ((pdr = get_sensor_pdr(id)) == NULL) {
+		log_err("failed to retrieve sensor %u info\n", id);
+		return -1;
+	}
+
+	hdr->version = 0x01;
+	hdr->tid = pldm_vars.async_tid;
+	hdr->class = PLDM_SENSOR_EVENT_CLASS;
+
+	ASSIGN16_LE(msg->id, id);
+	msg->class = PLDM_NUMERIC_SENSOR_STATE;
+
+        if (sensor[id].scale == SCALE_ENABLED) 
+		temp = (sensor[id].op == DIVIDE_TO_SCALE) ? temp / sensor[id].value : temp * sensor[id].value;
+
+	msg->data_size = pdr->data_size;
+	ASSIGN32_LE(msg->data, temp);
+
+	if (temp == -1)
+		state = PLDM_UNKNOWN_STATE;
+	else state = (temp < pdr->warn_high) ? PLDM_NORMAL_STATE : (temp < pdr->critc_high) ? PLDM_WARNING_STATE : (temp < pdr->fatal_high) ? PLDM_CRITICAL_STATE : PLDM_FATAL_STATE;
+
+	/* set previous state and record current */
+	msg->state = state;
+	msg->prv_state = sensor[id].state;
+	sensor[id].state = state;
+
+	pldm_vars.flags &= ~MCTP_VDM_ASYNC_ACK;
+
+	return sizeof(struct pldm_msg_hdr_stc) + sizeof(struct pldm_numeric_sensor_event_stc) + pdr->data_size;
+}
 
 /* helper function */
 static void set_payload(pldm_hdr_stct *resp, struct pldm_get_pdr_rspn *rspn,
@@ -54,6 +147,36 @@ static void set_payload(pldm_hdr_stct *resp, struct pldm_get_pdr_rspn *rspn,
 int external_thermal_sensor_rd()
 {
 	return -1;
+}
+
+/* pldm mcd set event reciver tid handler */
+static int pldm_set_rcvr_tid(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
+{
+        struct pldm_set_event_rcvr_req_stc *pldm = (struct pldm_set_event_rcvr_req_stc *)hdr->data;
+        struct pldm_null_rspn_stc *rspn = (struct pldm_null_rspn_stc *)resp->data;
+
+        if (pldm->proto_type != MCTP_MSG_PLDM) {
+                pldm_err("Invalid protocol type %x\n", pldm->proto_type);
+                pldm_response(resp, PLDM_INVALID_DATA);
+                return MIN_PLDM_PAYLOAD;
+        }
+
+        pldm_vars.async_tid = (pldm->enable) ? pldm->addr : 0;
+
+        pldm_response(resp, PLDM_SUCCESS);
+        return PLDM_PAYLOAD_SIZE;
+}
+
+/* pldm mcd get event reciver tid handler */
+static int pldm_get_rcvr_tid(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
+{
+        struct pldm_get_event_rcvr_rspn_stc *rspn = (struct pldm_get_event_rcvr_rspn_stc *)resp->data;
+
+	rspn->proto_type = MCTP_MSG_PLDM;
+        rspn->addr = pldm_vars.async_tid;
+
+        pldm_response(resp, PLDM_SUCCESS);
+        return PLDM_PAYLOAD_SIZE;
 }
 
 /* pldm pmc get repo info */
@@ -324,13 +447,8 @@ static int pldm_get_state_rd(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 }
 #endif
 
-#define WARNING_TEMP	((NVM_CFG(glob.led_global_settings) & NVM_CFG1_GLOB_MAX_CONT_OPERATING_TEMP_MASK) >> NVM_CFG1_GLOB_MAX_CONT_OPERATING_TEMP_OFFSET)
 void update_repo(struct numeric_sensor_pdr *pdr, uint32_t mcot)
 {
-#ifdef b900
-	if (mcot == 0)
-		mcot = 100;
-#endif
 	ASSIGN32_LE(pdr->warn_high, mcot);
 
 	ASSIGN32_LE(pdr->critc_high, (mcot + 10));
@@ -400,5 +518,7 @@ pldm_cmd_hdlr_stct pldm_pmc_cmds[] = {
 
 	{PLDM_PMC_GET_PDR_REPOSITORY_INFO, 0, pldm_get_repo_info},
 	{PLDM_PMC_GETPDR, sizeof(struct pldm_get_pdr_req), pldm_get_pdr},
+        {PLDM_PMC_SET_EVENT_RECEIVER, sizeof(struct pldm_set_event_rcvr_req_stc), pldm_set_rcvr_tid},
+        {PLDM_PMC_GET_EVENT_RECEIVER, 0, pldm_get_rcvr_tid},
 	PLDM_LAST_CMD,
 };

@@ -172,6 +172,7 @@ static int __get_min_payload(void)
 struct mctp_ops_stc smbus_ops = {
         .init = &__init,
         .recv = &__receive,
+	.async = NULL,
         .send = &__send,
         .complete = NULL,
         .error = NULL,
