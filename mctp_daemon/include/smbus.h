@@ -6,6 +6,7 @@
 #define _INC_SMBUS_HDR_
 
 #include <stdint.h>
+#include "auto_conf.h"
 
 #define SMBUS_SLAVE_ADDR	0x1a
 

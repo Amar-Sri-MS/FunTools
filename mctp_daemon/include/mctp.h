@@ -6,6 +6,7 @@
 #define _INC_PCIE_HDR_
 
 #include <stdint.h>
+#include "auto_conf.h"
 
 #define mctp_err(fmt, arg...)          log_n_print("MCTP: ERROR - "fmt, ##arg)
 
@@ -156,6 +157,7 @@ typedef struct __attribute__((__packed__)) {
 #define SUPPORT_VDM_OVER_MCTP		BIT(2)
 #define SUPPORT_OEM_OVER_MCTP		BIT(3)
 #define SUPPORT_MCTP_CNTROL_MSG		BIT(4)
+#define SUPPORT_ASYNC_EVENTS		BIT(5)
 
 /* mctp endpoint flags */
 #define MCTP_SEQ_ROLL			BIT(0)
@@ -179,6 +181,7 @@ typedef struct __attribute__((__packed__)) {
 struct mctp_ops_stc {
 	int (*init)(void);
 	int (*recv)(uint8_t *, int);
+	int (*async)(uint8_t *);
 	int (*send)(int);
 	int (*complete)(void);
 	int (*error)(void);

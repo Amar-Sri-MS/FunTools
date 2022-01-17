@@ -226,6 +226,20 @@ struct pldm_get_sens_rd_rspn {
     sensordata_t data;
 } __attribute__((packed));
 
+/* pldm set_event_receiver struct */
+struct pldm_set_event_rcvr_req_stc {
+    uint8_t enable;
+    uint8_t proto_type;
+    uint8_t addr;
+} __attribute__((packed));
+
+/* pldm get_event_receiver struct */
+struct pldm_get_event_rcvr_rspn_stc {
+    uint8_t cmp_code;
+    uint8_t proto_type;
+    uint8_t addr;
+} __attribute__((packed));
+
 /* pldm get sensor thresholds response per DSP0248 18.3 */
 struct pldm_get_sens_th_req {
     uint16_t id;
@@ -333,6 +347,8 @@ struct sensors_info {
 };
 
 extern pldm_cmd_hdlr_stct pldm_pmc_cmds[];
+
+int pldm_async_event(uint8_t *buf, int id, int temp);
 int pldm_pmc_init(void);
 
 #endif /* _INC_PLDM_PMC_HDR_ */

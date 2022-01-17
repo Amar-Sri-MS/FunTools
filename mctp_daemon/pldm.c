@@ -13,7 +13,7 @@
 
 // local vars
 static uint8_t pktbuf[256];
-struct pldm_global_stc pldm_vars;
+struct pldm_global_stc pldm_vars = { 0 };
 
 static pldm_cmd_hdlr_stct *search_handler(pldm_hdr_stct *hdr)
 {
@@ -100,8 +100,7 @@ exit:
 
 int pldm_init(void)
 {
-	/* initilize global variables for the first time */
-	bzero((uint8_t *)&pldm_vars, sizeof(struct pldm_global_stc));
+	pldm_vars.flags |= MCTP_VDM_ASYNC_ACK;
 
 #ifdef CONFIG_INCLUDE_PLDM_PMC
 	if (pldm_pmc_init())

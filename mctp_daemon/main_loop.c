@@ -17,6 +17,7 @@
 
 #include "utils.h"
 #include "mctp.h"
+#include "pldm_pmc.h"
 #include "pcie_vdm.h"
 #include "smbus.h"
 
@@ -24,9 +25,9 @@
 #define SMBUS_EP_ID	1
 #define NUMBER_OF_EPS	2
 
-#define SENSOR_FIFO		"/tmp/mctp_sensors"
+#define DEFAULT_VMD_INTERFACE	PCIE_EP_ID
 
-extern void main_clean_up();
+#define SENSOR_FIFO		"/tmp/mctp_sensors"
 
 static int terminate = 0;
 
@@ -69,21 +70,13 @@ static int init(void)
 	return 0;
 }
 
-void get_temp(uint8_t *buf, int len)
+void temp_event_handler(uint8_t *buf, int len)
 {
+	if (mctp_ops[DEFAULT_VMD_INTERFACE]->async == NULL)
+		return;
 
-	hexdump(buf, len);
-
+	mctp_ops[DEFAULT_VMD_INTERFACE]->async(buf);
 }
-
-#define SET_FDS(_fifo, _fds, _timeout)		\
-	do {					\
-		FD_ZERO(&(_fds));		\
-		FD_SET((_fifo), &(_fds));	\
-		(_timeout).tv_sec = cfg.sleep;	\
-		(_timeout).tv_usec = 0;		\
-	} while (0)
-
 
 int main_loop()
 {
@@ -140,7 +133,7 @@ int main_loop()
 		if (FD_ISSET(sensor_fifo_fd, &fds)) {
 			rd_len = read(sensor_fifo_fd, buf, sizeof(buf));
 			if (rd_len > 0)
-				get_temp(buf, rd_len);
+				temp_event_handler(buf, rd_len);
 		}
 
 		if (FD_ISSET(rx_fifo_fd, &fds)) {

@@ -15,7 +15,7 @@
 #include "utils.h"
 #include "mctp.h"
 #include "pcie_vdm.h"
-#include "auto_conf.h"
+#include "pldm_pmc.h"
 
 #define RX_FIFO         	"/tmp/mctp_pcie_rx"
 #define TX_FIFO         	"/tmp/mctp_pcie_tx"
@@ -35,7 +35,7 @@ static struct mctp_ep_retain_stc vdm_retain = {
 	.eid = 1,
 	.iid = 0,
 	.fragsize = DEFAULT_MCTP_FRAGMENT_SIZE,
-	.support = SUPPORT_MCTP_CNTROL_MSG | SUPPORT_PLDM_OVER_MCTP | SUPPORT_VDM_OVER_MCTP | SUPPORT_OEM_OVER_MCTP,
+	.support = SUPPORT_MCTP_CNTROL_MSG | SUPPORT_PLDM_OVER_MCTP | SUPPORT_VDM_OVER_MCTP | SUPPORT_OEM_OVER_MCTP | SUPPORT_ASYNC_EVENTS,
 	.uuid = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
 		 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f},
 	.ep_priv_data = (void *)&vdm_data,
@@ -133,6 +133,41 @@ static void set_pcie_vdm_hdr(int *len)
 	*len += sizeof(struct pcie_vdm_hdr_stc);
 }
 
+static int __async(uint8_t *buf)
+{
+	struct pcie_vdm_rec_data *hdr_data = (struct pcie_vdm_rec_data *)vdm_ep.retain->ep_priv_data;
+	uint32_t id;
+	int len = 0;
+	float temp;
+
+	if (!(vdm_retain.support & SUPPORT_ASYNC_EVENTS)) {
+		log_err("%s: async is not supported\n", __func__);
+		return -1;
+	}
+
+	if (hdr_data == NULL) {
+		log_err("%s: no priv data\n", __func__);
+		return -1;
+	}
+
+	sscanf((const char *)buf, "%u %f", &id, &temp);
+
+	len = pldm_async_event(vdm_ep.tx_ptr, (uint8_t)id, temp);
+	if (len < 0) {
+		log_err("pldm_async_event with %d\n", len);
+		return -1;
+	}
+
+	vdm_ep.tx_len = len;
+	vdm_ep.tx_cnt = 0;
+
+	if (cfg.debug)
+		hexdump(vdm_ep.tx_ptr, vdm_ep.tx_len);
+
+	return mctp_transmit(&vdm_ep);
+}
+
+
 static int __send(int len)
 {
 
@@ -197,6 +232,7 @@ static int __get_min_payload(void)
 struct mctp_ops_stc pcie_vdm_ops = {
         .init = &__init,
         .recv = &__receive,
+	.async = &__async,
         .send = &__send,
         .complete = NULL,
         .error = NULL,

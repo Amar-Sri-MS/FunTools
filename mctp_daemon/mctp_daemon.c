@@ -17,6 +17,7 @@
 
 #include "utils.h"
 #include "mctp.h"
+#include "pldm.h"
 
 extern int main_loop();
 
@@ -48,6 +49,7 @@ static void segfault_handler()
 static void usage()
 {
 	fprintf(stderr, "usage: mctp_daemon [options]\n");
+	fprintf(stderr, "\t-a | --async  : Enable Async events\n");
 	fprintf(stderr, "\t-b | --daemon : Run in background\n");
 	fprintf(stderr, "\t-h | --help   : Print this help\n");
 	fprintf(stderr, "\t-l | --log    : Specify logfile\n");
@@ -56,6 +58,7 @@ static void usage()
 	fprintf(stderr, "\t-D | --debug  : Turn on debug mode\n");
 	fprintf(stderr, "\t-E | --eid    : Set termious EID\n");
 	fprintf(stderr, "\t-L | --lock   : Specify lockfile\n");
+	fprintf(stderr, "\t-T | --tid    : Set Async TID\n");
 	fprintf(stderr, "\t-V | --version: Print current version\n");
 
 	exit(EXIT_SUCCESS);
@@ -69,6 +72,7 @@ int main(int argc, char *argv[])
 	struct sigaction sa;
 
         struct option long_args[] = {
+                {"async",       0, 0, 'a'},
                 {"daemon",      1, 0, 'b'},
                 {"help",        1, 0, 'h'},
                 {"log",         1, 0, 'l'},
@@ -77,6 +81,7 @@ int main(int argc, char *argv[])
 		{"debug",	0, 0, 'D'},
 		{"eid",		1, 0, 'E'},
                 {"lock",        1, 0, 'L'},
+                {"tid",         1, 0, 'T'},
 		{"version",	0, 0, 'V'},
                 {0, 0, 0, 0}};
 
@@ -94,8 +99,12 @@ int main(int argc, char *argv[])
         sigaction(SIGSEGV, &sa, NULL);
 
 
-        while ((c = getopt_long(argc, argv, "bhl:nvDE:L:V", long_args, &index)) != -1) {
+        while ((c = getopt_long(argc, argv, "abhl:nvDE:L:T:V", long_args, &index)) != -1) {
 		switch (c) {
+		case 'a':
+			pldm_vars.flags |= MCTP_VDM_ASYNC_ENABLED;
+			break;
+
 		case 'h':
 			usage();
 			break;
@@ -126,6 +135,10 @@ int main(int argc, char *argv[])
 
 		case 'E':
 			eid = (uint8_t)strtol(optarg, NULL, 0);
+			break;
+
+		case 'T':
+			pldm_vars.async_tid = (uint8_t)strtol(optarg, NULL, 0);
 			break;
 
 		case 'V':
