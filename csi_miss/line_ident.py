@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python2.7
 
 ## read a deduped file and translate all the addresses into something
 ## interesting via addr2line

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.7
 from __future__ import print_function
 import sys
 from bpf_elf import extract_hook

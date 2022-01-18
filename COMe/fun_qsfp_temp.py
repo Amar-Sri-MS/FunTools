@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python2.7
 # Description: Script to Read All NU Ports' Temp of FS-1600 and Print Max Temp out of all
 # Author: Karnik Jain
 # Date: 20th JAN 2020

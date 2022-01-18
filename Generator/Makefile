@@ -25,6 +25,8 @@ GENERATOR_SRC = generator.py \
 	        header-linux.tmpl \
 		source-linux.tmpl
 
+PYTHON ?= python2.7
+
 test: generator-test test_rdma_packed test_rdma_packed_html
 test: test_simple_validation test_packed_validation test_swap
 test: test_fun_hci test_fun_hci_linux_le test_fun_hci_linux_be
@@ -35,11 +37,11 @@ test: test_fun_hci test_fun_hci_linux_le test_fun_hci_linux_be
 
 # All tests for the Python generator script.
 generator-test:
-	python codegen_test.py
-	python generator_test.py
-	python htmlgen_test.py
-	python utils_test.py
-	python parser_test.py
+	$(PYTHON) codegen_test.py
+	$(PYTHON) generator_test.py
+	$(PYTHON) htmlgen_test.py
+	$(PYTHON) utils_test.py
+	$(PYTHON) parser_test.py
 
 # Tests building the current fun_hci.gen file to make sure generator
 # handles it well.
@@ -99,7 +101,7 @@ test_fun_hci_linux_dump:
 	./generator.py -g linux -c pack,swap,dump -o $(BUILD)/dump_linux $(FUN_HCI_DIR)/fun_hci.gen
 	gcc -o $(BUILD)/linux_dump -g -I$(BUILD) -Itest_helper test_helper/linux_dump.c $(BUILD)/dump_linux.c
 	$(BUILD)/linux_dump > /tmp/hex_dump_out
-	python test_helper/parse_hex.py /tmp/hex_dump_out
+	$(PYTHON) test_helper/parse_hex.py /tmp/hex_dump_out
 
 $(BUILD): $(BUILD)
 	mkdir $(BUILD)

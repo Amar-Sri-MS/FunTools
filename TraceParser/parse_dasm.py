@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python2.7
 #
 # parse_dasm.py: Parse disassembler contents to help build call graph
 #

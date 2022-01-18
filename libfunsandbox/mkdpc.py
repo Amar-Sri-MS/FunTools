@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python2.7
 
 ###
 ##  make the necessary dpc transactions to load a sandbox
