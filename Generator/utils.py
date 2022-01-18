@@ -1,4 +1,3 @@
-#!/usr/bin/python
 #
 # Utility code for generator.
 
