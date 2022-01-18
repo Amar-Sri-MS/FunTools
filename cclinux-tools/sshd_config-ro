@@ -109,7 +109,5 @@ HostKey /persist/config/ssh_host_rsa_key
 HostKey /persist/config/ssh_host_ecdsa_key
 HostKey /persist/config/ssh_host_ed25519_key
 
-Include /tmp/sshd_config.d/*.conf
-
 Match User root
    AuthorizedKeysFile  /run/ssh/root.authorized_keys
