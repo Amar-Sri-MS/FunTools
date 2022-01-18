@@ -59,16 +59,27 @@
 
 #define MCTP_OPCODE_WRITE	1
 
+#define MCTP_SOM_POS            7
+#define MCTP_SOM_MASK           1
+#define MCTP_EOM_POS            6
+#define MCTP_EOM_MASK           1
+#define MCTP_SEQ_POS            4
+#define MCTP_SEQ_MASK           2
+#define MCTP_TO_POS             3
+#define MCTP_TO_MASK            1
+#define MCTP_TAG_POS            0
+#define MCTP_TAG_MASK           3
+
 typedef struct __attribute__((packed)) {
 	uint8_t	hdr_ver;
 	uint8_t	dst_eid;
 	uint8_t	src_eid;
-	uint8_t	tag:3, to:1, seq:2, eom:1, som:1;
+	uint8_t hdr_data;
 	uint8_t	data[0];
 } mctp_hdr_stct;
 
 typedef struct __attribute__((packed)) {
-	uint8_t	iid:5, rsvd:1, d_bit:1, rq:1;
+	uint8_t	hdr_data;
 	uint8_t	cmd;
 	uint8_t	data[0];
 } mctp_ctrl_hdr_t;

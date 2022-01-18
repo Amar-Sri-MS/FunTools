@@ -133,8 +133,8 @@ struct pldm_global_stc {
 
 /* pldm receive header */
 typedef struct __attribute__((packed)) {
-	uint8_t inst_id: 5, rsrvd: 1, drq: 2;
-	uint8_t type: 6, ver: 2;
+	uint8_t drq_inst;
+	uint8_t type_ver;
 	uint8_t cmd;
 	uint8_t data[0];
 } pldm_hdr_stct;
