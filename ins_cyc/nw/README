@@ -1,0 +1,18 @@
+Tools used in networking perf tests etc
+
+--------------------------------------------------------------------------------
+Tool			Description
+--------------------------------------------------------------------------------
+nw_top_host_intr.py	top interrupts from /proc/interrupts 
+			customize by updating pattern_list at top
+
+nw_irq_affinity_set.py	set irq affinity for funeth interrupts (change main)
+			customize by updating __main__
+
+nw_mf_list.py		show "flow list" output for specific metaflow
+			example: nw_mf_list.py 1.0.1
+
+nw_top_eth.py		crisp flow stats view for ethernet traffic
+			example: nw_top_eth.py 1.0.1
+
+htop_wu.py		htop for wu handlers
