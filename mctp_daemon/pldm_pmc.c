@@ -104,14 +104,14 @@ int pldm_async_event(uint8_t *buf, int id, int temp)
 	hdr->tid = pldm_vars.async_tid;
 	hdr->class = PLDM_SENSOR_EVENT_CLASS;
 
-	ASSIGN16_LE(msg->id, id);
+	msg->id = host2pldm_16(id);
 	msg->class = PLDM_NUMERIC_SENSOR_STATE;
 
         if (sensor[id].scale == SCALE_ENABLED) 
 		temp = (sensor[id].op == DIVIDE_TO_SCALE) ? temp / sensor[id].value : temp * sensor[id].value;
 
 	msg->data_size = pdr->data_size;
-	ASSIGN32_LE(msg->data, temp);
+	*(int *)(msg->data) = host2pldm(temp);
 
 	if (temp == -1)
 		state = PLDM_UNKNOWN_STATE;
@@ -135,10 +135,10 @@ static void set_payload(pldm_hdr_stct *resp, struct pldm_get_pdr_rspn *rspn,
 
 	memcpy(rspn->data, src, len);
 	tmp = (rec == (num_of_sensors-1)) ? 0 : rec + 1;
-	ASSIGN32_LE(rspn->next_rec, tmp);
-	ASSIGN32_LE(rspn->next_data, next);
+	rspn->next_rec = host2pldm(tmp);
+	rspn->next_data = host2pldm(next);
 	rspn->flag = flag;
-	ASSIGN16_LE(rspn->count, len);
+	rspn->count = host2pldm_16(len);
 
 	pldm_response(resp, PLDM_SUCCESS);
 }
@@ -188,28 +188,28 @@ static int pldm_get_repo_info(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 
 	rspn->repo_state = AVAILABLE_REPO;
 
-	ASSIGN16_LE(rspn->update_time.utc_offset, (2 * 60));
-	ASSIGN32_LE(rspn->update_time.seconds, REPO_BUILD_SEC);
+	rspn->update_time.utc_offset = host2pldm_16((2 * 60));
+	rspn->update_time.seconds = host2pldm(REPO_BUILD_SEC);
 	rspn->update_time.minute = REPO_BUILD_MIN;
 	rspn->update_time.hour = REPO_BUILD_HOUR;
 	rspn->update_time.day = REPO_BUILD_DAY;
 	rspn->update_time.month = REPO_BUILD_MONTH;
-	ASSIGN16_LE(rspn->update_time.year, REPO_BUILD_YEAR);
+	rspn->update_time.year = host2pldm_16(REPO_BUILD_YEAR);
 	
 	memcpy((uint8_t *)&rspn->oem_update_time, (uint8_t *)&rspn->update_time,sizeof(struct pldm_timestamp));
-	ASSIGN32_LE(rspn->count, num_of_sensors);
+	rspn->count = host2pldm(num_of_sensors);
 
 	for (i = 0; i < num_of_sensors; i++)
 		size += sensor[i].len;
 
 	size &= 0xfffffc00;
-	ASSIGN32_LE(rspn->repo_size, size);
+	rspn->repo_size = host2pldm(size);
 
 	/* FIXME: for now, the numeric pdr is the largest.
 	 * if new structure is to be designed, this may need to be changed
 	 */
 	size = (63 + sizeof(struct numeric_sensor_pdr)) & 0xffffffc0;
-	ASSIGN32_LE(rspn->max_pdr_size, size);
+	rspn->max_pdr_size = host2pldm(size);
 	rspn->timeout = 0;
 
 	pldm_response(resp, PLDM_SUCCESS);
@@ -229,10 +229,10 @@ static int pldm_get_pdr(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 	uint16_t cnt, chg;
 	int i;
 
-	rec = ALIGN32_BE(pldm->rec_handle);
-	seq = ALIGN32_BE(pldm->data_seq);
-	cnt = ALIGN16_BE(pldm->req_count);
-	chg = ALIGN16_BE(pldm->chan_num);
+	rec = pldm2host(pldm->rec_handle);
+	seq = pldm2host(pldm->data_seq);
+	cnt = pldm2host_16(pldm->req_count);
+	chg = pldm2host_16(pldm->chan_num);
 
 	if (rec >= num_of_sensors) {
 		pldm_err("bad record number %x\n", rec); 
@@ -313,7 +313,7 @@ static int pldm_set_sensor_en(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 {
 	struct pldm_set_num_sens_en_req *pldm = (struct pldm_set_num_sens_en_req *)hdr->data;
 	struct pldm_null_rspn_stc *rspn = (struct pldm_null_rspn_stc *)resp->data;
-	uint16_t id = ALIGN16_BE(pldm->id);
+	uint16_t id = pldm2host_16(pldm->id);
 
 	VALID_SENSOR(id);
 	sensor[id].state = (!pldm->state) ? PLDM_SENSOR_ENABLED : PLDM_SENSOR_DISABLED;
@@ -331,7 +331,7 @@ static int pldm_get_sensor_rd(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 	struct numeric_sensor_pdr *pdr;
 	uint32_t tmp = 0, warn, critic, fatal;
 	uint8_t state;
-	uint16_t id = ALIGN16_BE(pldm->id);
+	uint16_t id = pldm2host_16(pldm->id);
 
 	VALID_SENSOR(id);
 
@@ -347,17 +347,16 @@ static int pldm_get_sensor_rd(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
         if (sensor[id].scale == SCALE_ENABLED) 
 		tmp = (sensor[id].op == DIVIDE_TO_SCALE) ? tmp / sensor[id].value : tmp * sensor[id].value;
 
-	ASSIGN32_LE(rspn->data, tmp);
-
+	rspn->data = host2pldm(tmp);
 	rspn->data_size = pdr->data_size;
 
 	/* if no temperature read is available - mark the sensor as disabled */
 	rspn->state = (tmp == -1) ? PLDM_SENSOR_UNAVAILABLE : PLDM_SENSOR_ENABLED;
 	rspn->event_ena = PLDM_EVENTS_STATE_ONLY;
 
-	warn = ALIGN32_BE(pdr->warn_high);
-	critic = ALIGN32_BE(pdr->critc_high);
-	fatal = ALIGN32_BE(pdr->fatal_high);
+	warn = host2pldm(pdr->warn_high);
+	critic = host2pldm(pdr->critc_high);
+	fatal = host2pldm(pdr->fatal_high);
 
 	if (tmp == -1)
 		state = PLDM_UNKNOWN_STATE;
@@ -381,7 +380,7 @@ static int pldm_get_sensor_th(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 	struct pldm_get_sens_th_req *pldm = (struct pldm_get_sens_th_req *)hdr->data;
 	struct pldm_get_sens_th_rspn *rspn = (struct pldm_get_sens_th_rspn *)resp->data;
 	struct numeric_sensor_pdr *pdr;
-	uint16_t id = ALIGN16_BE(pldm->id);
+	uint16_t id = pldm2host_16(pldm->id);
 
 	VALID_SENSOR(id);
 	pdr = (struct numeric_sensor_pdr *)sensor[id].pdr;
@@ -407,7 +406,7 @@ static int pldm_get_sensor_hy(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 	struct pldm_get_sens_th_req *pldm = (struct pldm_get_sens_th_req *)hdr->data;
 	struct pldm_get_sens_hy_rspn *rspn = (struct pldm_get_sens_hy_rspn *)resp->data;
 	struct numeric_sensor_pdr *pdr;
-	uint16_t id = ALIGN16_BE(pldm->id);
+	uint16_t id = pldm2host_16(pldm->id);
 
 	VALID_SENSOR(id);
 	pdr = (struct numeric_sensor_pdr *)sensor[id].pdr;
@@ -427,7 +426,7 @@ static int pldm_get_state_rd(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 	struct pldm_get_state_rd_rspn *rspn = (struct pldm_get_state_rd_rspn *)resp->data;
 	struct state_fields *state = (struct state_fields *)rspn->data;
 	struct state_pdr *pdr;
-	uint16_t id = ALIGN16_BE(pldm->id);
+	uint16_t id = pldm2host_16(pldm->id);
 	int8_t i;
 
 	VALID_SENSOR(id);
@@ -449,10 +448,10 @@ static int pldm_get_state_rd(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 
 void update_repo(struct numeric_sensor_pdr *pdr, uint32_t mcot)
 {
-	ASSIGN32_LE(pdr->warn_high, mcot);
+	pdr->warn_high = host2pldm(mcot);
 
-	ASSIGN32_LE(pdr->critc_high, (mcot + 10));
-	ASSIGN32_LE(pdr->fatal_high, (mcot + 15));
+	pdr->critc_high = host2pldm((mcot + 10));
+	pdr->fatal_high = host2pldm((mcot + 15));
 	pdr->support_thold = PLDM_UPPER_WARNING_SUPPORT | PLDM_UPPER_CRITICAL_SUPPORT | PLDM_UPPER_FATAL_SUPPORT;
 
 //	pdr->crc8 = (uint8_t)crc8((uint8_t *)pdr, sizeof(struct numeric_sensor_pdr) - 1);

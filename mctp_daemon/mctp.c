@@ -30,6 +30,7 @@ static int mctp_cmd_eid_set(uint8_t *buf, mctp_ctrl_hdr_t *hdr, mctp_endpoint_st
 	retain = ep->retain;
 
 	if ((eid != 0) && (eid != 0xff)) {
+		log("eid changed from %u to %u\n", retain->eid, eid);
 		retain->eid = eid;
 		rspn->reason = MCTP_RESP_SUCCESS;
 	}
