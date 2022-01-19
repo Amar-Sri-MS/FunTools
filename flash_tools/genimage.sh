@@ -14,6 +14,7 @@ CUSTOMER_CONFIG_JSON=
 CUSTOMER_OTP_ARGS=
 VARIANT=
 CHIP=
+EMU_SERIAL_NR=
 EMULATION=0
 WORKSPACE=${WORKSPACE:-/build}
 
@@ -25,6 +26,14 @@ print_usage_and_exit()
 	exit $1
 }
 
+check_for_fpk1_modulus()
+{
+    if [ ! -f $SBP_ROOT_DIR/software/production/$1 ]; then
+	echo "could not find the modulus file \"$1\" in $SBP_ROOT_DIR/software/production"
+	exit 1
+    fi
+}
+
 validate_process_input()
 {
 	if [ -z $VARIANT ]; then
@@ -32,10 +41,19 @@ validate_process_input()
 		print_usage_and_exit -1
 	fi
 
-	if [ -z $CHIP ]; then
-	        echo " -c chip option is missing"
+	case "$CHIP" in
+	    f1|s1|f1d1)
+		EMU_SERIAL_NR=0x1234
+		check_for_fpk1_modulus fpk1_modulus.c
+		;;
+	    s2)
+		EMU_SERIAL_NR=0x1236
+		check_for_fpk1_modulus fpk1s2_modulus.c
+		;;
+	    *)
+	        echo " -c chip option is missing or incorrect: $CHIP"
 	    	print_usage_and_exit -1
-	fi
+        esac
 
 	case "$BOOT_SIG_TYPE" in
 		customer)
@@ -57,6 +75,7 @@ validate_process_input()
 			echo " -s invalid value: [$BOOT_SIG_TYPE]"
 			print_usage_and_exit -1
 	esac
+
 	if [ -z $CUSTOM_HOST_FIRMWARE ]; then
 		echo " -f host firmware option is missing"
 		print_usage_and_exit -1
@@ -91,11 +110,9 @@ popd
 
 validate_process_input
 
-if [ ! -f $SBP_ROOT_DIR/software/production/fpk1_modulus.c ]; then
-    exit 1
-fi
 
 export WORKSPACE # scripts invoked from here expect it to be set
+
 
 # ---- ROM ----
 cp $SBP_INSTALL_DIR/bootloader_m5150.mif ${WORKSPACE}/sbpimage/SysROM
