@@ -12,11 +12,12 @@ tarball_name=""
 # README file
 readme_file="README"
 
-# Default is to use the master branch, no build ID, and to only build posix
+# Default is to use the master branch, no build ID, s1 chip and to only build posix
 branch_funsdk=""
 branch_funos=""
 build_id=""
 build_funos="no"
+chip="s1"
 
 # Top level directory
 root_dir=`pwd`
@@ -30,6 +31,7 @@ show_usage()
     echo "  -f <branch>         Specify the FunOS branch to use"
     echo "  -v <build_id>       Specify the FunSDK and FunOS build ID/version to use"
     echo "  -r <sdk-version>    Specify the release version to assign to the SDK"
+    echo "  -c <chip>           Specify the target chip (f1/s1)"
     echo "                      Defaults to the FunSDK build_id"
 }
 
@@ -67,92 +69,92 @@ cd /opt/cross
 sudo tar zxvf linux-mips64-gcc-8.2.tar.gz
 
 
-Building the S1 posix target binary (funospkg-s1-posix)
+Building the ${chip} posix target binary (funospkg-${chip}-posix)
 =======================================================
 
 tar zxvf Fungible-SDK-v0.1.tgz
 cd FunOSPackageDemo
-make -j8 MACHINE=s1-posix
+make -j8 MACHINE=${chip}-posix
 
-The binary funospkg-s1-posix is placed in the build directory.
+The binary funospkg-${chip}-posix is placed in the build directory.
 
 
-Building the S1 target binary (funospkg-s1)
+Building the ${chip} target binary (funospkg-${chip})
 ===========================================
 
 tar zxvf Fungible-SDK-v0.1.tgz
 cd FunOSPackageDemo
-make -j8 MACHINE=s1
+make -j8 MACHINE=${chip}
 
-The binary funospkg-s1 is placed in the build directory.
+The binary funospkg-${chip} is placed in the build directory.
 
 
 Running sample WU handler hello world package
 =============================================
 
 cd FunOSPackageDemo
-./build/funospkg-s1-posix app=hello_world_pkg
+./build/funospkg-${chip}-posix app=hello_world_pkg
 
 
 Running sample channel push hello world package
 ===============================================
 
 cd FunOSPackageDemo
-./build/funospkg-s1-posix app=hello_world_channel
+./build/funospkg-${chip}-posix app=hello_world_channel
 
 
 Running sample timer handler package
 ====================================
 
 cd FunOSPackageDemo
-./build/funospkg-s1-posix app=timer_test
+./build/funospkg-${chip}-posix app=timer_test
 
 
 Running sample workerpool package
 ====================================
 
 cd FunOSPackageDemo
-./build/funospkg-s1-posix app=workerpool_test_init
+./build/funospkg-${chip}-posix app=workerpool_test_init
 
 
 Running sample NVMe memory volume package
 =========================================
 
 cd FunOSPackageDemo
-./build/funospkg-s1-posix app=pkg_memvol_module_init,epnvme_test voltype=VOL_TYPE_SDK_BLK_MEMORY numios=100 nvfile=nvfile
+./build/funospkg-${chip}-posix app=pkg_memvol_module_init,epnvme_test voltype=VOL_TYPE_SDK_BLK_MEMORY numios=100 nvfile=nvfile
 
 
 Running sample NVMe replication volume package
 ==============================================
 
 cd FunOSPackageDemo
-./build/funospkg-s1-posix app=pkg_repvol_template_module_init,mdt_test,volsetup_cp,voltest,vol_teardown --serial voltype=VOL_TYPE_BLK_REPLICA_TEMPLATE  numios=40 UUID=repvol-000000000 transport=TCP --csr-replay localip=29.1.1.2 remoteip=29.1.1.2 rdstype=funtcp nplex=2 remote_plex_count=0
+./build/funospkg-${chip}-posix app=pkg_repvol_template_module_init,mdt_test,volsetup_cp,voltest,vol_teardown --serial voltype=VOL_TYPE_BLK_REPLICA_TEMPLATE  numios=40 UUID=repvol-000000000 transport=TCP --csr-replay localip=29.1.1.2 remoteip=29.1.1.2 rdstype=funtcp nplex=2 remote_plex_count=0
 
 
 Running sample CRC package
 ==========================
 
 cd FunOSPackageDemo
-./build/funospkg-s1-posix app=crc64_all_pkg
-./build/funospkg-s1-posix app=crc_check_32_pkg
-./build/funospkg-s1-posix app=crc_check_32c_pkg
-./build/funospkg-s1-posix app=crc_tcp_csum_pkg
-./build/funospkg-s1-posix app=crc_t10_test_pkg
-./build/funospkg-s1-posix app=crc16_random_pkg
-./build/funospkg-s1-posix app=crc32c_random_pkg
-./build/funospkg-s1-posix app=crc32_fixed_pkg
-./build/funospkg-s1-posix app=crc32_fixed_default_seed_pkg
-./build/funospkg-s1-posix app=crc32c_fixed_pkg
-./build/funospkg-s1-posix app=crc16_fixed_pkg
-./build/funospkg-s1-posix app=crc16_fixed_default_seed_pkg
-./build/funospkg-s1-posix app=crc32c_iscsi_payload_pkg
+./build/funospkg-${chip}-posix app=crc64_all_pkg
+./build/funospkg-${chip}-posix app=crc_check_32_pkg
+./build/funospkg-${chip}-posix app=crc_check_32c_pkg
+./build/funospkg-${chip}-posix app=crc_tcp_csum_pkg
+./build/funospkg-${chip}-posix app=crc_t10_test_pkg
+./build/funospkg-${chip}-posix app=crc16_random_pkg
+./build/funospkg-${chip}-posix app=crc32c_random_pkg
+./build/funospkg-${chip}-posix app=crc32_fixed_pkg
+./build/funospkg-${chip}-posix app=crc32_fixed_default_seed_pkg
+./build/funospkg-${chip}-posix app=crc32c_fixed_pkg
+./build/funospkg-${chip}-posix app=crc16_fixed_pkg
+./build/funospkg-${chip}-posix app=crc16_fixed_default_seed_pkg
+./build/funospkg-${chip}-posix app=crc32c_iscsi_payload_pkg
 
 
 Running sample ZIP package
 ==========================
 
 cd FunOSPackageDemo
-./build/funospkg-s1-posix app=ziptest_pkg
+./build/funospkg-${chip}-posix app=ziptest_pkg
 
 
 Signing server
@@ -178,11 +180,11 @@ Building development bundles
 Development bundles are required to install custom FunOS binaries in the
 hardware.
 
-make -j8 MACHINE=s1 dev_bundle
+make -j8 MACHINE=${chip} dev_bundle
 
 Alternatevely, release images can also be installed
 
-make -j8 MACHINE=s1-release dev_bundle
+make -j8 MACHINE=${chip}-release dev_bundle
 
 
 Installing development bundles
@@ -196,10 +198,10 @@ Installation of the release bundle is done only once for each new version of
 the SDK.
 
 1. scp release bundle to ccLinux's /tmp directory and install it
-   . scp dev_signed_setup_bundle_s1-rootfs-ro.squashfs-v15578.sh root@10.1.1.20:/tmp
+   . scp dev_signed_setup_bundle_${chip}-rootfs-ro.squashfs-v15578.sh root@10.1.1.20:/tmp
    . ssh root@10.1.1.20
    . cd /tmp
-   . ./dev_signed_setup_bundle_s1-rootfs-ro.squashfs-v15578.sh
+   . ./dev_signed_setup_bundle_${chip}-rootfs-ro.squashfs-v15578.sh
    . reboot
 2. scp development bundle to ccLinux's /tmp directory and install it
    . scp setup_bundle_development_image.sh root@10.1.1.20:/tmp
@@ -219,9 +221,9 @@ create_dev_bundle_environment()
     mkdir -p bundle/development
 
     # Populate the bundle development directory
-    ./bin/flash_tools/release.py --action sdk-prepare --destdir bundle/development --chip s1 bin/flash_tools/mmc_config_dev_funos.json bin/flash_tools/key_bag_config.json --force-version $build_id --force-description "SDK development bundle" --dev-image
+    ./bin/flash_tools/release.py --action sdk-prepare --destdir bundle/development --chip ${chip} bin/flash_tools/mmc_config_dev_funos.json bin/flash_tools/key_bag_config.json --force-version $build_id --force-description "SDK development bundle" --dev-image
     cd bundle/development
-    ./release.py --chip s1  --destdir . --action sign --default-config-files
+    ./release.py --chip ${chip}  --destdir . --action sign --default-config-files
 
     # Remove unneeded files
     rm -rf __pycache__
@@ -361,17 +363,17 @@ funos_install_lib_headers()
     fi
 
     # Build and install posix funos library & config
-    if ! make -j8 MACHINE=s1-posix install-libfunosrt install-defaultcfg; then
+    if ! make -j8 MACHINE=${chip}-posix install-libfunosrt install-defaultcfg; then
 	echo ""
-	echo "FunOS s1-posix fails to build"
+	echo "FunOS ${chip}-posix fails to build"
 	echo ""
 	exit 1
     fi
 
-    # Build and install s1 funos library & config
-    if ! make -j8 MACHINE=s1 install-libfunosrt install-defaultcfg; then
+    # Build and install ${chip} funos library & config
+    if ! make -j8 MACHINE=${chip} install-libfunosrt install-defaultcfg; then
 	echo ""
-	echo "FunOS s1 fails to build"
+	echo "FunOS ${chip} fails to build"
 	echo ""
 	exit 1
     fi
@@ -381,23 +383,23 @@ funos_install_lib_headers()
 funos_package_demo_build()
 {
     cd $root_dir/FunOSPackageDemo
-    if ! make -j8 MACHINE=s1-posix; then
+    if ! make -j8 MACHINE=${chip}-posix; then
 	echo ""
-	echo "FunOSPackageDemo s1-posix fails to build"
+	echo "FunOSPackageDemo ${chip}-posix fails to build"
 	echo ""
 	exit 1
     fi
 
-    if ! make -j8 MACHINE=s1 dev_bundle; then
+    if ! make -j8 MACHINE=${chip} dev_bundle; then
 	echo ""
-	echo "FunOSPackageDemo s1 fails to build"
+	echo "FunOSPackageDemo ${chip} fails to build"
 	echo ""
 	exit 1
     fi
 
     # copy the bundle to a versioned file in the root
     cd $root_dir
-    cp $root_dir/FunOSPackageDemo/build/s1/setup_bundle_development_image.sh package-demo-bundle-s1-v${build_id}.sh
+    cp $root_dir/FunOSPackageDemo/build/${chip}/setup_bundle_development_image.sh package-demo-bundle-${chip}-v${build_id}.sh
 }
 
 # fungible-host-drivers download and setup
@@ -437,70 +439,70 @@ package_host_drivers()
 run_posix()
 {
     cd $root_dir/FunOSPackageDemo
-    if ! ./build/funospkg-s1-posix app=hello_world_pkg; then
+    if ! ./build/funospkg-${chip}-posix app=hello_world_pkg; then
 	echo ""
-	echo "s1-posix hello_world package fails to run to completion"
-	echo ""
-	exit 1
-    fi
-
-    if ! ./build/funospkg-s1-posix app=hello_world_channel; then
-	echo ""
-	echo "s1-posix hello_world_channel package fails to run to completion"
+	echo "${chip}-posix hello_world package fails to run to completion"
 	echo ""
 	exit 1
     fi
 
-    if ! ./build/funospkg-s1-posix app=timer_test; then
+    if ! ./build/funospkg-${chip}-posix app=hello_world_channel; then
 	echo ""
-	echo "s1-posix timer package fails to run to completion"
-	echo ""
-	exit 1
-    fi
-
-    if ! ./build/funospkg-s1-posix app=workerpool_test_init; then
-	echo ""
-	echo "s1-posix workerpool package fails to run to completion"
+	echo "${chip}-posix hello_world_channel package fails to run to completion"
 	echo ""
 	exit 1
     fi
 
-    if ! ./build/funospkg-s1-posix app=pkg_memvol_module_init,epnvme_test voltype=VOL_TYPE_SDK_BLK_MEMORY numios=100 nvfile=nvfile; then
+    if ! ./build/funospkg-${chip}-posix app=timer_test; then
 	echo ""
-	echo "s1-posix memvol package fails to run to completion"
-	echo ""
-	exit 1
-    fi
-
-    if ! ./build/funospkg-s1-posix app=pkg_repvol_template_module_init,mdt_test,volsetup_cp,voltest,vol_teardown --serial voltype=VOL_TYPE_BLK_REPLICA_TEMPLATE  numios=40 UUID=repvol-000000000 transport=TCP --csr-replay localip=29.1.1.2 remoteip=29.1.1.2 rdstype=funtcp nplex=2 remote_plex_count=0; then
-	echo ""
-	echo "s1-posix repvol package fails to run to completion"
+	echo "${chip}-posix timer package fails to run to completion"
 	echo ""
 	exit 1
     fi
 
-    if  ! ./build/funospkg-s1-posix app=crc64_all_pkg ||
-	! ./build/funospkg-s1-posix app=crc_check_32_pkg ||
-	! ./build/funospkg-s1-posix app=crc_check_32c_pkg ||
-	! ./build/funospkg-s1-posix app=crc_tcp_csum_pkg ||
-	! ./build/funospkg-s1-posix app=crc_t10_test_pkg ||
-	! ./build/funospkg-s1-posix app=crc16_random_pkg ||
-	! ./build/funospkg-s1-posix app=crc32c_random_pkg ||
-	! ./build/funospkg-s1-posix app=crc32_fixed_pkg ||
-	! ./build/funospkg-s1-posix app=crc32_fixed_default_seed_pkg ||
-	! ./build/funospkg-s1-posix app=crc32c_fixed_pkg ||
-	! ./build/funospkg-s1-posix app=crc16_fixed_pkg ||
-	! ./build/funospkg-s1-posix app=crc16_fixed_default_seed_pkg ||
-	! ./build/funospkg-s1-posix app=crc32c_iscsi_payload_pkg; then
+    if ! ./build/funospkg-${chip}-posix app=workerpool_test_init; then
 	echo ""
-	echo "s1-posix CRC package fails to run to completion"
+	echo "${chip}-posix workerpool package fails to run to completion"
 	echo ""
 	exit 1
     fi
 
-    if ! ./build/funospkg-s1-posix app=ziptest_pkg; then
+    if ! ./build/funospkg-${chip}-posix app=pkg_memvol_module_init,epnvme_test voltype=VOL_TYPE_SDK_BLK_MEMORY numios=100 nvfile=nvfile; then
 	echo ""
-	echo "s1-posix ZIP package fails to run to completion"
+	echo "${chip}-posix memvol package fails to run to completion"
+	echo ""
+	exit 1
+    fi
+
+    if ! ./build/funospkg-${chip}-posix app=pkg_repvol_template_module_init,mdt_test,volsetup_cp,voltest,vol_teardown --serial voltype=VOL_TYPE_BLK_REPLICA_TEMPLATE  numios=40 UUID=repvol-000000000 transport=TCP --csr-replay localip=29.1.1.2 remoteip=29.1.1.2 rdstype=funtcp nplex=2 remote_plex_count=0; then
+	echo ""
+	echo "${chip}-posix repvol package fails to run to completion"
+	echo ""
+	exit 1
+    fi
+
+    if  ! ./build/funospkg-${chip}-posix app=crc64_all_pkg ||
+	! ./build/funospkg-${chip}-posix app=crc_check_32_pkg ||
+	! ./build/funospkg-${chip}-posix app=crc_check_32c_pkg ||
+	! ./build/funospkg-${chip}-posix app=crc_tcp_csum_pkg ||
+	! ./build/funospkg-${chip}-posix app=crc_t10_test_pkg ||
+	! ./build/funospkg-${chip}-posix app=crc16_random_pkg ||
+	! ./build/funospkg-${chip}-posix app=crc32c_random_pkg ||
+	! ./build/funospkg-${chip}-posix app=crc32_fixed_pkg ||
+	! ./build/funospkg-${chip}-posix app=crc32_fixed_default_seed_pkg ||
+	! ./build/funospkg-${chip}-posix app=crc32c_fixed_pkg ||
+	! ./build/funospkg-${chip}-posix app=crc16_fixed_pkg ||
+	! ./build/funospkg-${chip}-posix app=crc16_fixed_default_seed_pkg ||
+	! ./build/funospkg-${chip}-posix app=crc32c_iscsi_payload_pkg; then
+	echo ""
+	echo "${chip}-posix CRC package fails to run to completion"
+	echo ""
+	exit 1
+    fi
+
+    if ! ./build/funospkg-${chip}-posix app=ziptest_pkg; then
+	echo ""
+	echo "${chip}-posix ZIP package fails to run to completion"
 	echo ""
 	exit 1
     fi
@@ -519,7 +521,7 @@ funos_package_demo_clean()
 build_id="latest"
 
 # Parse the options
-while getopts "hb:f:v:r:" option; do
+while getopts "hb:f:v:r:c:" option; do
     case "$option" in
 	h)
 	    show_usage
@@ -538,6 +540,9 @@ while getopts "hb:f:v:r:" option; do
 	    ;;
 	r)
 	    tarball_name="Fungible-SDK-v$OPTARG.tgz"
+	    ;;
+	c)
+	    chip=$OPTARG
 	    ;;
 	*)
 	    show_usage
@@ -590,10 +595,10 @@ cd $root_dir
 tar zcvf $tarball_name FunSDK FunOSPackageDemo $readme_file
 
 # Build the bundle name without the build ID
-bundle_name="dev_signed_s1_setup_bundle.sh"
-cust_bundle="dev_signed_setup_bundle_s1-rootfs-ro.squashfs-v$build_id.sh"
+bundle_name="dev_signed_${chip}_setup_bundle.sh"
+cust_bundle="dev_signed_setup_bundle_${chip}-rootfs-ro.squashfs-v$build_id.sh"
 
-# Download accompanying S1 bundle
+# Download accompanying ${chip} bundle
 wget http://dochub.fungible.local/doc/jenkins/master/funsdk/$build_id/$bundle_name
 mv $bundle_name $cust_bundle
 
@@ -615,7 +620,7 @@ cd $out_dir
 md5sum * >manifest.txt
 
 echo ""
-echo "Accompanying S1 release bundle ($cust_bundle) is ready"
+echo "Accompanying ${chip} release bundle ($cust_bundle) is ready"
 echo ""
 echo "$tarball_name is ready"
 echo ""
