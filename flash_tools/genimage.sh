@@ -217,7 +217,7 @@ else
             --cm_input $SBP_DEVTOOLS_DIR/otp_templates/OTP_content_CM.txt \
             --sm_input $SBP_DEVTOOLS_DIR/otp_templates/OTP_content_SM.txt \
             --ci_input $SBP_DEVTOOLS_DIR/otp_templates/OTP_content_CI_${OTP_CHIP}.txt \
-            --esecboot=$OTP_MODE $CUSTOMER_OTP_ARGS \
+            --esecboot $OTP_MODE --serial_nr $OTP_SERIAL_NR $CUSTOMER_OTP_ARGS \
             --output ${WORKSPACE}/sbpimage/OTP_memory
 fi
 
