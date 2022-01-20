@@ -58,11 +58,11 @@ static int pldm_get_ver(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 
 	switch (pldm->type) {
 	case PLDM_MCD_TYPE:
-		ASSIGN32_LE(ver->ver, PLDM_MCD_VERSION);
+		ver->ver = host2pldm(PLDM_MCD_VERSION);
 		break;
 
 	case PLDM_PMC_TYPE:
-		ASSIGN32_LE(ver->ver, PLDM_PMC_VERSION);
+		ver->ver = host2pldm(PLDM_PMC_VERSION);
 		break;
 
 	default:
@@ -71,11 +71,11 @@ static int pldm_get_ver(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 		return MIN_PLDM_PAYLOAD;
 	}
 
-	ASSIGN32_LE(rspn->handle, 0);
+	rspn->handle = 0;
 	rspn->flag = START_TRANSFER | END_TRANSFER;
 
 	crc = crc32(rspn->data, n*sizeof(uint32_t), 0);
-	ASSIGN32_LE(ver->data, crc);
+	*(int *)(ver->data) = host2pldm(crc);
 
 	pldm_response(resp, PLDM_SUCCESS);
 	return PLDM_PAYLOAD_SIZE + n*sizeof(struct pldm_version_stc) + sizeof(uint32_t);
@@ -109,7 +109,7 @@ static int pldm_get_cmds(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 		return COMP_CODE_ONLY;
 	}
 
-	ver = ALIGN32_BE(pldm->ver);
+	ver = pldm2host(pldm->ver);
 
 	switch (pldm->type) {
 	case PLDM_MCD_TYPE:

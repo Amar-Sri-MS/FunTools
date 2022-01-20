@@ -6,6 +6,7 @@
 #define _INC_PLDM_HDR_
 
 #include <stdint.h>
+#include "auto_conf.h"
 
 #define pldm_err(fmt, arg...)          log_n_print("pldm error: "fmt, ##arg)
 
@@ -17,6 +18,10 @@
 
 #ifndef NULL
 #define NULL                    ((void *)0)
+#endif
+
+#ifndef BIT
+#define BIT(n)			(1 << (n))
 #endif
 
 
@@ -115,17 +120,21 @@ struct pldm_states_stc {
         uint8_t evnt;
 };
 
+#define MCTP_VDM_ASYNC_ENABLED		BIT(0)
+#define MCTP_VDM_ASYNC_ACK		BIT(1)
 struct pldm_global_stc {
     uint32_t temp;
     uint32_t sen_en;
     struct pldm_states_stc state[4];
     uint8_t tid;
+    uint8_t async_tid;
+    uint8_t flags;
 };
 
 /* pldm receive header */
 typedef struct __attribute__((packed)) {
-	uint8_t inst_id: 5, rsrvd: 1, drq: 2;
-	uint8_t type: 6, ver: 2;
+	uint8_t drq_inst;
+	uint8_t type_ver;
 	uint8_t cmd;
 	uint8_t data[0];
 } pldm_hdr_stct;
@@ -144,6 +153,9 @@ typedef struct {
 
 #define PLDM_LAST_CMD		{-1, -1, NULL}
 
+extern struct pldm_global_stc pldm_vars;
+
+void pldm_handle_async_event(int id, float temp);
 void set_bit(uint32_t, bit_arr_t *);
 int pldm_response(pldm_hdr_stct *, uint8_t);
 int pldm_handler(uint8_t *, int, uint8_t *);

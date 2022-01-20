@@ -30,6 +30,7 @@ static int mctp_cmd_eid_set(uint8_t *buf, mctp_ctrl_hdr_t *hdr, mctp_endpoint_st
 	retain = ep->retain;
 
 	if ((eid != 0) && (eid != 0xff)) {
+		log("eid changed from %u to %u\n", retain->eid, eid);
 		retain->eid = eid;
 		rspn->reason = MCTP_RESP_SUCCESS;
 	}
@@ -244,9 +245,7 @@ static int mctp_control_handler(mctp_endpoint_stct *ep)
 	}
 
 	rspn->cmd = hdr->cmd;
-	rspn->rq = 0;
-	rspn->d_bit = 0;
-	rspn->iid = hdr->iid;
+	rspn->hdr_data = hdr->hdr_data & 0xf8;
 
 	return rc + sizeof(mctp_ctrl_hdr_t);
 }
@@ -328,7 +327,7 @@ static int handle_mctp_pkt(mctp_endpoint_stct *ep)
 	case MCTP_MSG_PLDM:
 		if (check_for_unsupport(ep, SUPPORT_PLDM_OVER_MCTP))
 			return -1;
-		rc = pldm_handler(ep->rx_ptr, ep->rx_len, NULL);
+		rc = pldm_handler(ep->rx_ptr, ep->rx_len, ep->tx_ptr);
 		break;
 #endif
 
@@ -372,6 +371,7 @@ mctp_stats_t *get_mctp_sts(void)
 	return &mctp_sts;
 }
 
+#define _HDR_(p, m)		((hdr->hdr_data >> (p)) & ((1 << m) - 1))
 /* mctp receive routine */
 int mctp_recieve(mctp_endpoint_stct *ep)
 {
@@ -400,7 +400,7 @@ int mctp_recieve(mctp_endpoint_stct *ep)
 	}
 
 	/* Start new packet, ignore previous incomplete ones */
-	if (hdr->som) {
+	if (_HDR_(MCTP_SOM_POS, MCTP_SOM_MASK)) {
 		/* save initial mctp header */
 		ep->rx_len = 0;
 		ep->ic = hdr->data[0] >> 7;
@@ -409,17 +409,18 @@ int mctp_recieve(mctp_endpoint_stct *ep)
 
 #ifdef CONFIG_CHECK_SEQ_NUM
 		/* seq for som must be 0 */
-		if (hdr->seq) {
+		if (_HDR_(MCTP_SEQ_POS, MCTP_SEQ_MASK)) {
 			mctp_err("seq != 0\n");
 			return ERR_BAD_SEQ_NUM;
 		}
 #endif
-		ep->rxseq = hdr->seq;
-		ep->tag = hdr->tag;
-		ep->to = hdr->to;
+		ep->rxseq = _HDR_(MCTP_SEQ_POS, MCTP_SEQ_MASK);
+		ep->tag = _HDR_(MCTP_TAG_POS, MCTP_TAG_MASK);
+		ep->to = _HDR_(MCTP_TO_POS, MCTP_TO_MASK);
+
 		buf++;
 		len--;
-	} else if (((ep->rxseq + 1) & 0x3) != hdr->seq) {
+	} else if (((ep->rxseq + 1) & 0x3) != _HDR_(MCTP_SEQ_POS, MCTP_SEQ_MASK)) {
 		mctp_err("fragment lost\n");
 		return ERR_BAD_SEQ_NUM;
 	}
@@ -430,11 +431,11 @@ int mctp_recieve(mctp_endpoint_stct *ep)
         }
 
 	// Concatinate the incoming chunk
-	ep->rxseq = hdr->seq;
+	ep->rxseq = _HDR_(MCTP_SEQ_POS, MCTP_SEQ_MASK);
 	memcpy(&ep->rx_ptr[ep->rx_len], buf, len);
 	ep->rx_len += len;
 
-	if (hdr->eom) {
+	if (_HDR_(MCTP_EOM_POS, MCTP_EOM_POS)) {
 		mctp_sts.rx_pkts++;
 		mctp_sts.rx_bytes += ep->rx_len;
 		return handle_mctp_pkt(ep);
@@ -450,6 +451,7 @@ int mctp_transmit(mctp_endpoint_stct *ep)
 	uint8_t *buf;
 	uint32_t len;
 	struct mctp_ep_retain_stc *retain;
+	uint8_t som, eom;
 
 	if (!ep->retain)
 		return ERR_NO_RETAIN;
@@ -473,21 +475,20 @@ int mctp_transmit(mctp_endpoint_stct *ep)
 	len = (len > retain->fragsize) ? retain->fragsize : len;
 	ep->payload = len - MCTP_HDR_SIZE(ep);
 
+	som = (ep->flags & MCTP_COMPLETE) ? (1 << 7) : 0;
+	eom = ((ep->tx_cnt + ep->payload) == ep->tx_len) ? (1 << 6): 0;
+
 	/* set mctp header */
 	hdr->hdr_ver = 1;
 	hdr->dst_eid = ep->src_eid;
 	hdr->src_eid = retain->eid;
-	hdr->som = (ep->flags & MCTP_COMPLETE) ? 1 : 0;
-	hdr->eom = ((ep->tx_cnt + ep->payload) == ep->tx_len) ? 1 : 0;
-	ep->txseq = (hdr->som & !(ep->flags & MCTP_SEQ_ROLL)) ? 0 : ((ep->txseq + 1) & 3);
-	hdr->seq = ep->txseq;
-	hdr->to = ep->to;
-	hdr->tag = ep->tag;
+	ep->txseq = (som & !(ep->flags & MCTP_SEQ_ROLL)) ? 0 : ((ep->txseq + 1) & 3);
+	hdr->hdr_data = som | eom | (ep->txseq << 5) | (ep->to << 3) | ep->tag;
 
 	ep->flags &= ~MCTP_COMPLETE;
 
 	/* per DSP0237 first message should carry msg_type & ic */
-	if (hdr->som) {
+	if (som) {
 		*buf++ = ep->msgtype | (ep->ic << 7);
 	}
 

@@ -40,12 +40,17 @@ ifeq ($(PRIVATE_BUILD),y)
  LDFLAGS=-Wl,-O1  -Wl,--as-needed
  CPPFLAGS=""
  ARCH=mips
+ ARCH_BIG_ENDIAN=y
 endif
 else
  $(error Unknown machine type $(MACHINE))
 endif
 
 BUILD_ROOT ?= build_$(MACHINE)
+
+ifeq ($(ARCH_BIG_ENDIAN),y)
+CFLAGS += -DARCH_BIG_ENDIAN
+endif
 
 # define header and library location in FunSDK
 CFLAGS += -I./ -I./include -I./$(BUILD_ROOT) -g -Wall -Werror -Wno-multichar 

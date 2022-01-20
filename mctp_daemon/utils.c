@@ -29,31 +29,33 @@ int flags;
 
 void hexdump(uint8_t *addr, int len)
 {
-        char str[COL_SIZE + 4];
-        uint32_t cntr = 0, i, j = 0;
+	char str[COL_SIZE + 4];
+	uint32_t cntr = 0, i, j = 0;
 
-        for(i = 0; i < len; i++) {
-                str[j++] = IS_CHAR(*addr) ? *addr : '.';
+	for(i = 0; i < len; i++) {
+		str[j++] = IS_CHAR(*addr) ? *addr : '.';
 
-                if (!(i % COL_SIZE))
-                        printf("[0x%04x] ", cntr);
+		if (!(i % COL_SIZE)) {
+			printf("[0x%04x] ", cntr);
+			cntr += COL_SIZE;
+		}
 
-                printf("%02x ", *addr);
+		printf("%02x ", *addr);
 
-                if (!((i+1) % COL_SIZE)) {
-                        str[j] = 0;
-                        printf("%s%s\n", LEFT_SPACE, str);
-                        j = 0;
-                }
-                addr++;
-        }
+		if (!((i+1) % COL_SIZE)) {
+			str[j] = 0;
+			printf("%s%s\n", LEFT_SPACE, str);
+			j = 0;
+		}
+		addr++;
+	}
 
-        if (i % COL_SIZE) {
-                str[j] = 0;
-                for(j = (i % COL_SIZE); j < COL_SIZE; j++)
-                        printf("   ");
-                printf("%s%s\n", LEFT_SPACE, str);
-        }
+	if (i % COL_SIZE) {
+		str[j] = 0;
+		for(j = (i % COL_SIZE); j < COL_SIZE; j++)
+			printf("   ");
+		printf("%s%s\n", LEFT_SPACE, str);
+	}
 }
 
 void print_version(char *name)

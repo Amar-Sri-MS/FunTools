@@ -13,21 +13,7 @@
 
 // local vars
 static uint8_t pktbuf[256];
-struct pldm_global_stc pldm_vars;
-
-static pldm_cmd_hdlr_stct *search_handler(pldm_hdr_stct *hdr)
-{
-        pldm_cmd_hdlr_stct *ptr;
-
-	ptr = (hdr->type == 0) ? pldm_mcd_cmds : pldm_pmc_cmds;
-
-        for(; ptr->hdlr ; ptr++) {
-                if (ptr->cmd == hdr->cmd)
-                        return ptr;
-        }
-
-        return NULL;
-}
+struct pldm_global_stc pldm_vars = { 0 };
 
 /* set bit on an array of bit_arr_t */
 void set_bit(uint32_t n, bit_arr_t *p)
@@ -39,13 +25,29 @@ void set_bit(uint32_t n, bit_arr_t *p)
 
 int pldm_response(pldm_hdr_stct *resp, uint8_t comp_code)
 {
-	resp->drq = 0;
-	resp->ver = 0;
-	resp->rsrvd = 0;
+	resp->drq_inst = 0;
+	resp->type_ver = 0;
 
 	/* set complition code */
 	resp->data[0] = comp_code;
 	return 0;
+}
+
+#define HDR_VER		((pldm_hdr->type_ver >> 6) & 0x3)
+#define HDR_TYPE	((pldm_hdr->type_ver >> 0) & 0x3f)
+#define HDR_DRQ		((pldm_hdr->drq_inst >> 6) & 0x3)
+static pldm_cmd_hdlr_stct *search_handler(pldm_hdr_stct *pldm_hdr)
+{
+        pldm_cmd_hdlr_stct *ptr;
+
+	ptr = (HDR_TYPE == 0) ? pldm_mcd_cmds : pldm_pmc_cmds;
+
+        for(; ptr->hdlr ; ptr++) {
+                if (ptr->cmd == pldm_hdr->cmd)
+                        return ptr;
+        }
+
+        return NULL;
 }
 
 int pldm_handler(uint8_t *buf, int len, uint8_t *pbuf)
@@ -53,25 +55,33 @@ int pldm_handler(uint8_t *buf, int len, uint8_t *pbuf)
 	pldm_hdr_stct *pldm_hdr = (pldm_hdr_stct *)buf;
 	pldm_hdr_stct *resp;
 	pldm_cmd_hdlr_stct *ptr;
-	int rc = 1;
+	int rc = 1, ack_pending = (pldm_vars.flags & MCTP_VDM_ASYNC_ACK);
 
 	resp = (!pbuf) ? (pldm_hdr_stct *)pktbuf : (pldm_hdr_stct *)pbuf;
 
-	if (pldm_hdr->ver != PLDM_HEADER_VERSION) {
-		pldm_err("bad PLDM ver %x\n", pldm_hdr->ver);
+	if (HDR_VER != PLDM_HEADER_VERSION) {
+		pldm_err("bad PLDM ver %x\n", HDR_VER);
 		pldm_response(resp, PLDM_INVALID_VERSION);
 		goto exit;
 	}
 
-	if (pldm_hdr->drq != PLDM_REQ_DATA) {
-		pldm_err("unsupported req. %x\n", pldm_hdr->drq);
-		pldm_response(resp, PLDM_ERROR);
-		goto exit;
+	if (HDR_DRQ != PLDM_REQ_DATA) {
+		if (!(ack_pending)) {
+			pldm_err("unsupported req. %x\n", HDR_DRQ);
+			pldm_response(resp, PLDM_ERROR);
+			goto exit;
+		}
+
+		if (pldm_hdr->cmd != PLDM_SUCCESS)
+			pldm_err("ack err code = %u\n", pldm_hdr->cmd);
+
+		pldm_vars.flags |= MCTP_VDM_ASYNC_ACK;
+		return -1;
 	}
 
 	ptr = search_handler(pldm_hdr);
 	if (ptr == NULL) {
-		pldm_err("handler !found type = %x, cmd = %x\n", pldm_hdr->type, pldm_hdr->cmd);
+		pldm_err("handler !found type = %x, cmd = %x\n", HDR_TYPE, pldm_hdr->cmd);
 		pldm_response(resp, PLDM_UNSUPPORTED);
 		goto exit;
 	}
@@ -100,8 +110,7 @@ exit:
 
 int pldm_init(void)
 {
-	/* initilize global variables for the first time */
-	bzero((uint8_t *)&pldm_vars, sizeof(struct pldm_global_stc));
+	pldm_vars.flags |= MCTP_VDM_ASYNC_ACK;
 
 #ifdef CONFIG_INCLUDE_PLDM_PMC
 	if (pldm_pmc_init())

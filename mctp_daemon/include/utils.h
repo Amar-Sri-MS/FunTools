@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <time.h>
+#include <arpa/inet.h>
 
 #include "fw_version.h"
 #include "auto_conf.h"
@@ -76,56 +77,18 @@
                 write(fifo_fd, fifo_str, strlen(fifo_str)); 	\
         } while (0)
 
-/* unaligned assignment
- * MIPS architecture does not natively  support unaligned word access
- * e.g. 32bit variable that isn't on 4 bytes alignment (ADD[1:0] = 2'b0) will cause an exception
- * the pldm spec is full with such variables hence a "memcpy" method is required
- * to move data to packed unaligned structured variables
- */
-#define ASSIGN32_LE(x, n)                           \
-	do {                                                \
-		*(((uint8_t *)&(x))+0) = ((n) & 0xff);      \
-		*(((uint8_t *)&(x))+1) = (((n)>>8) & 0xff); \
-		*(((uint8_t *)&(x))+2) = (((n)>>16) & 0xff);\
-		*(((uint8_t *)&(x))+3) = (((n)>>24) & 0xff);\
-	} while (0)
 
-#define ALIGN32_BE(x)   (uint32_t)(((*(((uint8_t *)&(x))+0)) << 0)  | \
-                                   ((*(((uint8_t *)&(x))+1)) << 8)  | \
-                                   ((*(((uint8_t *)&(x))+2)) << 16) | \
-                                   ((*(((uint8_t *)&(x))+3)) << 24))
-
-#define ASSIGN16_LE(x, n)                           \
-	do {                                                \
-		*(((uint8_t *)&(x))+0) = ((n) & 0xff);      \
-		*(((uint8_t *)&(x))+1) = (((n)>>8) & 0xff); \
-	} while (0)
-
-#define ALIGN16_BE(x)   (uint16_t)(((*(((uint8_t *)&(x))+0)) << 0)  | \
-                                   ((*(((uint8_t *)&(x))+1)) << 8))
-
-#define ASSIGN32_BE(x, n)                           \
-	do {                                                \
-		*(((uint8_t *)&(x))+3) = ((n) & 0xff);      \
-		*(((uint8_t *)&(x))+2) = (((n)>>8) & 0xff); \
-		*(((uint8_t *)&(x))+1) = (((n)>>16) & 0xff);\
-		*(((uint8_t *)&(x))+0) = (((n)>>24) & 0xff);\
-	} while (0)
-
-#define ALIGN32_LE(x)   (uint32_t)(((*(((uint8_t *)&(x))+3)) << 0)  | \
-                                   ((*(((uint8_t *)&(x))+2)) << 8)  | \
-                                   ((*(((uint8_t *)&(x))+1)) << 16) | \
-                                   ((*(((uint8_t *)&(x))+0)) << 24))
-
-#define ASSIGN16_BE(x, n)                           \
-	do {                                                \
-		*(((uint8_t *)&(x))+1) = ((n) & 0xff);      \
-		*(((uint8_t *)&(x))+0) = (((n)>>8) & 0xff); \
-	} while (0)
-
-#define ALIGN16_LE(x)   (uint16_t)(((*(((uint8_t *)&(x))+1)) << 0)  | \
-                                   ((*(((uint8_t *)&(x))+0)) << 8))
-
+#ifdef ARCH_BIG_ENDIAN
+#define pldm2host(n)	n
+#define pldm2host_16(n)	n
+#define host2pldm(n)	n
+#define host2pldm_16(n)	n
+#else
+#define pldm2host(n)	ntohl(n)
+#define pldm2host_16(n)	ntohs(n)
+#define host2pldm(n)	htonl(n)
+#define host2pldm_16(n)	htons(n)
+#endif
 
 struct server_cfg_stc {
 	uint16_t sleep;
