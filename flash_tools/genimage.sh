@@ -182,7 +182,7 @@ if [ $EMULATION == 0 ]; then
 	cp qspi_image_hw.bin ${WORKSPACE}/sbpimage/flash_image.bin
 else
         # get the well-known enrollment certificate for emulation
-        wget 'https://f1reg.fungible.com/cgi-bin/enrollment_server.cgi/?cmd=cert&sn=AAAAAAAAAAAAAAAAAAAAAAAAAAAAABI0' -O - \
+        wget "https://f1reg.fungible.com/cgi-bin/enrollment_server.cgi/?cmd=cert&sn=`printf \"%048x\" $OTP_SERIAL_NR`" -O - \
 	       | base64 -d - > ${WORKSPACE}/enroll_cert.bin
 	# generate flash image for emulation
 	python3 $WORKSPACE/FunSDK/bin/flash_tools/generate_flash.py --config-type json \
@@ -217,7 +217,7 @@ else
             --cm_input $SBP_DEVTOOLS_DIR/otp_templates/OTP_content_CM.txt \
             --sm_input $SBP_DEVTOOLS_DIR/otp_templates/OTP_content_SM.txt \
             --ci_input $SBP_DEVTOOLS_DIR/otp_templates/OTP_content_CI_${OTP_CHIP}.txt \
-            --esecboot=$OTP_MODE $CUSTOMER_OTP_ARGS \
+            --esecboot $OTP_MODE --serial_nr $OTP_SERIAL_NR $CUSTOMER_OTP_ARGS \
             --output ${WORKSPACE}/sbpimage/OTP_memory
 fi
 
