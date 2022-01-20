@@ -146,11 +146,12 @@ def main():
             **metadata
         })
     finally:
-        # Clean up the downloaded files
-        clean_up(LOG_ID)
+        # Clean up the downloaded files if successful.
+        if status:
+            clean_up(LOG_ID)
 
         # Notify via email
-        email_notify(LOG_ID)
+        email_notify(LOG_ID, status, status_msg)
 
         # Backing up the logs generated during ingestion
         logger.backup_ingestion_logs(LOG_ID)
@@ -1030,7 +1031,7 @@ def _update_metadata(metadata_handler, log_id, status, additional_data={}):
     return metadata_handler.update(log_id, metadata)
 
 
-def email_notify(logID):
+def email_notify(logID, is_successful, status_msg):
     """ Notifying via email at the end of the ingestion """
     es_metadata = ElasticsearchMetadata()
     metadata = es_metadata.get(logID)
@@ -1042,9 +1043,6 @@ def email_notify(logID):
     if not submitted_by:
         logging.warning('Sending email aborted: submitted_by email not found.')
         return
-
-    is_successful = metadata.get('ingestion_status') == 'SUCCESS'
-    logID = metadata.get('logID')
 
     if not logID:
         logging.warning('Sending email aborted: logID not found.')
@@ -1062,7 +1060,7 @@ def email_notify(logID):
         subject = f'Ingestion of {logID} failed.'
         body = f"""
             Ingestion of {logID} failed. Please email tools-pals@fungible.com for help!
-            Reason: {metadata.get('ingestion_error')}
+            Reason: {status_msg}
         """
 
     status = mail.Mail(submitted_by, subject, body)
