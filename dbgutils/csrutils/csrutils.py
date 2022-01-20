@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.7
 '''
 csr find/list/peek/poke utilities
 To issue csr peek/poke, connection to one of the debug interfaces(i2c/jtag/pcie/dpc)

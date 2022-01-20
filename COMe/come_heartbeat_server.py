@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python2.7
 
 # Responds to any message that is received
 # on stdin with the same message in CAPS on stdout

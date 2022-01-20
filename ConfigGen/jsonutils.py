@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.7
 
 # Converts lenient json to standard json
 #The input files are allowed to make two side-steps from the standard JSON

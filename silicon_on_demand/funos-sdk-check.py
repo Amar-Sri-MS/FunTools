@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python2.7
 
 # automatically download and run a funos-f1 binary from a specified
 # FunSDK build

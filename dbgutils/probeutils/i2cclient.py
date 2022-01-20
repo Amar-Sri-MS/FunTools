@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.7
 '''
 i2cclient connects to i2cproxy on remote server
 and can issue hw access commands using i2c interface

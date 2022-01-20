@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python2.7
 
 # Use jtag via codescape to reset a target F1 device
 

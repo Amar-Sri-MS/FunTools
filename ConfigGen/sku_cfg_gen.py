@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.7
 
 #This module generates merged config of all skus, sku-id definitions and eeprom files.
 

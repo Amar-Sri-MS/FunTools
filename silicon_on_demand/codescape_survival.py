@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python2.7
 
 ## A set of functions to import into your codescape scripting to make
 ## life easier.

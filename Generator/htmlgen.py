@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2.7
 # htmlgen.py
 # HTMLGenerator takes a DocBuilder describing various machine data structures,
 # and generates documentation for these.

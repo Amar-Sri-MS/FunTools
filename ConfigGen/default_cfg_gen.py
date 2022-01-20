@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.7
 
 # This module generates the default dictionary which contains blocks of
 # parameters/values. Each of these blocks can then be used by SKU files as

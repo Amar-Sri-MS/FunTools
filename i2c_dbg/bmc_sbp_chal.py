@@ -1,4 +1,4 @@
-#! usr/bin/env python2
+#!/usr/bin/env python2.7
 #
 # bmc_sbp_chal.py
 #

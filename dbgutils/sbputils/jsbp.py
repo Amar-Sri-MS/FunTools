@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.7
 
 # This file defines the base JTAG methods to initialize, read and write data to and from 
 # JTAG transport.

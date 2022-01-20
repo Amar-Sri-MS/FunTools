@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2.7
 #
 # python s1_nu_intr_gen.py <output dir> input_file.h
 # eg.

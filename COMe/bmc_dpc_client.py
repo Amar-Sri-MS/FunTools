@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python2.7
 # Description: DPC Command Line Interface for BMC -> COMe Interaction
 #    This script will talk with DPC Server running in Proxy Mode on
 #    COMe and help the BMC to fetch the data from F1s'

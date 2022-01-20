@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.7
 
 # This file defines the user level JTAG call via otpions to initialize, read and 
 # write commands over JTAG transport.

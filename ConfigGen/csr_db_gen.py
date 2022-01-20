@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.7
+
 import glob, os, sys, re, datetime
 import getopt, platform, tempfile, re
 from string import Template
