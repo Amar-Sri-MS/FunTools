@@ -39,18 +39,24 @@ def mctp_pkt_tx():
     try:
         mctp_tx_dpc_handle = dpc_client.DpcClient(unix_sock = True)
         with open(PCIEVDM_TX_FIFO, 'rb') as pcievdm_tx_fifo:
+            #Make Reader FD as NonBlocking
+            os.set_blocking(pcievdm_tx_fifo.fileno(), False)
             log.info("PCIEVDM_TX_FIFO opened")
             while True:
+                log.debug('Waiting for the PLDM/MCTP Packets from MCTP Daemon.....')
                 mctp_pkt_tx_data = pcievdm_tx_fifo.read()
-                if len(mctp_pkt_tx_data) == 0:
+                if mctp_pkt_tx_data is None or len(mctp_pkt_tx_data) == 0:
+                    time.sleep(1)
                     continue
 
                 log.debug('Read data from FIFO before Bin -> Blob conversion: %s', mctp_pkt_tx_data)
                 data = mctp_tx_dpc_handle.blob_from_string(mctp_pkt_tx_data)
 
-                #Sending Data to HostServer using FunOS PCIe Driver
+                log.debug('Sending Data to HostServer using FunOS PCIe Driver')
                 result = mctp_tx_dpc_handle.execute('mctp_transport', ['mctp_hu_send', ['quote', data]])
                 log.debug("'mctp_hu_send' packet DPCSH response: {}".format(result))
+                time.sleep(0.1)
+
     except Exception as e:
         pcievdm_tx_fifo.close()
         result = mctp_tx_dpc_handle.execute("mctp_transport", ['mctp_hu_recv_unsub', 0])
@@ -70,15 +76,16 @@ def mctp_pkt_rx():
         with open(PCIEVDM_RX_FIFO, 'wb') as pcievdm_rx_fifo:
             log.info("PCIEVDM_RX_FIFO opened")
             while True:
-                log.debug("Waiting for MCTP Packet from Host Server ........")
+                log.debug("Waiting for PLDM/MCTP Packet from Host Server ........")
                 result = mctp_rx_dpc_handle.async_recv_wait(tid)
-                log.debug("MCTP async_recv_wait recieved response: {}".format(result))
-
-                log.debug('Read data from Host Server: %s', result['data'])
+                log.debug("PLDM/MCTP async_recv_wait recieved response: {}".format(result))
                 mctp_pkt_rx_data = mctp_rx_dpc_handle.blob_to_string(result['data'])
-                log.debug('Read data from FIFO after Blob -> Binary conversion: %s', mctp_pkt_rx_data)
+                log.debug('Sending PLDM/MCTP Packet to MCTP Daemon for Processing: %s', mctp_pkt_rx_data)
 
                 pcievdm_rx_fifo.write(mctp_pkt_rx_data)
+                #Flush is mandatory for proper writing data to Daemon FIFO
+                pcievdm_rx_fifo.flush()
+                time.sleep(0.1)
 
     except Exception as e:
         pcievdm_rx_fifo.close()
