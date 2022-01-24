@@ -130,9 +130,9 @@ class Tester(object):
                 'job_id': self.job_id,
                 'ingest_type': self.ingest_type,
                 'ingestion_status': self.ingestion_status,
-                'ingestion_msg': self.ingestion_status_msg,
+                'ingestion_msg': str(self.ingestion_status_msg),
                 'validation_status': self.status,
-                'validation_msg': self.status_msg
+                'validation_msg': str(self.status_msg)
             }
 
             result = self.es.index(INDEX_NAME, data)
