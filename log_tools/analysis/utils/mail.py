@@ -65,7 +65,7 @@ def Mail(owner_email, subject, mail_body, cc_list=[]):
 
     if len(cc_list) > 0:
         cc_emails = ','.join(cc_list)
-        cmd = f'{cmd} -cc {cc_emails}'
+        cmd = f'{cmd} -aCC:"{cc_emails}"'
 
     logging.info(f'Will execute {cmd}')
     try:
