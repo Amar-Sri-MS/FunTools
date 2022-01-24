@@ -479,7 +479,7 @@ static struct fun_ptr_and_size _transcode(struct fun_ptr_and_size source,
 		fun_json_fill_error_message(json, &msg);
 		log_info("Transcode error: %s\n", msg);
 	} else if (dest->socket->mode == SOCKMODE_TERMINAL) {
-		uint32_t flags = use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0;
+		uint32_t flags = FUN_JSON_PRETTY_PRINT_HUMAN_READABLE_STRINGS | (use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0);
 		json_text = fun_json_pretty_print(json,
 							  0, "    ",
 							  100, flags,
