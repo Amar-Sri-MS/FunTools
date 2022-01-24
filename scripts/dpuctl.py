@@ -86,20 +86,21 @@ def httpreq_json(api: str, js=None, timeout=None, method=requests.post, **kwargs
     DEBUG("Return status %s" % r.status_code)
     if (r.status_code == 200):
         DEBUG(r.json())
+        return r.json()
     else:
         LOG(r.reason)
-
-    return r.json()
+        return None
 
 ###
 ##  
 #
-def wait_for_version() -> Dict[str, Any]:
+def wait_for_version(logver: bool = False) -> Dict[str, Any]:
     failed = True
     while (failed):
         try:
             js = httpreq_json(API_VERSION)
-            LOG_JSON(js)
+            if (logver):
+                LOG_JSON(js)
             break
         except KeyboardInterrupt:
             sys.exit(1)
@@ -108,23 +109,28 @@ def wait_for_version() -> Dict[str, Any]:
 
         time.sleep(1)
 
+    return js
+
 ###
 ##  default command
 #
 
 def cmd_empty() -> None:   
-    wait_for_version()
+    wait_for_version(True)
 
 ###
 ##  ssh commands
 #
 
+def _list_keys():
+    reqjs = {"key": "ALL"}
+    return httpreq_json(API_SSHKEY, method=requests.get, js=reqjs)
+
 def cmd_ssh_list() -> None:
     wait_for_version()
 
     # make the reqeuest
-    reqjs = {"key": "ALL"}
-    js = httpreq_json(API_SSHKEY, method=requests.get, js=reqjs)
+    js = _list_keys()
     LOG_JSON(js)
 
 def cmd_ssh_add() -> None:
@@ -135,9 +141,21 @@ def cmd_ssh_add() -> None:
     key = fl.read().strip()
 
     DEBUG("key: %s" % key)
+
+    # get the list of keys
+    if (not args.no_check):
+        js = _list_keys()
+        rkeys = js.get("data")
+        if (rkeys is not None):
+            for rkey in rkeys:
+                if (rkey.strip() == key.strip()):
+                    LOG("Key exists in dpu already")
+                    return
+
     # make the request
     reqjs = {"key": key}
     js = httpreq_json(API_SSHKEY, method=requests.post, js=reqjs)
+    LOG("Key added...")
     LOG_JSON(js)
 
 def cmd_ssh_clear() -> None:
@@ -147,6 +165,21 @@ def cmd_ssh_clear() -> None:
     reqjs = {"key": "ALL"}
     js = httpreq_json(API_SSHKEY, method=requests.delete, js=reqjs)
     LOG_JSON(js)
+
+def cmd_ssh() -> None:
+
+    # wait for the device and make sure the key is added
+    cmd_ssh_add()
+
+    # derive the private key file from the public key file
+    privkey = args.privkey 
+    if (privkey is None):
+        privkey = os.path.splitext(args.pubkey)[0]
+
+    # run ssh
+    cmd = "ssh -i %s root@%s" % (privkey, args.dpu)
+    DEBUG(cmd)
+    os.system(cmd)
 
 def cmd_restart() -> None:
     wait_for_version()
@@ -195,14 +228,29 @@ def parse_args() -> argparse.Namespace:
 
     # add a key to the DPU
     parser_ssh_add = subparsers.add_parser('ssh_add')
-    parser.add_argument("-k", "--pubkey", action="store",
-                        default="~/.ssh/id_rsa.pub",
-                        help="SSH Public key file")
+    parser_ssh_add.add_argument("-k", "--pubkey", action="store",
+                                default="~/.ssh/id_rsa.pub",
+                                help="SSH Public key file")
+    parser_ssh_add.add_argument("-N", "--no-check", action="store_true",
+                                default=False,
+                                help="Don't check for key existence before adding")
     parser_ssh_add.set_defaults(func=cmd_ssh_add)
 
     # clear all keys in the dpu
-    parser_ssh_add = subparsers.add_parser('ssh_clear')
-    parser_ssh_add.set_defaults(func=cmd_ssh_clear)
+    parser_ssh_clear = subparsers.add_parser('ssh_clear')
+    parser_ssh_clear.set_defaults(func=cmd_ssh_clear)
+
+    # add a key and ssh to the DPU
+    parser_ssh = subparsers.add_parser('ssh')
+    parser_ssh.add_argument("-k", "--pubkey", action="store",
+                                default="~/.ssh/id_rsa.pub",
+                                help="SSH Public key file")
+    parser_ssh.add_argument("-P", "--privkey", action="store",
+                            help="SSH Private key file override")
+    parser_ssh.add_argument("-N", "--no-check", action="store_true",
+                                default=False,
+                                help="Don't check for key existence before adding")
+    parser_ssh.set_defaults(func=cmd_ssh)
 
     # fast restart
     parser_restart = subparsers.add_parser('restart')
