@@ -20,4 +20,4 @@ install-scripts:
 	install gz2idgz.py $(SDK_INSTALL_DIR)/bin/scripts
 	install rdsstat.py $(SDK_INSTALL_DIR)/bin/scripts
 	install update-dpu.py $(SDK_INSTALL_DIR)/bin/scripts
-
+	install dpu_ctl.py $(SDK_INSTALL_DIR)/bin/scripts

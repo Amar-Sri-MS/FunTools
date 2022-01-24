@@ -21,7 +21,10 @@ import shutil
 import shlex
 import socket
 import json
+import warnings
+import urllib3
 from http.server import BaseHTTPRequestHandler, HTTPServer
+
 
 ### List of API endpoints
 API_VERSION = 'http://{target}:{port}/platform/version'
@@ -226,6 +229,8 @@ def main() -> int:
         LOG("Required --dpu option missing")
         sys.exit(1)
 
+    warnings.simplefilter('ignore',
+                          category=urllib3.exceptions.InsecureRequestWarning)
     # setup the http boilerplate
     mk_api_format_dict()
 
