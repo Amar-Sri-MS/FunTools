@@ -6,8 +6,6 @@
 # The uid of processes running in the container will be the same as the
 # user running this script (instead of the default root).
 #
-# The user must have sudo permissions to run this script.
-#
 
 function usage() {
     echo "usage: process_cm.sh job_dir"
