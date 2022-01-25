@@ -303,7 +303,7 @@ class ElasticLogSearcher(object):
 
     def search(self, state,
                query_term=None, source_filters=None, time_filters=None,
-               query_size=1000):
+               query_size=1000, exact_match=False):
         """
         Returns up to query_size logs that match the query_term and the
         filters.
@@ -327,6 +327,10 @@ class ElasticLogSearcher(object):
         If the timestamp of a message does not lie within the range then it
         will be omitted.
 
+        The exact_match parameter is a boolean (False) which controls if the
+        query_term should be matched exactly or just partial matches are
+        acceptable.
+
         Returns a list with the following entry dicts:
         {
             "hits": [
@@ -345,7 +349,7 @@ class ElasticLogSearcher(object):
 
         TODO (jimmy): hide elastic specific stuff in return value?
         """
-        body = self._build_query_body(query_term, source_filters, time_filters)
+        body = self._build_query_body(query_term, source_filters, time_filters, exact_match)
         if state.after_sort_val is not None:
             body['search_after'] = [state.after_sort_val]
 
@@ -365,7 +369,7 @@ class ElasticLogSearcher(object):
         return {'hits': result, 'state': new_state, 'total_search_hits': total_search_hits}
 
     def _build_query_body(self, query_term,
-                          source_filters, time_filters):
+                          source_filters, time_filters, exact_match=False):
         """
         Constructs a query body from the specified query term
         (which is treated as an elasticsearch query string) and
@@ -404,7 +408,8 @@ class ElasticLogSearcher(object):
         must_queries = []
         if query_term is not None:
             must_queries.append({'query_string': {
-                'query': query_term
+                'query': query_term,
+                'default_operator': 'AND' if exact_match else 'OR'
             }})
 
         # Source filters are either simple (list of src) or
@@ -531,12 +536,13 @@ class ElasticLogSearcher(object):
     def search_backwards(self, state,
                          query_term=None,
                          source_filters=None, time_filters=None,
-                         query_size=1000):
+                         query_size=1000,
+                         exact_match=False):
         """
         The same as search, but only considers entries with timestamps that
         have lower values than the "before_sort_val" in the state argument.
         """
-        body = self._build_query_body(query_term, source_filters, time_filters)
+        body = self._build_query_body(query_term, source_filters, time_filters, exact_match)
         if state.before_sort_val != -1:
             body['search_after'] = [state.before_sort_val]
 
@@ -974,6 +980,7 @@ def get_search_results(log_id):
     page = int(search_payload.get('page', 1))
     size = int(search_payload.get('size', 20))
     next = search_payload.get('next', True)
+    exact_match = search_payload.get('exact_match', False)
 
     if filters.get('text'):
         if query:
@@ -991,11 +998,13 @@ def get_search_results(log_id):
     if next:
         results = es.search(state, query,
                         source_filters, time_filters,
-                        query_size=size)
+                        query_size=size,
+                        exact_match=exact_match)
     else:
         results = es.search_backwards(state, query,
                         source_filters, time_filters,
-                        query_size=size)
+                        query_size=size,
+                        exact_match=exact_match)
 
     search_results = results['hits']
     state.before_sort_val, state.after_sort_val = es._get_delimiting_sort_values(search_results)
@@ -1125,6 +1134,7 @@ def _search_anchors(log_id, size=50):
     page = int(request.args.get('page', 0))
     next = json.loads(request.args.get('next', 'true'))
     only_failed = json.loads(request.args.get('failed', 'false'))
+    exact_match = json.loads(request.args.get('exact_match', 'false'))
 
     state_str = request.args.get('state', None)
     state = ElasticLogState()
@@ -1146,10 +1156,14 @@ def _search_anchors(log_id, size=50):
 
     if next:
         results = es.search(state, text_filter,
-                        sources, query_size=size)
+                        sources,
+                        query_size=size,
+                        exact_match=exact_match)
     else:
         results = es.search_backwards(state, text_filter,
-                        sources, query_size=size)
+                        sources,
+                        query_size=size,
+                        exact_match=exact_match)
 
     search_results = results['hits']
     state.before_sort_val, state.after_sort_val = es._get_delimiting_sort_values(search_results)
