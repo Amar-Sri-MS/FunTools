@@ -29,5 +29,5 @@ echo "Running process_cm with uid $UID and gid $GID"
 docker run \
   --mount type=bind,source=$1,target=/data/run \
   --user=$UID:$GID \
-  docker.fungible.com/cm_local_processing \
+  docker.fungible.com/cm_processing \
   /app/process_perf_f1.py /data/run --custom-infra --parse-mode=cache_miss --skip-missmap
