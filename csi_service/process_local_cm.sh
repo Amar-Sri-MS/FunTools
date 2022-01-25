@@ -28,7 +28,7 @@ echo "Running process_cm with uid $UID and gid $GID"
 # Running as the uid of the current user means output files of the
 # post-processing step will belong to that uid, and not root.
 #
-sudo docker run \
+docker run \
   --mount type=bind,source=$1,target=/data/run \
   --user=$UID:$GID \
   docker.fungible.com/cm_local_processing \

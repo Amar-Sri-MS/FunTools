@@ -16,6 +16,7 @@ from werkzeug.utils import secure_filename
 
 
 app = flask.Flask(__name__)
+app.config.from_file("config.json", load=json.load)
 
 
 WORK_DIR_CFG = 'WORK_DIR'
