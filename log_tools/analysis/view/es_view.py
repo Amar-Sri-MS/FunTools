@@ -91,20 +91,13 @@ def load_user():
 @login_required
 def root():
     """ Serves the root page, which shows a list of logs """
-    ELASTICSEARCH_HOSTS = app.config['ELASTICSEARCH']['hosts']
-    es = Elasticsearch(ELASTICSEARCH_HOSTS)
     es_metadata = ElasticsearchMetadata()
 
     tags = request.args.get('tags', '')
 
     # Using the ES CAT API to get indices
     # CAT API supports sorting and returns more data
-    indices = es.cat.indices(
-        index='log_*',
-        h='health,index,id,docs.count,store.size,creation.date',
-        format='json',
-        s='creation.date:desc'
-    )
+    indices = _get_indices('log_*')
 
     if len(tags) > 0:
         tags_list = [tag.strip() for tag in tags.split(',')]
@@ -167,6 +160,52 @@ def _render_root_page(log_ids, metadata, jinja_env, template):
     result = template.render(template_dict, env=jinja_env)
     return result
 
+def _get_indices(prefix, limit=None):
+    """
+    Returns list of dicts containing data about an index.
+
+    Args:
+    prefix (str) - prefix for index name
+    limit (dict) - controlling how to limit the indices
+                   by count or days.
+    """
+    ELASTICSEARCH_HOSTS = app.config['ELASTICSEARCH']['hosts']
+    ELASTICSEARCH_TIMEOUT = app.config['ELASTICSEARCH']['timeout']
+    ELASTICSEARCH_MAX_RETRIES = app.config['ELASTICSEARCH']['max_retries']
+    es = Elasticsearch(ELASTICSEARCH_HOSTS,
+                       timeout=ELASTICSEARCH_TIMEOUT,
+                       max_retries=ELASTICSEARCH_MAX_RETRIES,
+                       retry_on_timeout=True)
+
+    # Using the ES CAT API to get indices
+    # CAT API supports sorting and returns more data
+    indices = es.cat.indices(
+        index=prefix,
+        h='health,index,id,docs.count,store.size,creation.date',
+        format='json',
+        s='creation.date:desc'
+    )
+
+    if limit:
+        limit_by = limit.get('by')
+        limit_count = limit.get('count')
+        if limit_by == 'count':
+            indices = indices[:int(limit_count)]
+        elif limit_by == 'days':
+            limited_indices = list()
+            limit_day = datetime.datetime.combine(
+                            datetime.datetime.today(),
+                            datetime.time.min
+                        ) - datetime.timedelta(days=limit_count)
+            # ES CAT API sends timestamp in nanoseconds.
+            limit_epoch = limit_day.timestamp() * 1000
+            for index in indices:
+                if float(index['creation.date']) < limit_epoch:
+                    break
+                limited_indices.append(index)
+            indices = limited_indices
+
+    return indices
 
 @app.route('/login', methods=['POST', 'GET'])
 def login():
