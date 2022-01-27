@@ -397,9 +397,17 @@ funos_package_demo_build()
 	exit 1
     fi
 
+    if ! make -j8 MACHINE=${chip}-release dev_bundle; then
+	echo ""
+	echo "FunOSPackageDemo ${chip} fails to build"
+	echo ""
+	exit 1
+    fi
+
     # copy the bundle to a versioned file in the root
     cd $root_dir
     cp $root_dir/FunOSPackageDemo/build/${chip}/setup_bundle_development_image.sh package-demo-bundle-${chip}-v${build_id}.sh
+    cp $root_dir/FunOSPackageDemo/build/${chip}-release/setup_bundle_development_image.sh package-demo-bundle-${chip}-release-v${build_id}.sh
 }
 
 # fungible-host-drivers download and setup
