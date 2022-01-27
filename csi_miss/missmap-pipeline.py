@@ -34,7 +34,7 @@ def do_missmap():
     csimiss_cook.save_json(csimiss_cook.OUT_ADDR, addrlist)
         
     # scrape the region table
-    regions = region_ident.find_regions(region_ident.IN_FILE)
+    regions = region_ident.find_regions(region_ident.IN_FILE, region_ident.IN_JSON_FILE)
 
     # gdb must go via a file becaue gdb
     # FIXME: expects well known names. Should extend this with a gdb.Command
