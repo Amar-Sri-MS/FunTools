@@ -1586,8 +1586,6 @@ def main():
     if opts.clean_excat_files and (not opts.elf):
         clean_elf_files(elffile)
 
-
-
     LOG_ALWAYS("exiting")
 
 if __name__ == '__main__':
