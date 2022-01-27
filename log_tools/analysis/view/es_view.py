@@ -681,6 +681,32 @@ class ElasticLogSearcher(object):
         count = result['count']
         return count
 
+
+@app.route('/search', methods=['POST'])
+def perform_search():
+    """
+    Performs search across different indices.
+    """
+    try:
+        search_payload = request.get_json(force=True).get('search', None)
+        log_ids = request.get_json(force=True).get('log_ids', None)
+        if not search_payload:
+                return jsonify({
+                    'error': 'Could not find the search payload'
+                }), 400
+        if not log_ids:
+                return jsonify({
+                    'error': 'Could not find the log_ids'
+                }), 400
+
+        search_results = get_search_results(log_ids)
+        return jsonify(search_results)
+    except Exception as e:
+        app.logger.exception('Error while performing search across indices.')
+        return jsonify({
+            'error': str(e)
+        }), 500
+
 @app.route('/log/<log_id>', methods=['GET'])
 @login_required
 def get_log_page(log_id):
