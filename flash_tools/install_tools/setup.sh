@@ -275,7 +275,7 @@ case "${host_sku}" in
 			./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file dcc0=composer-boot-services-emmc.img --active
 			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
 
-			local current_ver=$(dpcsh -nQ peek config/chip_info/images/mmc1/active/version | jq -Mr .result)
+			current_ver=$(dpcsh -nQ peek config/chip_info/images/mmc1/active/version | jq -Mr .result)
 
 			./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file dcc1=ComposerOptionRom.rom --active
 			RC=$?;
