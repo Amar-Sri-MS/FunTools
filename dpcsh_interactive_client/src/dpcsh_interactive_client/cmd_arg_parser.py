@@ -454,6 +454,11 @@ get_nu_parser = base_get_subparsers.add_parser('nu', help="Get NU config")
 get_hnu_parser = base_get_subparsers.add_parser('hnu', help="Get HNU config")
 get_system_parser = base_get_subparsers.add_parser('system', help="system log commands")
 get_bam_parser = base_get_subparsers.add_parser('bam', help="get bam commands")
+get_sdn_parser = base_get_subparsers.add_parser('sdn', help="get sdn commands")
+
+# Sdn commands
+get_sdn_subparser = get_sdn_parser.add_subparsers(title='subcommands', help="")
+get_sdn_flow_parser = get_sdn_subparser.add_parser('flows', help="get sdn flows command")
 
 # Get NU sub commands
 get_nu_subparsers = get_nu_parser.add_subparsers(title='subcommands', help="")
@@ -1076,6 +1081,17 @@ peek_per_vp_stats_parser.add_argument('-tx', type=bool, help="Print Wus sent", d
 peek_per_vp_stats_parser.add_argument('-q', type=bool, help="Print Wus q depth", default=False)
 peek_per_vp_stats_parser.add_argument('-pp', type=bool, help="PrettyPrint tabular", default=False)
 
+# Peek L1 Cache
+peek_l1_cache_stats_parser = peek_stats_parsers.add_parser('l1_cache', help="Peek L1 Cache Stats")
+peek_l1_cache_stats_parser.add_argument('-cluster_id', type=int, help="Cluster_id 0..7", default=None)
+peek_l1_cache_stats_parser.add_argument('-core_id', type=int, help="Core_id 0..5", default=None)
+peek_l1_cache_stats_parser.add_argument('-grep', help="Grep regex pattern", default=None)
+
+# New params
+peek_l1_cache_stats_parser.add_argument('-load_miss', type=bool, help="Print L1 load miss", default=True)
+peek_l1_cache_stats_parser.add_argument('-store_miss', type=bool, help="Print L1 store miss", default=True)
+peek_l1_cache_stats_parser.add_argument('-pp', type=bool, help="PrettyPrint tabular", default=True)
+
 # nwqm stats
 peek_nwqm_stats_parser = peek_stats_parsers.add_parser('nwqm', help="Peek nwqm stats")
 peek_nwqm_stats_parser.add_argument('-grep', help="Grep Regex pattern", default=None)
@@ -1158,6 +1174,10 @@ peek_hu_wqse_resource_stats_parser = peek_resource_stats_parsers.add_parser('hu_
 peek_hu_wqse_resource_stats_parser.add_argument('id', type=int, help="id")
 peek_hu_wqse_resource_stats_parser.add_argument('-grep', help="Grep regex pattern", default=None)
 
+peek_hux_resource_stats_parser = peek_resource_stats_parsers.add_parser('hux', help='Peek hu resource stats')
+peek_hux_resource_stats_parser.add_argument('id', type=int, help="id")
+peek_hux_resource_stats_parser.add_argument('-grep', help="Grep regex pattern", default=None)
+
 peek_dam_resource_stats_parser = peek_resource_stats_parsers.add_parser('dam', help='Peek dam resource stats')
 peek_dam_resource_stats_parser.add_argument('-grep', help="Grep regex pattern", default=None)
 
@@ -1172,6 +1192,7 @@ peek_ocm_resource_stats_parser.add_argument('-grep', help="Grep regex pattern", 
 
 # Eqm stats
 peek_eqm_stats_parser = peek_stats_parsers.add_parser('eqm', help="EQM stats")
+peek_eqm_stats_parser.add_argument('-drg_ctx', type=int, help='drg_ctx details', default=0)
 peek_eqm_stats_parser.add_argument('-grep', help="Grep regex pattern", default=None)
 
 # funtop stats
@@ -1183,9 +1204,19 @@ peek_wustacks_stats_parser = peek_stats_parsers.add_parser('wustacks', help="Pek
 # wustacks stats
 peek_wus_stats_parser = peek_stats_parsers.add_parser('wus', help="Peke wus stats")
 
-# HU stats
-peek_hu_stats_parser = peek_stats_parsers.add_parser('hu', help="Peek HU stats")
-peek_hu_stats_parser.add_argument('-grep', help="Grep regex pattern (Grep for HU Slice)", default=None)
+#Peek HU stats 
+peek_hu_stats_parser = peek_stats_parsers.add_parser('hu', help="Peek TCP stats")
+peek_hu_stats_parsers = peek_hu_stats_parser.add_subparsers(title='subcommands', help="")
+
+# Peek PCIe Counters
+peek_hu_stats_pcie_parser = peek_hu_stats_parsers.add_parser('bw', help="PCIe bandwidth stats")
+peek_hu_stats_pcie_parser.add_argument('-hu_id', type=int, help="HU ID = 0, 1", default=1)
+peek_hu_stats_pcie_parser.add_argument('-grep', help="Grep regex pattern", default=None)
+
+#Peek HU PWP stats
+peek_hu_stats_pwp_parser = peek_hu_stats_parsers.add_parser('pwp', help="PWP stats")
+peek_hu_stats_pwp_parser.add_argument('-hu_id', type=int, help="HU ID = 0, 1", default=1)
+peek_hu_stats_pwp_parser.add_argument('-grep', help="Grep regex pattern", default=None)
 
 # HU Framer stats
 peek_hu_framer_stats_parser = peek_stats_parsers.add_parser('hu_framer', help='Peek hu framer stats')
@@ -1233,15 +1264,50 @@ peek_stats_ca_parser.add_argument('-grep', help="Grep regex pattern", default=No
 peek_stats_ddr_parser = peek_stats_parsers.add_parser('ddr', help="Peek ddr stats")
 peek_stats_ddr_parser.add_argument('-grep', help="Grep regex pattern", default=None)
 
+# Peek stats mud 
+peek_stats_mud_parser = peek_stats_parsers.add_parser('mud', help="Peek mud stats")
+peek_stats_mud_parser.add_argument('-grep', help="Grep regex pattern", default=None)
+
+# Peek stats l2_cache
+peek_stats_l2_cache_parser = peek_stats_parsers.add_parser('l2_cache', help="L2 Cache Stats")
+peek_stats_l2_cache_parser.add_argument('-grep', help="Grep regex pattern", default=None)
+
 peek_stats_rdma_parser = peek_stats_parsers.add_parser('rdma', help='peek rdma stats')
 peek_stats_rdma_parser.add_argument("hu_id", help="Hu id to look for", type=str)
 peek_stats_rdma_parser.add_argument("-qpn", help="Print data only for particular qpn", default=None)
 peek_stats_rdma_parser.add_argument('-grep', help="Grep for specific flow", default=None)
 
+# le stats
+peek_stats_le_parser = peek_stats_parsers.add_parser('le', help='le stats')
+peek_stats_le_parsers = peek_stats_le_parser.add_subparsers(title='subcommands', help="")
+
+peek_stats_le_table_parser = peek_stats_le_parsers.add_parser('tables', help="le tables")
+peek_stats_le_table_parsers = peek_stats_le_table_parser.add_subparsers(title='subcommands', help="")
+
+peek_stats_le_table_sdn_parser = peek_stats_le_table_parsers.add_parser('sdn', help="sdn table")
+peek_stats_le_table_sdn_parsers = peek_stats_le_table_sdn_parser.add_subparsers(title='subcommands', help="")
+peek_stats_le_table_sdn_in_parser = peek_stats_le_table_sdn_parsers.add_parser('in')
+peek_stats_le_table_sdn_in_parser.add_argument('-grep', help="Grep for specific flow", default=None)
+peek_stats_le_table_sdn_out_parser = peek_stats_le_table_sdn_parsers.add_parser('out')
+peek_stats_le_table_sdn_out_parser.add_argument('-grep', help="Grep for specific flow", default=None)
+
+
 #sdn flow
 peek_stats_sdn_parser = peek_stats_parsers.add_parser('sdn', help='peek sdn stats')
-peek_stats_sdn_parser.add_argument("offset", help="start offset", type=int)
-peek_stats_sdn_parser.add_argument("num_flows", help="Print flow data", type=int)
+peek_stats_sdn_parsers = peek_stats_sdn_parser.add_subparsers(title='subcommands', help="")
+
+# sdn meter
+peek_stats_sdn_meter_parser = peek_stats_sdn_parsers.add_parser('meter', help='peek sdn meter stats')
+peek_stats_sdn_meter_parser.add_argument('policy_id', help="Policy id", type=int)
+peek_stats_sdn_meter_parser.add_argument('direction', help="In or out stats", type=str)
+
+# sdn flows
+peek_stats_sdn_flow_parser = peek_stats_sdn_parsers.add_parser('flows', help='peek sdn flows stats')
+
+# sdn flows
+peek_stats_sdn_vp_parser = peek_stats_sdn_parsers.add_parser('vp', help='peek sdn vp stats')
+peek_stats_sdn_vp_parser.add_argument('-grep', help="Grep for specific flow", default=None)
+
 
 #Peek stats TCP
 peek_stats_tcp_parser = peek_stats_parsers.add_parser('tcp', help="Peek TCP stats")
@@ -1410,13 +1476,17 @@ vp_util_parser.add_argument("-core_id", help="Specify core id", type=int)
 vp_util_parser.add_argument("-pp", help="Pretty Print in tabular")
 vp_util_parser.add_argument('-grep', help="Grep on particular field")
 
+vp_state_parser = base_debug_subparsers.add_parser("vp_state", help="Display vp_state")
+vp_state_parser.add_argument("vp_num", type=int, help="vp num as an integer", default=None)
+vp_state_parser.add_argument("-grep", type=str, help="grep regex", default=None)
+
 base_storage_parser = ArgumentParser(prog="storage")
 base_storage_subparsers = base_storage_parser.add_subparsers(title="subcommands", help="")
 
 storage_list_parser = base_storage_subparsers.add_parser("list", help="List Volumes or Controllers or Devices")
 storage_list_parsers = storage_list_parser.add_subparsers(title="subcommands", help="")
 storage_volume_parser = storage_list_parsers.add_parser("volumes", help="List volumes")
-storage_volume_parser.add_argument("voltype", action="store", default="all", choices=["blt", "lsv", "rds", "ec", "file","replica", "nvmem", "all"])
+storage_volume_parser.add_argument("voltype", action="store", default="all", choices=["blt", "lsv", "rds", "ec", "file","replica", "nvmem", "pv", "all"])
 storage_controller_parser = storage_list_parsers.add_parser("controllers", help="List controllers")
 storage_device_parser = storage_list_parsers.add_parser("devices", help="List devices")
 
@@ -1439,3 +1509,10 @@ storage_stats_vol_parser.add_argument("vol_uuid", type=str, help="volume uuid")
 storage_stats_ctrlr_parser = storage_stats_parsers.add_parser("ctrlr", help="controller stats")
 storage_stats_ctrlr_parser.add_argument("-rdsock_vp", action="store_true",  help="rdsock stats aggregated per rdsock vp")
 storage_stats_ctrlr_parser.add_argument("-ctrlr_uuid", type=str, help="specify ctrlr uuid")
+storage_stats_device_parser = storage_stats_parsers.add_parser("device", help="device stats")
+storage_stats_device_parser.add_argument("device_id", type=str, help="specify device_id")
+
+base_execute_parser = ArgumentParser(prog="execute")
+base_execute_parser.add_argument("verb", help="")
+base_execute_parser.add_argument("cmd", help="", type=str,)
+
