@@ -78,7 +78,7 @@ def mk_api_format_dict() -> None:
     API_FORMAT_DICT["sport"] = args.sport
 
 
-def httpreq_json(api: str, js=None, timeout=None, method=requests.post, **kwargs) -> Dict[Any, Any]:
+def httpreq_json(api: str, js=None, timeout=None, method=requests.post, **kwargs) -> Optional[Dict[Any, Any]]:
     kwargs.update(API_FORMAT_DICT)
     DEBUG(kwargs)
     url = api.format(**kwargs)
@@ -95,7 +95,7 @@ def httpreq_json(api: str, js=None, timeout=None, method=requests.post, **kwargs
         LOG(r.reason)
         return None
 
-def httpreq_file(api: str, js=None, timeout=None, method=requests.post, **kwargs) -> Dict[Any, Any]:
+def httpreq_file(api: str, js=None, timeout=None, method=requests.post, **kwargs) -> Optional[urllib3.response.HTTPResponse]:
     kwargs.update(API_FORMAT_DICT)
     DEBUG(kwargs)
     url = api.format(**kwargs)
