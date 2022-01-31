@@ -1405,6 +1405,18 @@ def server_listen(sock):
     GDBClientHandler(conn).run()
     return 1
 
+
+###
+##  Clean elf files downloaded from excat
+#
+
+def clean_elf_files(elffile):
+	# delete the .excat elf file
+	os.remove(elffile)
+	# delete the .bz file
+	os.remove(elffile.replace('excat','bz'))
+
+
 ###
 ##  running a gdb client
 #
@@ -1516,6 +1528,9 @@ def parse_args():
     parser.add_argument("--ex", action="append", metavar="command", default=[],
                         help="GDB ex command to run")
     parser.add_argument("--elf", help="Use provided elf file instead of downloading from excat")
+    parser.add_argument("--clean-excat-files", action="store_true",
+                        default=False,
+                        help="Delete the elf file(s) which is downloaded from excat")
 
     # final arg is the dump file
     parser.add_argument("hbmdump", help="hbmdump file")
@@ -1567,6 +1582,9 @@ def main():
 
     # listen
     server_listen(sock)
+    # clean downloaded excat files.
+    if opts.clean_excat_files and (not opts.elf):
+        clean_elf_files(elffile)
 
     LOG_ALWAYS("exiting")
 
