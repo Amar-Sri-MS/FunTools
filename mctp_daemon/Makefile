@@ -98,9 +98,9 @@ $(BUILD_ROOT)/%.o: %.c
 	$(QUIET_CC)$(CC) -c -o $@ $< $(CFLAGS)
 
 install: $(BUILD_ROOT)/mctp_daemon
-	$(QUIET_MKDIR)mkdir -p $(SDK_INSTALL_DIR)/$(MCTP_DAEMON_INSTALL_DIR)
-	@cp -f $< $(SDK_INSTALL_DIR)/$(MCTP_DAEMON_INSTALL_DIR)/
-	@cp -f -d init.d $(SDK_INSTALL_DIR)/$(MCTP_DAEMON_INSTALL_DIR)/
+	@echo "   MKDIR $(MCTP_DAEMON_INSTALL_DIR)"; mkdir -p $(SDK_INSTALL_DIR)/$(MCTP_DAEMON_INSTALL_DIR)
+	@echo "   CP    $<"; cp -f $< $(SDK_INSTALL_DIR)/$(MCTP_DAEMON_INSTALL_DIR)/
+	@echo "   CP    init.d"; cp -fr init.d $(SDK_INSTALL_DIR)/$(MCTP_DAEMON_INSTALL_DIR)/
 
 clean:
 	$(Q)rm -rf $(BUILD_ROOT)
