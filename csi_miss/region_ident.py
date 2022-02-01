@@ -111,7 +111,7 @@ def find_regions_json(fname):
 
     for k, d in js.iteritems():
         start = to_addr(d["start"])
-        end = to_addr(d["start"])
+        end = to_addr(d["end"])
         t = (start, end, k)
         regions.append(t)
 
