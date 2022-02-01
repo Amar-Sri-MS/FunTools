@@ -9,22 +9,26 @@ static check:
 format:
 % python3 -m black dpuctl.py
 """
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import List, Optional, Type, Dict, Any, Tuple
+
+import logging.handlers
+import threading
 import argparse
 import requests
-import pprint
-import time
-import os
-import sys
-import threading
-import shutil
-import shlex
-import socket
-import json
 import warnings
+import logging
 import urllib3
-from http.server import BaseHTTPRequestHandler, HTTPServer
-
+import socket
+import select
+import shutil
+import pprint
+import shlex
+import json
+import time
+import sys
+import os
+import re
 
 ### List of API endpoints
 API_VERSION = 'http://{target}:{port}/platform/version'
@@ -52,19 +56,26 @@ args: argparse.Namespace = argparse.Namespace()
 #
 VERBOSITY: int = 0
 
-def LOG(msg: str, verbosity: int = 0) -> None:
+def LOG(msg: Any, verbosity: int = 0) -> None:
     if (verbosity <= VERBOSITY):
         print(msg)
 
-def LOG_JSON(js: Dict[str, Any], verbosity: int = 0) -> None:
+def LOG_JSON(js: Optional[Dict[str, Any]], verbosity: int = 0) -> None:
     if (verbosity <= VERBOSITY):
-        print(json.dumps(js, indent=4, sort_keys=True))
+        if (js is None):
+            print("{NULL json}")
+        else:
+            print(json.dumps(js, indent=4, sort_keys=True))
 
-def VERBOSE(msg: str) -> None:
+def VERBOSE(msg: Any) -> None:
     LOG(msg, 1)
 
-def DEBUG(msg: str) -> None:
+def DEBUG(msg: Any) -> None:
     LOG(msg, 2)
+
+def DIE(msg: str) -> None:
+    sys.stderr.write(msg + "\n")
+    sys.exit(1)
 
 ###
 ##  low-level http details
@@ -114,8 +125,10 @@ def httpreq_file(api: str, js=None, timeout=None, method=requests.post, **kwargs
 ###
 ##  
 #
-def wait_for_version(logver: bool = False) -> Dict[str, Any]:
+ANIM = "/-\|"
+def wait_for_version(logver: bool = False) -> Optional[Dict[str, Any]]:
     failed = True
+    count = 0
     while (failed):
         try:
             js = httpreq_json(API_VERSION)
@@ -125,10 +138,14 @@ def wait_for_version(logver: bool = False) -> Dict[str, Any]:
         except KeyboardInterrupt:
             sys.exit(1)
         except:
-            print("Failed to get version, still waiting...")
+            sys.stdout.write("\rFailed to get version, still waiting %s" % ANIM[count%len(ANIM)])
+            sys.stdout.flush()
+            count += 1
 
         time.sleep(1)
 
+    if(count > 0):
+        print()
     return js
 
 ###
@@ -229,7 +246,10 @@ def _hbmdump_get(overwrite: bool):
     # find the filename
     js = httpreq_json(API_HBMDUMP_LIST, method=requests.get)
 
-    if (len(js) == 0):
+    if (js is None):
+        LOG("Error on http request")
+        return
+    elif (len(js) == 0):
         LOG("No hbmdumps")
         return
 
@@ -241,6 +261,10 @@ def _hbmdump_get(overwrite: bool):
 
     # get the raw socket of the file
     sock = httpreq_file(API_HBMDUMP_GET, method=requests.get)
+
+    if (sock is None):
+        LOG("Error opening hbmdump data")
+        return
 
     fname = "{}-{}-{}.gz".format(args.output, stime, args.dpu)
 
@@ -308,7 +332,149 @@ def cmd_hbmdump_collect():
         httpreq_json(API_HBMDUMP_CLEAR, method=requests.post)
     else:
         print("No new dumps available")
-    
+
+###
+##  logserver functionality
+#
+
+def parse_ports(s: str) -> List[int]:
+
+    l = s.split(",")
+    ret = []
+    for p in l:
+        try:
+            n = int(p)
+        except:
+            DIE("Bad port list: %s" % s)
+        ret.append(n)
+
+    return ret
+
+def tcp_server_socket(port: int) -> socket.socket:
+
+    tsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    tsock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    tsock.bind(("", port))
+    tsock.listen(10)
+
+    return tsock
+
+def udp_server_socket(port: int) -> socket.socket:
+
+    usock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    usock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    server_address = ("", port)
+    usock.bind(server_address)
+
+    return usock
+
+def mklogger(address:str, mode: str) -> logging.Logger:
+
+    path = "{}{}-{}".format(args.output, address, mode)
+
+    logger = logging.getLogger("Rotating %s Log" % mode)
+    logger.setLevel(logging.INFO)
+    handler = logging.handlers.TimedRotatingFileHandler(path,
+                                                       when="h",
+                                                       interval=1,
+                                                       backupCount=48)
+    handler.terminator = ""
+    logger.addHandler(handler)
+
+    return logger
+
+BOOT_RE = "\[[^\]]+\] \[kernel\] Welcome (back )?to FunOS"
+
+def new_udp_log(address: str, fd: socket.socket) -> logging.Logger:
+    return mklogger(address, "udp")
+
+def new_tcp_log(address: str) -> logging.Logger:
+    return mklogger(address, "tcp")
+
+def handle_udp_data(fd, udp_logs):
+    # read some data 
+    (data, address) = fd.recvfrom(16<<10, socket.MSG_DONTWAIT)
+
+    data = str(data.decode("ascii", errors='replace'))
+
+    if (address not in udp_logs):
+        LOG("New UDP log from %s" % (address, ))
+        udp_logs[address] = new_udp_log(address[0], fd)
+    else:
+        # check if this is a reboot
+        if(re.match(BOOT_RE, data) is not None):
+            LOG("Detected FunOS UDP reboot on %s" % (address, ))
+            udp_logs[address].handlers[0].doRollover()
+
+    # log it
+    udp_logs[address].info(data)
+
+def handle_tcp_connect(fd: socket.socket, tcp_logs):
+    # accept the connection
+    conn, address = fd.accept()
+    conn.setblocking(False)
+
+    # make a new log
+    LOG("New TCP log from %s on %s" % (address, conn.fileno()))
+    tcp_logs[conn] = new_tcp_log(address[0])
+
+def handle_tcp_data(fd, tcp_logs):
+    # lookup the log
+    assert(fd in tcp_logs.keys())
+    close = False
+
+    try:
+        bs = fd.recv(16<<10, socket.MSG_DONTWAIT)
+    except ConnectionError:
+        close = True
+
+    if (close or (len(bs) == 0)):
+        # close it
+        tcp_logs[fd].info("{Socket closed}")
+        LOG("Closing TCP socket %s" % fd.fileno())
+        del(tcp_logs[fd])
+        fd.close()
+        return
+
+    tcp_logs[fd].info(str(bs.decode("ascii", errors='replace')))
+
+
+def cmd_logserver() -> None:
+
+    # parse the prot numbers
+    udp_portnums = parse_ports(args.udp)
+    tcp_portnums = parse_ports(args.tcp)
+
+    # open all the server sockets
+    udp_socks = [udp_server_socket(x) for x in udp_portnums]
+    tcp_socks = [tcp_server_socket(x) for x in tcp_portnums]
+
+    # open logs / tcp sockets
+    tcp_logs: Dict[socket.socket, logging.Logger] = {}
+    udp_logs: Dict[socket.socket, logging.Logger] = {}
+
+    # main listen loop
+    LOG("Listening on %d ports..." % (len(udp_socks) + len(tcp_socks)))
+    while True:
+        # make the list of sockets to care about
+        rdlist: List[Any] = udp_socks + tcp_socks + list(tcp_logs.keys())
+
+        # wait for activity 
+        (r, w, x) = select.select(rdlist, [], [], 300.0)
+        if len(r) == 0:
+            print("tick")
+
+        # decode it
+        for fd in r:
+            if (fd in udp_socks):
+                handle_udp_data(fd, udp_logs)
+            elif (fd in tcp_socks):
+                handle_tcp_connect(fd, tcp_logs)
+            elif (fd in tcp_logs.keys()):
+                handle_tcp_data(fd, tcp_logs)
+            else:
+                raise RuntimeError("bad socket??")
+
 ###
 ##  parse_args
 #
@@ -328,6 +494,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--sport", action="store", type=int, default=8001,
                             help="Port for HTTPS requests")
     parser.set_defaults(func=cmd_empty)
+    parser.set_defaults(dpuarg="1")
 
     # Optional verbosity counter (eg. -v, -vv, -vvv, etc.)
     parser.add_argument(
@@ -393,6 +560,21 @@ def parse_args() -> argparse.Namespace:
     # fast restart
     parser_restart = subparsers.add_parser('restart')
     parser_restart.set_defaults(func=cmd_restart)
+    parser.set_defaults(dpuarg="0")
+
+    # Simple TCP and UDP logging server
+    parser_logserver = subparsers.add_parser('logserver')
+    parser_logserver.add_argument("-o", "--output", action="store",
+                                default="./dpulog-",
+                                help="prefix for logfiles")
+    parser_logserver.add_argument("-T", "--tcp", action="store",
+                                  default="6666",
+                                  help="comma separated list of TCP ports to listen on")
+    parser_logserver.add_argument("-U", "--udp", action="store",
+                                  default="2661,6666",
+                                  help="comma separated list of TCP ports to listen on")
+    parser_logserver.set_defaults(func=cmd_logserver)
+
 
     # do the actual parse
     args: argparse.Namespace = parser.parse_args()
@@ -411,7 +593,7 @@ def main() -> int:
     global args
     args = parse_args()
 
-    if (args.dpu is None):
+    if (args.dpuarg == "1" and args.dpu is None):
         LOG("Required --dpu option missing")
         sys.exit(1)
 
