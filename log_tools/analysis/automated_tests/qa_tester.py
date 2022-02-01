@@ -19,6 +19,7 @@ from view.ingester import _get_log_id
 
 
 FILE_PATH = os.path.abspath(os.path.dirname(__file__))
+SCRIPT_BASE_PATH = os.path.dirname(FILE_PATH)
 
 def main():
     # Setting up the logger.
@@ -97,7 +98,7 @@ class QATester(Tester):
         logging.info(f'Ingesting: {self.job_id}')
         logging.info('*'*100)
 
-        cmd = [f'{FILE_PATH}/../view/ingester.py', self.job_id,
+        cmd = [f'{SCRIPT_BASE_PATH}/view/ingester.py', self.job_id,
                '--ingest_type', 'qa',
                '--test_index', str(self.test_index),
                '--tags', 'automated_testing']
