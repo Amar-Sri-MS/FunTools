@@ -59,6 +59,8 @@ SRCS = smbus.c pcie_vdm.c utils.c pldm.c pldm_mcd.c pldm_pmc.c mctp.c mctp_daemo
 OBJS = $(addprefix $(BUILD_ROOT)/,$(SRCS:.c=.o))
 
 MCTP_CONFIG ?= .config
+MCTP_DAEMON_INSTALL_DIR ?= bin/mips64/Linux/mctp_daemon
+
 export MCTP_CONFIG
 
 .PHONY: FORCE version all install clean
@@ -96,8 +98,9 @@ $(BUILD_ROOT)/%.o: %.c
 	$(QUIET_CC)$(CC) -c -o $@ $< $(CFLAGS)
 
 install: $(BUILD_ROOT)/mctp_daemon
-	$(QUIET_MKDIR)mkdir -p $(SDK_INSTALL_DIR)/bin/$(SDK_INSTALL_PREFIX)/$(OS)
-	$(QUIET_CP)cp -f $< $(SDK_INSTALL_DIR)/bin/$(SDK_INSTALL_PREFIX)/$(OS)
+	@echo "   MKDIR $(MCTP_DAEMON_INSTALL_DIR)"; mkdir -p $(SDK_INSTALL_DIR)/$(MCTP_DAEMON_INSTALL_DIR)
+	@echo "   CP    $<"; cp -f $< $(SDK_INSTALL_DIR)/$(MCTP_DAEMON_INSTALL_DIR)/
+	@echo "   CP    init.d"; cp -fr init.d $(SDK_INSTALL_DIR)/$(MCTP_DAEMON_INSTALL_DIR)/
 
 clean:
 	$(Q)rm -rf $(BUILD_ROOT)
