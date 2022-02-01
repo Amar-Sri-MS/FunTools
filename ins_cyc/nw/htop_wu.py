@@ -27,7 +27,7 @@ def vp_usage_info():
   return (res, data)
 
 def top_wu_info():
-  data = dpcsh_cmd('debug top_wus 200 100 0 false')
+  data = dpcsh_cmd('debug top_wus 200 100 0.001 0 false')
   res = {}
   for d in data:
     (faddr, ccv) = d['VP'].split(']')[0].split('[')
