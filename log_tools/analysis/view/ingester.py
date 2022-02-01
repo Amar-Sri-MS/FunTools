@@ -249,7 +249,7 @@ def upload_file():
 
         ingest_type = 'techsupport'
         techsupport_ingest_type = 'upload'
-        file_name = file.filename
+        file_name = os.path.basename(file.filename)
 
         LOG_ID = _get_log_id(job_id, ingest_type=ingest_type)
 
