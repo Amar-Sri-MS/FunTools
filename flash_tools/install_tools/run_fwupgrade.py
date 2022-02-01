@@ -28,6 +28,8 @@ KNOWN_IMAGES = {'husd', 'husm', 'husc', 'hbsb',
                 'frmw'}
 # these images require async upgrade
 ASYNC_ONLY_IMAGES = {'nvdm', 'scap'}
+# these images should use async upgrade if supported
+ASYNC_PREF_IMAGES = {'mmc1'}
 # these images do not report sdk version correctly, so ignore
 # the reported version
 IGNORE_VERSION_IMAGES = {'nvdm', 'scap'}
@@ -383,7 +385,9 @@ def run_upgrade(args, release_images):
               cmd.append('--active')
           if args.downgrade:
               cmd.append('--downgrade')
-          if fourcc in ASYNC_ONLY_IMAGES:
+          if fourcc in ASYNC_PREF_IMAGES and have_async_fwupgrade:
+              cmd.append('--async')
+          elif fourcc in ASYNC_ONLY_IMAGES:
               cmd.append('--async')
 
           if not args.dry_run:
