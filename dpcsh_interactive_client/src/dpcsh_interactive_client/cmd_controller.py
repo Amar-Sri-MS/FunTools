@@ -25,6 +25,7 @@ class CmdController(Cmd):
         self._debug_cmd_obj = DebugCommands(dpc_client=self.dpc_client)
         self._storage_peek_obj = StoragePeekCommands(dpc_client=self.dpc_client)
         self._storage_obj = StorageCommands(dpc_client=self.dpc_client)
+        self._execute_obj = StorageCommands(dpc_client=self.dpc_client)
 
     def check_cluster_id_range(self, cluster_id):
         result = True
@@ -57,6 +58,9 @@ class CmdController(Cmd):
         port_num = args.port_num
         shape = args.shape
         self._port_cmd_obj.port_mtu(port_num=port_num, shape=shape)
+
+    def get_sdn_flow_layers(self, args):
+        self._peek_cmd_obj.get_sdn_flow_layers()
 
     def set_nu_meter(self, args):
         index = args.index
@@ -756,6 +760,25 @@ class CmdController(Cmd):
             self._peek_cmd_obj.peek_stats_per_vp(cluster_id=cluster_id, core_id=core_id, rx=rx, tx=tx, q=q,
                                                  grep_regex=grep_regex)
 
+    def peek_l1_cache_stats(self, args):
+        grep_regex = args.grep
+        pp = args.pp
+        load = args.load_miss
+        store = args.store_miss
+        cluster_id = args.cluster_id
+        core_id = args.core_id
+        cid_flag = True
+        core_id_flag = True
+        if cluster_id is not None:
+            cid_flag = self.check_cluster_id_range(cluster_id=cluster_id)
+        if core_id is not None:
+            core_id_flag = self.check_core_id_range(core_id=core_id)
+        if core_id and (cluster_id is None):
+            print "Please enter value for cluster_id with core_id"
+            return self.dpc_client.disconnect()
+        self._peek_cmd_obj.peek_stats_l1_cache_pp(cluster_id=cluster_id, core_id=core_id, load=load, store=store,
+                                                grep_regex=grep_regex)
+
     def peek_nwqm_stats(self, args):
         grep_regex = args.grep
         self._peek_cmd_obj.peek_nwqm_stats(grep_regex=grep_regex)
@@ -864,6 +887,11 @@ class CmdController(Cmd):
         grep_regex = args.grep
         self._peek_cmd_obj.peek_hu_resource_stats(hu_id=id, wqse=True, grep_regex=grep_regex)
 
+    def peek_hux_resource_stats(self, args):
+        id = args.id
+        grep_regex = args.grep
+        self._peek_cmd_obj.peek_hux_resource_stats(hu_id=id, grep_regex=grep_regex)
+
     def peek_dam_resource_stats(self, args):
         grep_regex = args.grep
         self._peek_cmd_obj.peek_dam_resource_stats(grep_regex=grep_regex)
@@ -890,8 +918,9 @@ class CmdController(Cmd):
         self._peek_cmd_obj.peek_ocm_resource_stats(diff=diff, grep_regex=grep_regex)
 
     def peek_eqm_stats(self, args):
+        drg_ctx = args.drg_ctx
         grep_regex = args.grep
-        self._peek_cmd_obj.peek_eqm_stats(grep_regex=grep_regex)
+        self._peek_cmd_obj.peek_eqm_stats(drg_ctx=drg_ctx, grep_regex=grep_regex)
 
     def peek_malloc_agent_stats(self, args):
         grep_regex = args.grep
@@ -922,11 +951,39 @@ class CmdController(Cmd):
         grep = args.grep
         self._peek_cmd_obj.peek_ddr_stats(grep=grep)
 
+    def peek_mud_stats(self, args):
+        grep = args.grep
+        self._peek_cmd_obj.peek_mud_stats(grep_regex=grep)
+
+    def peek_l2_cache_stats(self, args):
+        grep = args.grep
+        self._peek_cmd_obj.peek_l2_cache_stats(grep=grep)
+
+    def peek_le_tables_sdn_in(self, args):
+        grep = args.grep
+        self._peek_cmd_obj.peek_le_tables_sdn_in(grep=grep)
+
+    def peek_le_tables_sdn_out(self, args):
+        grep = args.grep
+        self._peek_cmd_obj.peek_le_tables_sdn_out(grep=grep)
+
     def peek_sdn_stats(self, args):
         offset = args.offset
         num_flows = args.num_flows
         print offset, num_flows
         self._peek_cmd_obj.peek_sdn_stats(offset=offset, num_flows=num_flows)
+
+    def peek_sdn_meter_stats(self, args):
+        policy_id = args.policy_id
+        direction = args.direction
+        self._peek_cmd_obj.peek_sdn_meter_stats(policy_id, direction)
+
+    def peek_sdn_flow_stats(self, args):
+        self._peek_cmd_obj.peek_sdn_flow_stats()
+
+    def peek_sdn_vp_stats(self,args):
+        grep = args.grep
+        self._peek_cmd_obj.peek_sdn_vp_stats(grep=grep)
 
     def peek_tcp_stats(self, args):
         grep = args.grep
@@ -1073,6 +1130,16 @@ class CmdController(Cmd):
         grep_regex = args.grep
         self._peek_cmd_obj.peek_stats_hu(grep_regex=grep_regex)
 
+    def peek_hu_pcie_stats(self, args):
+        hu_id = args.hu_id
+        grep_regex = args.grep
+        self._peek_cmd_obj.peek_stats_hu_pcie(hu_id=hu_id, grep_regex=grep_regex)
+
+    def peek_hu_pwp_stats(self, args):
+        hu_id = args.hu_id
+        grep_regex = args.grep
+        self._peek_cmd_obj.peek_stats_hu_pwp(hu_id=hu_id, grep_regex=grep_regex)
+
     def peek_hu_framer_stats(self, args):
         grep_regex = args.grep
         self._peek_cmd_obj.peek_stats_hu_framer(grep_regex=grep_regex)
@@ -1215,6 +1282,11 @@ class CmdController(Cmd):
         grep_regex = args.grep
         self._flow_cmd_obj.get_flow_blocked(grep_regex=grep_regex)
 
+    def debug_vp_state(self, args):
+        vp_num = args.vp_num
+        grep_regex = args.grep
+        self._debug_cmd_obj.debug_vp_state(vp_num, grep_regex)
+
     def debug_vp_util(self, args):
         grep_regex = args.grep
         pp = args.pp
@@ -1229,7 +1301,6 @@ class CmdController(Cmd):
         if core_id and (cluster_id is None):
             print "Please enter value for cluster_id with core_id"
             return self.dpc_client.disconnect()
-
         if cid_flag and core_id_flag and pp:
             self._debug_cmd_obj.debug_vp_util_pp(cluster_id=cluster_id, core_id=core_id, grep_regex=grep_regex)
         elif cid_flag and core_id_flag:
@@ -1264,12 +1335,17 @@ class CmdController(Cmd):
             self._storage_obj.storage_list_volumes_replica(voltype = 'VOL_TYPE_BLK_REPLICA')
         elif voltype == "nvmem":
            self._storage_obj.storage_list_volumes(voltype = 'VOL_TYPE_BLK_NV_MEMORY')
+        elif voltype == "pv":
+           self._storage_obj.storage_list_volumes_pv(voltype = 'VOL_TYPE_BLK_PART_VOL')
         elif voltype == "all":
             self._storage_obj.storage_list_volumes_blt(voltype = 'VOL_TYPE_BLK_LOCAL_THIN')
             self._storage_obj.storage_list_volumes_rds(voltype = 'VOL_TYPE_BLK_RDS')
             self._storage_obj.storage_list_volumes(voltype = 'VOL_TYPE_BLK_FILE')
             self._storage_obj.storage_list_volumes_ec(voltype = 'VOL_TYPE_BLK_EC')
             self._storage_obj.storage_list_volumes(voltype = 'VOL_TYPE_BLK_NV_MEMORY')
+	    self._storage_obj.storage_list_volumes_pv(voltype = 'VOL_TYPE_BLK_PART_VOL')
+	    self._storage_obj.storage_list_volumes(voltype = 'VOL_TYPE_BLK_LSV')
+	    self._storage_obj.storage_list_volumes_replica(voltype = 'VOL_TYPE_BLK_REPLICA')
         else:
             print "unknown voltype"
 
@@ -1319,6 +1395,15 @@ class CmdController(Cmd):
         else:
             self._storage_obj.storage_controller_stats(ctrlr_uuid)
 
+    def storage_dev_stats(self, args):
+        device_id = args.device_id
+        self._storage_obj.storage_device_stats(device_id)
+
+    def execute_cmd(self, args):
+        verb = args.verb
+        cmd = args.cmd
+        self._execute_obj.execute_commands(verb, cmd)
+
     # Set handler functions for the sub commands
 
     # -------------- Port Command Handlers ----------------
@@ -1354,6 +1439,9 @@ class CmdController(Cmd):
     set_port_speed_parser.set_defaults(func=set_port_speed)
     get_port_speed_parser.set_defaults(func=get_port_speed)
     get_port_link_status_parser.set_defaults(func=get_port_link_status)
+
+    # -------------- SDN flow --------------------------
+    get_sdn_flow_parser.set_defaults(func=get_sdn_flow_layers)
 
     # -------------- System Command Handlers ----------------
     set_system_params_syslog_parser.set_defaults(func=set_system_syslog_level)
@@ -1482,6 +1570,7 @@ class CmdController(Cmd):
     peek_nu_sfg_stats_parser.set_defaults(func=peek_nu_sfg_stats)
     peek_hnu_sfg_stats_parser.set_defaults(func=peek_hnu_sfg_stats)
     peek_per_vp_stats_parser.set_defaults(func=peek_per_vp_stats)
+    peek_l1_cache_stats_parser.set_defaults(func=peek_l1_cache_stats)
     peek_nwqm_stats_parser.set_defaults(func=peek_nwqm_stats)
     peek_nwqm_hnu_stats_parser.set_defaults(func=peek_nwqm_hnu_stats)
     peek_fae_stats_parser.set_defaults(func=peek_fae_stats)
@@ -1501,6 +1590,7 @@ class CmdController(Cmd):
     peek_hu_resource_stats_parser.set_defaults(func=peek_hu_resource_stats)
     peek_hu_wqsi_resource_stats_parser.set_defaults(func=peek_hu_wqsi_resource_stats)
     peek_hu_wqse_resource_stats_parser.set_defaults(func=peek_hu_wqse_resource_stats)
+    peek_hux_resource_stats_parser.set_defaults(func=peek_hux_resource_stats)
     peek_dam_resource_stats_parser.set_defaults(func=peek_dam_resource_stats)
     peek_bam_resource_stats_parser.set_defaults(func=peek_bam_resource_stats)
     peek_ocm_resource_stats_parser.set_defaults(func=peek_ocm_resource_stats)
@@ -1512,13 +1602,22 @@ class CmdController(Cmd):
     peek_malloc_agent_non_coh_stats_parser.set_defaults(func=peek_malloc_agent_non_coh_stats)
     peek_wustacks_stats_parser.set_defaults(func=peek_wustacks_stats)
     peek_hu_stats_parser.set_defaults(func=peek_hu_stats)
+    peek_hu_stats_pwp_parser.set_defaults(func=peek_hu_pwp_stats)
+    peek_hu_stats_pcie_parser.set_defaults(func=peek_hu_pcie_stats)
     peek_hu_framer_stats_parser.set_defaults(func=peek_hu_framer_stats)
     peek_wus_stats_parser.set_defaults(func=peek_wus_stats)
     peek_stats_cdu_parser.set_defaults(func=peek_cdu_stats)
     peek_stats_ca_parser.set_defaults(func=peek_ca_stats)
     peek_stats_ddr_parser.set_defaults(func=peek_ddr_stats)
+    peek_stats_mud_parser.set_defaults(func=peek_mud_stats)
+    peek_stats_l2_cache_parser.set_defaults(func=peek_l2_cache_stats)
     peek_stats_rdma_parser.set_defaults(func=peek_stats_rdma)
+    peek_stats_le_table_sdn_in_parser.set_defaults(func=peek_le_tables_sdn_in)
+    peek_stats_le_table_sdn_out_parser.set_defaults(func=peek_le_tables_sdn_out)
     peek_stats_sdn_parser.set_defaults(func=peek_sdn_stats)
+    peek_stats_sdn_meter_parser.set_defaults(func=peek_sdn_meter_stats)
+    peek_stats_sdn_flow_parser.set_defaults(func=peek_sdn_flow_stats)
+    peek_stats_sdn_vp_parser.set_defaults(func=peek_sdn_vp_stats)
     peek_stats_tcp_parser.set_defaults(func=peek_tcp_stats)
     peek_stats_tcp_flows_summary_parser.set_defaults(func=peek_tcp_flows_summary_stats)
     #peek_stats_tcp_flow_state_parser.set_defaults(func=peek_tcp_flows_state)
@@ -1571,6 +1670,7 @@ class CmdController(Cmd):
     flow_blocked_parser.set_defaults(func=get_flow_blocked)
 
     # -------------- Debug Command Handlers -----------------
+    vp_state_parser.set_defaults(func=debug_vp_state)
     vp_util_parser.set_defaults(func=debug_vp_util)
 
     # -------------- Storage Command Handlers -----------------
@@ -1582,6 +1682,8 @@ class CmdController(Cmd):
     storage_getmap_parser.set_defaults(func=storage_getmap)
     storage_stats_vol_parser.set_defaults(func=storage_vol_stats)
     storage_stats_ctrlr_parser.set_defaults(func=storage_ctrlr_stats)
+    storage_stats_device_parser.set_defaults(func=storage_dev_stats)
+    base_execute_parser.set_defaults(func=execute_cmd)
 
     @with_argparser(base_set_parser)
     def do_set(self, args):
@@ -1647,10 +1749,18 @@ class CmdController(Cmd):
         else:
             self.do_help('storage')
 
+    @with_argparser(base_execute_parser)
+    def do_execute(self, args):
+        func = getattr(args, 'func', None)
+        if func is not None:
+            func(self, args)
+        else:
+            self.do_help('execute') 
+
     def __del__(self):
         self.dpc_client.disconnect()
 
 
 if __name__ == '__main__':
-    cmd_obj = CmdController(target_ip="fs45-come", target_port=42221, verbose=False)
+    cmd_obj = CmdController(target_ip="fc200-353-cc", target_port=4223, verbose=False)
     cmd_obj.cmdloop(intro="hello")
