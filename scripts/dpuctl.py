@@ -90,8 +90,11 @@ def httpreq_json(api: str, js=None, timeout=None, method=requests.post, **kwargs
 
     DEBUG("Return status %s" % r.status_code)
     if (r.status_code == 200):
-        DEBUG(r.json())
-        return r.json()
+        try:
+            DEBUG(r.json())
+            return r.json()
+        except ValueError:
+            return None
     else:
         LOG(r.reason)
         return None
