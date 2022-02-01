@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
 {
 	pid_t pid, sid;
 	uid_t uid=getuid(), euid=geteuid();
-        int c, index = 0;
+        int c, index = 0, fd2;
 	struct sigaction sa;
 
         struct option long_args[] = {
@@ -167,12 +167,16 @@ int main(int argc, char *argv[])
 		log_n_print("MCTP daemon already running\n");
 		exit(EXIT_FAILURE);
 	} else {
-		int fd2 = open(lock, O_RDWR | O_CREAT, S_IRUSR | S_IRGRP | S_IROTH);
+		char pid_str[10];
 		
+		fd2 = open(lock, O_RDWR | O_CREAT, S_IRUSR | S_IRGRP | S_IROTH);
 		if (fd2 < 0) {
 			log_n_print("Error - Cannot create lock file\n");
 			exit(EXIT_FAILURE);
 		}
+
+		snprintf(pid_str, sizeof(pid_str), "%d", getpid());
+		write(fd2, pid_str, strlen(pid_str));
 	}
 
 	if (flags & FLAGS_DAEMON_ENABLED) {
@@ -183,6 +187,10 @@ int main(int argc, char *argv[])
 		}
 
 		if (pid > 0) {
+			char pid_str[10];
+
+			snprintf(pid_str, sizeof(pid_str), "\n%d", pid);
+			write(fd2, pid_str, strlen(pid_str));
 			exit(EXIT_SUCCESS);
 		}
 

@@ -108,7 +108,7 @@ class QATester(Tester):
             self.ingestion_status = True
         except subprocess.CalledProcessError as e:
             self.ingestion_status = False
-            self.ingestion_status_msg = e.output
+            self.ingestion_status_msg = str(e.output)
 
     def validate(self):
         """
