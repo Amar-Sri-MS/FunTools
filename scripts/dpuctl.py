@@ -575,7 +575,7 @@ def parse_args() -> argparse.Namespace:
                                   help="comma separated list of TCP ports to listen on")
     parser_logserver.add_argument("-U", "--udp", action="store",
                                   default="2661,6666",
-                                  help="comma separated list of TCP ports to listen on")
+                                  help="comma separated list of UDP ports to listen on")
     parser_logserver.set_defaults(func=cmd_logserver)
 
 
