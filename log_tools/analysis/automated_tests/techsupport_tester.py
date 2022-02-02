@@ -8,10 +8,13 @@
 
 import logging
 import os
+import requests
 import subprocess
+import time
 
 from os.path import basename, dirname, isfile, join
 
+import config_loader
 import logger
 
 from automated_tests.tester import Tester
@@ -20,6 +23,10 @@ from view.ingester import _get_log_id
 
 
 FILE_PATH = os.path.abspath(os.path.dirname(__file__))
+SCRIPT_BASE_PATH = os.path.dirname(FILE_PATH)
+
+config = config_loader.get_config()
+
 
 def main():
     # Setting up the logger.
@@ -50,11 +57,17 @@ def main():
             logging.exception('Error while finding techsupport archive')
 
     # Start ingestion
-    for techsupport_archive in techsupport_archives:
+    for test_index in range(len(techsupport_archives)):
+        techsupport_archive = techsupport_archives[test_index]
+        ingest_type = 'techsupport'
+        # Test the upload API for the last techsupport archive
+        if test_index == len(techsupport_archives)-1:
+            ingest_type = 'upload'
+
         logging.info('-*-'*50)
         folder_name = basename(dirname(techsupport_archive))
-        logging.info(f'{folder_name}, {techsupport_archive}')
-        tester = TechsupportTester(folder_name, techsupport_archive)
+        logging.info(f'{ingest_type}, {folder_name}, {techsupport_archive}')
+        tester = TechsupportTester(folder_name, ingest_type, techsupport_archive)
         tester.start()
         logging.info('-*-'*50)
 
@@ -74,11 +87,12 @@ class TechsupportTester(Tester):
     """
     Class for testing Techsupport ingestion into Log Analyzer.
     """
-    def __init__(self, job_id, mount_path):
+    def __init__(self, job_id, ingest_type, file_path):
         super().__init__()
         self.job_id = str(job_id).lower()
-        self.mount_path = mount_path
+        self.file_path = file_path
         self.ingest_type = 'techsupport'
+        self.techsupport_ingest_type = ingest_type
 
     def setup(self):
         """ Setting up the test ingestion """
@@ -92,19 +106,63 @@ class TechsupportTester(Tester):
         logging.info(f'Ingesting: {self.job_id}')
         logging.info('*'*100)
 
-        cmd = [f'{FILE_PATH}/../view/ingester.py', self.job_id,
-               '--ingest_type', 'techsupport',
-               '--techsupport_ingest_type', 'mount_path',
-               '--log_path', str(self.mount_path),
-               '--tags', 'automated_testing']
-        logging.info(cmd)
+        if self.techsupport_ingest_type == 'upload':
+            try:
+                URL = f'{config["LOG_ANALYZER_BASE_URL"]}/upload_file'
+                headers = {
+                    'Accept': 'application/json'
+                }
+                data = {
+                    'job_id': self.job_id,
+                    'submitted_by': 'sourabh.jain@fungible.com'
+                }
+                files = {
+                    'file': (self.file_path, open(self.file_path, 'rb'))
+                }
+                response = requests.post(URL,
+                                         headers=headers,
+                                         data=data,
+                                         files=files)
+                response.raise_for_status()
+                response_data = response.json()
+                if response_data.get('ingestion_status') == 'FAILED':
+                    self.ingestion_status = False
+                    self.ingestion_status_msg = response_data.get('ingestion_error')
+                    return
 
-        try:
-            out = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
-            self.ingestion_status = True
-        except subprocess.CalledProcessError as e:
-            self.ingestion_status = False
-            self.ingestion_status_msg = str(e.output)
+                LOG_ID = response_data.get('log_id')
+                STATUS_URL = f'{config["LOG_ANALYZER_BASE_URL"]}/ingest/{LOG_ID}/status'
+                while True:
+                    # Wait for 5 minutes and check the status
+                    time.sleep(300)
+                    response = requests.get(STATUS_URL)
+                    response_data = response.json()
+                    if response_data.get('ingestion_status') == 'FAILED':
+                        self.ingestion_status = False
+                        self.ingestion_status_msg = response_data.get('ingestion_error')
+                        break
+                    elif response_data.get('ingestion_status') == 'COMPLETED':
+                        self.ingestion_status = True
+                        break
+            except Exception as e:
+                self.ingestion_status = False
+                self.ingestion_status_msg = str(e)
+                logging.exception('Could not start ingestion via upload')
+        else:
+            cmd = [f'{SCRIPT_BASE_PATH}/view/ingester.py', self.job_id,
+                '--ingest_type', 'techsupport',
+                '--techsupport_ingest_type', 'mount_path',
+                '--log_path', str(self.file_path),
+                '--tags', 'automated_testing']
+            logging.info(cmd)
+
+            try:
+                out = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+                self.ingestion_status = True
+            except subprocess.CalledProcessError as e:
+                self.ingestion_status = False
+                self.ingestion_status_msg = str(e.output)
+                logging.exception('Could not start ingestion')
 
     def validate(self):
         """
