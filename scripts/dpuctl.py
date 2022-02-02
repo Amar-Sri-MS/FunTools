@@ -554,6 +554,9 @@ def parse_args() -> argparse.Namespace:
     parser_hbm_clear.set_defaults(func=cmd_hbmdump_clear)
 
     parser_hbm_collect = subparsers.add_parser('hbmdump_collect')
+    parser_hbm_collect.add_argument("-o", "--output", action="store",
+                                    default="hbmdump",
+                                    help="output hbmdump filename prefix")
     parser_hbm_collect.set_defaults(func=cmd_hbmdump_collect)
 
 
