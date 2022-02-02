@@ -441,13 +441,9 @@ def handle_tcp_data(fd, tcp_logs):
 
 def cmd_logserver() -> None:
 
-    # parse the prot numbers
-    udp_portnums = parse_ports(args.udp)
-    tcp_portnums = parse_ports(args.tcp)
-
     # open all the server sockets
-    udp_socks = [udp_server_socket(x) for x in udp_portnums]
-    tcp_socks = [tcp_server_socket(x) for x in tcp_portnums]
+    udp_socks = [udp_server_socket(x) for x in args.udp]
+    tcp_socks = [tcp_server_socket(x) for x in args.tcp]
 
     # open logs / tcp sockets
     tcp_logs: Dict[socket.socket, logging.Logger] = {}
@@ -570,12 +566,12 @@ def parse_args() -> argparse.Namespace:
     parser_logserver.add_argument("-o", "--output", action="store",
                                 default="./dpulog-",
                                 help="prefix for logfiles")
-    parser_logserver.add_argument("-T", "--tcp", action="store",
-                                  default="6666",
-                                  help="comma separated list of TCP ports to listen on")
-    parser_logserver.add_argument("-U", "--udp", action="store",
-                                  default="2661,6666",
-                                  help="comma separated list of UDP ports to listen on")
+    parser_logserver.add_argument("-T", "--tcp", nargs="*", type=int,
+                                   default=[6666],
+                                   help="TCP ports to listen on")
+    parser_logserver.add_argument("-U", "--udp", nargs="*", type=int,
+                                   default=[2661,6666],
+                                   help="UDP ports to listen on")
     parser_logserver.set_defaults(func=cmd_logserver)
 
 
