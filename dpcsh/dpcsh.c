@@ -1040,16 +1040,22 @@ bool dpcsocket_open(struct dpcsock_connection *connection)
 
 	if (sock->mode == SOCKMODE_DEV) {
 		connection->fd = open(sock->socket_name, O_RDWR | O_NOCTTY);
-		if (connection->fd < 0)
+		if (connection->fd < 0) {
 			perror("open");
+			return false;
+		}
 	}
 
 	if (sock->mode == SOCKMODE_UNIX) {
 		connection->fd = _open_sock_unix(sock->socket_name);
+		if (connection->fd < 0)
+			return false;
 	}
 
 	if (sock->mode == SOCKMODE_IP) {
 		connection->fd = _open_sock_inet(sock->socket_name, sock->port_num);
+		if (connection->fd < 0)
+			return false;
 	}
 
 	if (connection->fd > 0) {
