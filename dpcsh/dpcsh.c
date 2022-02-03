@@ -250,7 +250,7 @@ static char *getline_with_history(OUT ssize_t *nbytes)
 static int _open_sock_inet(const char *host_port, uint16_t port)
 {
 	int sock = -1;
-	int r = -1, tries = 0;
+	int r = -1;
 	struct addrinfo hints;
 	struct addrinfo *result, *rp;
 
@@ -265,13 +265,13 @@ static int _open_sock_inet(const char *host_port, uint16_t port)
 		int s = getaddrinfo("127.0.0.1", port_str, &hints, &result);
 		if (s != 0) {
 				log_error("getaddrinfo: %s\n", gai_strerror(s));
-				exit(EXIT_FAILURE);
+				return -1;
 		}
 	} else {
 		char *host_port_d = strdup(host_port);
 		if (!host_port_d) {
 			log_error("failed to copy host_port string");
-			exit(EXIT_FAILURE);
+			return -1;
 		}
 
 		char *delimiter = strstr(host_port_d, ":");
@@ -284,38 +284,29 @@ static int _open_sock_inet(const char *host_port, uint16_t port)
 		int s = getaddrinfo(host_s, port_s, &hints, &result);
 		if (s != 0) {
 			log_error("getaddrinfo: %s\n", gai_strerror(s));
-			exit(EXIT_FAILURE);
+			return -1;
 		}
 		free(host_port_d);
 	}
 
-	do {
-		for (rp = result; rp != NULL; rp = rp->ai_next) {
-				sock = socket(rp->ai_family, rp->ai_socktype,
-										rp->ai_protocol);
-				if (sock == -1) {
-					continue;
-				}
+	for (rp = result; rp != NULL; rp = rp->ai_next) {
+			sock = socket(rp->ai_family, rp->ai_socktype,
+									rp->ai_protocol);
+			if (sock == -1) {
+				continue;
+			}
 
-				r = connect(sock, rp->ai_addr, rp->ai_addrlen);
-				if (r != -1) break;
-				close(sock);
-		}
-
-		if (tries > 0) {
-			log_error("connect error, retry %d\n", tries);
-			sleep(1);
-		}
-
-		tries++;
-	} while ((r < 0) && (tries < connect_retries));
+			r = connect(sock, rp->ai_addr, rp->ai_addrlen);
+			if (r != -1) break;
+			close(sock);
+	}
 
 	freeaddrinfo(result);
 
 	if (r < 0 || sock < 0) {
 		log_error("can't connect\n");
 		perror("connect");
-		exit(1);
+		return -1;
 	}
 
 	if (host_port == NULL) {
@@ -1073,6 +1064,25 @@ bool dpcsocket_open(struct dpcsock_connection *connection)
 	return true;
 }
 
+bool dpcsocket_open_retry(struct dpcsock_connection *connection)
+{
+	int tries = 0;
+	do {
+		if (dpcsocket_open(connection))
+			return true;
+
+		if (tries > 0) {
+			log_error("connect error, retry %d\n", tries);
+			sleep(1);
+		}
+
+		tries++;
+	} while (tries < connect_retries);
+
+	log_error("too many attempts, giving up\n");
+	return false;
+}
+
 void dpcsocket_close(struct dpcsock_connection *connection)
 {
 	if (connection == NULL) return;
@@ -1466,7 +1476,7 @@ static void open_new_connections(struct dpcsock *funos_socket,
 	*funos = dpcsocket_new(funos_socket);
 	*cmd = dpcsocket_new(cmd_socket);
 
-	if (!dpcsocket_open(*funos) || !dpcsocket_open(*cmd)) {
+	if (!dpcsocket_open_retry(*funos) || !dpcsocket_open(*cmd)) {
 		log_error("unable to open connection");
 	}
 
