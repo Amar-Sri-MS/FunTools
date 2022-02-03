@@ -8,10 +8,10 @@ import subprocess
 
 
 # File containing information about the thread-local region in FunOS
-IN_JSON_FILE = 'thread-local.js'
+IN_JSON_FILE = "thread-local.js"
 
 # Where we dump the results
-OUT_FILE = 'thread-local-ident.js'
+OUT_FILE = "thread-local-ident.js"
 
 
 def dump_thread_locals(funos_binary, tls_start, stride):
@@ -20,7 +20,7 @@ def dump_thread_locals(funos_binary, tls_start, stride):
     result = _identify_thread_locals(funos_binary, tls_start, stride, max_vps)
 
     s = json.dumps(result)
-    with open(OUT_FILE, 'w') as f:
+    with open(OUT_FILE, "w") as f:
         f.write(s)
 
 
@@ -29,9 +29,9 @@ def _identify_thread_locals(funos_binary, tls_start, stride, num_vps):
 
     # This is pretty much:
     # objdump -t <binary> | grep tdata
-    objdump_proc = subprocess.Popen([objdump, '-t', funos_binary],
+    objdump_proc = subprocess.Popen([objdump, "-t", funos_binary],
                                     stdout=subprocess.PIPE)
-    grep_proc = subprocess.Popen(['grep', 'tdata'],
+    grep_proc = subprocess.Popen(["grep", "tdata"],
                                  stdin=objdump_proc.stdout,
                                  stdout=subprocess.PIPE)
 
@@ -45,7 +45,7 @@ def _identify_thread_locals(funos_binary, tls_start, stride, num_vps):
         parts = l.split()
 
         # ignore the .tdata section entry
-        if len(parts) == 6 and parts[5] == '.tdata':
+        if len(parts) == 6 and parts[5] == ".tdata":
             continue
 
         offset = int(parts[0], 16)
@@ -73,10 +73,10 @@ def _identify_thread_locals(funos_binary, tls_start, stride, num_vps):
 
 def _objdump_binary():
     current_os = platform.system()
-    if current_os == 'Darwin':
-        return '/Users/Shared/cross/mips64/bin/mips64-unknown-elf-objdump'
+    if current_os == "Darwin":
+        return "/Users/Shared/cross/mips64/bin/mips64-unknown-elf-objdump"
     else:
-        return '/opt/cross/mips64/bin/mips64-unknown-elf-objdump'
+        return "/opt/cross/mips64/bin/mips64-unknown-elf-objdump"
 
 
 def get_thread_local_info(regions, log_file, json_file):
@@ -84,22 +84,22 @@ def get_thread_local_info(regions, log_file, json_file):
     stride = None
 
     if os.path.exists(json_file):
-        with open(json_file, 'r') as f:
+        with open(json_file, "r") as f:
             js = json.load(f)
-            stride = js['tls_stride']
+            stride = js["tls_stride"]
     elif os.path.exists(log_file):
-        with open(log_file, 'r') as f:
+        with open(log_file, "r") as f:
             stride = _scan_log_for_stride(f)
 
     for r in regions:
         name = r[2]
-        if name == 'thread-local':
+        if name == "thread-local":
             return r[0], stride
     return None, stride
 
 
 # Regex for the thread-local log line
-STRIDE_RE = r'.*thread-local base: 0x[0-9a-f]+, thread-local stride: 0x([0-9a-f]+).*'
+STRIDE_RE = r".*thread-local base: 0x[0-9a-f]+, thread-local stride: 0x([0-9a-f]+).*"
 
 def _scan_log_for_stride(f):
     for line in f:
@@ -111,8 +111,8 @@ def _scan_log_for_stride(f):
 
 def main():
     """ sanity test """
-    dump_thread_locals('workspace/FunOS/bin/funos-f1', 0xa800000000000000, 0xc0, 216);
+    dump_thread_locals("funos-f1", 0xa800000000000000, 0xc0, 216);
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

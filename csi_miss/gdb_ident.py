@@ -324,12 +324,12 @@ def add_thread_locals():
     used by the other portions of gdb_ident.
     """
     syms = []
-    fname = 'thread-local-ident.js'
+    fname = "thread-local-ident.js"
 
     if not os.path.exists(fname):
         return syms
 
-    with open(fname, 'r') as f:
+    with open(fname, "r") as f:
         vars = json.load(f)
         for var in vars:
             start = var[1]
@@ -343,7 +343,7 @@ def add_thread_locals():
             # structs. This will require conjuring faux gdb data structures,
             # but gives the best insight when folks start adding structs and
             # arrays into thread-local.
-            mangled_name = var[0] + ' (%s)' % ccv(var[3])
+            mangled_name = var[0] + " (%s)" % ccv(var[3])
             sym = (start, start + size, mangled_name, FakeGdbType())
             syms.append(sym)
 
@@ -357,7 +357,7 @@ def ccv(vpnum):
     cl = vpnum // MAX_VPS_PER_CLUSTER
     co = (vpnum % MAX_VPS_PER_CLUSTER) // MAX_VPS_PER_CORE
     vp = vpnum % MAX_VPS_PER_CORE
-    return '%d.%d.%d' % (cl, co, vp)
+    return "%d.%d.%d" % (cl, co, vp)
 
 
 def find_all_symbols():
