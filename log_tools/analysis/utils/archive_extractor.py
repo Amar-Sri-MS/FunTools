@@ -17,7 +17,7 @@ def extract(path):
     """ Extract archive in the exisiting path """
     if not os.path.exists(path):
         logging.error(f'Archive does not exist at {path}')
-        return
+        raise Exception(f'Archive does not exist at {path}')
 
     if path.endswith('.zip'):
         opener, mode = zipfile.ZipFile, 'r'
@@ -31,7 +31,7 @@ def extract(path):
         opener, mode = tarfile.open, 'r'
     else:
         logging.error(f'Unsupported format archive: {path}')
-        return
+        raise Exception(f'Unsupported format archive: {path}')
 
     # Get current working directory
     cwd = os.getcwd()
@@ -59,6 +59,7 @@ def extract(path):
         archive.extractall()
     except Exception as e:
         logging.exception('Failed to extract archive')
+        raise Exception('Failed to extract archive')
     finally:
         # Close the archive file opener
         if archive:

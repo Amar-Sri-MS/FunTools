@@ -55,7 +55,7 @@ class CodegenEndToEnd(unittest.TestCase):
     self.assertNotIn('#define FOO_RESERVED', out)
 
     # Did bitfield get initialized?'
-    self.assertIn('s->b_to_c = FOO_B_P(b) | FOO_C_P(c);', out)
+    self.assertIn('s->b_to_c = FOO_B_P(b) | FOO_C_P(c)', out)
 
   def testZeroDimensionArray(self):
     input = ['STRUCT Foo',

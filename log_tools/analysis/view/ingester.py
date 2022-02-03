@@ -249,7 +249,7 @@ def upload_file():
 
         ingest_type = 'techsupport'
         techsupport_ingest_type = 'upload'
-        file_name = file.filename
+        file_name = os.path.basename(file.filename)
 
         LOG_ID = _get_log_id(job_id, ingest_type=ingest_type)
 
@@ -631,7 +631,8 @@ def _filter_qa_log_files(job_logs, suite_info, test_index=None):
         if test_index is not None and not filename.startswith(log_filename_starts):
             continue
 
-        if filename.endswith(log_filenames_to_ingest):
+        # NOTE: Ignoring tm_fc_log.tgz since it does contain fc logs.
+        if filename.endswith(log_filenames_to_ingest) and not filename.endswith('_tm_fc_log.tgz'):
             log_files.append(log['filename'])
 
     return log_files
@@ -657,7 +658,7 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
 
     path = f'{DOWNLOAD_DIRECTORY}/{LOG_ID}'
     file_path = os.path.abspath(os.path.dirname(__file__))
-    QA_LOGS_DIRECTORY = '/regression/Integration/fun_test/web/static/logs'
+    QA_LOGS_DIRECTORY = '/web/static/logs'
     found_logs = False
 
     manifest_contents = list()
@@ -686,6 +687,9 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
         _update_metadata(es_metadata, LOG_ID, 'DOWNLOAD_STARTED')
 
         for log_file in log_files:
+            # Ignore files which are not in the logs directory.
+            if QA_LOGS_DIRECTORY not in log_file:
+                continue
             log_dir = log_file.split(QA_LOGS_DIRECTORY)[1]
             url = f'{QA_STATIC_ENDPOINT}{log_dir}'
             if check_and_download_logs(url, path):
@@ -752,8 +756,7 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
                         ])
 
                 # single node FC
-                # NOTE: Ignoring tm_fc_log.tgz since it does contain fc logs.
-                elif log_file.endswith('_fc_log.tgz') and not log_file.endswith('_tm_fc_log.tgz'):
+                elif log_file.endswith('_fc_log.tgz'):
                     filename = log_file.split('/')[-1].replace(' ', '_')
                     archive_path = f'{path}/{filename}'
                     archive_extractor.extract(archive_path)
