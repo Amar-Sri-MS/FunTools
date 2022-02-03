@@ -29,6 +29,8 @@ def restart_in_gdb(binname, exit=True):
     current_os = platform.system()
     if current_os == 'Darwin':
         gdb = '/Users/Shared/cross-el/bin/mips64-gdb'
+        if not os.path.exists(gdb):
+            gdb = '/Users/Shared/cross/mips64/bin/mips64-unknown-elf-gdb'
     else:
         gdb = ('/opt/cross/mips64/bin/'
                'mips64-unknown-elf-gdb')
@@ -301,6 +303,63 @@ def mksymlist(block):
 
     return l
 
+
+class FakeGdbType:
+    """
+    Faux gdb type object.
+
+    May be extended in future to mimic a proper gdb type so we can walk into
+    structs and arrays in thread-local.
+    """
+    def __init__(self):
+        self.code = None
+
+
+def add_thread_locals():
+    """
+    Work around the fact that gdb chokes on the thread-local variables.
+
+    A previous stage may have generated thread-local information via other
+    means. This function converts that information into the symbol tuples
+    used by the other portions of gdb_ident.
+    """
+    syms = []
+    fname = 'thread-local-ident.js'
+
+    if not os.path.exists(fname):
+        return syms
+
+    with open(fname, 'r') as f:
+        vars = json.load(f)
+        for var in vars:
+            start = var[1]
+            size = var[2]
+
+            # Hokey... mangle the variable name to include the c.c.v so we know
+            # which VP the thread-local belongs to.
+            #
+            # An alternative for the future: treat the per-vp stride
+            # as a struct, and the thread-local region as an array of those
+            # structs. This will require conjuring faux gdb data structures,
+            # but gives the best insight when folks start adding structs and
+            # arrays into thread-local.
+            mangled_name = var[0] + ' (%s)' % ccv(var[3])
+            sym = (start, start + size, mangled_name, FakeGdbType())
+            syms.append(sym)
+
+    return syms
+
+
+MAX_VPS_PER_CLUSTER = 24
+MAX_VPS_PER_CORE = 4
+
+def ccv(vpnum):
+    cl = vpnum // MAX_VPS_PER_CLUSTER
+    co = (vpnum % MAX_VPS_PER_CLUSTER) // MAX_VPS_PER_CORE
+    vp = vpnum % MAX_VPS_PER_CORE
+    return '%d.%d.%d' % (cl, co, vp)
+
+
 def find_all_symbols():
 
     syms = []
@@ -309,6 +368,7 @@ def find_all_symbols():
 
     syms += mksymlist(symtab.global_block())
     syms += mksymlist(symtab.static_block())
+    syms += add_thread_locals()
 
     print "Found %d symbols" % len(syms)
     syms.sort()
@@ -338,7 +398,7 @@ def gdb_main():
             print "complete: %f%%" % ((i * 100.0) / n)
             t0 = t1
         check_add(addrident, int(va, 16), syms)
-                
+
 
     # write it out
     fl = open(OUT_FILE, "w")
