@@ -1099,6 +1099,7 @@ peek_l1_cache_stats_parser.add_argument('-grep', help="Grep regex pattern", defa
 # New params
 peek_l1_cache_stats_parser.add_argument('-load_miss', type=bool, help="Print L1 load miss", default=True)
 peek_l1_cache_stats_parser.add_argument('-store_miss', type=bool, help="Print L1 store miss", default=True)
+peek_l1_cache_stats_parser.add_argument('-iters', type=int, help="Iteration count", default=999999)
 peek_l1_cache_stats_parser.add_argument('-pp', type=bool, help="PrettyPrint tabular", default=True)
 
 # nwqm stats
