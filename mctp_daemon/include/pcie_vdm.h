@@ -14,7 +14,7 @@
 
 #define DWORD(n)		((n) >> 2)
 
-#define MCTP_MSG_CODE		0x7e
+#define MCTP_MSG_CODE		0x7f
 #define MCTP_VENDOR_ID		0x1ab4
 
 struct pcie_vdm_hdr_stc {

@@ -15,9 +15,6 @@ ifeq ($(QUIET),1)
  VERBOSE_AR =
 endif
 
-SDKDIR ?= ../../FunSDK
-SDK_INSTALL_DIR ?= $(SDKDIR)
-
 MACHINE ?= mips64
 
 ifeq ($(MACHINE),x86_64)
@@ -27,6 +24,7 @@ ifeq ($(MACHINE),x86_64)
 else ifeq ($(MACHINE),mips64)
  SDK_LIB_SUBDIR :=
  SDK_INSTALL_PREFIX := mips64
+ ARCH_BIG_ENDIAN=y
 ifeq ($(PRIVATE_BUILD),y)
  SDKTARGETSYSROOT=/opt/poky/3.0.2/sysroots/mipsisa64r6-poky-linux
  PATH:=$(PATH):/opt/poky/3.0.2/sysroots/x86_64-pokysdk-linux/usr/bin/mipsisa64r6-poky-linux:/opt/poky/3.0.2/sysroots/x86_64-pokysdk-linux/usr/bin/mipsisa64r6-poky-linux-musl
@@ -40,13 +38,14 @@ ifeq ($(PRIVATE_BUILD),y)
  LDFLAGS=-Wl,-O1  -Wl,--as-needed
  CPPFLAGS=""
  ARCH=mips
- ARCH_BIG_ENDIAN=y
 endif
 else
  $(error Unknown machine type $(MACHINE))
 endif
 
 BUILD_ROOT ?= build_$(MACHINE)
+SDKDIR ?= ../../FunSDK
+SDK_INSTALL_DIR ?= $(SDKDIR)/mctp_daemon.$(MACHINE)
 
 ifeq ($(ARCH_BIG_ENDIAN),y)
 CFLAGS += -DARCH_BIG_ENDIAN
@@ -59,7 +58,7 @@ SRCS = smbus.c pcie_vdm.c utils.c pldm.c pldm_mcd.c pldm_pmc.c mctp.c mctp_daemo
 OBJS = $(addprefix $(BUILD_ROOT)/,$(SRCS:.c=.o))
 
 MCTP_CONFIG ?= .config
-MCTP_DAEMON_INSTALL_DIR ?= bin/mips64/Linux/mctp_daemon
+MCTP_DAEMON_INSTALL_DIR ?= ./
 
 export MCTP_CONFIG
 
@@ -98,9 +97,10 @@ $(BUILD_ROOT)/%.o: %.c
 	$(QUIET_CC)$(CC) -c -o $@ $< $(CFLAGS)
 
 install: $(BUILD_ROOT)/mctp_daemon
-	@echo "   MKDIR $(MCTP_DAEMON_INSTALL_DIR)"; mkdir -p $(SDK_INSTALL_DIR)/$(MCTP_DAEMON_INSTALL_DIR)
-	@echo "   CP    $<"; cp -f $< $(SDK_INSTALL_DIR)/$(MCTP_DAEMON_INSTALL_DIR)/
-	@echo "   CP    init.d"; cp -fr init.d $(SDK_INSTALL_DIR)/$(MCTP_DAEMON_INSTALL_DIR)/
+	@echo "Installing mctp_daemon.$(MACHINE) @ $(SDK_INSTALL_DIR)"
+	@mkdir -p $(SDK_INSTALL_DIR)/$(MCTP_DAEMON_INSTALL_DIR)/{bin,etc}
+	@cp -f $< $(SDK_INSTALL_DIR)/$(MCTP_DAEMON_INSTALL_DIR)/bin/
+	@cp -fr init.d $(SDK_INSTALL_DIR)/$(MCTP_DAEMON_INSTALL_DIR)/etc/
 
 clean:
 	$(Q)rm -rf $(BUILD_ROOT)
