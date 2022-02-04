@@ -5356,7 +5356,7 @@ class ShowCommands(PeekCommands):
             if not filename:
                 filename = str(uuid4()) + '.txt'
             filepath = tmp_path + filename
-             
+
             command_dict['NU FPG 0'] = self.peek_fpg_stats(port_num=0, iterations=iterations)
             command_dict['NU FPG 4'] = self.peek_fpg_stats(port_num=4, iterations=iterations)
             command_dict['NU PSW'] = self.peek_psw_stats(iterations=iterations)
@@ -5391,8 +5391,10 @@ class ShowCommands(PeekCommands):
             command_dict['TCP FC'] = self.peek_tcp_flows_fc()
             command_dict['RDSOCK VP'] = self.peek_rdsock_flow_stats(iterations=iterations)
              
-            command_dict['Flow List Storage'] = flow_cmd_obj.get_flow_list_pp(tx=1, rx=1, storage=1, iterations=iterations)
-            command_dict['Flow List Others'] = flow_cmd_obj.get_flow_list_pp(tx=1, rx=1, iterations=iterations)
+            command_dict['Flow List Storage Tx'] = flow_cmd_obj.get_flow_list_pp(tx=1, storage=1, iterations=iterations)
+            command_dict['Flow List Storage Rx'] = flow_cmd_obj.get_flow_list_pp(rx=1, storage=1, iterations=iterations)
+            command_dict['Flow List Others Tx'] = flow_cmd_obj.get_flow_list_pp(tx=1, iterations=iterations)
+            command_dict['Flow List Others Rx'] = flow_cmd_obj.get_flow_list_pp(rx=1, iterations=iterations)
              
             command_dict['OCM'] = self.peek_ocm_resource_stats(iterations=iterations)
             command_dict['BAM'] = self.peek_bam_resource_stats(iterations=iterations)
@@ -5401,13 +5403,12 @@ class ShowCommands(PeekCommands):
             command_dict['MALLOC CACHES'] = self.peek_stats_malloc_caches(iterations=iterations)
             command_dict['MUD'] = self.peek_stats_mud(iterations=iterations)
             command_dict['MUD QD'] = self.peek_stats_mud(qdepth=1, iterations=iterations)
-            command_dict['L1_Cache'] = self.peek_l1_cache_stats(iterations=iterations)
-            command_dict['L2_Cache'] = self.peek_stats_l2_cache_pp(iterations=iterations)
+            command_dict['L1_Cache'] = self.peek_stats_l1_cache_pp(iterations=iterations)
+            command_dict['L2_Cache'] = self.peek_l2_cache_stats(iterations=iterations)
             command_dict['CA'] = self.peek_ca_stats(iterations=iterations)
             command_dict['CDU'] = self.peek_cdu_stats(iterations=iterations)
             command_dict['MBUF VP'] = self.peek_stats_mbuf_vp(iterations=iterations)
             command_dict['MBUF MEM'] = self.peek_stats_mbuf_mem_type(iterations=iterations)
-             
             
             write_result = self.do_write_on_file(filepath=filepath, command_dict=command_dict)
             if write_result:
