@@ -975,7 +975,28 @@ class CmdController(Cmd):
 
     def peek_mud_stats(self, args):
         grep = args.grep
-        self._peek_cmd_obj.peek_mud_stats(grep_regex=grep)
+        iterations = args.iters
+        qdepth = args.qd
+        self._peek_cmd_obj.peek_stats_mud(qdepth=qdepth, iterations=iterations, grep_regex=grep)
+
+    def peek_dam_stats(self, args):
+        grep = args.grep
+        iterations = args.iters
+        self._peek_cmd_obj.peek_stats_dam(iterations=iterations, grep_regex=grep)
+
+    def peek_malloc_caches_stats(self, args):
+        grep = args.grep
+        iterations = args.iters
+        self._peek_cmd_obj.peek_stats_malloc_caches(iterations=iterations, grep_regex=grep)
+
+    def peek_mbuf_stats(self, args):
+        iterations = args.iters
+        vp = args.vp
+        mem_type = args.mem_type
+        if mem_type:
+            self._peek_cmd_obj.peek_stats_mbuf_mem_type(iterations=iterations)
+        else:
+            self._peek_cmd_obj.peek_stats_mbuf_vp(iterations=iterations)
 
     def peek_l2_cache_stats(self, args):
         grep = args.grep
@@ -1659,6 +1680,9 @@ class CmdController(Cmd):
     peek_stats_ca_parser.set_defaults(func=peek_ca_stats)
     peek_stats_ddr_parser.set_defaults(func=peek_ddr_stats)
     peek_stats_mud_parser.set_defaults(func=peek_mud_stats)
+    peek_stats_dam_parser.set_defaults(func=peek_dam_stats)
+    peek_stats_malloc_caches_parser.set_defaults(func=peek_malloc_caches_stats)
+    peek_stats_mbuf_parser.set_defaults(func=peek_mbuf_stats)
     peek_stats_l2_cache_parser.set_defaults(func=peek_l2_cache_stats)
     peek_stats_rdma_parser.set_defaults(func=peek_stats_rdma)
     peek_stats_le_table_sdn_in_parser.set_defaults(func=peek_le_tables_sdn_in)

@@ -1291,7 +1291,26 @@ peek_stats_ddr_parser.add_argument('-grep', help="Grep regex pattern", default=N
 
 # Peek stats mud 
 peek_stats_mud_parser = peek_stats_parsers.add_parser('mud', help="Peek mud stats")
+peek_stats_mud_parser.add_argument('-iters', type=int, help="Iteration count", default=999999)
+peek_stats_mud_parser.add_argument('-qd', type=int, help="Show qdepth", default=0)
 peek_stats_mud_parser.add_argument('-grep', help="Grep regex pattern", default=None)
+
+# Peek stats dam 
+peek_stats_dam_parser = peek_stats_parsers.add_parser('dam', help="Peek dam stats")
+peek_stats_dam_parser.add_argument('-iters', type=int, help="Iteration count", default=999999)
+peek_stats_dam_parser.add_argument('-grep', help="Grep regex pattern", default=None)
+
+# Peek stats malloc caches 
+peek_stats_malloc_caches_parser = peek_stats_parsers.add_parser('malloc', help="Peek malloc caches stats")
+peek_stats_malloc_caches_parser.add_argument('-iters', type=int, help="Iteration count", default=999999)
+peek_stats_malloc_caches_parser.add_argument('-grep', help="Grep regex pattern", default=None)
+
+# Peek stats mbuf 
+peek_stats_mbuf_parser = peek_stats_parsers.add_parser('mbuf', help="Peek malloc caches stats")
+peek_stats_mbuf_parser.add_argument('-iters', type=int, help="Iteration count", default=999999)
+peek_stats_mbuf_parser.add_argument('-vp', type=int, help="Iteration count", default=1)
+peek_stats_mbuf_parser.add_argument('-mem_type', type=int, help="Iteration count", default=0)
+
 
 # Peek stats l2_cache
 peek_stats_l2_cache_parser = peek_stats_parsers.add_parser('l2_cache', help="L2 Cache Stats")

@@ -1791,9 +1791,143 @@ class PeekCommands(object):
             print "ERROR: %s" % str(ex)
             self.dpc_client.disconnect()
 
-    def peek_mud_stats(self, grep_regex=None):
-        cmd = "stats/mud/qsys/mud_0/qsys_0"
-        return self._get_nested_dict_stats(cmd=cmd, grep_regex=grep_regex)
+    def peek_stats_mud(self, qdepth=0, iterations=9999999, grep_regex=None):
+        cmd = "stats/mud"
+        qd_dict = {}
+        rw_dict = {}
+        result = self.dpc_client.execute(verb='peek', arg_list=[cmd])
+        for mud in result["qsys"]:
+            for qsys in result["qsys"][mud]:
+                qd_dict[mud+'_'+qsys] = result["qsys"][mud][qsys].pop("qdepth")
+                rw_dict[mud+'_'+qsys] = result["qsys"][mud][qsys] 
+        if qdepth:
+            return self._get_nested_dict_stats(cmd, cmd_output=qd_dict, iterations=iterations, grep_regex=grep_regex)
+        else:
+            return self._get_nested_dict_stats(cmd, cmd_output=rw_dict, iterations=iterations, grep_regex=grep_regex)
+                    
+    def peek_stats_dam(self, iterations=9999999, grep_regex=None):
+        cmd = "stats/dam"
+        new_result = {}
+        result = self.dpc_client.execute(verb='peek', arg_list=[cmd])
+        new_result = {"global": result["debug"]["global"]}
+        new_result.update(result["usage"])
+
+        return self._get_nested_dict_stats(cmd, cmd_output=new_result, iterations=iterations, grep_regex=grep_regex)
+
+    def peek_stats_malloc_caches(self, caches=0, iterations=9999999, grep_regex=None):
+        cmd = "stats/malloc_caches"
+        result = self.dpc_client.execute(verb='peek', arg_list=[cmd])
+        total = {'bytes_available': result.pop('bytes_available'), 'num_available': result.pop('num_available')} 
+        for k,v in result.iteritems():
+            del v["cached"]
+        result['total'] = total 
+        return self._get_nested_dict_stats(cmd, cmd_output=result, iterations=iterations, grep_regex=grep_regex)
+
+    def peek_stats_mbuf_mem_type(self, iterations=9999999):
+        cmd = 'stats/mbuf/caches_details'
+        iteration_count = 0
+        prev_result = None
+        col_titles = ["Type", "hits", "max", "misses", "num_cached"]
+        col_titles_diff = ["Type", "hits", "hits diff", "max", "max diff", "misses", "misses diff", "num_cached", "num_cached diff"]
+        while True:
+            try:
+                result = self.dpc_client.execute(verb='peek', arg_list=[cmd])
+                if result:
+                    new_result = {}
+                    for item in result:
+                        del item["cache_entry"]
+                        mem_type = item.pop("mem_type")
+                        size = item.pop("size")
+                        new_key = mem_type + '_' + str(size)
+                        new_result[new_key] = item 
+                    result = new_result
+                    if prev_result:
+                        diff_result = self._get_difference(result, prev_result)
+                        master_table_obj = self._build_diff_grid(col_titles, col_titles_diff, result, diff_result)
+                    else:
+                        master_table_obj = self._build_grid(col_titles, result)
+                prev_result = result
+                print master_table_obj
+                print "\n########################  %s ########################\n" % str(self._get_timestamp())
+                if iteration_count == iterations:
+                    return cmd, master_table_obj
+                iteration_count += 1 
+                do_sleep_for_interval()
+            except KeyboardInterrupt:
+                self.dpc_client.disconnect()
+                break
+            except Exception as ex:
+                print "ERROR: %s" % str(ex)
+                self.dpc_client.disconnect()
+                break
+
+
+    def peek_stats_mbuf_vp(self, iterations=9999999):
+        cmd = 'stats/mbuf/per_vp_cache'
+        iteration_count = 0
+        prev_result = None
+        col_titles = ["VP Num", "hits", "max", "misses", "num_cached"]
+        col_titles_diff = ["VP Num", "hits", "hits diff", "max", "max diff", "misses", "misses diff", "num_cached", "num_cached diff"]
+        while True:
+            try:
+                result = self.dpc_client.execute(verb='peek', arg_list=[cmd])
+                if result:
+                    for k,v in result.iteritems():
+                        result[k] = v['cache_1']
+                    if prev_result:
+                        diff_result = self._get_difference(result, prev_result)
+                        master_table_obj = self._build_diff_grid(col_titles, col_titles_diff, result, diff_result)
+                    else:
+                        master_table_obj = self._build_grid(col_titles, result)
+                prev_result = result 
+                print master_table_obj
+                print "\n########################  %s ########################\n" % str(self._get_timestamp())
+                if iteration_count == iterations:
+                    return cmd, master_table_obj
+                iteration_count += 1
+                do_sleep_for_interval()
+            except KeyboardInterrupt:
+                self.dpc_client.disconnect()
+                break
+            except Exception as ex:
+                print "ERROR: %s" % str(ex)
+                self.dpc_client.disconnect()
+                break
+
+    def _build_grid(self, col_titles, result):
+        result_dict = {}
+        col_values = []
+        for key in sorted(result):
+            result_dict.setdefault(col_titles[0], []).append(key)
+            for k in sorted(result[key]):
+                result_dict.setdefault(k, []).append(result[key][k]) 
+        for keys in col_titles:
+            col_values.append(result_dict[keys])
+        master_table_obj = PrettyTable()
+        master_table_obj.align = 'l'
+        for col_name, col_val in zip(col_titles, col_values):
+            master_table_obj.add_column(col_name, col_val)
+        return master_table_obj
+
+    def _build_diff_grid(self, col_titles, col_titles_diff, result, diff_result):
+        result_dict = {}
+        col_values = []
+
+        for key in sorted(result):
+            result_dict.setdefault(col_titles[0], []).append(key)
+            for k in sorted(result[key]):
+                result_dict.setdefault(k, []).append(result[key][k])
+        for key in sorted(diff_result):
+            for k in sorted(result[key]):
+                result_dict.setdefault(k+" diff", []).append(diff_result[key][k])
+        for key in col_titles_diff:
+            col_values.append(result_dict[key])
+        master_table_obj = PrettyTable()
+        master_table_obj.align = 'l'
+        for col_name, col_val in zip(col_titles_diff, col_values):
+            master_table_obj.add_column(col_name, col_val)
+        return master_table_obj
+ 
 
     def peek_ca_stats(self, grep=None, iterations=9999999):
         iteration_count = 0
@@ -3805,50 +3939,16 @@ class PeekCommands(object):
             print "ERROR: %s" % str(ex)
             self.dpc_client.disconnect()
 
-    def _add_pwp_bandwidth(self, result):
-        raw_bandwidth_to_host = result["core"]["pwp_tx_to_PLDA_DWords"] * 4
-        payload_bandwidth_to_host = (result["core"]["pwp_tx_to_PLDA_payload_Dwords_NP"] + \
-                                    result["core"]["pwp_tx_to_PLDA_payload_Dwords_P"] + \
-                                    result["core"]["pwp_tx_to_PLDA_payload_Dwords_CPL"]) * 4
-        raw_bandwidth_from_host = result["core"]["PLDA_to_PTA_Dwords"] * 4
-
-        bw_dict = {"bandwidth": {"raw_bandwidth_to_host": raw_bandwidth_to_host, "payload_bandwidth_to_host": payload_bandwidth_to_host, "raw_bandwidth_from_host": raw_bandwidth_from_host}}
-        result.update(bw_dict)
-        return result 
-
-    def _update_eqm_stats(self, cmd, result):
-        if cmd.find('drg_ctx') != -1:
-            return result
-        else:
-            del result["drg_ctx"]
-            del result["event_queue"]
-            return result
-
-    def _updated_rdsock_vp_stats(self, result):
-        new_result = {}
-        for key,val in result.iteritems():
-            temp_dict = {}
-            temp_dict["stats_client"] = val["instances"]
-            temp_dict["stats_client"].update(val["stats_client"])
-            new_result[key] = temp_dict
-        return new_result
- 
-    def _get_nested_dict_stats(self, cmd, verb='peek', stop_regex="does not exist", grep_regex=None, get_result_only=False, iterations=9999999):
+    def _get_nested_dict_stats(self, cmd, verb='peek', cmd_output = {}, stop_regex="does not exist", grep_regex=None, get_result_only=False, iterations=9999999):
         try:
             iteration_count = 0
             prev_result = None
             while True:
                 try:
-                    result = self.dpc_client.execute(verb=verb, arg_list=[cmd])
-                    if isinstance(cmd, dict):
-                        for k,v in cmd.iteritems():
-                            if v == 'GET_RDSOCK_VP_STATS':
-                                result = self._updated_rdsock_vp_stats(result)
-                    elif cmd.find('pwp') != -1:
-                        result = self._add_pwp_bandwidth(result)
-                    elif cmd.find('eqm') != -1:
-                        result = self._update_eqm_stats(cmd, result)
-
+                    if cmd_output:
+                        result = cmd_output
+                    else:
+                        result = self.dpc_client.execute(verb=verb, arg_list=[cmd])
                     master_table_obj = PrettyTable()
                     master_table_obj.align = 'l'
                     master_table_obj.border = False
@@ -4553,133 +4653,6 @@ class PeekCommands(object):
                 print "ERROR: %s" % str(ex)
                 self.dpc_client.disconnect()
                 break
-    # def peek_bam_resource_stats(self, cid=None, grep_regex=None, get_result_only=False):
-    #     prev_result = None
-    #     while True:
-    #         try:
-    #             cmd = "stats/resource/bam"
-    #             master_table_obj = PrettyTable()
-    #             master_table_obj.header = False
-    #             master_table_obj.border = False
-    #             master_table_obj.align = 'l'
-    #             result = self.dpc_client.execute(verb="peek", arg_list=[cmd])
-    #             if cid:
-    #                 result = self._get_cid_bam_results(result, cid)
-    #             if prev_result:
-    #                 diff_result = self._get_nested_dict_difference(result=result, prev_result=prev_result)
-    #                 for key in sorted(result):
-    #                     table_obj = PrettyTable(['Field Name', 'Counters', 'Counter Diff'])
-    #                     table_obj.align = 'l'
-    #                     table_obj.sortby = 'Field Name'
-    #                     for _key in result[key]:
-    #                         if grep_regex:
-    #                             if re.search(grep_regex, key, re.IGNORECASE):
-    #                                 table_obj.add_row([_key, result[key][_key], diff_result[key][_key]])
-    #                         else:
-    #                             if type(result[key][_key]) == dict:
-    #                                 inner_table_obj = PrettyTable(['Field Name', 'Counters', 'Counter Diff'])
-    #                                 inner_table_obj.align = 'l'
-    #                                 inner_table_obj.sortby = 'Field Name'
-    #                                 for inner_key in result[key][_key]:
-    #                                     if type(result[key][_key]) == dict:
-    #                                         _inner_table_obj = PrettyTable(['Field Name', 'Counters', 'Counter Diff'])
-    #                                         _inner_table_obj.align = 'l'
-    #                                         _inner_table_obj.sortby = 'Field Name'
-    #                                         for _inner_key in result[key][_key][inner_key]:
-    #                                             _inner_table_obj.add_row([_inner_key, result[key][_key][inner_key][_inner_key],
-    #                                                                       diff_result[key][_key][inner_key][_inner_key]])
-    #                                         inner_table_obj.add_row([inner_key, _inner_table_obj, ""])
-    #                                     else:
-    #                                         inner_table_obj.add_row([inner_key, result[key][_key][inner_key],
-    #                                                                  diff_result[key][_key][inner_key]])
-    #                                 table_obj.add_row([_key, inner_table_obj, ""])
-    #                             else:
-    #                                 table_obj.add_row([_key, result[key][_key], diff_result[key][_key]])
-    #                     if table_obj.rowcount > 0:
-    #                         master_table_obj.add_row([key, table_obj])
-    #             else:
-    #                 for key in sorted(result):
-    #                     table_obj = PrettyTable(['Field Name', 'Counters'])
-    #                     table_obj.align = 'l'
-    #                     table_obj.sortby = 'Field Name'
-    #                     for _key in result[key]:
-    #                         if grep_regex:
-    #                             if re.search(grep_regex, key, re.IGNORECASE):
-    #                                 table_obj.add_row([_key, result[key][_key]])
-    #                         else:
-    #                             if type(result[key][_key]) == dict:
-    #                                 inner_table_obj = PrettyTable(['Field Name', 'Counters'])
-    #                                 inner_table_obj.align = 'l'
-    #                                 inner_table_obj.sortby = 'Field Name'
-    #                                 for inner_key in result[key][_key]:
-    #                                     if type(result[key][_key]) == dict:
-    #                                         _inner_table_obj = PrettyTable(['Field Name', 'Counters'])
-    #                                         _inner_table_obj.align = 'l'
-    #                                         _inner_table_obj.sortby = 'Field Name'
-    #                                         for _inner_key in result[key][_key][inner_key]:
-    #                                             _inner_table_obj.add_row([_inner_key, result[key][_key][inner_key][_inner_key]])
-    #                                         inner_table_obj.add_row([inner_key, _inner_table_obj])
-    #                                     else:
-    #                                         inner_table_obj.add_row([inner_key, result[key][_key][inner_key]])
-    #                                 table_obj.add_row([_key, inner_table_obj])
-    #                             else:
-    #                                 table_obj.add_row([_key, result[key][_key]])
-    #                     if table_obj.rowcount > 0:
-    #                         master_table_obj.add_row([key, table_obj])
-    #             if get_result_only:
-    #                 return cmd, master_table_obj
-    #             prev_result = result
-    #             print master_table_obj
-    #             print "\n########################  %s ########################\n" % str(self._get_timestamp())
-    #             do_sleep_for_interval()
-    #         except KeyboardInterrupt:
-    #             self.dpc_client.disconnect()
-    #             break
-    #         except Exception as ex:
-    #             print "ERROR: %s" % str(ex)
-    #             self.dpc_client.disconnect()
-    #             break
-    '''
-    def peek_nwqm_stats(self, grep_regex=None):
-        try:
-            prev_results = None
-            while True:
-                try:
-                    cmd = "stats/nwqm"
-                    result = self.dpc_client.execute(verb='peek', arg_list=[cmd])
-                    #result = results[""]
-                    if result:
-                        if prev_results:
-                            table_obj = PrettyTable(['Field Name', 'Counter', 'Counter Diff'])
-                            table_obj.align = 'l'
-                            diff_result = self._get_difference(result=result, prev_result=prev_results)
-                            for key in sorted(result):
-                                if grep_regex:
-                                    if re.search(grep_regex, key, re.IGNORECASE):
-                                        table_obj.add_row([key, result[key], diff_result[key]])
-                                else:
-                                    table_obj.add_row([key, result[key], diff_result[key]])
-                        else:
-                            table_obj = PrettyTable(['Field Name', 'Counter'])
-                            table_obj.align = 'l'
-                            for key in sorted(result):
-                                if grep_regex:
-                                    if re.search(grep_regex, key, re.IGNORECASE):
-                                        table_obj.add_row([key, result[key]])
-                                else:
-                                    table_obj.add_row([key, result[key]])
-                        prev_results = result
-                        print table_obj
-                        print "\n########################  %s ########################\n" % \
-                              str(self._get_timestamp())
-                        do_sleep_for_interval()
-                except KeyboardInterrupt:
-                    self.dpc_client.disconnect()
-                    break
-        except Exception as ex:
-            print "ERROR: %s" % str(ex)
-            self.dpc_client.disconnect()
-    '''
 
     def peek_nwqm_stats(self, mode=None, grep_regex=None, get_result_only=False):
         cmd = "stats/nwqm"
@@ -4708,48 +4681,17 @@ class PeekCommands(object):
 
     def peek_eqm_stats(self, drg_ctx=None, evq= None, grep_regex=None, iterations=9999999):
         if drg_ctx:
-            cmd = 'stats/eqm/drg_ctx'
+            cmd = "stats/eqm/drg_ctx"
+            result = self.dpc_client.execute(verb='peek', arg_list=[cmd])
         elif evq:
-            return self.peek_eqm_event_q(grep_regex=grep_regex, iterations=iterations) 
+            return self.peek_eqm_event_q(grep_regex=grep_regex, iterations=iterations)
         else:
             cmd = "stats/eqm"
-        return self._get_nested_dict_stats(cmd=cmd, grep_regex=grep_regex, iterations=iterations)
+            result = self.dpc_client.execute(verb='peek', arg_list=[cmd])
+            del result["drg_ctx"]
+            del result["event_queue"]
 
-    '''
-    def peek_eqm_stats(self, grep_regex=None):
-        try:
-            prev_result = None
-            while True:
-                try:
-                    cmd = "stats/eqm"
-                    result = self.dpc_client.execute(verb='peek', arg_list=[cmd])
-                    master_table_obj = PrettyTable()
-                    master_table_obj.align = "l"
-                    if result:
-                        for key in sorted(result):
-                            prev_result_dict = prev_result
-                            if prev_result:
-                                prev_result_dict = prev_result[key]
-                            result_dict = result[key]
-                            table_obj = self.get_singleton_table_obj(result=result_dict, prev_result=prev_result_dict,
-                                                                     grep=grep_regex)
-                            master_table_obj.add_row([key, table_obj])
-
-                        prev_result = result
-                        print master_table_obj
-                        print "\n########################  %s ########################\n" % \
-                              str(self._get_timestamp())
-                        do_sleep_for_interval()
-                    else:
-                        print "Empty Result"
-                except KeyboardInterrupt:
-                    self.dpc_client.disconnect()
-                    break
-        except Exception as ex:
-            print "ERROR: %s" % str(ex)
-            self.dpc_client.disconnect()
-
-    '''
+        return self._get_nested_dict_stats(cmd=cmd, cmd_output = result, grep_regex=grep_regex, iterations=iterations) 
 
     def peek_funtop_stats(self):
         try:
@@ -4963,7 +4905,20 @@ class PeekCommands(object):
 
     def peek_stats_hu_pwp(self, hu_id=1, grep_regex=None, iterations=9999999):
         cmd = "stats/hu/pwp/hu_slice_%d/pcie_ctrl_0" % hu_id
-        return self._get_nested_dict_stats(cmd=cmd, grep_regex=grep_regex, iterations=iterations)
+        result = self.dpc_client.execute(verb='peek', arg_list=[cmd])
+
+        raw_bandwidth_to_host = result["core"]["pwp_tx_to_PLDA_DWords"] * 4
+        payload_bandwidth_to_host = (result["core"]["pwp_tx_to_PLDA_payload_Dwords_NP"] + \
+                                    result["core"]["pwp_tx_to_PLDA_payload_Dwords_P"] + \
+                                    result["core"]["pwp_tx_to_PLDA_payload_Dwords_CPL"]) * 4
+        raw_bandwidth_from_host = result["core"]["PLDA_to_PTA_Dwords"] * 4
+
+        bw_dict = {"bandwidth": {"raw_bandwidth_to_host": raw_bandwidth_to_host, "payload_bandwidth_to_host": payload_bandwidth_to_host, "raw_bandwidth_from_host": raw_bandwidth_from_host}}
+        result.update(bw_dict)
+        
+        return self._get_nested_dict_stats(cmd=cmd, cmd_output=result, grep_regex=grep_regex, iterations=iterations)
+
+
 
     def peek_stats_hu(self, grep_regex=None, iterations=9999999):
         iteration_count = 0
@@ -5233,7 +5188,15 @@ class PeekCommands(object):
 
     def peek_rdsock_flow_stats(self, grep_regex=None, iterations=9999999):
         cmd = {"class": "controller", "opcode": "GET_RDSOCK_VP_STATS"}
-        return self._get_nested_dict_stats(cmd=cmd, verb='sdebug', grep_regex=grep_regex, iterations=iterations)
+        result = self.dpc_client.execute(verb='sdebug', arg_list=[cmd])
+        new_result = {}
+        for key,val in result.iteritems():
+            temp_dict = {}
+            temp_dict["stats_client"] = val["instances"]
+            temp_dict["stats_client"].update(val["stats_client"])
+            new_result[key] = temp_dict
+ 
+        return self._get_nested_dict_stats(cmd=cmd, cmd_output = new_result, grep_regex=grep_regex, iterations=iterations)
 
 class SampleCommands(object):
 
@@ -5434,10 +5397,16 @@ class ShowCommands(PeekCommands):
             command_dict['OCM'] = self.peek_ocm_resource_stats(iterations=iterations)
             command_dict['BAM'] = self.peek_bam_resource_stats(iterations=iterations)
             command_dict['DDR'] = self.peek_ddr_stats(iterations=iterations)
+            command_dict['DAM'] = self.peek_stats_dam(iterations=iterations)
+            command_dict['MALLOC CACHES'] = self.peek_stats_malloc_caches(iterations=iterations)
+            command_dict['MUD'] = self.peek_stats_mud(iterations=iterations)
+            command_dict['MUD QD'] = self.peek_stats_mud(qdepth=1, iterations=iterations)
             command_dict['L1_Cache'] = self.peek_l2_cache_stats(iterations=iterations)
             command_dict['L2_Cache'] = self.peek_stats_l1_cache_pp(iterations=iterations)
             command_dict['CA'] = self.peek_ca_stats(iterations=iterations)
             command_dict['CDU'] = self.peek_cdu_stats(iterations=iterations)
+            command_dict['MBUF VP'] = self.peek_stats_mbuf_vp(iterations=iterations)
+            command_dict['MBUF MEM'] = self.peek_stats_mbuf_mem_type(iterations=iterations)
              
             
             write_result = self.do_write_on_file(filepath=filepath, command_dict=command_dict)
