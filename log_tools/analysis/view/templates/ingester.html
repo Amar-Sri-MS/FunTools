@@ -81,6 +81,16 @@
                                     />
                                     Local Upload
                                 </label>
+                                <label>
+                                    <input
+                                        type="radio"
+                                        name="techsupport_ingest_type"
+                                        value="url"
+                                        {{"checked" if techsupport_ingest_type == "url" else ""}}
+                                        onchange="onChangeTechsupportIngestType(this.value)"
+                                    />
+                                    Downloadable URL
+                                </label>
                             </div>
                             <div id="techsupport_ingest_type">
                             </div>
@@ -245,6 +255,14 @@
                     </div>
                 `;
                 initializeDropzone();
+            }
+            else if (ingestType === "url") {
+                techsupportIngestTypeElement.innerHTML = `
+                    <div class="form-group">
+                        <label>Downloadable URL</label>
+                        <input type="text" id="downloadable_url" name="downloadable_url" class="large-input" value="{{feedback.downloadable_url if feedback else null}}" required>
+                    </div>
+                `;
             }
             else {
                 techsupportIngestTypeElement.innerHTML = `

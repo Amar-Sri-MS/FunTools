@@ -62,7 +62,7 @@ def main():
     parser.add_argument('--sources', nargs='*', help='Sources to filter the logs during ingestion', default=None)
     parser.add_argument('--file_name', help='File name of the uploaded log archive', default=None)
     parser.add_argument('--submitted_by', help='Email address of the submitter', default=None)
-    parser.add_argument('--techsupport_ingest_type', help='Techsupport ingestion type', choices=['mount_path', 'upload'])
+    parser.add_argument('--techsupport_ingest_type', help='Techsupport ingestion type', choices=['mount_path', 'upload', 'url'])
 
     try:
         status = True
@@ -128,6 +128,21 @@ def main():
                 shutil.copy(log_path, log_dir)
 
                 ingestion_status = ingest_techsupport_logs(job_id, path, metadata, filters)
+            elif techsupport_ingest_type == 'url':
+                start = time.time()
+                _update_metadata(es_metadata, LOG_ID, 'DOWNLOAD_STARTED')
+                if check_and_download_logs(log_path, log_dir):
+                    end = time.time()
+                    time_taken = end - start
+
+                    _update_metadata(es_metadata,
+                                    LOG_ID,
+                                    'DOWNLOAD_COMPLETED',
+                                    {'download_time': time_taken})
+
+                    archive_name = os.path.basename(log_path)
+                    path = os.path.join(log_dir, archive_name)
+                    ingestion_status = ingest_techsupport_logs(job_id, path, metadata, filters)
             else:
                 raise Exception('Wrong techsupport ingest type')
         else:
@@ -373,6 +388,7 @@ def ingest():
         tags_list = [tag.strip() for tag in tags.split(',') if tag.strip() != ''] if tags else []
         file_name = request.form.get('filename')
         mount_path = request.form.get('mount_path')
+        downloadable_url = request.form.get('downloadable_url')
         submitted_by = g.user
 
         start_time = request.form.get('start_time', None)
@@ -394,6 +410,7 @@ def ingest():
                 'end_time': end_time,
                 'sources': sources,
                 'mount_path': mount_path,
+                'downloadable_url': downloadable_url,
                 'msg': msg if msg else 'Some error occurred'
             }
             if accept_type == 'application/json':
@@ -415,6 +432,8 @@ def ingest():
             return render_error_template('Missing mount path')
         elif techsupport_ingest_type == 'upload' and not file_name:
             return render_error_template('Missing filename')
+        elif techsupport_ingest_type == 'url' and not downloadable_url:
+            return render_error_template('Missing downloadable url')
 
         metadata = start_ingestion(job_id,
                                    ingest_type,
@@ -422,6 +441,7 @@ def ingest():
                                    tags=tags_list,
                                    techsupport_ingest_type=techsupport_ingest_type,
                                    mount_path=mount_path,
+                                   downloadable_url=downloadable_url,
                                    file_name=file_name,
                                    sources=sources,
                                    start_time=start_time,
@@ -440,6 +460,7 @@ def ingest():
             'end_time': end_time,
             'sources': sources,
             'mount_path': mount_path,
+            'downloadable_url': downloadable_url,
             'metadata': metadata
         }
 
@@ -468,6 +489,7 @@ def start_ingestion(job_id, ingest_type, **addtional_data):
     techsupport_ingest_type = addtional_data.get('techsupport_ingest_type')
     mount_path = addtional_data.get('mount_path')
     file_name = addtional_data.get('file_name')
+    downloadable_url = addtional_data.get('downloadable_url')
     submitted_by = g.user
 
     sources = addtional_data.get('sources')
@@ -511,6 +533,9 @@ def start_ingestion(job_id, ingest_type, **addtional_data):
             elif techsupport_ingest_type == 'upload':
                 cmd.append('--file_name')
                 cmd.append(file_name)
+            elif techsupport_ingest_type == 'url':
+                cmd.append('--log_path')
+                cmd.append(downloadable_url)
 
         if submitted_by:
             cmd.append('--submitted_by')
