@@ -689,7 +689,7 @@ def fun_agent_input_pipeline(frn_info, source, file_pattern, parse_block='Generi
             **cfg,
             'file_pattern': file_pattern,
             'src': source,
-            'pattern': r'(\d{4}(?:-|/)\d{2}(?:-|/)\d{2})+(?:T|\s)([:0-9]+)(?:.|,)([0-9]{3,9})',
+            'pattern': r'(\d{4}(?:-|/)\d{2}(?:-|/)\d{2})+(?:T|\s)([:0-9]+)[\.|\,]{0,1}([0-9]*)',
             # Regex pattern to pick information from the filename
             'file_info_match': file_info_match
         },
