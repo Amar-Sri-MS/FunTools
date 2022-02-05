@@ -235,6 +235,8 @@
             if (ingestType) params.set("techsupport_ingest_type", ingestType);
             window.history.replaceState(null, null, `?${params.toString()}`);
 
+            techsupportIngestType = ingestType;
+
             if (ingestType === "upload") {
                 techsupportIngestTypeElement.innerHTML = `
                     <div class="form-group">

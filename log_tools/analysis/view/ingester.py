@@ -358,7 +358,7 @@ def ingest():
     For ingesting a techsupport archive, requires:
         unique "job_id" and
         "mount_path" in case the archive is in NFS mounted volume
-        "file_name" in case the archive is uploaded by the user.
+        "filename" in case the archive is uploaded by the user.
     """
     try:
         # Accept type could be either text/html or application/json if the
