@@ -116,8 +116,9 @@ class TechsupportTester(Tester):
                     'job_id': self.job_id,
                     'submitted_by': 'sourabh.jain@fungible.com'
                 }
+                file_name = os.path.basename(self.file_path)
                 files = {
-                    'file': (self.file_path, open(self.file_path, 'rb'))
+                    'file': (file_name, open(self.file_path, 'rb'))
                 }
                 response = requests.post(URL,
                                          headers=headers,
