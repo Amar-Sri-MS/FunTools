@@ -25,7 +25,9 @@ CFGGEN_SRC :=	cfg_gen.py         \
 		platform_sku_c.j2  \
 		platform_sku_h.j2  \
 		hwcap_config_c.j2  \
-		hwcap_config_h.j2
+		hwcap_config_h.j2  \
+		mod_interface.py   \
+		mod_interface_h.j2
 
 
 .PHONY: test
