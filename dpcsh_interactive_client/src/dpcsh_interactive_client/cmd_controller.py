@@ -743,6 +743,11 @@ class CmdController(Cmd):
         grep_regex = args.grep
         self._peek_cmd_obj.peek_sfg_stats(mode='hnu', grep_regex=grep_regex)
 
+    def peek_nu_flowcontrol_stats(self, args):
+        grep_regex = args.grep
+        iterations = args.iters
+        self._peek_cmd_obj.peek_stats_nu_flowcontrol(grep_regex=grep_regex, iterations=iterations)
+
     def peek_per_vp_stats(self, args):
         grep_regex = args.grep
         pp = args.pp
@@ -1639,6 +1644,7 @@ class CmdController(Cmd):
     peek_wred_ecn_stats_parser.set_defaults(func=peek_nu_qos_wred_ecn_stats)
     peek_nu_sfg_stats_parser.set_defaults(func=peek_nu_sfg_stats)
     peek_hnu_sfg_stats_parser.set_defaults(func=peek_hnu_sfg_stats)
+    peek_flowcontrol_nu_parser.set_defaults(func=peek_nu_flowcontrol_stats)
     peek_per_vp_stats_parser.set_defaults(func=peek_per_vp_stats)
     peek_l1_cache_stats_parser.set_defaults(func=peek_l1_cache_stats)
     peek_nwqm_stats_parser.set_defaults(func=peek_nwqm_stats)

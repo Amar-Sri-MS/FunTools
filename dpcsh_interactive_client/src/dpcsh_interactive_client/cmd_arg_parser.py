@@ -1077,6 +1077,14 @@ peek_nu_sfg_stats_parser.add_argument('-grep', help="Grep regex pattern", defaul
 peek_hnu_sfg_stats_parser = peek_sfg_stats_parsers.add_parser('hnu', help="Peek HNU SFG stats")
 peek_hnu_sfg_stats_parser.add_argument('-grep', help="Grep regex pattern", default=None)
 
+# NU/HU Flow_control
+peek_flowcontrol_parser = peek_stats_parsers.add_parser('flow_control', help="Peek NU flow_control")
+peek_flowcontrol_parsers = peek_flowcontrol_parser.add_subparsers(title='subcommands', help="")
+
+peek_flowcontrol_nu_parser = peek_flowcontrol_parsers.add_parser('nu', help="Peek NU FlowControl")
+peek_flowcontrol_nu_parser.add_argument('-grep', help="Grep regex pattern", default=None)
+peek_flowcontrol_nu_parser.add_argument('-iters', type=int, help="Iteration count", default=999999)
+
 # Per VP stats
 peek_per_vp_stats_parser = peek_stats_parsers.add_parser('per_vp', help="Peek Per VP Stats")
 peek_per_vp_stats_parser.add_argument('-cluster_id', type=int, help="Cluster_id 0..7", default=None)

@@ -1673,6 +1673,10 @@ class PeekCommands(object):
                 self.dpc_client.disconnect()
                 break
 
+    def peek_stats_nu_flowcontrol(self, iterations=9999999, grep_regex=None):
+        cmd = "stats/nu/flow_control"
+        result = self.dpc_client.execute(verb='peek', arg_list=[cmd])
+        return self._get_nested_dict_stats(cmd, cmd_output=result, iterations=iterations, grep_regex=grep_regex)
 
     def get_singleton_table_obj(self, result, prev_result=None, grep=None):
         if prev_result:
@@ -1826,6 +1830,7 @@ class PeekCommands(object):
     def peek_stats_mbuf_mem_type(self, iterations=9999999):
         cmd = 'stats/mbuf/caches_details'
         iteration_count = 0
+        master_table_obj = PrettyTable() 
         prev_result = None
         col_titles = ["Type", "hits", "max", "misses", "num_cached"]
         col_titles_diff = ["Type", "hits", "hits diff", "max", "max diff", "misses", "misses diff", "num_cached", "num_cached diff"]
@@ -1846,8 +1851,8 @@ class PeekCommands(object):
                         master_table_obj = self._build_diff_grid(col_titles, col_titles_diff, result, diff_result)
                     else:
                         master_table_obj = self._build_grid(col_titles, result)
+                    print master_table_obj
                 prev_result = result
-                print master_table_obj
                 print "\n########################  %s ########################\n" % str(self._get_timestamp())
                 if iteration_count == iterations:
                     return cmd, master_table_obj
@@ -1865,6 +1870,7 @@ class PeekCommands(object):
     def peek_stats_mbuf_vp(self, iterations=9999999):
         cmd = 'stats/mbuf/per_vp_cache'
         iteration_count = 0
+        master_table_obj = PrettyTable() 
         prev_result = None
         col_titles = ["VP Num", "hits", "max", "misses", "num_cached"]
         col_titles_diff = ["VP Num", "hits", "hits diff", "max", "max diff", "misses", "misses diff", "num_cached", "num_cached diff"]
@@ -1879,8 +1885,8 @@ class PeekCommands(object):
                         master_table_obj = self._build_diff_grid(col_titles, col_titles_diff, result, diff_result)
                     else:
                         master_table_obj = self._build_grid(col_titles, result)
-                prev_result = result 
-                print master_table_obj
+                    print master_table_obj
+                prev_result = result
                 print "\n########################  %s ########################\n" % str(self._get_timestamp())
                 if iteration_count == iterations:
                     return cmd, master_table_obj
@@ -5187,16 +5193,24 @@ class PeekCommands(object):
             self._display_stats(cmd=cmd, grep_regex=grep_regex, get_result_only=get_result_only, iterations=iterations)
 
     def peek_rdsock_flow_stats(self, grep_regex=None, iterations=9999999):
-        cmd = {"class": "controller", "opcode": "GET_RDSOCK_VP_STATS"}
-        result = self.dpc_client.execute(verb='sdebug', arg_list=[cmd])
-        new_result = {}
-        for key,val in result.iteritems():
-            temp_dict = {}
-            temp_dict["stats_client"] = val["instances"]
-            temp_dict["stats_client"].update(val["stats_client"])
-            new_result[key] = temp_dict
- 
-        return self._get_nested_dict_stats(cmd=cmd, cmd_output = new_result, grep_regex=grep_regex, iterations=iterations)
+        table_obj = PrettyTable()
+        try:
+            cmd = {"class": "controller", "opcode": "GET_RDSOCK_VP_STATS"}
+            result = self.dpc_client.execute(verb='sdebug', arg_list=[cmd])
+            if result:
+                new_result = {}
+                for key,val in result.iteritems():
+                    temp_dict = {}
+                    temp_dict["stats_client"] = val["instances"]
+                    temp_dict["stats_client"].update(val["stats_client"])
+                    new_result[key] = temp_dict
+                return self._get_nested_dict_stats(cmd=cmd, cmd_output = new_result, grep_regex=grep_regex, iterations=iterations)
+            else:
+                return cmd, table_obj     
+        except Exception as ex:
+            print "ERROR: %s" % str(ex)
+            self.dpc_client.disconnect()
+
 
 class SampleCommands(object):
 
@@ -5356,7 +5370,8 @@ class ShowCommands(PeekCommands):
             if not filename:
                 filename = str(uuid4()) + '.txt'
             filepath = tmp_path + filename
-
+            
+             
             command_dict['NU FPG 0'] = self.peek_fpg_stats(port_num=0, iterations=iterations)
             command_dict['NU FPG 4'] = self.peek_fpg_stats(port_num=4, iterations=iterations)
             command_dict['NU PSW'] = self.peek_psw_stats(iterations=iterations)
@@ -5367,7 +5382,6 @@ class ShowCommands(PeekCommands):
             command_dict['NU SFG'] = self.peek_sfg_stats(iterations=iterations)
             command_dict['NU RES'] = self.peek_mode_resource_stats(iterations=iterations)
              
-            
             command_dict['HU PCIe'] = self.peek_stats_hu_pcie(iterations=iterations)
             command_dict['HU PWP'] = self.peek_stats_hu_pwp(iterations=iterations)
             command_dict['HUX 0 RES'] = self.peek_hux_resource_stats(hu_id=0, iterations=iterations)
@@ -5383,7 +5397,7 @@ class ShowCommands(PeekCommands):
             command_dict['PC 0 RES'] = self.peek_pc_resource_stats(0, iterations=iterations)
             command_dict['PC 1 RES'] = self.peek_pc_resource_stats(1, iterations=iterations)
             command_dict['CC RES'] = self.peek_cc_resource_stats(iterations=iterations)
-
+            
             command_dict['TCP Flow Summary'] = self.peek_tcp_flows_summary_stats()
             command_dict['TCP Global'] = self.peek_tcp_stats(iterations=iterations) 
             command_dict['TCP Flow Stats'] = self.peek_tcp_flows_stats(rate=True, count=100, iterations=iterations)
@@ -5407,9 +5421,10 @@ class ShowCommands(PeekCommands):
             command_dict['L2_Cache'] = self.peek_l2_cache_stats(iterations=iterations)
             command_dict['CA'] = self.peek_ca_stats(iterations=iterations)
             command_dict['CDU'] = self.peek_cdu_stats(iterations=iterations)
+            
             command_dict['MBUF VP'] = self.peek_stats_mbuf_vp(iterations=iterations)
             command_dict['MBUF MEM'] = self.peek_stats_mbuf_mem_type(iterations=iterations)
-            
+             
             write_result = self.do_write_on_file(filepath=filepath, command_dict=command_dict)
             if write_result:
                 print "Filepath is %s" % filepath
