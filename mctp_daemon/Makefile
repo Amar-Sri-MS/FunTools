@@ -98,7 +98,8 @@ $(BUILD_ROOT)/%.o: %.c
 
 install: $(BUILD_ROOT)/mctp_daemon
 	@echo "Installing mctp_daemon.$(MACHINE) @ $(SDK_INSTALL_DIR)"
-	@mkdir -p $(SDK_INSTALL_DIR)/$(MCTP_DAEMON_INSTALL_DIR)/{bin,etc}
+	@for dir in bin etc; do mkdir -p $(SDK_INSTALL_DIR)/$(MCTP_DAEMON_INSTALL_DIR)/$$dir; done
+	@mkdir -p $(SDK_INSTALL_DIR)/$(MCTP_DAEMON_INSTALL_DIR)/
 	@cp -f $< $(SDK_INSTALL_DIR)/$(MCTP_DAEMON_INSTALL_DIR)/bin/
 	@cp -fr init.d $(SDK_INSTALL_DIR)/$(MCTP_DAEMON_INSTALL_DIR)/etc/
 
