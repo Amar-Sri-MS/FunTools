@@ -1,0 +1,45 @@
+/*
+ *  {{meta_data.filename}}
+ *
+ *  !!!! AUTO-GENERATED FILE. DO NOT EDIT !!!!
+ *  Created by {{meta_data.generator}} on {{meta_data.date}}.
+ *
+ *  Copyright {{meta_data.year}} Fungible Inc. All rights reserved.
+ */
+
+#pragma once
+
+{% for enum_set in data|selectattr("type", "eq", "enum") %}
+typedef enum {{enum_set.name}} {
+{% for enum_item in enum_set['values'] %}
+	{% if enum_item.value is defined %}
+	{{enum_item.key}} = {{enum_item.value}}, // {{enum_item.description}}
+	{% else %}
+	{{enum_item.key}}, // {{enum_item.description}}
+	{% endif %}
+{% endfor %}
+} {{enum_set.name}};
+
+{% endfor %}
+
+{#
+typedef enum fun_sku_id {
+	/* SKUID's of emulation builds */
+	{% for sku_name, sku_id in emu_sku_list.items() -%}
+		SKU__{{sku_name.lower()}} = {{"0x%08x"|format(sku_id|int)}}, // {{sku_name.lower()}}
+	{% endfor %}
+
+	/* SKUID's of fungible boards */
+	{% for sku_name,sku_id in fun_board_sku_list.items() -%}
+		SKU__{{sku_name.lower()}} = {{"0x%08x"|format(sku_id|int)}}, // {{sku_name.lower()}}
+	{% endfor %}
+} fun_sku_id_t;
+
+typedef enum fun_board_id {
+	{% for name,id in fun_board_list.items() -%}
+		FUN_BOARD_{{name.upper()}} = {{"0x%06x"|format((id)|int)}},
+	{% endfor %}
+} fun_board_id_t;
+
+extern struct platform_sku_t platform_sku_db[{{(emu_sku_list|length) + (fun_board_sku_list|length)}}];
+#}
