@@ -167,7 +167,7 @@ int main(int argc, char *argv[])
 		log_n_print("MCTP daemon already running\n");
 		exit(EXIT_FAILURE);
 	} else {
-		char pid_str[10];
+		char pid_str[32];
 		
 		fd2 = open(lock, O_RDWR | O_CREAT, S_IRUSR | S_IRGRP | S_IROTH);
 		if (fd2 < 0) {
@@ -187,7 +187,7 @@ int main(int argc, char *argv[])
 		}
 
 		if (pid > 0) {
-			char pid_str[10];
+			char pid_str[32];
 
 			snprintf(pid_str, sizeof(pid_str), "\n%d", pid);
 			write(fd2, pid_str, strlen(pid_str));

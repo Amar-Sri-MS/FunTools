@@ -122,7 +122,9 @@ static void set_pcie_vdm_hdr(int *len)
 	hdr->fmt = 3;
 	hdr->type = (2 << 3) | (PCIE_ROUTE_BY_ID << 0);
 
-	hdr->len = DWORD(*len);
+	// count mctp header as pcie_vdm hdr
+	hdr->len = DWORD(*len) - 1;
+
 	hdr->msg_code = MCTP_MSG_CODE;
 	hdr->vendor_id = MCTP_VENDOR_ID;
 
