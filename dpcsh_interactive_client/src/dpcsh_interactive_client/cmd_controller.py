@@ -29,7 +29,7 @@ class CmdController(Cmd):
 
     def check_cluster_id_range(self, cluster_id):
         result = True
-        if not ((int(cluster_id) <= 7) and (int(cluster_id) >= 0)):
+        if not ((int(cluster_id) <= 8) and (int(cluster_id) >= 0)):
             print "Enter cluster id between 0 and 7. You entered %s" % cluster_id
             result = False
         return result
@@ -630,8 +630,9 @@ class CmdController(Cmd):
 
     def peek_fpg_stats(self, args):
         port_num = args.port_num
+        iters = args.iters
         grep_regex = args.grep
-        self._peek_cmd_obj.peek_fpg_stats(port_num=port_num, grep_regex=grep_regex)
+        self._peek_cmd_obj.peek_fpg_stats(port_num=port_num, iterations=iterations, grep_regex=grep_regex)
 
     def peek_hnu_fpg_stats(self, args):
         port_num = args.port_num
@@ -641,8 +642,9 @@ class CmdController(Cmd):
     def peek_psw_nu_stats(self, args):
         port_num = args.port_num
         queues = args.queues
+        iterations = args.iters
         grep_regex = args.grep
-        self._peek_cmd_obj.peek_psw_stats(mode='nu', port_num=port_num, queue_list=queues, grep_regex=grep_regex)
+        self._peek_cmd_obj.peek_psw_stats(mode='nu', port_num=port_num, queue_list=queues, grep_regex=grep_regex, iterations=iterations)
 
     def peek_psw_hnu_stats(self, args):
         port_num = args.port_num
@@ -664,7 +666,8 @@ class CmdController(Cmd):
 
     def peek_vp_stats(self, args):
         grep_regex = args.grep
-        self._peek_cmd_obj.peek_vp_stats(grep_regex=grep_regex)
+        iterations = args.iters
+        self._peek_cmd_obj.peek_vp_stats(grep_regex=grep_regex, iterations=iterations)
 
     def peek_fcp_tunnel_stats(self, args):
         tunnel_id = args.tunnel
@@ -683,7 +686,8 @@ class CmdController(Cmd):
     def peek_wro_nu_stats(self, args):
         tunnel_id = args.tunnel
         grep_regex = args.grep
-        self._peek_cmd_obj.peek_wro_stats(mode='nu', tunnel_id=tunnel_id, grep_regex=grep_regex)
+        iterations = args.iters
+        self._peek_cmd_obj.peek_wro_stats(mode='nu', tunnel_id=tunnel_id, grep_regex=grep_regex, iterations=iterations)
 
     def peek_wro_hnu_stats(self, args):
         tunnel_id = args.tunnel
@@ -700,7 +704,8 @@ class CmdController(Cmd):
 
     def peek_erp_nu_stats(self, args):
         grep_regex = args.grep
-        self._peek_cmd_obj.peek_erp_stats(mode='nu', grep_regex=grep_regex)
+        iterations = args.iters
+        self._peek_cmd_obj.peek_erp_stats(mode='nu', grep_regex=grep_regex, iterations=iterations)
 
     def peek_etp_hnu_stats(self, args):
         grep_regex = args.grep
@@ -708,7 +713,8 @@ class CmdController(Cmd):
 
     def peek_etp_nu_stats(self, args):
         grep_regex = args.grep
-        self._peek_cmd_obj.peek_etp_stats(mode='nu', grep_regex=grep_regex)
+        iterations = args.iters
+        self._peek_cmd_obj.peek_etp_stats(mode='nu', grep_regex=grep_regex, iterations=iterations)
 
     def peek_erp_flex_stats(self, args):
         grep_regex = args.grep
@@ -730,11 +736,17 @@ class CmdController(Cmd):
 
     def peek_nu_sfg_stats(self, args):
         grep_regex = args.grep
-        self._peek_cmd_obj.peek_sfg_stats(mode='nu', grep_regex=grep_regex)
+        iterations = args.iters
+        self._peek_cmd_obj.peek_sfg_stats(mode='nu', grep_regex=grep_regex, iterations=iterations)
 
     def peek_hnu_sfg_stats(self, args):
         grep_regex = args.grep
         self._peek_cmd_obj.peek_sfg_stats(mode='hnu', grep_regex=grep_regex)
+
+    def peek_nu_flowcontrol_stats(self, args):
+        grep_regex = args.grep
+        iterations = args.iters
+        self._peek_cmd_obj.peek_stats_nu_flowcontrol(grep_regex=grep_regex, iterations=iterations)
 
     def peek_per_vp_stats(self, args):
         grep_regex = args.grep
@@ -742,6 +754,7 @@ class CmdController(Cmd):
         rx = args.rx
         tx = args.tx
         q = args.q
+        iterations = args.iters
         cluster_id = args.cluster_id
         core_id = args.core_id
         cid_flag = True
@@ -755,10 +768,10 @@ class CmdController(Cmd):
             return self.dpc_client.disconnect()
         if cid_flag and core_id_flag and pp:
             self._peek_cmd_obj.peek_stats_per_vp_pp(cluster_id=cluster_id, core_id=core_id, rx=rx, tx=tx, q=q,
-                                                    grep_regex=grep_regex)
+                                                    grep_regex=grep_regex, iterations=iterations)
         elif cid_flag and core_id_flag:
             self._peek_cmd_obj.peek_stats_per_vp(cluster_id=cluster_id, core_id=core_id, rx=rx, tx=tx, q=q,
-                                                 grep_regex=grep_regex)
+                                                 grep_regex=grep_regex, iterations=iterations)
 
     def peek_l1_cache_stats(self, args):
         grep_regex = args.grep
@@ -767,6 +780,7 @@ class CmdController(Cmd):
         store = args.store_miss
         cluster_id = args.cluster_id
         core_id = args.core_id
+        iterations = args.iters
         cid_flag = True
         core_id_flag = True
         if cluster_id is not None:
@@ -777,7 +791,7 @@ class CmdController(Cmd):
             print "Please enter value for cluster_id with core_id"
             return self.dpc_client.disconnect()
         self._peek_cmd_obj.peek_stats_l1_cache_pp(cluster_id=cluster_id, core_id=core_id, load=load, store=store,
-                                                grep_regex=grep_regex)
+                                                grep_regex=grep_regex, iterations=iterations)
 
     def peek_nwqm_stats(self, args):
         grep_regex = args.grep
@@ -803,6 +817,7 @@ class CmdController(Cmd):
         grep_regex = args.grep
         cluster_id = args.cluster_id
         core_id = args.core_id
+        iterations = args.iters
         cid_flag = True
         core_id_flag = True
         if cluster_id is not None:
@@ -813,11 +828,12 @@ class CmdController(Cmd):
             print "Please enter value for cluster_id with "
             return self.dpc_client.disconnect()
         if cid_flag and core_id_flag:
-            self._peek_cmd_obj.peek_pervppkts_stats(cluster_id=cluster_id, core_id=core_id, grep_regex=grep_regex)
+            self._peek_cmd_obj.peek_pervppkts_stats(cluster_id=cluster_id, core_id=core_id, grep_regex=grep_regex, iterations=iterations)
 
     def peek_stats_nhp(self, args):
         grep_regex = args.grep
-        self._peek_cmd_obj.peek_nhp_stats(grep_regex=grep_regex)
+        iterations = args.iters
+        self._peek_cmd_obj.peek_nhp_stats(grep_regex=grep_regex, iterations=iterations)
 
     def peek_stats_sse(self, args):
         grep_regex = args.grep
@@ -827,6 +843,7 @@ class CmdController(Cmd):
         grep_regex = args.grep
         cluster_id = args.cluster_id
         core_id = args.core_id
+        iterations = args.iters
         cid_flag = True
         core_id_flag = True
         if cluster_id is not None:
@@ -837,7 +854,7 @@ class CmdController(Cmd):
             print "Please enter value for cluster_id with "
             return self.dpc_client.disconnect()
         if cid_flag and core_id_flag:
-            self._peek_cmd_obj.peek_pc_resource_stats(cluster_id=cluster_id, core_id=core_id, grep_regex=grep_regex)
+            self._peek_cmd_obj.peek_pc_resource_stats(cluster_id=cluster_id, core_id=core_id, grep_regex=grep_regex, iterations=iterations)
 
     def peek_cc_resource_stats(self, args):
         grep_regex = args.grep
@@ -868,7 +885,8 @@ class CmdController(Cmd):
     def peek_nu_resource_stats(self, args):
         grep_regex = args.grep
         resource_id = args.resource_id
-        self._peek_cmd_obj.peek_mode_resource_stats(mode='nu', resource_id=resource_id, grep_regex=grep_regex)
+        iterations = args.iters
+        self._peek_cmd_obj.peek_mode_resource_stats(mode='nu', resource_id=resource_id, grep_regex=grep_regex, iterations=iterations)
 
     def peek_hu_resource_stats(self, args):
         id = args.id
@@ -889,8 +907,9 @@ class CmdController(Cmd):
 
     def peek_hux_resource_stats(self, args):
         id = args.id
+        iterations = args.iters
         grep_regex = args.grep
-        self._peek_cmd_obj.peek_hux_resource_stats(hu_id=id, grep_regex=grep_regex)
+        self._peek_cmd_obj.peek_hux_resource_stats(hu_id=id, grep_regex=grep_regex, iterations=iterations)
 
     def peek_dam_resource_stats(self, args):
         grep_regex = args.grep
@@ -910,17 +929,21 @@ class CmdController(Cmd):
         grep_regex = args.grep
         cid = args.cid
         diff = args.diff
-        self._peek_cmd_obj.peek_bam_resource_stats(cid=cid, diff=diff, grep_regex=grep_regex)
+        iterations = args.iters
+        self._peek_cmd_obj.peek_bam_resource_stats(cid=cid, diff=diff, grep_regex=grep_regex, iterations=iterations)
 
     def peek_ocm_resource_stats(self, args):
         grep_regex = args.grep
+        iterations = args.iters
         diff = args.diff
-        self._peek_cmd_obj.peek_ocm_resource_stats(diff=diff, grep_regex=grep_regex)
+        self._peek_cmd_obj.peek_ocm_resource_stats(diff=diff, grep_regex=grep_regex, iterations=iterations)
 
     def peek_eqm_stats(self, args):
         drg_ctx = args.drg_ctx
+        evq = args.evq
         grep_regex = args.grep
-        self._peek_cmd_obj.peek_eqm_stats(drg_ctx=drg_ctx, grep_regex=grep_regex)
+        iterations = args.iters
+        self._peek_cmd_obj.peek_eqm_stats(drg_ctx=drg_ctx, evq=evq, grep_regex=grep_regex, iterations=iterations)
 
     def peek_malloc_agent_stats(self, args):
         grep_regex = args.grep
@@ -934,30 +957,56 @@ class CmdController(Cmd):
         self._peek_cmd_obj.peek_funtop_stats()
 
     def peek_wustacks_stats(self, args):
-        self._peek_cmd_obj.peek_stats_wustacks()
+        iterations = args.iters
+        self._peek_cmd_obj.peek_stats_wustacks(iterations=iterations)
 
     def peek_wus_stats(self, args):
         self._peek_cmd_obj.peek_stats_wus()
 
     def peek_cdu_stats(self, args):
         grep = args.grep
-        self._peek_cmd_obj.peek_cdu_stats(grep=grep)
+        iterations = args.iters
+        self._peek_cmd_obj.peek_cdu_stats(grep=grep, iterations=iterations)
 
     def peek_ca_stats(self, args):
         grep = args.grep
-        self._peek_cmd_obj.peek_ca_stats(grep=grep)
+        iterations = args.iters
+        self._peek_cmd_obj.peek_ca_stats(grep=grep, iterations=iterations)
 
     def peek_ddr_stats(self, args):
         grep = args.grep
-        self._peek_cmd_obj.peek_ddr_stats(grep=grep)
+        iterations = args.iters
+        self._peek_cmd_obj.peek_ddr_stats(grep=grep, iterations=iterations)
 
     def peek_mud_stats(self, args):
         grep = args.grep
-        self._peek_cmd_obj.peek_mud_stats(grep_regex=grep)
+        iterations = args.iters
+        qdepth = args.qd
+        self._peek_cmd_obj.peek_stats_mud(qdepth=qdepth, iterations=iterations, grep_regex=grep)
+
+    def peek_dam_stats(self, args):
+        grep = args.grep
+        iterations = args.iters
+        self._peek_cmd_obj.peek_stats_dam(iterations=iterations, grep_regex=grep)
+
+    def peek_malloc_caches_stats(self, args):
+        grep = args.grep
+        iterations = args.iters
+        self._peek_cmd_obj.peek_stats_malloc_caches(iterations=iterations, grep_regex=grep)
+
+    def peek_mbuf_stats(self, args):
+        iterations = args.iters
+        vp = args.vp
+        mem_type = args.mem_type
+        if mem_type:
+            self._peek_cmd_obj.peek_stats_mbuf_mem_type(iterations=iterations)
+        else:
+            self._peek_cmd_obj.peek_stats_mbuf_vp(iterations=iterations)
 
     def peek_l2_cache_stats(self, args):
         grep = args.grep
-        self._peek_cmd_obj.peek_l2_cache_stats(grep=grep)
+        iterations = args.iters
+        self._peek_cmd_obj.peek_l2_cache_stats(grep=grep, iterations=iterations)
 
     def peek_le_tables_sdn_in(self, args):
         grep = args.grep
@@ -987,7 +1036,8 @@ class CmdController(Cmd):
 
     def peek_tcp_stats(self, args):
         grep = args.grep
-        self._peek_cmd_obj.peek_tcp_stats(grep=grep)
+        iterations = args.iters
+        self._peek_cmd_obj.peek_tcp_stats(grep=grep, iterations=iterations)
 
     def peek_tcp_flows_summary_stats(self,args):
         flow_id = args.flow_id
@@ -1023,7 +1073,8 @@ class CmdController(Cmd):
     def peek_stats_rate_all(self,args):
         rate = True
         count = args.count
-        self._peek_cmd_obj.peek_tcp_flows_stats(count=count,rate=rate)
+        iterations = args.iters
+        self._peek_cmd_obj.peek_tcp_flows_stats(count=count,rate=rate, iterations=iterations)
 
     def peek_stats_rate_filter(self,args):
         sip = args.sip
@@ -1125,6 +1176,11 @@ class CmdController(Cmd):
     def peek_copp_stats(self, args):
         grep = args.grep
         self._peek_cmd_obj.peek_copp_stats(grep=grep)
+
+    def peek_rdsock_stats(self, args):
+        grep = args.grep
+        iterations = args.iters
+        self._peek_cmd_obj.peek_rdsock_flow_stats(grep_regex=grep, iterations=iterations)
     
     def peek_hu_stats(self, args):
         grep_regex = args.grep
@@ -1133,12 +1189,14 @@ class CmdController(Cmd):
     def peek_hu_pcie_stats(self, args):
         hu_id = args.hu_id
         grep_regex = args.grep
-        self._peek_cmd_obj.peek_stats_hu_pcie(hu_id=hu_id, grep_regex=grep_regex)
+        iterations = args.iters
+        self._peek_cmd_obj.peek_stats_hu_pcie(hu_id=hu_id, grep_regex=grep_regex, iterations=iterations)
 
     def peek_hu_pwp_stats(self, args):
         hu_id = args.hu_id
         grep_regex = args.grep
-        self._peek_cmd_obj.peek_stats_hu_pwp(hu_id=hu_id, grep_regex=grep_regex)
+        iterations = args.iters
+        self._peek_cmd_obj.peek_stats_hu_pwp(hu_id=hu_id, grep_regex=grep_regex, iterations=iterations)
 
     def peek_hu_framer_stats(self, args):
         grep_regex = args.grep
@@ -1245,11 +1303,18 @@ class CmdController(Cmd):
         fcp_tunnel_id = args.fcp_tunnel_id
         self._show_cmd_obj.show_stats(filename=filename, mode='all', port_list=portlist, fcp_tunnel_id=fcp_tunnel_id)
 
+    def show_k2_stats(self, args):
+        filename = args.filename
+        iterations = args.iters 
+        self._show_cmd_obj.show_k2_stats(filename=filename, iterations=iterations) 
+
     def get_flow_list(self, args):
         grep_regex = args.grep
         pp = args.pp
         hu_id = args.hu_id
         hcf_id = args.hcf_id
+        storage = args.storage
+        iterations = args.iters
         tx = args.tx
         rx = args.rx
         if tx is None and rx is None:
@@ -1262,7 +1327,7 @@ class CmdController(Cmd):
             elif hu_id and hcf_id:
                 print "Please enter either hu_id in x or hcf_id in x.x.x format"
                 return self.dpc_client.disconnect()
-            self._flow_cmd_obj.get_flow_list_pp(hcf_id=hcf_id, hu_id=hu_id, tx=tx, rx=rx, grep_regex=grep_regex)
+            self._flow_cmd_obj.get_flow_list_pp(hcf_id=hcf_id, hu_id=hu_id, tx=tx, rx=rx, storage=storage, grep_regex=grep_regex, iterations=iterations)
         else:
             self._flow_cmd_obj.get_flow_list(hcf_id=hcf_id, hu_id=hu_id, grep_regex=grep_regex)
 
@@ -1337,6 +1402,10 @@ class CmdController(Cmd):
            self._storage_obj.storage_list_volumes(voltype = 'VOL_TYPE_BLK_NV_MEMORY')
         elif voltype == "pv":
            self._storage_obj.storage_list_volumes_pv(voltype = 'VOL_TYPE_BLK_PART_VOL')
+        elif voltype == "memvol":
+           self._storage_obj.storage_list_volumes(voltype = 'VOL_TYPE_BLK_MEMORY')
+        elif voltype == "sdk_memvol":
+           self._storage_obj.storage_list_volumes(voltype = 'VOL_TYPE_SDK_BLK_MEMORY')
         elif voltype == "all":
             self._storage_obj.storage_list_volumes_blt(voltype = 'VOL_TYPE_BLK_LOCAL_THIN')
             self._storage_obj.storage_list_volumes_rds(voltype = 'VOL_TYPE_BLK_RDS')
@@ -1346,6 +1415,8 @@ class CmdController(Cmd):
 	    self._storage_obj.storage_list_volumes_pv(voltype = 'VOL_TYPE_BLK_PART_VOL')
 	    self._storage_obj.storage_list_volumes(voltype = 'VOL_TYPE_BLK_LSV')
 	    self._storage_obj.storage_list_volumes_replica(voltype = 'VOL_TYPE_BLK_REPLICA')
+            self._storage_obj.storage_list_volumes(voltype = 'VOL_TYPE_BLK_MEMORY')
+            self._storage_obj.storage_list_volumes(voltype = 'VOL_TYPE_SDK_BLK_MEMORY')
         else:
             print "unknown voltype"
 
@@ -1384,7 +1455,11 @@ class CmdController(Cmd):
             self._storage_obj.storage_volume_stats(vol_uuid, voltype = 'VOL_TYPE_BLK_EC')
         elif voltype == "replica":
             self._storage_obj.storage_volume_stats(vol_uuid, voltype = 'VOL_TYPE_BLK_REPLICA')
-        else:
+        elif voltype == "memvol":
+	    self._storage_obj.storage_volume_stats(vol_uuid, voltype = 'VOL_TYPE_BLK_MEMORY')
+	elif voltype == "sdk_memvol":
+	    self._storage_obj.storage_volume_stats(vol_uuid, voltype = 'VOL_TYPE_SDK_BLK_MEMORY')
+	else:
             print "Unknown voltype"
 
     def storage_ctrlr_stats(self, args):
@@ -1569,6 +1644,7 @@ class CmdController(Cmd):
     peek_wred_ecn_stats_parser.set_defaults(func=peek_nu_qos_wred_ecn_stats)
     peek_nu_sfg_stats_parser.set_defaults(func=peek_nu_sfg_stats)
     peek_hnu_sfg_stats_parser.set_defaults(func=peek_hnu_sfg_stats)
+    peek_flowcontrol_nu_parser.set_defaults(func=peek_nu_flowcontrol_stats)
     peek_per_vp_stats_parser.set_defaults(func=peek_per_vp_stats)
     peek_l1_cache_stats_parser.set_defaults(func=peek_l1_cache_stats)
     peek_nwqm_stats_parser.set_defaults(func=peek_nwqm_stats)
@@ -1610,6 +1686,9 @@ class CmdController(Cmd):
     peek_stats_ca_parser.set_defaults(func=peek_ca_stats)
     peek_stats_ddr_parser.set_defaults(func=peek_ddr_stats)
     peek_stats_mud_parser.set_defaults(func=peek_mud_stats)
+    peek_stats_dam_parser.set_defaults(func=peek_dam_stats)
+    peek_stats_malloc_caches_parser.set_defaults(func=peek_malloc_caches_stats)
+    peek_stats_mbuf_parser.set_defaults(func=peek_mbuf_stats)
     peek_stats_l2_cache_parser.set_defaults(func=peek_l2_cache_stats)
     peek_stats_rdma_parser.set_defaults(func=peek_stats_rdma)
     peek_stats_le_table_sdn_in_parser.set_defaults(func=peek_le_tables_sdn_in)
@@ -1640,6 +1719,7 @@ class CmdController(Cmd):
     peek_probetest_streaminfo_parser.set_defaults(func=peek_probetest_streaminfo)
     peek_fcp_nu_gph_parser.set_defaults(func=peek_fcp_nu_gph)
     peek_stats_copp_parser.set_defaults(func=peek_copp_stats)
+    peek_stats_rdsock_parser.set_defaults(func=peek_rdsock_stats)
     peek_stats_ssds_parser.set_defaults(func=peek_stats_ssds)
     peek_stats_blt_vol_parser.set_defaults(func=peek_blt_vol_stats)
     peek_stats_rds_vol_parser.set_defaults(func=peek_rds_vol_stats)
@@ -1659,10 +1739,11 @@ class CmdController(Cmd):
     clear_nu_nwqm_stats_parser.set_defaults(func=clear_nu_nwqm_stats)
     clear_nu_vppkts_stats_parser.set_defaults(func=clear_nu_vppkts_stats)
 
-    # -------------- Clear Command Handlers ----------------
+    # -------------- Show Tech Handlers ----------------
     show_tech_nu_parser.set_defaults(func=show_tech_nu_stats)
     show_tech_hnu_parser.set_defaults(func=show_tech_hnu_stats)
     show_tech_all_parser.set_defaults(func=show_tech_all_stats)
+    show_tech_k2_parser.set_defaults(func=show_k2_stats)
 
     # -------------- Flow Command Handlers ----------------
     flow_list_parser.set_defaults(func=get_flow_list)
