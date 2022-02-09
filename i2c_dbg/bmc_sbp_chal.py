@@ -1354,16 +1354,18 @@ def do_full_rewrite(nor_image, src_image, override_files):
         enrollment_cert = nor_image.read_enrollment_cert(nor_dir)
         # save it to disk just in case --
         if enrollment_cert:
-            with open('saved_enrollment_cert.bin', 'rb') as f:
+            with open('saved_enrollment_cert.bin', 'wb') as f:
                 f.write(enrollment_cert)
+                print("Enrollment certificate backup saved as %s" % f.name)
 
     # read the host data from flash
     if need_to_move['hdat']:
         host_data = nor_image.read_host_data(nor_dir)
         # save it to disk just in case --
         if host_data:
-            with open('saved_host_data.bin', 'rb') as f:
+            with open('saved_host_data.bin', 'wb') as f:
                 f.write(host_data)
+                print("Host data backup saved as %s" % f.name)
 
     # identify sources: get_srcs_images() will give a set of good images
     # with their addresses
