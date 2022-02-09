@@ -1632,9 +1632,14 @@ def execute_challenge_command(challenge_interface, args):
     if args.raw_read is not None:
         nor_addr = int(args.raw_read, 0)
         num_bytes = int(args.read_size, 0)
-        data = nor_image.read_flash(nor_addr, num_bytes)
-        print("%d bytes at 0x%08x: %s" % (num_bytes, nor_addr, hex_str(data)))
-        open(args.output, 'wb').write(data)
+        bytes_read = 0
+        with open(args.output, 'wb') as f:
+            while bytes_read < num_bytes:
+                cnt = min(64*1024, num_bytes - bytes_read)
+                print("read %d bytes from 0x%08x" % (cnt, nor_addr + bytes_read))
+                data = nor_image.read_flash(nor_addr + bytes_read, cnt)
+                f.write(data)
+                bytes_read += cnt
         return
 
 
