@@ -1749,8 +1749,8 @@ def main():
                            help="recover the system automatically")
     flash_grp.add_argument("--use-cache", action="store_true",
                            help="Use the last downloaded NOR Image file for remote recovery")
-    flash_grp.add_argument("--install-missing", action="store_true",
-                           help="Fill in missing firmware locations during full update")
+    flash_grp.add_argument("--no-install-missing", dest='install_missing', action="store_false",
+                           help="Do not fill in missing firmware locations during full update")
 
     args = parser.parse_args()
 
