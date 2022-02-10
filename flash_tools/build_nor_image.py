@@ -303,14 +303,13 @@ def parse_args():
                             metavar='FILE',
                             help="enrollment certificate to add to the image")
     bld_type = arg_parser.add_mutually_exclusive_group()
-    bld_type.add_argument("-p", "--production", action='store_const', const='', dest='debug',
-                            help="Production build")
+    bld_type.add_argument("-p", "-r", "--release", "--production",
+                          action='store_const', const='', dest='debug',
+                          help="Production/Release build")
     bld_type.add_argument("-V", "--verbose", action='store_const', const='_verbose', dest='debug',
-                            help="Production build with verbose logging")
+                          help="Production/Release build with verbose logging")
     bld_type.add_argument("-T", "--test", action='store_const', const='_test', dest='debug',
-                            help="Production build with all tests")
-    bld_type.add_argument("--debug", action='store_const', const='_debug',
-                            help="Debug build")
+                          help="Production/Release build with all tests")
     # default to --debug
     arg_parser.set_defaults(debug='_debug')
 
