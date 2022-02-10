@@ -26,10 +26,17 @@ SLOWPATH_SYMBOLS = [
         "_maybe_log_and_send_wu",
         "_maybe_log_wu",
         "trace_wu_send",
+        "fun_props",
+        "abort",
+        "print_nu_debug_stats",
+        "ws_coldtrace"
+
+]
+
+VERBOSE_SYMBOLS = [
         "wuthread_sleep",
         "fun_json",
         "_fun_json_dict",
-        "fun_props",
         "fun_malloc",
         "fun_free",
         "free_multiple",
@@ -38,9 +45,8 @@ SLOWPATH_SYMBOLS = [
         "fun_magent",
         "fun_mcache",
         "biggies_allocate",
-        "abort",
-        "channel_parallelize_push",
-        "print_nu_debug_stats"]
+        "channel_parallelize_push"
+]
 
 ###
 ##  parse_args
@@ -54,7 +60,7 @@ def parse_args() -> argparse.Namespace:
         parser.add_argument("dasm1", help="First DASM file")
 
         # Second dasm file
-        parser.add_argument("dasm2", help="Second DASM file")
+        parser.add_argument("dasm2", nargs='?', help="Second DASM file")
 
         # All functions instead of just WU handlers
         parser.add_argument("-a", "--all", action="store_true", default=False)
@@ -64,6 +70,9 @@ def parse_args() -> argparse.Namespace:
 
         # Max depth of recursion (0=flat) 
         parser.add_argument("-d", "--depth", action="store", default=5)
+        
+        # Dump regardless of diffs
+        parser.add_argument("-D", "--no-delta", action="store_true", default=False)
 
         args: argparse.Namespace = parser.parse_args()
         EXTRA_DETAIL = args.extra
@@ -79,6 +88,14 @@ def is_slowpath(sym):
         if (EXTRA_DETAIL):
                 return False
         for ssym in SLOWPATH_SYMBOLS:
+                if (sym.startswith(ssym)):
+                        return True
+        return False
+
+def is_verbose(sym):
+        if (EXTRA_DETAIL):
+                return False
+        for ssym in VERBOSE_SYMBOLS:
                 if (sym.startswith(ssym)):
                         return True
         return False
@@ -194,6 +211,7 @@ class FuncStats:
                 self.recursion: int = 0
                 self.maxdepth: bool = False
                 self.slowpath: bool = False
+                self.verbose: bool = False
                 
                 self._total_ins = None
                 self._children_fp = None
@@ -212,6 +230,11 @@ class FuncStats:
                 # check if we're slowpath
                 if (is_slowpath(self.name)):
                         self.slowpath = True
+                        return
+
+                # check if we're slowpath
+                if (is_verbose(self.name)):
+                        self.verbose = True
                         return
 
                 # Bail out now if we've hit the max depth
@@ -257,6 +280,8 @@ class FuncStats:
                         suffix += "<max depth reached>"
                 if (self.slowpath):
                         suffix += "<SLOWPATH>"
+                if (self.verbose):
+                        suffix += "<VERBOSE>"
                 return suffix
 
         def fingername(self):
@@ -347,7 +372,7 @@ def dump_diffs(d1name: str, d2name: str, dasm1, dasm2, common: Set[str]) -> None
 
                 idelta = check_diff(func1, func2)
 
-                if (idelta is None):
+                if ((idelta is None) and (args.no_delta == False)):
                         continue
 
                 # put it in a list
@@ -377,7 +402,7 @@ def dump_recursive_diff(absdelta: int, fp1: Fingerprint, fp2: Fingerprint):
         fp2.fstat.print_callgraph("\t", "dasm2")
 
 
-def dump_diffs_recursive(d1name: str, d2name: str, dasm1, dasm2, common: Set[str]) -> None:
+def dump_diffs_recursive(args, d1name: str, d2name: str, dasm1, dasm2, common: Set[str]) -> None:
 
         # build a list sorted by abs(ins_delta)
         dlist = []
@@ -389,7 +414,7 @@ def dump_diffs_recursive(d1name: str, d2name: str, dasm1, dasm2, common: Set[str
                 fp2 = fstat2.fingerprint()
 
                 # compare fingerprints
-                if (fp1 == fp2):
+                if ((fp1 == fp2) and (args.no_delta == False)):
                         continue
 
                 # put it in a list
@@ -413,10 +438,10 @@ def dump_diffs_recursive(d1name: str, d2name: str, dasm1, dasm2, common: Set[str
         print( "%d common functions changed" % len(dlist))
 
 ###
-##  main
+##  Diff a pair of files 
 #
-def main() -> int:
-        args: argparse.Namespace = parse_args()
+
+def analyse_diff(args):
 
         # parse the two files
         fl1 = open(args.dasm1, 'r')
@@ -447,7 +472,7 @@ def main() -> int:
 
         # print("both: ", len(both), "functions")
         #dump_diffs(args.dasm1, args.dasm2, dasm1, dasm2, both)
-        dump_diffs_recursive(args.dasm1, args.dasm2, dasm1, dasm2, both)
+        dump_diffs_recursive(args, args.dasm1, args.dasm2, dasm1, dasm2, both)
 
         # count all the instructions
         count1: int = all_insns(dasm1)
@@ -457,6 +482,54 @@ def main() -> int:
               (count1, count2, count2 - count1))
 
         return 0
+
+###
+##  Analyse a single file 
+#
+
+def dump_funcs_recursive(dname: str, dasm, syms: Set[str]) -> None:
+
+        # build a list sorted by abs(ins_delta)
+        dlist = []
+        for sym in syms:
+                fstat = FuncStats(dasm, sym, 5)
+
+                fp = fstat.fingerprint()
+
+                # put it in a list
+                dlist.append((fp.totalins, fp))
+
+        # Sort forward for heaviest last
+        print("Showing %d functions" % len(dlist))
+        print("dasm: %s" % dname)
+        print()
+        for (_, fp) in sorted(dlist):
+                # lazy                
+                fp.fstat.print_callgraph("\t", fp.fstat.name)
+                print()
+
+def analyse_single(args):
+
+        fl = open(args.dasm1, 'r')
+        dasm = parse_dasm.DasmInfo()
+        dasm.Read(fl.readlines())
+        funcs = set(dasm.functions.keys())
+        funcs = set(filter_wus(list(funcs)))
+
+        dump_funcs_recursive("Functions in %s" % args.dasm1, dasm, funcs)
+
+###
+##  main
+#
+def main() -> int:
+        args: argparse.Namespace = parse_args()
+
+        if (args.dasm2 is None):
+                analyse_single(args)
+        else:
+                analyse_diff(args)
+
+
  
 ###
 ##  entrypoint
