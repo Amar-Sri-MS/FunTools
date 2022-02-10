@@ -896,18 +896,20 @@ class NOR_IMAGE(object):
 
     def get_version_of_image_at_addr(self, image_addr):
         header_info = self.get_auth_header_of_image_at_addr(image_addr)
+        if header_info['version'] == 0xffffffff:
+            return 0 # convert missing image data to version 0 for easier processing
         return header_info['version']
 
     def get_address_of_highest_version(self, addresses):
         all_raw_versions = { a : self.get_version_of_image_at_addr(a) for a in addresses}
-        # filter out all 0xFFFFFFFF version (missing images)
-        all_versions = { a : v for a, v in all_raw_versions.iteritems() if v != 0xFFFFFFFF }
+        # filter out all missing images
+        all_versions = { a : v for a, v in all_raw_versions.iteritems() if v != 0 }
 
         if not all_versions:
             return None, None
 
-        addr_of_max_version = max( all_versions, key=all_versions.get)
-        return all_versions, addr_of_max_version
+        addr_of_max_version = max(all_versions, key=all_versions.get)
+        return all_raw_versions, addr_of_max_version
 
 
     def read_image(self, addr):
@@ -1279,7 +1281,7 @@ def do_image_update(nor_image, src_image, sorted_addresses,
 
 
 
-def do_full_update(nor_image, src_image, override_files, dry_run):
+def do_full_update(nor_image, src_image, override_files, dry_run, install_missing):
     st = datetime.datetime.now()
 
     # figure out the address on file of the newer source imag
@@ -1296,11 +1298,19 @@ def do_full_update(nor_image, src_image, override_files, dry_run):
             if target_address is None:
                 print("%s: no current image found for this type on Flash => no safe update possible")
             else:
-                versions_str = ''.join(["0x%08x: %d " % (a,v) for a,v in versions.items()])
+                versions_str = ''.join(["0x%08x: %s " % (a, str(v) if v else 'None') for a,v in versions.items()])
                 print("%s : 0x%08x  (versions: %s)" % (img_type, target_address, versions_str))
                 do_image_update(nor_image, src_image, sorted_addresses,
                                 img_type, target_address, versions[target_address],
                                 src_info, dry_run)
+            if versions and install_missing:
+                for address, version in versions.items():
+                    if version == 0:
+                        print("Install %s missing at location 0x%08x" % (img_type, address))
+                        do_image_update(nor_image, src_image, sorted_addresses,
+                                img_type, address, version,
+                                src_info, dry_run)
+
         else:
             print("%s: image not found on Flash => cannot update" % img_type)
             print("Consider using the full-rewrite option")
@@ -1344,16 +1354,18 @@ def do_full_rewrite(nor_image, src_image, override_files):
         enrollment_cert = nor_image.read_enrollment_cert(nor_dir)
         # save it to disk just in case --
         if enrollment_cert:
-            with open('saved_enrollment_cert.bin', 'rb') as f:
+            with open('saved_enrollment_cert.bin', 'wb') as f:
                 f.write(enrollment_cert)
+                print("Enrollment certificate backup saved as %s" % f.name)
 
     # read the host data from flash
     if need_to_move['hdat']:
         host_data = nor_image.read_host_data(nor_dir)
         # save it to disk just in case --
         if host_data:
-            with open('saved_host_data.bin', 'rb') as f:
+            with open('saved_host_data.bin', 'wb') as f:
                 f.write(host_data)
+                print("Host data backup saved as %s" % f.name)
 
     # identify sources: get_srcs_images() will give a set of good images
     # with their addresses
@@ -1542,12 +1554,12 @@ def execute_challenge_command(challenge_interface, args):
 
     if args.full_update is not None:
         src_image = NOR_IMAGE(DBG_File(args.full_update))
-        do_full_update( nor_image, src_image, args.override, dry_run=False)
+        do_full_update( nor_image, src_image, args.override, dry_run=False, install_missing=args.install_missing)
         return
 
     if args.explain_full_update is not None:
         src_image = NOR_IMAGE(DBG_File(args.explain_full_update))
-        do_full_update( nor_image, src_image, args.override, dry_run=True)
+        do_full_update( nor_image, src_image, args.override, dry_run=True, install_missing=args.install_missing)
         return
 
     if args.images:
@@ -1632,9 +1644,14 @@ def execute_challenge_command(challenge_interface, args):
     if args.raw_read is not None:
         nor_addr = int(args.raw_read, 0)
         num_bytes = int(args.read_size, 0)
-        data = nor_image.read_flash(nor_addr, num_bytes)
-        print("%d bytes at 0x%08x: %s" % (num_bytes, nor_addr, hex_str(data)))
-        open(args.output, 'wb').write(data)
+        bytes_read = 0
+        with open(args.output, 'wb') as f:
+            while bytes_read < num_bytes:
+                cnt = min(64*1024, num_bytes - bytes_read)
+                print("read %d bytes from 0x%08x" % (cnt, nor_addr + bytes_read))
+                data = nor_image.read_flash(nor_addr + bytes_read, cnt)
+                f.write(data)
+                bytes_read += cnt
         return
 
 
@@ -1732,6 +1749,8 @@ def main():
                            help="recover the system automatically")
     flash_grp.add_argument("--use-cache", action="store_true",
                            help="Use the last downloaded NOR Image file for remote recovery")
+    flash_grp.add_argument("--no-install-missing", dest='install_missing', action="store_false",
+                           help="Do not fill in missing firmware locations during full update")
 
     args = parser.parse_args()
 
