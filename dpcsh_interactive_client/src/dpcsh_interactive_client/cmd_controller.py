@@ -630,7 +630,7 @@ class CmdController(Cmd):
 
     def peek_fpg_stats(self, args):
         port_num = args.port_num
-        iters = args.iters
+        iterations = args.iters
         grep_regex = args.grep
         self._peek_cmd_obj.peek_fpg_stats(port_num=port_num, iterations=iterations, grep_regex=grep_regex)
 
