@@ -1,6 +1,7 @@
 from prettytable import PrettyTable, FRAME
 from datetime import datetime
 from collections import OrderedDict
+from collections import defaultdict
 import re
 import time
 import os
@@ -966,6 +967,153 @@ class PeekCommands(object):
                 column_name = "Port %d MISC stats" % port_num
                 break
         return column_name
+
+    def _calculate_percentage(self, subtotal, total):
+        return round((subtotal / float(total)) * 100, 2)
+
+    def _calculate_stats(self, j):
+        def _calculate_target_percentage(key, global_stats, target_instance_stats):
+            target_instance_stats[key + "_percentage"] = self._calculate_percentage(
+                target_instance_stats[key], global_stats[key]
+            )
+
+        target_stats = defaultdict(lambda: defaultdict(int))
+        global_stats = defaultdict(int)
+
+        for flow in j:
+            global_stats["total_tx_packets"] += flow["stats"]["total_tx_packets"]
+            global_stats["total_rx_packets"] += flow["stats"]["total_rx_packets"]
+
+            global_stats["total_tx_bytes"] += flow["stats"][
+                "total_tx_payload_bytes"
+            ]
+            global_stats["total_rx_bytes"] += flow["stats"][
+                "total_rx_payload_bytes"
+            ]
+
+            target_stats[flow["tcp_daddr"]]["total_tx_packets"] += flow["stats"][
+                "total_tx_packets"
+            ]
+            target_stats[flow["tcp_daddr"]]["total_tx_bytes"] += flow["stats"][
+                "total_tx_payload_bytes"
+            ]
+            target_stats[flow["tcp_daddr"]]["total_rx_packets"] += flow["stats"][
+                "total_rx_packets"
+            ]
+            target_stats[flow["tcp_daddr"]]["total_rx_bytes"] += flow["stats"][
+                "total_rx_payload_bytes"
+            ]
+
+        for target, data in target_stats.items():
+            _calculate_target_percentage("total_tx_packets", global_stats, data)
+            _calculate_target_percentage("total_tx_bytes", global_stats, data)
+            _calculate_target_percentage("total_rx_packets", global_stats, data)
+            _calculate_target_percentage("total_rx_bytes", global_stats, data)
+
+        return global_stats, target_stats
+
+    def _print_tabulated_flows(self, j, global_stats):
+        flows = []
+        for flow in j:
+            flows.append(TCPFlow(flow, global_stats))
+
+        flows_tab = PrettyTable()
+
+        flows_tab.field_names = [
+            "ID",
+            "Tuple",
+            "FC",
+            "Pages",
+            "RCV.WND",
+            "RCV.WND peer",
+            "In Flight (B)",
+            "#SGLs",
+            "In FIFO (B)",
+            "TX (B)",
+            "TX (B%)",
+            "TX (Packets)",
+            "TX (Packets%)",
+            "RX (B)",
+            "RX (B%)",
+            "RX (Packets)",
+            "RX (Packets%)",
+            "Drops",
+        ]
+
+        for flow in flows:
+            flows_tab.add_row(
+                [
+                    flow.id,
+                    flow.tuple,
+                    flow.fc,
+                    flow.pages_held,
+                    flow.rcv_wnd,
+                    flow.rcv_wnd_peer,
+                    flow.in_flight,
+                    flow.sgl_occupancy,
+                    flow.in_fifo,
+                    flow.tx_bytes,
+                    flow.tx_bytes_percentage,
+                    flow.tx_packets,
+                    flow.tx_packets_percentage,
+                    flow.rx_bytes,
+                    flow.rx_bytes_percentage,
+                    flow.rx_packets,
+                    flow.rx_packets_percentage,
+                    flow.drops,
+                ]
+            )
+
+        print(flows_tab)
+        return flows_tab
+
+    def _print_tabulated_targets(self, j, target_stats):
+        targets_tab = PrettyTable()
+        targets_tab.field_names = [
+            "DIP",
+            "TX (B)",
+            "TX (B%)",
+            "TX (Packets)",
+            "TX (Packets%)",
+            "RX (B)",
+            "RX (B%)",
+            "RX (Packets)",
+            "RX (Packets%)",
+        ]
+
+        flattened = target_stats.items()
+        ranked = sorted(
+            flattened, key=lambda x: x[1]["total_tx_bytes_percentage"], reverse=True
+        )
+
+        for target, stats in ranked:
+            targets_tab.add_row(
+                [
+                    target,
+                    stats["total_tx_bytes"],
+                    stats["total_tx_bytes_percentage"],
+                    stats["total_tx_packets"],
+                    stats["total_tx_packets_percentage"],
+                    stats["total_rx_bytes"],
+                    stats["total_rx_bytes_percentage"],
+                    stats["total_rx_packets"],
+                    stats["total_rx_packets_percentage"],
+                ]
+            )
+
+        print(targets_tab)
+        return targets_tab
+
+    def _tabularize(self, output=None, dest=0, iterations=1):
+        output = output["6.0.0"]["tcp"]
+
+        global_stats, target_stats = self._calculate_stats(output)
+
+        if not dest:
+            result = self._print_tabulated_flows(output, global_stats)
+        else:
+            result = self._print_tabulated_targets(output, target_stats)
+        return result
 
     def peek_fpg_stats(self, port_num, grep_regex=None, mode='nu', get_result_only=False, iterations=9999999):
         prev_result = {}
@@ -2386,7 +2534,7 @@ class PeekCommands(object):
             ip_address = ip_address + "." + ip if ip_address else ip
         return ip_address
 
-    def peek_tcp_flows_summary_stats(self,flow_id=-1,count=None):
+    def peek_tcp_flows_summary_stats(self,flow_id=-1,count=1000):
         cmd = ["list_r",]
         pos = len("TCP_FSM_STATE_")
         if count: 
@@ -2416,6 +2564,32 @@ class PeekCommands(object):
         except Exception as ex:
             print "ERROR: %s" % str(ex)
             self.dpc_client.disconnect()
+
+    def peek_tcp_flows_details(self, count = 1000, dest = 0, iterations = 1):
+        cmd = ["list_r"]
+        iteration_count = 1
+        if count:
+            count_dict = {"count": count}
+            cmd.append(count_dict)
+        while True:
+            try:
+                result = self.dpc_client.execute(verb="tcp",arg_list=cmd)
+                if result:
+                    output = self._tabularize(output=result, dest=dest, iterations=iterations)
+                else:
+                    return cmd, "Empty Result"
+                if iteration_count == iterations:
+                    return cmd, output
+                iteration_count += 1
+                print "\n########################  %s ########################\n" % str(self._get_timestamp())
+                do_sleep_for_interval()
+            except KeyboardInterrupt:
+                self.dpc_client.disconnect()
+                break
+            except Exception as ex:
+                print "ERROR: %s" % str(ex)
+                self.dpc_client.disconnect()
+                break
 
     def peek_tcp_flows_state(self,flow_id = -1,sip=None,dip=None,sport=None,dport=None,count=None):
         cmd = ["list_r",]
@@ -5371,7 +5545,6 @@ class ShowCommands(PeekCommands):
                 filename = str(uuid4()) + '.txt'
             filepath = tmp_path + filename
             
-             
             command_dict['NU FPG 0'] = self.peek_fpg_stats(port_num=0, iterations=iterations)
             command_dict['NU FPG 4'] = self.peek_fpg_stats(port_num=4, iterations=iterations)
             command_dict['NU PSW'] = self.peek_psw_stats(iterations=iterations)
@@ -5399,6 +5572,8 @@ class ShowCommands(PeekCommands):
             command_dict['CC RES'] = self.peek_cc_resource_stats(iterations=iterations)
             
             command_dict['TCP Flow Summary'] = self.peek_tcp_flows_summary_stats()
+            command_dict['TCP Flow Details'] = self.peek_tcp_flows_details(count=1000, dest=0, iterations=iterations)
+            command_dict['TCP Flow Details'] = self.peek_tcp_flows_details(count=1000, dest=1, iterations=iterations)
             command_dict['TCP Global'] = self.peek_tcp_stats(iterations=iterations) 
             command_dict['TCP Flow Stats'] = self.peek_tcp_flows_stats(rate=True, count=100, iterations=iterations)
             command_dict['TCP State'] = self.peek_tcp_flows_state()
@@ -6174,6 +6349,63 @@ class DebugCommands(PeekCommands):
     def debug_vp_state(self, vp_num, grep_regex):
         cmd = ["vp_state", vp_num]
         return self._display_stats(cmd=cmd, grep_regex=grep_regex, verb='debug', get_result_only=False)
+
+class TCPFlow(object):
+    def __init__(self, data, global_stats):
+        self.data = data
+
+        self.id = data["flow"]["id"]
+        self.nu_blocked = data["xmt_stats"]["nu_res_stats"]["blocked_cnt"]
+        self.pc_blocked = data["xmt_stats"]["hu_or_pc_res_stats"]["blocked_cnt"]
+        self.fc = self.nu_blocked + self.pc_blocked
+        self.pages_held = data["xmt_page_buf_pages_held"]
+        self.dma_in_flight = (
+            data["xmt_page_buf_seq_tail_pending"]
+            - data["xmt_page_buf_seq_tail"]
+        )
+        self.sgl_occupancy = data["xmt_sgl_fifo_occupancy16"]
+        self.rcv_wnd = data["tcp_rcv_wnd"]
+        self.rcv_wnd_peer = data["tcp_rcv_adv"]
+
+        self.in_flight = data["xmt_snd_nxt"] - data["xmt_snd_una"]
+        self.in_fifo = (
+            data["xmt_sgl_fifo_seq_tail"] - data["xmt_sgl_fifo_seq_head"]
+        )
+        self.tx_bytes = data["stats"]["total_tx_payload_bytes"]
+        self.tx_bytes_percentage = self._calculate_percentage(
+            self.tx_bytes, global_stats["total_tx_bytes"]
+        )
+
+        self.tx_packets = data["stats"]["total_tx_packets"]
+        self.tx_packets_percentage = self._calculate_percentage(
+            self.tx_packets, global_stats["total_tx_packets"]
+        )
+
+        self.rx_packets = data["stats"]["total_rx_packets"]
+        self.rx_packets_percentage = self._calculate_percentage(
+            self.rx_packets, global_stats["total_rx_packets"]
+        )
+
+        self.rx_bytes = data["stats"]["total_rx_payload_bytes"]
+        self.rx_bytes_percentage = self._calculate_percentage(
+            self.rx_bytes, global_stats["total_rx_bytes"]
+        )
+
+        self.drops = (
+            data["stats"]["drops_ooo"] + data["stats"]["drops_past_seq"]
+        )
+
+        self.saddr = data["tcp_saddr"]
+        self.sport = data["tcp_sport"]
+        self.daddr = data["tcp_daddr"]
+        self.dport = data["tcp_dport"]
+
+        self.tuple = "{}:{} -> {}:{}".format(
+            self.saddr, self.sport, self.daddr, self.dport
+        )
+
+    def _calculate_percentage(self, subtotal, total):
+        return round((subtotal / float(total)) * 100, 2)
 
 
 if __name__ == "__main__":

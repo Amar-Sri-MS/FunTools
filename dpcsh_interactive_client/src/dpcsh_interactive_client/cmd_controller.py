@@ -1044,6 +1044,12 @@ class CmdController(Cmd):
         count = args.count
         self._peek_cmd_obj.peek_tcp_flows_summary_stats(flow_id = flow_id,count = count)
 
+    def peek_tcp_flows_details(self,args):
+        count = args.count
+        dest = args.dest
+        iterations = args.iters
+        self._peek_cmd_obj.peek_tcp_flows_details(count = count, dest = dest, iterations = iterations)
+
     def peek_tcp_flows_state_all(self,args):
         count = args.count 
         self._peek_cmd_obj.peek_tcp_flows_state(count=count)
@@ -1699,6 +1705,7 @@ class CmdController(Cmd):
     peek_stats_sdn_vp_parser.set_defaults(func=peek_sdn_vp_stats)
     peek_stats_tcp_parser.set_defaults(func=peek_tcp_stats)
     peek_stats_tcp_flows_summary_parser.set_defaults(func=peek_tcp_flows_summary_stats)
+    peek_stats_tcp_flows_details_parser.set_defaults(func=peek_tcp_flows_details)
     #peek_stats_tcp_flow_state_parser.set_defaults(func=peek_tcp_flows_state)
     peek_stats_tcp_flows_state_all_parser.set_defaults(func=peek_tcp_flows_state_all)
     peek_stats_tcp_flows_state_filter_sub_parser.set_defaults(func=peek_tcp_flows_state_filter)
