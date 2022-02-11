@@ -16,6 +16,9 @@ import parse_dasm
 
 EXTRA_DETAIL: bool = False
 
+# slowpath symbols are functions that only execute due to
+# exceptional situations. These never affect the fast path
+# so their code generation doesn't matter
 SLOWPATH_SYMBOLS = [
         "printf",
         "vfprintf",
@@ -33,6 +36,10 @@ SLOWPATH_SYMBOLS = [
 
 ]
 
+# Verbose symbols are functions that may appear in data
+# path WUs but are very heavy-weight. They are more about
+# algorithmic than code generation optimisation, so it only
+# crufts up the output to show them. 
 VERBOSE_SYMBOLS = [
         "wuthread_sleep",
         "fun_json",
