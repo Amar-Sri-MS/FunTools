@@ -945,6 +945,29 @@ bool dpcsocket_init(struct dpcsock *sock)
 	return true;
 }
 
+bool retry_function(void *context, bool (func)(void *)) {
+	int tries = 0;
+	do {
+		if (func(context))
+			return true;
+
+		if (tries > 0) {
+			log_error("connect error, retry %d\n", tries);
+			sleep(1);
+		}
+
+		tries++;
+	} while (tries < connect_retries);
+
+	log_error("too many attempts, giving up\n");
+	return false;
+}
+
+bool dpcsocket_init_retry(struct dpcsock *sock)
+{
+	return retry_function(sock, (void *)dpcsocket_init);
+}
+
 static void dpcsocket_destroy(struct dpcsock *sock)
 {
 #ifdef WITH_LIBFUNQ
@@ -1072,21 +1095,7 @@ bool dpcsocket_open(struct dpcsock_connection *connection)
 
 bool dpcsocket_open_retry(struct dpcsock_connection *connection)
 {
-	int tries = 0;
-	do {
-		if (dpcsocket_open(connection))
-			return true;
-
-		if (tries > 0) {
-			log_error("connect error, retry %d\n", tries);
-			sleep(1);
-		}
-
-		tries++;
-	} while (tries < connect_retries);
-
-	log_error("too many attempts, giving up\n");
-	return false;
+	return retry_function(connection, (void *)dpcsocket_open);
 }
 
 void dpcsocket_close(struct dpcsock_connection *connection)
@@ -2053,7 +2062,7 @@ int main(int argc, char *argv[])
 	_print_version(); /* always print this for the logs */
 
 	/* start by initializing the sockets */
-	if (!dpcsocket_init(&funos_sock) || !dpcsocket_init(&cmd_sock)) {
+	if (!dpcsocket_init_retry(&funos_sock) || !dpcsocket_init(&cmd_sock)) {
 		log_error("can't initialize connections\n");
 		exit(1);
 	}
