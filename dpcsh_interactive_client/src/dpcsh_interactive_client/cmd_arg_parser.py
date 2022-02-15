@@ -1381,6 +1381,12 @@ peek_stats_tcp_flows_summary_parser = peek_stats_tcp_flows_parsers.add_parser('s
 peek_stats_tcp_flows_summary_parser.add_argument('-flow_id', type=int, help="Flow ID", default=None)
 peek_stats_tcp_flows_summary_parser.add_argument('-count', type=int, help="Count", default=None)
 
+#Peek stats TCP flows details 
+peek_stats_tcp_flows_details_parser = peek_stats_tcp_flows_parsers.add_parser('detail', help="Peek TCP stats flows summary")
+peek_stats_tcp_flows_details_parser.add_argument('-dest', type=int, help="Flow ID", default=0)
+peek_stats_tcp_flows_details_parser.add_argument('-count', type=int, help="Count", default=100)
+peek_stats_tcp_flows_details_parser.add_argument('-iters', type=int, help="Iterations", default=1)
+
 #Peek stats TCP flows state
 peek_stats_tcp_flows_state_parser = peek_stats_tcp_flows_parsers.add_parser('state', help="Peek TCP stats flows state")
 peek_stats_tcp_flows_state_sub_parsers = peek_stats_tcp_flows_state_parser.add_subparsers(title='subcommands', help="")
