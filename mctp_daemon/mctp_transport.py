@@ -53,13 +53,12 @@ def mctp_pkt_tx():
                 data = mctp_tx_dpc_handle.blob_from_string(mctp_pkt_tx_data)
 
                 log.debug('Sending Data to HostServer using FunOS PCIe Driver')
-                result = mctp_tx_dpc_handle.execute('mctp_transport', ['mctp_hu_send', ['quote', data]])
-                log.debug("'mctp_hu_send' packet DPCSH response: {}".format(result))
-                time.sleep(0.1)
+                result = mctp_tx_dpc_handle.execute('mctp_transport', ['mctp_pkt_send', 'mctp_over_pcievdm', ['quote', data]])
+                log.debug("'mctp_pkt_send' packet DPCSH response: {}".format(result))
 
     except Exception as e:
         pcievdm_tx_fifo.close()
-        result = mctp_tx_dpc_handle.execute("mctp_transport", ['mctp_hu_recv_unsub', 0])
+        result = mctp_tx_dpc_handle.execute("mctp_transport", ['mctp_pkt_recv_unsub', 0])
         log.exception(" mctp_pkt_tx() failed, error:{}".format(e))
   
 #PLDM/MCTP Packet Ingress Path
@@ -68,7 +67,12 @@ def mctp_pkt_rx():
 
     try:
         mctp_rx_dpc_handle = dpc_client.DpcClient(unix_sock = True)
-        tid = mctp_rx_dpc_handle.async_send("mctp_transport", "mctp_hu_recv_sub")
+        #Start a Fresh
+        mctp_rx_dpc_handle.execute("mctp_transport", ['mctp_pkt_recv_unsub', 0])
+        mctp_rx_dpc_handle.execute("mctp_transport", ['mctp_pkt_recv_unsub', 1])
+
+        #Subscribe to a MCTP Transport Channel to RX Packets
+        tid = mctp_rx_dpc_handle.async_send("mctp_transport", "mctp_pkt_recv_sub")
 
         result = mctp_rx_dpc_handle.async_recv_wait(tid)
         log.info("MCTP Rx Channel Successfully established: {}".format(result))
@@ -79,17 +83,22 @@ def mctp_pkt_rx():
                 log.debug("Waiting for PLDM/MCTP Packet from Host Server ........")
                 result = mctp_rx_dpc_handle.async_recv_wait(tid)
                 log.debug("PLDM/MCTP async_recv_wait recieved response: {}".format(result))
+
+                if not result['mctp_over_pcievdm']:
+                    log.debug("pkt != PLDM/MCTP Over PCIeVDM")
+                    continue
+
                 mctp_pkt_rx_data = mctp_rx_dpc_handle.blob_to_string(result['data'])
                 log.debug('Sending PLDM/MCTP Packet to MCTP Daemon for Processing: %s', mctp_pkt_rx_data)
 
                 pcievdm_rx_fifo.write(mctp_pkt_rx_data)
                 #Flush is mandatory for proper writing data to Daemon FIFO
                 pcievdm_rx_fifo.flush()
-                time.sleep(0.1)
+                time.sleep(1)
 
     except Exception as e:
         pcievdm_rx_fifo.close()
-        result = mctp_rx_dpc_handle.execute("mctp_transport", ['mctp_hu_recv_unsub', 0])
+        result = mctp_rx_dpc_handle.execute("mctp_transport", ['mctp_pkt_recv_unsub', 0])
         log.exception("mctp_pkt_rx() failed, error:{}".format(e))
 
 # Main Function of MCTP Transport CCLinux GlueLayer
