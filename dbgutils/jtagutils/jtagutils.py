@@ -58,9 +58,9 @@ class ChipJTAG(object):
         pass
 
 
-class F1JTAG(ChipJTAG):
+class CSR1JTAG(ChipJTAG):
     def __init__(self):
-        super(F1JTAG, self).__init__()
+        super(CSR1JTAG, self).__init__()
 
         # Pick the wide register at 0x0 on F1 (probably maps to the JTAG
         # master's wide register)
@@ -94,9 +94,9 @@ class F1JTAG(ChipJTAG):
         return jtag_ack, jtag_resp, jtag_running, jtag_status
 
 
-class S1JTAG(ChipJTAG):
+class CSR2JTAG(ChipJTAG):
     def __init__(self):
-        super(S1JTAG, self).__init__()
+        super(CSR2JTAG, self).__init__()
 
         # On S1, pick the first wide register (apparently they are all
         # accessible by any master).
@@ -131,11 +131,9 @@ class S1JTAG(ChipJTAG):
 
 def _get_chip_jtag(chip):
     if chip == 'f1':
-        return F1JTAG()
-    elif chip == 's1':
-        return S1JTAG()
+        return CSR1JTAG()
     else:
-        raise NotImplementedError('no JTAG support for chip {}'.format(chip))
+        return CSR2JTAG()
 
 
 def _ir_shiftin(width, data):
