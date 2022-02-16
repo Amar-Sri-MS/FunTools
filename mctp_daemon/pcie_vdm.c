@@ -91,6 +91,7 @@ static int __receive(uint8_t *buf, int len)
 	struct pcie_vdm_hdr_stc *hdr = (struct pcie_vdm_hdr_stc *)buf;
 	struct pcie_vdm_rec_data *hdr_data = (struct pcie_vdm_rec_data *)vdm_ep.retain->ep_priv_data;
 
+	hdr_data->cookie = hdr->cookie;
 	hdr_data->trgt_id = hdr->trgt_id;
 	hdr_data->req_id = hdr->req_id;
 	hdr_data->vendor_id = hdr->vendor_id;
@@ -118,6 +119,8 @@ static void set_pcie_vdm_hdr(int *len)
 	bzero((uint8_t *)&vdm_ep.tx_pkt_buf[*len], pad);
 	bzero((uint8_t *)hdr, sizeof(*hdr));
 	*len += pad;
+
+	hdr->cookie = hdr_data->cookie;
 
 	hdr->fmt = 3;
 	hdr->type = (2 << 3) | (PCIE_ROUTE_BY_ID << 0);
