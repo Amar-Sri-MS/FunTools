@@ -157,6 +157,13 @@ cd FunOSPackageDemo
 ./build/funospkg-${chip}-posix app=ziptest_pkg
 
 
+Running sample Lookup Table (Engine) example
+===============================================
+
+cd FunOSPackageDemo
+./build/funospkg-${chip}-posix app=lookup_table_example
+
+
 Signing server
 ==============
 
@@ -511,6 +518,13 @@ run_posix()
     if ! ./build/funospkg-${chip}-posix app=ziptest_pkg; then
 	echo ""
 	echo "${chip}-posix ZIP package fails to run to completion"
+	echo ""
+	exit 1
+    fi
+
+    if ! ./build/funospkg-${chip}-posix app=lookup_table_example; then
+	echo ""
+	echo "${chip}-posix lookup table example fails to run to completion"
 	echo ""
 	exit 1
     fi
