@@ -1358,6 +1358,9 @@ peek_stats_sdn_meter_parser.add_argument('direction', help="In or out stats", ty
 # sdn flows
 peek_stats_sdn_flow_parser = peek_stats_sdn_parsers.add_parser('flows', help='peek sdn flows stats')
 
+peek_stats_sdnflow_parser = peek_stats_sdn_parsers.add_parser('sdn_flow', help='peek stats sdn sdn_flow')
+peek_stats_sdnflow_parser.add_argument("offset", help="start offset", type=int)
+peek_stats_sdnflow_parser.add_argument("num_flows", help="Print flow data", type=int)
 # sdn flows
 peek_stats_sdn_vp_parser = peek_stats_sdn_parsers.add_parser('vp', help='peek sdn vp stats')
 peek_stats_sdn_vp_parser.add_argument('-grep', help="Grep for specific flow", default=None)
