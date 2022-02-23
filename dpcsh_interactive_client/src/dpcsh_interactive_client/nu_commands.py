@@ -2248,22 +2248,22 @@ class PeekCommands(object):
             print "ERROR: %s" % str(ex)
             self.dpc_client.disconnect()
 
-    def _get_sdnflow_stats(self, offset, num_flows):
+    def _get_vr_flow_stats(self, offset, num_flows):
         fwd_flows_dict = {}
-        arg_dict = {"ol_flow": "show", "flow_offset": int(offset), "num_flows": int(num_flows)}
-        cmd = ["sdn", arg_dict]
-        output = self.dpc_client.execute(verb='network', arg_list=cmd)
+        arg_dict = {"count": int(num_flows), "resume_cookie": int(offset)}
+        cmd = ["flow_show", "tf", arg_dict]
+        output = self.dpc_client.execute(verb='overlay', arg_list=cmd)
         if output:
             for mkey, mval in output.items():
                 if mkey.startswith('vp_'):
                     fwd_flows_dict[mkey] = mval
         return fwd_flows_dict
 
-    def peek_sdnflow_stats(self, offset, num_flows, grep=None):
+    def peek_vr_flow_stats(self, offset, num_flows, grep=None):
         old_fwd_flows = None
         while True:
             try:
-                flows_dict = self._get_sdnflow_stats(offset=offset, num_flows=num_flows)
+                flows_dict = self._get_vr_flow_stats(offset=offset, num_flows=num_flows)
                 if flows_dict:
                     if old_fwd_flows:
                         table_obj = PrettyTable(['flow_id', 'sip:sport -> dip:dport protocol',
