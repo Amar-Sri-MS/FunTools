@@ -1022,6 +1022,12 @@ class CmdController(Cmd):
         print offset, num_flows
         self._peek_cmd_obj.peek_sdn_stats(offset=offset, num_flows=num_flows)
 
+    def peek_vr_flow_stats(self, args):
+        offset = args.offset
+        num_flows = args.num_flows
+        print offset, num_flows
+        self._peek_cmd_obj.peek_vr_flow_stats(offset=offset, num_flows=num_flows)
+
     def peek_sdn_meter_stats(self, args):
         policy_id = args.policy_id
         direction = args.direction
@@ -1700,6 +1706,7 @@ class CmdController(Cmd):
     peek_stats_le_table_sdn_in_parser.set_defaults(func=peek_le_tables_sdn_in)
     peek_stats_le_table_sdn_out_parser.set_defaults(func=peek_le_tables_sdn_out)
     peek_stats_sdn_parser.set_defaults(func=peek_sdn_stats)
+    peek_stats_vr_flow_parser.set_defaults(func=peek_vr_flow_stats)
     peek_stats_sdn_meter_parser.set_defaults(func=peek_sdn_meter_stats)
     peek_stats_sdn_flow_parser.set_defaults(func=peek_sdn_flow_stats)
     peek_stats_sdn_vp_parser.set_defaults(func=peek_sdn_vp_stats)
