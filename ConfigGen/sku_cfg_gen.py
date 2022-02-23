@@ -480,7 +480,8 @@ class SKUCfgGen():
 
             eeprom_list = {}
             for sku_name, sku_id in all_board_skus_with_sbp.iteritems():
-                for (sku_var, _) in self.flag_variants_for_chip(chip_type):
+                for (suffix, _) in self.flag_variants_for_chip(chip_type):
+                    sku_var = sku_name + suffix
                     eeprom_list[sku_var] = {
                         'filename' : self.eeprom_filename(sku_var),
                         'image_type' : sku_var
