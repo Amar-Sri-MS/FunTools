@@ -397,6 +397,12 @@ class SKUCfgGen():
     def eeprom_filename(self, sku_name):
         return 'eeprom_{}'.format(sku_name)
 
+    def flag_variants_for_chip(self, chip):
+        # If there's no entries in the variants table, just use
+        # the default sku with flags == 0;
+        DEFAULT_FLAG_VAR = [("", 0)]
+        return CHIP_FLAG_EEPR_VARIANTS.get(chip, DEFAULT_FLAG_VAR)
+
     def write_eepr_file_data(self, sku_var, sku_name, sku_id,
                              pci_cfg_dir, flags):
         # filename for the flag variant
@@ -408,16 +414,14 @@ class SKUCfgGen():
             byte_array = struct.pack('<I', sku_id) + version1_data
             f.write(byte_array)
 
-        return { 'filename' : fname, 'image_type': sku_name }
+        return { 'filename' : fname, 'image_type': sku_var }
 
     def write_eepr_files(self, sku_name, sku_id, pci_cfg_dir):
         dentries = {}
         chip = self.get_chip_for_sku_id(sku_name)
 
-        # write out a file for each flag variant. If there's no special
-        # variant table, just use the default sku with flags == 0;
-        DEFAULT_FLAG_VAR = [("", 0)]
-        flagvars = CHIP_FLAG_EEPR_VARIANTS.get(chip, DEFAULT_FLAG_VAR)
+        # write out a file for each flag variant
+        flagvars = self.flag_variants_for_chip(chip)
         for (suffix, flags) in flagvars:
             skuvar = "{}{}".format(sku_name, suffix)
             dent = self.write_eepr_file_data(skuvar, sku_name, sku_id,
@@ -463,22 +467,27 @@ class SKUCfgGen():
         fun_board_config = self._get_fungible_board_id_config()
         for board in fun_board_config:
             chip_type = board.get('asic', None)
-            if chip_type not in chips_seen:
-                chips_seen.append(chip_type)
-                self.target_chip = chip_type
+            
+            # skip seen chips
+            if chip_type in chips_seen:
+                continue
 
-                all_board_skus_with_sbp = \
-                        self.get_fungible_board_sku_ids(all_target_chips=False)
+            chips_seen.append(chip_type)
+            self.target_chip = chip_type
 
-                eeprom_list = {}
-                for sku_name, sku_id in all_board_skus_with_sbp.iteritems():
-                    eeprom_list[sku_name] = {
-                        'filename' : self.eeprom_filename(sku_name),
-                        'image_type' : sku_name
+            all_board_skus_with_sbp = \
+                    self.get_fungible_board_sku_ids(all_target_chips=False)
+
+            eeprom_list = {}
+            for sku_name, sku_id in all_board_skus_with_sbp.iteritems():
+                for (sku_var, _) in self.flag_variants_for_chip(chip_type):
+                    eeprom_list[sku_var] = {
+                        'filename' : self.eeprom_filename(sku_var),
+                        'image_type' : sku_var
                     }
 
                     try:
-                        eeprom_list[sku_name]['hw_base'] = \
+                        eeprom_list[sku_var]['hw_base'] = \
                             filter(lambda x: x['name'] == sku_name and x['asic'] == chip_type,
                                 fun_board_config)[0]['hw_base']
                     except:
