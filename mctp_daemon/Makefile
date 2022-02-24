@@ -102,6 +102,8 @@ install: $(BUILD_ROOT)/mctp_daemon
 	@mkdir -p $(SDK_INSTALL_DIR)/$(MCTP_DAEMON_INSTALL_DIR)/
 	@cp -f $< $(SDK_INSTALL_DIR)/$(MCTP_DAEMON_INSTALL_DIR)/bin/
 	@cp -fr init.d $(SDK_INSTALL_DIR)/$(MCTP_DAEMON_INSTALL_DIR)/etc/
+	@cp -f mctp_tmp_agent.sh $(SDK_INSTALL_DIR)/$(MCTP_DAEMON_INSTALL_DIR)/bin/
+	@cp -f mctp_transport.py $(SDK_INSTALL_DIR)/$(MCTP_DAEMON_INSTALL_DIR)/bin/
 
 clean:
 	$(Q)rm -rf $(BUILD_ROOT)
