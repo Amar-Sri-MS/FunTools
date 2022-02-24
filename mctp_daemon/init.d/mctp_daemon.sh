@@ -7,7 +7,7 @@ SETCOLOR_NORM="echo -en \\033[0;39m"
 SETCOLOR_SUCC="echo -en \\033[1;32m"
 SETCOLOR_FAIL="echo -en \\033[1;31m"
 
-SERVICE=/usr/local/bin/mctp_daemon
+SERVICE=/usr/bin/mctp_daemon
 LOCK_FILE=/tmp/mctp_daemon.lock
 
 die() {
@@ -24,7 +24,7 @@ fail() {
 }
 
 
-[ ! -f $SERVICE -o ! -x $SERVICE ] && die "mctp_daemon not found or not executable"
+[ ! -x $SERVICE ] && die "mctp_daemon not found or not executable"
 
 failed="no"
 

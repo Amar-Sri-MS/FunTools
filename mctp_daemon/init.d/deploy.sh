@@ -13,7 +13,7 @@ die() {
 rc_script=mctp_daemon.sh
 
 mkdir -p $DEPLOY_ROOT/usr/bin
-cp -f $MCTP_DAEMON_INSTALL_DIR/init.d/$rc_script $DEPLOY_ROOT/etc/init.d
+cp -f $MCTP_DAEMON_INSTALL_DIR/init.d/{$rc_script,mctp_transport_init.sh} $DEPLOY_ROOT/etc/init.d
 
 mkdir -p $DEPLOY_ROOT/etc/rc5.d
 cd ${DEPLOY_ROOT}/etc/rc5.d
