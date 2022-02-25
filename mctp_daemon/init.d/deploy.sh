@@ -9,7 +9,7 @@ die() {
 [ -z $MCTP_DAEMON_INSTALL_DIR ] && die $"Error - missing install dir"
 [ -z $DEPLOY_ROOT ] && die $"Error - missing deploy root"
 
-: ${STARTUP_ID=-90}
+: ${STARTUP_ID=90}
 rc_script=mctp_daemon.sh
 
 mkdir -p $DEPLOY_ROOT/usr/bin
