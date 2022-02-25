@@ -11,10 +11,9 @@ die() {
 
 : ${STARTUP_ID=-90}
 rc_script=mctp_daemon.sh
-mctp_transport_script=mctp_transport_init.sh
 
 mkdir -p $DEPLOY_ROOT/usr/bin
-cp -f $MCTP_DAEMON_INSTALL_DIR/init.d/{$rc_script,${mctp_transport_script}} $DEPLOY_ROOT/etc/init.d
+cp -f $MCTP_DAEMON_INSTALL_DIR/init.d/$rc_script $DEPLOY_ROOT/etc/init.d
 
 mkdir -p $DEPLOY_ROOT/etc/rc5.d
 cd ${DEPLOY_ROOT}/etc/rc5.d
