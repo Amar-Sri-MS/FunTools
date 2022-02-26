@@ -45,7 +45,7 @@ endif
 
 BUILD_ROOT ?= build_$(MACHINE)
 SDKDIR ?= ../../FunSDK
-SDK_INSTALL_DIR ?= $(SDKDIR)/mctp_daemon.$(MACHINE)
+SDK_INSTALL_DIR ?= $(SDKDIR)/bin
 
 ifeq ($(ARCH_BIG_ENDIAN),y)
 CFLAGS += -DARCH_BIG_ENDIAN
@@ -58,7 +58,7 @@ SRCS = smbus.c pcie_vdm.c utils.c pldm.c pldm_mcd.c pldm_pmc.c mctp.c mctp_daemo
 OBJS = $(addprefix $(BUILD_ROOT)/,$(SRCS:.c=.o))
 
 MCTP_CONFIG ?= .config
-MCTP_DAEMON_INSTALL_DIR ?= ./
+MCTP_DAEMON_INSTALL_DIR ?= ${MACHINE}/Linux/mctp_daemon
 
 export MCTP_CONFIG
 
@@ -98,10 +98,11 @@ $(BUILD_ROOT)/%.o: %.c
 
 install: $(BUILD_ROOT)/mctp_daemon
 	@echo "Installing mctp_daemon.$(MACHINE) @ $(SDK_INSTALL_DIR)"
-	@for dir in bin etc; do mkdir -p $(SDK_INSTALL_DIR)/$(MCTP_DAEMON_INSTALL_DIR)/$$dir; done
-	@mkdir -p $(SDK_INSTALL_DIR)/$(MCTP_DAEMON_INSTALL_DIR)/
-	@cp -f $< $(SDK_INSTALL_DIR)/$(MCTP_DAEMON_INSTALL_DIR)/bin/
+	@for dir in usr/bin etc; do mkdir -p $(SDK_INSTALL_DIR)/$(MCTP_DAEMON_INSTALL_DIR)/$$dir; done
+	@cp -f $< $(SDK_INSTALL_DIR)/$(MCTP_DAEMON_INSTALL_DIR)/usr/bin/
 	@cp -fr init.d $(SDK_INSTALL_DIR)/$(MCTP_DAEMON_INSTALL_DIR)/etc/
+	@cp -f mctp_tmp_agent.sh $(SDK_INSTALL_DIR)/$(MCTP_DAEMON_INSTALL_DIR)/usr/bin/
+	@cp -f mctp_transport.py $(SDK_INSTALL_DIR)/$(MCTP_DAEMON_INSTALL_DIR)/usr/bin/
 
 clean:
 	$(Q)rm -rf $(BUILD_ROOT)
