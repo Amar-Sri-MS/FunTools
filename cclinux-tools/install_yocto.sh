@@ -49,6 +49,7 @@ install -t $scripts_dir deploy_yocto.sh
 install -m 0644 -t $patches_dir patches/rc.patch
 install -m 0644 -t $patches_dir patches/dhclient-script.patch
 install -m 0644 -t $patches_dir patches/nfsroot.patch
+install -m 0644 -t $patches_dir patches/ntpd.patch
 install -t $scripts_dir gzip-stdin
 install -t $scripts_dir miscinit
 
