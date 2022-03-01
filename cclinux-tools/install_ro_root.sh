@@ -36,5 +36,3 @@ install -t $runtime_target_dir/ro-verify-emmc -m 0755 ro-verify-emmc/verify_root
 
 patches_dir=$target_dir/patches
 mkdir -p $patches_dir
-
-install -t $patches_dir -m 0644 patches/ntpd.patch
