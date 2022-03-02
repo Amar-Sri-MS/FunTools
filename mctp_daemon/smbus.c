@@ -23,8 +23,7 @@
 static uint8_t tx_buf[MCTP_MAX_MESSAGE_DATA];
 static uint8_t rx_buf[MCTP_MAX_MESSAGE_DATA];
 static uint8_t tx_pkt_buf[MAX_SMBUS_TX_PKT_SIZE];
-
-static uint8_t src_addr;
+static struct smbus_priv_data_stc smbus_data;
 
 static struct mctp_ep_retain_stc smbus_retain = {
 	.eid = 1,
@@ -33,6 +32,7 @@ static struct mctp_ep_retain_stc smbus_retain = {
 	.support = SUPPORT_MCTP_CNTROL_MSG | SUPPORT_PLDM_OVER_MCTP | SUPPORT_VDM_OVER_MCTP | SUPPORT_OEM_OVER_MCTP,
 	.uuid = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
 		 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f},
+	.ep_priv_data = (void *)&smbus_data,
 };
 
 static mctp_endpoint_stct smbus_ep;
@@ -65,15 +65,18 @@ static int __init(void)
 	smbus_ep.retain = &smbus_retain;
 	smbus_ep.ops = &smbus_ops;
 
+	smbus_data.slv_addr = SMBUS_SLAVE_ADDR;
+	smbus_data.src_addr = 0;
+
 	reset_ep();
 
         if ((tx_fifo_fd = open(TX_FIFO, O_RDWR | O_CREAT)) < 0) {
-                log_err("cannot open %s for write\n", TX_FIFO);
+                smbus_err("cannot open %s for write\n", TX_FIFO);
                 return -1;
         }
 
         if ((rx_fifo_fd = open(RX_FIFO, O_RDWR | O_NONBLOCK | O_CREAT)) < 0) {
-                log_err("cannot open %s for read\n", RX_FIFO);
+                smbus_err("cannot open %s for read\n", RX_FIFO);
                 return -1;
         }
 
@@ -82,10 +85,35 @@ static int __init(void)
 
 static int __receive(uint8_t *buf, int len)
 {
-	smbus_ep.rx_cnt = len;
-	smbus_ep.rx_pkt_buf = buf;
+	struct smbus_hdr_stc *hdr = (struct smbus_hdr_stc *)buf;
 
-	hexdump(buf, len);
+	smbus_ep.rx_cnt = len;
+	smbus_ep.rx_pkt_buf = hdr->data;
+
+	if (cfg.debug)
+		hexdump(buf, len);
+
+	// check rcvd hdr
+	if (hdr->dst_addr != smbus_data.slv_addr) {
+		smbus_err("dst_addr does not match (%x)\n", hdr->dst_addr);
+		reset_ep();
+		return -1;
+	}
+
+	if (hdr->opcode != 0) {
+		smbus_err("expecting wr opcode\n");
+		reset_ep();
+		return -1;
+	}
+
+	if (hdr->type != 0x0f) {
+		smbus_err("incorrect cmd type (%x)\n", hdr->type);
+		reset_ep();
+		return -1;
+	}
+
+	// record the src address for the response
+	smbus_data.src_addr = hdr->src_addr;
 
         if (mctp_recieve(&smbus_ep) < 0) {
                 reset_ep();
@@ -101,20 +129,20 @@ static void set_smbus_hdr(int *len)
 
 	bzero((uint8_t *)hdr, sizeof(*hdr));
 
-	hdr->dst_addr = src_addr;
+	hdr->dst_addr = smbus_data.src_addr;
 	hdr->type = 0x0f;
 	hdr->len = *len;
 	hdr->rdwr = 1;
-	hdr->src_addr = SMBUS_SLAVE_ADDR;
+	hdr->src_addr = smbus_data.slv_addr;
 
-	len += sizeof(struct smbus_hdr_stc);
+	*len += sizeof(struct smbus_hdr_stc);
 }
 
 static int __send(int len)
 {
 
 	if (!len) {
-		log_err("SMBUS: Error - payload length = 0\n");
+		smbus_err("payload length = 0\n");
 		reset_ep();
 		return -1;
 	}
@@ -123,6 +151,7 @@ static int __send(int len)
 	smbus_ep.tx_cnt += smbus_ep.payload;
 
 	set_smbus_hdr(&len);
+	
 #ifdef CONFIG_USE_SMBUS_INTERFACE
 	write(tx_fifo_fd, tx_pkt_buf, len);
 #else

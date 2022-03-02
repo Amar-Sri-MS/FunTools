@@ -70,6 +70,13 @@ static int init(void)
 	return 0;
 }
 
+static void find_max_fd(int *maxfd)
+{
+	for(int i = 0; i < NUMBER_OF_EPS; i++)
+		if (mctp_ops[i]->get_rx_fifo() > *maxfd)
+			*maxfd = mctp_ops[i]->get_rx_fifo();
+}	
+
 void temp_event_handler(uint8_t *buf, int len)
 {
 	if (mctp_ops[DEFAULT_VMD_INTERFACE]->async == NULL)
@@ -82,7 +89,7 @@ int main_loop()
 {
         int len = 0, rc = -1, rd_len;
         struct timeval timeout;
-	int rx_fifo_fd, sensor_fifo_fd;
+	int sensor_fifo_fd;
 	uint8_t buf[128];
 
 	umask(0);
@@ -108,21 +115,21 @@ int main_loop()
 		goto exit;
 	}
 
-	rx_fifo_fd = mctp_ops[PCIE_EP_ID]->get_rx_fifo();
-
 	// for now, assume only one ep (pcie-vdm)
 	while (1) {
 		fd_set fds;
-		int maxfd;
+		int maxfd = sensor_fifo_fd;
 
 		FD_ZERO(&fds);
 		FD_SET(sensor_fifo_fd, &fds);
-		FD_SET(rx_fifo_fd, &fds);
+
+		for(int i = 0; i < NUMBER_OF_EPS; i++)
+			FD_SET(mctp_ops[i]->get_rx_fifo(), &fds);
 
 		timeout.tv_sec = 1;
                 timeout.tv_usec = 0; 
 
-		maxfd = sensor_fifo_fd > rx_fifo_fd ? sensor_fifo_fd : rx_fifo_fd;
+		find_max_fd(&maxfd);
 		select(maxfd + 1, &fds, NULL, NULL, &timeout);
 
 		if (terminate) {
@@ -136,16 +143,20 @@ int main_loop()
 				temp_event_handler(buf, rd_len);
 		}
 
-		if (FD_ISSET(rx_fifo_fd, &fds)) {
-			rd_len = read(rx_fifo_fd, buf, sizeof(buf));
+		for(int i = 0; i < NUMBER_OF_EPS; i++) {
+			int fd = mctp_ops[i]->get_rx_fifo();
 
-			if (rd_len <= 0)
-				continue;
+			if (FD_ISSET(fd, &fds)) {
+				rd_len = read(fd, buf, sizeof(buf));
 
-			len += rd_len;
-			if (len >= mctp_ops[PCIE_EP_ID]->get_min_payload()) {
-				mctp_ops[PCIE_EP_ID]->recv(buf, len);
-				len = 0;
+				if (rd_len <= 0)
+					continue;
+
+				len += rd_len;
+				if (len >= mctp_ops[i]->get_min_payload()) {
+					mctp_ops[i]->recv(buf, len);
+					len = 0;
+				}
 			}
 		}
 	}

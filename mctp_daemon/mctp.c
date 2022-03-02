@@ -395,7 +395,7 @@ int mctp_recieve(mctp_endpoint_stct *ep)
 	len -= sizeof(mctp_hdr_stct);
 
 	if (hdr->dst_eid && (hdr->dst_eid != retain->eid)) {
-		mctp_err("dest eid doesn't match\n");
+		mctp_err("dest eid doesn't match (%x %x)\n", hdr->dst_eid, retain->eid);
 		return ERR_BAD_SEID;
 	}
 
