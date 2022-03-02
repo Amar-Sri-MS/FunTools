@@ -165,7 +165,7 @@ static int __send(int len)
 
 		set_smbus_hdr(&len);
 #ifdef CONFIG_USE_SMBUS_INTERFACE
-	write(tx_fifo_fd, tx_pkt_buf, len);
+		write(tx_fifo_fd, tx_pkt_buf, len);
 #else
 		hexdump(tx_pkt_buf, len);
 #endif
