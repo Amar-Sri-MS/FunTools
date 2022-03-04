@@ -86,12 +86,20 @@ static int __init(void)
 static int __receive(uint8_t *buf, int len)
 {
 	struct smbus_hdr_stc *hdr = (struct smbus_hdr_stc *)buf;
+	uint8_t pec;
 
 	smbus_ep.rx_cnt = len;
 	smbus_ep.rx_pkt_buf = hdr->data;
 
 	if (cfg.debug)
 		hexdump(buf, len);
+
+	pec = crc8(buf, len - 1);
+	if (pec != buf[len - 1]) {
+		smbus_err("incorrect pec (%x %x)\n", buf[len - 1], pec);
+		reset_ep();
+		return -1;
+	}
 
 	// check rcvd hdr
 	if (hdr->dst_addr != smbus_data.slv_addr) {
@@ -136,6 +144,11 @@ static void set_smbus_hdr(int *len)
 	hdr->src_addr = smbus_data.slv_addr;
 
 	*len += sizeof(struct smbus_hdr_stc);
+
+	// add crc8
+	tx_pkt_buf[*len] = crc8(tx_pkt_buf, *len);
+	*len += 1;
+	
 }
 
 static int __send(int len)
@@ -151,7 +164,10 @@ static int __send(int len)
 	smbus_ep.tx_cnt += smbus_ep.payload;
 
 	set_smbus_hdr(&len);
-	
+
+	if (cfg.debug)
+		hexdump(tx_pkt_buf, len);
+
 #ifdef CONFIG_USE_SMBUS_INTERFACE
 	write(tx_fifo_fd, tx_pkt_buf, len);
 #else
