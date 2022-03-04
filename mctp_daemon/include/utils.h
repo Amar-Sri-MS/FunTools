@@ -106,6 +106,7 @@ extern char *manuallog_file;
 
 void hexdump(uint8_t *addr, int len);
 uint32_t crc32(uint8_t  *data_buf, uint32_t byte_cnt, uint32_t crc_in);
+uint8_t crc8(const uint8_t *buf, int len);
 void print_version(char *name);
 
 #endif /* _INC_UTILS_HDR_ */
