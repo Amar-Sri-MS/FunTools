@@ -7,7 +7,7 @@ files will generate a corrupt file.
  
 The header is a 4kB blob with a 32b little endian size for the ROM.
 
-The ROM must be power of 2 size (becasue PCI BAR), with size a multiple of
+The ROM must be power of 2 size (because PCI BAR), with size a multiple of
 512B because EEPROM block size.
 
 The custom header is prepended to the ROM so the total size need not be power-of-two, but the total size must be 512B aligned.
