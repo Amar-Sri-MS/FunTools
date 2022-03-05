@@ -427,7 +427,7 @@ def _generate_funos_default_config(config_root_dir, sdk_dir, output_dir,
                                                  modules_cfg)
 
     ## process module config -- per-sku
-    for sku in list(funos_default_config[SKUCfgGen.get_sku_path()].keys()):
+    for sku in list(funos_default_config.get(SKUCfgGen.get_sku_path(),{}).keys()):
         config_sku_dir = os.path.join(config_root_dir,
                                    "modules_config", "board", sku)
         if os.path.exists(config_sku_dir):
