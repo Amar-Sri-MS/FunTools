@@ -363,6 +363,10 @@ def sanitize_args(args, eeproms_dir):
                 args.eeprom = "eeprom_emu_s1_full"
             else:
                 args.eeprom = "eeprom_s1_dev_board"
+        else:
+            print("*** no default eeprom for that chip: %s\n" % args.chip)
+            print("Please specify an eeprom to use with the -e/--eeprom option")
+            sys.exit(1)
 
         # verify somebody did not remove the default
         if not args.eeprom in eeprom_files:
