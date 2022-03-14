@@ -51,7 +51,7 @@ struct pldm_get_type_req_stc {
 
 struct pldm_get_type_rspn_stc {
     uint8_t cmp_code;
-    uint8_t type[7];
+    uint8_t type[8];
 } __attribute__((packed));
 
 /* pldm commands */
@@ -65,6 +65,6 @@ struct pldm_cmds_rspn_stc {
     uint8_t cmds[32];
 } __attribute__((packed));
 
-extern pldm_cmd_hdlr_stct pldm_mcd_cmds[];
+int pldm_mcd_init();
 
 #endif /* _INC_PLDM_MCD_HDR_ */

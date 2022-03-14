@@ -80,6 +80,7 @@ int main(int argc, char *argv[])
                 {"verbose",     1, 0, 'v'},
 		{"debug",	0, 0, 'D'},
 		{"eid",		1, 0, 'E'},
+		{"nopec",	0, 0, 'I'},
                 {"lock",        1, 0, 'L'},
                 {"tid",         1, 0, 'T'},
 		{"version",	0, 0, 'V'},
@@ -99,7 +100,7 @@ int main(int argc, char *argv[])
         sigaction(SIGSEGV, &sa, NULL);
 
 
-        while ((c = getopt_long(argc, argv, "abhl:nvDE:L:T:V", long_args, &index)) != -1) {
+        while ((c = getopt_long(argc, argv, "abhl:nvDE:IL:T:V", long_args, &index)) != -1) {
 		switch (c) {
 		case 'a':
 			pldm_vars.flags |= MCTP_VDM_ASYNC_ENABLED;
@@ -135,6 +136,10 @@ int main(int argc, char *argv[])
 
 		case 'E':
 			eid = (uint8_t)strtol(optarg, NULL, 0);
+			break;
+
+		case 'I':
+			flags |= FLAGS_NO_SMBUS_PEC_CHECK;
 			break;
 
 		case 'T':

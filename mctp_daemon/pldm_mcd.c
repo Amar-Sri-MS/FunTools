@@ -8,6 +8,8 @@
 
 #include "utils.h"
 #include "pldm_mcd.h"
+#include "pldm_pmc.h"
+#include "pldm_fru.h"
 
 extern struct pldm_global_stc pldm_vars;
 
@@ -61,9 +63,17 @@ static int pldm_get_ver(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 		ver->ver = host2pldm(PLDM_MCD_VERSION);
 		break;
 
+#ifdef CONFIG_INCLUDE_PLDM_PMC
 	case PLDM_PMC_TYPE:
 		ver->ver = host2pldm(PLDM_PMC_VERSION);
 		break;
+#endif
+
+#ifdef CONFIG_INCLUDE_PLDM_FRU
+	case PLDM_FRU_TYPE:
+		ver->ver = host2pldm(PLDM_FRU_VERSION);
+		break;
+#endif
 
 	default:
 		pldm_err("Invalid type %x\n", pldm->type);
@@ -87,10 +97,13 @@ static int pldm_get_type(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 	struct pldm_get_type_rspn_stc *rspn = (struct pldm_get_type_rspn_stc *)resp->data;
 
 	memset(rspn->type , 0, sizeof(rspn->type));
-
-	/* FIXME: can be optimized to fixed value if room is tight */
 	set_bit(PLDM_MCD_TYPE, rspn->type);
+#ifdef CONFIG_INCLUDE_PLDM_PMC
 	set_bit(PLDM_PMC_TYPE, rspn->type);
+#endif
+#ifdef CONFIG_INCLUDE_PLDM_FRU
+	set_bit(PLDM_FRU_TYPE, rspn->type);
+#endif
 
 	pldm_response(resp, PLDM_SUCCESS);
 	return PLDM_PAYLOAD_SIZE;
@@ -103,13 +116,8 @@ static int pldm_get_cmds(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 	struct pldm_cmds_rspn_stc *rspn = (struct pldm_cmds_rspn_stc *)resp->data;
 	uint32_t ver;
 
-	if (pldm->type != PLDM_MCD_TYPE && pldm->type != PLDM_PMC_TYPE) {
-		pldm_err("bad pldm type %x\n", pldm->type);
-		pldm_response(resp, PLDM_INVALID_TYPE_REQ);
-		return COMP_CODE_ONLY;
-	}
-
 	ver = pldm2host(pldm->ver);
+	bzero(rspn->cmds, 32);
 
 	switch (pldm->type) {
 	case PLDM_MCD_TYPE:
@@ -127,23 +135,34 @@ static int pldm_get_cmds(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 		set_bit(PLDM_MCD_GET_CMDS, rspn->cmds);
 		break;
 
+#ifdef CONFIG_INCLUDE_PLDM_PMC
 	case PLDM_PMC_TYPE:
 		if (ver != PLDM_PMC_VERSION) {
 			pldm_response(resp, PLDM_INVALID_VERSION);
 			return COMP_CODE_ONLY;
 		}
 
-		/* Note: If additional PMC are added, make sure to add them here as well */
-		set_bit(PLDM_PMC_SET_NUMERIC_SENSOR_ENABLE, rspn->cmds);
-		set_bit(PLDM_PMC_GET_SENSOR_READING, rspn->cmds);
-		set_bit(PLDM_PMC_GET_SENSOR_THRESHOLDS, rspn->cmds);
-		set_bit(PLDM_PMC_GET_SENSOR_HYSTERESIS, rspn->cmds);
-#ifdef CONFIG_PLDM_STATE_SONSORS_SUPPORT
-		set_bit(PLDM_PMC_GET_STATES_SENSOR_READINGS, rspn->cmds);
-#endif
-		set_bit(PLDM_PMC_GET_PDR_REPOSITORY_INFO, rspn->cmds);
-		set_bit(PLDM_PMC_GETPDR, rspn->cmds);
+		get_pmc_supported_cmds(rspn->cmds);
 		break;
+#endif
+
+#ifdef CONFIG_INCLUDE_PLDM_FRU
+	case PLDM_FRU_TYPE:
+		printf("PLDM_FRU_TYPE\n");
+                if (ver != PLDM_FRU_VERSION) {
+                        pldm_response(resp, PLDM_INVALID_VERSION);
+                        return COMP_CODE_ONLY;
+                }
+
+		get_fru_supported_cmds(rspn->cmds);
+                break;
+#endif
+
+	default:
+		pldm_err("bad pldm type %x\n", pldm->type);
+		pldm_response(resp, PLDM_INVALID_TYPE_REQ);
+		return COMP_CODE_ONLY;
+
 	}
 
 	pldm_response(resp, PLDM_SUCCESS);
@@ -158,3 +177,8 @@ pldm_cmd_hdlr_stct pldm_mcd_cmds[] = {
 	{PLDM_MCD_GET_CMDS, sizeof(struct pldm_cmds_req_stc), pldm_get_cmds},
 	PLDM_LAST_CMD,
 };
+
+int pldm_mcd_init()
+{
+	return register_pldm_handler(PLDM_MCD_TYPE, pldm_mcd_cmds);
+}
