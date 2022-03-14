@@ -88,17 +88,16 @@ static int __receive(uint8_t *buf, int len)
 	struct smbus_hdr_stc *hdr = (struct smbus_hdr_stc *)buf;
 	uint8_t pec;
 
-	smbus_ep.rx_cnt = len;
-	smbus_ep.rx_pkt_buf = hdr->data;
-
 	if (cfg.debug)
 		hexdump(buf, len);
 
-	pec = crc8(buf, len - 1);
-	if (pec != buf[len - 1]) {
-		smbus_err("incorrect pec (%x %x)\n", buf[len - 1], pec);
-		reset_ep();
-		return -1;
+	if (!(flags & FLAGS_NO_SMBUS_PEC_CHECK)) {
+		pec = crc8(buf, len - 1);
+		if (pec != buf[len - 1]) {
+			smbus_err("incorrect pec (%x %x)\n", buf[len - 1], pec);
+			reset_ep();
+			return -1;
+		}
 	}
 
 	// check rcvd hdr
@@ -122,6 +121,9 @@ static int __receive(uint8_t *buf, int len)
 
 	// record the src address for the response
 	smbus_data.src_addr = hdr->src_addr;
+	smbus_ep.rx_pkt_buf = hdr->data;
+	smbus_ep.rx_cnt = len - sizeof(struct smbus_hdr_stc) - 1;
+
 
         if (mctp_recieve(&smbus_ep) < 0) {
                 reset_ep();
@@ -170,10 +172,7 @@ static int __send(int len)
 
 #ifdef CONFIG_USE_SMBUS_INTERFACE
 	write(tx_fifo_fd, tx_pkt_buf, len);
-#else
-	hexdump(tx_pkt_buf, len);
 #endif
-
 
 	while (smbus_ep.tx_cnt != smbus_ep.tx_len) {
 		len = mctp_transmit(&smbus_ep);
