@@ -97,6 +97,7 @@ struct server_cfg_stc {
 	uint8_t debug;
 	char *logfile;
 	char *lockfile;
+	char *fru_filename;
 };
 
 extern struct server_cfg_stc cfg;
