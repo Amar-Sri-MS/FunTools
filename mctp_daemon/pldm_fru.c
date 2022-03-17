@@ -27,7 +27,6 @@ static int fru_rcrd_cnt = 0, fru_length = 0, total_records = 0;
 
 /* helper function for parsing the fru data
  * This implementation supports Chassis info/Board area only*/
-
 static int set_chassis_record(uint8_t *ptr, uint8_t **rcrd_ptr)
 {
 	struct chassis_info_hdr_stc *hdr = (struct chassis_info_hdr_stc *)ptr;
@@ -158,19 +157,17 @@ static int parse_fru_file()
 		goto exit;
 	}
 
-	// for now, only chassis info is supported, however - the infrastructure is there
+	// for now, only chassis info/board area are supported, however - the infrastructure is there
 	// to suppoprt up to MAX_FRU_RECORDS records 
 	if (hdr->chassis_info_offset) {
 		if (set_chassis_record(&ptr[8 * hdr->chassis_info_offset], &rcrd_ptr))
 			goto exit;
-
 	}
 
 	if (hdr->board_area_offset) {
 		if (set_board_record(&ptr[8 * hdr->board_area_offset], &rcrd_ptr))
 			goto exit;
 	}
-
 
 	rc = 0;
 
@@ -179,7 +176,6 @@ exit:
 		munmap((void *)ptr, sbuf.st_size);
 
 	close(fd);
-
 	return rc;
 }
 
