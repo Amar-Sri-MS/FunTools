@@ -71,7 +71,8 @@ static int pldm_get_ver(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 
 #ifdef CONFIG_INCLUDE_PLDM_FRU
 	case PLDM_FRU_TYPE:
-		ver->ver = host2pldm(PLDM_FRU_VERSION);
+		if (cfg.fru_filename)
+			ver->ver = host2pldm(PLDM_FRU_VERSION);
 		break;
 #endif
 
@@ -102,7 +103,8 @@ static int pldm_get_type(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 	set_bit(PLDM_PMC_TYPE, rspn->type);
 #endif
 #ifdef CONFIG_INCLUDE_PLDM_FRU
-	set_bit(PLDM_FRU_TYPE, rspn->type);
+	if (cfg.fru_filename)
+		set_bit(PLDM_FRU_TYPE, rspn->type);
 #endif
 
 	pldm_response(resp, PLDM_SUCCESS);
@@ -148,7 +150,11 @@ static int pldm_get_cmds(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 
 #ifdef CONFIG_INCLUDE_PLDM_FRU
 	case PLDM_FRU_TYPE:
-		printf("PLDM_FRU_TYPE\n");
+		if (!cfg.fru_filename) {
+			pldm_response(resp, PLDM_INVALID_TYPE_REQ);
+			return COMP_CODE_ONLY;
+		}
+
                 if (ver != PLDM_FRU_VERSION) {
                         pldm_response(resp, PLDM_INVALID_VERSION);
                         return COMP_CODE_ONLY;

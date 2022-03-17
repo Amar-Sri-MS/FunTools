@@ -31,7 +31,7 @@ struct server_cfg_stc cfg = {
 	.timeout = 10,
 	.lockfile = "/tmp/mctp_daemon.lock",
 	.logfile = "/tmp/mctp_daemon.log",
-	.fru_filename = "/tmp/fru.bin",
+	.fru_filename = NULL,
 	.debug = 0,
 };
 

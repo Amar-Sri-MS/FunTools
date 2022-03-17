@@ -233,12 +233,16 @@ void get_fru_supported_cmds(uint8_t *cmds)
 
 int pldm_fru_init(void)
 {
+	// ignore type 4 if no fru file provided
+	if (!cfg.fru_filename)
+		return 0;
+
 	if (parse_fru_file()) {
 		pldm_err("FRU parsing failed\n");
 		return -1;
 	}
 
-	log_n_print("Total record sets: %u, table size: %u\n", fru_rcrd_cnt, fru_length);
+	log("Total FRU record sets: %u, table size: %u\n", fru_rcrd_cnt, fru_length);
 
         return register_pldm_handler(PLDM_FRU_TYPE, pldm_cmds);
 }
