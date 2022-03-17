@@ -88,6 +88,7 @@ struct fru_meta_stc {
 };
 
 struct pldm_get_meta_rsp_stc {
+	uint8_t cmp_code;
         uint8_t ver_maj;
         uint8_t ver_min;
         uint32_t set_max_size;
@@ -98,6 +99,7 @@ struct pldm_get_meta_rsp_stc {
 } __attribute__((packed));
 
 struct pldm_get_rec_req_hdr_stc {
+	uint8_t cmp_code;
         uint32_t handler;
         uint8_t flags;
 } __attribute__((packed));

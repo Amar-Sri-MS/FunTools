@@ -187,10 +187,10 @@ static int pldm_get_fru_meta(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 	rspn->ver_maj = 0x01;
 	rspn->ver_min = 0;
 	rspn->set_max_size = 0;
-	rspn->fru_length = fru_length;
-	rspn->record_sets = fru_rcrd_cnt;
-	rspn->total_records = total_records;
-	rspn->crc = crc32(fru_buf, fru_length, -1);
+	rspn->fru_length = host2pldm(fru_length);
+	rspn->record_sets = host2pldm_16(fru_rcrd_cnt);
+	rspn->total_records = host2pldm_16(total_records);
+	rspn->crc = host2pldm(crc32(fru_buf, fru_length, -1));
 
 	return PLDM_PAYLOAD_SIZE;
 }
