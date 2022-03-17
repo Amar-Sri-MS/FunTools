@@ -207,7 +207,7 @@ static int pldm_get_fru_data(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 
 	// calculate max. payload
 	size = MIN(PLDM_TX_BUFFER_SIZE, fru_length - index);
-	rspn->next_handler = index + size;
+	rspn->next_handler = host2pldm(index + size);
 	rspn->flags = (size <= fru_length && index == 0) ? PLDM_GETFRU_RSPN_FLAGS_SINGLE :
 		      (size == PLDM_TX_BUFFER_SIZE) ? PLDM_GETFRU_RSPN_FLAGS_MIDDLE : PLDM_GETFRU_RSPN_FLAGS_END;
 
