@@ -155,6 +155,7 @@ typedef struct {
 
 extern struct pldm_global_stc pldm_vars;
 
+int register_pldm_handler(uint8_t type, pldm_cmd_hdlr_stct *ptr);
 void pldm_handle_async_event(int id, float temp);
 void set_bit(uint32_t, bit_arr_t *);
 int pldm_response(pldm_hdr_stct *, uint8_t);

@@ -31,6 +31,7 @@ struct server_cfg_stc cfg = {
 	.timeout = 10,
 	.lockfile = "/tmp/mctp_daemon.lock",
 	.logfile = "/tmp/mctp_daemon.log",
+	.fru_filename = NULL,
 	.debug = 0,
 };
 
@@ -57,6 +58,7 @@ static void usage()
 	fprintf(stderr, "\t-v | --verbose: Be verbose\n");
 	fprintf(stderr, "\t-D | --debug  : Turn on debug mode\n");
 	fprintf(stderr, "\t-E | --eid    : Set termious EID\n");
+	fprintf(stderr, "\t-F | --fru    : Set FRU filename\n");
 	fprintf(stderr, "\t-L | --lock   : Specify lockfile\n");
 	fprintf(stderr, "\t-T | --tid    : Set Async TID\n");
 	fprintf(stderr, "\t-V | --version: Print current version\n");
@@ -80,6 +82,8 @@ int main(int argc, char *argv[])
                 {"verbose",     1, 0, 'v'},
 		{"debug",	0, 0, 'D'},
 		{"eid",		1, 0, 'E'},
+		{"fru",		1, 0, 'F'},
+		{"nopec",	0, 0, 'I'},
                 {"lock",        1, 0, 'L'},
                 {"tid",         1, 0, 'T'},
 		{"version",	0, 0, 'V'},
@@ -99,7 +103,7 @@ int main(int argc, char *argv[])
         sigaction(SIGSEGV, &sa, NULL);
 
 
-        while ((c = getopt_long(argc, argv, "abhl:nvDE:L:T:V", long_args, &index)) != -1) {
+        while ((c = getopt_long(argc, argv, "abhl:nvDE:F:IL:T:V", long_args, &index)) != -1) {
 		switch (c) {
 		case 'a':
 			pldm_vars.flags |= MCTP_VDM_ASYNC_ENABLED;
@@ -135,6 +139,14 @@ int main(int argc, char *argv[])
 
 		case 'E':
 			eid = (uint8_t)strtol(optarg, NULL, 0);
+			break;
+
+		case 'F':
+			cfg.fru_filename = optarg;
+			break;
+
+		case 'I':
+			flags |= FLAGS_NO_SMBUS_PEC_CHECK;
 			break;
 
 		case 'T':

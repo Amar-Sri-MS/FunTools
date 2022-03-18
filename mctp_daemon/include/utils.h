@@ -13,10 +13,11 @@
 #include "fw_version.h"
 #include "auto_conf.h"
 
-#define FLAGS_DAEMON_ENABLED    (1 << 0)
-#define FLAGS_VERBOSE           (1 << 1)
-#define FLAGS_NO_SU_CHECK	(1 << 2)
-#define FLAGS_DEBUG		(1 << 3)
+#define FLAGS_DAEMON_ENABLED    	(1 << 0)
+#define FLAGS_VERBOSE           	(1 << 1)
+#define FLAGS_NO_SU_CHECK		(1 << 2)
+#define FLAGS_DEBUG			(1 << 3)
+#define FLAGS_NO_SMBUS_PEC_CHECK	(1 << 4)
 
 #define _CONCAT(x, y)   x ## y
 #define CONCAT(x, y)    _CONCAT(x, y)
@@ -96,6 +97,7 @@ struct server_cfg_stc {
 	uint8_t debug;
 	char *logfile;
 	char *lockfile;
+	char *fru_filename;
 };
 
 extern struct server_cfg_stc cfg;

@@ -9,11 +9,42 @@
 #include "utils.h"
 #include "pldm.h"
 #include "pldm_mcd.h"
+
+#ifdef CONFIG_INCLUDE_PLDM_PMC
 #include "pldm_pmc.h"
+#endif
+
+#ifdef CONFIG_INCLUDE_PLDM_FRU
+#include "pldm_fru.h"
+#endif
+
+#define MAX_NUMBER_OF_TYPE		3
 
 // local vars
 static uint8_t pktbuf[256];
 struct pldm_global_stc pldm_vars = { 0 };
+
+struct pldm_type_hdlr_stc {
+	uint8_t type;
+	pldm_cmd_hdlr_stct *ptr;
+};
+
+static struct pldm_type_hdlr_stc pldm_type_hdlrs[MAX_NUMBER_OF_TYPE];
+static int hdlr_cnt = 0;
+
+int register_pldm_handler(uint8_t type, pldm_cmd_hdlr_stct *ptr)
+{
+	if (hdlr_cnt == MAX_NUMBER_OF_TYPE) {
+		pldm_err("Cannot register pldm type %u (max. number of handler reached)\n", type);
+		return -1;
+	}
+
+	pldm_type_hdlrs[hdlr_cnt].type = type;
+	pldm_type_hdlrs[hdlr_cnt].ptr = ptr;
+	hdlr_cnt++;
+
+	return 0;
+}
 
 /* set bit on an array of bit_arr_t */
 void set_bit(uint32_t n, bit_arr_t *p)
@@ -38,12 +69,20 @@ int pldm_response(pldm_hdr_stct *resp, uint8_t comp_code)
 #define HDR_DRQ		((pldm_hdr->drq_inst >> 6) & 0x3)
 static pldm_cmd_hdlr_stct *search_handler(pldm_hdr_stct *pldm_hdr)
 {
-        pldm_cmd_hdlr_stct *ptr;
+        pldm_cmd_hdlr_stct *ptr = NULL;
 
-	ptr = (HDR_TYPE == 0) ? pldm_mcd_cmds : pldm_pmc_cmds;
+	for(int i = 0; i < hdlr_cnt; i++) {
+		if (pldm_type_hdlrs[i].type == HDR_TYPE) {
+			ptr = pldm_type_hdlrs[i].ptr;
+			break;
+		}
+	}
+
+	if (!ptr)
+		return NULL;	
 
         for(; ptr->hdlr ; ptr++) {
-                if (ptr->cmd == pldm_hdr->cmd)
+                if (ptr->cmd == pldm_hdr->cmd) 
                         return ptr;
         }
 
@@ -112,8 +151,16 @@ int pldm_init(void)
 {
 	pldm_vars.flags |= MCTP_VDM_ASYNC_ACK;
 
+	if (pldm_mcd_init())
+		return -1;
+
 #ifdef CONFIG_INCLUDE_PLDM_PMC
 	if (pldm_pmc_init())
+		return -1;
+#endif
+
+#ifdef CONFIG_INCLUDE_PLDM_FRU
+	if (pldm_fru_init())
 		return -1;
 #endif
 
