@@ -130,7 +130,10 @@ def main():
                 ingestion_status = ingest_techsupport_logs(job_id, path, metadata, filters)
             elif techsupport_ingest_type == 'url':
                 start = time.time()
-                _update_metadata(es_metadata, LOG_ID, 'DOWNLOAD_STARTED')
+                _update_metadata(es_metadata,
+                                 LOG_ID,
+                                 'DOWNLOAD_STARTED',
+                                 {'log_path': log_path})
                 if check_and_download_logs(log_path, log_dir):
                     end = time.time()
                     time_taken = end - start
@@ -541,6 +544,7 @@ def start_ingestion(job_id, ingest_type, **addtional_data):
             cmd.append('--submitted_by')
             cmd.append(submitted_by)
 
+        logging.info(f'Running ingestion cmd: {cmd}')
         ingestion = subprocess.Popen(cmd)
 
     return metadata
