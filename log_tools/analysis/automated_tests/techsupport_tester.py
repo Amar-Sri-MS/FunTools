@@ -18,6 +18,7 @@ import config_loader
 import logger
 
 from automated_tests.tester import Tester
+from utils.archive_extractor import is_archive
 from utils.cleanup import clean
 from view.ingester import _get_log_id
 
@@ -46,15 +47,21 @@ def main():
         logging.info(f'Looking for techsupport in {folder}')
         try:
             for file in os.listdir(folder):
-                if isfile(join(folder, file)) and is_techsupport(file):
+                file_path = join(folder, file)
+                if (isfile(file_path) and
+                    is_techsupport(file) and
+                    is_archive(file_path)):
                     logging.info(f'Found techsupport {file}')
-                    techsupport_archives.append(f'{folder}/{file}')
+                    techsupport_archives.append(file_path)
                     break
             # Stop searching if we found TEST_COUNT number of archives
             if len(techsupport_archives) == TEST_COUNT:
                 break
         except Exception as e:
             logging.exception('Error while finding techsupport archive')
+
+    if len(techsupport_archives) == 0:
+        logging.error(f'Could not find any techsupport archive in: {LOGS_DIRECTORY}')
 
     # Start ingestion
     for test_index in range(len(techsupport_archives)):
