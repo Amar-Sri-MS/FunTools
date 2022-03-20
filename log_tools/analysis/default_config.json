@@ -1,8 +1,9 @@
 {
     "ELASTICSEARCH": {
         "hosts": [
-            "10.1.22.206:9200",
-            "10.1.80.252:9200"
+            "10.1.80.252:9200",
+            "10.1.80.138:9200",
+            "10.1.22.206:9200"
         ],
         "timeout": 60,
         "max_retries": 3
@@ -21,7 +22,7 @@
         }
     },
     "FILE_SERVER_URL": "http://funlogs.fungible.local:11000",
-    "LOG_ANALYZER_BASE_URL": "http://funlogs.fungible.local/",
+    "LOG_ANALYZER_BASE_URL": "http://funlogs.fungible.local",
     "LOG_VIEW_BASE_URL": "http://funlogs.fungible.local/log/LOG_ID",
     "SESSION_PERMANENT": true,
     "SESSION_TYPE": "filesystem"
