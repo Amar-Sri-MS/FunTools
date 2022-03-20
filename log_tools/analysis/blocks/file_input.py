@@ -63,10 +63,14 @@ class TextFileInput(Block):
                     # TODO(Sourabh): Let users know about this.
                     logging.exception(f'Error while parsing zipped file: {file}')
             else:
-                with open(file, 'r', encoding='ascii', errors='replace') as f:
-                    yield from self.read_logs(f)
-                    f.seek(0,2)
-                    file_size += f.tell()
+                try:
+                    with open(file, 'r', encoding='ascii', errors='replace') as f:
+                        yield from self.read_logs(f)
+                        f.seek(0,2)
+                        file_size += f.tell()
+                except:
+                    # TODO(Sourabh): Let users know about this.
+                    logging.exception(f'Error while parsing log file: {file}')
         logging.info(f'Uncompressed file size (in bytes): {file_size}')
         timeline.track_end('file_input')
 
