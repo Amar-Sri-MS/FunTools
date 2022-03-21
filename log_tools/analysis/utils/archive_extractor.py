@@ -19,6 +19,9 @@ def extract(path):
         logging.error(f'Archive does not exist at {path}')
         raise Exception(f'Archive does not exist at {path}')
 
+    if not is_archive(path):
+        raise Exception(f'{path} is not an archive.')
+
     if path.endswith('.zip'):
         opener, mode = zipfile.ZipFile, 'r'
     elif path.endswith('.tar'):
@@ -30,8 +33,9 @@ def extract(path):
     elif path.endswith(('.tar.lzma', '.tlz')):
         opener, mode = tarfile.open, 'r'
     else:
-        logging.error(f'Unsupported format archive: {path}')
-        raise Exception(f'Unsupported format archive: {path}')
+        # # Will attempt to extract with tarfile.
+        # opener, mode = tarfile.open, 'r'
+        raise Exception(f'Unknown archive: {path}')
 
     # Get current working directory
     cwd = os.getcwd()
@@ -91,6 +95,12 @@ def archive_has_top_level_directory(archive, archive_name):
 def is_archive(path):
     """ Check if the file at the path is an archive """
     if os.path.isdir(path):
+        return False
+    # WORKAROUND: Manifest files have wrong types
+    if path.endswith('.gz'):
+        return True
+    # WORKAROUND: Manifest files have wrong types
+    if path.endswith('.log'):
         return False
     if tarfile.is_tarfile(path) or zipfile.is_zipfile(path):
         return True
