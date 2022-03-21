@@ -160,7 +160,7 @@ class SKUCfgGen():
 
                 # Apply the board layer configuration to the SKU file
                 board_layer = BoardLayer(self.input_dir, self.target_chip)
-                board_layer.apply_board_layer(sku_json, def_cfg)
+                sku_json = board_layer.apply_board_layer(sku_json, def_cfg)
 
                 board_cfg = jsonutils.merge_dicts(board_cfg, copy.deepcopy(sku_json))
 
@@ -183,7 +183,7 @@ class SKUCfgGen():
 
             # Apply the board layer configuration to the SKU file
             board_layer = BoardLayer(self.input_dir, self.target_chip)
-            board_layer.apply_board_layer(sku_json, def_cfg)
+            sku_json = board_layer.apply_board_layer(sku_json, def_cfg)
 
             board_cfg = jsonutils.merge_dicts(board_cfg, copy.deepcopy(sku_json))
 
@@ -268,7 +268,7 @@ class SKUCfgGen():
 
             # we found the board, return the chip name
             return board.get("asic")
-        
+
         # board not found?
         return None
 
@@ -467,7 +467,7 @@ class SKUCfgGen():
         fun_board_config = self._get_fungible_board_id_config()
         for board in fun_board_config:
             chip_type = board.get('asic', None)
-            
+
             # skip seen chips
             if chip_type in chips_seen:
                 continue

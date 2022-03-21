@@ -61,7 +61,7 @@ def _generate_nu_csr_replay_config(config_root_dir, output_dir, target_chip, tar
 
 # Creates nu config
 def _generate_sku_config(config_root_dir, sdk_dir, output_dir, target_chip, target_machine):
-    logger.info('Processing per sku config:')
+    logger.info('Processing per sku config: {}-{}'.format(target_chip, target_machine))
 
     sku_cfg_gen = SKUCfgGen(config_root_dir, sdk_dir, output_dir, target_chip, target_machine)
 
