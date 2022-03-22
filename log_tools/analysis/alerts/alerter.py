@@ -7,6 +7,7 @@
 # Owner: Sourabh Jain (sourabh.jain@fungible.com)
 # Copyright (c) 2022 Fungible Inc.  All rights reserved.
 
+import json
 import time
 
 import config_loader
@@ -75,7 +76,7 @@ class Alerter(object):
                 result = self._search(self.last_sync_time)
                 result_count = result['total']
                 if result_count['relation'] != 'eq':
-                    # Fetch the next set of results
+                    #TODO(Sourabh): Fetch the next set of results
                     pass
                 results = result['hits']
                 for document in results:
@@ -95,6 +96,19 @@ class Alerter(object):
         # Convert comma separated tags into list
         tags_str = alert.get('tags')
         alert['tags'] = tags_str.split(',') if tags_str else []
+
+        # hits are comma separated dicts stored as string.
+        # Converting them into list of dicts.
+        formatted_hits = []
+        if alert['hits'] != '':
+            formatted_hits = json.loads(f"""[{alert['hits']}]""")
+        alert['hits'] = formatted_hits
+        alert['hits'] = [
+            {
+                'index': hit['_index'],
+                **hit['_source']
+            } for hit in alert['hits']
+        ]
 
         return alert
 
