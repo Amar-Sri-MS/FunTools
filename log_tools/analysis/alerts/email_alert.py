@@ -54,11 +54,11 @@ class EmailAlert(AlertType):
 
         log_handler.info(f'Preparing to send email to {recipient_emails}')
 
-        subject = alert.get('context_message')
+        subject = alert.get('context_title')
         from_email = 'Log Analyzer<localadmin@funlogs01.fungible.local>'
 
-        mail_body = alert.get('context_message')
-        mail_body += '\n' + json.dumps(alert.get('hits'), indent=2)
+        mail_body = f"""{alert.get('context_message')}"""
+        mail_body += '\n' + json.dumps(alert.get('hits'), sort_keys=True, indent=2)
 
         log_handler.info(mail_body)
         log_handler.info('-'*100)
