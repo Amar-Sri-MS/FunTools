@@ -82,7 +82,7 @@ def mctp_smbus_pkt_tx():
                 log.debug('Read data from FIFO before Bin -> Blob conversion: %s', mctp_smbus_pkt_tx_data)
                 data = mctp_tx_dpc_handle.blob_from_string(mctp_smbus_pkt_tx_data)
 
-                log.debug('Sending Data to HostServer using FunOS PCIe Driver')
+                log.debug('Sending Data to HostServer using FunOS SMBus Driver')
                 result = mctp_tx_dpc_handle.execute('mctp_transport', ['mctp_pkt_send', 'mctp_over_smbus', ['quote', data]])
                 log.debug("'mctp_pkt_send' packet DPCSH response: {}".format(result))
 
@@ -151,7 +151,7 @@ def mctp_smbus_pkt_rx():
                 log.debug("PLDM/MCTP async_recv_wait recieved response: {}".format(result))
 
                 if not result['mctp_over_smbus']:
-                    log.debug("pkt != PLDM/MCTP Over PCIeVDM")
+                    log.debug("pkt != PLDM/MCTP Over SMBus")
                     continue
 
                 mctp_smbus_pkt_rx_data = mctp_rx_dpc_handle.blob_to_string(result['data'])
