@@ -39,14 +39,8 @@ class EmailAlert(AlertType):
         - context_title (str)
         - context_message (str)
         - tags (list)
-        - hits
+        - hits (list of dict): instances of event that triggered the alert
         """
-        log_handler.info('*'*100)
-        # log_handler.info(alert.get('alert_name'))
-        # log_handler.info(alert.get('context_title'))
-        # log_handler.info(alert.get('context_message'))
-        # log_handler.info(alert.get('tags'))
-
         email_addresses = self._get_email_addresses_from_tags(alert.get('tags'))
         email_addresses.extend(self.config.get('email_addresses'))
         recipient_emails = ','.join(email_addresses)
@@ -55,13 +49,10 @@ class EmailAlert(AlertType):
         log_handler.info(f'Preparing to send email to {recipient_emails}')
 
         subject = alert.get('context_title')
-        from_email = 'Log Analyzer<localadmin@funlogs01.fungible.local>'
+        from_email = 'Log Analyzer Alerts<localadmin@funlogs01.fungible.local>'
 
         mail_body = f"""{alert.get('context_message')}"""
         mail_body += '\n' + json.dumps(alert.get('hits'), sort_keys=True, indent=2)
-
-        log_handler.info(mail_body)
-        log_handler.info('-'*100)
 
         # Mail only the first MAX_LOG_LENGTH/2 and last MAX_LOG_LENGTH/2 characters of the log file
         # if it is over MAX_LOG_LENGTH characters long.

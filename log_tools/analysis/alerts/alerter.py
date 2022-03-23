@@ -7,6 +7,7 @@
 # Owner: Sourabh Jain (sourabh.jain@fungible.com)
 # Copyright (c) 2022 Fungible Inc.  All rights reserved.
 
+import argparse
 import json
 import time
 
@@ -24,7 +25,10 @@ log_handler = logger.get_logger(filename='alerter.log')
 
 
 class Alerter(object):
-    """ """
+    """
+    Alerter class to watch for documents in a given elasticsearch
+    index and send out alerts.
+    """
     def __init__(self, index='alerts*', sync_freq=30, last_sync_time=0):
         ELASTICSEARCH_HOSTS = config['ELASTICSEARCH']['hosts']
         ELASTICSEARCH_TIMEOUT = config['ELASTICSEARCH']['timeout']
@@ -46,7 +50,7 @@ class Alerter(object):
         self.alert_types = list()
 
     def add_alert_type(self, alert_type):
-        """ """
+        """ Append alert types """
         self.alert_types.append(alert_type)
 
     def _search(self, since_time):
@@ -70,7 +74,7 @@ class Alerter(object):
         return result['hits']
 
     def start(self):
-        """ """
+        """ Start watching for alerts in the given Elasticsearch index. """
         while True:
             try:
                 result = self._search(self.last_sync_time)
@@ -123,7 +127,21 @@ class Alerter(object):
 
 
 def main():
-    alerter = Alerter()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--index', help='Elasticsearch index of alerts', default='alerts*')
+    parser.add_argument('--sync_freq',
+                        type=int,
+                        help='Frequency to look for alerts (in epoch seconds, default to 30)',
+                        default=30)
+    parser.add_argument('--last_sync_time',
+                        type=int,
+                        help='Since when to look for alerts (in epoch milliseconds, default to now)',
+                        default=time.time())
+    args = parser.parse_args()
+
+    alerter = Alerter(index=args.index,
+                      sync_freq=args.sync_freq,
+                      last_sync_time=args.last_sync_time)
 
     email_alerter = EmailAlert()
     alerter.add_alert_type(email_alerter)
