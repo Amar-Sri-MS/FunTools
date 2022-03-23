@@ -57,7 +57,7 @@ def get_address(trace_line):
 
         m = re.search(regex, trace_line)
 
-        addr = int(m.group(1),16)
+        addr = long(m.group(1),16)
 
     return addr
 

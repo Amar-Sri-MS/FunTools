@@ -43,7 +43,7 @@ def vpstats_output_html(data):
     newdict["setup"] = {"runs": 5}
     newdict["functions"] = []
 
-    for funcname in list(data.keys()):
+    for funcname in data.keys():
         cntdict = {"name":funcname}
         cntdict["dist"] = {}
         cntdict["avg"] = sum(data[funcname])/len(data[funcname])
@@ -52,7 +52,7 @@ def vpstats_output_html(data):
         cntdict["std"] = standard_deviation(data[funcname])
         
         for el in data[funcname]:
-            if el in list(cntdict["dist"].keys()):
+            if el in cntdict["dist"].keys():
                 cntdict["dist"][el] = cntdict["dist"][el] + 1
             else:
                 cntdict["dist"][el] = 1

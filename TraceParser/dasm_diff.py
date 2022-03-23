@@ -120,7 +120,7 @@ def sorted_calls_by_size(func) -> List[Tuple[int, str]]:
                         continue
                 cd[callsym] = cd.setdefault(callsym, 0) + 1
 
-        clist = [(cd[sym], sym) for sym in list(cd.keys())]
+        clist = [(cd[sym], sym) for sym in cd.keys()]
 
         return sorted(clist, reverse=True)
 
@@ -145,15 +145,15 @@ def anon_constprop(scalls:List[Tuple[int, str]]) -> List[Tuple[int, str]]:
 
 def filter_wus(funcs: List[str]) -> List[str]:
         l: List[str] = []
-        l += [x for x in funcs if x.startswith("__wu_handler__")]
-        l += [x for x in funcs if x.startswith("__channel__")]
-        l += [x for x in funcs if x.startswith("__thread__")]
+        l += filter(lambda x : x.startswith("__wu_handler__"), funcs)
+        l += filter(lambda x : x.startswith("__channel__"), funcs)
+        l += filter(lambda x : x.startswith("__thread__"), funcs)
 
         return l
 
 def all_insns(dasm) -> int:
         total = 0
-        for func in list(dasm.functions.values()):
+        for func in dasm.functions.values():
                 n = func_insn(func)
                 # done_start_vps has negative size -1585267068431761408
                 n = max(0, n)
@@ -274,7 +274,7 @@ class FuncStats:
         def total_insns(self):
                 # sum all our childrens' instructions
                 if (self._total_ins is None):
-                        self._total_ins = sum([x.total_insns() for x in list(self.children.values())]) + self.insns
+                        self._total_ins = sum([x.total_insns() for x in self.children.values()]) + self.insns
                 return self._total_ins
 
         def attrsuffix(self):
@@ -301,7 +301,7 @@ class FuncStats:
                         cs = []
 
                         # collect & sort the fingerprint of all our children
-                        for child in list(self.children.values()):
+                        for child in self.children.values():
                                 fp = child.fingerprint()
                                 cs.append(fp)
                         cs.sort(reverse=True)

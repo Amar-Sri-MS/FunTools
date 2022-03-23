@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2.7
 #
 # trace_test.py: unit tests for tree manipulation code.
 #
@@ -7,7 +7,7 @@
 import unittest
 
 import json
-import io
+import StringIO
 import unittest
 
 import tprs
@@ -76,7 +76,7 @@ class TestFunctionStats(unittest.TestCase):
         root = makeSimpleTree()
         ttypes.number_nodes(root, 1)
         
-        out_stream = io.StringIO()
+        out_stream = StringIO.StringIO()
         ttypes.write_nodes_as_json(root, out_stream)
 
         # Quick sanity check on expected values.
@@ -139,11 +139,11 @@ class TestGetStats(unittest.TestCase):
 
         self.assertEqual(70, stats[0]['cycles'])
         self.assertEqual(4, stats[0]['calls'])
-        self.assertEqual(40, stats[0]['cycles_average'])
-        self.assertEqual(70, stats[0]['cycles_max'])
-        self.assertEqual(10, stats[0]['cycles_min'])
+        self.assertEquals(40, stats[0]['cycles_average'])
+        self.assertEquals(70, stats[0]['cycles_max'])
+        self.assertEquals(10, stats[0]['cycles_min'])
         # Stddev is set later.
-        self.assertEqual(0, stats[0]['cycles_std_dev'])
+        self.assertEquals(0, stats[0]['cycles_std_dev'])
 
 if __name__ == '__main__':
     unittest.main()

@@ -59,7 +59,7 @@ class TF3(BaseTF):
         if match:
             self.inscomp = match.group(3)
             self.ttype = match.group(4)
-            self.addr = int(match.group(8), 16)
+            self.addr = long(match.group(8), 16)
         else:
             raise ValueError('wrong format for TF3 %s' % msg)
 

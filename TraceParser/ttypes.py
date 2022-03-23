@@ -43,8 +43,8 @@ class TEntry():
         self.func = tutils.find_function(self.addr, dasm_info)
 
         if not self.func:
-            print("No function for address 0x%x\n" % (
-                self.addr))
+            print "No function for address 0x%x\n" % (
+                self.addr)
 
     def __str__(self):
         return "%24s: %2s cyc %24s (%s)" % (hex(self.addr),self.ccount,self.func,self.pos)
@@ -104,9 +104,9 @@ class SummaryTree():
         self.id = 0
 
     def PrintTree(self, level=0):
-        print(' ' * (level * 2), end=' ')
-        print('%s (%d calls, %d cycles)' % (self.name, self.num_calls,
-                        self.cycles))
+        print ' ' * (level * 2),
+        print '%s (%d calls, %d cycles)' % (self.name, self.num_calls,
+                        self.cycles)
         for child in self.calls:
             child.PrintTree(level + 1)
 
@@ -347,14 +347,14 @@ class TTree():
         if self is refobj:
             ann= "*"
 
-        print("%s%s%s%s-> %s [%s]" % (ann, '\t',' '*depth, depth, self.name, self.stats_str(False)))
+        print "%s%s%s%s-> %s [%s]" % (ann, '\t',' '*depth, depth, self.name, self.stats_str(False))
 
         for subcall in self.calls:
             subcall.print_tree_annotated(depth+1, refobj)
 
     def print_tree(self, depth):
 
-        print("[%12s]\t%s%s-> %s [%s]" % (self.get_start_cycle(), ' '*depth, depth, self.name, self.stats_str(False)))
+        print "[%12s]\t%s%s-> %s [%s]" % (self.get_start_cycle(), ' '*depth, depth, self.name, self.stats_str(False))
 
         for subcall in self.calls:
             subcall.print_tree(depth+1)
@@ -364,7 +364,7 @@ class TTree():
         if maxdepth == 0:
             return
 
-        print("%s%s-> %s [%s]" % (' '*startdepth, startdepth, self.name, self.stats_str(excl_sub_calls)))
+        print "%s%s-> %s [%s]" % (' '*startdepth, startdepth, self.name, self.stats_str(excl_sub_calls))
 
         for subcall in self.calls:
             subcall.print_tree_ltd(startdepth+1, maxdepth-1, excl_sub_calls)
@@ -372,7 +372,7 @@ class TTree():
     def print_context(self):
 
         if self.parent == None:
-            print("----Context----")
+            print "----Context----"
             self.print_tree(0)
         else:
             self.get_parent().print_context()
@@ -403,9 +403,9 @@ class TTree():
             subcount = subcount + el.get_ccount()
 
         if self.get_ccount() < subcount:
-            print("sanity check issue:")
-            print("[%s] ccount %s subcount %s" % (
-                self.name, self.get_ccount(), subcount))
+            print "sanity check issue:"
+            print "[%s] ccount %s subcount %s" % (
+                self.name, self.get_ccount(), subcount)
             return False
         else:
             return True

@@ -10,9 +10,9 @@ def ParseLine(trace_line):
         return None
     args = trace_line.split()
     return {'type': args[0],
-        'vpid': int(args[1]),
-        'address': int(args[2], 16),
-        'arg': int(args[3], 16),
+        'vpid': long(args[1]),
+        'address': long(args[2], 16),
+        'arg': long(args[3], 16),
         'cycle': int(args[5][6:]),
         'time': int(args[6][5:])}
 
@@ -39,7 +39,7 @@ def get_return_addr(trace_line):
 
 def get_address(trace_line):
     try:
-        return int(trace_line.split()[2], 16)
+        return long(trace_line.split()[2], 16)
     except:
         # XXX
         return 0
@@ -54,12 +54,12 @@ def get_asm(trace_line):
 def get_ts(trace_line):
     time_txt = trace_line.split()[6]
     timev = time_txt.split('=')[1]
-    return int(timev)    
+    return long(timev)    
 
 def get_cycle(trace_line):
     cycle_txt = trace_line.split()[5]
     cycle = cycle_txt.split('=')[1]
-    return int(cycle)    
+    return long(cycle)    
 
 
 # FIXME

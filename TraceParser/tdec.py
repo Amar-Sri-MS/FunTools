@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2.7
 
 #external libs
 import pickle, sys, os
@@ -14,7 +14,7 @@ import html_gen
 def filter_tree(tree, fname, depth, excl_sub_calls):
     
     if tree.get_name() == fname:
-        print("")
+        print ""
         tree.print_tree_ltd(0, depth, excl_sub_calls)
     else:
         for el in tree.get_calls():
@@ -36,30 +36,30 @@ def gather_stats_rec(tree, statsd):
         
 
 def summarize(statsd):
-    print("""<div style="height: 3000px"></div>
-<h1>Summary</h1>""")
+    print """<div style="height: 3000px"></div>
+<h1>Summary</h1>"""
 
 
-    funcs = list(statsd.keys())
+    funcs = statsd.keys()
     funcs.sort()
 
     for funcname in funcs:
-        print("<a name=\"%s\"></a>" % funcname)
-        print("<h2>%s</h2>" % funcname)
-        print("Details on %s." % funcname)
-        print("<br>")
-        print("<br>")
-        print("Called at ticks: ")
+        print "<a name=\"%s\"></a>" % funcname
+        print "<h2>%s</h2>" % funcname
+        print "Details on %s." % funcname
+        print "<br>"
+        print "<br>"
+        print "Called at ticks: "
         for cyc in statsd[funcname]:
-            print("<a href=\"#%s\">%s</a> " % (cyc, cyc))
-        print("<br>")
+            print "<a href=\"#%s\">%s</a> " % (cyc, cyc)
+        print "<br>"
 
 
 def hdr_info(statsd):
 
     hdrs = ""
 
-    funcs = list(statsd.keys())
+    funcs = statsd.keys()
     funcs.sort()
 
     outstats = []
@@ -91,7 +91,7 @@ if __name__ == "__main__":
     (options, args) = parser.parse_args()
 
     if options.funtrc_f is None:
-        print("Need to specify a fungible option trace file")
+        print "Need to specify a fungible option trace file"
         sys.exit(1)
 
     dst = ''
@@ -185,7 +185,7 @@ if __name__ == "__main__":
     for c in range(0,4):
         core_report = core_report + "<td>"
 
-        for fcall in list(statsd[c].keys()):
+        for fcall in statsd[c].keys():
             core_report = core_report + "%s<br>" % fcall
 
         core_report = core_report + "</td>"

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2.7
 #
 # read_trace_test.py: unit tests for parsing binary trace events.
 #

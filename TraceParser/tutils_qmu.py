@@ -37,7 +37,7 @@ def get_address(trace_line):
     try:
         saddr = trace_line.split()[4]
         saddr = saddr[1:-1]
-        naddr = int(saddr, 16)
+        naddr = long(saddr, 16)
         DEBUG("address: 0x%x ('%s')" % (naddr, saddr))
         return naddr
     except:
@@ -50,11 +50,11 @@ def get_asm(trace_line):
 
 def get_ts(trace_line):
     cycle = trace_line.split()[-1]
-    return int(cycle)    
+    return long(cycle)    
 
 def get_cycle(trace_line):
     cycle = trace_line.split()[-1]
-    return int(cycle)    
+    return long(cycle)    
 
 
 # FIXME
