@@ -18,6 +18,7 @@
 #define MCTP_VENDOR_ID		0x1ab4
 
 struct pcie_vdm_hdr_stc {
+	uint32_t cookie;
 #ifndef ARCH_BIG_ENDIAN
 	uint32_t len:10, r_at:2, attr:2, ep:1, td:1, t8:4, tc:3, t9:1, type:5, fmt:2, t2:1;
 	uint32_t msg_code:8, tag:8, req_id:16;
@@ -34,6 +35,7 @@ struct pcie_vdm_rec_data {
 	uint16_t vendor_id;
 	uint16_t trgt_id;
 	uint16_t req_id;
+	uint32_t cookie;
 };
 
 extern struct mctp_ops_stc pcie_vdm_ops;

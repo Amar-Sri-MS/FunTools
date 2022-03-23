@@ -2248,6 +2248,67 @@ class PeekCommands(object):
             print "ERROR: %s" % str(ex)
             self.dpc_client.disconnect()
 
+    def _get_vr_flow_stats(self, offset, num_flows):
+        fwd_flows_dict = {}
+        arg_dict = {"count": int(num_flows), "resume_cookie": int(offset)}
+        cmd = ["flow_show", "tf", arg_dict]
+        output = self.dpc_client.execute(verb='overlay', arg_list=cmd)
+        if output:
+            for mkey, mval in output.items():
+                if mkey.startswith('vp_'):
+                    fwd_flows_dict[mkey] = mval
+        return fwd_flows_dict
+
+    def peek_vr_flow_stats(self, offset, num_flows, grep=None):
+        old_fwd_flows = None
+        while True:
+            try:
+                flows_dict = self._get_vr_flow_stats(offset=offset, num_flows=num_flows)
+                if flows_dict:
+                    if old_fwd_flows:
+                        table_obj = PrettyTable(['flow_id', 'sip:sport -> dip:dport protocol',
+                            'pkt', 'pkt_diff', 'byte', 'byte_diff'])
+                        table_obj.align = 'l'
+                        sorted_flows = flows_dict.keys()
+                        sorted_flows.sort()
+                        for vp_flows in sorted_flows:
+                            flows_in_vp = flows_dict[vp_flows]
+                            old_flows_in_vp = old_fwd_flows[vp_flows]
+                            old_flows_in_vp_size = len(old_flows_in_vp)
+                            for idx in range(len(flows_in_vp)):
+                                flow = flows_in_vp[idx]
+                                tpl = flow["tuple"]
+                                stats = flow["stats"]
+                                flow_id = flow["flow_id"]
+                                old_flow = old_flows_in_vp[idx]
+                                old_stats = old_flow["stats"]
+                                f_pkt_diff = stats['in_pkts'] - old_stats['in_pkts']
+                                f_byte_diff = stats['in_bytes'] - old_stats['in_bytes']
+                                table_obj.add_row([flow_id, tpl, stats['in_pkts'], f_pkt_diff,
+                                               stats['in_bytes'], f_byte_diff])
+                    else:
+                        table_obj = PrettyTable(['flow_id', 'sip:sport -> dip:dport protocol', 'pkt', 'byte'])
+                        table_obj.align = 'l'
+                        sorted_flows = flows_dict.keys()
+                        sorted_flows.sort()
+                        for vp_flows in sorted_flows:
+                            flows_in_vp = flows_dict[vp_flows]
+                            for flow in flows_in_vp:
+                                tpl = flow["tuple"]
+                                stats = flow["stats"]
+                                flow_id = flow["flow_id"]
+
+                                table_obj.add_row([flow_id , tpl, stats['in_pkts'],
+                                                   stats['in_bytes']])
+                    old_fwd_flows = flows_dict
+                    print table_obj
+                    print "\n########################  %s ########################\n" % \
+                          str(self._get_timestamp())
+                    do_sleep_for_interval()
+            except Exception as ex:
+                print "ERROR: %s" % str(ex)
+                self.dpc_client.disconnect()
+
     def _get_sdn_meter_stats(self, policy_id, direction):
         output = None
         arg_dict = {"metering": "show", "policy_id": int(policy_id)}

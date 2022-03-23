@@ -1358,6 +1358,15 @@ peek_stats_sdn_meter_parser.add_argument('direction', help="In or out stats", ty
 # sdn flows
 peek_stats_sdn_flow_parser = peek_stats_sdn_parsers.add_parser('flows', help='peek sdn flows stats')
 
+#sdn flow
+peek_stats_vrouter_parser = peek_stats_parsers.add_parser('vrouter', help='peek stats vrouter')
+peek_stats_vrouter_parsers = peek_stats_vrouter_parser.add_subparsers(title='subcommands', help="")
+
+# vrouter flows
+peek_stats_vr_flow_parser = peek_stats_vrouter_parsers.add_parser('vr_flow', help='peek stats vrouter vr_flow')
+peek_stats_vr_flow_parser.add_argument("offset", help="start offset", type=int)
+peek_stats_vr_flow_parser.add_argument("num_flows", help="Print flow data", type=int)
+
 # sdn flows
 peek_stats_sdn_vp_parser = peek_stats_sdn_parsers.add_parser('vp', help='peek sdn vp stats')
 peek_stats_sdn_vp_parser.add_argument('-grep', help="Grep for specific flow", default=None)

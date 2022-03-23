@@ -457,6 +457,34 @@ void update_repo(struct numeric_sensor_pdr *pdr, uint32_t mcot)
 //	pdr->crc8 = (uint8_t)crc8((uint8_t *)pdr, sizeof(struct numeric_sensor_pdr) - 1);
 }
 
+static pldm_cmd_hdlr_stct pldm_pmc_cmds[] = {
+	{PLDM_PMC_SET_NUMERIC_SENSOR_ENABLE, sizeof(struct pldm_set_num_sens_en_req), pldm_set_sensor_en},
+	{PLDM_PMC_GET_SENSOR_READING, sizeof(struct pldm_get_sens_rd_req), pldm_get_sensor_rd},
+	{PLDM_PMC_GET_SENSOR_THRESHOLDS, sizeof(struct pldm_get_sens_th_req), pldm_get_sensor_th},
+	{PLDM_PMC_GET_SENSOR_HYSTERESIS, sizeof(struct pldm_get_sens_th_req), pldm_get_sensor_hy},
+#ifdef CONFIG_PLDM_STATE_SONSORS_SUPPORT
+	{PLDM_PMC_GET_STATES_SENSOR_READINGS, sizeof(struct pldm_get_state_rd_req), pldm_get_state_rd},
+#endif
+	{PLDM_PMC_GET_PDR_REPOSITORY_INFO, 0, pldm_get_repo_info},
+	{PLDM_PMC_GETPDR, sizeof(struct pldm_get_pdr_req), pldm_get_pdr},
+        {PLDM_PMC_SET_EVENT_RECEIVER, sizeof(struct pldm_set_event_rcvr_req_stc), pldm_set_rcvr_tid},
+        {PLDM_PMC_GET_EVENT_RECEIVER, 0, pldm_get_rcvr_tid},
+	PLDM_LAST_CMD,
+};
+
+void get_pmc_supported_cmds(uint8_t *cmds)
+{
+	set_bit(PLDM_PMC_SET_NUMERIC_SENSOR_ENABLE, cmds);
+	set_bit(PLDM_PMC_GET_SENSOR_READING, cmds);
+	set_bit(PLDM_PMC_GET_SENSOR_THRESHOLDS, cmds);
+	set_bit(PLDM_PMC_GET_SENSOR_HYSTERESIS, cmds);
+#ifdef CONFIG_PLDM_STATE_SONSORS_SUPPORT
+	set_bit(PLDM_PMC_GET_STATES_SENSOR_READINGS, cmds);
+#endif
+	set_bit(PLDM_PMC_GET_PDR_REPOSITORY_INFO, cmds);
+	set_bit(PLDM_PMC_GETPDR, cmds);
+}
+
 #define ON_BOARD_INLET			0x1
 #define ON_BOARD_OUTLET			0x2
 #define ON_BOARD_OTHER			0x3
@@ -465,7 +493,6 @@ int pldm_pmc_init(void)
 {
 	num_of_sensors = 0;
 	int rc = 0;
-
 
 	sensor[num_of_sensors].id = ON_BOARD_INLET;
 	sensor[num_of_sensors].state = PLDM_SENSOR_ENABLED;
@@ -500,24 +527,10 @@ int pldm_pmc_init(void)
 		goto exit;
 #endif
 
+	rc = register_pldm_handler(PLDM_PMC_TYPE, pldm_pmc_cmds);
+
 exit:
 	pldm_dbg("pldm pmc init done - num_of_sensors = %u\n", num_of_sensors);
 	return rc;
 }
 
-pldm_cmd_hdlr_stct pldm_pmc_cmds[] = {
-	{PLDM_PMC_SET_NUMERIC_SENSOR_ENABLE, sizeof(struct pldm_set_num_sens_en_req), pldm_set_sensor_en},
-	{PLDM_PMC_GET_SENSOR_READING, sizeof(struct pldm_get_sens_rd_req), pldm_get_sensor_rd},
-	{PLDM_PMC_GET_SENSOR_THRESHOLDS, sizeof(struct pldm_get_sens_th_req), pldm_get_sensor_th},
-	{PLDM_PMC_GET_SENSOR_HYSTERESIS, sizeof(struct pldm_get_sens_th_req), pldm_get_sensor_hy},
-
-#ifdef CONFIG_PLDM_STATE_SONSORS_SUPPORT
-	{PLDM_PMC_GET_STATES_SENSOR_READINGS, sizeof(struct pldm_get_state_rd_req), pldm_get_state_rd},
-#endif
-
-	{PLDM_PMC_GET_PDR_REPOSITORY_INFO, 0, pldm_get_repo_info},
-	{PLDM_PMC_GETPDR, sizeof(struct pldm_get_pdr_req), pldm_get_pdr},
-        {PLDM_PMC_SET_EVENT_RECEIVER, sizeof(struct pldm_set_event_rcvr_req_stc), pldm_set_rcvr_tid},
-        {PLDM_PMC_GET_EVENT_RECEIVER, 0, pldm_get_rcvr_tid},
-	PLDM_LAST_CMD,
-};

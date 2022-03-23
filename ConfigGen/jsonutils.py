@@ -120,18 +120,34 @@ def merge_dicts(cfg1, cfg2):
 
     return new_cfg
 
-# Merge two dictionaries
-# Like merge_dicts above, but recursively merges dictionaries too
-def merge_dicts_recursive(cfg1, cfg2):
-    for k, v in cfg1.items():
-        if isinstance(v, dict):
-            merge_dicts_recursive(v, cfg2.setdefault(k, {}))
-        elif isinstance(v, list) and k in cfg2:
-            cfg2[k].extend(v)
-        elif not k in cfg2:
-            cfg2[k] = v
+# Create a new dictionary with merged contents of 1st and 2nd, using the following rules:
+#  if a value entry exists in only either of the args, then use it in returned dict
+#  if a value entry exists in both args, use 2nd value in returned dict
+#  if a list entry exists in both args, then elements from 2nd are appended to 1st
+#  if a dict entry exists in both args, then rules above are applied recursively
+def merge_dicts_recursive(orig, other_):
+    other = other_.copy()
+    res = {}
+    for k, v in orig.items():
+        if k in other:
+            if isinstance(v, dict):
+                assert isinstance(other[k], dict), "{} should be a dict in both dictionaries".format(k)
+                res[k] = merge_dicts_recursive(v, other[k])
+            elif isinstance(v, list):
+                assert isinstance(other[k], list), "{} should be a list in both dictionaries".format(k)
+                res[k] = v + other[k]
+            else:
+                res[k] = other[k]
 
-    return cfg2
+            del other[k]
+        else:
+            res[k] = v
+
+    for k, v in other.items():
+        res[k] = v
+
+    return res
+
 
 # Raise an error when duplicate keys are found
 # Otherwise the default loader silently loads the last value, which

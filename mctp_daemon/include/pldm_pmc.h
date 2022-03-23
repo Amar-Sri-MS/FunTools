@@ -346,9 +346,8 @@ struct sensors_info {
 	int (*read)(void);
 };
 
-extern pldm_cmd_hdlr_stct pldm_pmc_cmds[];
-
 int pldm_async_event(uint8_t *buf, int id, int temp);
+void get_pmc_supported_cmds(uint8_t *cmds);
 int pldm_pmc_init(void);
 
 #endif /* _INC_PLDM_PMC_HDR_ */

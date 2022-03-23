@@ -7,3 +7,4 @@ dbgutils/probeutils/build/
 *.o
 *.pyc
 *~
+.DS_Store

@@ -11,7 +11,6 @@ from default_cfg_gen import DefaultCfgGen
 logger = logging.getLogger('sku_board_layer_cfg_gen')
 logger.setLevel(logging.INFO)
 
-
 class BoardLayer():
     board_name = ""
     board_layer_name = ""
@@ -117,13 +116,12 @@ class BoardLayer():
         return sku_json
 
 
-    def apply_rest(self, sku_json, bl_json, def_cfg):
+    def apply_non_perst(self, sku_json, bl_json, def_cfg, sku_overrides_board=True):
         """Write the remaining board layer configuration to the SKU file
         """
-        tmp_bl_json = dict()
         default_cfg_gen = DefaultCfgGen(self.input_dir, self.target_chip)
 
-        tmp_bl_json = bl_json
+        tmp_bl_json = bl_json.copy()
 
         # Perst is processed elsewhere so remove it
         if 'perst' in tmp_bl_json:
@@ -131,7 +129,7 @@ class BoardLayer():
 
         # Nothing to do if the board layer is empty
         if not bool(tmp_bl_json):
-            return
+            return tmp_bl_json
 
         # Rename the board name placeholder with the real board name
         tmp_bl_json['skus'][self.board_name] = tmp_bl_json['skus']['board']
@@ -140,8 +138,11 @@ class BoardLayer():
         # Apply defaults to the board layer configuration file
         default_cfg_gen.apply_defaults(tmp_bl_json, def_cfg)
 
-        # Merge the board layer configuration with the SKU file
-        sku_json = jsonutils.merge_dicts_recursive(tmp_bl_json, sku_json)
+        if sku_overrides_board:
+            return jsonutils.merge_dicts_recursive(tmp_bl_json, sku_json)
+        else:
+            return jsonutils.merge_dicts_recursive(sku_json, tmp_bl_json)
+
 
     def apply_board_layer(self, sku_json, def_cfg):
         """Apply the board layer configuration, when available, to a SKU file.
@@ -160,10 +161,26 @@ class BoardLayer():
 
         # Check the board layer was specified
         if not self.board_layer_name:
-            return
+            return sku_json
+
+        final_override_json = dict()
 
         if not isinstance(self.board_layer_name, list):
             self.board_layer_name = [ self.board_layer_name ]
+
+        for index, board in enumerate(self.board_layer_name):
+            # Get the board layer config
+            logger.info('Processing {}'.format(board))
+            bl_json = self.get_board_layer_config(board)
+
+            # Generate a "common" board layer based on all layers,
+            # ensuring that any board layer that follows, overrides any
+            # matching settings from a previous layer.
+            final_override_json = self.apply_non_perst(final_override_json, bl_json,
+                def_cfg, sku_overrides_board=False)
+
+        # Apply sku config on top of the complete board layer json
+        sku_json = jsonutils.merge_dicts_recursive(final_override_json, sku_json)
 
         for board in self.board_layer_name:
             # Get the board layer config
@@ -174,7 +191,7 @@ class BoardLayer():
             cl_json = self.get_chip_layer_config()
 
             # Apply the perst board values to the SKU config file
-            self.apply_perst(sku_json, bl_json, cl_json)
+            sku_json = self.apply_perst(sku_json, bl_json, cl_json)
 
-            # Apply the rest of the board values to the SKU config file
-            self.apply_rest(sku_json, bl_json, def_cfg)
+
+        return sku_json

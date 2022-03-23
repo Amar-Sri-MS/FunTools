@@ -13,10 +13,11 @@
 #include "fw_version.h"
 #include "auto_conf.h"
 
-#define FLAGS_DAEMON_ENABLED    (1 << 0)
-#define FLAGS_VERBOSE           (1 << 1)
-#define FLAGS_NO_SU_CHECK	(1 << 2)
-#define FLAGS_DEBUG		(1 << 3)
+#define FLAGS_DAEMON_ENABLED    	(1 << 0)
+#define FLAGS_VERBOSE           	(1 << 1)
+#define FLAGS_NO_SU_CHECK		(1 << 2)
+#define FLAGS_DEBUG			(1 << 3)
+#define FLAGS_NO_SMBUS_PEC_CHECK	(1 << 4)
 
 #define _CONCAT(x, y)   x ## y
 #define CONCAT(x, y)    _CONCAT(x, y)
@@ -96,6 +97,7 @@ struct server_cfg_stc {
 	uint8_t debug;
 	char *logfile;
 	char *lockfile;
+	char *fru_filename;
 };
 
 extern struct server_cfg_stc cfg;
@@ -106,6 +108,7 @@ extern char *manuallog_file;
 
 void hexdump(uint8_t *addr, int len);
 uint32_t crc32(uint8_t  *data_buf, uint32_t byte_cnt, uint32_t crc_in);
+uint8_t crc8(const uint8_t *buf, int len);
 void print_version(char *name);
 
 #endif /* _INC_UTILS_HDR_ */

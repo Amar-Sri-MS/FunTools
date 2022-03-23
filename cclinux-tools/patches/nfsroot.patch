@@ -1,11 +1,13 @@
 --- etc/network/if-pre-up.d/nfsroot.old	2021-01-15 07:34:47.029028819 +0100
 +++ etc/network/if-pre-up.d/nfsroot	2021-01-15 07:38:48.850590674 +0100
-@@ -33,6 +33,8 @@
+@@ -33,6 +33,10 @@
  
  if test "x$IFACE" = "x$nfs_iface" ; then
      echo "ifup skipped for nfsroot interface $nfs_iface"
 +    echo "Using kernel-provided resolv.conf"
 +    cat /proc/net/pnp | tee /etc/resolv.conf
++    echo "Using kernel-provided ntp.conf"
++    echo server `cat /proc/net/ipconfig/ntp_servers` | tee /etc/ntp.conf
      exit 1
  fi
  
