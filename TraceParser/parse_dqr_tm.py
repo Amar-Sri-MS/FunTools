@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 #
 # Parses MIPS dequeuer trace message output.
@@ -10,7 +10,7 @@
 #
 # Copyright (c) 2019 Fungible Inc.  All rights reserved.
 #
-from __future__ import print_function
+
 
 import argparse
 import json

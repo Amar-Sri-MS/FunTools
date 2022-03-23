@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 #
 # Looks for message "sequences" in a log.
@@ -152,7 +152,7 @@ def main():
         reports = scanner.scan(fh)
 
         for r in reports:
-            print '{}: {}'.format(r[0], r[1])
+            print('{}: {}'.format(r[0], r[1]))
 
 
 if __name__ == '__main__':

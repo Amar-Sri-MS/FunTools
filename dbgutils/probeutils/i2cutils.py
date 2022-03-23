@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 import sys, os
 from aardvark_py import *
@@ -9,7 +9,7 @@ import logging
 import traceback
 import subprocess
 import paramiko
-from i2cdev import *
+from .i2cdev import *
 
 logger = logging.getLogger('i2cutils')
 logger.setLevel(logging.INFO)
@@ -974,7 +974,7 @@ class csr2i2c(i2c):
         qword = list(struct.unpack('BBBBBBBB', qword))
         cmd_data.extend(qword)
 
-        logger.debug('csr2 poking bytes: {0}'.format(map(hex, cmd_data)))
+        logger.debug('csr2 poking bytes: {0}'.format(list(map(hex, cmd_data))))
         sent_bytes = self.master.i2c_write(write_data = cmd_data, chip_inst=chip_inst)
         logger.debug('csr2 sent_bytes: {0}'.format(sent_bytes))
         if sent_bytes != len(cmd_data):
@@ -1008,7 +1008,7 @@ class csr2i2c(i2c):
         csr_addr = list(struct.unpack('BBBB', csr_addr))
         cmd_data = array('B', [0x00])
         cmd_data.extend(csr_addr)
-        logger.debug('csr2 cmd_data bytes: {0}'.format(map(hex, cmd_data)))
+        logger.debug('csr2 cmd_data bytes: {0}'.format(list(map(hex, cmd_data))))
         sent_bytes = self.master.i2c_write(write_data = cmd_data, chip_inst=chip_inst)
         logger.debug('csr2 sent_bytes: {0}'.format(sent_bytes))
         if sent_bytes != len(cmd_data):
@@ -1018,7 +1018,7 @@ class csr2i2c(i2c):
             time.sleep(constants.I2C_CSR_SLEEP_SEC)
             read_data = array('B', [00]*(8 + 1))
             read_bytes = self.master.i2c_read(read_data = read_data, chip_inst=chip_inst)
-            logger.debug(('csr2 read_bytes: {0} read_data: {1}').format(read_bytes, map(hex, read_data)))
+            logger.debug(('csr2 read_bytes: {0} read_data: {1}').format(read_bytes, list(map(hex, read_data))))
             if read_bytes[0] != (8+1):
                 logger.error(('csr2 Read Error! read_bytes:{0} Expected: {1}').format(read_bytes, (8 + 1)))
                 return (False, None)
@@ -1122,7 +1122,7 @@ class csr2i2c(i2c):
         """
         logger.debug('csr2 I2C poke! chip_inst: {0} csr_addr: {1} poke_array:{2}'.format(chip_inst,
                                                                                            hex(csr_addr),
-                                                                                           map(hex, word_array)))
+                                                                                           list(map(hex, word_array))))
         if not word_array:
             logger.error('csr2 poke array empty ...')
             return False

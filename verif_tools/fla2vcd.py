@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 import os,sys,code
 import rlcompleter, readline
 import argparse
@@ -25,7 +25,7 @@ def proc_file():
             path=".".join(s2[:-1])
             sig=s2[-1]
             if args.debug:
-                print "path=%s sig=%s width=%0d"%(path,sig,w)
+                print("path=%s sig=%s width=%0d"%(path,sig,w))
 
         else:
             s=l.rstrip()
@@ -34,7 +34,7 @@ def proc_file():
             sig=s2[-1]
             w=1
             if args.debug:
-                print "path=%s sig=%s width=1"%(path,sig)
+                print("path=%s sig=%s width=1"%(path,sig))
         var=writer.register_var(path,sig,'reg',size=w)
         sig_name.append(path+"."+sig)
         sig_list.append(var)
@@ -49,7 +49,7 @@ def proc_file():
         for i in range(len(sig_list)):
             v2=(val>>sig_lsb[i])&sig_mask[i]
             if args.debug:
-                print "time=%0d %s=0x%0x"%(time,sig_name[i],v2)
+                print("time=%0d %s=0x%0x"%(time,sig_name[i],v2))
             writer.change(sig_list[i],time,v2)
         time+=1
         

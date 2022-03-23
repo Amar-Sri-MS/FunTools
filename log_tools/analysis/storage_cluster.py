@@ -6,7 +6,7 @@
 
 import argparse
 
-import pipeline
+from . import pipeline
 
 
 def main():

@@ -6,7 +6,7 @@
 
 import unittest
 
-import csr2utils
+from . import csr2utils
 
 
 class MockDebugProbe(object):
@@ -177,7 +177,7 @@ class RegisterValueTest(unittest.TestCase):
                       in a print?
         """
         val = csr2utils.RegisterValue(self.reg, [0xcafebabe])
-        print val
+        print(val)
 
     def test_set_one_register_field(self):
         val = csr2utils.RegisterValue(self.reg, [0xcafebabe])
@@ -207,11 +207,11 @@ class RawFormatterTest(unittest.TestCase):
         self.formatter = csr2utils.RawValuesFormatter()
 
     def test_format_one_element(self):
-        print self.formatter.format([0xdeadbeef])
+        print(self.formatter.format([0xdeadbeef]))
 
     def test_format_multiple_elements(self):
         vals = [0xdeadbeef]
 
         for i in range(0, 5):
             vals.append(0xcafebabe)
-            print self.formatter.format(vals)
+            print(self.formatter.format(vals))

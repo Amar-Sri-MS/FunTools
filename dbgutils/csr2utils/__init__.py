@@ -1,1 +1,1 @@
-import csr2utils
+from . import csr2utils

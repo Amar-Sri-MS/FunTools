@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 # external libs
 import sys, pickle, json, os, time
@@ -148,7 +148,7 @@ def ValidateSummaryTrees(roots):
                     # TODO(bowdidge): Fix numbers for root nodes.
                     continue
                 if child.cycles > next.cycles:
-                    print ('Unexpected time: cycles for %s is %d,'
+                    print('Unexpected time: cycles for %s is %d,'
                            'cycles for child %s is %d' %
                            (next.name, next.cycles, child.name, child.cycles))
                     success = False
@@ -254,18 +254,18 @@ class TreeBuilder:
                                               entry.func, entry.addr)
         if debug:
             # Identify changes to call tree.
-            print '%d (line %d) %s %x %s %s %x' % (
+            print('%d (line %d) %s %x %s %s %x' % (
                 stats.cycles, stats.lines, self.last_found_func[entry.vpid],
                 self.last_address[entry.vpid],
-                kind, entry.func, entry.addr)
+                kind, entry.func, entry.addr))
 
         if kind is None:
-            print 'Unknown reason why we changed functions!'
-            print 'Line %d cycle %d' % (stats.cycles, stats.lines)
-            print 'Prev fn %s addr %x next fn %s next addr %x' % (
+            print('Unknown reason why we changed functions!')
+            print('Line %d cycle %d' % (stats.cycles, stats.lines))
+            print('Prev fn %s addr %x next fn %s next addr %x' % (
                 last_func,
                 self.last_address[entry.vpid],
-                entry.func, entry.addr)
+                entry.func, entry.addr))
             # TODO(bowdidge): Figure out more gentle solution.
             if debug_halt:
                 import pdb
@@ -331,14 +331,14 @@ class TreeBuilder:
                     entry.func != 'kernel_entry_asm' and
                     entry.func != '__cpu_init')):
 
-                    print 'Mismatch on return'
-                    print 'Caller was %s' % entry.func
+                    print('Mismatch on return')
+                    print('Caller was %s' % entry.func)
 
-                    print 'Return to %s' % entry.func
-                    print 'Stack is: '
+                    print('Return to %s' % entry.func)
+                    print('Stack is: ')
                     a = current.parent
                     while a is not None:
-                        print a.name
+                        print(a.name)
                         a = a.parent
                     if debug_halt:
                         import pdb
@@ -454,13 +454,13 @@ def read_trace(trace_fname, dasm_info, filter_fns, follow, core_id):
                     stats.loadstore_misses += 1
     infile.close()
 
-    print "Run complete..."
+    print("Run complete...")
 
     tree_builder.FinishEntry(stats)
     roots = tree_builder.Roots()
     for root in roots:
         sc = root.sanitycheck()
-        print "Sanity check for %s: %s" % (root.name, sc)
+        print("Sanity check for %s: %s" % (root.name, sc))
 
     max_call_depth = max([ttypes.max_tree_height(root)
               for root in roots])
@@ -468,13 +468,13 @@ def read_trace(trace_fname, dasm_info, filter_fns, follow, core_id):
     elapsed_secs = real_cycles/float(1000000000)
     elapsed_msecs = real_cycles/float(1000000)
 
-    print "Total cycles: %s" % stats.cycles
-    print "Time elapsed @ 1GHz: %s seconds (%s ms)" % (elapsed_secs,
-                               elapsed_msecs)
-    print "Max call depth: %d" % max_call_depth
-    print "Total idles: %s" % stats.real_idles
-    print "Total instr misses: %s" % stats.instr_misses
-    print "Total load/store misses: %s" % stats.loadstore_misses
+    print("Total cycles: %s" % stats.cycles)
+    print("Time elapsed @ 1GHz: %s seconds (%s ms)" % (elapsed_secs,
+                               elapsed_msecs))
+    print("Max call depth: %d" % max_call_depth)
+    print("Total idles: %s" % stats.real_idles)
+    print("Total instr misses: %s" % stats.instr_misses)
+    print("Total load/store misses: %s" % stats.loadstore_misses)
 
     return roots
 
@@ -491,10 +491,10 @@ def print_funcs(ranges):
             flag = "*"
 
 
-        print "%s\t%s\t%s\t%s" % (flag, hex(item[1]), hex(item[2]), item[0])
+        print("%s\t%s\t%s\t%s" % (flag, hex(item[1]), hex(item[2]), item[0]))
 
         if item[0] in flist:
-            print "%s already in list" % item[0]
+            print("%s already in list" % item[0])
         else:
             flist.append(item[0])
 
@@ -531,11 +531,11 @@ if __name__ == "__main__":
         debug_halt = True
 
     if options.asm_f is None:
-        print "ASM file is mandatory. Use -h for more information"
+        print("ASM file is mandatory. Use -h for more information")
         sys.exit(1)
 
     if options.format not in tutils.VALID_FORMATS:
-        print "Format must be one of %s" % tutils.VALID_FORMATS
+        print("Format must be one of %s" % tutils.VALID_FORMATS)
         sys.exit(1)
 
     # set the format
@@ -552,7 +552,7 @@ if __name__ == "__main__":
     if options.data_f != None:
         dst = os.path.abspath(options.data_f)
         if not os.path.exists(dst):
-            print "Invalid folder for dst"
+            print("Invalid folder for dst")
             sys.exit(1)
 
     if options.filter_f:
@@ -561,10 +561,10 @@ if __name__ == "__main__":
             filterlist.append(line.strip())
         f.close()
 
-        print "Filter list: %s" % filterlist
+        print("Filter list: %s" % filterlist)
 
     if options.reverse_order:
-        print "Reverse order not currently supported, my apologies."
+        print("Reverse order not currently supported, my apologies.")
         sys.exit(0)
 
         sys.stderr.write('Parsing disassembly.\n')
@@ -588,7 +588,7 @@ if __name__ == "__main__":
 
     for root in roots:
             # Used for tests.
-            print 'Tree height: %d' % ttypes.max_tree_height(root)
+            print('Tree height: %d' % ttypes.max_tree_height(root))
 
     next_id = 1
     summary_trees = [ttypes.MakeSummaryTree(root) for root in roots]

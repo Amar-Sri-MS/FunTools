@@ -89,7 +89,7 @@ def main():
     entries = get_entries(args.input_file)
     entries.sort(key=lambda x: x[1])
 
-    for i, e in enumerate(filter(lambda f: f[0] == args.fourcc if args.fourcc else True, entries)):
+    for i, e in enumerate([f for f in entries if (f[0] == args.fourcc if args.fourcc else True)]):
         valid, value = image_details(args.input_file, e[0], e[1])
         print("{}: {}".format(e[0], value))
 

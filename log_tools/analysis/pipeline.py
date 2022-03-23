@@ -10,19 +10,19 @@ import json
 import os
 
 # Input blocks
-from blocks import file_input
+from .blocks import file_input
 
 # Filters
-from blocks import display_time
-from blocks import log_parsers
-from blocks import merge
-from blocks import log_filter
+from .blocks import display_time
+from .blocks import log_parsers
+from .blocks import merge
+from .blocks import log_filter
 
 # Output blocks
-from blocks import analytics_output
-from blocks import elastic_output
-from blocks import html_output
-from blocks import stdout_output
+from .blocks import analytics_output
+from .blocks import elastic_output
+from .blocks import html_output
+from .blocks import stdout_output
 
 
 def main():

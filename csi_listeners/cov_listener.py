@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 #
 # Listener for rdsock messages from coverage.
@@ -345,7 +345,7 @@ def quit_if_dumps_exist(source_dir):
     path = os.path.join(source_dir, 'cov_data_*')
     files = glob.glob(path)
     if files:
-        print ('ERROR: Coverage dumps already exist in %s\n'
+        print('ERROR: Coverage dumps already exist in %s\n'
                'Exiting to prevent overwriting of trace data. '
                'Remove the cov_data_* files if you want to '
                'start a new run.\n' % source_dir)

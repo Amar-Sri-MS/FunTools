@@ -1,10 +1,10 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 pretty-print json as a tree
 """
 
-from __future__ import print_function
+
 import os
 import sys
 import json
@@ -27,7 +27,7 @@ def get_indent(s, dangling=False):
 
 def print_dict_node(args, js, depth):
 
-    ks = js.keys()
+    ks = list(js.keys())
     ks.sort()
     for (i, k) in enumerate(ks):
         if (i > args.nelem):

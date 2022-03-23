@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 #
 # event_test.py: unit tests for event.py.
 #
@@ -82,7 +82,7 @@ class TestParseFabricAddress(unittest.TestCase):
         self.assertFalse(faddr.is_accelerator())
         self.assertFalse(faddr.is_hu())
         self.assertFalse(faddr.is_nu())
-        self.assertEquals('VP2.2.2', str(faddr))
+        self.assertEqual('VP2.2.2', str(faddr))
 
     def testHU(self):
         self.assertEqual('HU0',
@@ -110,13 +110,13 @@ class TestParseFabricAddress(unittest.TestCase):
         faddr = event.FabricAddress.from_string('FA6:3:0[DMA]')
         self.assertTrue(faddr.is_accelerator())
         self.assertTrue(faddr.is_cluster())
-        self.assertEquals('DMA6', str(faddr))
+        self.assertEqual('DMA6', str(faddr))
 
     def testRegex(self):
         faddr = event.FabricAddress.from_string('FA3:4:0[RGX]')
         self.assertTrue(faddr.is_accelerator())
         self.assertTrue(faddr.is_cluster())
-        self.assertEquals('RGX3', str(faddr))
+        self.assertEqual('RGX3', str(faddr))
 
 
 if __name__ == '__main__':

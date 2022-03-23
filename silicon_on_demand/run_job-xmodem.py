@@ -263,18 +263,18 @@ out:
 def sighup_handler(signal, frame):
     # this method defines the handler i.e. what to do
     # when you receive a SIGHUP
-    print "%s:SIGHUP received" % sys.argv[0]
+    print("%s:SIGHUP received" % sys.argv[0])
 
 def maybe_reset_target(options):
     tfile = options.reset_file
     if (tfile is not None):
         # XXX: assume file == reset probe
-        print "Resetting sb-02"
+        print("Resetting sb-02")
         r = os.system("~cgray/bin/sb-jtag-reset.py sb-02")
         #if (r != 0):
         #    print "Probe reset returned an error. FAILING"
         #    sys.exit(1)
-        print "Waiting for a reset"
+        print("Waiting for a reset")
         time.sleep(15)
 
 def maybe_install_funos(funos):
@@ -333,15 +333,15 @@ else:
     if (not options.tftp):
         if (not os.path.isfile(krn)):
             # clean exit so the server moves on
-            print "FunOS binary doesn't exist: %s" % krn
+            print("FunOS binary doesn't exist: %s" % krn)
             sys.exit(0)
 
         if (os.path.getsize(krn) > (10*1024*1024)):
             # clean exit so the server moves on
-            print "FunOS binary > 10MB. Is it compressed?"
+            print("FunOS binary > 10MB. Is it compressed?")
             sys.exit(0)
 
-    print "Putting output files in %s" % path
+    print("Putting output files in %s" % path)
 
     script_name = "%s/boot.script" % path
     log_name = "%s/minicom-log" % path
@@ -377,16 +377,16 @@ else:
         fl.close()
 
     # make our own process group for easier clean-up
-    print "Making our own process group"
+    print("Making our own process group")
     if (options.do_pgid):
         os.setpgid(0,0)
     gpid = os.getpgrp()
-    print "pgid now %s" % gpid
+    print("pgid now %s" % gpid)
 
     cmd = "minicom -D /dev/ttyUSB0 -S %s -w -C %s" % (script_name, log_name)
 
     # fork minicom to get its pid for later
-    print "Forking minicom..."
+    print("Forking minicom...")
     p = subprocess.Popen(cmd, shell=True)
 
     fl = open(pid_name, "w")
@@ -398,34 +398,34 @@ else:
         time.sleep(1)
         p.poll()
         if (os.path.exists(dun_name)):
-            print "someone requested a kill, killing minicom"
+            print("someone requested a kill, killing minicom")
             killcmd = "kill -HUP %s" % p.pid
-            print "killing with '%s'" % killcmd
+            print("killing with '%s'" % killcmd)
             os.system(killcmd)
-            print "waiting for its demise"
+            print("waiting for its demise")
             p.wait()
             break
 
 
-    print "Minicom is dead. long live minicom, but fixing its terminal settings..."
+    print("Minicom is dead. long live minicom, but fixing its terminal settings...")
     time.sleep(2)
     if (not options.no_terminal_reset):
         os.system("reset")
-    print "log file at %s.txt" % log_name
+    print("log file at %s.txt" % log_name)
     os.system("cat %s | grep -v 'Xmodem sectors' > %s.txt" % (log_name, log_name))
     os.system("cat %s.txt | tail -20" % log_name)
 
-    print "Cleaning my own process group"
+    print("Cleaning my own process group")
     # make sure we catch the signal so we exit OK
     signal.signal(signal.SIGHUP, sighup_handler)
     killcmd = "kill -HUP -%s" % gpid
-    print "killing with '%s'" % killcmd
+    print("killing with '%s'" % killcmd)
     time.sleep(2)
     try:
         os.system(killcmd)
     except:
-        print "got signal in kill"
-    print "run_job exiting"
+        print("got signal in kill")
+    print("run_job exiting")
 
 # if there's a restart fail, we don't want to run the postscript
 job_ok = not os.path.exists("restart.fail")

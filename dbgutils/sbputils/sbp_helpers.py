@@ -56,17 +56,17 @@ def arraypack(H):
     return BLOB
 
 def bytepack(BYTES):
-    H = map(lambda i: int(i, 16), map(lambda x: '0x'+x, BYTES.split()))
+    H = [int(i, 16) for i in ['0x'+x for x in BYTES.split()]]
     BLOB = struct.pack('%sB'%len(H), *H)
     return BLOB
 
 def wordpack(WORD):
-    H = map(lambda i: int(i, 16), map(lambda x: '0x'+x, WORD.split()))
+    H = [int(i, 16) for i in ['0x'+x for x in WORD.split()]]
     BLOB = struct.pack('%sI'%len(H), *H)
     return BLOB
 
 def LEwordpack(LEWORD):
-    H = map(lambda i: int(i, 16), map(lambda x: '0x'+x, LEWORD.split()))
+    H = [int(i, 16) for i in ['0x'+x for x in LEWORD.split()]]
     BLOB = struct.pack('<%sI'%len(H), *H)
     return BLOB
 
@@ -76,11 +76,11 @@ class VPacket(Packet):
     def verify_field(self, field, value, msg=""):
         m = field if not msg else msg + '.' + field
         (f, v) = self.getfield_and_val(field)
-        comparev = value if type(value) is unicode or str else hex(value)
-        actualv = f.i2repr(self, v).replace( '\'', '') if type(value) is unicode or str else hex(v)
-        print ("    compare ... %s (observed=%s, expected=%s) ..." % (m, actualv, comparev)),
+        comparev = value if type(value) is str or str else hex(value)
+        actualv = f.i2repr(self, v).replace( '\'', '') if type(value) is str or str else hex(v)
+        print(("    compare ... %s (observed=%s, expected=%s) ..." % (m, actualv, comparev)), end=' ')
         status = True if actualv == comparev else False
-        print ("ok" if status else "fail")
+        print("ok" if status else "fail")
         return status
 
     def find_field(self, field, value, msg=""):
@@ -88,10 +88,10 @@ class VPacket(Packet):
         m = field if not msg else msg + '.' + field
         (f, v) = self.getfield_and_val(field)
         comparev = value
-        actualv = str(f.i2repr(self, v).replace( '\'', '') if type(value) is unicode or str else hex(v))
-        print ("    find ... %s (observed=%s, comparedto=%s) ..." % (m, actualv, comparev)),
+        actualv = str(f.i2repr(self, v).replace( '\'', '') if type(value) is str or str else hex(v))
+        print(("    find ... %s (observed=%s, comparedto=%s) ..." % (m, actualv, comparev)), end=' ')
         status = True if re.search(comparev, actualv) else False
-        print ("ok" if status else "fail")
+        print("ok" if status else "fail")
         return status
 
     def compare_value(self, field):
@@ -99,7 +99,7 @@ class VPacket(Packet):
         return f.i2repr(self, v)
 
     def verify(self, *args, **kwargs):
-        print ("packet (%s) verification ... skipped" % self.__class__.__name__)
+        print("packet (%s) verification ... skipped" % self.__class__.__name__)
         return True
 
 class XStrLenField(StrFixedLenField):
@@ -120,7 +120,7 @@ class CFlagsField(FlagsField):
     def i2repr(self, pkt, x):
         flgs = []
         d = dict(enumerate(self.names)) if type(self.names) is list else self.names
-        for (k, v) in d.iteritems():
+        for (k, v) in d.items():
             v = v if type(v) is not list else v[0]
             tf = '' if (x & (1<<k)) == 0 else 'on'
             #flgs.append('%s=%s' % (v, tf))
@@ -132,7 +132,7 @@ class CLEFlagsField(FlagsField):
         flgs = []
         x = struct.unpack('H', struct.pack('>H', x))[0]
         d = dict(enumerate(self.names)) if type(self.names) is list else self.names
-        for (k, v) in d.iteritems():
+        for (k, v) in d.items():
             v = v if type(v) is not list else v[0]
             tf = '' if (x & (1<<k)) == 0 else 'on'
             flgs.append('{0:20} = {1:7}'.format(v, tf))
@@ -153,7 +153,7 @@ class CBitEnumField(BitEnumField, object):
 class UBitEnumField(BitEnumField, object):
     def i2repr(self, pkt, x):
         d = dict(enumerate(self.names)) if type(self.names) is list else self.names
-        for (k, v) in d.iteritems():
+        for (k, v) in d.items():
             v = v if type(v) is not list else v[0]
             tf = '' if (x & (1<<k)) == 0 else 'on'
             #flgs.append('%s=%s' % (v, tf))

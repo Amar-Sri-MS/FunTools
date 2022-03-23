@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 #
 # Unit tests for dequeuer trace message parser
@@ -6,7 +6,7 @@
 # Copyright (c) 2019 Fungible Inc.  All rights reserved.
 #
 
-import StringIO
+import io
 import unittest
 
 import parse_dqr_tm
@@ -16,7 +16,7 @@ class TestFraming(unittest.TestCase):
     """ Checks for correct grouping into frames """
 
     def setUp(self):
-        self.fh = StringIO.StringIO()
+        self.fh = io.StringIO()
 
     def _init_fh(self, msgs):
         self.fh.write(msgs)
@@ -58,7 +58,7 @@ class TestPerfParser(unittest.TestCase):
                     ' 8.090: 82 00030000 0EC40000 33A3FE00  TF3 ic[3]=ni  tt=tu1 te=1 tm=1  va[64]=0x00000EC4000033A3']
 
     def setUp(self):
-        self.fh = StringIO.StringIO()
+        self.fh = io.StringIO()
         self.parser = parse_dqr_tm.PerfParser(cluster=7, core=5)
 
     def _init_fh(self, msgs):

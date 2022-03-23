@@ -3,7 +3,7 @@
 """
 Push hbmdump files to an s3 server
 """
-from __future__ import print_function
+
 import argparse
 import os
 import sys

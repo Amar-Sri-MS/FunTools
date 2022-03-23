@@ -1,6 +1,6 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
-import Tkinter as tk
+import tkinter as tk
 import time
 import json
 import dpc_client

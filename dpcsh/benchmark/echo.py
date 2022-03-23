@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 import socket
 import json
 
@@ -9,7 +9,7 @@ s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.bind((HOST, PORT))
 s.listen(1)
 conn, addr = s.accept()
-print 'Connected by', addr
+print('Connected by', addr)
 while True:
     f = conn.makefile()
     data = f.readline()

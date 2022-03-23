@@ -161,7 +161,7 @@ def main() -> None:
             print("\n== %s [error] ==" % sprint_as_str(sprint))
             print(error)
             
-        print
+        print()
     
     ### Print out all the jiras that don't have sprints
     jlist = find_jira_list_without_sprint()
@@ -169,7 +169,7 @@ def main() -> None:
     jvector.append(len(jlist))
     for issue in jlist:
         print_issue(issue)
-    print
+    print()
 
 
     ### Print out the distribution and totals

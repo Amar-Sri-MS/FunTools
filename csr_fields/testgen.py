@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 import random
 import sys
@@ -37,21 +37,21 @@ def bits2words(bits, zerofill=False):
     if (len(bits) == 0):
         raise "empty bit list!"
 
-    print "// input %d bits" % len(bits)
+    print("// input %d bits" % len(bits))
         
     # pad the list randomly to word size
     n = len(bits) % BPW
     if (n):
         n = 64 - n
 
-        print "// n is %d bits" % n
+        print("// n is %d bits" % n)
 
         if (zerofill or True):
             bits += [0] * n
         else:
             bits += randbitstring(n)
 
-    print "// converting %d bits" % len(bits)
+    print("// converting %d bits" % len(bits))
     # convert to a series of numbers
     words = []
     while(len(bits)):
@@ -121,7 +121,7 @@ def gen_read_test(max_bits):
     inwords = bits2words(regbits)
     outwords = bits2words(outbits, True)
     
-    print "{ ID, %s, %s, %s, %s, { %s}, { %s} }," % (reg_padded_size, reg_size, fld_size, fld_pos, aprint(inwords), aprint(outwords))
+    print("{ ID, %s, %s, %s, %s, { %s}, { %s} }," % (reg_padded_size, reg_size, fld_size, fld_pos, aprint(inwords), aprint(outwords)))
 
     
 ###
@@ -168,7 +168,7 @@ def gen_write_test(max_bits):
     infldwords = bits2words(in_fld)
     outwords = bits2words(out_reg, True)
     
-    print "{ ID, %s, %s, %s, %s, { %s}, { %s}, { %s} }," % (reg_padded_size, reg_size, fld_size, fld_pos, aprint(inregwords), aprint(infldwords), aprint(outwords))
+    print("{ ID, %s, %s, %s, %s, { %s}, { %s}, { %s} }," % (reg_padded_size, reg_size, fld_size, fld_pos, aprint(inregwords), aprint(infldwords), aprint(outwords)))
     
 ###
 ##  Entrypoint
@@ -185,16 +185,16 @@ if (__name__ == "__main__"):
         count = int(sys.argv[1])
 
     if (count == 0):
-        print "usage: testgen.py [test-count]"
+        print("usage: testgen.py [test-count]")
         sys.exit(1)
 
-    print "/* auto generated csr field tests: %s */" % sys.argv
-    print "#ifdef AUTO_READ"
+    print("/* auto generated csr field tests: %s */" % sys.argv)
+    print("#ifdef AUTO_READ")
     for i in range(0, count):
         gen_read_test(NREGS * BPW)
-    print "#endif /* AUTO_READ */"
+    print("#endif /* AUTO_READ */")
 
-    print "#ifdef AUTO_WRITE"
+    print("#ifdef AUTO_WRITE")
     for i in range(0, count):
         gen_write_test(NREGS * BPW)
-    print "#endif /* AUTO_WRITE */"
+    print("#endif /* AUTO_WRITE */")

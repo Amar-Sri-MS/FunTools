@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 ## read a deduped file and translate all the addresses into something
 ## interesting via gdb
@@ -37,20 +37,20 @@ def restart_in_gdb(binname, exit=True):
 
     # XXX: if we're compiled, strip back to the real script name for gdb
     scriptname = os.path.realpath(__file__)
-    print scriptname, scriptname[:-4]
+    print(scriptname, scriptname[:-4])
     if (scriptname[-4:] == ".pyc"):
-        print "fixup"
+        print("fixup")
         scriptname = scriptname[:-1]
         
-    print scriptname
+    print(scriptname)
     
     cmd = "%s -ex 'source %s' %s -ex quit" % (gdb, scriptname,
                                               binname)
-    print cmd
+    print(cmd)
     
     r = os.system(cmd)
     if (r != 0):
-        print "gdb failed: %s" % cmd
+        print("gdb failed: %s" % cmd)
         sys.exit(1)
     if (exit):
         sys.exit(0)
@@ -120,14 +120,14 @@ def sym2str(va, sym, vague):
     return nested_type_walk(name, type, offset, vague)
     
 def printsym(sym):
-    print "(0x%x, 0x%x, %s, %s)" % sym
+    print("(0x%x, 0x%x, %s, %s)" % sym)
 
 def debug_find_closest(va, syms):
 
     for i in range(len(syms)):
         sym = syms[i]
         if (sym[0] > va):
-            print i
+            print(i)
             printsym(syms[i-1])
             printsym(syms[i])
             printsym(syms[i+1])
@@ -140,7 +140,7 @@ def get_syminfo(va, syms, vague=False):
 
     debug = False
     if (va == 0xa800000003bdf240):
-        print "magic sym"
+        print("magic sym")
         debug = True
 
     if (debug):
@@ -152,7 +152,7 @@ def get_syminfo(va, syms, vague=False):
         sym = syms[i]
         if ((va >= sym[0]) and (va < sym[1])):
             if (debug):
-                print "found: %s" % printsym(sym)
+                print("found: %s" % printsym(sym))
             return sym2str(va, sym, vague)
         
         if (va >= sym[1]):
@@ -161,11 +161,11 @@ def get_syminfo(va, syms, vague=False):
             n1 = i - 1
 
         if (debug):
-            print n0, i, n1, "0x%x" % va
+            print(n0, i, n1, "0x%x" % va)
             printsym(sym)
 
     if (debug):
-        print "not found?"
+        print("not found?")
     return None
     
     
@@ -225,8 +225,8 @@ def mkloctab():
 
 def mksymlist(block):
 
-    print "block start: 0x%x" % block.start
-    print "block end: 0x%x" % block.end
+    print("block start: 0x%x" % block.start)
+    print("block end: 0x%x" % block.end)
     
     mkloctab()
     
@@ -238,47 +238,47 @@ def mksymlist(block):
         else:
             debug = False
         if (debug):
-            print "sym %s" % sym.name
-            print "%d: %s" % (sym.addr_class, LOCTAB[sym.addr_class])
-            print "type: %s, %d" % (sym.type, sym.type.sizeof)
-            print sym.line
-            print sym.is_valid()
-            print dir(sym)
-            print sym.symtab
+            print("sym %s" % sym.name)
+            print("%d: %s" % (sym.addr_class, LOCTAB[sym.addr_class]))
+            print("type: %s, %d" % (sym.type, sym.type.sizeof))
+            print(sym.line)
+            print(sym.is_valid())
+            print(dir(sym))
+            print(sym.symtab)
 
         if (sym.needs_frame):
             if (debug):
-                print "needs frame!"
+                print("needs frame!")
             continue
         
         if (sym.addr_class == gdb.SYMBOL_LOC_UNRESOLVED):
             if (debug):
-                print "unresolved!"
+                print("unresolved!")
             continue
 
         if (sym.addr_class == gdb.SYMBOL_LOC_TYPEDEF):
             if (debug):
-                print "typedef!"
+                print("typedef!")
             continue
 
         if (sym.addr_class == gdb.SYMBOL_LOC_OPTIMIZED_OUT):
             if (debug):
-                print "optimised out!"
+                print("optimised out!")
             continue
 
         if (sym.addr_class == gdb.SYMBOL_LOC_CONST):
             if (debug):
-                print "const!"
+                print("const!")
             continue
 
         if (sym.addr_class == gdb.SYMBOL_LOC_CONST_BYTES):
             if (debug):
-                print "const bytes!"
+                print("const bytes!")
             continue
 
         if (debug):
-            print sym, sym.value()
-            print sym.value().address
+            print(sym, sym.value())
+            print(sym.value().address)
 
         # Work around the thread-local variables in FunOS because gdb won't
         # handle them without register context.
@@ -370,7 +370,7 @@ def find_all_symbols():
     syms += mksymlist(symtab.static_block())
     syms += add_thread_locals()
 
-    print "Found %d symbols" % len(syms)
+    print("Found %d symbols" % len(syms))
     syms.sort()
 
     return syms
@@ -380,7 +380,7 @@ def find_all_symbols():
 #
 
 def gdb_main():
-    print "starting in gdb..."
+    print("starting in gdb...")
     fl = open(IN_FILE)
 
     addrlist = json.loads(fl.read())
@@ -395,7 +395,7 @@ def gdb_main():
 
         t1 = time.time()
         if ((t1 - t0) > 10):
-            print "complete: %f%%" % ((i * 100.0) / n)
+            print("complete: %f%%" % ((i * 100.0) / n))
             t0 = t1
         check_add(addrident, int(va, 16), syms)
 
@@ -403,7 +403,7 @@ def gdb_main():
     # write it out
     fl = open(OUT_FILE, "w")
     fl.write(json.dumps(addrident, indent=4))
-    print "done"
+    print("done")
 
         
 

@@ -19,7 +19,7 @@ FORMAT_DECODER = {"sim": tutils_sim,
                   "pdt": tutils_pdt,
                   "qemu": tutils_qmu,
           "sbp": tutils_sbp}
-VALID_FORMATS = FORMAT_DECODER.keys()
+VALID_FORMATS = list(FORMAT_DECODER.keys())
 
 # called by the trace parser when we know the user's intent
 def set_format(fname):
@@ -96,7 +96,7 @@ def asm_isfunc(line):
 
     m = REGEX.search(line)
     if m is not None:
-        addr = long(m.group(1), 16)
+        addr = int(m.group(1), 16)
         fname = m.group(2)
         found = True
 
@@ -113,7 +113,7 @@ def asm_get_fstart(line):
 
 # Create an entry with [funcname, start addr, end addr]
 def create_range_list(dasm_fname):
-    print "creating range list"
+    print("creating range list")
     f = open(dasm_fname)
 
     linenum = 0
@@ -161,7 +161,7 @@ def create_range_list(dasm_fname):
         coll[len(coll)-1].append(0xffffffffffffffff)
 
     f.close()
-    print "done creating range list"
+    print("done creating range list")
     return sorted(coll, key=itemgetter(1))
 
 def find_function(addr, dasm_info):

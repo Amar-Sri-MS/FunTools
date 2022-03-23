@@ -84,7 +84,7 @@ def save_file(log_id):
     BASE_PATH = os.path.join(app.config['UPLOAD_DIRECTORY'], log_id)
     errors = list()
 
-    for file in request.files.values():
+    for file in list(request.files.values()):
         try:
             # if filename not present
             if file.filename == '':

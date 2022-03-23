@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 #external libs
 import sys, pickle, re
@@ -43,13 +43,13 @@ def tdasm_print_lines(pdt_f, dasm_f, vpid, start_line, end_line):
             if tutils.is_instruction(line):
                 if tutils.get_vpid(line) == vpid:
                     if 'idle' in line: # XXX improve
-                        print line.strip()
+                        print(line.strip())
                     elif 'Sync' in line:
                         pass
                     else:
-                        print "%s\t\t\t\t%s" % (line.strip(), tdasm_get_dasm(dasm_f, tutils.get_address(line)))
+                        print("%s\t\t\t\t%s" % (line.strip(), tdasm_get_dasm(dasm_f, tutils.get_address(line))))
                 else:
-                    print "-- (vp %s)" % tutils.get_vpid(line) # XXX
+                    print("-- (vp %s)" % tutils.get_vpid(line)) # XXX
 
     f.close()
 
@@ -61,11 +61,11 @@ def tdasm_show_func_rec(vpid, pdt_f, dasm_f, tree, funcname, printed, max_prints
             
             printed = printed + 1
 
-            print "\n\n"
+            print("\n\n")
 
-            print "=========== NEW OCCURRENCE OF %s (count: %s/%s) ===========" % (funcname, printed, max_prints)
-            print "=========== cycle count: %s\t===========" % tree.get_ccount()
-            print "=========== vp: %s\t\t===========" % vpid
+            print("=========== NEW OCCURRENCE OF %s (count: %s/%s) ===========" % (funcname, printed, max_prints))
+            print("=========== cycle count: %s\t===========" % tree.get_ccount())
+            print("=========== vp: %s\t\t===========" % vpid)
 
             tdasm_print_lines(pdt_f, dasm_f, vpid, tree.get_start_line(), tree.get_end_line())
 
@@ -112,22 +112,22 @@ if __name__ == "__main__":
     (options, args) = parser.parse_args()
 
     min_cycles = 0
-    max_cycles = sys.maxint
+    max_cycles = sys.maxsize
 
     if options.fun_dasm_txt_f is None:
-        print "Need to specify a fungible dasm file"
+        print("Need to specify a fungible dasm file")
         sys.exit(1)
 
     if options.funtrc_data_f is None:
-        print "Need to specify a fungible option trace file"
+        print("Need to specify a fungible option trace file")
         sys.exit(1)
 
     if options.fun_trc_txt_f is None:
-        print "Need to specify a fungible trace text file"
+        print("Need to specify a fungible trace text file")
         sys.exit(1)
 
     if options.func is None:
-        print "Need to specify a function to look at"
+        print("Need to specify a function to look at")
         sys.exit(1)
 
     if options.cycle_range is not None:
@@ -141,10 +141,10 @@ if __name__ == "__main__":
         else:
             max_cycles = int(cycles[1])
 
-    print "Cycle range: %s to %s" % (min_cycles, max_cycles)
+    print("Cycle range: %s to %s" % (min_cycles, max_cycles))
 
     if options.format not in tutils.VALID_FORMATS:
-        print "Format must be one of %s" % tutils.VALID_FORMATS
+        print("Format must be one of %s" % tutils.VALID_FORMATS)
         sys.exit(1)
 
     max_prints = 10
@@ -163,5 +163,5 @@ if __name__ == "__main__":
 
     if ret == True:
 
-        print "Printed the first %s occurrences of %s" % (max_prints, options.func)
-        print "Note: Iteration order is VP0-3 and then within the VP ordered by time, i.e. ALL VP0 entries will print before VP1."
+        print("Printed the first %s occurrences of %s" % (max_prints, options.func))
+        print("Note: Iteration order is VP0-3 and then within the VP ordered by time, i.e. ALL VP0 entries will print before VP1.")

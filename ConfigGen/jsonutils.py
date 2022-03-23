@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 # Converts lenient json to standard json
 #The input files are allowed to make two side-steps from the standard JSON
@@ -128,7 +128,7 @@ def merge_dicts(cfg1, cfg2):
 def merge_dicts_recursive(orig, other_):
     other = other_.copy()
     res = {}
-    for k, v in orig.items():
+    for k, v in list(orig.items()):
         if k in other:
             if isinstance(v, dict):
                 assert isinstance(other[k], dict), "{} should be a dict in both dictionaries".format(k)
@@ -143,7 +143,7 @@ def merge_dicts_recursive(orig, other_):
         else:
             res[k] = v
 
-    for k, v in other.items():
+    for k, v in list(other.items()):
         res[k] = v
 
     return res

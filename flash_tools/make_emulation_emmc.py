@@ -363,7 +363,7 @@ def run():
 
     with open("mmc_image.json", "w") as f:
         config = { 'generated_images' : {}}
-        for k,v in output_descr.items():
+        for k,v in list(output_descr.items()):
             config['generated_images'][k] = { 'description' : v['description'],
                 'no_bundle' : v['no_bundle'] }
         json.dump(config, f, indent=4)

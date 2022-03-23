@@ -140,7 +140,7 @@ def objdump_debug_line_parse(objdump, bin_file, is_full_path=False):
       #
       # Print a message and skip the line.
       if not loc_f.endswith(line[0]) and line[0] == '<unknown>':
-        print 'Unknown file and line from objdump: %s' % line
+        print('Unknown file and line from objdump: %s' % line)
         continue
 
       assert loc_f.endswith(line[0])

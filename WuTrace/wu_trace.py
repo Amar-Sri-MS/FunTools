@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 #
 # Converts output from funos-posix's --wulog option into a graphical
 # form to show the order and timing of work units.

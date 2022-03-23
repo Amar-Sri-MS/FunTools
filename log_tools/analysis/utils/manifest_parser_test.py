@@ -8,7 +8,7 @@
 
 import unittest
 
-import manifest_parser
+from . import manifest_parser
 
 
 class ManifestParserTest(unittest.TestCase):

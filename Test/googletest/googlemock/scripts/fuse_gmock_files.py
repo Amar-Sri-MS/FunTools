@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 #
 # Copyright 2009, Google Inc.
 # All rights reserved.
@@ -232,7 +232,7 @@ def main():
     # fuse_gmock_files.py GMOCK_ROOT_DIR OUTPUT_DIR
     FuseGMock(sys.argv[1], sys.argv[2])
   else:
-    print __doc__
+    print(__doc__)
     sys.exit(1)
 
 

@@ -6,7 +6,7 @@
 
 import unittest
 
-import csrutils
+from . import csrutils
 
 
 class RecordingProbe(object):

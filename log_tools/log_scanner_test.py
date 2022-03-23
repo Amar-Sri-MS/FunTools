@@ -1,10 +1,10 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 #
 # Unit tests for the log scanner.
 #
 
-import StringIO
+import io
 import unittest
 
 from log_scanner import DecisionGraph
@@ -16,7 +16,7 @@ class LogScannerTest(unittest.TestCase):
     """ Testcases for the log scanner """
 
     def setUp(self):
-        self.log = StringIO.StringIO()
+        self.log = io.StringIO()
         self.test_messages = ['taxman',
                               'eleanor rigby',
                               'im only sleeping',

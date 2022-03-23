@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 import pickle
 import os
 import sys
@@ -132,7 +132,7 @@ class QueryOpt(object):
 
     def replace_query(self, **kwargs):
         parts = [p for p in self.query.split("&") if p]
-        for k,v in kwargs.items():
+        for k,v in list(kwargs.items()):
             parts = [p for p in parts if not p.startswith(k + "=")]
             if v is not None:
                 parts.append("%s=%s" % (k, v))
@@ -157,7 +157,7 @@ def get_query_opt(**kwargs):
         opt.show_max = int(request.query.show_max)
         if opt.show_max <= 0:
             opt.show_max = 1000*1000
-    for k,v in kwargs.items():
+    for k,v in list(kwargs.items()):
         setattr(opt, k, v)
     return opt
 
@@ -176,9 +176,9 @@ def read_pd_from_file(fname):
         vp_to_rows[r[1]].append(r)
     assert pd.rows[0][3] == "cycles"
     new_rows = []
-    for vp, rows in vp_to_rows.iteritems():
+    for vp, rows in vp_to_rows.items():
         new_rows.append(rows[0] + ("unknown",))
-        for i in xrange(1, len(rows)):
+        for i in range(1, len(rows)):
             dispatch_time = rows[i][0] - rows[i-1][0]
             dispatch_cycles = dispatch_time*16/10
             dispatch_cycles -= rows[i-1][3]
@@ -248,7 +248,7 @@ def group_by(opt, col, operate_fn):
     for r in rows:
         groups[r[i]].append(r)
     result = []
-    for k,rows in groups.items():
+    for k,rows in list(groups.items()):
         result.append(operate_fn(k, rows))
     sort_rows(opt, result)
     return result
@@ -259,6 +259,6 @@ def group_by(opt, col, operate_fn):
 if (__name__ == "__main__"):
     if (len(sys.argv) == 2):
         job_root = sys.argv[1]
-        print "Using job root %s" % job_root
+        print("Using job root %s" % job_root)
 
     run(host='0.0.0.0', port=8585, debug=True)

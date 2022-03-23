@@ -24,7 +24,7 @@ def get_address(trace_line):
     try:
         v = trace_line.split()[1].split('=')[1]
         v = '0x' + v
-        return long(v, 16) | 0x80000000
+        return int(v, 16) | 0x80000000
     except:
         # XXX
         return 0
@@ -39,7 +39,7 @@ def get_cycle(trace_line):
     try:
         v = trace_line.split()[3].split('=')[1]
         v = '0x' + v
-        return long(v, 16)
+        return int(v, 16)
     except:
         # XXX
         return 0

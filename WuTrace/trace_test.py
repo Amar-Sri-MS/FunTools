@@ -9,7 +9,7 @@ import sys
 import unittest
 
 import render
-import StringIO
+import io
 import read_trace
 import wu_trace
 
@@ -124,7 +124,7 @@ class TestParseLine(unittest.TestCase):
 class TestProcessFile(unittest.TestCase):
     def process_transactions(self, lines):
         filename = 'fake_file'
-        fake_input = StringIO.StringIO('\n'.join(lines))
+        fake_input = io.StringIO('\n'.join(lines))
         file_parser = read_trace.TraceLogParser()
         events = []
         events = file_parser.parse(fake_input, filename=filename)
@@ -174,7 +174,7 @@ class TestProcessFile(unittest.TestCase):
 1.0004000 faddr000 TRACE WU END FA0:8:0[VP]
 """.split('\n')
         transactions = self.process_transactions(log)
-        print transactions
+        print(transactions)
         self.assertIsNotNone(transactions)
 
         self.assertEqual(2, len(transactions))
@@ -267,7 +267,7 @@ class FakeFile:
 class EndToEndTest(unittest.TestCase):
     def process_transactions(self, lines):
         filename = 'fake_file'
-        fake_input = StringIO.StringIO('\n'.join(lines))
+        fake_input = io.StringIO('\n'.join(lines))
         file_parser = read_trace.TraceLogParser()
         events = []
         events = file_parser.parse(fake_input, filename=filename)
@@ -328,7 +328,7 @@ class EndToEndTest(unittest.TestCase):
 
         self.assertEqual(2, len(transactions))
 
-        out_file = StringIO.StringIO()
+        out_file = io.StringIO()
 
         render.dump(out_file, transactions[1])
 

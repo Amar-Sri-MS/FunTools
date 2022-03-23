@@ -39,7 +39,7 @@ class AnchorMatch:
         # short representation with the matchgroups.
         short_desc = anchor.get('short', '')
         if 'rematch' in anchor:
-            for key, value in match.groupdict().items():
+            for key, value in list(match.groupdict().items()):
                 short_desc = re.sub(f'<{key}>', value, short_desc)
         self.short_desc = short_desc
 

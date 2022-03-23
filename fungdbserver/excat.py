@@ -9,7 +9,7 @@ modes:
 pub[lish]: copy files to dochub via cp/scp
 get: find a file via /dogfood or http://dochub
 """
-from __future__ import print_function
+
 import uuid_extract
 import subprocess
 import argparse
@@ -17,7 +17,7 @@ import datetime
 import tempfile
 import requests
 import hashlib
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import urllib.request
 import urllib.error
 import random
@@ -451,7 +451,7 @@ def http_publish(metadata, fname):
     LOG("publishing json via http")
     r = requests.post(url, files=files)
     if (r.status_code != requests.codes.ok):
-        raise(RuntimeError(r.text))
+        raise RuntimeError
 
     # bz file
     blobname = metadata["bzblob"]
@@ -461,7 +461,7 @@ def http_publish(metadata, fname):
     LOG("publishing bz via http")
     r = requests.post(url, files=files)
     if (r.status_code != requests.codes.ok):
-        raise(RuntimeError(r.text))
+        raise RuntimeError
 
     LOG("published")
     

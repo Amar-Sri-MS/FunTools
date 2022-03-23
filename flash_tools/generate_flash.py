@@ -91,11 +91,11 @@ def write_file(filename, content, tohex=False, tobyte=False):
 
 def map_method_args(argmap, attrs):
     # set default empty arguments
-    args = { v:None for v in argmap.values() }
+    args = { v:None for v in list(argmap.values()) }
 
     # map json parameters into function arguments
-    args.update({ argmap[k]:v for k,v in attrs.items() \
-                if k in argmap.keys() and len(str(attrs[k]))} )
+    args.update({ argmap[k]:v for k,v in list(attrs.items()) \
+                if k in list(argmap.keys()) and len(str(attrs[k]))} )
 
     return args
 
@@ -183,7 +183,7 @@ def create_file(filename, section="signed_images"):
                     raise Exception("key_index used for image {0}, but no or empty key_bag_creation section".
                                     format(filename))
                 # use the first element in spec -- there's only one key bag now.
-                key_list = next(iter(key_bag_spec.values()))
+                key_list = next(iter(list(key_bag_spec.values())))
                 image['key'] = key_list['keys'][image['key_index']]
 
             ret = gen_fw_image(filename, image)
@@ -425,7 +425,7 @@ def generate_flash(bin_infos, total_size, padding):
 def from_binary_to_size( bin_info):
     ''' mapping function to replace binaries with their size '''
     # copy everything except the binaries
-    mapped = {k:v for k,v in bin_info.items() if k not in ['a','b'] }
+    mapped = {k:v for k,v in list(bin_info.items()) if k not in ['a','b'] }
     # add size
     mapped['a_size'] = len(bin_info['a'])
     mapped['b_size'] = len(bin_info['b'])
@@ -459,7 +459,7 @@ class FileJsonEncoder(json.JSONEncoder):
         return super().default(o)
 
 def merge_configs(old, new, only_if_present=False):
-    for k,v in new.items():
+    for k,v in list(new.items()):
         if k in old and isinstance(old[k], dict) and isinstance(new[k], dict):
             merge_configs(old[k], new[k], only_if_present)
         else:
@@ -469,7 +469,7 @@ def merge_configs(old, new, only_if_present=False):
             old[k] = new[k]
 
 def override_field(config, field, value, only_if_empty=True):
-    for k,v in config.items():
+    for k,v in list(config.items()):
         if isinstance(v, dict):
             override_field(config[k], field, value, only_if_empty)
         elif k==field:
@@ -579,7 +579,7 @@ def run(arg_action, arg_enroll_cert = None, *args, **kwargs):
     new_entries = {}
     delete_entries = []
 
-    for k,v in config['signed_images'].items():
+    for k,v in list(config['signed_images'].items()):
         if v.get('description','').startswith('@file:'):
             try:
                 with open(find_file_in_srcdirs(v['description'][len('@file:'):]), 'r') as f:
@@ -591,7 +591,7 @@ def run(arg_action, arg_enroll_cert = None, *args, **kwargs):
             try:
                 with open(find_file_in_srcdirs(v['source'][len('@file:'):]), 'r') as f:
                     files = json.load(f)
-                    for vv in files.values():
+                    for vv in list(files.values()):
                         fname = vv.get('target')
                         if not fname:
                             fname = '{}.bin'.format(vv['filename'])
@@ -620,7 +620,7 @@ def run(arg_action, arg_enroll_cert = None, *args, **kwargs):
     # do not use wanted() here, as this is an action only
     # executed when requested explicitly
     if arg_action == 'sources':
-        for outfile, v in config['signed_images'].items():
+        for outfile, v in list(config['signed_images'].items()):
             infile = find_file_in_srcdirs(v['source'])
 
             if infile:
@@ -636,12 +636,12 @@ def run(arg_action, arg_enroll_cert = None, *args, **kwargs):
 
     # Generate keys (if required)
     if wanted('key_hashes') and 'key_hashes' in config:
-        for k,v in config['key_hashes'].items():
+        for k,v in list(config['key_hashes'].items()):
             fsi.export_pub_key_hash(k, v['name'])
 
     # Generate certificates (if required)
     if wanted('certificates') and 'certificates' in config:
-        for k,v in config['certificates'].items():
+        for k,v in list(config['certificates'].items()):
             file = find_file_in_srcdirs(k)
             if file:
                 print("File {} already exists and will not be generated".
@@ -658,7 +658,7 @@ def run(arg_action, arg_enroll_cert = None, *args, **kwargs):
 
     if wanted('key_injection') and config.get('key_injection'):
         keep_outfile = kwargs.get("keep_output", False)
-        for outfile, v in config['key_injection'].items():
+        for outfile, v in list(config['key_injection'].items()):
             if not (os.path.exists(outfile) and keep_outfile):
                 infile = find_file_in_srcdirs(v['source'])
                 shutil.copy2(infile, outfile)
@@ -667,7 +667,7 @@ def run(arg_action, arg_enroll_cert = None, *args, **kwargs):
 
     if wanted('key_injection') and config.get('key_bag_creation'):
         # keybag is always created from scratch....
-        for outfile, v in config['key_bag_creation'].items():
+        for outfile, v in list(config['key_bag_creation'].items()):
             kbc.create(outfile, v['keys'])
 
     if wanted('flash') and config.get('output_format'):
@@ -679,7 +679,7 @@ def run(arg_action, arg_enroll_cert = None, *args, **kwargs):
             raise Exception("Too many sections: {0}, max is {1}".
                                 format(len(config.sections()), 1 + MAX_VARIABLE_SECTIONS))
         else:
-            for k,v in config['output_sections'].items():
+            for k,v in list(config['output_sections'].items()):
                 bin_info = get_a_and_b(v, padding, arg_action == 'all')
                 # bin_info can be None if optional section and files
                 # are not there -> no entry
@@ -727,7 +727,7 @@ def run(arg_action, arg_enroll_cert = None, *args, **kwargs):
     if wanted('flash') and len(config.get('output_sections', {})) > 0:
         # Write directory file used by board_init.py for QSPI
         # = dictionary without the binary and with the size
-        flash_map = {k: from_binary_to_size(v) for k,v in bin_infos.items() }
+        flash_map = {k: from_binary_to_size(v) for k,v in list(bin_infos.items()) }
 
         with open(output + '.map', 'w') as f:
             json.dump(flash_map, f, indent=4, cls=FileJsonEncoder)

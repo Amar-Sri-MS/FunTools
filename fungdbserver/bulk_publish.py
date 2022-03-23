@@ -1,9 +1,9 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 publish files from a build directory or a range of files from FunSDK builds
 """
-from __future__ import print_function
+
 import argparse
 import tempfile
 import shutil

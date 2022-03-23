@@ -104,7 +104,7 @@ def generate_timeline():
         json.dump(timeline, f)
 
     block_id = 1
-    for block, status in timeline.items():
+    for block, status in list(timeline.items()):
         total_time = 0
         blocks[block] = {
             'id': block_id
@@ -133,7 +133,7 @@ def generate_timeline():
     ax.autoscale()
 
     textstr = 'Total Time:\n'
-    textstr += '\n'.join([f'{name}: {round(block["total_time"], 2)} seconds' for name, block in blocks.items()])
+    textstr += '\n'.join([f'{name}: {round(block["total_time"], 2)} seconds' for name, block in list(blocks.items())])
 
     # these are matplotlib.patch.Patch properties
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
@@ -146,8 +146,8 @@ def generate_timeline():
     plt.xticks(rotation=70)
     plt.xlabel('Seconds since the start of ingestion')
 
-    ax.set_yticks(range(1, len(blocks)+1))
-    ax.set_yticklabels(blocks.keys())
+    ax.set_yticks(list(range(1, len(blocks)+1)))
+    ax.set_yticklabels(list(blocks.keys()))
     file_path = os.path.join(logger.LOGS_DIRECTORY, f'{log_id}_timeline.png')
     fig.savefig(file_path, bbox_inches='tight')
 

@@ -482,9 +482,9 @@ class ElasticLogSearcher(object):
         if source_filters and len(source_filters) > 0:
             if type(source_filters) == dict:
                 system_type_list = []
-                for system_type, system_ids in source_filters.items():
+                for system_type, system_ids in list(source_filters.items()):
                     system_id_list = []
-                    for system_id, sources in system_ids.items():
+                    for system_id, sources in list(system_ids.items()):
                         source_list = [_generate_match_query('src', source)
                                     for source in sources]
                         source_query = _generate_should_query(source_list)
@@ -1321,7 +1321,7 @@ def _get_log_level_stats(log_id, sources=[], time_filters=None):
 def _get_log_event_stats(log_id, sources=[], time_filters=None):
     event_keywords = app.config.get('EVENTS_BY_SOURCE')
     source_keywords = dict()
-    for source, keywords in event_keywords.items():
+    for source, keywords in list(event_keywords.items()):
         # Filter the events for only the sources we want or select all
         # events if no source is provided.
         if len(sources) == 0 or source in sources:

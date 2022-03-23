@@ -5,7 +5,7 @@
 #
 
 import json
-import StringIO
+import io
 import unittest
 
 import parse_funos_log
@@ -108,7 +108,7 @@ class TestParseLogFileFunction(unittest.TestCase):
     """
 
     def test_partial_log(self):
-        log = StringIO.StringIO(
+        log = io.StringIO(
             '[0.000518 8.0.0] [32mINFO nucleus[0m "data              '
             '0xa800000000905900 0xa800000000fdded0 ~7009 KB" \n'
             
@@ -122,7 +122,7 @@ class TestParseLogFileFunction(unittest.TestCase):
             'recv 11312 WUs 10.689999%	[wu 446/irq 0/unk 0]\n"'
         )
 
-        result = StringIO.StringIO()
+        result = io.StringIO()
         parse_funos_log.parse_log_file(log, result)
         result.seek(0)
         obj = decode_json(result.read())

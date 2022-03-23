@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 # cfg_gen.py
 # The config generator is intended to simplify configuration file maintenance,
@@ -188,7 +188,7 @@ def _validate_subprofile_cfg(fname, js):
     logger.debug(js["key_path"])
     logger.debug(type(js["key_path"]))
 
-    assert(isinstance(js["key_path"], basestring))
+    assert(isinstance(js["key_path"], str))
 
     if ("weight" in js):
         assert(isinstance(js["weight"], int))

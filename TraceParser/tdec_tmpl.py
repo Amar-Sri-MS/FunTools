@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 #external libs
 import jinja2
@@ -90,7 +90,7 @@ if __name__ == "__main__":
     (options, args) = parser.parse_args()
 
     if options.trace_file is None:
-        print "Need to specify a fungible option trace file"
+        print("Need to specify a fungible option trace file")
         sys.exit(1)
 
     dest_dir = ''

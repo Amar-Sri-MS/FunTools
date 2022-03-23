@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 # input: directory containing samurai .trace files
 # output: .annotate (use sam_cycles.py for further analysis)
@@ -19,13 +19,13 @@ def funos_dasm_path(wdir):
     funos = '%s/%s' % (wdir, funos)
 
   if not os.path.exists(funos):
-    print '%s not found' % funos
+    print('%s not found' % funos)
     sys.exit(-1)
 
   funos_dasm = '%s.dasm' % funos
   if not os.path.exists(funos_dasm):
     if not os.path.isfile(objdump):
-      print 'objdump does not exist'
+      print('objdump does not exist')
       sys.exit(-1)
     #
     # These options match the -d option that was provided, only that
@@ -42,29 +42,29 @@ def setup_funtools_path():
   global funtools
   funtools = os.getenv('FUNTOOLS')
   if not funtools:
-    print 'please set FUNTOOLS environment variable'
+    print('please set FUNTOOLS environment variable')
     sys.exit(-1)
   if not os.path.isdir(funtools):
-    print '%s is not a directory' % funtools
+    print('%s is not a directory' % funtools)
     sys.exit(-1)
 
 def encode_single(in_file):
   arg2 = in_file.replace('samurai_', '').replace('.trace', '')
-  print in_file, arg2
+  print(in_file, arg2)
   cmd = ['%s/ins-trace/build/encode' % funtools, in_file, arg2]
   if not os.path.isfile(cmd[0]):
-    print '%s does not exist' % cmd[0]
+    print('%s does not exist' % cmd[0])
     sys.exit(-1)
 
   subprocess.check_output(cmd)
 
 def annotate_single(funos_dasm, in_file):
   out_file = in_file.replace('.te', '.annotate')
-  print 'annotate', in_file, out_file
+  print('annotate', in_file, out_file)
   
   cmd = ['%s/ins-trace/build/annotate' % funtools, funos_dasm, in_file]
   if not os.path.isfile(cmd[0]):
-    print '%s does not exist' % cmd[0]
+    print('%s does not exist' % cmd[0])
     sys.exit(-1)
 
   #if os.stat(cmd[0]).st_size < 2:
@@ -73,13 +73,13 @@ def annotate_single(funos_dasm, in_file):
   try:
     output = subprocess.check_output(cmd)
     if not output:
-      print 'empty, skip writing of %s' % out_file
+      print('empty, skip writing of %s' % out_file)
       return
     with open(out_file, 'w') as f:
       f.write(output)
   except subprocess.CalledProcessError as e:
-    print 'Exception while running %s, skipping annotate for %s' % (cmd,
-                                                                    in_file)
+    print('Exception while running %s, skipping annotate for %s' % (cmd,
+                                                                    in_file))
 
 def encode_and_annotate(in_file_list, funos_dasm):
   setup_funtools_path()
@@ -109,10 +109,10 @@ def encode_and_annotate(in_file_list, funos_dasm):
       annotate_single(funos_dasm, enc_file)
 
 def usage():
-  print 'usage: %s <file.trace|dir>' % sys.argv[0]
+  print('usage: %s <file.trace|dir>' % sys.argv[0])
 
 if __name__ == '__main__':
-  print sys.argv
+  print(sys.argv)
   parser = argparse.ArgumentParser()
   parser.add_argument('trace_file_or_dir', type=str,
                       help='<file>.trace or directory containing trace files')

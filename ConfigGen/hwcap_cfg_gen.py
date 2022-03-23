@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 # -*- coding: utf-8 -*-
 """Utilities for C code generation from emulation hwcap JSON config
@@ -70,7 +70,7 @@ class HWCAPDataCatalog():
 
     def get_max_emu_sku_id(self):
         max_sku_id = 0
-        for sku_name,sku_id in self.get_emu_valid_sku_list().iteritems():
+        for sku_name,sku_id in self.get_emu_valid_sku_list().items():
             if sku_id > max_sku_id:
                 max_sku_id = sku_id
         return max_sku_id
@@ -151,11 +151,11 @@ class HWCAPCodeGen():
         sub_blocks = self.hwcap_catalog._get_hw_sub_block_defs(hw_block_name)
         hw_block_status_list = self.hwcap_catalog._get_valid_block_status_list()
 
-        for entry,value in hw_block_cfg.iteritems():
-            if not entry in sub_blocks.keys():
+        for entry,value in hw_block_cfg.items():
+            if not entry in list(sub_blocks.keys()):
                 raise argparse.ArgumentTypeError(
                     'hw block: {} entry: {} is not valid! valid list: {}'.format(
-                        hw_block_name, entry, sub_blocks.keys()))
+                        hw_block_name, entry, list(sub_blocks.keys())))
             entry_size = sub_blocks.get(entry, 0)
             entry_max_plus_1 = 0
             if entry_size:
@@ -179,17 +179,17 @@ class HWCAPCodeGen():
     def _per_sku_cfg_finalise(self, sku_name, per_sku_data):
         valid_skus = self.hwcap_catalog.get_emu_valid_sku_list()
 
-        if not sku_name in valid_skus.keys():
+        if not sku_name in list(valid_skus.keys()):
             raise argparse.ArgumentTypeError(
                 'sku_name: {} is not valid! Valid list: {}'.format(
-                    sku_name, valid_skus.keys()))
+                    sku_name, list(valid_skus.keys())))
 
         per_sku_cfg = per_sku_data.get('hwcap', None)
         logger.debug('Finalising sku: {}'.format(sku_name))
-        block_names = self.hwcap_catalog._get_hw_block_defs().keys()
+        block_names = list(self.hwcap_catalog._get_hw_block_defs().keys())
 
         finalised_cfg = dict()
-        for block, block_data in per_sku_cfg.iteritems():
+        for block, block_data in per_sku_cfg.items():
             if block not in block_names:
                 raise argparse.ArgumentTypeError(
                     'hw block: {} is not a valid block'.format(block))
@@ -234,7 +234,7 @@ class HWCAPCodeGen():
 
         all_skus_hwcap_cfg = self._get_hwcap_config(all_target_chips=False)
         finalised_cfg = dict()
-        for sku_name,per_sku_cfg in all_skus_hwcap_cfg.iteritems():
+        for sku_name,per_sku_cfg in all_skus_hwcap_cfg.items():
             cfg = self._per_sku_cfg_finalise(sku_name, per_sku_cfg)
             finalised_cfg[sku_name] = cfg
 
@@ -255,7 +255,7 @@ class HWCAPCodeGen():
         if all_target_chips:
             return all_valid_skus
 
-        emu_sku_ids = self._get_hwcap_config(all_target_chips).keys()
+        emu_sku_ids = list(self._get_hwcap_config(all_target_chips).keys())
         emu_skus = dict()
         for sku in emu_sku_ids:
             if not sku in all_valid_skus:
@@ -269,7 +269,7 @@ class HWCAPCodeGen():
     def get_emu_sku_ids_with_sbp(self, all_target_chips = False):
         emu_skuids = self.get_emu_sku_ids(all_target_chips)
         hwcap_config = self._get_hwcap_config(all_target_chips)
-        for sku in emu_skuids.keys():
+        for sku in list(emu_skuids.keys()):
             try:
                 sku_cfg = hwcap_config.get(sku, None).get('hwcap', None)
             except:

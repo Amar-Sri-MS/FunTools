@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 #
 # hw_stats_gen.py
 #
@@ -22,7 +22,7 @@ def group_to_range(group):
     r = g.split('-', 1)
     r[0] = sign + r[0]
     r = sorted(int(__) for __ in r)
-    return range(r[0], 1 + r[-1])
+    return list(range(r[0], 1 + r[-1]))
 
 #Groups and expands range strings
 def rangeexpand(txt):
@@ -45,7 +45,7 @@ class CSRNode(object):
         if rnode is not None:
             rclass = rnode.get("class", None)
             if rclass is not None:
-                if type(rclass) is not unicode:
+                if type(rclass) is not str:
                     logging.error(("CSR:{} ring class must"
                                    " be a string").format(self.name))
                     sys.exit(1)
@@ -53,7 +53,7 @@ class CSRNode(object):
 
             rinst = rnode.get("inst", None)
             if rinst is not None:
-                if type(rinst) is unicode:
+                if type(rinst) is str:
                     self.ring_inst = rangeexpand(rinst)
                 elif type(rinst) is int:
                     self.ring_inst = [rinst]
@@ -202,7 +202,7 @@ class CSRNode(object):
         fld_objs = collections.OrderedDict()
         field_list = list()
         if fields is not None:
-            if type(fields) is unicode:
+            if type(fields) is str:
                 field_list.append(fields);
             elif  type(fields) is list:
                 field_list = fields
@@ -295,9 +295,9 @@ class StatsGen(object):
         file_name = "stats_cache.cfg"
         logging.info("Creating file {}".format(file_name))
         f = open(os.path.join(args.out_dir, file_name), "w")
-        for name,cfg in cfg.get().iteritems():
+        for name,cfg in cfg.get().items():
             cfg_objs = collections.OrderedDict()
-            for k,v in cfg.iteritems():
+            for k,v in cfg.items():
                 csr_obj = CSRNode(k,v)
                 dict_merge(cfg_objs, csr_obj.get_cfg_objs())
             stats_cfg[name] = self.get_cfg_gen_objs(cfg_objs)
@@ -306,37 +306,37 @@ class StatsGen(object):
         f.close()
 
     def __print_fld_objs(self, fld_list):
-        for k,v in fld_list.iteritems():
+        for k,v in fld_list.items():
             logging.debug(("\t\t\t\tFIELD:{} NAME:{}, WIDTH:{}, OFFSET:{}").format(
                 k, v.get("csr_fld_name", None), v.get("csr_fld_width", None),
                 v.get("csr_fld_offset", None)))
 
     def __print_csr_objs(self, csr_list):
-        for k,v in csr_list.iteritems():
+        for k,v in csr_list.items():
             logging.debug(("\t\t\tCSR:{}, ADDR:{}, WIDTH:{}, N_INST:{}, N_ENTRIES:{}").format(
                 k, v.get("addr", None), v.get("width", None), v.get("n_instances", None),
                 v.get("n_entries", None), v.get("type", None)))
             self.__print_fld_objs(v.get("fld_list", None))
 
     def __print_anode_objs(self, an_list):
-        for k,v in an_list.iteritems():
+        for k,v in an_list.items():
             logging.debug(("\t\tANODE:{} N_INST:{} ADDR: {} SKIP_ADDR:{}").format(
                 k, v.get("an_inst_cnt", None), v.get("an_addr", None),
                  v.get("skip_addr", None)))
             self.__print_csr_objs(v.get("csr", None))
 
     def __print_ring_inst_objs(self, rinst_list):
-        for k,v in rinst_list.iteritems():
+        for k,v in rinst_list.items():
             self.__print_anode_objs(v.get("anode", None))
 
     def print_cfg_objs(self, cfg_objs):
-        for k,v in cfg_objs.iteritems():
+        for k,v in cfg_objs.items():
             logging.debug("RING: {} ADDR:{}".format(k, v.get("ring_addr", None)))
             self.__print_ring_inst_objs(v.get("ring_inst", None))
 
     def __get_csr_objs(self, base_addr, csr_list):
         gen_obj_list = list()
-        for k,v in csr_list.iteritems():
+        for k,v in csr_list.items():
             csr_addr = v.get("addr", None)
             if csr_addr is None:
                 logging.error("CSR:{} Invalid address!".format(k))
@@ -373,7 +373,7 @@ class StatsGen(object):
                     addr = base_addr + csr_addr \
                             + ((i * n_entries) * csr_width_bytes) \
                             + (e * csr_width_bytes)
-                    for f,d in fld_list.iteritems():
+                    for f,d in fld_list.items():
                         fld_obj = collections.OrderedDict()
                         fld_obj["csr_addr"] = hex(addr)
                         fld_obj["csr_width"] = csr_width
@@ -398,7 +398,7 @@ class StatsGen(object):
 
     def __get_anode_objs(self, an_list):
         gen_obj_list = list()
-        for k,v in an_list.iteritems():
+        for k,v in an_list.items():
             inst_cnt = v.get("an_inst_cnt", 1)
             an_addr = v.get("an_addr", None)
             if an_addr is None:
@@ -418,14 +418,14 @@ class StatsGen(object):
 
     def __get_ring_inst_objs(self, rinst_list):
         gen_obj_list = list()
-        for k,v in rinst_list.iteritems():
+        for k,v in rinst_list.items():
             objs = self.__get_anode_objs(v.get("anode", None))
             gen_obj_list += objs
         return gen_obj_list
 
     def get_cfg_gen_objs(self, cfg_objs):
         gen_obj_list = list()
-        for k,v in cfg_objs.iteritems():
+        for k,v in cfg_objs.items():
             objs = self.__get_ring_inst_objs(v.get("ring_inst", None))
             gen_obj_list += objs
         return gen_obj_list
@@ -477,7 +477,7 @@ class csr_metadata:
         return csr_defs_lst
 
 def dict_merge(dct, merge_dct):
-    for k, v in merge_dct.iteritems():
+    for k, v in merge_dct.items():
 		if (k in dct and isinstance(dct[k], dict)
 				and isinstance(merge_dct[k], collections.Mapping)):
 			dict_merge(dct[k], merge_dct[k])

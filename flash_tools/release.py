@@ -391,7 +391,7 @@ def main():
             output_image = config['output_format']['output']
             with open(eeprom_list) as f:
                 eeproms = json.load(f)
-                for skuid, value in eeproms.items():
+                for skuid, value in list(eeproms.items()):
                     er.replace('{}.bin'.format(output_image),
                         '{}.bin.{}'.format(output_image, skuid), value['filename'] + '.bin')
         except:
@@ -405,14 +405,14 @@ def main():
 
         with open("image.json") as f:
             images = json.load(f)
-            tarfiles.extend([key for key,value in images['signed_images'].items()
+            tarfiles.extend([key for key,value in list(images['signed_images'].items())
                                 if not value.get("no_export", False)])
-            tarfiles.extend([key for key,value in images['signed_meta_images'].items()
+            tarfiles.extend([key for key,value in list(images['signed_meta_images'].items())
                                 if not value.get("no_export", False)])
 
         with open("mmc_image.json") as f:
             images = json.load(f)
-            tarfiles.extend([key for key,value in images['generated_images'].items()
+            tarfiles.extend([key for key,value in list(images['generated_images'].items())
                                 if not value.get("no_export", False)])
 
         tarfiles.append('image.json')
@@ -452,14 +452,14 @@ def main():
 
             with open("image.json") as f:
                 images = json.load(f)
-                bundle_images.extend([key for key,value in images.get('signed_images',{}).items()
+                bundle_images.extend([key for key,value in list(images.get('signed_images',{}).items())
                                     if not skip_entry(value)])
-                bundle_images.extend([key for key,value in images.get('signed_meta_images', {}).items()
+                bundle_images.extend([key for key,value in list(images.get('signed_meta_images', {}).items())
                                     if not skip_entry(value)])
 
             with open("mmc_image.json") as f:
                 images = json.load(f)
-                bundle_images.extend([key for key,value in images.get('generated_images',{}).items()
+                bundle_images.extend([key for key,value in list(images.get('generated_images',{}).items())
                                     if not skip_entry(value)])
 
             bundle_images.extend([
@@ -512,7 +512,7 @@ def main():
         os.chdir(args.destdir)
         with open(eeprom_list) as f:
             eeproms = json.load(f)
-            for skuid, value in eeproms.items():
+            for skuid, value in list(eeproms.items()):
                 if not value.get('hw_base'):
                     continue
 
@@ -580,17 +580,17 @@ def main():
             'fw_upgrade_mmc': 'mmc'
         }
 
-        for fname, target in mfgxdata_lists.items():
+        for fname, target in list(mfgxdata_lists.items()):
             # generate upgrade lists to be embedded in xdata
             with open(fname, 'w') as f:
-                for key, (imgtarget, imgfile) in mfgxdata.items():
+                for key, (imgtarget, imgfile) in list(mfgxdata.items()):
                     if target == imgtarget or target == 'all':
                         f.write("{}\n".format(key))
 
         def _gen_xdata_funos(outname_modifier, target=None):
             with open('fw_upgrade_xdata', 'w') as f:
                 # generate complete xdata list
-                for key, (imgtarget, imgfile) in mfgxdata.items():
+                for key, (imgtarget, imgfile) in list(mfgxdata.items()):
                     if not target or imgtarget == target:
                         f.write("{} {}\n".format(key, os.path.join(os.getcwd(), imgfile)))
 

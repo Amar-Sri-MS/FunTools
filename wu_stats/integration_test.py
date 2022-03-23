@@ -5,7 +5,7 @@
 #
 
 import json
-import StringIO
+import io
 import unittest
 
 import create_charts
@@ -16,8 +16,8 @@ class TestActualLogs(unittest.TestCase):
 
     @staticmethod
     def produce_charts(filepath):
-        parse_result = StringIO.StringIO()
-        chart_result = StringIO.StringIO()
+        parse_result = io.StringIO()
+        chart_result = io.StringIO()
 
         with open(filepath, 'r') as log_fh:
             parse_funos_log.parse_log_file(log_fh, parse_result)

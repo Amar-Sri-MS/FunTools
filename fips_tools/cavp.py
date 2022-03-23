@@ -143,7 +143,7 @@ class CAVPTest:
 
 
         # the file keys but without testGroups items
-        file_params = {k:v for (k,v) in test_dict.items() if k != "testGroups"}
+        file_params = {k:v for (k,v) in list(test_dict.items()) if k != "testGroups"}
         test_groups = []
 
         algorithm_mode = file_params["algorithm"]
@@ -152,7 +152,7 @@ class CAVPTest:
 
         for test_group in test_dict["testGroups"]:
             # add the test group keys but without tests items
-            test_group_params = {k:v for (k,v) in test_group.items() if k != "tests" }
+            test_group_params = {k:v for (k,v) in list(test_group.items()) if k != "tests" }
             tests = []
 
             # add more info if necessary:
