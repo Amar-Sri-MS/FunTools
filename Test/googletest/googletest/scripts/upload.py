@@ -1223,8 +1223,8 @@ def GuessVCS(options):
     out, returncode = RunShellWithReturnCode(["hg", "root"])
     if returncode == 0:
       return MercurialVCS(options, out.strip())
-  except OSError as xxx_todo_changeme:
-    (errno, message) = xxx_todo_changeme.args
+  except OSError as __exception:
+    (errno, message) = __exception.args
     if errno != 2:  # ENOENT -- they don't have hg installed.
       raise
 
@@ -1240,8 +1240,8 @@ def GuessVCS(options):
                                               "--is-inside-work-tree"])
     if returncode == 0:
       return GitVCS(options)
-  except OSError as xxx_todo_changeme1:
-    (errno, message) = xxx_todo_changeme1.args
+  except OSError as __exception1:
+    (errno, message) = __exception1.args
     if errno != 2:  # ENOENT -- they don't have git installed.
       raise
 

@@ -392,7 +392,7 @@ class StatsGen(object):
                         + (e * csr_width_bytes)
                     for f, d in fld_list.items():
                         fld_obj = collections.OrderedDict()
-                        fld_obj["csr_addr"] = hex(addr)
+                        fld_obj["csr_addr"] = hex(int(addr))
                         fld_obj["csr_width"] = csr_width
                         fld_obj["period_msec"] = v.get("period_msec", 0)
                         field_offset = d.get("csr_fld_offset", None)
