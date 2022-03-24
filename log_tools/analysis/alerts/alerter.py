@@ -136,7 +136,7 @@ def main():
     parser.add_argument('--last_sync_time',
                         type=int,
                         help='Since when to look for alerts (in epoch milliseconds, default to now)',
-                        default=time.time())
+                        default=time.time() * 1000)
     args = parser.parse_args()
 
     alerter = Alerter(index=args.index,
