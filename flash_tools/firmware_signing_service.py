@@ -17,7 +17,6 @@ import requests
 # image file format description
 # https://docs.google.com/document/d/1wb34TuVJmPlikeVjvE0tdCQxP8ZgzLc0RSMbyd1prwM
 
-RSA_KEY_SIZE_IN_BITS = 2048
 SIGNING_INFO_SIZE = 2048
 MAX_SIGNATURE_SIZE = 512
 HEADER_RESERVED_SIZE = SIGNING_INFO_SIZE - (8 + 4 + MAX_SIGNATURE_SIZE)
@@ -29,6 +28,8 @@ CERT_PUB_KEY_POS = 64
 MAX_KEYS_IN_KEYBAG = 96
 SEC_GRP_POS = 14
 SEC_GRP_SIZE = 2
+
+CERT_LEN = 1096
 
 MAGIC_NUMBER_CERTIFICATE = 0xB1005EA5
 MAGIC_NUMBER_ENROLL_CERT = 0xB1005C1E
@@ -246,10 +247,12 @@ def hash_sign(digest, sign_key=None, modulus=None):
     multipart_form_data = {'digest' : pack_binary_form_data("sha512", digest)}
 
     if modulus:
-        multipart_form_data['modulus'] = pack_binary_form_data("modulus", modulus)
+        multipart_form_data['modulus'] = pack_binary_form_data("modulus",
+                                                               modulus)
 
     if auth_token:
-        multipart_form_data['auth_token'] = pack_binary_form_data("auth", auth_token)
+        multipart_form_data['auth_token'] = pack_binary_form_data("auth",
+                                                                  auth_token)
 
 
     params = {}
@@ -379,7 +382,9 @@ def image_gen(outfile, infile, ftype, version, description, sign_key,
               "to identify the key used to sign a firmware image")
         print("Image will not be signed!")
 
-    customer_to_be_signed = add_cert_and_signature_to_image(b'', cert, signature, MAGIC_STRING_FUNGIBLE_SIGN)
+    customer_to_be_signed = add_cert_and_signature_to_image(b'', cert,
+                                                            signature,
+                                                            MAGIC_STRING_FUNGIBLE_SIGN)
     customer_to_be_signed += to_be_signed
 
     if customer_certfile:
@@ -391,7 +396,8 @@ def image_gen(outfile, infile, ftype, version, description, sign_key,
         customer_signature = b''
 
     image = add_cert_and_signature_to_image(b'', customer_cert,
-                                            customer_signature, MAGIC_STRING_CUSTOMER_SIGN)
+                                            customer_signature,
+                                            MAGIC_STRING_CUSTOMER_SIGN)
     image += customer_to_be_signed
 
     # pad the image to the requested length
@@ -436,3 +442,13 @@ def export_pub_key_hash(outfile, label):
         write(outfile, new_hash)
     else:
         print("No changes in hash")
+
+
+def sign_debugging_certificate(label, cert_file_name):
+    # read the TBS part of the file (can be TBS or Full Cert)
+    tbs_cert = open(cert_file_name, 'rb').read(CERT_LEN -
+                                               (4+MAX_SIGNATURE_SIZE))
+    cert = append_signature_to_binary(tbs_cert,
+                                      server_sign_with_key(label, tbs_cert))
+    # write back to input file
+    open(cert_file_name, 'wb').write(cert)
