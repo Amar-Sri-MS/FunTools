@@ -28,7 +28,7 @@ class EmailAlert(AlertType):
     def __init__(self):
         super().__init__()
         self.config = {
-            'email_addresses': ['sourabh.jain@fungible.com']
+            'email_addresses': ['sourabh.jain@fungible.com', 'hara.bandhakavi@fungible.com']
         }
 
     def process(self, alert):
@@ -41,15 +41,14 @@ class EmailAlert(AlertType):
         - tags (list)
         - hits (list of dict): instances of event that triggered the alert
         """
-        email_addresses = self._get_email_addresses_from_tags(alert.get('tags'))
-        email_addresses.extend(self.config.get('email_addresses'))
+        cc_list = self._get_email_addresses_from_tags(alert.get('tags'))
+        email_addresses = self.config.get('email_addresses')
         recipient_emails = ','.join(email_addresses)
-        cc_list = list()
 
         log_handler.info(f'Preparing to send email to {recipient_emails}')
 
         subject = alert.get('context_title')
-        from_email = 'Log Analyzer Alerts<localadmin@funlogs01.fungible.local>'
+        from_email = 'Log Analyzer Alerts<robotpal-automation@fungible.com>'
 
         mail_body = f"""{alert.get('context_message')}"""
         mail_body += '\n' + json.dumps(alert.get('hits'), sort_keys=True, indent=2)
