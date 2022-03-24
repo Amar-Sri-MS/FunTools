@@ -86,12 +86,12 @@ def prepare_offline(args, path='', select=None):
             else:
                 select=lambda k,v: rel(k)
 
-        for outfile, v in list(release['signed_images'].items()):
+        for outfile, v in release['signed_images'].items():
             value = select(outfile, v)
             if not images.get(v['fourcc']) and value:
                 images[v['fourcc']] = value
 
-        for outfile, v in list(release.get('signed_meta_images',{}).items()):
+        for outfile, v in release.get('signed_meta_images',{}).items():
             value = select(outfile, v)
             if not images.get(v['fourcc']) and value:
                 images[v['fourcc']] = value
@@ -135,7 +135,7 @@ def prepare(args):
         files[funcp_file] = url
         files[libfunq_file] = url
 
-    for f, url in list(files.items()):
+    for f, url in files.items():
         wget(url + '/' + f)
         run(['tar', '-xf', f])
 
@@ -184,18 +184,18 @@ def run_upgrade(args, release_images):
                 funqpath = p
                 break
         else: # this is for ... else statement
-            raise Exception
+            raise(Exception("funq-setup not found!"))
     res = 0
 
     if args.upgrade_file:
-        args.upgrade = list(release_images.keys())
+        args.upgrade = release_images.keys()
 
     for arg in args.upgrade:
         if not os.path.isfile(release_images[arg]):
-            raise Exception
+            raise(Exception("Upgrade image for '{}' not found in upgrade bundle".format(arg)))
 
     if not pcidevs_string:
-        raise Exception
+        raise(Exception("No Fungible devices detected on PCI"))
 
     pcidevs = [dev.split()[0].decode('ascii') for dev in pcidevs_string.splitlines()]
 
@@ -231,7 +231,7 @@ def run_upgrade(args, release_images):
     if res:
         for dev in pcidevs:
             pcidev_unbind(dev)
-        raise Exception
+        raise(Exception("Failed to bind PCI VFIO"))
 
     upgrade_fourccs = {}
     downgrade_fourccs = {}
@@ -451,7 +451,7 @@ def run_upgrade(args, release_images):
 
                 # if there was no name found or the name doesn't contain any numbers
                 # it's most likely a generic name like Fun or FunServer, so ignore it
-                if not list(filter(str.isdigit, machine)):
+                if not filter(str.isdigit, machine):
                     machine=''
 
                 if not machine:
@@ -489,7 +489,7 @@ def run_upgrade(args, release_images):
         pcidev_unbind(dev)
 
     if res:
-        raise Exception
+        raise(Exception("Errors occured during upgrade"))
 
 # return all valid upgrade images available in 'path'
 def get_current_upgrade_images(path, select):
@@ -586,7 +586,7 @@ def main():
                      "Are you sure? [Yes/No] ".format(
                     active="active" if args.active else "inactive"))
         sys.stdout.flush()
-        conf = eval(input())
+        conf = input()
         if conf != 'Yes':
             print("Aborted by user")
             return

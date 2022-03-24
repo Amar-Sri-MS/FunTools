@@ -4,7 +4,7 @@
 Random access read a file from http as a file-like using "range" headers
 """
 
-import urllib.request, urllib.parse, urllib.error
+import urllib
 
 ## courtesy: https://stackoverflow.com/questions/7829311/is-there-a-library-for-retrieving-a-file-from-a-remote-zip/7852229#7852229
 

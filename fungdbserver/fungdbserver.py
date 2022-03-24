@@ -1059,7 +1059,7 @@ DEF_SYMS = {
 
 def _default_sym(symname):
 
-    if (symname in list(DEF_SYMS.keys())):
+    if (symname in DEF_SYMS.keys()):
         ERROR("WARNING: gdb failed to return symbol %s, using default" % symname)
         return DEF_SYMS[symname]
 

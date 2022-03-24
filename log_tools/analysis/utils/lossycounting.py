@@ -78,7 +78,7 @@ class LossyCounting(object):
         self._trim()
         # This could be the max error in the count.
         error_count = self._n/self._window_size
-        for item, entry in list(self._entries.items()):
+        for item, entry in self._entries.items():
             count = entry.count
             if count >= threshold_count - error_count:
                 yield {

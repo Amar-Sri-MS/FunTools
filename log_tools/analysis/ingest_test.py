@@ -6,7 +6,7 @@
 
 import unittest
 
-from . import ingest
+import ingest
 
 
 def _parse_contents(contents):

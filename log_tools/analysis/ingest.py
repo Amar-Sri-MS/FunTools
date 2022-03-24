@@ -16,14 +16,14 @@ import time
 
 sys.path.append('.')
 
-from . import config_loader
-from . import pipeline
-from . import logger
+import config_loader
+import pipeline
+import logger
 
-from .elastic_metadata import ElasticsearchMetadata
-from .utils import archive_extractor
-from .utils import manifest_parser
-from .utils import timeline
+from elastic_metadata import ElasticsearchMetadata
+from utils import archive_extractor
+from utils import manifest_parser
+from utils import timeline
 
 
 # The manifest file can have different names for a source.

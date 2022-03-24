@@ -6,9 +6,9 @@
 
 import unittest
 
-from . import pipeline
+import pipeline
 
-from .blocks.block import Block
+from blocks.block import Block
 
 
 class Producer(Block):

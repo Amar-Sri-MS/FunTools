@@ -95,7 +95,7 @@ class TRNGDataSet:
 
 
         # the file keys but without testGroups items
-        file_params = {k:v for (k,v) in list(test_dict.items()) if k != "testGroups"}
+        file_params = {k:v for (k,v) in test_dict.items() if k != "testGroups"}
         test_groups = []
 
         algorithm_mode = file_params["algorithm"]
@@ -104,7 +104,7 @@ class TRNGDataSet:
 
         for test_group in test_dict["testGroups"]:
             # add the test group keys but without tests items
-            test_group_params = {k:v for (k,v) in list(test_group.items()) if k != "tests" }
+            test_group_params = {k:v for (k,v) in test_group.items() if k != "tests" }
             tests = []
 
             # add more info if necessary:
@@ -300,7 +300,7 @@ def execute_all_tests(args):
         ARGS_NAMES = ["disabled_rings", "clock_divider", "sample_size"]
         dict_args = vars(args)
         dpc_args = { n : int(dict_args.get(n,0),0) for n in ARGS_NAMES }
-        remote_file_name = "trng_data_" + "_".join(["%s_x%x" % (k[0], v) for k,v in list(dpc_args.items())])
+        remote_file_name = "trng_data_" + "_".join(["%s_x%x" % (k[0], v) for k,v in dpc_args.items()])
 
         # deal with fun_json limitation
         val64 = dpc_args["disabled_rings"]

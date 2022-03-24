@@ -9,7 +9,7 @@
 
 import datetime
 
-from . import config_loader
+import config_loader
 
 from elasticsearch7 import Elasticsearch
 from elasticsearch7.exceptions import NotFoundError

@@ -20,7 +20,7 @@ import os
 import requests
 import time
 
-from . import config_loader
+import config_loader
 
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))

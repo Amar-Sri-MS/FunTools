@@ -40,8 +40,8 @@ MAGIC_NUMBER_ENROLL_CERT = 0xB1005C1E
 def get_from_user(prompt):
     ''' a slighty fancier to get the user to enter data '''
     while True:
-        res = eval(input(prompt))
-        ok = eval(input("You entered '{0}'\nIs this correct? (Y/n) ".format(res)))
+        res = input(prompt)
+        ok = input("You entered '{0}'\nIs this correct? (Y/n) ".format(res))
         if ok in ['', 'Y', 'y']:
             break
 

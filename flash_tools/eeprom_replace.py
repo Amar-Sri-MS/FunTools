@@ -8,7 +8,7 @@ import subprocess
 import flash_utils
 
 def replace(infile, outfile, eepr):
-    parts = list([f for f in flash_utils.get_entries(infile) if f[0] == 'eepr'])
+    parts = list(filter(lambda f: f[0] == 'eepr', flash_utils.get_entries(infile)))
     shutil.copy2(infile, outfile)
     for p in parts:
         cmd = ['dd',
@@ -39,7 +39,7 @@ def main():
     else:
         with open(args.eepr_list) as f:
             eeproms = json.load(f)
-            for skuid, value in list(eeproms.items()):
+            for skuid, value in eeproms.items():
                 destfile = '{}.{}'.format(input, skuid)
                 print('Generating {}'.format(destfile))
                 replace(input, destfile, value['filename'] + '.bin')

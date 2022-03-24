@@ -6,7 +6,7 @@ remote publish proxy for excat.
 expects to be run on the far size of of an ssh port
 with tunneled ports to netcat files through
 """
-
+from __future__ import print_function
 import uuid_extract
 import subprocess
 import argparse

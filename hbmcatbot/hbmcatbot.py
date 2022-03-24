@@ -208,7 +208,7 @@ def build_dump_list(verbose):
         dump.add_shard(fname)
 
     # just the list
-    return list(dumps.values())
+    return dumps.values()
 
 
 def process_dump(verbose, dump):

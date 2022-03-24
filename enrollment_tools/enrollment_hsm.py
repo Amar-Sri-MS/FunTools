@@ -68,8 +68,8 @@ def write(filename, content, overwrite=True, tobyte=False, verbose=False):
 def get_from_user(prompt):
     ''' a slighty fancier to get the user to enter data '''
     while True:
-        res = eval(input(prompt))
-        ok = eval(input("You entered '{0}'\nIs this correct? (Y/n) ".format(res)))
+        res = input(prompt)
+        ok = input("You entered '{0}'\nIs this correct? (Y/n) ".format(res))
         if ok == '' or ok == 'Y' or ok == 'y':
             break
 
@@ -324,7 +324,7 @@ def prompt_for_values(prefix, values):
     once_again = True
     while once_again:
         for value in values:
-            res = eval(input(prefix + " " + value["prompt"] + " (" + value["default"] + "): "))
+            res = input(prefix + " " + value["prompt"] + " (" + value["default"] + "): ")
             if res == "":
                 res = value["default"]
             responses[value["key"]] = res
@@ -332,7 +332,7 @@ def prompt_for_values(prefix, values):
         print("\nYou entered the following for " + prefix + ":\n")
         for value in values:
             print("%s: %s" % (prefix + " " + value["prompt"], responses[value["key"]]))
-        ok = eval(input("\nIs this correct? (Y/n)"))
+        ok = input("\nIs this correct? (Y/n)")
         if ok in ['','Y','y']:
             break
 
@@ -349,7 +349,7 @@ def get_x509_name(prefix):
     NAME_PARTS = [COUNTRY, STATE, LOCALITY, ORGANIZATION, CN]
 
     responses = prompt_for_values(prefix, NAME_PARTS)
-    filled_responses = {k : v for k,v in list(responses.items()) if v}
+    filled_responses = {k : v for k,v in responses.items() if v}
     return x509.Name.build(filled_responses)
 
 

@@ -36,8 +36,8 @@ class ModInterfaceGen():
 
         data = list()
 
-        for v in list(self.data.values()):
-            for v1 in list(v.values()):
+        for v in self.data.values():
+            for v1 in v.values():
                 data.append(v1)
 
         env = Environment(
@@ -63,9 +63,9 @@ class ModInterfaceGen():
         # is not good for later reads.
         # Other types (non-enum) are currently not implemented.
         res = {}
-        for k,v in list(self.data.items()):
+        for k,v in self.data.items():
             res1 = {}
-            for entry, value in list(v.items()):
+            for entry, value in v.items():
                 res2 = {}
                 assert value['type'] == 'enum'
                 id = 0

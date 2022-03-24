@@ -16,7 +16,7 @@
 import argparse
 import logging
 
-from . import manifest_parser
+import manifest_parser
 
 
 def main():
@@ -68,7 +68,7 @@ def validate(path):
                 logging.error(f'Manifest content at line #{index} does not contain value for prefix_path and sub_path')
                 is_valid = False
 
-            for key, value in list(frn_info.items()):
+            for key, value in frn_info.items():
                 if not value:
                     logging.warning(f'Manifest content at line #{index} does not contain value for {key}')
 

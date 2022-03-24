@@ -5,7 +5,7 @@
 Sign a single binary for F1/S1 using development keys from the network.
 """
 
-
+from __future__ import print_function
 import sys
 import argparse
 import firmware_signing_service as fsi

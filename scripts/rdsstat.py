@@ -106,7 +106,7 @@ def mkvolinfo(d):
         lat = "<unknown>"
 
         # extract values
-        for k in list(d.get(key, {}).keys()):
+        for k in d.get(key, {}).keys():
             if (k.endswith("_iops")):
                 iops = d.get(key, {}).get(k)
                 continue

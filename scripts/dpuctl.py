@@ -412,7 +412,7 @@ def handle_tcp_connect(fd: socket.socket, tcp_logs):
 
 def handle_tcp_data(fd, tcp_logs):
     # lookup the log
-    assert(fd in list(tcp_logs.keys()))
+    assert(fd in tcp_logs.keys())
     close = False
 
     try:
@@ -458,7 +458,7 @@ def cmd_logserver() -> None:
                 handle_udp_data(fd, udp_logs)
             elif (fd in tcp_socks):
                 handle_tcp_connect(fd, tcp_logs)
-            elif (fd in list(tcp_logs.keys())):
+            elif (fd in tcp_logs.keys()):
                 handle_tcp_data(fd, tcp_logs)
             else:
                 raise RuntimeError("bad socket??")
