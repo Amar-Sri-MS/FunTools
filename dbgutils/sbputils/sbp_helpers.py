@@ -76,8 +76,8 @@ class VPacket(Packet):
     def verify_field(self, field, value, msg=""):
         m = field if not msg else msg + '.' + field
         (f, v) = self.getfield_and_val(field)
-        comparev = value if type(value) is str or str else hex(value)
-        actualv = f.i2repr(self, v).replace( '\'', '') if type(value) is str or str else hex(v)
+        comparev = value if type(value) is str else hex(value)
+        actualv = f.i2repr(self, v).replace( '\'', '') if type(value) is str else hex(v)
         print(("    compare ... %s (observed=%s, expected=%s) ..." % (m, actualv, comparev)), end=' ')
         status = True if actualv == comparev else False
         print("ok" if status else "fail")
@@ -88,7 +88,7 @@ class VPacket(Packet):
         m = field if not msg else msg + '.' + field
         (f, v) = self.getfield_and_val(field)
         comparev = value
-        actualv = str(f.i2repr(self, v).replace( '\'', '') if type(value) is str or str else hex(v))
+        actualv = str(f.i2repr(self, v).replace( '\'', '') if type(value) is str else hex(v))
         print(("    find ... %s (observed=%s, comparedto=%s) ..." % (m, actualv, comparev)), end=' ')
         status = True if re.search(comparev, actualv) else False
         print("ok" if status else "fail")
