@@ -457,7 +457,7 @@ class SKUCfgGen():
             eeprom_dict.update(fnd)
 
         # write out the list of eeprom files as a dict
-        with open(os.path.join(self.output_dir, 'eeprom_list.json'), "wb") as f:
+        with open(os.path.join(self.output_dir, 'eeprom_list.json'), "w") as f:
             json.dump(eeprom_dict, f, indent=4)
 
 
@@ -493,7 +493,7 @@ class SKUCfgGen():
                     except:
                         pass
 
-                with open(os.path.join(self.output_dir, '{}_eeprom_list.json'.format(chip_type)), "wb") as f:
+                with open(os.path.join(self.output_dir, '{}_eeprom_list.json'.format(chip_type)), "w") as f:
                     json.dump(eeprom_list, f, indent=4)
 
     # Generate a new dict containing @entry that can be merged into
