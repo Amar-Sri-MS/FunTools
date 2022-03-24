@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2.7
 #
 # bmc_sbp_chal.py
 #
@@ -23,7 +23,7 @@ Update the B copy of the pufr image with the content of the file signed_pufr_fpk
 $ python bmc_sbp_chal.py  --chip 0 --update signed_pufr_fpk4_v1.bin --BImage
 '''
 
-
+from __future__ import print_function
 import os
 import binascii
 import datetime
@@ -34,7 +34,7 @@ import platform   # Fungible
 import hashlib
 
 from subprocess import check_output as subprocess_check_output
-from urllib.request import urlopen, urlretrieve
+from urllib import urlopen, urlretrieve
 from tempfile import NamedTemporaryFile
 from gzip import open as gzip_open
 from shutil import copyfileobj as shutil_copyfileobj, move as shutil_move
@@ -903,7 +903,7 @@ class NOR_IMAGE(object):
     def get_address_of_highest_version(self, addresses):
         all_raw_versions = { a : self.get_version_of_image_at_addr(a) for a in addresses}
         # filter out all missing images
-        all_versions = { a : v for a, v in all_raw_versions.items() if v != 0 }
+        all_versions = { a : v for a, v in all_raw_versions.iteritems() if v != 0 }
 
         if not all_versions:
             return None, None
@@ -1151,14 +1151,14 @@ def write_directory_to_flash(nor_image, directory, nor_addr):
 def show_flash_dir(nor_image):
     nor_dir = nor_image.read_dir()
     print("Directory on flash:")
-    for img_type, addresses in sorted(list(nor_dir.items()), key=max):
+    for img_type, addresses in sorted(nor_dir.items(), key=max):
         print("%s: (%10d (0x%08x), %10d (0x%08x))" %
               (img_type, addresses[0], addresses[0], addresses[1], addresses[1]))
     return nor_dir
 
 def show_flash_images(nor_image):
     nor_dir = nor_image.read_dir()
-    for img_type, addresses in sorted(list(nor_dir.items()), key=max):
+    for img_type, addresses in sorted(nor_dir.items(), key=max):
         for addr in addresses:
             logger.info("Retrieving header of image %s at 0x%08x", img_type, addr)
             img_info = nor_image.get_auth_header_of_image_at_addr(addr)
@@ -1199,10 +1199,10 @@ def get_src_images(src_image, override_file_names):
         src_dir.pop(img_type, None)
 
     src_images = {}
-    for img_type, addresses in list(src_dir.items()):
+    for img_type, addresses in src_dir.items():
         versions, addr_of_max_version = src_image.get_address_of_highest_version(addresses)
         if addr_of_max_version:
-            versions_str = ''.join(["0x%08x: %d " % (a, v) for a, v in list(versions.items())])
+            versions_str = ''.join(["0x%08x: %d " % (a, v) for a, v in versions.items()])
             print("%s : 0x%08x  (versions: %s)" % (img_type, addr_of_max_version, versions_str))
             src_images[img_type] = { 'addr' : addr_of_max_version,
                                      'version' : versions[addr_of_max_version],
@@ -1213,7 +1213,7 @@ def get_src_images(src_image, override_file_names):
         return src_images
 
     # sort all addresses to figure out the available space for an override
-    sorted_addresses = sorted([addr for addresses in list(src_dir.values()) for addr in addresses])
+    sorted_addresses = sorted([addr for addresses in src_dir.values() for addr in addresses])
 
     # now the overrides
     for override_file_name in override_file_names:
@@ -1290,21 +1290,21 @@ def do_full_update(nor_image, src_image, override_files, dry_run, install_missin
 
     print("Target images:")
     nor_dir = nor_image.read_dir()
-    sorted_addresses = sorted([addr for addresses in list(nor_dir.values()) for addr in addresses])
-    for img_type, src_info in list(src_images.items()):
+    sorted_addresses = sorted([addr for addresses in nor_dir.values() for addr in addresses])
+    for img_type, src_info in src_images.items():
         dest_addresses = nor_dir.get(img_type)
         if dest_addresses:
             versions, target_address = nor_image.get_address_of_highest_version(dest_addresses)
             if target_address is None:
                 print("%s: no current image found for this type on Flash => no safe update possible")
             else:
-                versions_str = ''.join(["0x%08x: %s " % (a, str(v) if v else 'None') for a,v in list(versions.items())])
+                versions_str = ''.join(["0x%08x: %s " % (a, str(v) if v else 'None') for a,v in versions.items()])
                 print("%s : 0x%08x  (versions: %s)" % (img_type, target_address, versions_str))
                 do_image_update(nor_image, src_image, sorted_addresses,
                                 img_type, target_address, versions[target_address],
                                 src_info, dry_run)
             if versions and install_missing:
-                for address, version in list(versions.items()):
+                for address, version in versions.items():
                     if version == 0:
                         print("Install %s missing at location 0x%08x" % (img_type, address))
                         do_image_update(nor_image, src_image, sorted_addresses,
@@ -1371,7 +1371,7 @@ def do_full_rewrite(nor_image, src_image, override_files):
     # with their addresses
     src_images = get_src_images(src_image, override_files)
 
-    for img_type, src_info in list(src_images.items()):
+    for img_type, src_info in src_images.items():
 
         print("writing %s image (version = %d) at 0x%08x" %
               (img_type, src_info['version'], src_info['addr']))
@@ -1587,7 +1587,7 @@ def execute_challenge_command(challenge_interface, args):
             print("No such image type '%s' on Flash" % fourcc)
             return
 
-        sorted_addresses = sorted([addr for addresses in list(nor_dir.values())
+        sorted_addresses = sorted([addr for addresses in nor_dir.values()
                                    for addr in addresses])
         nor_image.update_image(nor_addr, new_image, sorted_addresses,
                                resume_at=int(args.resume,0))
@@ -1667,7 +1667,7 @@ def main():
     spec_grp.add_argument("--chip", type=int, default=0, choices=[0,1],
                           help="chip instance number (default = 0)")
 
-    spec_grp.add_argument("--log", choices=list(log_levels.keys()),
+    spec_grp.add_argument("--log", choices=log_levels.keys(),
                           default="ERROR",
                           help="set log level")
 
