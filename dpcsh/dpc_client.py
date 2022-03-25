@@ -5,7 +5,7 @@
 ##  Copyright (C) 2017 Fungible. All rights reserved.
 ##
 
-
+from __future__ import print_function
 import json
 import socket
 import time
@@ -232,7 +232,7 @@ class DpcClient(object):
         while position < len(data):
             next_position = position + BLOB_CHUNK_SIZE
             if sys.version_info[0] == 2:
-                blob_array.append(list(map(ord, data[position:next_position])))
+                blob_array.append(map(ord, data[position:next_position]))
             else:
                 blob_array.append(list(data[position:next_position]))
             position = next_position
