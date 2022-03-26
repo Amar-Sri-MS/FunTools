@@ -79,7 +79,7 @@ class RingNode(object):
 
     def __str__(self):
         r_str = "ring_coll_t {}_rng;\n".format(self.name)
-        for m_id, m_node in self.instances.iteritems():
+        for m_id, m_node in self.instances.items():
             r_str += "{}_rng.add_ring({}, 0x{:01X});\n".\
                     format(self.name, m_id, m_node.get_addr())
             r_str += "{}".format(m_node)
@@ -144,7 +144,7 @@ class ANode(object):
     def get_num_csr(self, csr_name):
         p = self.csrs.get(csr_name, None)
         if p == None:
-            for k, v in self.csrs.iteritems():
+            for k, v in self.csrs.items():
                 self.logger.debug("{}:{}".format(k, v))
             self.logger.warning("NINSTANCE_NOT_FOUND_FOR:{} not found in {}".format(csr_name, self.path))
             return 1
@@ -269,12 +269,12 @@ class RingProps(object):
 
     def __str__(self):
         r_str = ""
-        for an_name, an_lst in self.anodes.iteritems():
+        for an_name, an_lst in self.anodes.items():
             for idx, elem in enumerate(an_lst):
 
                 an_csrs = elem.csr_map
                 if an_csrs != None:
-                    if len(an_csrs.get().keys()) == 0:
+                    if len(list(an_csrs.get().keys())) == 0:
                         continue
                     r_str += "#pragma message \"Compiling: AN: {}\"\n".format(an_name)
                     r_str += "{{\n // BEGIN {} \n".format(an_name)
@@ -282,7 +282,7 @@ class RingProps(object):
                         format(an_name, idx, self.r_name, self.i_num,
                                 elem.get_path_str(), elem.start_addr, elem.n_inst, elem.skip_addr);
                     colls = {}
-                    for csr_name, csr_val in an_csrs.get().iteritems():
+                    for csr_name, csr_val in an_csrs.get().items():
                         if csr_val.name in colls:
                             continue
                         r_str += "fld_map_t {};\n".format(csr_val.name)
@@ -370,7 +370,7 @@ class CSRMetaData(object):
 
     def __str__(self):
         r_str = ""
-        for csr_name, csr_lst in self.metadata.iteritems():
+        for csr_name, csr_lst in self.metadata.items():
             r_str += "NAME:{}\n".format(csr_name)
             for idx, csr_prop in enumerate(csr_lst):
                 r_str += "[{}]: {}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}:{}\n".\
@@ -738,7 +738,7 @@ class CSRRoot(object):
 
     def __str__(self):
         r_str = ""
-        for name, node in self.ring_map.iteritems():
+        for name, node in self.ring_map.items():
             r_str += "{}".format(node)
             r_str += "sys_rings[\"{}\"] = {}_rng;\n".format(name.upper(), name)
         return r_str
@@ -775,7 +775,7 @@ class Walker(object):
     def __flatten(self, yml_obj, pre=None):
         pre = pre[:] if pre else []
         if isinstance(yml_obj, dict):
-            for key, val in yml_obj.items():
+            for key, val in list(yml_obj.items()):
                 if isinstance(val, dict):
                     for d in self.__flatten(val, pre + [key]):
                         yield d

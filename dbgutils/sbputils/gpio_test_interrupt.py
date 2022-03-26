@@ -4,15 +4,15 @@ import sys
 import sys
 from array import array
 import logging
-from i2cdev import *
-from dututils import dut
+from .i2cdev import *
+from .dututils import dut
 
 logger = logging.getLogger('gpiotest')
 logger.setLevel(logging.DEBUG)
 
 def test(name):
     status, dev_id, ip, addr = dut().get_i2c_info(name)
-    print status, dev_id, ip, addr
+    print(status, dev_id, ip, addr)
     dev_idx = aardvark_i2c_spi_dev_index_from_serial(dev_id)
     if dev_idx is None:
         dev_list = aardvark_i2c_spi_dev_list()
@@ -64,29 +64,29 @@ def test(name):
     print("listening to GPIO pin (esp. pin-5/gpio 0x04) as interrupt ....!")
 
     status = aa_gpio_direction(h, 0x00)
-    print "Configuring GPIO direction as all INPUT. status: " + aa_status_string(status)
+    print("Configuring GPIO direction as all INPUT. status: " + aa_status_string(status))
     
     status = aa_gpio_pullup(h, 0xFF)
-    print "gpio pullup. status: " + aa_status_string(status)
+    print("gpio pullup. status: " + aa_status_string(status))
     oldval = aa_gpio_get(h);
-    print hex(oldval)
-    print "READ old GPIO value: ", hex(oldval) #  + aa_status_string(oldval)
+    print(hex(oldval))
+    print("READ old GPIO value: ", hex(oldval)) #  + aa_status_string(oldval)
 
-    print "Listen for a change in GPIO level ... " # + aa_status_string(status)
+    print("Listen for a change in GPIO level ... ") # + aa_status_string(status)
     while True:
         newval = aa_gpio_change(h, 0xFFFF);
         if ((newval ^ oldval) == 0x04):
-            print "SBP v_PAD_SP_TEST2 (newval=%s) asserted due to AUTH error ..." % hex(newval)
+            print("SBP v_PAD_SP_TEST2 (newval=%s) asserted due to AUTH error ..." % hex(newval))
             break
     
-    print "GPIO inputs changed ...", hex(oldval), hex(newval)
+    print("GPIO inputs changed ...", hex(oldval), hex(newval))
     #if (newval & 0x04):
     #    print "SBP v_PAD_SP_TEST2 asserted due to AUTH error ..."
     #else:
     #    print "GPIO timeout occurred no changed ...", oldval, newval
              
     aa_close(h)
-    print "Done!"
+    print("Done!")
 
 if __name__== "__main__":
     name = sys.argv[1]

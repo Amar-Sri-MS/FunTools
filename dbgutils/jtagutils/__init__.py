@@ -1,1 +1,1 @@
-import jtagutils
+from . import jtagutils

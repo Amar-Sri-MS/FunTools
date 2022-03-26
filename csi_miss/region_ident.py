@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 import re
 import os
@@ -29,12 +29,12 @@ def find_first_region(lines):
         # take the first line and see if it's the header
         line = lines.pop(0)
         if ("region" in line):
-            print line
+            print(line)
         m = re.match(START_RE, line.strip())
         if (m is None):
             continue
 
-        print "found header"
+        print("found header")
         
         # inspect next line and see if it's dashes
         line = lines[0]
@@ -84,7 +84,7 @@ def find_regions_log(fname):
         toks = parse_region_line(lines.pop(0))
 
     regions.sort()
-    print "found %d regions" % len(regions)
+    print("found %d regions" % len(regions))
 
     return regions
 
@@ -109,7 +109,7 @@ def find_regions_json(fname):
     fl = open(fname)
     js = json.loads(fl.read())
 
-    for k, d in js.iteritems():
+    for k, d in js.items():
         start = to_addr(d["start"])
         end = to_addr(d["end"])
         t = (start, end, k)
@@ -118,7 +118,7 @@ def find_regions_json(fname):
 
     # done
     regions.sort()
-    print "found %d regions" % len(regions)
+    print("found %d regions" % len(regions))
 
     return regions
 
@@ -146,7 +146,7 @@ def main():
 
     fl = open(OUT_FILE, "w")
     fl.write(json.dumps(regions, indent=4))
-    print "done"
+    print("done")
 
     
 ###

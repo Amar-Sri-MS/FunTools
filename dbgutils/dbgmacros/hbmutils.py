@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 """
 HBM read/write/copy utilities
@@ -289,7 +289,7 @@ def main():
 
     parser.add_argument("--dut", required=True, type=str, help="Dut name")
     parser.add_argument("--mode", required=True, type=str, help="Dut name")
-    parser.add_argument("--chip", type=int, choices=range(0, 2), help="chip instance")
+    parser.add_argument("--chip", type=int, choices=list(range(0, 2)), help="chip instance")
 
     subparsers = parser.add_subparsers(help='hbm sub-command help')
     parser_dump = subparsers.add_parser('dump', help='dump help')

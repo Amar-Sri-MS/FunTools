@@ -16,7 +16,7 @@ def send_rest_api(http_action, url, params={}, verbose=True):
     resp = {}
     headers = {'content-type': 'application/json'}
     if verbose:
-        print (http_action, url, params)
+        print(http_action, url, params)
 
     if http_action == 'get':
         resp = requests.get(url, auth=('admin', 'password'),\

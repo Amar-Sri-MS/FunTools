@@ -17,9 +17,9 @@ def dpcsh_cmd(cmd):
 def vp_usage_info():
   data = dpcsh_cmd('peek stats/funtop/vp_usage')
   res = {}
-  for (clstr, clstr_v) in data.items():
-    for (core, core_v) in clstr_v.items():
-      for (vp, vp_v) in core_v.items():
+  for (clstr, clstr_v) in list(data.items()):
+    for (core, core_v) in list(clstr_v.items()):
+      for (vp, vp_v) in list(core_v.items()):
         ccv = '%s.%s.%s' % (clstr.split('_')[1], core.split('_')[1], vp.split('_')[1])
         v = vp_v['usage_percent']
         if v:
@@ -43,7 +43,7 @@ def top_wu_info():
 
 def top_wu_info_delta(res1, res2, vp_info):
   res = {}
-  for (ccv, vp_v1) in res1.items():
+  for (ccv, vp_v1) in list(res1.items()):
     vp_v2 = res2.get(ccv, None)
     if not vp_v2:
       continue
@@ -51,7 +51,7 @@ def top_wu_info_delta(res1, res2, vp_info):
     vp_v['wu_list'] = {}
     top_wu = vp_v['wu_list']
     tot_usecs = 0
-    for (wu, w1) in vp_v1['wu_list'].items():
+    for (wu, w1) in list(vp_v1['wu_list'].items()):
       w2 = vp_v2['wu_list'].get(wu, None)
       if not w2:
         continue
@@ -66,7 +66,7 @@ def top_wu_info_delta(res1, res2, vp_info):
     if len(top_wu):
       res[ccv] = vp_v
       vp_v['vp_percent'] = vp_info[0].get(ccv, 0)
-    for (wu, w) in vp_v['wu_list'].items():
+    for (wu, w) in list(vp_v['wu_list'].items()):
       w['wu_percent'] = int(w['usecs_diff'] * vp_v['vp_percent'] / tot_usecs)
       w['avg_nsecs']  = int(w['usecs_diff'] * 1000 / w['count_diff'])
   return res
@@ -75,15 +75,15 @@ def top_wu_sort_vp_count_diff(data, group_by_vp=False):
   tbl = []
 
   if group_by_vp:
-    vp_per = {ccv:vp_v['vp_percent'] for (ccv, vp_v) in data.items()}
+    vp_per = {ccv:vp_v['vp_percent'] for (ccv, vp_v) in list(data.items())}
     ccv_list = sorted(vp_per, key=vp_per.get, reverse=True)
   else:
-    ccv_list = data.keys()
+    ccv_list = list(data.keys())
 
   for ccv in ccv_list:
     vp_v = data[ccv]
     vp_res = []
-    for (wu, w) in vp_v['wu_list'].items():
+    for (wu, w) in list(vp_v['wu_list'].items()):
       r = [vp_v['faddr'], ccv, vp_v['vp_percent'], w['wu_percent'], wu, w['count_diff'], w['usecs_diff'], w['avg_nsecs']]
       vp_res.append(r)
     vp_res = sorted(vp_res, key=lambda e: e[6], reverse=True)
@@ -232,11 +232,11 @@ class MyCurses:
 
 def vp_info_to_tbl(vp_info):
   res = []
-  for (clstr, clstr_v) in vp_info[1].items():
+  for (clstr, clstr_v) in list(vp_info[1].items()):
     clstr_s = '  {0:<6}:'.format(clstr.replace('cluster_', 'clstr'))
-    for (core, core_v) in clstr_v.items():
+    for (core, core_v) in list(clstr_v.items()):
       core_s = ''
-      for (vp, vp_v) in core_v.items():
+      for (vp, vp_v) in list(core_v.items()):
         core_s += '{0:>2} '.format(vp_v['usage_percent'])
       clstr_s +=' [{0:<11}]'.format(core_s[:-1])
     res.append(clstr_s)

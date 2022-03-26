@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 ## read a deduped file and translate all the addresses into something
 ## interesting via addr2line
@@ -105,7 +105,7 @@ def do_line_ident(addrlist, outfname, binname):
     # write it out
     fl = open(outfname, "w")
     fl.write(json.dumps(addrident, indent=4))
-    print "done"
+    print("done")
 
 ###
 ##  main

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 ##############################################################################
 #  enrollment_client.py
@@ -204,24 +204,24 @@ class DBG_Chal(object):
 def generate_enrollment_cert(tbs_cert, verbose=False):
 
     # always print the TBS since it is precious
-    print "Enrollment Information: " + binascii.b2a_hex(tbs_cert)
+    print("Enrollment Information: " + binascii.b2a_hex(tbs_cert))
 
     tbs_cert_64 = binascii.b2a_base64(tbs_cert)
 
     if verbose:
-        print "TBS: ", tbs_cert_64
+        print("TBS: ", tbs_cert_64)
 
     response = requests.put("https://f1reg.fungible.com/cgi-bin/enrollment_server.cgi",
                             data=tbs_cert_64)
 
     if response.status_code != requests.codes.ok:
-        print "Server response: %d %s" % (response.status_code, response.reason)
+        print("Server response: %d %s" % (response.status_code, response.reason))
         return None
 
     cert_64 = response.text
 
     if verbose:
-        print "CERT: ", cert_64
+        print("CERT: ", cert_64)
 
     return binascii.a2b_base64(cert_64)
 
@@ -234,13 +234,13 @@ def get_cert_of_serial_number(sn, verbose=False):
     response = requests.get(url)
 
     if response.status_code != requests.codes.ok:
-        print "Server response: %d %s" % (response.status_code, response.reason)
+        print("Server response: %d %s" % (response.status_code, response.reason))
         return None
 
     cert_64 = response.text
 
     if verbose:
-        print "CERT: ", cert_64
+        print("CERT: ", cert_64)
 
     return binascii.a2b_base64(cert_64)
 
@@ -293,7 +293,7 @@ def main():
     parser.add_argument("--dut-name", help="Dut name")
     parser.add_argument("--bmc-ip-addr", help="BMC IP Address")
 
-    parser.add_argument("--chip", type=int, required=True, choices=xrange(0, 2),
+    parser.add_argument("--chip", type=int, required=True, choices=range(0, 2),
             help='chip instance number. For boards with signle dpu, it should be \"0\"')
 
     args = parser.parse_args()

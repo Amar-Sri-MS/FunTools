@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 #
 # Listener for rdsock messages from hardware WU tracing.
@@ -349,7 +349,7 @@ def quit_if_trace_dumps_exist(source_dir):
     path = os.path.join(source_dir, 'trace_dump_*')
     files = glob.glob(path)
     if files:
-        print ('ERROR: Trace cluster dumps already exist in %s\n'
+        print('ERROR: Trace cluster dumps already exist in %s\n'
                'Exiting to prevent overwriting of trace data. '
                'Remove the trace_dump_* files if you want to '
                'start a new run.\n' % source_dir)

@@ -22,7 +22,7 @@ boards = ["sb-01", "sb-02"]
 def sighup_handler(signal, frame):
     # this method defines the handler i.e. what to do
     # when you receive a SIGHUP
-    print "%s:SIGHUP received" % sys.argv[0]
+    print("%s:SIGHUP received" % sys.argv[0])
 
 
 def fix_args(args):
@@ -88,13 +88,13 @@ def load_job(opts, name, want_done):
         return None
 
     if (opts.verbose):
-        print "job %s" % name
-        print "path %s" % path
-        print "done %s" % done
-        print "is_done: %s" % is_done
-        print "want_waiting: %s" % want_waiting
-        print "want_done: %s" % want_done
-        print "waiting: %s" % waiting
+        print("job %s" % name)
+        print("path %s" % path)
+        print("done %s" % done)
+        print("is_done: %s" % is_done)
+        print("want_waiting: %s" % want_waiting)
+        print("want_done: %s" % want_done)
+        print("waiting: %s" % waiting)
     
     try:
         fl = open(path)
@@ -187,31 +187,31 @@ def print_status(opts, job):
         board = ""
     else:
         board = "<%s> " % board
-    print "%s %s- %s -- %s" % (job['path'], board, funos, args)
+    print("%s %s- %s -- %s" % (job['path'], board, funos, args))
     if (job['raw_log'] is not None):
         if (os.path.exists(fclaim(job))):
             claim = open(fclaim(job)).read()
         else:
             claim = "<unknown>"
-        print "   -->  %s logging to %s" % (claim, job['raw_log'])
+        print("   -->  %s logging to %s" % (claim, job['raw_log']))
     if (opts.verbose):
         is_done = os.path.exists(fdone(job))
-        print "   --> job is %s" % "DONE!" if is_done else "not done"
+        print("   --> job is %s" % "DONE!" if is_done else "not done")
         
 
 def print_results(job):
 
     if ("jobid" in job):
-        print "jobid: %s" % job['jobid']
+        print("jobid: %s" % job['jobid'])
     else:
-        print "jobid: %s" % job['path']
-    print "funos: %s -- %s" % (job.get('funos'), job.get('args'))
-    print "reason: %s" % job['reason']
-    print "%s: %s" % (job['log_type'], job['log'])
+        print("jobid: %s" % job['path'])
+    print("funos: %s -- %s" % (job.get('funos'), job.get('args')))
+    print("reason: %s" % job['reason'])
+    print("%s: %s" % (job['log_type'], job['log']))
     if (job['post_log'] is not None):
-        print "postscript log: %s" % job['post_log']
+        print("postscript log: %s" % job['post_log'])
 
-    print
+    print()
     
 def done_jobs_by_date(opts, all=None):
     # get it
@@ -279,7 +279,7 @@ def mkjob(opts, email, funos,  args):
         suffix = opts.suffix
         os.mkdir(path)
         
-    print "path is %s" % path
+    print("path is %s" % path)
 
     jobid = path.split("/")[-1]
 
@@ -310,18 +310,18 @@ def mkjob(opts, email, funos,  args):
     if (opts.delay is not None):
         d['delay'] = opts.delay
 
-    print "job is %s/job.js" % path
+    print("job is %s/job.js" % path)
     fl = open("%s/job.js" % path, 'w')
     json.dump(d, fl, indent=4, sort_keys=True)
     fl.close()
 
-    print "Submitted jobid %s" % jobid
+    print("Submitted jobid %s" % jobid)
 
 def rmjob(opts, jobid):
     l = job_list_by_date(opts, all=True)
 
     if (len(l) == 0):
-        print "No jobs to kill"
+        print("No jobs to kill")
         return
 
     if ((jobid == "next") and ("jobid" in l[0])):
@@ -330,27 +330,27 @@ def rmjob(opts, jobid):
     for job in l:
         if (job_matches_id(opts, job, jobid)):
             os.system("echo killed > %s" % fdone(job['path']))
-            print "killed %s" % job['path']
+            print("killed %s" % job['path'])
             return
 
-    print "job not found"
+    print("job not found")
 
 def restartjob(opts, jobid):
-    print "scanning last %d jobs to restart..." % opts.num_done
+    print("scanning last %d jobs to restart..." % opts.num_done)
     l = done_jobs_by_date(opts)
 
     for job in l:
         if (job_matches_id(opts, job, jobid)):
             donefile = fdone(job)
-            print "Removing done file %s" % donefile
+            print("Removing done file %s" % donefile)
             os.system("rm %s" % donefile)
             if (os.path.exists(donefile)):
-                print "ERROR: job file couldn't be removed"
+                print("ERROR: job file couldn't be removed")
             else:
-                print "Job restarted"
+                print("Job restarted")
             return
 
-    print "No matching job found"
+    print("No matching job found")
     
 def lsjobs(opts):
 
@@ -362,37 +362,37 @@ def lsjobs(opts):
     for srv in servers:
         runfile = get_runfile(opts, srv)
         if (os.path.exists(runfile)):
-            print "status %s: silicon on demand server should be online" % srv
+            print("status %s: silicon on demand server should be online" % srv)
         else:
             reason = "<no reason given>"
             if (os.path.exists(reasonfile(srv))):
                 reason = open(reasonfile(srv)).read()
-            print "status %s: OFFLINE: %s" % (srv, reason)
+            print("status %s: OFFLINE: %s" % (srv, reason))
         
     l = job_list_by_date(opts, all=True)
 
-    print "== %d waiting jobs (next first) ==" % len(l)
+    print("== %d waiting jobs (next first) ==" % len(l))
     for job in l:
         print_status(opts, job)
 
     if (opts.num_done > 0):
         l = done_jobs_by_date(opts)
-        print
-        print "== Last %d completed jobs (most recent last) ==" % len(l)
+        print()
+        print("== Last %d completed jobs (most recent last) ==" % len(l))
         for job in l:
             print_results(job)
 
 def tailjob(opts):
     l = job_list_by_date(opts, all=True)
     if (len(l) == 0):
-        print "no jobs"
+        print("no jobs")
 
     job = l[0]
     
     if (os.path.exists(job['log'])):
         os.system("tail -f %s" % job['log'])
     else:
-        print "job log file '%s' does not exist" % job['log']
+        print("job log file '%s' does not exist" % job['log'])
         
 def lessjob(opts, args):
 
@@ -408,7 +408,7 @@ def lessjob(opts, args):
                 break
                 
     if (job is None):
-        print "job not found. Increase n?"
+        print("job not found. Increase n?")
         return
     
     os.system("less %s" % job['log'])
@@ -426,7 +426,7 @@ def _getlogin():
 def online_server(opts):
 
     if (opts.board is None):
-        print "must specify a board to online"
+        print("must specify a board to online")
         return
 
     fname = get_runfile(opts)
@@ -437,12 +437,12 @@ def online_server(opts):
 
 def offline_server(opts, reason):
     if (opts.board is None):
-        print "must specify a board to offline"
+        print("must specify a board to offline")
         return
 
     fname = get_runfile(opts)
     if (not os.path.exists(fname)):
-        print "server %s already offline? trying anyway" % opts.board
+        print("server %s already offline? trying anyway" % opts.board)
     else:
         os.remove(fname)
     if (os.path.exists(reasonfile(opts.board))):
@@ -467,13 +467,13 @@ def sod_client():
     if (opts.uname is None):
         try:
             opts.uname = _getlogin()
-            print "Running as user %s" % opts.uname
+            print("Running as user %s" % opts.uname)
         except:
             opts.uname = "secret_squirrel"
 
     if (opts.board is not None):
         if (opts.board not in boards):
-            print "unknown board %s" % opts.board
+            print("unknown board %s" % opts.board)
             sys.exit(1)
             
     if len(args) < 1:
@@ -491,7 +491,7 @@ def sod_client():
             epath = "/home/%s/.silicon_email" % opts.uname
         if (os.path.exists(epath)):
             lines = file(epath).readlines()
-            lines = map(str.strip, lines)
+            lines = list(map(str.strip, lines))
             email = " ".join(lines)
     else:
         email = " ".join(opts.email)
@@ -540,38 +540,38 @@ def sod_client():
 def claim_job(job, board):
     fname = fclaim(job)
     try:
-        print "open %s" % fname
+        print("open %s" % fname)
         f = os.open(fname, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-        print "write %s" % board
+        print("write %s" % board)
         os.write(f, "%s" % board)
-        print "done"
+        print("done")
         return job
     except:
-        print "except fail"
+        print("except fail")
         return None
     
         
 def main(opts, joblist):
 
     if (len(joblist) == 0):
-        print "No job to run"
+        print("No job to run")
         return
 
-    print "%s claiming job %s" % (opts.board, joblist[0]['path'])
+    print("%s claiming job %s" % (opts.board, joblist[0]['path']))
     job = claim_job(joblist[0], opts.board)
     if (job is None):
-        print "Failed to claim job, trying again..."
+        print("Failed to claim job, trying again...")
         return
     
-    print "Running the following job..."
+    print("Running the following job...")
     print_status(opts, job)
 
     delay = job.get("delay", 0)
     if (delay > 0):
-        print "%s: Delaying for %d seconds...\n" % (datetime.datetime.now().replace(microsecond=0).isoformat(), delay)
+        print("%s: Delaying for %d seconds...\n" % (datetime.datetime.now().replace(microsecond=0).isoformat(), delay))
         open(fraw(job), 'w').write("delaying for %s seconds\n" % delay)
         time.sleep(delay)
-        print "%s: Continuing job\n" % datetime.datetime.now().replace(microsecond=0).isoformat()
+        print("%s: Continuing job\n" % datetime.datetime.now().replace(microsecond=0).isoformat())
 
     
     # default 5 minute timeout
@@ -598,10 +598,10 @@ def main(opts, joblist):
 
     if (not os.path.exists(frestart(job))):
         os.system("(echo -n 'Finished at ' && date) > %s" % fdone(job['path']))
-        print "job done in %s" % job['path']
+        print("job done in %s" % job['path'])
         os.system("rm -f %s" % fclaim(job))
     else:
-        print "job in %s requires restart" % job['path']
+        print("job in %s requires restart" % job['path'])
         os.system("rm %s" % frestart(job))
         os.system("rm -f %s" % fclaim(job))
         return
@@ -631,9 +631,9 @@ def main(opts, joblist):
         fl.close()
 
         cmd = "cat %s/email-body.txt | mail -r charles.gray+silicon@fungible.com -s '%s' -a 'Content-Type: text/html; charset=UTF-8' %s" % (job['path'], subject, email)
-        print "Here goes nothing..."
+        print("Here goes nothing...")
         os.system(cmd)
-        print "Sent?"
+        print("Sent?")
         
         
 
@@ -655,12 +655,12 @@ if (__name__ == "__main__"):
     if (opts.uname is None):
         try:
             opts.uname = _getlogin()
-            print "Running as user %s" % opts.uname
+            print("Running as user %s" % opts.uname)
         except:
             opts.uname = "secret_squirrel"
 
     if (opts.board not in boards):
-        print "invalid board specified: %s. Pick one of: %s" % (opts.board, boards)
+        print("invalid board specified: %s. Pick one of: %s" % (opts.board, boards))
         sys.exit(1)
 
     run_next = False
@@ -671,18 +671,18 @@ if (__name__ == "__main__"):
 
     # see if we're a single instance
     if (run_next):
-        print "silicon on demand running next job"
+        print("silicon on demand running next job")
         main(opts, joblist)
-        print "returning"
+        print("returning")
         sys.exit(0)
 
     # main server loop
     runfile = get_runfile(opts)
-    print "Starting silicon on demand server..."
+    print("Starting silicon on demand server...")
     while (True):
         # see if we should terminate
         if (not os.path.exists(runfile)):
-            print "%s: no run file at %s, waiting" %  (time.strftime('%Y-%m-%d %H:%M:%S'), runfile)
+            print("%s: no run file at %s, waiting" %  (time.strftime('%Y-%m-%d %H:%M:%S'), runfile))
             time.sleep(20)
             continue
 
@@ -696,6 +696,6 @@ if (__name__ == "__main__"):
 
         # call out to run the next job
         os.system("%s --board=%s run_next" % (sys.argv[0], opts.board))
-        print "Silicon on demand server pausing for next job..."
+        print("Silicon on demand server pausing for next job...")
         time.sleep(5)
 

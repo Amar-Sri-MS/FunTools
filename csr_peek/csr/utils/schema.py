@@ -76,7 +76,7 @@ class Schema():
 
     def __create_map(self, csr_def_yml):
         m_coll = collections.OrderedDict()
-        for key, val in csr_def_yml['ATTR'].iteritems():
+        for key, val in csr_def_yml['ATTR'].items():
             m_coll[key] = LexTok(val)
         return m_coll
 
@@ -162,18 +162,18 @@ class Schema():
         return lst, (w+extra_w)
 
     def __dump(self, yml_stream):
-        for key, val in yml_stream.iteritems():
+        for key, val in yml_stream.items():
             self.logger.debug("{}".format(key))
 
     def __sanitize(self, yml_stream):
         lst = []
-        for key, val in yml_stream.iteritems():
+        for key, val in yml_stream.items():
             if key not in Schema.ALLOW_LST:
                  lst.append(key)
         for key in lst:
             yml_stream.pop(key, None)
         lst = []
-        for key, val in yml_stream.iteritems():
+        for key, val in yml_stream.items():
             if isinstance(val, dict):
                 return self.__sanitize(val)
             elif isinstance(val, list):
@@ -200,7 +200,7 @@ class Schema():
 
     def __str__(self):
         r_str = ""
-        for val in self.entities.itervalues():
+        for val in self.entities.values():
             r_str += "{}".format(val)
         return r_str
     __repr__ = __str__

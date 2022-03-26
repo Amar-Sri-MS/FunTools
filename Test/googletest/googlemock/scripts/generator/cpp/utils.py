@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 #
 # Copyright 2007 Neal Norwitz
 # Portions Copyright 2007 Google Inc.

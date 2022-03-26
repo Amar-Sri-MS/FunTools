@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 import os
 import sys
@@ -145,7 +145,7 @@ def do_pivot(out_fname, misses):
 
     fl = open(out_fname, "wb")
     
-    keys = TABDEF.keys()
+    keys = list(TABDEF.keys())
     writer = csv.DictWriter(fl, fieldnames=keys, extrasaction="ignore")
     
     # write the header with nice names
@@ -310,10 +310,10 @@ def mkmisses(raw_misses, lineinfo, regioninfo, gdbinfo):
 def do_missmap(misses_raw, lineinfo, regioninfo, gdbinfo, mode, out_fname, max_rows=0):
     
     # process misses accoriding to available info
-    print "%d misses in input" % len(misses_raw)
+    print("%d misses in input" % len(misses_raw))
     misses = mkmisses(misses_raw, lineinfo, regioninfo, gdbinfo)
 
-    print "%d processed misses" % len(misses)
+    print("%d processed misses" % len(misses))
 
     if (mode == "html"):
         # template prints a list of sections
@@ -347,7 +347,7 @@ MODES = {"html": OUTFILE_HTML,
          "csv": OUTFILE_CSV}
 
 def usage():
-    print "usage: %s {html, csv}" % sys.argv[0]
+    print("usage: %s {html, csv}" % sys.argv[0])
     sys.exit(1)
 
 def getmode():

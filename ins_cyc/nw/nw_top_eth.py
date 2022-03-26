@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 import sys
 import subprocess
@@ -26,19 +26,19 @@ def mf_flow_dump(mf_list):
     print(mf)
     print('  epsq')
     for e in m.get('epsq', []):
-      print '    %s %s: sqe_count=%s db_count=%s' % (e['flow']['id'], e['flow']['dest'], e['sqe_count'], e['db_count'])
+      print('    %s %s: sqe_count=%s db_count=%s' % (e['flow']['id'], e['flow']['dest'], e['sqe_count'], e['db_count']))
 
     print('  eth')
     for e in m.get('ethernet', []):
-      print '    %s %s: lport=%s pkts=%s/bytes=%s' % (e['flow']['id'], e['flow']['dest'], e['logical_port'], e['packets'], e['bytes'])
+      print('    %s %s: lport=%s pkts=%s/bytes=%s' % (e['flow']['id'], e['flow']['dest'], e['logical_port'], e['packets'], e['bytes']))
 
     print('  vi')
     for e in m.get('virtual_interface', []):
-      print '    %s %s: lport=%s %s' % (e['flow']['id'], e['flow']['dest'], e['lport'], e.get('flows/sub', ''))
+      print('    %s %s: lport=%s %s' % (e['flow']['id'], e['flow']['dest'], e['lport'], e.get('flows/sub', '')))
 
     print('  epcq')
     for e in m.get('epcq', []):
-      print '    %s %s: cqe_count=%s db_count=%s int_count=%s' % (e['flow']['id'], e['flow']['dest'], e['cqe_count'], e['db_count'], e['int_count'])
+      print('    %s %s: cqe_count=%s db_count=%s int_count=%s' % (e['flow']['id'], e['flow']['dest'], e['cqe_count'], e['db_count'], e['int_count']))
 
 
 def main(argv):

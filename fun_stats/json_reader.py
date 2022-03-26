@@ -48,7 +48,7 @@ class CFG_Reader(object):
 
     def __str__(self):
         r_str = ""
-        for key, val in self.cfg.iteritems():
+        for key, val in self.cfg.items():
             r_str += "{}:\n{}".format(key, val)
         return r_str
     __repr__ = __str__
@@ -56,8 +56,8 @@ class CFG_Reader(object):
     # Merge two dictionaries
     def merge_dicts(self, cfg, cfg_new):
         merged_cfg = cfg
-        for key in cfg_new.keys():
-            if key in merged_cfg.keys():
+        for key in list(cfg_new.keys()):
+            if key in list(merged_cfg.keys()):
                 merged_cfg[key].update(cfg_new[key])
             else:
                 merged_cfg[key] = cfg_new[key]

@@ -1,4 +1,4 @@
-from sbp_helpers import *
+from .sbp_helpers import *
 
 class WideCSRCTL(Packet):
     fields_desc = [
