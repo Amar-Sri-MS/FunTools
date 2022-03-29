@@ -6,6 +6,12 @@
 #
 set -e
 
+if [ $# -ge 1 ] && [ "$1" == "config-only" ] ; then
+    config_only=y
+else
+    config_only=n
+fi
+
 binutils_version=binutils-2.35.2
 gcc_version=gcc-11.2.0
 gdb_version=gdb-11.1
@@ -63,9 +69,11 @@ binutils_dir=mips64-${binutils_version}
 mkdir -p $binutils_dir
 pushd $binutils_dir
 ../${binutils_version}/configure --target=mips64-unknown-elf --prefix=$dest_dir $host_binutils_config \
-    $common_config
-make -j4
-make -j4 install
+   $common_config
+if [ "$config_only" = "n" ] ; then
+    make -j4
+    make -j4 install
+fi
 popd
 
 tar Jxf $gcc_archive
@@ -93,8 +101,10 @@ pushd $gcc_dir
     --enable-plugin			\
     --enable-targets=64			\
     --with-arch=i6500 --with-abi=64
-make -j4
-make -j4 install
+if [ "$config_only" = "n" ] ; then
+    make -j4
+    make -j4 install
+fi
 popd
 
 tar Jxf $gdb_archive
@@ -114,10 +124,14 @@ pushd $gdb_dir
 ../${gdb_version}/configure --disable-sim --target=mips64-unknown-elf --prefix=$dest_dir $host_gdb_config \
    $common_config \
    --with-python=python3
-make -j4
-make -j4 install
+if [ "$config_only" = "n" ] ; then
+    make -j4
+    make -j4 install
+fi
 popd
 
 pushd $dest_dir
-tar cJf ../toolchain.tar.xz *
+if [ "$config_only" = "n" ] ; then
+    tar cJf ../toolchain.tar.xz *
+fi
 popd
