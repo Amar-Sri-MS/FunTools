@@ -17,9 +17,16 @@ import requests
 # image file format description
 # https://docs.google.com/document/d/1wb34TuVJmPlikeVjvE0tdCQxP8ZgzLc0RSMbyd1prwM
 
+MAGIC_STRING_FUNGIBLE_SIGN = b'Fungible'
+MAGIC_STRING_CUSTOMER_SIGN = b'FunCustS'
+EXTRA_INFO_SIZE = len(MAGIC_STRING_CUSTOMER_SIGN)
+
 SIGNING_INFO_SIZE = 2048
 MAX_SIGNATURE_SIZE = 512
-HEADER_RESERVED_SIZE = SIGNING_INFO_SIZE - (8 + 4 + MAX_SIGNATURE_SIZE)
+SIGNATURE_STRUCT_SIZE = 4 + MAX_SIGNATURE_SIZE # length prefix
+
+HEADER_RESERVED_SIZE = SIGNING_INFO_SIZE - (
+    EXTRA_INFO_SIZE + SIGNATURE_STRUCT_SIZE)
 SIGNED_ATTRIBUTES_CHIP_ID_SIZE = 4
 SIGNED_ATTRIBUTES_PAD_SIZE = 28 # zero pad + key_addrs
 SIGNED_DESCRIPTION_SIZE = 32
@@ -33,8 +40,6 @@ CERT_LEN = 1096
 
 MAGIC_NUMBER_CERTIFICATE = 0xB1005EA5
 MAGIC_NUMBER_ENROLL_CERT = 0xB1005C1E
-MAGIC_STRING_FUNGIBLE_SIGN = b'Fungible'
-MAGIC_STRING_CUSTOMER_SIGN = b'FunCustS'
 
 SIGNING_SERVER_URL = "https://f1reg.fungible.com:4443"
 SIGNING_SERVICE_URL = SIGNING_SERVER_URL + "/cgi-bin/signing_server.cgi"
@@ -447,7 +452,7 @@ def export_pub_key_hash(outfile, label):
 def sign_debugging_certificate(label, cert_file_name):
     # read the TBS part of the file (can be TBS or Full Cert)
     tbs_cert = open(cert_file_name, 'rb').read(CERT_LEN -
-                                               (4+MAX_SIGNATURE_SIZE))
+                                               (SIGNATURE_STRUCT_SIZE))
     cert = append_signature_to_binary(tbs_cert,
                                       server_sign_with_key(label, tbs_cert))
     # write back to input file
