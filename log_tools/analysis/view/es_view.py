@@ -34,8 +34,9 @@ from elastic_log_searcher import ElasticLogSearcher
 from elastic_log_searcher import ElasticLogState
 from elastic_metadata import ElasticsearchMetadata
 from ingester import ingester_page
-from web_usage import web_usage
+from searcher_view import searcher_page
 from tools_view import tools_page
+from web_usage import web_usage
 
 sys.path.append('..')
 
@@ -47,6 +48,7 @@ import logger
 app = Flask(__name__)
 app.register_blueprint(ingester_page)
 app.register_blueprint(web_usage, url_prefix='/events')
+app.register_blueprint(searcher_page, url_prefix='/searcher')
 app.register_blueprint(tools_page, url_prefix='/tools')
 
 

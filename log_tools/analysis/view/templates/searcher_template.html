@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="/static/css/root.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/index.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/logs.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/searcher.css">
+	<script type="text/javascript" src="/static/js/fetchWrapper.js"></script>
+	<script type="text/javascript" src="/static/js/tracker.js"></script>
+    <title>Log Analyzer Searcher</title>
+</head>
+<body>
+    {% include 'nav_bar.html' ignore missing %}
+    <div class="container">
+        <h2 class="center-align">Search for logs across ingested archives</h2>
+        <div class="form-group">
+            <div>
+                <div class="form-group">
+                    <label for="prefix">Log name prefix:</label>
+                    <input type="text" id="prefix" class="medium-input" placeholder="log_*" onkeyup="onKeyUpLogPrefix(this)" />
+                </div>
+                <div class="form-group" style="justify-content: flex-start;">
+                    <label>Limit by</label>
+					<label>
+						<input
+							type="radio"
+							name="limit_by"
+							value="days"
+							onchange="onChangeLimitBy(this)"
+							checked
+						/>
+						Days
+					</label>
+					<label>
+                        <input
+                            type="radio"
+                            name="limit_by"
+                            value="count"
+                            onchange="onChangeLimitBy(this)"
+                        />
+                        Count
+                    </label>
+                </div>
+                <div class="form-group" style="justify-content: flex-start;">
+                    <label for="limit_value">Limit value:</label>
+                    <input type="number" id="limit_value" value=7 onkeyup="onChangeLimitValue(this)" />
+                </div>
+                <div class="info" id="show_ingested_logs" onclick="toggleIngestedLogsOverlay()"></div>
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="filters_container">
+                <input id="search" type="search" placeholder="Search..." onkeyup="onKeyDownSearchText(event)" />
+                <span class="info">Enclose the search string with quotes if it contains special characters.</span>
+            </div>
+            <div style="display: flex; flex-direction: column;">
+                <div class="separator"></div>
+            </div>
+            <div class="filters">
+                <b>Search by time range</b>
+                <div>
+                    <div class="time_filters">
+                        <label for="dt_start">Start time</label>
+                        <input type="text" id="dt_start" placeholder="yyyy-mm-ddTHH:MM:SS.ss" onchange="handleTimeFilters(this, 'start')"/>
+                    </div>
+
+                    <div class="time_filters">
+                        <label for="dt_end">End time</label>
+                        <input type="text" id="dt_end" placeholder="yyyy-mm-ddTHH:MM:SS.ss" onchange="handleTimeFilters(this, 'end')"/>
+                    </div>
+                </div>
+                <div class="info">Timestamp can be copied from log line</div>
+            </div>
+        </div>
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary" onclick="handleSearch()">Search</button>
+        </div>
+    </div>
+    <div class="content" id="ingested_logs_overlay" style="display: none;">
+        <div id="notes_header">
+            <div style="width: 100%;" class="center-align">Ingested Logs</div>
+            <button onclick="toggleIngestedLogsOverlay()">Close</button>
+        </div>
+        <table class="index">
+            <thead>
+                <tr>
+                    <th>Job ID</th>
+                    <th>Ingested Time (in UTC)</th>
+                    <th>Log Lines</th>
+                    <th>Log Analyzer Storage</th>
+                    <th>Tags</th>
+                </tr>
+            </thead>
+            <tbody id="ingested_logs_container">
+            </tbody>
+        </table>
+    </div>
+	<div id="results_container">
+	</div>
+	{% include 'loader.html' %}
+</body>
+<script type="text/javascript">
+    const ingestedLogsOverlay = document.getElementById("ingested_logs_overlay");
+    const logsContainer = document.getElementById("ingested_logs_container");
+    const limitValueInput = document.getElementById("limit_value");
+	const showIngestedLogsText = document.getElementById("show_ingested_logs");
+	const searchBox = document.getElementById("search");
+
+	const results_container = document.getElementById("results_container");
+
+	const LOG_VIEW_BASE_URL = location.origin;
+
+    let prefix = "log_*", limit = {
+		"by": "days",
+		"value": 7
+	};
+    let ingestedLogs = [], selectedLogs = new Set();
+	let searchPayload = {};
+
+	window.onload = function() {
+		debouncedFetchIngestedLogs();
+	}
+
+	const debouncedFetchIngestedLogs = debounce(fetchIngestedLogs, 1000, false);
+    function debounce(func, wait, immediate) {
+        let timeout;
+        return function executedFunction() {
+            let context = this;
+            let args = arguments;
+
+            let later = function() {
+                timeout = null;
+                if (!immediate) func.apply(context, args);
+            };
+
+            let callNow = immediate && !timeout;
+
+            clearTimeout(timeout);
+
+            timeout = setTimeout(later, wait);
+
+            if (callNow) func.apply(context, args);
+        };
+    };
+
+    function onKeyUpLogPrefix(event) {
+        prefix = event.value;
+        debouncedFetchIngestedLogs();
+    }
+
+    function onChangeLimitBy(event) {
+        const value = event.value;
+        if (value) {
+            limit = {
+                "by": value,
+                "value": parseInt(limitValueInput.value)
+            }
+            debouncedFetchIngestedLogs();
+        }
+    }
+
+    function onChangeLimitValue(event) {
+        const value = event.value;
+        limit["value"] = value;
+        debouncedFetchIngestedLogs();
+    }
+
+    function fetchIngestedLogs() {
+		let params = new URLSearchParams();
+
+		if (prefix && prefix !== "") {
+			params.set("prefix", prefix);
+		}
+		if (limit && limit["by"]) {
+			params.set("limit_by", limit["by"]);
+			params.set("limit_value", limit["value"]);
+		}
+		let uri = `${LOG_VIEW_BASE_URL}/searcher/logs`;
+
+		const paramsString = params.toString();
+		if (paramsString && paramsString !== "") {
+			uri += `?${paramsString}`;
+		}
+
+        fetchWrapper.get(uri)
+            .then(data => {
+                ingestedLogs = data;
+                updateIngestedLogs(data);
+				updateSelectedLogsText();
+            })
+            .catch(error => {
+                // alert(`Could not get any ingested archives: ${error}`);
+				showIngestedLogsText.innerHTML = `Could not find any ingested archives`;
+            });
+    }
+
+	function updateSelectedLogsText() {
+		showIngestedLogsText.innerHTML = `Show selected ${selectedLogs.size} ingested archives`;
+	}
+	function toggleSelectedLogs(event) {
+		if (event.checked) {
+			selectedLogs.add(event.value);
+		}
+		else {
+			selectedLogs.delete(event.value);
+		}
+		updateSelectedLogsText();
+	}
+
+    function updateIngestedLogs() {
+		// Reset all the selected logs
+		selectedLogs.clear();
+		let tableRows = [];
+		for (const log of ingestedLogs) {
+			selectedLogs.add(log.name);
+			tableRows.push(`
+				<tr class="log-row">
+					<td style="display: flex; align-items: center;">
+						<input type="checkbox" id="${log.name}" checked onclick="toggleSelectedLogs(this)" value="${log.name}" />
+						<label for="${log.name}">${log.name}</label>
+					</td>
+					<td class="fixed-font">${log["creation_date"]}</td>
+					<td class="right-align fixed-font">${log["doc_count"]}</td>
+					<td class="right-align fixed-font caps">${log["es_size"]}</td>
+					<td class="center-align tags">${log["tags"] ? log["tags"].join(", "): ""}</td>
+				</tr>
+			`);
+		}
+		if (tableRows.length > 0) {
+			logsContainer.innerHTML = tableRows.join("\n");
+		}
+    }
+
+    function toggleIngestedLogsOverlay() {
+        const currentDisplay = ingestedLogsOverlay.style.display;
+        ingestedLogsOverlay.style.display = currentDisplay === "none" ? "block" : "none";
+    }
+
+	function onKeyDownSearchText(event) {
+		// Enter clicked
+        if (event.keyCode === 13) {
+            handleSearch();
+        }
+	}
+
+	/*
+        Constructs a search string, for use in a request,
+        from search query and search state.
+    */
+    function buildSearchOption(searchPayload) {
+        if (searchPayload == null || (Object.keys(searchPayload).length === 0 && searchPayload.constructor === Object) || searchBox.value === "") {
+            return null;
+        }
+        return {
+            "query": encodeURIComponent(searchBox.value),
+            //"page": searchPayload["page"],
+            //"state": JSON.stringify(searchPayload["state"]),
+            "next": true,
+			"size": 10000
+        };
+    }
+
+	function handleSearch() {
+        const searchText = searchBox.value;
+        if (!searchText || searchText === "") {
+            alert("Search box is empty");
+            return;
+        }
+
+		if (selectedLogs.size === 0) {
+			alert("Selected ingested archives are empty");
+			return;
+		}
+
+        toggleLoader(true);
+
+		searchPayload["query"] = searchText;
+        const search_url = `${LOG_VIEW_BASE_URL}/search`;
+		const payload = {
+			"search": buildSearchOption(searchPayload),
+			"log_ids": Array.from(selectedLogs)
+		}
+        fetchWrapper.post(search_url, payload)
+            .then(data => {
+                toggleLoader(false);
+                searchPayload = data;
+                updateSearchResults(data);
+            })
+            .catch(error => {
+                toggleLoader(false);
+                alert(`Could not get search results: ${error}`);
+            });
+    }
+
+	function updateSearchResults(data) {
+		let resultsPerIngestion = {};
+		let rows = [];
+		for (const result of data["results"]) {
+			const ingestionId = result["_index"];
+			if (!(ingestionId in resultsPerIngestion)) {
+				resultsPerIngestion[ingestionId] = [];
+			}
+			resultsPerIngestion[ingestionId].push(getLogRow(result));
+			rows.push(getLogRow(result));
+		}
+
+		results_container.innerHTML = "";
+		for (const [ingestionId, results] of Object.entries(resultsPerIngestion)) {
+			results_container.innerHTML += getLogsTable(ingestionId, results);
+		}
+	}
+
+	function getLogRow(result) {
+		const index = result["_index"];
+		const docId = result["_id"];
+		const source = result["_source"];
+		const timestamp = source["@timestamp"];
+
+		const current_state = {
+            "before": timestamp,
+            "after": timestamp
+        };
+		const state_str = encodeURIComponent(JSON.stringify(current_state));
+		const url = `${LOG_VIEW_BASE_URL}/log/${index}?next=true&prev=true&state=${state_str}&include=${docId}#0`;
+		return `
+			<tr style="vertical-align: baseline">
+				<td class="table-source">${source["src"]}</td>
+				<td class="table-system_id">${source["system_id"]}</td>
+				<td class="table-timestamp">${timestamp}</td>
+				<td class="table-level">${source["level"]}</td>
+				<td class="table-msg"><a href="${url}">${source["msg"]}</a></td>
+			</tr>
+		`;
+	}
+
+	function getLogsTable(ingestionId, rows) {
+		return `
+		<div class="filter_box_header" style="cursor: pointer;" onclick="toggleLogs(this, '${ingestionId}')">
+			<div>Logs from ${ingestionId}</div>
+			<div style="padding: 0px 5px; cursor: pointer;">
+				<span class="arrow up"></span>
+			</div>
+		</div>
+		<table class="log_entries" id="table-${ingestionId}">
+			<thead>
+				<tr>
+					<th class="table-source">Source</th>
+					<th class="table-system_id">System ID</th>
+					<th class="table-timestamp">Timestamp</th>
+					<th class="table-level">Level</th>
+					<th class="table-msg">Log message</th>
+				</tr>
+			</thead>
+			<tbody id="line_table">
+				${rows.join("\n")}
+			</tbody>
+		</table>
+		`;
+	}
+
+	function toggleLogs(element, ingestionId) {
+		const tableElement = document.getElementById(`table-${ingestionId}`);
+		const currentDisplay = tableElement.style.display;
+
+		const arrowElement = element.getElementsByClassName("arrow")[0];
+		if (currentDisplay === "none") {
+            // Filter box is closed
+            tableElement.style.display = "block";
+            arrowElement.classList.remove("down");
+            arrowElement.classList.add("up");
+        }
+        else {
+            // Filter box is open
+            tableElement.style.display = "none";
+            arrowElement.classList.remove("up");
+            arrowElement.classList.add("down");
+        }
+	}
+
+</script>
+</html>
