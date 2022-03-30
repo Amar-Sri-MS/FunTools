@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 #
 # Implementation of the csr access methods for CSR2
@@ -24,7 +24,7 @@ from csrutils.csrutils import str_to_int
 # TODO (jimmy): we need a better way to import our favourite modules
 WS = os.environ.get('WORKSPACE', None)
 if WS is None:
-    print 'Need WORKSPACE environment variable to be set: exiting'
+    print('Need WORKSPACE environment variable to be set: exiting')
     sys.exit(1)
 sys.path.append(os.path.join(WS, 'FunHW/csr2api/v2'))
 
@@ -549,7 +549,7 @@ def csr2_peek(csr_path):
     accessor = CSRAccessor(dbgprobe(), finder)
     regval = accessor.peek(csr_path)
     if regval is not None:
-        print str(regval)
+        print(str(regval))
 
 def csr2_peek_args(args):
     """
@@ -581,7 +581,7 @@ def print_matching_regs(csr_path):
     csr_names.build()
     result = csr_names.find_matching(regex)
     result.sort()
-    print '\n'.join(result)
+    print('\n'.join(result))
 
 def csr2_raw_peek_args(args):
     """
@@ -595,7 +595,7 @@ def csr2_raw_peek_args(args):
 
     if data is not None:
         formatter = RawValuesFormatter()
-        print formatter.format(data)
+        print(formatter.format(data))
 
 def csr2_poke(csr_path, values):
     """
@@ -655,7 +655,7 @@ def csr2_find_by_name(csr_path):
     csr_names.build()
     matched_csrs = csr_names.find_matching(regex)
     matched_csrs.sort()
-    print '\n'.join(matched_csrs)
+    print('\n'.join(matched_csrs))
 
 def csr2_find(args):
     """

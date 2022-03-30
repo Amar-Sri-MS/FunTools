@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 import sys
 import glob
@@ -51,7 +51,7 @@ def mkmisslist(globstr):
     for mfile in missfiles:
         core = file2core(mfile)
         fl = open(mfile)
-        print "parsing %s (%s)" % (mfile, core)
+        print("parsing %s (%s)" % (mfile, core))
 
         for line in fl.readlines():
             toks = parse_line(line.strip())
@@ -117,7 +117,7 @@ def main():
 
     # write out the address list
     save_json(OUT_ADDR, addrlist)
-    print "done"
+    print("done")
     
 ###
 ##  entrypoint

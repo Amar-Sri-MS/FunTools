@@ -288,11 +288,11 @@ def do_sleep(secs):
 def sighup_handler(signal, frame):
     # this method defines the handler i.e. what to do
     # when you receive a SIGHUP
-    print "%s:SIGHUP received" % sys.argv[0]
+    print("%s:SIGHUP received" % sys.argv[0])
 
 def maybe_reset_target(options):
     if (options.reset):
-        print "Resetting %s" % options.board
+        print("Resetting %s" % options.board)
         r = os.system("~cgray/bin/sb-jtag-reset.py %s" % options.board)
 
 def maybe_install_funos(funos):
@@ -328,7 +328,7 @@ parser.add_option("--bootscript-only", action="store_true", help="Generate boots
 (options, args) = parser.parse_args()
 
 if (options.board not in boards):
-    print "must specify a board"
+    print("must specify a board")
     sys.exit(1)
 
 if (options.make_dir):
@@ -359,15 +359,15 @@ else:
     if (not options.tftp):
         if (not os.path.isfile(krn)):
             # clean exit so the server moves on
-            print "FunOS binary doesn't exist: %s" % krn
+            print("FunOS binary doesn't exist: %s" % krn)
             sys.exit(0)
 
         if (os.path.getsize(krn) > (10*1024*1024)):
             # clean exit so the server moves on
-            print "FunOS binary > 10MB. Is it compressed?"
+            print("FunOS binary > 10MB. Is it compressed?")
             sys.exit(0)
 
-    print "Putting output files in %s" % path
+    print("Putting output files in %s" % path)
 
     script_name = "%s/boot.script" % path
     log_name = "%s/minicom-log" % path
@@ -450,11 +450,11 @@ else:
         exit(0)
 
     # make our own process group for easier clean-up
-    print "Making our own process group"
+    print("Making our own process group")
     if (options.do_pgid):
         os.setpgid(0,0)
     gpid = os.getpgrp()
-    print "pgid now %s" % gpid
+    print("pgid now %s" % gpid)
 
     device = boards[options.board]["uart"]
     baud = boards[options.board]["baud"]
@@ -462,7 +462,7 @@ else:
     cmd = "/usr/bin/minicom -D %s -b %s -S %s -w -C %s" % (device, baud, script_name, log_name)
 
     # fork minicom to get its pid for later
-    print "Forking minicom..."
+    print("Forking minicom...")
     p = subprocess.Popen(cmd.split())
 
     fl = open(pid_name, "w")
@@ -478,12 +478,12 @@ else:
 
         if (global_timeout is not None):
             if ((time.time() - t0) > global_timeout):
-                print "global timeout reached"
+                print("global timeout reached")
                 os.system("echo 'run_job: global timeout reached' >> %s" % (exit_name))
                 do_kill = True
 
         if (os.path.exists(dun_name)):
-            print "someone requested a kill, killing minicom"
+            print("someone requested a kill, killing minicom")
             os.system("echo 'run_job: kill requested' >> %s" % (exit_name))
             do_kill = True
 
@@ -493,53 +493,53 @@ else:
                                stderr=subprocess.STDOUT)
         stdout,stderr = out.communicate()
         if "platform_halt" in stdout:
-            print "platform halt detected, killing minicom"
+            print("platform halt detected, killing minicom")
             os.system("echo 'run_job: platform halt detected' >> %s" % (exit_name))
             do_kill = True
 
         if (do_kill):
             killcmd = "kill -HUP %s" % p.pid
-            print "killing with '%s'" % killcmd
+            print("killing with '%s'" % killcmd)
             os.system(killcmd)
-            print "waiting for its demise"
+            print("waiting for its demise")
             p.wait()
             break
 
     if (p.returncode is not None):
-        print "run_job: minicom exited"
+        print("run_job: minicom exited")
         cmd = "echo 'run_job: minicom died of natural causes (%s)' >> %s" % (p.returncode, exit_name)
-        print cmd
+        print(cmd)
         os.system(cmd)
     else:
-        print "run_job: we killed minicom"
+        print("run_job: we killed minicom")
         cmd = "echo 'run_job: minicom died of unnatural causes (%s)' >> %s" % (p.returncode, exit_name)
-        print cmd
+        print(cmd)
         os.system(cmd)
 
     #for i in range(30):
     #    print "run_job: pause"
     #    do_sleep(1)
 
-    print "Minicom is dead. long live minicom, but fixing its terminal settings..."
+    print("Minicom is dead. long live minicom, but fixing its terminal settings...")
     do_sleep(2)
     if (not options.no_terminal_reset):
         os.system("reset")
-    print "log file at %s.txt" % log_name
+    print("log file at %s.txt" % log_name)
     os.system("cat %s | grep -v 'Xmodem sectors' > %s.txt" % (log_name, log_name))
     os.system("cat %s >> %s.txt" % (exit_name, log_name))
     os.system("echo 'Job completed on board %s' >> %s.txt" % (options.board, log_name))
     os.system("cat %s.txt | tail -20" % log_name)
 
-    print "Cleaning my own process group"
+    print("Cleaning my own process group")
     # make sure we catch the signal so we exit OK
     signal.signal(signal.SIGHUP, sighup_handler)
     killcmd = "kill -HUP -%s" % gpid
-    print "killing with '%s'" % killcmd
+    print("killing with '%s'" % killcmd)
     try:
         os.system(killcmd)
     except:
-        print "got signal in kill"
-    print "run_job exiting"
+        print("got signal in kill")
+    print("run_job exiting")
 
     do_sleep(2)
 

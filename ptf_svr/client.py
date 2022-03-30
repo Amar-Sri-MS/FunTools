@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 #
 #  client.py
 #
@@ -50,7 +50,7 @@ def rcv_packets_from_server(self, sock):
             self.join()
             return
         returndata = json.loads(result)
-        print ("Receive JSON Response : "+ str(returndata))
+        print("Receive JSON Response : "+ str(returndata))
     except(socket.timeout):
         pass
    
@@ -84,7 +84,7 @@ def create_send_data(sock):
         local_mac =  jdata["local_mac"]
         router_mac = jdata["router_mac"]
         pktlen=200
-        print "Sending packet "+str(in_intf)+" (" + src+" -> " + dst +")"
+        print("Sending packet "+str(in_intf)+" (" + src+" -> " + dst +")")
         pkt = simple_tcp_packet(eth_dst=router_mac,
                                 eth_src=local_mac,
 		                dl_vlan_enable=False,

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 #This module applies the board layer to the SKU configuration
 
@@ -129,7 +129,7 @@ class BoardLayer():
 
         # Nothing to do if the board layer is empty
         if not bool(tmp_bl_json):
-            return tmp_bl_json
+            return tmp_bl_json if sku_overrides_board else sku_json
 
         # Rename the board name placeholder with the real board name
         tmp_bl_json['skus'][self.board_name] = tmp_bl_json['skus']['board']

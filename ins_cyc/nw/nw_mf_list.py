@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 import sys
 import subprocess
@@ -23,7 +23,7 @@ def mf_flow_dump(mf_list):
     if not m:
       continue
 
-    print '====== %s ======' % mf
+    print('====== %s ======' % mf)
     print(json.dumps(m, indent=4, sort_keys=True))
 
 def main(argv):

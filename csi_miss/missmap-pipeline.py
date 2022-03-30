@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 import argparse
 import os
@@ -52,9 +52,9 @@ def do_missmap():
     # line table
     lfname = line_ident.OUT_FILE
     if (os.path.exists(lfname)):
-        print "Line identification file exists (%s), using cached copy" % lfname
+        print("Line identification file exists (%s), using cached copy" % lfname)
     else:
-        print "Re-generating line identification file (%s)" % lfname
+        print("Re-generating line identification file (%s)" % lfname)
         line_ident.do_line_ident(addrlist, lfname, args.funos_bin)
 
     # Read the two by file
@@ -62,13 +62,13 @@ def do_missmap():
     gdbinfo = missmapper.loadjs(gdb_ident.OUT_FILE)
 
     out_fname = missmapper.OUTFILE_HTML
-    print "Generating HTML output %s" % out_fname
+    print("Generating HTML output %s" % out_fname)
     missmapper.do_missmap(misslist, lineinfo,
                           regions, gdbinfo, "html", out_fname,
                           max_rows=MAX_ROWS)
 
     out_fname = missmapper.OUTFILE_CSV
-    print "Generating CVS output %s" % out_fname
+    print("Generating CVS output %s" % out_fname)
     missmapper.do_missmap(misslist, lineinfo,
                           regions, gdbinfo, "csv", out_fname)
 

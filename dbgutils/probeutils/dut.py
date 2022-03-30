@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 import sys
 import json
@@ -6,7 +6,7 @@ import logging
 import socket
 import pkg_resources
 
-from i2cutils import constants
+from .i2cutils import constants
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("dut")

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 #
 # run_f1.py: Run binary on Fun-on-demand.  For now, only run F1 jobs.
 #
@@ -19,12 +19,12 @@ import subprocess
 import sys
 import tempfile
 import time
-import urllib
-import urllib2
+import urllib.request, urllib.parse, urllib.error
+import urllib.request, urllib.error, urllib.parse
 try:
     import configparser  # python 3
 except ImportError:
-    import ConfigParser as configparser # python 2.7
+    import configparser as configparser # python 2.7
 
 # Only use libraries from Python - don't import any of our own
 # helpers, or non-default packages.  This code will need to run on
@@ -286,7 +286,7 @@ class CopyExecutor(object):
 
             # Make directory for binary blobs.
             cmd = ['mkdir', '-p', os.path.join(self.dest_root, 'blobs')]
-            print cmd
+            print(cmd)
             (ret, out) = RunCommandOnServer(cmd,
                                             self.remoteuser,
                                             self.fun_host,
@@ -309,10 +309,10 @@ class CopyExecutor(object):
         else:
             self.dest_root = tempfile.mkdtemp(prefix='run_f1_',
                                         dir=os.getenv('HOME'))
-            os.chmod(self.dest_root, 0755)
+            os.chmod(self.dest_root, 0o755)
             blobs_dir = os.path.join(self.dest_root, 'blobs')
             os.mkdir(blobs_dir)
-            os.chmod(blobs_dir, 0755)
+            os.chmod(blobs_dir, 0o755)
 
         return True
 
@@ -349,7 +349,7 @@ class CopyExecutor(object):
                 shutil.copy(source_path, dest_path)
                 # Make sure readable by others.
                 mode = os.stat(dest_path).st_mode
-                mode |= 0444
+                mode |= 0o444
                 os.chmod(dest_path, mode)
             except Exception as e:
                 sys.stderr.write('Errors copying file to job directory: %s\n'
@@ -381,7 +381,7 @@ class CopyExecutor(object):
             if scp_compress:
                 cmd.extend(['-C'])
             cmd.extend([source_path, dest])
-            print cmd
+            print(cmd)
             try:
                 out = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
                 # Owner: read write, execute only on directories.
@@ -544,7 +544,7 @@ class FunOnDemandJob(object):
                 value = terms[1].strip()
 
                 if (key in REQUIRED_FIELDS or
-                    key in key_map.values() or
+                    key in list(key_map.values()) or
                     key in ['timeout_mins', 'timeout_msecs', 'emulation_pipeline']):
                     result[key] = value
 
@@ -782,7 +782,7 @@ class FunOnDemandJob(object):
                 self.spec_dict[field] = uTransform(self.spec_dict[field])
 
         # Check for any remaining invalid chars in self.spec_dict.
-        for field in self.spec_dict.keys():
+        for field in list(self.spec_dict.keys()):
             # Fail if we find any non-ASCII characters (chars not
             # between space and tilde inclusive).
             if self.spec_dict[field] and re.search(r'[^ -~]',
@@ -925,7 +925,7 @@ class FunOnDemandJob(object):
             return False
 
         if dryrun:
-            print 'would enqueue now'
+            print('would enqueue now')
         else:
             dest_root = executor.get_dest_root()
             ret = self.queue_manager_interface.enqueue_job(dest_root)
@@ -947,7 +947,7 @@ class FunOnDemandJob(object):
 
     def wait_until_complete(self):
         """Returns job return node, or None if something went wrong."""
-        print 'Waiting for job to complete.'
+        print('Waiting for job to complete.')
         while True:
             time.sleep(30)
             ret = self.queue_manager_interface.get_job_status(self.lsf_job_id)
@@ -958,13 +958,13 @@ class FunOnDemandJob(object):
                 # error. we'll wait.
                 continue
             job_state = ret['job_dict'].get('state')
-            if job_state == u'completed':
+            if job_state == 'completed':
                 return ret['job_dict'].get('return_code', None)
             # TODO(bowdidge): Time out?
         return None
 
     def wait_until_accepted(self):
-        print 'Waiting for job to be accepted.'
+        print('Waiting for job to be accepted.')
         while True:
             time.sleep(2)
             ret = self.queue_manager_interface.get_job_status(self.lsf_job_id)
@@ -975,7 +975,7 @@ class FunOnDemandJob(object):
                 # error. we'll wait.
                 continue
             job_state = ret['job_dict'].get('state')
-            if job_state == u'accepted' or job_state == u'running' or job_state ==u'completed':
+            if job_state == 'accepted' or job_state == 'running' or job_state =='completed':
                 sys.stderr.write('Job started')
                 return
             # TODO(bowdidge): Time out?
@@ -1007,16 +1007,16 @@ def curl_json(url, data=None, timeout='10'):
     try:
         if data == None:
             # GET request.
-            req = urllib2.Request(url)
+            req = urllib.request.Request(url)
         else:
             # POST request.
-            url += '?%s' % urllib.urlencode(data)
-            req = urllib2.Request(url, data='')
-        out = urllib2.urlopen(req, timeout=float(timeout)).read()
-    except urllib2.HTTPError as e:
+            url += '?%s' % urllib.parse.urlencode(data)
+            req = urllib.request.Request(url, data='')
+        out = urllib.request.urlopen(req, timeout=float(timeout)).read()
+    except urllib.error.HTTPError as e:
         sys.stderr.write('Fetching HTTP URL failed: %s: %s\n' % (e.code, e.reason))
         return {'error': e.reason}
-    except urllib2.URLError as e:
+    except urllib.error.URLError as e:
         sys.stderr.write('Fetching URL failed: %s\n' % (e.reason))
         return {'error': e.reason}
     except Exception as e:
@@ -1085,35 +1085,35 @@ def get_hardware_models(models_url=HARDWARE_MODELS_URL):
 # Taken from FunDevelopment/jenkins/utils.py
 # Dict of 1:>1 char translations.
 uTransformDict = {
-    u"\u2014": u"--",   # Emdash
-    u"\u2122": u"(TM)", # Trademark
-    u"\u00ae": u"(R)",  # Registered Trademark
+    "\u2014": "--",   # Emdash
+    "\u2122": "(TM)", # Trademark
+    "\u00ae": "(R)",  # Registered Trademark
 }
 # Tuple of 1:1 char translations.
-uTransformTuple = [(u"\u00a0", u" "),  # No-Break Space
-                   (u"\u2002", u" "),  # En Space
-                   (u"\u2003", u" "),  # Em Space
-                   (u"\u2004", u" "),  # Three-Per-Em Space
-                   (u"\u2005", u" "),  # Four-Per-Em Space
-                   (u"\u2006", u" "),  # Six-Per-Em Space
-                   (u"\u2007", u" "),  # Figure Space
-                   (u"\u2008", u" "),  # Punctuation Space
-                   (u"\u2009", u" "),  # Thin Space
-                   (u"\u200a", u" "),  # Hair Space
-                   (u"\u200b", u" "),  # Zero Width Space
-                   (u"\u2010", u"-"),  # Hyphen
-                   (u"\u2013", u"-"),  # Endash
-                   (u"\u2018", u"'"),  # Left single quote => single quote
-                   (u"\u2019", u"'"),  # Right single quote => single quote
-                   (u"\u201a", u"'"),  # Single Low-9 quote => single quote
-                   (u"\u201b", u"'"),  # Single High-Reversed-9 quote => single quote
-                   (u"\u201c", u'"'),  # Left double quote => double quote
-                   (u"\u201d", u'"'),  # Right double quote => double quote
-                   (u"\u201e", u'"'),  # Double Low-9 quote => double quote
-                   (u"\u201f", u'"'),  # Double High-Reversed-9 quote => double quote
-                   (u"\u2022", u"*"),  # Bullet
-                   (u"\u202f", u" "),  # Narrow No-Break Space
-                   (u"\u2060", u" "),  # Word Joiner
+uTransformTuple = [("\u00a0", " "),  # No-Break Space
+                   ("\u2002", " "),  # En Space
+                   ("\u2003", " "),  # Em Space
+                   ("\u2004", " "),  # Three-Per-Em Space
+                   ("\u2005", " "),  # Four-Per-Em Space
+                   ("\u2006", " "),  # Six-Per-Em Space
+                   ("\u2007", " "),  # Figure Space
+                   ("\u2008", " "),  # Punctuation Space
+                   ("\u2009", " "),  # Thin Space
+                   ("\u200a", " "),  # Hair Space
+                   ("\u200b", " "),  # Zero Width Space
+                   ("\u2010", "-"),  # Hyphen
+                   ("\u2013", "-"),  # Endash
+                   ("\u2018", "'"),  # Left single quote => single quote
+                   ("\u2019", "'"),  # Right single quote => single quote
+                   ("\u201a", "'"),  # Single Low-9 quote => single quote
+                   ("\u201b", "'"),  # Single High-Reversed-9 quote => single quote
+                   ("\u201c", '"'),  # Left double quote => double quote
+                   ("\u201d", '"'),  # Right double quote => double quote
+                   ("\u201e", '"'),  # Double Low-9 quote => double quote
+                   ("\u201f", '"'),  # Double High-Reversed-9 quote => double quote
+                   ("\u2022", "*"),  # Bullet
+                   ("\u202f", " "),  # Narrow No-Break Space
+                   ("\u2060", " "),  # Word Joiner
 ]
 # Create the table for .translate().
 uTransformTable = dict((ord(From), To) for From, To in uTransformTuple)
@@ -1121,7 +1121,7 @@ uTransformTable = dict((ord(From), To) for From, To in uTransformTuple)
 def uTransform(uToTransform):
     """Convert commonly broken chars to their expected value."""
     origstr = uToTransform
-    for c in uTransformDict.keys():
+    for c in list(uTransformDict.keys()):
         uToTransform = uToTransform.decode("utf-8").replace(c, uTransformDict[c]).encode("utf-8")
     # TODO(tbush): Don't 'ignore' failed encoded chars but handle them appropriately.
     newstr = uToTransform.decode("utf-8").translate(uTransformTable).encode("ascii","ignore")
@@ -1139,7 +1139,7 @@ def configfile_get(configfile, section, key, default):
     result = default
     try:
         result = configfile.get(section, key)
-    except NoSectionError, NoOptionError:
+    except NoSectionError as NoOptionError:
         pass
     finally:
         return result
@@ -1155,7 +1155,7 @@ def configfile_getboolean(configfile, section, key, default):
     result = default
     try:
         result = configfile.getboolean(section, key)
-    except NoSectionError, NoOptionError:
+    except NoSectionError as NoOptionError:
         pass
     finally:
         return result
@@ -1253,7 +1253,7 @@ class CommandLineOptions(object):
         # command line or the job_spec file or params file.
         if self.priority is not None:
             if priority_map.get(self.priority) == None:
-                print 'Unknown priority level %s' % self.priority
+                print('Unknown priority level %s' % self.priority)
                 return False
 
         # Check if the params_file exists if it was specified.
@@ -1461,7 +1461,7 @@ def main(args=sys.argv):
     configfile = configparser.SafeConfigParser();
     configfile.read(os.path.expanduser("~/.runf1rc"))
 
-    run_argv = map(uTransform, list(sys.argv))
+    run_argv = list(map(uTransform, list(sys.argv)))
     run_argv, funos_boot_args = split_runf1_and_funos_args(run_argv)
 
     # Get the known hardware models and pick the ones we want.
@@ -1626,15 +1626,15 @@ on cmdline. Values specified as cmdline args override the config file defaults.
     job_json = job.get_job_status()
 
     if 'job_dict' not in job_json:
-        print 'Malformed job status retrieved.'
+        print('Malformed job status retrieved.')
         sys.exit(1)
 
     job_output = job_json.get('output_text')
     job_return_code = job_json.get('job_dict').get('return_code')
     job_return_msg = job_json.get('job_dict').get('return_code_msg')
 
-    print job_output
-    print 'Job result: %d (%s)' % (job_return_code, job_return_msg)
+    print(job_output)
+    print('Job result: %d (%s)' % (job_return_code, job_return_msg))
 
     sys.exit(job_return_code)
 

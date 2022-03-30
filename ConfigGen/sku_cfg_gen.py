@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 #This module generates merged config of all skus, sku-id definitions and eeprom files.
 
@@ -106,7 +106,7 @@ class SKUCfgGen():
         return False
 
     def get_board_config_parent(self, sku_json):
-        return sku_json['skus'].values()[0].get('PlatformInfo', {}).get('inherit')
+        return list(sku_json['skus'].values())[0].get('PlatformInfo', {}).get('inherit')
 
     def get_board_configs(self, board_cfg):
         """Get the configuration for all the boards that use the target
@@ -140,7 +140,7 @@ class SKUCfgGen():
                     raise
 
                 # stash this board config for processing inherited configs
-                raw_board_configs[sku_json['skus'].keys()[0]] = copy.deepcopy(sku_json)
+                raw_board_configs[list(sku_json['skus'].keys())[0]] = copy.deepcopy(sku_json)
 
                 if self.get_board_config_parent(sku_json):
                     # add this config to the list for processing later, as the parent
@@ -165,7 +165,7 @@ class SKUCfgGen():
                 board_cfg = jsonutils.merge_dicts(board_cfg, copy.deepcopy(sku_json))
 
         for sku_json in remaining_board_configs:
-            sku = sku_json['skus'].keys()[0]
+            sku = list(sku_json['skus'].keys())[0]
             parent = self.get_board_config_parent(sku_json)
 
             # check if the board is for a given target - if this is a 'base' board that was
@@ -175,7 +175,7 @@ class SKUCfgGen():
 
             # Create new sku based on the parent sku but retain original PlatformInfo
             sku_json['skus'][sku] = jsonutils.merge_dicts_recursive(
-                dict(filter(lambda e: e[0] != 'PlatformInfo', raw_board_configs[parent]['skus'][parent].items())),
+                dict([e for e in list(raw_board_configs[parent]['skus'][parent].items()) if e[0] != 'PlatformInfo']),
                 sku_json['skus'][sku])
 
             # Apply defaults to the SKU file
@@ -204,7 +204,7 @@ class SKUCfgGen():
                     raise
 
                 # Check the additional file is for the machine being built
-                if 'machine' not in sku_json['PlatformInfo'].keys():
+                if 'machine' not in list(sku_json['PlatformInfo'].keys()):
                     continue
                 machine = sku_json['PlatformInfo']['machine']
                 if machine != addition_machine:
@@ -452,12 +452,12 @@ class SKUCfgGen():
             if not os.path.isdir(pci_cfg_dir):
                 pci_cfg_dir = None
 
-        for sku_name, sku_id in all_skus_with_sbp.iteritems():
+        for sku_name, sku_id in all_skus_with_sbp.items():
             fnd = self.write_eepr_files(sku_name, sku_id, pci_cfg_dir)
             eeprom_dict.update(fnd)
 
         # write out the list of eeprom files as a dict
-        with open(os.path.join(self.output_dir, 'eeprom_list.json'), "wb") as f:
+        with open(os.path.join(self.output_dir, 'eeprom_list.json'), "w") as f:
             json.dump(eeprom_dict, f, indent=4)
 
 
@@ -479,7 +479,7 @@ class SKUCfgGen():
                     self.get_fungible_board_sku_ids(all_target_chips=False)
 
             eeprom_list = {}
-            for sku_name, sku_id in all_board_skus_with_sbp.iteritems():
+            for sku_name, sku_id in all_board_skus_with_sbp.items():
                 for (suffix, _) in self.flag_variants_for_chip(chip_type):
                     sku_var = sku_name + suffix
                     eeprom_list[sku_var] = {
@@ -489,12 +489,11 @@ class SKUCfgGen():
 
                     try:
                         eeprom_list[sku_var]['hw_base'] = \
-                            filter(lambda x: x['name'] == sku_name and x['asic'] == chip_type,
-                                fun_board_config)[0]['hw_base']
+                            [x for x in fun_board_config if x['name'] == sku_name and x['asic'] == chip_type][0]['hw_base']
                     except:
                         pass
 
-                with open(os.path.join(self.output_dir, '{}_eeprom_list.json'.format(chip_type)), "wb") as f:
+                with open(os.path.join(self.output_dir, '{}_eeprom_list.json'.format(chip_type)), "w") as f:
                     json.dump(eeprom_list, f, indent=4)
 
     # Generate a new dict containing @entry that can be merged into

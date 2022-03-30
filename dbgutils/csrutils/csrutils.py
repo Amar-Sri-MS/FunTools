@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 '''
 csr find/list/peek/poke utilities
 To issue csr peek/poke, connection to one of the debug interfaces(i2c/jtag/pcie/dpc)
@@ -14,7 +14,7 @@ import time
 import logging
 import traceback
 import tempfile
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import tarfile
 import shutil
 from array import array
@@ -156,7 +156,7 @@ def csr_poke(args):
             if field_name not in valid_field_list:
                 print("Invalid field name: {0}."
                       " Valid fields are: {1}".format(field_name,
-                                                      valid_field_list.keys()))
+                                                      list(valid_field_list.keys())))
                 return None
             str_word_array = field[1:]
             field_word_array = list()
@@ -255,10 +255,10 @@ def csr_decode(args):
 def csr_find_addr_metadata(caddr):
     csr_dict =  csr_metadata().get_metadata()
     if not csr_dict:
-        print "Can't get csr metadata!"
+        print("Can't get csr metadata!")
         return None
-    print "Done Loading"
-    for k, v in csr_dict.iteritems():
+    print("Done Loading")
+    for k, v in csr_dict.items():
         if k == 'psw_sch_qsch_cfg_extrabw_sp_queues_fp':
             pass
             #pdb.set_trace()
@@ -338,12 +338,12 @@ def csr_find_addr_metadata(caddr):
                 continue
             csr_index = address / csr_width_bytes
 
-            print json_obj_pretty({k:csr_data})
-            print ("csr: {0} anode_inst: {1} csr_inst: {2} csr_index:"
-                " {3}").format(k, anode_inst, csr_inst, csr_index)
+            print(json_obj_pretty({k:csr_data}))
+            print(("csr: {0} anode_inst: {1} csr_inst: {2} csr_index:"
+                " {3}").format(k, anode_inst, csr_inst, csr_index))
             return ({k:csr_data, "anode_inst": anode_inst,
                     "csr_inst": csr_inst, "csr_index": csr_index})
-    print "Invalid address: {0}. No valid csr found!".format(hex(caddr))
+    print("Invalid address: {0}. No valid csr found!".format(hex(caddr)))
     return None
 
 # csr find handler for commandline interface.
@@ -368,7 +368,7 @@ def csr_find(args):
         if address and address > 0:
             csr_find_addr_metadata(address)
         else:
-            print "Invalid address!"
+            print("Invalid address!")
             return
     else:
         print('Invalid argument! args:{0}'.format(args))
@@ -376,7 +376,7 @@ def csr_find(args):
 
 def csr_metadata_dochub():
     url = 'http://dochub/doc/jenkins/master/funsdk/latest/Linux/csr-cfg.tgz'
-    file_tmp = urllib.urlretrieve(url, filename=None)[0]
+    file_tmp = urllib.request.urlretrieve(url, filename=None)[0]
     base_name = os.path.basename(url)
     file_name, file_extension = os.path.splitext(base_name)
     tar = tarfile.open(file_tmp)
@@ -391,20 +391,20 @@ def csr_load_metadata(args):
     if args.default:
         status = csr_metadata().load_metadata_from_dochub()
         if not status:
-            print 'Failed to load metadata from dochub!'
+            print('Failed to load metadata from dochub!')
             return
     elif args.sdk_root_dir:
         sdk_root_dir = args.sdk_root_dir[0]
         sdk_root_dir = os.path.abspath(sdk_root_dir)
         if not os.path.exists(sdk_root_dir):
-            print  'SDK root dir: "{}": does not exist!'.format(sdk_root_dir)
+            print('SDK root dir: "{}": does not exist!'.format(sdk_root_dir))
             return
         status = csr_metadata().load_metadata_from_sdk(sdk_root_dir)
         if not status:
-            print 'Failed to load metadata from sdk dir: {}!'.format(sdk_root_dir)
+            print('Failed to load metadata from sdk dir: {}!'.format(sdk_root_dir))
             return
     else:
-        print "Invalid metadta arguments!"
+        print("Invalid metadta arguments!")
         return
     return
 
@@ -683,14 +683,14 @@ def csr_replay_config(csr_replay_input_file, srec_file = None):
     if not os.path.isabs(csr_replay_input_file):
         csr_replay_input_file = os.path.join(os.getcwd(), csr_replay_input_file)
     if not os.path.isfile(csr_replay_input_file):
-        print 'Path: "{0}" is not a regular file!'.format(csr_replay_input_file)
+        print('Path: "{0}" is not a regular file!'.format(csr_replay_input_file))
         return
 
     if srec_file:
         if not os.path.isabs(srec_file):
             srec_file = os.path.join(os.getcwd(), srec_file)
         if not os.path.isfile(srec_file):
-            print 'Path: "{0}" is not a regular file!'.format(srec_file)
+            print('Path: "{0}" is not a regular file!'.format(srec_file))
             return
 
     csr_replay_data = list()
@@ -731,12 +731,12 @@ def csr_replay_config(csr_replay_input_file, srec_file = None):
                 csr_address = csr_tokens[2]
                 csr_width = csr_tokens[3]
                 if not csr_width:
-                    print 'Invalid csr width in input data: "{0}"'.format(line)
+                    print('Invalid csr width in input data: "{0}"'.format(line))
                     return
                 csr_width_words = (csr_width + 63) / 64
                 csr_val_words = csr_tokens[4:]
                 if csr_width_words != len(csr_val_words):
-                    print 'Mismatch in csr width and value. "{0}"'.format(line)
+                    print('Mismatch in csr width and value. "{0}"'.format(line))
                     return
                 logger.debug('csr_address: {0} csr_width: {1}'
                         ' word_array:{2}'.format(csr_address,
@@ -807,7 +807,7 @@ def csr_replay_config(csr_replay_input_file, srec_file = None):
         print('Succesfully added {0} lines! to replay data.'.format(cnt))
         return csr_replay_data
     else:
-        print('No valid csrreplay data is found in {}').format(input_file)
+        print(('No valid csrreplay data is found in {}').format(input_file))
         return None
 
 # Dumps the json dict of all the csrs returned by csr_replay_config() into a file in the directory <dest_dir>
@@ -815,18 +815,18 @@ def csr_replay_config_to_file(input_file, dest_dir):
     if not os.path.isabs(input_file):
         input_file = os.path.join(os.getcwd(), input_file)
     if not os.path.isfile(input_file):
-        print 'Path: "{0}" is not a regular file!'.format(input_file)
+        print('Path: "{0}" is not a regular file!'.format(input_file))
         return
 
     if not os.path.isabs(dest_dir):
         dest_dir = os.path.join(os.getcwd(), dest_dir)
     if not os.path.exists(dest_dir):
-        print 'Path: "{0}" does not exist!'.format(dest_dir)
+        print('Path: "{0}" does not exist!'.format(dest_dir))
         return
 
     replay_config = csr_replay_config(input_file)
     if replay_config is None:
-        print('No valid csrreplay data is found in {}.').format(input_file)
+        print(('No valid csrreplay data is found in {}.').format(input_file))
         return False
 
     csr_replay_data = list()
@@ -871,14 +871,14 @@ def csr_replay(args):
     if not os.path.isabs(input_file):
         input_file = os.path.join(os.getcwd(), input_file)
     if not os.path.isfile(input_file):
-        print 'Path: "{0}" is not a regular file!'.format(input_file)
+        print('Path: "{0}" is not a regular file!'.format(input_file))
         return
 
     srec_file = args.image[0]
     if not os.path.isabs(srec_file):
         srec_file = os.path.join(os.getcwd(), srec_file)
     if not os.path.isfile(srec_file):
-        print 'Path: "{0}" is not a regular file!'.format(srec_file)
+        print('Path: "{0}" is not a regular file!'.format(srec_file))
         return
 
     chip_inst = int(args.chip_inst[0], 10) if args.chip_inst else None
@@ -886,7 +886,7 @@ def csr_replay(args):
 
     replay_config = csr_replay_config(input_file)
     if replay_config is None:
-        print('No valid csrreplay data is found in {}').format(input_file)
+        print(('No valid csrreplay data is found in {}').format(input_file))
         return False
 
     cnt = 0
@@ -1209,7 +1209,7 @@ def csr_get_addr(csr_data, anode_inst=None, csr_inst=None, csr_entry=None):
         print(("csr exists in multiple instances of anode: {}."
                " Give appropriate anode option!"
                " valid anode instances: {}").format(an_name,
-                                            range(0,anode_inst_cnt)))
+                                            list(range(0,anode_inst_cnt))))
         return
 
     if (anode_inst is not None) and (anode_inst < 0 or anode_inst >= anode_inst_cnt):
@@ -1217,7 +1217,7 @@ def csr_get_addr(csr_data, anode_inst=None, csr_inst=None, csr_entry=None):
         print(("Invalid anode instance for csr: anode: {}."
             "\nGive appropriate anode details!"
             " Valid anode instances: {}").format(an_name,
-                                    range(0,anode_inst_cnt)))
+                                    list(range(0,anode_inst_cnt))))
         return
 
     csr_inst_cnt = csr_data.get("csr_count", None)
@@ -1228,8 +1228,8 @@ def csr_get_addr(csr_data, anode_inst=None, csr_inst=None, csr_entry=None):
     if csr_inst_cnt > 1:
         if csr_inst is None:
             print("csr objs:\n{}\n".format(json.dumps(csr_data, indent=4)))
-            print(("There are {} instances of csr."
-                   "\nProvide csr instance number!".format(csr_inst_cnt)))
+            print("There are {} instances of csr."
+                   "\nProvide csr instance number!".format(csr_inst_cnt))
             return
         if csr_inst < 0 or csr_inst >= csr_inst_cnt:
             print("csr objs:\n{}\n".format(json.dumps(csr_data, indent=4)))
@@ -1255,9 +1255,9 @@ def csr_get_addr(csr_data, anode_inst=None, csr_inst=None, csr_entry=None):
         logger.debug("csr entry index: {} csr_n_entries: {}".format(csr_entry, csr_n_entries))
         if csr_entry < 0 or csr_entry >= csr_n_entries:
             print("csr objs:\n{}\n".format(json.dumps(csr_data, indent=4)))
-            print(("Invalid entry index of csr!"
+            print("Invalid entry index of csr!"
                    "\nProvide csr entry index in the"
-                   " range of [0 - {}]!".format(csr_n_entries - 1)))
+                   " range of [0 - {}]!".format(csr_n_entries - 1))
             return
 
     if csr_n_entries == 1 and csr_entry is not None:
@@ -1578,7 +1578,7 @@ def csr_show(csr_data, word_array, field_list=None):
         if field_list:
             field_list.remove(fld_name)
     if field_list:
-        field_list_valid = csr_get_valid_field_list(csr_data).keys()
+        field_list_valid = list(csr_get_valid_field_list(csr_data).keys())
         print(("Skipped invalid fields:"
               " {0}\nvalid fields: {1}").format(field_list, field_list_valid))
 
@@ -1669,7 +1669,7 @@ def csr_get_metadata(csr_name, ring_name=None, ring_inst=None, anode_name=None, 
 
         csr_list = csr_metadata().get_csr_def(csr_name = csr_name, rn_class=ring_name)
         if ring_name is None:
-            ring_name = rings.keys()[0]
+            ring_name = list(rings.keys())[0]
         ring_inst_list = rings.get(ring_name, None)
 
         if ring_inst_list is None:
@@ -1734,7 +1734,7 @@ def csr_get_metadata(csr_name, ring_name=None, ring_inst=None, anode_name=None, 
             return
         anodes_list = anodes.get(anode_name, None)
     else:
-        anode_names = anodes.keys()
+        anode_names = list(anodes.keys())
         if len(anode_names) != 1:
             print(("Inconsistant csr metadata parsing. anode_names: {}"
                     " There should be one anode name!").format(anode_names))
@@ -1758,7 +1758,7 @@ def csr_get_metadata(csr_name, ring_name=None, ring_inst=None, anode_name=None, 
                    " valid an_paths: {}").format(csr_name, anodes_list))
             return
 
-    anode_paths = anodes_list.keys()
+    anode_paths = list(anodes_list.keys())
     if not len(anode_paths) > 0:
         print("Inconsistant csr metadata parsing."
                 " There should be atleast one an_path!")
@@ -1810,7 +1810,7 @@ class csr_metadata:
 
     def _load_metadata_file(self, metadata_file):
         if not os.path.exists(metadata_file):
-            print "Failed to find matadata file: {}".format(metadata_file)
+            print("Failed to find matadata file: {}".format(metadata_file))
             return False
         print("Loading csr metadata: {0}".format(metadata_file))
         self.metadata = json.load(open(metadata_file))
@@ -1826,7 +1826,7 @@ class csr_metadata:
                   'Make sure that "dochub.fungible.local" accessable.')
             return None
         if not os.path.exists(metadata_file):
-            print "Failed to find matadata file: {} after download!".format(metadata_file)
+            print("Failed to find matadata file: {} after download!".format(metadata_file))
             return None
         return metadata_file
 
@@ -1836,7 +1836,7 @@ class csr_metadata:
              print('Failed to download csr metadata!')
              return False
         if not os.path.exists(metadata_file):
-            print "Failed to find matadata file: {} after download!".format(metadata_file)
+            print("Failed to find matadata file: {} after download!".format(metadata_file))
             return None
         status = self._load_metadata_file(metadata_file)
         tmp_dir_path =  os.path.join('/', *(metadata_file.split(os.path.sep)[:3]))
@@ -1852,11 +1852,11 @@ class csr_metadata:
         metadata_file = os.path.join(sdk_root, constants.CSR_CFG_DIR,
                 constants.CSR_METADATA_FILE)
         if not os.path.exists(metadata_file):
-            print "Failed to find matadata file: {}".format(metadata_file)
+            print("Failed to find matadata file: {}".format(metadata_file))
             return None
         status = self._load_metadata_file(metadata_file)
         if not status:
-            print "Failed to load matadata file: {}".format(metadata_file)
+            print("Failed to load matadata file: {}".format(metadata_file))
             return False
         return True
 

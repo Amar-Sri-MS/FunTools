@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 # This file defines the base JTAG methods to initialize, read and write data to and from 
 # JTAG transport.
@@ -241,7 +241,7 @@ def csr_peek_poke_test():
     local_csr_probe('sp55e', '10.1.20.115')
 
     print('\n************POKE MIO SCRATCHPAD ***************')
-    print (local_csr_poke(0x1d00e170, [0xabcd112299885566]))
+    print(local_csr_poke(0x1d00e170, [0xabcd112299885566]))
     print('\n************PEEK MIO SCRATCHPAD ***************')
     word_array = local_csr_peek(0x1d00e170, 1)
     #word_array = local_csr_peek(0x1d00e160, 1)

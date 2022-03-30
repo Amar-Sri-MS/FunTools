@@ -1,7 +1,7 @@
 import logging
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 from scapy.all import *
-from sbp_helpers import *
+from .sbp_helpers import *
 
 class Remains(Packet):
     fields_desc = [HexDumpStrField("payload", None)]

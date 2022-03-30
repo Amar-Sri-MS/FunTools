@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 # This module generates the default dictionary which contains blocks of
 # parameters/values. Each of these blocks can then be used by SKU files as
@@ -83,7 +83,7 @@ class DefaultCfgGen():
         """Only expand and add keys prefixed with "DEFAULT_" to the default
         dictionary.
         """
-        for def_key, val in def_json.items():
+        for def_key, val in list(def_json.items()):
             # Only process keys prefixed with "DEFAULT_"
             if 'DEFAULT_' in def_key:
                 # Build the entry.
@@ -125,7 +125,7 @@ class DefaultCfgGen():
         in entry is a dictionary, and the corresponding value in cfg_json is
         also a dictionary, then merge them in place.
         """
-        for key, val_json in cfg_json.items():
+        for key, val_json in list(cfg_json.items()):
             val_entry = entry.get(key)
             if (isinstance(val_entry, collections.Mapping) and
                  isinstance(val_json, collections.Mapping)):

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 import os
 import json
 import math
@@ -39,7 +39,7 @@ class bpf:
     return bid
 
   def __exit__(self, exc_type, exc_value, traceback):
-    for bid in self.attached_hooks.keys():
+    for bid in list(self.attached_hooks.keys()):
       result = self.client.execute('ebpf', ['detach', {'bid': bid}])
       if result != 'Ok':
         raise Exception(json.dumps(result))
@@ -85,12 +85,12 @@ class bpf:
   def map_dump(self, bid, map_idx):
     key = self.map_first(bid, map_idx)
     if key is None:
-      print 'Map is empty'
+      print('Map is empty')
       return
 
     while True:
       value = self.map_get(bid, map_idx, key)
-      print json.dumps(key) + ' => ' + json.dumps(value)
+      print(json.dumps(key) + ' => ' + json.dumps(value))
       key = self.map_next(bid, map_idx, key)
       if key is None:
         break
@@ -123,6 +123,6 @@ class bpf:
       result = self.client.execute('ebpf', ['trace', {'position': self.position}])
       if ('trace' not in result) or ('position' not in result):
         raise Exception(json.dumps(result))
-      print result['trace']
+      print(result['trace'])
       self.position = int(result['position'])
       time.sleep(1)

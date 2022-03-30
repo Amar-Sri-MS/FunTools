@@ -1,16 +1,16 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 import os
 import logging
 import traceback
 from array import array
-from i2cclient import *
-from pcieclient import *
-from bmcclient import *
+from .i2cclient import *
+from .pcieclient import *
+from .bmcclient import *
 from sys import platform as _platform
 if _platform == "linux" or _platform == "linux2":
-    from jtagclient import *
+    from .jtagclient import *
 
-from i2cutils import constants
+from .i2cutils import constants
 
 logger = logging.getLogger("dbgclient")
 logger.setLevel(logging.INFO)

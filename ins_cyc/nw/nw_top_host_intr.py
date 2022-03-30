@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 import sys
 import subprocess
@@ -23,7 +23,7 @@ def intr_info(pat):
   for line in data:
     line = line.strip().split()
     intr_id = line[0].split(':')[0]
-    intr_count_list = map(int, line[1:num_cpu+1])
+    intr_count_list = list(map(int, line[1:num_cpu+1]))
     other = line[num_cpu + 1:]
     if other:
       intr_name = other[-1]
@@ -36,14 +36,14 @@ def intr_info(pat):
 
 def intr_info_delta(res1, res2):
   res = []
-  for (k, v1) in res1.iteritems():
+  for (k, v1) in res1.items():
     v2 = res2.get(k, None)
     if not v2:
       continue
     v = list(v2)
     delta_count_list = []
     for i in range(len(v[2])):
-      count_delta = long(v2[2][i]) - long(v1[2][i])
+      count_delta = int(v2[2][i]) - int(v1[2][i])
       delta_count_list.append(count_delta)
     delta_count = max(delta_count_list)
     intr_cpu = delta_count_list.index(delta_count)

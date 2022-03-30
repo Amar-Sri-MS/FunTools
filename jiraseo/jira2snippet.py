@@ -115,7 +115,7 @@ issues = jira.search_issues(sq)
 print("Created issues (%d)" % len(issues))
 for issue in issues:
     pri(issue)
-print
+print()
 
 sys.stdout.flush()
 
@@ -131,7 +131,7 @@ issues = jira.search_issues(sq)
 print("Resolved issues (%d)" % len(issues))
 for issue in issues:
     pri(issue)
-print
+print()
 
 sys.stdout.flush()
 
