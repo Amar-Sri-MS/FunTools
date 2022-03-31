@@ -27,7 +27,7 @@ gdb_url="http://ftpmirror.gnu.org/gdb/${gdb_archive}"
 
 # Fix-Python for gdb-9.2 only.
 #gdb_patches=0001-Fix-Python3.9-related-runtime-problems.patch
-gdb_patches=fungible-enable-tls.patch
+gdb_patches=fungible-enable-tls.patch fungible-enable-core.patch
 
 if [ $(uname) = 'Linux' ] ; then
     host_binutils_config=--with-static-standard-libraries
