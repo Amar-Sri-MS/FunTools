@@ -93,24 +93,32 @@ typedef struct {
 	uint8_t reason;
 } mctp_unsupported_resp_t;
 
-typedef struct {
+typedef struct __attribute__((packed)) {
 	uint8_t reason;
 	uint8_t status;
 	uint8_t eid;
 	uint8_t pool_size;
 } mctp_set_eid_resp_t;
 
-typedef struct {
+typedef struct __attribute__((packed)) {
 	uint8_t reason;
 	uint8_t eid;
 	uint8_t eid_type;
 	uint8_t data;
 } mctp_get_eid_resp_t;
 
-typedef struct {
+typedef struct __attribute__((packed)) {
 	uint8_t reason;
 	uint8_t udid[16];
 } mctp_get_udid_resp_t;
+
+typedef struct __attribute__((packed)) {
+	uint8_t reason;
+} mctp_discovery_prep_resp_t;
+
+typedef struct __attribute__((packed)) {
+	uint8_t reason;
+} mctp_discover_resp_t;
 
 #define MCTP_MSG_TYPE_NOT_SUPPORTED	0x80
 

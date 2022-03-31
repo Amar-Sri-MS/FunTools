@@ -17,6 +17,8 @@ static mctp_stats_t mctp_sts;
 #define MCTP_HDR_SIZE(ep)		(sizeof(mctp_hdr_stct) + ((ep->flags & MCTP_COMPLETE) ? 1 : 0))
 #define MCTP_SUPPORT_TYPE(ep, n)	((ep)->retain->support & (n))
 
+static uint32_t discovered = 0;
+
 /* mctp set eid command */
 static int mctp_cmd_eid_set(uint8_t *buf, mctp_ctrl_hdr_t *hdr, mctp_endpoint_stct *ep)
 {
@@ -206,6 +208,28 @@ static int mctp_cmd_unsupported(uint8_t *buf, mctp_ctrl_hdr_t *hdr, mctp_endpoin
 	return sizeof(mctp_unsupported_resp_t);
 }
 
+/* mctp prepare for discovery command */
+static int mctp_cmd_prepare_for_discover(uint8_t *buf, mctp_ctrl_hdr_t *hdr, mctp_endpoint_stct *ep)
+{
+	mctp_discovery_prep_resp_t *rspn = (mctp_discovery_prep_resp_t *)buf;
+
+	discovered = 0;
+	rspn->reason = MCTP_RESP_SUCCESS;
+
+	return sizeof(mctp_discovery_prep_resp_t);
+}
+
+/* mctp discovery command */
+static int mctp_cmd_discover(uint8_t *buf, mctp_ctrl_hdr_t *hdr, mctp_endpoint_stct *ep)
+{
+	mctp_discover_resp_t *rspn = (mctp_discover_resp_t *)buf;
+
+	discovered = 1;
+	rspn->reason = MCTP_RESP_SUCCESS;
+
+	return sizeof(mctp_discover_resp_t);
+}
+
 /* mctp controll message handler */
 static int mctp_control_handler(mctp_endpoint_stct *ep)
 {
@@ -239,6 +263,19 @@ static int mctp_control_handler(mctp_endpoint_stct *ep)
 		rc = mctp_cmd_vdm_get(rspn->data, hdr, ep);
 		break;
 #endif
+
+	case MCTP_CMD_PRE_EP_DISC:
+		if (!discovered)
+			return 0;
+
+		rc = mctp_cmd_prepare_for_discover(rspn->data, hdr, ep);
+		break;
+
+	case MCTP_CMD_EP_DISC:
+		if (discovered)
+			return 0;
+		rc = mctp_cmd_discover(rspn->data, hdr, ep);
+		break;
 
 	default:
 		rc = mctp_cmd_unsupported(rspn->data, hdr, ep);
@@ -394,9 +431,11 @@ int mctp_recieve(mctp_endpoint_stct *ep)
 	buf += sizeof(mctp_hdr_stct);
 	len -= sizeof(mctp_hdr_stct);
 
-	if (hdr->dst_eid && (hdr->dst_eid != retain->eid)) {
-		mctp_err("dest eid doesn't match (%x %x)\n", hdr->dst_eid, retain->eid);
-		return ERR_BAD_SEID;
+	if (hdr->dst_eid != MCTP_EID_BROADCAST) {
+		if (hdr->dst_eid && (hdr->dst_eid != retain->eid)) {
+			mctp_err("dest eid doesn't match (%x %x)\n", hdr->dst_eid, retain->eid);
+			return ERR_BAD_SEID;
+		}
 	}
 
 	/* Start new packet, ignore previous incomplete ones */
