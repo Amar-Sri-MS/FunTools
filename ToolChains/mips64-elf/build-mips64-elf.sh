@@ -27,7 +27,7 @@ gdb_url="http://ftpmirror.gnu.org/gdb/${gdb_archive}"
 
 # Fix-Python for gdb-9.2 only.
 #gdb_patches=0001-Fix-Python3.9-related-runtime-problems.patch
-gdb_patches=fungible-enable-tls.patch fungible-enable-core.patch
+gdb_patches=(fungible-enable-tls.patch fungible-enable-core.patch)
 
 if [ $(uname) = 'Linux' ] ; then
     host_binutils_config=--with-static-standard-libraries
@@ -110,7 +110,7 @@ popd
 tar Jxf $gdb_archive
 
 pushd ${gdb_version}
-for gdb_patch in $gdb_patches ; do
+for gdb_patch in ${gdb_patches[@]} ; do
     patch -p1 < ../../$gdb_patch
 done
 popd
