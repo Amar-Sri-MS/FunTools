@@ -440,14 +440,11 @@ def main() -> int:
     # Get address and offset of a bunch of things.
     (fv_gbl_ctx, vcpus_offset, guest_gpr_offset, epc_offset, status_offset, fv_region_start) = get_reg_offsets(args.gdb, args.funos)
 
-    # Open and wrap in ELFFile the HBM dump and output core file.
+    # Open and wrap in ELFFile the HBM dump.
     hbm_file = open(args.hbm, 'rb')
-    core_file = open(args.core, 'wb')
-
     hbm: ELFFile = ELFFile(hbm_file)
-    core: ELFFile = ELFFile(core_file, True)
 
-    # Why not see which Program Headers are present in the HBM dump.
+    # Why not see which Program Headers are present in the HBM dump?
     hbm.print_phdrs()
 
     # Get the array of vcpu pointers from the HBM dump
@@ -504,26 +501,30 @@ def main() -> int:
     kseg0_size  = 0x0000000020000000
 
     fv_phdr = hbm.find_load_phdr(funvisor_address)
-    if fv_phdr:
-        # Copy over the "funvisor" memory region to the new core file
-        (blob_pos, blob_size) = hbm.write_phdr(fv_phdr, core)
-        # Program Header for xkphys view of memory.
-        blob_ph = Phdr(Phdr.PT_LOAD, Phdr.PF_R | Phdr.PF_W | Phdr.PF_X, blob_pos, xkphys_base, 0, blob_size, blob_size, 0)
-        core.add_phdr(blob_ph)
-        # Program Header for KSEG0 view of memory.
-        kseg0_view_size = min(blob_size, kseg0_size)
-        kseg0_ph = Phdr(Phdr.PT_LOAD, Phdr.PF_R | Phdr.PF_W | Phdr.PF_X, blob_pos, kseg0_base, 0, kseg0_view_size, kseg0_view_size, 0)
-        core.add_phdr(kseg0_ph)
-
-        # NOTE Program Header and contents.
-        (note_pos, note_size) = core.write_bytes(elf_notes)
-        note_ph = Phdr(Phdr.PT_NOTE, 0, note_pos, 0, 0, note_size, 0, 0)
-        core.add_phdr(note_ph)
-        core.emit_headers()
-        core.close()
-        # Done!
-    else:
+    if fv_phdr is None:
         print("No FunVisor region found")
+        return 1
+
+    core_file = open(args.core, 'wb')
+    core: ELFFile = ELFFile(core_file, True)
+
+    # Copy over the "funvisor" memory region to the new core file
+    (blob_pos, blob_size) = hbm.write_phdr(fv_phdr, core)
+    # Program Header for xkphys view of memory.
+    blob_ph = Phdr(Phdr.PT_LOAD, Phdr.PF_R | Phdr.PF_W | Phdr.PF_X, blob_pos, xkphys_base, 0, blob_size, blob_size, 0)
+    core.add_phdr(blob_ph)
+    # Program Header for KSEG0 view of memory.
+    kseg0_view_size = min(blob_size, kseg0_size)
+    kseg0_ph = Phdr(Phdr.PT_LOAD, Phdr.PF_R | Phdr.PF_W | Phdr.PF_X, blob_pos, kseg0_base, 0, kseg0_view_size, kseg0_view_size, 0)
+    core.add_phdr(kseg0_ph)
+
+    # NOTE Program Header and contents.
+    (note_pos, note_size) = core.write_bytes(elf_notes)
+    note_ph = Phdr(Phdr.PT_NOTE, 0, note_pos, 0, 0, note_size, 0, 0)
+    core.add_phdr(note_ph)
+    core.emit_headers()
+    core.close()
+    # Done!
 
     return 0
 
