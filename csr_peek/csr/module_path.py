@@ -11,8 +11,8 @@ class module_locator():
 
     def module_path(self):
        if self.is_frozen:
-           return os.path.dirname(sys.executable.decode(self.encoding))
-       return os.path.dirname(__file__.decode(self.encoding))
+           return os.path.dirname(sys.executable)
+       return os.path.dirname(__file__)
 
     def curr_path(self):
        return os.environ.get('OLDPWD')
