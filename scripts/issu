@@ -1,0 +1,77 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+tail(1)-like command to stream logs off FunOS
+
+static check:
+% mypy funtail
+"""
+import os
+import sys
+import argparse
+import time
+import json
+
+## add some default locations to find dpc_client
+OSNAME = os.uname()[0]
+SCRIPTDIR = os.path.dirname(sys.argv[0])
+SDKDIR = os.environ.get("SDKDIR",
+                        os.environ.get("WORKSPACE",
+                                       SCRIPTDIR + "/../..") + "/FunSDK")
+sys.path.append(os.path.join(SCRIPTDIR, "../dcpsh"))
+sys.path.append(os.path.join(SDKDIR, "bin", OSNAME))
+sys.path.append("/usr/bin") ## demo rootfs
+
+import dpc_client
+
+###
+##  main
+#
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+ 
+    # dpc host / socket name
+    parser.add_argument("-a", "--dpcaddress", help="dpc proxy hostname")
+  
+    # dpc TCP port
+    parser.add_argument("-D", "--dpcport", action="store", type=int)
+
+    # Required positional argument
+    parser.add_argument("elf", help="FunOS binary to upgrade to")
+	 
+    # use a unix socket
+    parser.add_argument("-u", "--unix", action="store_true", default=False)
+
+    args: argparse.Namespace = parser.parse_args()
+    return args
+  
+def main() -> int:
+    args: argparse.Namespace = parse_args()
+
+     # work out the args
+    if (args.unix):
+        addr = args.dpcaddress
+    elif (args.dpcaddress is not None):
+        addr = (args.dpcaddress, args.dpcport)
+    else:
+        raise RuntimeError("unspecified dpc connection")
+
+    # construct the dpc client
+    conn = dpc_client.DpcClient(legacy_ok=False,
+                                unix_sock = args.unix,
+                                server_address = addr)
+
+    print("Creating a BLOB from file (takes a few minutes) ...")
+    uuid = conn.execute('blob', ['store', ['quote', conn.blob_from_file(args.elf)]])
+    print("UUID ", uuid)
+
+    result = conn.execute('issu', ['loadelf', uuid])
+    print("result ", result)
+    return 0
+ 
+###
+## entrypoint
+#
+if __name__ == "__main__":
+    main()
