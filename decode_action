@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 """
 This script is for decoding a WU action value. At the moment it only really
@@ -27,7 +27,7 @@ benturrubiates at vodex (venv) :: echo "0x822fcbf000c40fbe\n0x820ecd1010e60fc4" 
   dest FA6:17:1
 """
 
-from __future__ import print_function
+
 from future_builtins import hex
 import argparse
 import sys
