@@ -617,7 +617,7 @@ cd $root_dir
 tar zcvf $tarball_name FunSDK FunOSPackageDemo $readme_file
 
 # Build the bundle name without the build ID
-bundle_name="dev_signed_${chip}_setup_bundle.sh"
+bundle_name="dev_signed_setup_bundle_${chip}_qa.sh"
 cust_bundle="dev_signed_setup_bundle_${chip}-rootfs-ro.squashfs-v$build_id.sh"
 
 # Download accompanying ${chip} bundle
