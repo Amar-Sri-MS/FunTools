@@ -286,10 +286,10 @@
                 autoProcessQueue: false,
                 processingmultiple: false,
                 uploadMultiple: false,
-                maxFilesize: 1024 * 10, // 10GB
+                maxFilesize: 1024 * 2, // 2GB
                 maxFiles: 1,
                 addRemoveLinks: true,
-                chunkSize: 1000000 // (in bytes) => 1MB
+                chunkSize: 2 * 1024 * 1024 // (in bytes) => 2MB
             });
 
             dropzone.on("addedfile", file => {
@@ -311,6 +311,8 @@
 
             dropzone.on("error", (file, error) => {
                 alert(`UPLOAD FAILED: ${error}`);
+                if (error.includes("File is too big")) return;
+                dropzone.removeFile(file);
             });
 
             // Delete the uploaded files on the server
