@@ -164,6 +164,12 @@ Running sample Lookup Table (Engine) example
 cd FunOSPackageDemo
 ./build/funospkg-${chip}-posix app=lookup_table_example
 
+Running sample Networking examples
+===============================================
+
+cd FunOSPackageDemo
+./build/funospkg-${chip}-posix app=sdn_flow_mgr_basic
+
 
 Signing server
 ==============
@@ -533,6 +539,13 @@ run_posix()
 	echo ""
 	exit 1
     fi
+
+    if ! ./build/funospkg-${chip}-posix app=sdn_flow_mgr_basic; then
+    echo ""
+    echo "${chip}-posix SDN flow manager example fails to run to completion"
+    echo ""
+    exit 1
+    fi
 }
 
 # Clean the FunOSPackageDemo
@@ -548,7 +561,7 @@ funos_package_demo_clean()
 build_id="latest"
 
 # Parse the options
-while getopts "hb:f:v:r:c:" option; do
+while getopts "hb:f:v:r:c:p:" option; do
     case "$option" in
 	h)
 	    show_usage
