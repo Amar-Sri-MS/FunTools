@@ -8,6 +8,9 @@
 #include "pcieproxy.h"
 #include "endian.h"
 
+/* csr ring from address */
+#define CSR_RING(a)            (((a) & CCU_RING_MSK) >> CCU_RING_SHF)
+
 /*
  * Decode a CCU Indirect CSR Access Command.
  */
@@ -80,7 +83,7 @@ csr_wide_read(struct ccu_info_t *ccu_info,
 	int reg_idx;
 
 	size64 = SIZE64(size);
-	ring_sel = ((addr >> CCU_RING_SHF) & CCU_RING_MSK);
+	ring_sel = CSR_RING(addr);
 	cmd = CCU_CMD(CCU_CMD_TYPE_RD_T, size64, ring_sel,
 			CCU_CMD_INIT_DIS, data, addr);
 
@@ -117,7 +120,7 @@ csr_wide_write(struct ccu_info_t *ccu_info,
 	int reg_idx;
 
 	size64 = SIZE64(size);
-	ring_sel = ((addr >> CCU_RING_SHF) & CCU_RING_MSK);
+	ring_sel = CSR_RING(addr);
 	cmd = CCU_CMD(CCU_CMD_TYPE_WR_T, size64, ring_sel,
 			CCU_CMD_INIT_DIS, data, addr);
 
