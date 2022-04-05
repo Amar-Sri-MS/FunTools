@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include "auto_conf.h"
 
-#define smbus_err(fmt, arg...)  log_n_print("SMBUS: ERROR - "fmt, ##arg)
+#define smbus_err(fmt, arg...)  log("SMBUS: ERROR - "fmt, ##arg)
 
 #define SMBUS_SLAVE_ADDR	0x1a
 

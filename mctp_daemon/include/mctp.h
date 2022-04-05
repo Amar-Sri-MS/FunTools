@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include "auto_conf.h"
 
-#define mctp_err(fmt, arg...)          log_n_print("MCTP: ERROR - "fmt, ##arg)
+#define mctp_err(fmt, arg...)          log("MCTP: ERROR - "fmt, ##arg)
 
 #ifdef CONFIG_MCTP_DEBUG
 #define mctp_dbg(fmt, arg...)          printf("%s: "fmt,__func__, ##arg)
