@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include "auto_conf.h"
 
-#define pldm_err(fmt, arg...)          log_n_print("pldm error: "fmt, ##arg)
+#define pldm_err(fmt, arg...)          log("pldm error: "fmt, ##arg)
 
 #ifdef CONFIG_PLDM_DEBUG
 #define pldm_dbg(fmt, arg...)          log_n_print("%s: "fmt, __func__, ##arg)
