@@ -48,7 +48,8 @@ QA_JOB_INFO_ENDPOINT = f'{QA_REGRESSION_BASE_ENDPOINT}/suite_executions'
 QA_LOGS_ENDPOINT = f'{QA_REGRESSION_BASE_ENDPOINT}/test_case_time_series'
 QA_SUITE_ENDPOINT = f'{QA_REGRESSION_BASE_ENDPOINT}/suites'
 QA_STATIC_ENDPOINT = 'http://integration.fungible.local/static/logs'
-UPLOAD_MAX_FILESIZE = 2147483648
+# Max upload size for the techsupport archive - 2GB
+UPLOAD_MAX_FILESIZE = 2 * 1024 * 1024 * 1024
 
 
 def main():
