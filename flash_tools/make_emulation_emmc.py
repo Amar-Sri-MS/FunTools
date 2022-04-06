@@ -121,15 +121,18 @@ def merge_file(infile_name, outfile_name):
                     break
 
 
-def gen_hex_file(infile_name, outfile_name, append, width):
-    mode = 'ab' if append else 'wb'
-    cmd = ['hexdump',
-           '-v',
-           '-e', '{}/1 "%02X"'.format(width),
-           '-e', '"\n"']
+def gen_hex_file(infile_name, outfile_name, append, width, reverse):
+    mode = 'a' if append else 'w'
     with open(outfile_name, mode) as outfile:
         with open(infile_name, 'rb') as infile:
-            subprocess.call(cmd, stdin=infile, stdout=outfile)
+            while True:
+                data = infile.read(width)
+                if data:
+                    if reverse:
+                        data = bytes(reversed(data))
+                    outfile.write(data.hex().upper() + '\n')
+                else:
+                    break
 
 
 def crc32(filename):
@@ -297,6 +300,10 @@ def run():
         type=int, default=32
     )
     parser.add_argument(
+        '--hex-reverse', help='Hex output should have bytes reversed in each output line',
+        action='store_true'
+    )
+    parser.add_argument(
         '--signed', help='Input images are signed', action='store_true')
     parser.add_argument(
         '--fsfile', help='File(s) to put in the filesystem', action='append')
@@ -351,7 +358,7 @@ def run():
 
     if g.hex:
         for f in enumerate(files):
-            gen_hex_file(f[1], outfile_hex, bool(f[0]), g.hex_width)
+            gen_hex_file(f[1], outfile_hex, bool(f[0]), g.hex_width, g.hex_reverse)
 
     output_descr = {
         'emmc_image.bin' : { 'description':'complete eMMC image', 'no_bundle':True },
