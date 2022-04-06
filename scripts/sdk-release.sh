@@ -29,6 +29,7 @@ show_usage()
     echo "  -h:                 Display this information."
     echo "  -b <branch>         Specify the FunSDK branch to use"
     echo "  -f <branch>         Specify the FunOS branch to use"
+    echo "  -p <branch>         Specify the FunOSPackageDemo branch to use"
     echo "  -v <build_id>       Specify the FunSDK and FunOS build ID/version to use"
     echo "  -r <sdk-version>    Specify the release version to assign to the SDK"
     echo "  -c <chip>           Specify the target chip (f1/s1)"
@@ -162,6 +163,12 @@ Running sample Lookup Table (Engine) example
 
 cd FunOSPackageDemo
 ./build/funospkg-${chip}-posix app=lookup_table_example
+
+Running sample Networking examples
+===============================================
+
+cd FunOSPackageDemo
+./build/funospkg-${chip}-posix app=sdn_flow_mgr_basic
 
 
 Signing server
@@ -312,7 +319,7 @@ funos_package_demo_setup()
 {
     cd $root_dir
 
-    # There can't be a FunOS directory already present
+    # There can't be a FunOSPackageDemo directory already present
     if [ -d FunOSPackageDemo ]; then
 	echo ""
 	echo "Error: FunOSPackageDemo already present. Remove and try again"
@@ -320,11 +327,15 @@ funos_package_demo_setup()
 	exit 1
     fi
 
-    # Clone FunOSPackageDemo and checkout the tag bld_<build_id>
-    tag=bld_$build_id
-    git clone git@github.com:fungible-inc/FunOSPackageDemo.git
-    cd FunOSPackageDemo
-    git checkout tags/$tag
+    if [ "$branch_funos_packagedemo" == "" ]; then
+        # Clone FunOSPackageDemo and checkout the tag bld_<build_id>
+        tag=bld_$build_id
+        git clone git@github.com:fungible-inc/FunOSPackageDemo.git
+        cd FunOSPackageDemo
+        git checkout tags/$tag
+    else
+        git clone git@github.com:fungible-inc/FunOSPackageDemo.git -b $branch_funos_packagedemo --depth 1
+    fi
 
     # Remove unneeded files
     find . -name .git |xargs rm -rf
@@ -528,6 +539,13 @@ run_posix()
 	echo ""
 	exit 1
     fi
+
+    if ! ./build/funospkg-${chip}-posix app=sdn_flow_mgr_basic; then
+    echo ""
+    echo "${chip}-posix SDN flow manager example fails to run to completion"
+    echo ""
+    exit 1
+    fi
 }
 
 # Clean the FunOSPackageDemo
@@ -543,7 +561,7 @@ funos_package_demo_clean()
 build_id="latest"
 
 # Parse the options
-while getopts "hb:f:v:r:c:" option; do
+while getopts "hb:f:v:r:c:p:" option; do
     case "$option" in
 	h)
 	    show_usage
@@ -556,6 +574,9 @@ while getopts "hb:f:v:r:c:" option; do
 	f)
 	    branch_funos=$OPTARG
         build_funos="yes"
+	    ;;
+	p)
+	    branch_funos_packagedemo=$OPTARG
 	    ;;
 	v)
 	    build_id=$OPTARG
