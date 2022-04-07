@@ -10,6 +10,7 @@ import glob
 import json
 import logging
 import os
+import re
 import requests
 import sys
 import time
@@ -36,6 +37,28 @@ SOURCE_ALIASES = {
     'node-service': ['nms'],
     'sns': ['network-service', 'network_service']
 }
+
+# The manifest file can contain paths for non log files or
+# files which are not needed for debugging.
+# This is a list of paths to ignore during ingestion.
+BLACKLISTED_PATHS = [
+    # Ignore files (which are not logs) collected by the HA cluster.
+    '.*/configs_baremetal/.*',
+    '.*/containers/.*',
+    '.*/debug_errors/.*',
+    '.*/deployment/.*',
+    '.*/hw_info/.*',
+    '.*/inventory/.*',
+    '.*/kafka_metadata/.*',
+    '.*/kubedump/.*',
+
+    # Ignore checking logs from BMC till Log Analyzer supports it.
+    '.*/.*_chassis_log/.*',
+    # Systemstate files are not log files.
+    '.*/systemstate.*/.*',
+]
+BLACKLISTED_PATHS_REGEX = '(%s)' % '|'.join(BLACKLISTED_PATHS)
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -249,12 +272,19 @@ def parse_manifest(path, parent_frn={}, filters={}):
                     continue
 
             # Path to the content in the FRN
-            content_path = os.path.join(path, frn_info['prefix_path'], frn_info['sub_path'])
+            frn_path = os.path.join(frn_info['prefix_path'], frn_info['sub_path'])
+            content_path = os.path.join(path, frn_path)
 
             # The content path does not exist
             if not glob.glob(content_path):
                 logging.warning(f'Path does not exist: {content_path}')
                 continue
+
+            # Ignore if the path is blacklisted
+            if frn_path and frn_path != '':
+                if not _should_ingest_path(frn_path):
+                    logging.info(f'Skipping blacklisted path: {frn_path}.')
+                    continue
 
             # Extract archive and check for manifest file
             if frn_info['resource_type'] in ['archive', 'compressed', 'bundle']:
@@ -559,6 +589,14 @@ def _has_ingestion_filters(filters):
     source_filters = include.get('sources')
     if not source_filters or len(source_filters) == 0:
         return False
+
+
+def _should_ingest_path(path):
+    """
+    Returns True if the path needs to be ingested.
+    Returns False for the all the BLACKLISTED_PATHS.
+    """
+    return not re.match(BLACKLISTED_PATHS_REGEX, path)
 
 
 def _should_ingest_source(source, source_filters=[]):
