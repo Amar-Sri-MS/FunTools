@@ -3,6 +3,7 @@
 #
 
 import datetime
+import dateutil
 import json
 import logging
 import re
@@ -195,7 +196,7 @@ class GenericInput(Block):
 
         day_str = day_str.replace('-', '/')
         log_time = f"{day_str} {time_str}.{usecs_str}" if usecs_str else f"{day_str} {time_str}.0"
-        d = datetime.datetime.strptime(log_time, '%Y/%m/%d %H:%M:%S.%f')
+        d = dateutil.parser.parse(log_time)
 
         return d, d.microsecond
 
@@ -277,9 +278,8 @@ class KeyValueInput(Block):
 
         day_str = day_str.replace('-', '/')
         log_time = f"{day_str} {time_str}.{usecs_str}" if usecs_str else f"{day_str} {time_str}.0"
-        log_time_format = '%Y/%m/%d %H:%M:%S.%f'
 
-        d = datetime.datetime.strptime(log_time, log_time_format)
+        d = dateutil.parser.parse(log_time)
 
         # adding if timezone offset is present, converting to UTC
         # if tz_offset:
@@ -348,9 +348,8 @@ class JSONInput(Block):
 
         day_str = day_str.replace('-', '/')
         log_time = f"{day_str} {time_str}.{usecs_str}" if usecs_str else f"{day_str} {time_str}.0"
-        log_time_format = '%Y/%m/%d %H:%M:%S.%f'
 
-        d = datetime.datetime.strptime(log_time, log_time_format)
+        d = dateutil.parser.parse(log_time)
 
         # adding if timezone offset is present, converting to UTC
         # if tz_offset:
