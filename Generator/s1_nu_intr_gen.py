@@ -1,4 +1,4 @@
-#!/usr/bin/python2.7
+#!/usr/bin/python3
 #
 # python s1_nu_intr_gen.py <output dir> input_file.h
 # eg.
@@ -152,7 +152,7 @@ def main():
     if filename == args.inputs[0]:
       dst = filename
       continue
-    print "Processing file", filename, "output directory", dst
+    print("Processing file", filename, "output directory", dst)
     # extra filename -> output_base
     toklist = filename.split("/")
     #print "tklist ", toklist[-1]
