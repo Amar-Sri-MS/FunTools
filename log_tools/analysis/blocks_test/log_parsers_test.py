@@ -80,6 +80,16 @@ class GenericInputTest(unittest.TestCase):
                                               '%Y-%m-%d %H:%M:%S,%f')
         self.assertEqual(expected, timestamp)
 
+    def test_can_parse_different_format_timestamp(self):
+        """ check if the date and time strings are converted to datetime """
+        lines = ["25/03/2022 14:02:33 MCTP: ERROR - dest eid doesn't match (74 1)"]
+        output = process(self.block, lines_to_iterable(lines))
+
+        timestamp = msg_tuple_to_dict(output[0])['datetime']
+        expected = datetime.datetime.strptime('25/03/2022 14:02:33',
+                                              '%d/%m/%Y %H:%M:%S')
+        self.assertEqual(expected, timestamp)
+
     def test_can_read_go_msecs(self):
         """ go microservice style """
         lines = ['2020/08/05 03:37:00.607 INFO    restmq  waitForResponses']
