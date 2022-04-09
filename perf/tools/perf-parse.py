@@ -1,4 +1,5 @@
-#!/usr/bin/python2.7
+#!/usr/bin/python3
+
 import os
 import re
 import sys
@@ -78,7 +79,7 @@ def download_files(url):
         },
     }
 
-    for name, remote_paths in config_type_to_perfmon_list[config_type].items():
+    for name, remote_paths in config_type_to_perfmon_list[config_type].iteritems():
         local_path = local_job_dir + "/" + name
         errors = []
         for remote_path in remote_paths:

@@ -1,4 +1,3 @@
-#!/usr/bin/python2.7
 # htmlgen.py
 # HTMLGenerator takes a DocBuilder describing various machine data structures,
 # and generates documentation for these.
@@ -170,7 +169,10 @@ class HTMLGenerator:
     return out
 
   def VisitDocument(self, doc):
-    # Generates all the HTML to document the structures.
+    """Generates all the HTML to document the structures.
+
+    Returns bytes for contents.
+    """
     css = ("""
 .structTable {
     border: solid 1px black;

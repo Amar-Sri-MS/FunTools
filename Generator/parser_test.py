@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 # Unit tests for generator.py
 #
 # Robert Bowdidge, August 8, 2016.
@@ -48,21 +48,22 @@ class TestTypes(unittest.TestCase):
                      parser.ArrayTypeForName("uint32_t", 4).BaseName())
 
   def testCompare(self):
-    self.assertEqual(parser.TypeForName("uint32_t"),
-                     parser.TypeForName("uint32_t"))
-    self.assertEqual(parser.TypeForName("uint8_t"),
-                     parser.TypeForName("uint8_t"))
+    self.assertTrue(parser.TypeForName("uint32_t").IsSameType(
+        parser.TypeForName("uint32_t")))
 
-    self.assertNotEqual(parser.TypeForName("uint8_t"),
-                        parser.TypeForName("char"))
+    self.assertTrue(parser.TypeForName("uint8_t").IsSameType(
+        parser.TypeForName("uint8_t")))
 
-    self.assertEqual(parser.ArrayTypeForName("uint8_t", 4),
-                     parser.ArrayTypeForName("uint8_t", 4))
+    self.assertFalse(parser.TypeForName("uint8_t").IsSameType(
+                        parser.TypeForName("char")))
 
-    self.assertNotEqual(parser.ArrayTypeForName("char", 4),
-                        parser.ArrayTypeForName("uint16_t", 4))
-    self.assertNotEqual(parser.ArrayTypeForName("char", 4),
-                        parser.ArrayTypeForName("char", 8))
+    self.assertTrue(parser.ArrayTypeForName("uint8_t", 4).IsSameType(
+        parser.ArrayTypeForName("uint8_t", 4)))
+
+    self.assertFalse(parser.ArrayTypeForName("char", 4).IsSameType(
+        parser.ArrayTypeForName("uint16_t", 4)))
+    self.assertFalse(parser.ArrayTypeForName("char", 4).IsSameType(
+        parser.ArrayTypeForName("char", 8)))
 
 
 class PrintingTest(unittest.TestCase):
@@ -227,125 +228,6 @@ class DefaultTypeTest(unittest.TestCase):
 
     self.assertEqual('uint32_t',
                      parser.DefaultTypeForWidth(16, 4).ParameterTypeName())
-
-
-class YAMLParserTest(unittest.TestCase):
-  def testEnum(self):
-    input = """
----
-DESCRIPTION: ' Enums used in NU'
-ENUMLIST:
-  - DESCRIPTION: Ingress Stream Type Definition
-    ENUMS:
-      - DESCRIPTION: SF
-        NAME: SF
-        VALUE: 0
-      - DESCRIPTION: CX
-        NAME: CX
-        VALUE: 1
-      - DESCRIPTION: SX or DX
-        NAME: SX_DX
-        VALUE: 2
-      - DESCRIPTION: Reserved
-        NAME: RESV
-        VALUE: 3
-    NAME: nu_ig_stream_type_t
-    WIDTH: 2
-  - DESCRIPTION: Switch Type Definition
-    ENUMS:
-      - DESCRIPTION: SF
-        NAME: SF
-        VALUE: 0
-      - DESCRIPTION: SX
-        NAME: SX
-        VALUE: 1
-      - DESCRIPTION: DX
-        NAME: DX
-        VALUE: 2
-      - DESCRIPTION: DF
-        NAME: DF
-        VALUE: 3
-    NAME: nu_switch_type_t
-"""
-    temp_input = tempfile.NamedTemporaryFile()
-    temp_input.write(input)
-    temp_input.flush()
-    name = temp_input.name
-
-    yaml_parser = parser.YAMLParser()
-    yaml_parser.Parse(name)
-
-    document = yaml_parser.current_document
-
-    self.assertEqual(2, len(document.Enums()))
-    self.assertEqual(0, len(document.Structs()))
-
-    enum_a = document.Enums()[0]
-    self.assertEqual('nu_ig_stream_type_t', enum_a.name)
-    self.assertEqual(4, len(enum_a.variables))
-    self.assertEqual('SF', enum_a.variables[0].name)
-    self.assertEqual('RESV', enum_a.variables[3].name)
-    self.assertEqual(3, enum_a.last_value)
-
-    enum_b = document.Enums()[1]
-    self.assertEqual('nu_switch_type_t', enum_b.name)
-    self.assertEqual(4, len(enum_b.variables))
-    self.assertEqual('SX', enum_b.variables[1].name)
-    self.assertEqual('DX', enum_b.variables[2].name)
-    self.assertEqual(3, enum_b.last_value)
-
-    temp_input.close()
-
-  def testStruct(self):
-    input = """
----
-C_STRUCT: 1
-IS_STRUCT: 1
-LIST:
-  - DESCRIPTION: Foo
-    NAME: my_struct
-    SIGLIST:
-      - DESCRIPTION: field a
-        NAME: a
-        WIDTH: 8
-
-      - DESCRIPTION: field b
-        NAME: b
-        WIDTH: 32
-
-      - DESCRIPTION: field c
-        NAME: c
-        WIDTH: 24
-"""
-    temp_input = tempfile.NamedTemporaryFile()
-    temp_input.write(input)
-    temp_input.flush()
-    name = temp_input.name
-
-    yaml_parser = parser.YAMLParser()
-    yaml_parser.Parse(name)
-    
-    document = yaml_parser.current_document
-    
-    self.assertEqual(0, len(document.Enums()))
-    self.assertEqual(1, len(document.Structs()))
-    
-    struct_a = document.Structs()[0]
-    self.assertEqual('my_struct', struct_a.name)
-    self.assertEqual(3, len(struct_a.fields))
-    self.assertEqual(64, struct_a.BitWidth())
-
-    field_a = struct_a.fields[0]
-    self.assertEqual('a', field_a.name)
-    self.assertEqual(8, field_a.BitWidth())
-
-    field_b = struct_a.fields[1]
-    self.assertEqual('b', field_b.name)
-    self.assertEqual(32, field_b.BitWidth())
-
-    field_c = struct_a.fields[2]
-    self.assertEqual('c', field_c.name)
-    self.assertEqual(24, field_c.BitWidth())
 
 
 if __name__ == '__main__':

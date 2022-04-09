@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 # Unit tests for generator.py
 #
 # Robert Bowdidge, August 8, 2016.
@@ -95,10 +95,10 @@ class DocBuilderTest(unittest.TestCase):
     self.assertIsNone(errors)
     doc = gen_parser.current_document
 
-    self.assertEquals(1, len(doc.Structs()))
+    self.assertEqual(1, len(doc.Structs()))
 
     s = doc.Structs()[0]
-    self.assertEquals(64, s.BitWidth())
+    self.assertEqual(64, s.BitWidth())
   
   def testPartialFlitBitWidth(self):
     gen_parser = parser.GenParser()
@@ -108,10 +108,10 @@ class DocBuilderTest(unittest.TestCase):
     self.assertIsNone(errors)
     doc = gen_parser.current_document
 
-    self.assertEquals(1, len(doc.Structs()))
+    self.assertEqual(1, len(doc.Structs()))
 
     s = doc.Structs()[0]
-    self.assertEquals(48, s.BitWidth())
+    self.assertEqual(48, s.BitWidth())
 
   def testPartialFlitBitWidth(self):
     gen_parser = parser.GenParser()
@@ -125,10 +125,10 @@ class DocBuilderTest(unittest.TestCase):
     self.assertIsNone(errors)
     doc = gen_parser.current_document
 
-    self.assertEquals(1, len(doc.Structs()))
+    self.assertEqual(1, len(doc.Structs()))
 
     s = doc.Structs()[0]
-    self.assertEquals(96, s.BitWidth())
+    self.assertEqual(96, s.BitWidth())
 
   def testArray(self):
     gen_parser = parser.GenParser()
@@ -145,9 +145,9 @@ class DocBuilderTest(unittest.TestCase):
     my_field = my_struct.fields[0]
 
     self.assertEqual('chars', my_field.name)
-    self.assertEqual(parser.ArrayTypeForName('uint8_t', 8),
-                     my_field.type)
-    self.assertEqual(True, my_field.type.IsArray())
+    uint8_t = parser.ArrayTypeForName('uint8_t', 8)
+    self.assertTrue(uint8_t.IsSameType(my_field.type))
+    self.assertTrue(my_field.type.IsArray())
     self.assertEqual(8, my_field.type.ArraySize())
     self.assertEqual(0, my_field.StartFlit())
     self.assertEqual(0, my_field.EndFlit())
@@ -760,7 +760,7 @@ class DocBuilderTest(unittest.TestCase):
     foo = doc.Structs()[0]
     self.assertEqual(2, len(foo.fields))
     array = foo.fields[1]
-    self.assertEquals('<Type: char[0]>', str(array.Type()))
+    self.assertEqual('<Type: char[0]>', str(array.Type()))
     
     self.assertEqual(8, foo.BitWidth())
     self.assertEqual(0, array.BitWidth())
@@ -786,7 +786,7 @@ class DocBuilderTest(unittest.TestCase):
     foo = doc.Structs()[1]
     self.assertEqual(2, len(foo.fields))
     array = foo.fields[1]
-    self.assertEquals('<Type: element[0]>', str(array.Type()))
+    self.assertEqual('<Type: element[0]>', str(array.Type()))
     
     self.assertEqual(8, foo.BitWidth())
     self.assertEqual(0, array.BitWidth())
@@ -819,7 +819,7 @@ class DocBuilderTest(unittest.TestCase):
                 'END']
     errors = gen_parser.Parse('filename', contents)
 
-    self.assertEquals(1, len(errors))
+    self.assertEqual(1, len(errors))
     self.assertIn('"1" is not a valid', errors[0])
 
   def testValidUnionName(self):
@@ -829,8 +829,8 @@ class DocBuilderTest(unittest.TestCase):
                 'END',
                 'END']
     errors = gen_parser.Parse('filename', contents)
-    print (errors)
-    self.assertEquals(1, len(errors))
+    print(errors)
+    self.assertEqual(1, len(errors))
     self.assertIn('"1_1" is not a valid', errors[0])
 
   def testValidUnionVariable(self):
@@ -840,8 +840,8 @@ class DocBuilderTest(unittest.TestCase):
                 'END',
                 'END']
     errors = gen_parser.Parse('filename', contents)
-    print (errors)
-    self.assertEquals(1, len(errors))
+    print(errors)
+    self.assertEqual(1, len(errors))
     self.assertIn('"1_a" is not a valid', errors[0])
 
   def testValidFieldName(self):
@@ -850,7 +850,7 @@ class DocBuilderTest(unittest.TestCase):
                 '0 63:0 uint64_t 1dh',
                 'END']
     errors = gen_parser.Parse('filename', contents)
-    self.assertEquals(1, len(errors))
+    self.assertEqual(1, len(errors))
     self.assertIn('field name "1dh" is not a valid identifier', errors[0])
 
 
@@ -859,7 +859,7 @@ class DocBuilderTest(unittest.TestCase):
     contents = ['ENUM 1AA', 'END']
     errors = gen_parser.Parse('filename', contents)
 
-    self.assertEquals(1, len(errors))
+    self.assertEqual(1, len(errors))
     self.assertIn('"1AA" is not a valid identifier', errors[0])
 
   def testValidEnumVarName(self):
@@ -868,7 +868,7 @@ class DocBuilderTest(unittest.TestCase):
                 '1 = 3',
                 'END']
     errors = gen_parser.Parse('filename', contents)
-    self.assertEquals(1, len(errors))
+    self.assertEqual(1, len(errors))
     self.assertIn('"1" is not a valid identifier', errors[0])
 
   def testValidEnumVarValue(self):
@@ -877,7 +877,7 @@ class DocBuilderTest(unittest.TestCase):
                 'v = 999999999999',
                 'END']
     errors = gen_parser.Parse('filename', contents)
-    self.assertEquals(1, len(errors))
+    self.assertEqual(1, len(errors))
     self.assertIn('is larger than the 2^32', errors[0])
 
   def testValidEnumVarValueInHex(self):
@@ -886,7 +886,7 @@ class DocBuilderTest(unittest.TestCase):
                 'v = 0x10000000011',
                 'END']
     errors = gen_parser.Parse('filename', contents)
-    self.assertEquals(1, len(errors))
+    self.assertEqual(1, len(errors))
     self.assertIn('is larger than the 2^32', errors[0])
 
   def testValidFlagName(self):
@@ -894,7 +894,7 @@ class DocBuilderTest(unittest.TestCase):
     contents = ['FLAGS 1AA', 'END']
     errors = gen_parser.Parse('filename', contents)
 
-    self.assertEquals(1, len(errors))
+    self.assertEqual(1, len(errors))
     self.assertIn('"1AA" is not a valid identifier', errors[0])
 
   def testValidFlagVarName(self):
@@ -903,7 +903,7 @@ class DocBuilderTest(unittest.TestCase):
                 '1 = 3',
                 'END']
     errors = gen_parser.Parse('filename', contents)
-    self.assertEquals(1, len(errors))
+    self.assertEqual(1, len(errors))
     self.assertIn('"1" is not a valid identifier', errors[0])
 
   def testValidFlagVarValue(self):
@@ -912,7 +912,7 @@ class DocBuilderTest(unittest.TestCase):
                 'v = 999999999999',
                 'END']
     errors = gen_parser.Parse('filename', contents)
-    self.assertEquals(1, len(errors))
+    self.assertEqual(1, len(errors))
     self.assertIn('is larger than the 2^32', errors[0])
 
   def testValidFlagVarValueInHex(self):
@@ -921,7 +921,7 @@ class DocBuilderTest(unittest.TestCase):
                 'v = 0x10000000011',
                 'END']
     errors = gen_parser.Parse('filename', contents)
-    self.assertEquals(1, len(errors))
+    self.assertEqual(1, len(errors))
     self.assertIn('is larger than the 2^32', errors[0])
 
   def testBitSizeOfUnion(self):
@@ -1021,14 +1021,14 @@ class StripCommentTest(unittest.TestCase):
     gen_parser.current_line = 15
 
     self.assertEqual(None, gen_parser.StripKeyComment('/* foo bar'))
-    self.assertEquals(1, len(gen_parser.errors))
+    self.assertEqual(1, len(gen_parser.errors))
     self.assertIn('15: Badly formatted comment',
                   gen_parser.errors[0])
 
   def testNotStarted(self):
     gen_parser = parser.GenParser()
     self.assertEqual(None, gen_parser.StripKeyComment('foo bar */'))
-    self.assertEquals(1, len(gen_parser.errors))
+    self.assertEqual(1, len(gen_parser.errors))
     self.assertIn('0: Unexpected stuff where comment should be',
                      gen_parser.errors[0])
                                          
@@ -1148,6 +1148,8 @@ class PackerTest(unittest.TestCase):
     doc = gen_parser.current_document
     p = generator.Packer()
     p.VisitDocument(doc)
+    print ([x.name for x in doc.Structs()[0].fields])
+
     self.assertEqual(6, len(doc.Structs()[0].fields))
     self.assertEqual('favorite_char', doc.Structs()[0].fields[0].name)
     self.assertEqual('is_valid_char', doc.Structs()[0].fields[1].name)
@@ -1972,13 +1974,13 @@ class AlignmentCheckerTest(unittest.TestCase):
     gen_parser = parser.GenParser()
     errors = gen_parser.Parse('filename', contents)
     if errors:
-      print errors
+      print(errors)
       return None
 
     checker = parser.Checker()
     checker.VisitDocument(gen_parser.current_document)
     if len(checker.errors) > 0:
-      print checker.errors
+      print(checker.errors)
       return None
 
     return gen_parser.current_document
@@ -1993,7 +1995,7 @@ class AlignmentCheckerTest(unittest.TestCase):
 
     aligner = generator.AlignmentChecker(True)
     aligner.VisitDocument(doc)
-    self.assertEquals(0, len(aligner.errors))
+    self.assertEqual(0, len(aligner.errors))
 
   def testBadAlignment(self):
     contents = [
@@ -2006,7 +2008,7 @@ class AlignmentCheckerTest(unittest.TestCase):
 
     aligner = generator.AlignmentChecker(False)
     aligner.VisitDocument(doc)
-    self.assertEquals(1, len(aligner.errors))
+    self.assertEqual(1, len(aligner.errors))
     self.assertIn('Expected alignment: 32 bits', aligner.errors[0])
 
   def testAlignmentOkIfPacked(self):
@@ -2020,8 +2022,8 @@ class AlignmentCheckerTest(unittest.TestCase):
 
     aligner = generator.AlignmentChecker(True)
     aligner.VisitDocument(doc)
-    print aligner.errors
-    self.assertEquals(0, len(aligner.errors))
+    print(aligner.errors)
+    self.assertEqual(0, len(aligner.errors))
 
   def testBitfieldAlignmentOk(self):
     contents = [
@@ -2035,7 +2037,7 @@ class AlignmentCheckerTest(unittest.TestCase):
 
     aligner = generator.AlignmentChecker(False)
     aligner.VisitDocument(doc)
-    self.assertEquals(0, len(aligner.errors))
+    self.assertEqual(0, len(aligner.errors))
 
 
   def testBitfieldDeservesNewWord(self):
@@ -2050,7 +2052,7 @@ class AlignmentCheckerTest(unittest.TestCase):
 
     aligner = generator.AlignmentChecker(False)
     aligner.VisitDocument(doc)
-    self.assertEquals(1, len(aligner.errors))
+    self.assertEqual(1, len(aligner.errors))
     self.assertIn('because of switch from non-bitfield', aligner.errors[0])
 
   def testNonBitfieldDeservesNewWord(self):
@@ -2064,7 +2066,7 @@ class AlignmentCheckerTest(unittest.TestCase):
 
     aligner = generator.AlignmentChecker(False)
     aligner.VisitDocument(doc)
-    self.assertEquals(1, len(aligner.errors))
+    self.assertEqual(1, len(aligner.errors))
     self.assertIn('because of switch from bitfield', aligner.errors[0])
 
   def testBitfieldOkOnWordBoundary(self):
@@ -2079,7 +2081,7 @@ class AlignmentCheckerTest(unittest.TestCase):
 
     aligner = generator.AlignmentChecker(False)
     aligner.VisitDocument(doc)
-    self.assertEquals(0, len(aligner.errors))
+    self.assertEqual(0, len(aligner.errors))
 
   def testNonBitfieldOkOnWordBoundary(self):
     contents = [
@@ -2092,7 +2094,7 @@ class AlignmentCheckerTest(unittest.TestCase):
     self.assertIsNotNone(doc)
     aligner = generator.AlignmentChecker(False)
     aligner.VisitDocument(doc)
-    self.assertEquals(0, len(aligner.errors))
+    self.assertEqual(0, len(aligner.errors))
 
   def testBitfieldDeservesNewWordIfPacked(self):
     contents = [
@@ -2106,7 +2108,7 @@ class AlignmentCheckerTest(unittest.TestCase):
 
     aligner = generator.AlignmentChecker(True)
     aligner.VisitDocument(doc)
-    self.assertEquals(1, len(aligner.errors))
+    self.assertEqual(1, len(aligner.errors))
     self.assertIn('because of switch from non-bitfield', aligner.errors[0])
 
   def testNonBitfieldDeservesNewWordIfPacked(self):
@@ -2120,7 +2122,7 @@ class AlignmentCheckerTest(unittest.TestCase):
 
     aligner = generator.AlignmentChecker(True)
     aligner.VisitDocument(doc)
-    self.assertEquals(1, len(aligner.errors))
+    self.assertEqual(1, len(aligner.errors))
     self.assertIn('because of switch from bitfield', aligner.errors[0])
 
   def testBitfieldOkOnWordBoundaryIfPacked(self):
@@ -2135,7 +2137,7 @@ class AlignmentCheckerTest(unittest.TestCase):
 
     aligner = generator.AlignmentChecker(True)
     aligner.VisitDocument(doc)
-    self.assertEquals(0, len(aligner.errors))
+    self.assertEqual(0, len(aligner.errors))
 
   def testFlagErrorIfMisalignFullType(self):
     gen_parser = parser.GenParser()
@@ -2159,7 +2161,7 @@ class AlignmentCheckerTest(unittest.TestCase):
     aligner.VisitDocument(doc)
 
     self.assertEqual(3, len(aligner.errors))
-    print aligner.errors
+    print(aligner.errors)
     self.assertIn('"b" cannot be placed', aligner.errors[0])
     self.assertIn('"c" cannot be placed', aligner.errors[1])
     self.assertIn('"d" cannot be placed', aligner.errors[2])
@@ -2177,7 +2179,7 @@ class AlignmentCheckerTest(unittest.TestCase):
 
     aligner = generator.AlignmentChecker(False)
     aligner.VisitDocument(doc)
-    self.assertEquals(1, len(aligner.errors))
+    self.assertEqual(1, len(aligner.errors))
     self.assertIn('Field "b" cannot be placed', aligner.errors[0])
 
   def testAlignmentOnPackedField(self):
@@ -2192,11 +2194,11 @@ class AlignmentCheckerTest(unittest.TestCase):
 
     packer = generator.Packer()
     packer.VisitDocument(doc)
-    self.assertEquals(0, len(packer.errors))
+    self.assertEqual(0, len(packer.errors))
 
     aligner = generator.AlignmentChecker(True)
     aligner.VisitDocument(doc)
-    self.assertEquals(0, len(aligner.errors))
+    self.assertEqual(0, len(aligner.errors))
 
   def testOkAlignmentOnPackedFieldPackedStruct(self):
     contents = [
@@ -2212,11 +2214,11 @@ class AlignmentCheckerTest(unittest.TestCase):
 
     packer = generator.Packer()
     packer.VisitDocument(doc)
-    self.assertEquals(0, len(packer.errors))
+    self.assertEqual(0, len(packer.errors))
 
     aligner = generator.AlignmentChecker(True)
     aligner.VisitDocument(doc)
-    self.assertEquals(0, len(aligner.errors))
+    self.assertEqual(0, len(aligner.errors))
 
   def testBadAlignmentOnPackedFieldNonPackedStruct(self):
     contents = [
@@ -2232,12 +2234,12 @@ class AlignmentCheckerTest(unittest.TestCase):
 
     packer = generator.Packer()
     packer.VisitDocument(doc)
-    self.assertEquals(0, len(packer.errors))
+    self.assertEqual(0, len(packer.errors))
 
     aligner = generator.AlignmentChecker(False)
     aligner.VisitDocument(doc)
 
-    self.assertEquals(1, len(aligner.errors))
+    self.assertEqual(1, len(aligner.errors))
     self.assertIn('Field "a_to_c" cannot be placed', aligner.errors[0])
 
   def testZeroLengthArrayAlignmentCharArray(self):
@@ -2252,7 +2254,7 @@ class AlignmentCheckerTest(unittest.TestCase):
 
     aligner = generator.AlignmentChecker(False)
     aligner.VisitDocument(doc)
-    self.assertEquals(0, len(aligner.errors))
+    self.assertEqual(0, len(aligner.errors))
 
   def testZeroLengthArrayAlignmentCharArrayPackedStructure(self):
     contents = [
@@ -2266,7 +2268,7 @@ class AlignmentCheckerTest(unittest.TestCase):
 
     aligner = generator.AlignmentChecker(True)
     aligner.VisitDocument(doc)
-    self.assertEquals(0, len(aligner.errors))
+    self.assertEqual(0, len(aligner.errors))
 
   def testZeroLengthArrayAlignmentWordArray(self):
     contents = [
@@ -2280,7 +2282,7 @@ class AlignmentCheckerTest(unittest.TestCase):
 
     aligner = generator.AlignmentChecker(False)
     aligner.VisitDocument(doc)
-    self.assertEquals(1, len(aligner.errors))
+    self.assertEqual(1, len(aligner.errors))
     self.assertIn('Field "rest" cannot be placed at location',
                   aligner.errors[0])
 
@@ -2298,7 +2300,7 @@ class AlignmentCheckerTest(unittest.TestCase):
 
     aligner = generator.AlignmentChecker(False)
     aligner.VisitDocument(doc)
-    self.assertEquals(2, len(aligner.errors))
+    self.assertEqual(2, len(aligner.errors))
     self.assertIn('Field "b" cannot be placed at location', aligner.errors[0])
     self.assertIn('Field "d" cannot be placed at location', aligner.errors[1])
 
@@ -2318,7 +2320,7 @@ class AlignmentCheckerTest(unittest.TestCase):
 
     aligner = generator.AlignmentChecker(True)
     aligner.VisitDocument(doc)
-    self.assertEquals(2, len(aligner.errors))
+    self.assertEqual(2, len(aligner.errors))
     self.assertIn('Field "b" cannot be placed at location', aligner.errors[0])
     self.assertIn('Field "d" cannot be placed at location', aligner.errors[1])
 

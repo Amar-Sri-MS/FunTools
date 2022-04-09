@@ -1,4 +1,3 @@
-#!/usr/bin/env python2.7
 #
 # Code related to generating C headers and sources.
 #

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 #
 # Parses file containing JSON provided on the command line.
 # Succeeds if file parses correctly, fails if file is not valid JSON.
