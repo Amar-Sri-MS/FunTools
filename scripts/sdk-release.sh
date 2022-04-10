@@ -204,25 +204,23 @@ make -j8 MACHINE=${chip}-release dev_bundle
 Installing development bundles
 ==============================
 
-Before installing a development bundle, the matching release bundle must be
-installed. This guarantees all the APIs across the complete system match. Note
-that development bundles only include FunOS whereas release bundles include all
-the system's binaries.
-Installation of the release bundle is done only once for each new version of
-the SDK.
+Before installing a development bundle, the matching base bundle must be installed.
+This guarantees all the APIs across the complete system match.
+Note that development bundles only include FunOS whereas base bundles include all the system's binaries.
+Installation of the base bundle needs to be done only once for each new version of the SDK.
 
-1. scp release bundle to ccLinux's /tmp directory and install it
-   . scp dev_signed_setup_bundle_${chip}-rootfs-ro.squashfs-v15578.sh root@10.1.1.20:/tmp
-   . ssh root@10.1.1.20
-   . cd /tmp
-   . ./dev_signed_setup_bundle_${chip}-rootfs-ro.squashfs-v15578.sh
-   . reboot
-2. scp development bundle to ccLinux's /tmp directory and install it
-   . scp setup_bundle_development_image.sh root@10.1.1.20:/tmp
-   . ssh root@10.1.1.20
-   . cd /tmp
-   . ./setup_bundle_development_image.sh
-   . reboot
+1. Install the base bundle on the device:
+   > FunSDK/bin/scripts/update-dpu.py --dpu <cclinux_ip_address> --restart dev_signed_setup_bundle_${chip}-rootfs-ro.squashfs-v${build_id}.sh
+   If required - specify a CCFG as part of the base bundle install: (for eg: ccfg for network-sdk)
+   > FunSDK/bin/scripts/update-dpu.py --dpu <cclinux_ip_address> --restart --ccfg network-sdk dev_signed_setup_bundle_${chip}-rootfs-ro.squashfs-v${build_id}.sh
+2. Then install the development bundle:
+   > FunSDK/bin/scripts/update-dpu.py --dpu <cclinux_ip_address> --restart setup_bundle_development_image.sh
+3. To see other options/capabilities of the update-dpu.py utility:
+   > FunSDK/bin/scripts/update-dpu.py -h
+
+Note that Fungible provides two pre-built development images of FunOSPackageDemo example applications for convenience.
+  > package-demo-bundle-${chip}-v${build_id}.sh: Debug version of example applications - includes log messages, assertion checking etc.
+  > package-demo-bundle-${chip}-release-v${build_id}.sh: Release version optimized for performance.
 EOM
 }
 
@@ -458,7 +456,7 @@ package_host_drivers()
     make PKG_PATH=$root_dir/$PKG_NAME PKG_NAME=$PKG_NAMAE package_tgz
 
     # build the whole thing
-    make   
+    make
 }
 
 # Verify the posix packages run to completion
