@@ -135,7 +135,7 @@ class TestDPCCommands(unittest.TestCase):
 
     def testBlob(self):
         with tempfile.NamedTemporaryFile() as fp:
-            original_data = 'b' * 100000
+            original_data = b'b' * 100000
             fp.write(original_data)
             fp.flush()
             uuid = self.client.execute('blob', ['store', ['quote', self.client.blob_from_file(fp.name)]])
