@@ -5,12 +5,11 @@
 ##  Copyright (C) 2017 Fungible. All rights reserved.
 ##
 
-from __future__ import print_function
 import json
-import socket
 import select
-import time
+import socket
 import sys
+import time
 from typing import Any, Tuple, Union
 
 # N.B. The user must start a dpcsh in text proxy mode before
