@@ -5,6 +5,7 @@
 ##  Copyright (C) 2017 Fungible. All rights reserved.
 ##
 
+from __future__ import print_function
 import json
 import select
 import socket
@@ -31,7 +32,8 @@ class DpcTimeoutError(Exception):
     pass
 
 class DpcSocket:
-    def __init__(self, unix_sock: bool, server_address: Union[None, str, Tuple[str, int]]) -> None:
+    def __init__(self, unix_sock, server_address):
+        # type: (Any, bool, Union[None, str, Tuple[str, int]]) -> None
         if unix_sock:
             if server_address is None:
                 server_address = '/tmp/dpc.sock'
@@ -46,10 +48,8 @@ class DpcSocket:
         self.__buffer = b''
         self.__chunk_size = 32*1024
 
-    def __write(self, data: bytes, timeout_seconds: Union[float, None]) -> Tuple[Union[float, None], int]:
-        if timeout_seconds is None:
-            bytes_sent = self.__sock.send(data)
-            return None, bytes_sent
+    def __write(self, data, timeout_seconds):
+        # type: (Any, bytes, Union[float, None]) -> Tuple[Union[float, None], int]
 
         start_time = time.time()
         ready = select.select([], [self.__sock], [], timeout_seconds)
@@ -58,19 +58,24 @@ class DpcSocket:
         else:
             raise DpcTimeoutError('receive() timeout')
 
+        if timeout_seconds is None:
+            return None, bytes_sent
+
         remaining_time = timeout_seconds - start_time + time.time()
         if remaining_time is not None and remaining_time < 0:
             raise DpcTimeoutError('receive() timeout')
 
         return remaining_time, bytes_sent
 
-    def send(self, data: Any, timeout_seconds: Union[float, None]) -> None:
+    def send(self, data, timeout_seconds):
+        # type: (Any, Any, Union[float, None]) -> None
         data_bytes = json.dumps(data).encode('utf8') + b'\n'
         while len(data_bytes) > 0:
             timeout_seconds, bytes_sent = self.__write(data_bytes, timeout_seconds)
             data_bytes = data_bytes[bytes_sent:]
 
-    def __read(self, timeout_seconds: Union[float, None]) -> None:
+    def __read(self, timeout_seconds):
+        # type: (Any, Union[float, None]) -> None
         start_time = time.time()
         ready = select.select([self.__sock], [], [], timeout_seconds)
         if ready[0]:
@@ -81,7 +86,8 @@ class DpcSocket:
             return remaining_time
         raise DpcTimeoutError('receive() timeout')
 
-    def receive(self, timeout_seconds: Union[float, None]) -> Any:
+    def receive(self, timeout_seconds):
+        # type: (Any, Union[float, None]) -> Any
         position = self.__buffer.find(b'\n')
 
         if position == -1:
@@ -100,8 +106,8 @@ class DpcSocket:
         return decoded_results
 
 class DpcClient(object):
-    def __init__(self, legacy_ok: bool = True, unix_sock: bool = False, server_address = None):
-        self.__legacy_ok = legacy_ok
+    def __init__(self, legacy_ok = True, unix_sock = False, server_address = None):
+        # type: (Any, bool, bool, Union[None, str, Tuple[str, int]]) -> None
         self.__verbose = False
         self.__truncate_long_lines = False
         self.__async_queue = []
@@ -110,10 +116,10 @@ class DpcClient(object):
         self.socket = DpcSocket(unix_sock, server_address)
 
     # main interface for running DPC commands
-    def execute(self, verb: str, arg_list: list[Any], tid: Union[None, int] = None, custom_timeout: bool = False, timeout_seconds: Union[float, None] = None) -> Any:
+    def execute(self, verb, arg_list, tid = None, custom_timeout = False, timeout_seconds = None):
+        # type: (Any, str, list[Any], Union[None, int], bool, Union[float, None]) -> Any
 
-        # make sure verb is just a verb
-        if (" " in verb):
+        if " " in verb:
             raise RuntimeError("no spaces allowed in verbs")
         # make it a string and send it & get results
         tid = self.async_send(verb, arg_list, tid, custom_timeout, timeout_seconds)
@@ -122,20 +128,21 @@ class DpcClient(object):
         return results
 
     # Whether to print each command line and its result
-    def set_verbose(self, verbose: bool = True) -> None:
+    def set_verbose(self, verbose = True):
+        # type: (Any, bool) -> None
         self.__verbose = verbose
 
-    def set_truncate_long_lines(self, truncate: bool = True) -> None:
+    def set_truncate_long_lines(self, truncate = True):
+        # type: (Any, bool) -> None
         self.__truncate_long_lines = truncate
 
     # passing None disables timeout
-    # passing 0 makes socket Non-blocking and not supported
-    # complete time spend in execute may be 2x higher
-    # because send and receive timeouts add
-    def set_timeout(self, timeout_seconds: Union[float, None]) -> None:
+    def set_timeout(self, timeout_seconds):
+        # type: (Any,  Union[float, None]) -> None
         self.__execute_timeout_seconds = timeout_seconds
 
-    def async_send(self, verb: str, args: Any, tid: Union[int, None] = None, custom_timeout: bool = False, timeout_seconds: Union[float, None] = None) -> int:
+    def async_send(self, verb, args, tid = None, custom_timeout = False, timeout_seconds = None):
+        # type: (Any,  str, Any, Union[int, None], bool, Union[float, None]) -> int
 
         if tid is None:
             tid = self.__get_next_tid()
@@ -151,7 +158,8 @@ class DpcClient(object):
 
         return tid
 
-    def async_wait(self, custom_timeout: bool = False, timeout_seconds: Union[float, None] = None) -> Any:
+    def async_wait(self, custom_timeout = False, timeout_seconds = None):
+        # type: (Any,  bool, Union[float, None]) -> Any
         # just pull the first thing off the wire and return it
         if not custom_timeout:
             timeout_seconds = self.__execute_timeout_seconds
@@ -160,6 +168,7 @@ class DpcClient(object):
         return result
 
     def async_recv_any_raw(self, custom_timeout = False, timeout_seconds = None):
+        # type: (Any,  bool, Union[float, None]) -> Any
         # try and dequeue the first queued
         if (len(self.__async_queue) > 0):
             r = self.__async_queue.pop(0)

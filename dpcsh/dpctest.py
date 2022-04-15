@@ -6,6 +6,7 @@
 ##  Copyright (C) 2018 Fungible. All rights reserved.
 ##
 
+from __future__ import print_function
 import json
 import os
 import sys
@@ -122,7 +123,7 @@ class TestDPCCommands(unittest.TestCase):
         ticket = self.client.execute('notification', ['register', 'test_note_1', ''])
         self.assertIsInstance(ticket, int)
         ret = self.client.execute('notification', ['test_emit_periodic'])
-        self.assertIsInstance(ret, str)
+        self.assertEqual(ret, u'timer will post \'test_note_1\' every second')
         for _ in range(0, 3):
             ret = self.client.async_recv_wait(0, True, 2)
             self.assertEqual(ret['cookie'], '')
@@ -130,7 +131,7 @@ class TestDPCCommands(unittest.TestCase):
         ret = self.client.execute('notification', ['unregister', 'test_note_1', ticket])
         self.assertEqual(ret, True)
         ret = self.client.execute('notification', ['test_emit_periodic'])
-        self.assertIsInstance(ret, str)
+        self.assertEqual(ret, u'timer stopped')
 
 
     def testBlob(self):
