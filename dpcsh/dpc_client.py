@@ -105,6 +105,11 @@ class DpcSocket:
 
         return decoded_results
 
+    def close(self):
+        # type: (Any) -> None
+        self.__sock.close()
+
+
 class DpcClient(object):
     def __init__(self, legacy_ok = True, unix_sock = False, server_address = None):
         # type: (Any, bool, bool, Union[None, str, Tuple[str, int]]) -> None
@@ -113,7 +118,16 @@ class DpcClient(object):
         self.__async_queue = []
         self.__next_tid = 1
         self.__execute_timeout_seconds = None
-        self.socket = DpcSocket(unix_sock, server_address)
+        self.__sock = DpcSocket(unix_sock, server_address)
+
+    def close(self):
+        self.__sock.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self):
+        self.close()
 
     # main interface for running DPC commands
     def execute(self, verb, arg_list, tid = None, custom_timeout = False, timeout_seconds = None):
@@ -154,7 +168,7 @@ class DpcClient(object):
             timeout_seconds = self.__execute_timeout_seconds
 
         # make a json request in dict from
-        self.socket.send({ "verb": verb, "arguments": arg_list, "tid": tid }, timeout_seconds)
+        self.__sock.send({ "verb": verb, "arguments": arg_list, "tid": tid }, timeout_seconds)
 
         return tid
 
@@ -163,7 +177,7 @@ class DpcClient(object):
         # just pull the first thing off the wire and return it
         if not custom_timeout:
             timeout_seconds = self.__execute_timeout_seconds
-        result = self.socket.receive(timeout_seconds)
+        result = self.__sock.receive(timeout_seconds)
         self.__print(result)
         return result
 
