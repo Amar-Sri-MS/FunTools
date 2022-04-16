@@ -11,7 +11,11 @@ import select
 import socket
 import sys
 import time
-from typing import Any, Tuple, Union
+
+try:
+    from typing import Any, Tuple, Union
+except ImportError:
+    pass # since types are comments it is ok to miss the module
 
 # N.B. The user must start a dpcsh in text proxy mode before
 # creating a DpcClient, e.g.
