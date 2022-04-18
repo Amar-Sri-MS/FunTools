@@ -104,14 +104,13 @@ class Alerter(object):
         # hits are comma separated dicts stored as string.
         # Converting them into list of dicts.
         formatted_hits = []
-        if alert['hits'] != '':
+        if 'hits' in alert and alert['hits'] != '':
             formatted_hits = json.loads(f"""[{alert['hits']}]""")
-        alert['hits'] = formatted_hits
         alert['hits'] = [
             {
                 'index': hit['_index'],
                 **hit['_source']
-            } for hit in alert['hits']
+            } for hit in formatted_hits
         ]
 
         return alert
@@ -132,7 +131,7 @@ def main():
     parser.add_argument('--sync_freq',
                         type=int,
                         help='Frequency to look for alerts (in epoch seconds, default to 30)',
-                        default=30)
+                        default=90)
     parser.add_argument('--last_sync_time',
                         type=int,
                         help='Since when to look for alerts (in epoch milliseconds, default to now)',
