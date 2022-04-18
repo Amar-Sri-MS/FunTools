@@ -42,8 +42,8 @@
 #include <FunOS/utils/common/base64.h>
 #include <FunOS/platform/include/platform/utils_platform.h>
 
-#define SOCK_NAME	"/tmp/funos-dpc.sock"      /* default FunOS socket */
-#define PROXY_NAME      "/tmp/funos-dpc-text.sock" /* default unix proxy name */
+#define FUNOS_SOCKET	"/tmp/funos-dpc.sock"      /* default FunOS socket */
+#define PROXY_SOCKET      "/tmp/dpc.sock" /* default unix proxy name */
 #define DPC_PORT_STR    "20110"   /* default FunOS port */
 #define DPC_PROXY_PORT  40221   /* default TCP proxy port */
 #define DPC_B64_PORT    40222   /* default dpcuart port in qemu */
@@ -1873,7 +1873,7 @@ int main(int argc, char *argv[])
 			funos_sock.mode = SOCKMODE_UNIX;
 			cmd_sock.server = false;
 			funos_sock.socket_name = opt_sockname(optarg,
-							      SOCK_NAME);
+							      FUNOS_SOCKET);
 			autodetect_input_device = false;
 			break;
 // DPC over NVMe is needed only in Linux
@@ -1910,7 +1910,7 @@ int main(int argc, char *argv[])
 			cmd_sock.mode = SOCKMODE_UNIX;
 			cmd_sock.server = true;
 			cmd_sock.socket_name = opt_sockname(optarg,
-							    PROXY_NAME);
+							    PROXY_SOCKET);
 
 			mode = MODE_PROXY;
 
@@ -2007,16 +2007,21 @@ int main(int argc, char *argv[])
 	}
 
 	if (autodetect_input_device) {
-		/* check whether NVMe connection to DPU is available */
-		/* DPC over NVMe will work only in Linux */
-		/* In macOS, libfunq is used */
+		/*
+			Autodetection order:
+			1. system-wide dpc proxy it is availabe if PROXY_SOCKET exists
+			2. NVMe transport, only on Linux
+			3. posix simulator port
+		*/
 
-		/* In macOS, always returns false */
-		bool nvme_dpu_found = find_nvme_dpu_device(detected_nvme_device_name,
-							sizeof(detected_nvme_device_name));
-
-		/* In Linux, use NVMe as default if present */
-		if (nvme_dpu_found) {
+		if( access( PROXY_SOCKET, F_OK ) == 0 ) {
+			funos_sock.dpcsh_connection = true;
+			funos_sock.mode = SOCKMODE_UNIX;
+			funos_sock.server = false;
+			funos_sock.socket_name = PROXY_SOCKET;
+		} else
+		if (find_nvme_dpu_device(detected_nvme_device_name,
+							sizeof(detected_nvme_device_name))) {
 			funos_sock.mode = SOCKMODE_NVME;
 			funos_sock.socket_name = detected_nvme_device_name;
 			funos_sock.server = false;
@@ -2024,9 +2029,7 @@ int main(int argc, char *argv[])
 			if (!cmd_timeout_is_set) {
 				funos_sock.cmd_timeout = atoi(DEFAULT_NVME_CMD_TIMEOUT_MS);
 			}
-		}
-		/* Use libfunq otherwise */
-		else {
+		} else {
 			/* default connection to FunOS posix simulator dpcsock */
 			funos_sock.mode = SOCKMODE_IP;
 			funos_sock.server = false;
