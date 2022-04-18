@@ -53,15 +53,19 @@ class Alerter(object):
         """ Append alert types """
         self.alert_types.append(alert_type)
 
-    def _search(self, since_time):
-        log_handler.info(f'Searching for alerts in {self.index} since {since_time}')
+    def _search(self):
+        log_handler.info(f'Searching for alerts in {self.index} since {self.last_sync_time}')
         # Query to fetch documents from the last sync time.
         query_body = {
             "query": {
-                "range": {
-                    "@timestamp": {
-                        "gte": str(since_time),
-                    }
+                "bool": {
+                    "filter": [{
+                        "range": {
+                            "@timestamp": {
+                                "gte": str(self.last_sync_time)
+                            }
+                        }
+                    }]
                 }
             }
         }
@@ -71,13 +75,16 @@ class Alerter(object):
                                 size=10000,
                                 sort='@timestamp:asc',
                                 ignore_throttled=False)
+
+        # Storing time in milliseconds.
+        self.last_sync_time = time.time() * 1000
         return result['hits']
 
     def start(self):
         """ Start watching for alerts in the given Elasticsearch index. """
         while True:
             try:
-                result = self._search(self.last_sync_time)
+                result = self._search()
                 result_count = result['total']
                 if result_count['relation'] != 'eq':
                     #TODO(Sourabh): Fetch the next set of results
