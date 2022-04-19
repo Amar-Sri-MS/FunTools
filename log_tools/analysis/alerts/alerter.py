@@ -53,15 +53,19 @@ class Alerter(object):
         """ Append alert types """
         self.alert_types.append(alert_type)
 
-    def _search(self, since_time):
-        log_handler.info(f'Searching for alerts in {self.index} since {since_time}')
+    def _search(self):
+        log_handler.info(f'Searching for alerts in {self.index} since {self.last_sync_time}')
         # Query to fetch documents from the last sync time.
         query_body = {
             "query": {
-                "range": {
-                    "@timestamp": {
-                        "gte": str(since_time),
-                    }
+                "bool": {
+                    "filter": [{
+                        "range": {
+                            "@timestamp": {
+                                "gte": str(self.last_sync_time)
+                            }
+                        }
+                    }]
                 }
             }
         }
@@ -71,13 +75,16 @@ class Alerter(object):
                                 size=10000,
                                 sort='@timestamp:asc',
                                 ignore_throttled=False)
+
+        # Storing time in milliseconds.
+        self.last_sync_time = time.time() * 1000
         return result['hits']
 
     def start(self):
         """ Start watching for alerts in the given Elasticsearch index. """
         while True:
             try:
-                result = self._search(self.last_sync_time)
+                result = self._search()
                 result_count = result['total']
                 if result_count['relation'] != 'eq':
                     #TODO(Sourabh): Fetch the next set of results
@@ -104,14 +111,13 @@ class Alerter(object):
         # hits are comma separated dicts stored as string.
         # Converting them into list of dicts.
         formatted_hits = []
-        if alert['hits'] != '':
+        if 'hits' in alert and alert['hits'] != '':
             formatted_hits = json.loads(f"""[{alert['hits']}]""")
-        alert['hits'] = formatted_hits
         alert['hits'] = [
             {
                 'index': hit['_index'],
                 **hit['_source']
-            } for hit in alert['hits']
+            } for hit in formatted_hits
         ]
 
         return alert
@@ -132,7 +138,7 @@ def main():
     parser.add_argument('--sync_freq',
                         type=int,
                         help='Frequency to look for alerts (in epoch seconds, default to 30)',
-                        default=30)
+                        default=90)
     parser.add_argument('--last_sync_time',
                         type=int,
                         help='Since when to look for alerts (in epoch milliseconds, default to now)',
