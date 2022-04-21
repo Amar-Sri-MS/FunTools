@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 #include <unistd.h>
 
 /*
@@ -62,7 +63,7 @@ int main(int argc, char *argv[])
     address = strtoull(argv[optind+1], NULL, 0);
     size = strtoull(argv[optind+2], NULL, 0);
 
-    printf("Verifying 0x%llx bytes at address 0x%llx in %s (is_key: %d)\n",
+    printf("Verifying 0x%"PRIx64 "bytes at address 0x%"PRIx64 " in %s (is_key: %d)\n",
             size, address, dump_fname, is_key_region);
 
     FILE *file;
@@ -88,7 +89,7 @@ int main(int argc, char *argv[])
         
         if (expected != actual) {
             uint64_t loc = address + i;
-            printf("Mismatch @ 0x%llx expected %04x got %04x\n", 
+            printf("Mismatch @ 0x%"PRIx64 " expected %04x got %04x\n", 
                     loc, expected, actual);
             return 1;
         }
