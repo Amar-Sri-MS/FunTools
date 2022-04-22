@@ -115,7 +115,8 @@ class CSIMessageHandler(socketserver.BaseRequestHandler):
     # Byte 2 is the cluster id.
     # Bytes 3-4 are the data type (big-endian).
     # Bytes 5-8 are the length (big-endian).
-    HDR_LEN = 9
+    # Other bytes are reserved for now.
+    HDR_LEN = 16
 
     # Possible state values for message processing.
     STATE_HEADER = 0
