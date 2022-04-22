@@ -285,6 +285,8 @@ class CSIWriter(object):
         try:
             with open(trace_file, 'ab') as fh:
                 if not written:
+                    fh.write(bytes.fromhex('ca fe'))
+                    fh.write(type.to_bytes(2, byteorder='big'))
                     fh.write(msg.cluster)
                 fh.write(msg.data)
         except Exception as e:
