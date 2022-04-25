@@ -88,7 +88,7 @@ def main():
     }
 
     LOG_ID = f'log_{build_id}'
-    custom_logging = logger.get_logger(filename=f'{LOG_ID}.log')
+    custom_logging = logger.get_logger(filename=f'{LOG_ID}.log', separate_error_file=True)
     custom_logging.propagate = False
 
     # Initializing the timeline tracker

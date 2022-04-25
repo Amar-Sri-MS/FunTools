@@ -85,7 +85,7 @@ def main():
         LOG_ID = _get_log_id(job_id, ingest_type, test_index=test_index)
         es_metadata = ElasticsearchMetadata()
 
-        custom_logging = logger.get_logger(filename=f'{LOG_ID}.log')
+        custom_logging = logger.get_logger(filename=f'{LOG_ID}.log', separate_error_file=True)
         custom_logging.propagate = False
 
         # Initializing the timeline tracker
