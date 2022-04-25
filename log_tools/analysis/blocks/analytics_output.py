@@ -195,18 +195,21 @@ class AnalyticsOutput(Block):
     def process(self, iters):
         """ Performs analysis on all iterables """
         timeline.track_start('analytics')
-        for it in iters:
-            for tuple in it:
-                msg_dict = self.tuple_to_dict(tuple)
+        try:
+            for it in iters:
+                for tuple in it:
+                    msg_dict = self.tuple_to_dict(tuple)
 
-                self.check_for_duplicate_entry(msg_dict)
-                self.check_and_store_anchor_match(msg_dict)
+                    self.check_for_duplicate_entry(msg_dict)
+                    self.check_and_store_anchor_match(msg_dict)
 
-        # Anchor matches
-        self.store_anchor_matches()
+            # Anchor matches
+            self.store_anchor_matches()
 
-        # Most duplicated logs
-        self.generate_most_duplicates_entries()
+            # Most duplicated logs
+            self.generate_most_duplicates_entries()
+        except:
+            logging.exception(f'Failed while performing Analytics')
         timeline.track_end('analytics')
 
     def check_for_duplicate_entry(self, msg_dict):

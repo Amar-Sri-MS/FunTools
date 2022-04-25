@@ -75,7 +75,7 @@ class FunOSInput(Block):
 
                     yield (date_time, usecs, system_type, system_id, uid, None, None, line)
                 except:
-                    logging.warning(f'Malformed line in FUNOS logs: {line}')
+                    logging.error(f'Malformed line in FUNOS logs: {line}')
                     continue
 
     @staticmethod
@@ -183,7 +183,7 @@ class GenericInput(Block):
                         msg = filename.strip() + ' ' + msg.strip()
                     yield (date_time, usecs, system_type, system_id, uid, None, None, msg)
                 else:
-                    logging.warning(f'Malformed line in {uid}: {line}')
+                    logging.error(f'Malformed line in {uid}: {line}')
             except:
                 logging.exception(f'Malformed line in {uid}: {line}')
         timeline.track_end('log_parser')
@@ -258,7 +258,7 @@ class KeyValueInput(Block):
 
                     yield (date_time, usecs, system_type, system_id, uid, None, level, msg)
                 else:
-                    logging.warning(f'Malformed timestamp in {uid}: {line}')
+                    logging.error(f'Malformed timestamp in {uid}: {line}')
             except:
                 logging.exception(f'Malformed line in {uid}: {line}')
 
@@ -329,7 +329,7 @@ class JSONInput(Block):
 
                     yield (date_time, usecs, system_type, system_id, uid, None, level, msg)
                 else:
-                    logging.warning(f'Malformed timestamp in {uid}: {line}')
+                    logging.error(f'Malformed timestamp in {uid}: {line}')
             except:
                 logging.exception(f'Malformed line in {uid}: {line}')
 
