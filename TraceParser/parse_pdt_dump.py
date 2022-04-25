@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 #
 # Parses a dump of PDTrace data from a cluster.
@@ -14,10 +14,18 @@
 import argparse
 import binascii
 import os
+import struct
 import subprocess
 import tempfile
 
-# Cluster ID is stored in 1 byte at the start of each file
+import csi_types
+
+
+# Magic bytes
+MAGIC = b'\xca\xfe'
+# Number of bytes in which the data type is stored
+TYPE_LEN = 2
+# Cluster ID is stored in 1 byte
 CLUSTER_LEN = 1
 # The width of the funnel in bytes, which dictates the frame length
 PDT_FRAME_LEN = 32
@@ -62,6 +70,7 @@ def generate_trc_contents(fh):
     Returns (cluster_id, content_string).
     """
     cluster_data = []
+    _verify_trace_file(fh)
     cluster = _read_cluster(fh)
 
     # Gather cluster data.
@@ -86,18 +95,40 @@ def generate_trc_contents(fh):
 
 def _write_dqr_file(input_file, output_dir):
     with open(input_file, 'rb') as fh:
+        if not _verify_trace_file(fh):
+            print('Problems reading trace file %s: skipping' % input_file)
+            return
         cluster = _read_cluster(fh)
         data = generate_dqr_contents(fh)
 
     out_filename = 'dqr_%s.rtd' % cluster
     out_filepath = os.path.join(output_dir, out_filename)
     with open(out_filepath, 'wb') as fh:
-        fh.write(''.join(data))
+        fh.write(data)
+
+
+def _verify_trace_file(fh):
+    """
+    Returns True if the trace file holds pdtrace data, else False.
+    """
+    magic = fh.read(2)
+    if magic != MAGIC:
+        print('Unrecognized magic header for trace file')
+        return False
+
+    type = struct.unpack('>H', fh.read(TYPE_LEN))[0]
+
+    pdt_types = [csi_types.CSI_PERF_PDTRACE,
+                 csi_types.CSI_CACHE_MISS_PDTRACE]
+    if type not in pdt_types:
+        print('Cannot decode: not a pdtrace file')
+        return False
+    return True
 
 
 def _read_cluster(fh):
     cluster = fh.read(CLUSTER_LEN)
-    ascii_cluster = binascii.b2a_hex(cluster)
+    ascii_cluster = bytes.hex(cluster)
     return ascii_cluster
 
 
@@ -109,7 +140,7 @@ def generate_dqr_contents(fh):
     followed by a 32-byte frame containing data. The frame data is
     in big-endian order. All values are in binary.
     """
-    data = []
+    data = bytearray()
     frame_num = 0
 
     frame = fh.read(PDT_FRAME_LEN)
@@ -125,10 +156,10 @@ def generate_dqr_contents(fh):
 
 def _frame_to_bytes(frame_num):
     frame_str = '%08x' % frame_num
-    result = []
+    result = bytearray()
     for i in range(0, 4):
         ascii_byte = binascii.a2b_hex(frame_str[i*2:i*2+2])
-        result.append(ascii_byte)
+        result.extend(ascii_byte)
 
     return result
 
