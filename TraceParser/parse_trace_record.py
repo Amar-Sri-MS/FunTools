@@ -14,15 +14,13 @@ import collections
 import os
 import struct
 
+import csi_trace
 import csi_types
 from perf_sample import PerfSample
 
 
-# Magic bytes
-MAGIC = b'\xca\xfe'
 # Cluster ID is stored in 1 byte
 CLUSTER_LEN = 1
-TYPE_LEN = 2
 
 # Length of a trace record in bytes
 TRACE_RECORD_LEN = 64
@@ -142,13 +140,7 @@ def drop_cluster_byte(fh):
 
 def verify_trace_file(fh):
     """ Ensures that the trace file holds trace records """
-    magic = fh.read(2)
-    if magic != MAGIC:
-        print('Unrecognized magic header for trace file')
-        return False
-
-    type = struct.unpack('>H', fh.read(TYPE_LEN))[0]
-
+    type = csi_trace.get_trace_file_type(fh)
     if type != csi_types.CSI_TRACE_RECORD:
         print('Cannot decode: not a trace record file')
         return False

@@ -18,13 +18,10 @@ import struct
 import subprocess
 import tempfile
 
+import csi_trace
 import csi_types
 
 
-# Magic bytes
-MAGIC = b'\xca\xfe'
-# Number of bytes in which the data type is stored
-TYPE_LEN = 2
 # Cluster ID is stored in 1 byte
 CLUSTER_LEN = 1
 # The width of the funnel in bytes, which dictates the frame length
@@ -111,13 +108,7 @@ def _verify_trace_file(fh):
     """
     Returns True if the trace file holds pdtrace data, else False.
     """
-    magic = fh.read(2)
-    if magic != MAGIC:
-        print('Unrecognized magic header for trace file')
-        return False
-
-    type = struct.unpack('>H', fh.read(TYPE_LEN))[0]
-
+    type = csi_trace.get_trace_file_type(fh)
     pdt_types = [csi_types.CSI_PERF_PDTRACE,
                  csi_types.CSI_CACHE_MISS_PDTRACE]
     if type not in pdt_types:
