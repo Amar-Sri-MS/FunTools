@@ -15,10 +15,10 @@ else ifeq ($(MACHINE),arm64)
  TOOLCHAIN_PREFIX :=
  SDK_LIB_SUBDIR := noasan
  SDK_INSTALL_PREFIX :=
-else ifeq ($(MACHINE),arm)
- TOOLCHAIN_PREFIX := arm-linux-gnueabi-
+else ifeq ($(MACHINE),aarch64)
+ TOOLCHAIN_PREFIX := aarch64-linux-gnu-
  SDK_LIB_SUBDIR :=
- SDK_INSTALL_PREFIX := arm
+ SDK_INSTALL_PREFIX := aarch64
 else ifeq ($(MACHINE),mips64)
  SDK_LIB_SUBDIR :=
  SDK_INSTALL_PREFIX := mips64
