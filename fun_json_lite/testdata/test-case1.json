@@ -1,0 +1,75 @@
+{
+    "dpu_id": "c8:2c:2b:00:4b:04",
+    "path": "stats/fpg/nu",
+    "time": 100,
+    "value": {
+        "0": [
+            {
+                "MAC0_TX_EMPTY_READ": 1,
+                "port_0-PORT_MAC_RX_aFrameCheckSequenceErrors": 1,
+                "port_0-PORT_MAC_RX_etherStatsOctets": 64,
+                "port_0-PORT_MAC_RX_etherStatsPkts": 1,
+                "port_0-PORT_MAC_RX_etherStatsPkts64Octets": 1,
+                "port_0-PORT_MAC_RX_ifInErrors": 1
+            },
+            {
+                "fpg0misc-rx_frm_chk_eope_cnt00": 1,
+                "fpg0misc-rx_frm_chk_pkt_cnt1": 1,
+                "fpg0misc-rx_psw_pkt_cnt0": 1,
+                "fpg0misc-rx_rxpipe_pkt_cnt0": 1
+            },
+            {"port_0-RS-FEC Correctable Codewords :": 5}
+        ],
+        "1": [
+            {"MAC1_TX_EMPTY_READ": 1},
+            {
+                "fpg0misc-rx_frm_chk_eope_cnt00": 1,
+                "fpg0misc-rx_frm_chk_pkt_cnt1": 1,
+                "fpg0misc-rx_psw_pkt_cnt0": 1,
+                "fpg0misc-rx_rxpipe_pkt_cnt0": 1
+            },
+            {"port_1-RS-FEC Correctable Codewords :": 2}
+        ],
+        "10": [{"MAC2_TX_EMPTY_READ": 1}],
+        "11": [{"MAC3_TX_EMPTY_READ": 1}],
+        "12": [{"MAC0_LOC_FAULT_READ": 1, "MAC0_TX_EMPTY_READ": 1}],
+        "13": [{"MAC1_TX_EMPTY_READ": 1}],
+        "14": [{"MAC2_TX_EMPTY_READ": 1}],
+        "15": [{"MAC3_TX_EMPTY_READ": 1}],
+        "16": [{"MAC0_LOC_FAULT_READ": 1, "MAC0_TX_EMPTY_READ": 1}],
+        "17": [{"MAC1_TX_EMPTY_READ": 1}],
+        "18": [{"MAC2_TX_EMPTY_READ": 1}],
+        "19": [{"MAC3_TX_EMPTY_READ": 1}],
+        "2": [
+            {"MAC2_TX_EMPTY_READ": 1},
+            {
+                "fpg0misc-rx_frm_chk_eope_cnt00": 1,
+                "fpg0misc-rx_frm_chk_pkt_cnt1": 1,
+                "fpg0misc-rx_psw_pkt_cnt0": 1,
+                "fpg0misc-rx_rxpipe_pkt_cnt0": 1
+            },
+            {"port_2-RS-FEC Correctable Codewords :": 2}
+        ],
+        "20": [{"MAC0_LOC_FAULT_READ": 1, "MAC0_TX_EMPTY_READ": 1}],
+        "21": [{"MAC1_TX_EMPTY_READ": 1}],
+        "22": [{"MAC2_TX_EMPTY_READ": 1}],
+        "23": [{"MAC3_TX_EMPTY_READ": 1}],
+        "3": [
+            {"MAC3_TX_EMPTY_READ": 1},
+            {
+                "fpg0misc-rx_frm_chk_eope_cnt00": 1,
+                "fpg0misc-rx_frm_chk_pkt_cnt1": 1,
+                "fpg0misc-rx_psw_pkt_cnt0": 1,
+                "fpg0misc-rx_rxpipe_pkt_cnt0": 1
+            },
+            {"port_3-RS-FEC Correctable Codewords :": 16}
+        ],
+        "4": [{"MAC0_TX_EMPTY_READ": 1}],
+        "5": [{"MAC1_TX_EMPTY_READ": 1}],
+        "6": [{"MAC2_TX_EMPTY_READ": 1}],
+        "7": [{"MAC3_TX_EMPTY_READ": 1}, {"port_7-RS-FEC Correctable Codewords :": 14}],
+        "8": [{"MAC0_LOC_FAULT_READ": 1, "MAC0_TX_EMPTY_READ": 1}],
+        "9": [{"MAC1_TX_EMPTY_READ": 1}],
+        "port": []
+    }
+}
