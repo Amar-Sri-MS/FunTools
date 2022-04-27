@@ -96,6 +96,7 @@ class Message(object):
     """
     def __init__(self):
         self.cluster = None
+        self.type = None
         self.data = bytearray()
 
 
@@ -108,9 +109,14 @@ class CSIMessageHandler(socketserver.BaseRequestHandler):
     out by not sending any packets.
     """
 
-    # Header length for messages that we receive. This is one byte for
-    # the cluster, 4 bytes for the length (big-endian).
-    HDR_LEN = 5
+    # Header length for messages that we receive.
+    # Byte 0 is always 0xff, allowing us to detect legacy formats.
+    # Byte 1 is the version of this serialization format.
+    # Byte 2 is the cluster id.
+    # Bytes 3-4 are the data type (big-endian).
+    # Bytes 5-8 are the length (big-endian).
+    # Other bytes are reserved for now.
+    HDR_LEN = 16
 
     # Possible state values for message processing.
     STATE_HEADER = 0
@@ -221,8 +227,13 @@ class CSIMessageHandler(socketserver.BaseRequestHandler):
         self.current_message = Message()
 
         # python funkiness: slice to ensure we get a bytes() object, not an int
-        self.current_message.cluster = self.partial_header[0:1]
-        self.data_remaining = struct.unpack('>L', self.partial_header[1:5])[0]
+        if self.partial_header[0:1] != bytes.fromhex('ff'):
+            logging.error('Old format detected')
+            raise RuntimeError('Old format detected')
+
+        self.current_message.cluster = self.partial_header[2:3]
+        self.current_message.type = struct.unpack('>H', self.partial_header[3:5])[0]
+        self.data_remaining = struct.unpack('>L', self.partial_header[5:9])[0]
 
 
 class CSIWriter(object):
@@ -232,7 +243,7 @@ class CSIWriter(object):
     def __init__(self, client_ip, dir_lookup):
         self.client_ip = client_ip
         self.dir_lookup = dir_lookup
-        self.seen_clusters = {}
+        self.seen_clusters_and_types = {}
         self.output_dir = None
         self.missing_dir_reported = False
 
@@ -257,22 +268,26 @@ class CSIWriter(object):
         """
         Processes a message.
 
-        We write the cluster id once to the per-cluster trace log.
+        We write the cluster id once to the per-cluster-and-type trace log.
         All subsequent message data is appended to the log.
         """
         if self.output_dir is None:
             return
 
         cluster_hex = msg.cluster.hex()
-        written = cluster_hex in self.seen_clusters
+        type = msg.type
+        cluster_and_type = (cluster_hex, type)
+        written = cluster_and_type in self.seen_clusters_and_types
         if not written:
-            self.seen_clusters[cluster_hex] = True
+            self.seen_clusters_and_types[cluster_and_type] = True
 
-        trace_file = 'trace_cluster_%s' % cluster_hex
+        trace_file = 'trace_cluster_%s_type_%02d' % (cluster_hex, type)
         trace_file = os.path.join(self.output_dir, trace_file)
         try:
             with open(trace_file, 'ab') as fh:
                 if not written:
+                    fh.write(bytes.fromhex('ca fe'))
+                    fh.write(type.to_bytes(2, byteorder='big'))
                     fh.write(msg.cluster)
                 fh.write(msg.data)
         except Exception as e:
