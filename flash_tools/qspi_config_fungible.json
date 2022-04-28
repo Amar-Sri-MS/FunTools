@@ -69,7 +69,7 @@
             "fourcc": "husc",
             "cert": "",
             "customer_cert": "",
-            "key": "fpk3",
+            "key": "fpk5",
             "description": "@file:sbm_serdes.hu.conv.rom.version"
         },
         "hbm_sbus.bin": {
