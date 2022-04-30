@@ -21,6 +21,8 @@ import config_loader
 import pipeline
 import logger
 
+from custom_exceptions import EmptyPipelineException
+from custom_exceptions import NotFoundException
 from elastic_metadata import ElasticsearchMetadata
 from utils import archive_extractor
 from utils import manifest_parser
@@ -140,7 +142,7 @@ def start_pipeline(base_path, build_id, filters={}, metadata={}, output_block='E
             base_path = os.path.splitext(base_path)[0]
 
         if not os.path.exists(os.path.join(base_path, 'FUNLOG_MANIFEST')):
-            raise Exception('Could not find manifest file')
+            raise NotFoundException('Could not find manifest file')
 
         env = dict()
         env['logdir'] = base_path
@@ -230,7 +232,7 @@ def build_pipeline_cfg(path, filters, output_block):
     pipeline_cfg, metadata = parse_manifest(path, filters=filters)
 
     if not pipeline_cfg:
-        raise Exception('Could not form the ingestion pipeline.')
+        raise EmptyPipelineException('Could not form the ingestion pipeline.')
 
     # Adding filter pipeline
     pipeline_cfg.extend(filter_pipeline(filters))
@@ -342,7 +344,7 @@ def build_input_pipeline(path, frn_info, filters={}):
         return blocks
 
     if not source:
-        logging.error(f'Missing source in FRN: {frn_info}')
+        logging.warning(f'Missing source in FRN: {frn_info}')
         return blocks
 
     # If the folder does not exist
