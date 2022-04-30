@@ -176,8 +176,15 @@ def start_pipeline(base_path, build_id, filters={}, metadata={}, output_block='E
 
     end = time.time()
     time_taken = end - start
+
+    # Check if there are any error logs indicating partial ingestion
+    is_partial = False
+    error_log_file = f'{logger.LOGS_DIRECTORY}/{LOG_ID}_error.log'
+    if os.stat(error_log_file).st_size != 0:
+        is_partial = True
+
     es_metadata.update(LOG_ID, {
-        'ingestion_status': 'COMPLETED',
+        'ingestion_status': 'PARTIAL' if is_partial else 'COMPLETED',
         'ingestion_error': None,
         'ingestion_time': time_taken,
         **metadata
@@ -189,6 +196,7 @@ def start_pipeline(base_path, build_id, filters={}, metadata={}, output_block='E
 
     return {
         'success': True,
+        'is_partial': is_partial,
         'time_taken': time_taken
     }
 

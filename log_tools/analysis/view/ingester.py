@@ -71,6 +71,7 @@ def main():
 
     try:
         status = True
+        is_partial = False
         status_msg = None
         args = parser.parse_args()
         ingest_type = args.ingest_type
@@ -160,7 +161,14 @@ def main():
             status = False
             status_msg = ingestion_status.get('msg')
 
-    except Exception as e:
+        is_partial = ingestion_status.get('is_partial', False)
+    except (
+        EmptyPipelineException,
+        NotFoundException,
+        FileNotFoundError,
+        TypeError,
+        NotSupportedException
+    ) as e:
         logging.exception(f'Error when starting ingestion for job: {job_id}')
         status = False
         status_msg = str(e)
@@ -168,13 +176,21 @@ def main():
             'ingestion_error': str(e),
             **metadata
         })
+    except Exception as e:
+        logging.exception(f'Error when ingesting logs for job: {job_id}')
+        status = False
+        status_msg = str(e)
+        _update_metadata(es_metadata, LOG_ID, 'PARTIAL', {
+            'ingestion_error': str(e),
+            **metadata
+        })
     finally:
         # Clean up the downloaded files if successful.
-        if status:
+        if status and not is_partial:
             clean_up(LOG_ID)
 
         # Notify via email
-        email_notify(LOG_ID, status, status_msg)
+        email_notify(LOG_ID, status, is_partial, status_msg)
 
         # Backing up the logs generated during ingestion
         logger.backup_ingestion_logs(LOG_ID)
@@ -330,7 +346,8 @@ def upload_file():
         'ingester.html',
         feedback=feedback,
         ingest_type=ingest_type,
-        techsupport_ingest_type=techsupport_ingest_type
+        techsupport_ingest_type=techsupport_ingest_type,
+        file_server_url=config['FILE_SERVER_URL']
     )
 
 @ingester_page.route('/remove_file', methods=['DELETE'])
@@ -370,7 +387,8 @@ def render_ingest_page():
         'ingester.html',
         feedback={},
         ingest_type=ingest_type,
-        techsupport_ingest_type=techsupport_ingest_type)
+        techsupport_ingest_type=techsupport_ingest_type,
+        file_server_url=config['FILE_SERVER_URL'])
 
 
 @ingester_page.route('/ingest', methods=['POST'])
@@ -432,7 +450,8 @@ def ingest():
                 'ingester.html',
                 feedback=feedback,
                 ingest_type=ingest_type,
-                techsupport_ingest_type=techsupport_ingest_type
+                techsupport_ingest_type=techsupport_ingest_type,
+                file_server_url=config['FILE_SERVER_URL']
             )
 
         if not job_id:
@@ -483,7 +502,8 @@ def ingest():
             'ingester.html',
             feedback=feedback,
             ingest_type=ingest_type,
-            techsupport_ingest_type=techsupport_ingest_type
+            techsupport_ingest_type=techsupport_ingest_type,
+            file_server_url=config['FILE_SERVER_URL']
         )
     except Exception as e:
         current_app.logger.exception(f'Error when starting ingestion for job: {job_id}')
@@ -1046,7 +1066,7 @@ def _update_metadata(metadata_handler, log_id, status, additional_data={}):
     return metadata_handler.update(log_id, metadata)
 
 
-def email_notify(logID, is_successful, status_msg):
+def email_notify(logID, is_successful, is_partial, status_msg):
     """ Notifying via email at the end of the ingestion """
     es_metadata = ElasticsearchMetadata()
     metadata = es_metadata.get(logID)
@@ -1064,17 +1084,28 @@ def email_notify(logID, is_successful, status_msg):
         return
 
     if is_successful:
-        subject = f'Ingestion of {logID} is successful.'
-        body = f"""
-            Ingestion of {logID} is successful.
-            Log Analyzer Dashboard: {config['LOG_VIEW_BASE_URL'].replace('LOG_ID', logID)}/dashboard
+        if is_partial:
+            subject = f'Ingestion of {logID} is successful.'
+            body = f"""
+                Ingestion of {logID} is partially successful.
+                Log Analyzer Dashboard: {config['LOG_VIEW_BASE_URL'].replace('LOG_ID', logID)}/dashboard
 
-            Time to ingest logs: {metadata.get('ingestion_time')} seconds
-        """
+                Error logs: {config['FILE_SERVER_URL']}/{logID}/file/{logID}_error.log
+                Time to ingest logs: {metadata.get('ingestion_time')} seconds
+            """
+        else:
+            subject = f'Ingestion of {logID} is successful.'
+            body = f"""
+                Ingestion of {logID} is successful.
+                Log Analyzer Dashboard: {config['LOG_VIEW_BASE_URL'].replace('LOG_ID', logID)}/dashboard
+
+                Time to ingest logs: {metadata.get('ingestion_time')} seconds
+            """
     else:
         subject = f'Ingestion of {logID} failed.'
         body = f"""
             Ingestion of {logID} failed. Please email tools-pals@fungible.com for help!
+            Error logs: {config['FILE_SERVER_URL']}/{logID}/file/{logID}_error.log
             Reason: {status_msg}
         """
 
