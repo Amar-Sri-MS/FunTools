@@ -129,9 +129,14 @@ def main():
                 archive_name = os.path.basename(log_path)
                 path = os.path.join(log_dir, archive_name)
 
-                # Copying the log archive to download directory to avoid write
-                # permission issue when unarchiving the archive.
-                shutil.copy(log_path, log_dir)
+                if os.path.isdir(log_path):
+                    # Copying the log folder to download directory to avoid write
+                    # permission issue when accessing the archive.
+                    shutil.copytree(log_path, path)
+                else:
+                    # Copying the log archive to download directory to avoid write
+                    # permission issue when unarchiving the archive.
+                    shutil.copy(log_path, log_dir)
 
                 ingestion_status = ingest_techsupport_logs(job_id, path, metadata, filters)
             elif techsupport_ingest_type == 'url':
