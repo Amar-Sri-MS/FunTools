@@ -4,8 +4,10 @@
 # Extracting archives
 #
 
+import gzip
 import logging
 import os
+import shutil
 import tarfile
 import zipfile
 
@@ -26,16 +28,18 @@ def extract(path):
         opener, mode = zipfile.ZipFile, 'r'
     elif path.endswith('.tar'):
         opener, mode = tarfile.open, 'r'
-    elif path.endswith(('.tar.gz', '.tgz', '.gz')):
+    elif path.endswith(('.tar.gz', '.tgz')):
         opener, mode = tarfile.open, 'r'
     elif path.endswith(('.tar.bz2', '.tbz', '.tbz2', '.tz2', '.tb2', '.bz2')):
         opener, mode = tarfile.open, 'r'
     elif path.endswith(('.tar.lzma', '.tlz')):
         opener, mode = tarfile.open, 'r'
+    elif path.endswith(('.gz')):
+        opener, mode = gzip.open, 'rb'
     else:
         # # Will attempt to extract with tarfile.
-        # opener, mode = tarfile.open, 'r'
-        raise Exception(f'Unknown archive: {path}')
+        opener, mode = tarfile.open, 'r'
+        # raise Exception(f'Unknown archive: {path}')
 
     # Get current working directory
     cwd = os.getcwd()
@@ -60,7 +64,13 @@ def extract(path):
             os.chdir(archive_path)
             logging.info(f'Extracting archive at {archive_path}')
 
-        archive.extractall()
+        if opener == gzip.open:
+            file_out_name = os.path.join(os.getcwd(), archive_name)
+            with archive as f_in:
+                with open(file_out_name, 'wb') as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+        else:
+            archive.extractall()
     except Exception as e:
         logging.exception('Failed to extract archive')
         raise Exception('Failed to extract archive')
@@ -89,6 +99,9 @@ def archive_has_top_level_directory(archive, archive_name):
         logging.info('Type of archive: tar')
         contents = archive.getmembers()
         dir_exists = len(contents) > 0 and contents[0].isdir() and contents[0].name == archive_name
+    elif type(archive) == gzip.GzipFile:
+        logging.info('Type of archive: gzip')
+        dir_exists = True
     return dir_exists
 
 
