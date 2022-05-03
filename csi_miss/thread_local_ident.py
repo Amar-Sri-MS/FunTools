@@ -30,10 +30,12 @@ def _identify_thread_locals(funos_binary, tls_start, stride, num_vps):
     # This is pretty much:
     # objdump -t <binary> | grep tdata
     objdump_proc = subprocess.Popen([objdump, "-t", funos_binary],
-                                    stdout=subprocess.PIPE)
+                                    stdout=subprocess.PIPE,
+                                    universal_newlines=True)
     grep_proc = subprocess.Popen(["grep", "tdata"],
                                  stdin=objdump_proc.stdout,
-                                 stdout=subprocess.PIPE)
+                                 stdout=subprocess.PIPE,
+                                 universal_newlines=True)
 
     objdump_proc.stdout.close()
     out, err = grep_proc.communicate()

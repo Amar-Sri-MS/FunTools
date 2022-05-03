@@ -143,7 +143,7 @@ TABDEF = collections.OrderedDict([("pc_hex", "pc"),
 
 def do_pivot(out_fname, misses):
 
-    fl = open(out_fname, "wb")
+    fl = open(out_fname, "w")
     
     keys = list(TABDEF.keys())
     writer = csv.DictWriter(fl, fieldnames=keys, extrasaction="ignore")
@@ -308,7 +308,6 @@ def mkmisses(raw_misses, lineinfo, regioninfo, gdbinfo):
 #
 
 def do_missmap(misses_raw, lineinfo, regioninfo, gdbinfo, mode, out_fname, max_rows=0):
-    
     # process misses accoriding to available info
     print("%d misses in input" % len(misses_raw))
     misses = mkmisses(misses_raw, lineinfo, regioninfo, gdbinfo)
