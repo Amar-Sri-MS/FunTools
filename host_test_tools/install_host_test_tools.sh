@@ -6,4 +6,5 @@
 # a deploy image, we only need to install our deploy script which
 # assembles the archive.
 
-cp deploy_host_test_tools.sh $SDK_INSTALL_DIR/bin/scripts
+mkdir -p ${SDK_INSTALL_DIR}/bin/scripts
+cp deploy_host_test_tools.sh ${SDK_INSTALL_DIR}/bin/scripts/deploy_host_test_tools.sh
