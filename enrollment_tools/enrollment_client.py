@@ -33,9 +33,6 @@ class CMD(object):
     GET_ENROLL_INFO = 0xFF050000
     SET_ENROLL_INFO = 0xFF060000
 
-# Chip must report being in this boot step for enrollment
-BOOT_STEP_PUF_INIT = (0x1A<<2)
-
 #Default i2c clock speed
 I2C_CLOCK_SPEED_DEFAULT = 500
 
@@ -151,18 +148,23 @@ class DBG_Chal(object):
         print('Disconnect failed!')
         return status
 
-    def check_boot_step(self, desired_boot_step):
+    def get_boot_step_and_version(self):
         ''' check that the chip is in the right boot step
         status returns header (4), tamper_status (4), tamper_timestamp (4)
         status (4), RTC time (4), boot step (1), upgrade(1), etc... '''
         (status, rdata) = self.dbgprobe.dbg_chal_cmd(CMD.GET_STATUS,
                                                      chip_inst=self.chip_inst)
 
-        if status is True and cmd_status_ok(rdata) and cmd_reply_length(rdata) > 20:
-            return rdata[20] == desired_boot_step
+        if status is True and cmd_status_ok(rdata) and cmd_reply_length(rdata) > 36:
+            # boot step is the single byte at 20
+            # version is the nul terminated string from byte 36
+            boot_step = rdata[20]
+            version_bytes = rdata[36:].split(b'\x00')[0]
+            version = version_bytes.decode('ascii')
+            return boot_step, version
 
         report_error("GetStatus", rdata)
-        return False
+        return None, None
 
     def get_serial_number(self):
         ''' get the chip's serial number '''
@@ -201,6 +203,20 @@ class DBG_Chal(object):
 #
 #########################################################################
 
+SERVER_URL_PRE = "https://f1reg.fungible.com/cgi-bin/"
+
+def get_expected_boot_step(version):
+
+    url = SERVER_URL_PRE + "enrollment_boot_step.cgi?version=" + version
+    response = requests.get(url)
+
+    if response.status_code != requests.codes.ok:
+        print("Server response: %d %s" % (response.status_code, response.reason))
+        return None
+
+    boot_step_val = int(response.text,0)
+    return boot_step_val
+
 def generate_enrollment_cert(tbs_cert, verbose=False):
 
     # always print the TBS since it is precious
@@ -211,7 +227,7 @@ def generate_enrollment_cert(tbs_cert, verbose=False):
     if verbose:
         print("TBS: ", tbs_cert_64)
 
-    response = requests.put("https://f1reg.fungible.com/cgi-bin/enrollment_server.cgi",
+    response = requests.put(SERVER_URL_PRE + "enrollment_server.cgi",
                             data=tbs_cert_64)
 
     if response.status_code != requests.codes.ok:
@@ -230,7 +246,7 @@ def get_cert_of_serial_number(sn, verbose=False):
 
     sn_64 = binascii.b2a_base64(sn).rstrip()
 
-    url = "https://f1reg.fungible.com/cgi-bin/enrollment_server.cgi?cmd=cert&sn=%s" % sn_64
+    url = SERVER_URL_PRE + "enrollment_server.cgi?cmd=cert&sn=" + sn_64
     response = requests.get(url)
 
     if response.status_code != requests.codes.ok:
@@ -328,7 +344,10 @@ def main():
 
     print('Connected to probe')
     # verify we are in the correct step
-    if not dbgprobe.check_boot_step(BOOT_STEP_PUF_INIT):
+    boot_step, version = dbg_probe.get_boot_step_and_version()
+    expected_boot_step = get_expected_boot_step(version)
+
+    if boot_step != expected_boot_step:
         print("Chip is not at the correct boot step for enrollment")
         return False
 
