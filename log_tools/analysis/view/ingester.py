@@ -26,6 +26,9 @@ import yaml
 
 sys.path.insert(0, '.')
 
+from custom_exceptions import EmptyPipelineException
+from custom_exceptions import NotFoundException
+from custom_exceptions import NotSupportedException
 from elastic_metadata import ElasticsearchMetadata
 from flask import Blueprint, jsonify, request, render_template
 from flask import current_app, g
@@ -68,6 +71,7 @@ def main():
 
     try:
         status = True
+        is_partial = False
         status_msg = None
         args = parser.parse_args()
         ingest_type = args.ingest_type
@@ -85,7 +89,7 @@ def main():
         LOG_ID = _get_log_id(job_id, ingest_type, test_index=test_index)
         es_metadata = ElasticsearchMetadata()
 
-        custom_logging = logger.get_logger(filename=f'{LOG_ID}.log')
+        custom_logging = logger.get_logger(filename=f'{LOG_ID}.log', separate_error_file=True)
         custom_logging.propagate = False
 
         # Initializing the timeline tracker
@@ -119,15 +123,20 @@ def main():
             elif techsupport_ingest_type == 'mount_path':
                 # Check if the mount path exists
                 if not os.path.exists(log_path):
-                    raise Exception('Could not find the mount path')
+                    raise FileNotFoundError('Could not find the mount path')
                 metadata['mount_path'] = log_path
 
                 archive_name = os.path.basename(log_path)
                 path = os.path.join(log_dir, archive_name)
 
-                # Copying the log archive to download directory to avoid write
-                # permission issue when unarchiving the archive.
-                shutil.copy(log_path, log_dir)
+                if os.path.isdir(log_path):
+                    # Copying the log folder to download directory to avoid write
+                    # permission issue when accessing the archive.
+                    shutil.copytree(log_path, path)
+                else:
+                    # Copying the log archive to download directory to avoid write
+                    # permission issue when unarchiving the archive.
+                    shutil.copy(log_path, log_dir)
 
                 ingestion_status = ingest_techsupport_logs(job_id, path, metadata, filters)
             elif techsupport_ingest_type == 'url':
@@ -149,15 +158,22 @@ def main():
                     path = os.path.join(log_dir, archive_name)
                     ingestion_status = ingest_techsupport_logs(job_id, path, metadata, filters)
             else:
-                raise Exception('Wrong techsupport ingest type')
+                raise TypeError('Wrong techsupport ingest type')
         else:
-            raise Exception('Wrong ingest type')
+            raise TypeError('Wrong ingest type')
 
         if ingestion_status and not ingestion_status['success']:
             status = False
             status_msg = ingestion_status.get('msg')
 
-    except Exception as e:
+        is_partial = ingestion_status.get('is_partial', False)
+    except (
+        EmptyPipelineException,
+        NotFoundException,
+        FileNotFoundError,
+        TypeError,
+        NotSupportedException
+    ) as e:
         logging.exception(f'Error when starting ingestion for job: {job_id}')
         status = False
         status_msg = str(e)
@@ -165,13 +181,21 @@ def main():
             'ingestion_error': str(e),
             **metadata
         })
+    except Exception as e:
+        logging.exception(f'Error when ingesting logs for job: {job_id}')
+        status = False
+        status_msg = str(e)
+        _update_metadata(es_metadata, LOG_ID, 'PARTIAL', {
+            'ingestion_error': str(e),
+            **metadata
+        })
     finally:
         # Clean up the downloaded files if successful.
-        if status:
+        if status and not is_partial:
             clean_up(LOG_ID)
 
         # Notify via email
-        email_notify(LOG_ID, status, status_msg)
+        email_notify(LOG_ID, status, is_partial, status_msg)
 
         # Backing up the logs generated during ingestion
         logger.backup_ingestion_logs(LOG_ID)
@@ -327,7 +351,8 @@ def upload_file():
         'ingester.html',
         feedback=feedback,
         ingest_type=ingest_type,
-        techsupport_ingest_type=techsupport_ingest_type
+        techsupport_ingest_type=techsupport_ingest_type,
+        file_server_url=config['FILE_SERVER_URL']
     )
 
 @ingester_page.route('/remove_file', methods=['DELETE'])
@@ -367,7 +392,8 @@ def render_ingest_page():
         'ingester.html',
         feedback={},
         ingest_type=ingest_type,
-        techsupport_ingest_type=techsupport_ingest_type)
+        techsupport_ingest_type=techsupport_ingest_type,
+        file_server_url=config['FILE_SERVER_URL'])
 
 
 @ingester_page.route('/ingest', methods=['POST'])
@@ -429,7 +455,8 @@ def ingest():
                 'ingester.html',
                 feedback=feedback,
                 ingest_type=ingest_type,
-                techsupport_ingest_type=techsupport_ingest_type
+                techsupport_ingest_type=techsupport_ingest_type,
+                file_server_url=config['FILE_SERVER_URL']
             )
 
         if not job_id:
@@ -480,7 +507,8 @@ def ingest():
             'ingester.html',
             feedback=feedback,
             ingest_type=ingest_type,
-            techsupport_ingest_type=techsupport_ingest_type
+            techsupport_ingest_type=techsupport_ingest_type,
+            file_server_url=config['FILE_SERVER_URL']
         )
     except Exception as e:
         current_app.logger.exception(f'Error when starting ingestion for job: {job_id}')
@@ -596,7 +624,7 @@ def fetch_qa_job_info(job_id):
     response = requests.get(url)
     job_info = response.json()
     if not (job_info and job_info['data']):
-        raise Exception('Job info not found')
+        raise NotFoundException('Job info not found')
     return job_info
 
 
@@ -610,7 +638,7 @@ def fetch_qa_suite_info(suite_id):
     response = requests.get(url)
     suite_info = response.json()
     if not (suite_info and suite_info['data']):
-        raise Exception(f'QA suite ({suite_id}) not found')
+        raise NotFoundException(f'QA suite ({suite_id}) not found')
     return suite_info['data']
 
 
@@ -632,7 +660,7 @@ def fetch_qa_logs(job_id, suite_info, test_index=None):
     response = requests.get(url)
     job_logs = response.json()
     if not (job_logs and job_logs['data']):
-        raise Exception('Logs not found')
+        raise NotFoundException('Logs not found')
     return _filter_qa_log_files(job_logs, suite_info, test_index)
 
 
@@ -647,7 +675,7 @@ def _filter_qa_log_files(job_logs, suite_info, test_index=None):
         # _{test_index}script_helper.py
         log_filename_starts = (f'_{test_index}{test_script_name}', f'_{test_index}script_helper.py')
     else:
-        raise Exception('Logs not found')
+        raise NotFoundException('Logs not found')
 
     # These are the log archives from QA platform to ingest.
     # fc_log.tgz & fcs_log.tgz are from single & HA node setup.
@@ -806,7 +834,7 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
                         template_path = os.path.join(file_path, '../config/templates/fc/FUNLOG_MANIFEST')
                         shutil.copy(template_path, LOG_DIR)
                     else:
-                        raise Exception('Unsupported release train')
+                        raise NotSupportedException('Unsupported release train')
 
                     manifest_contents.append(f'frn::::::bundle::"{archive_name}"')
 
@@ -827,9 +855,9 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
                         # TODO(Sourabh): This is an assumption that there will not be
                         # other files in this directory
                         if len(files) == 0:
-                            raise Exception('Could not find the CS log archive')
+                            raise NotFoundException('Could not find the CS log archive')
                         if len(files) > 1:
-                            raise Exception('There are more than 1 CS log archive')
+                            raise NotSupportedException('There are more than 1 CS log archive')
 
                         # The path contains only a tar file, with a FUNLOG_MANIFEST
                         # file, which needs to be ingested
@@ -854,7 +882,7 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
 
                         manifest_contents.append(f'frn::::::bundle:"{archive_name}/tmp/debug_logs":"{log_folder_name}"')
                     else:
-                        raise Exception('Unsupported release train')
+                        raise NotSupportedException('Unsupported release train')
 
                 # system logs
                 elif log_file.endswith('system_log.tar'):
@@ -873,10 +901,10 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
 
                         manifest_contents.append(f'frn::::::bundle::"{archive_name}"')
                     else:
-                        raise Exception('Unsupported release train')
+                        raise NotSupportedException('Unsupported release train')
 
         if not found_logs:
-            raise Exception('Logs not found')
+            raise NotFoundException('Logs not found')
 
         end = time.time()
         time_taken = end - start
@@ -923,7 +951,7 @@ def ingest_techsupport_logs(job_id, log_path, metadata, filters):
             log_path = os.path.splitext(log_path)[0]
 
         if not manifest_parser.has_manifest(log_path):
-            raise Exception('Could not find the FUNLOG_MANIFEST file.')
+            raise NotFoundException('Could not find the FUNLOG_MANIFEST file.')
 
         manifest_contents = list()
         filename = log_path.split('/')[-1].replace(' ', '_')
@@ -1043,7 +1071,7 @@ def _update_metadata(metadata_handler, log_id, status, additional_data={}):
     return metadata_handler.update(log_id, metadata)
 
 
-def email_notify(logID, is_successful, status_msg):
+def email_notify(logID, is_successful, is_partial, status_msg):
     """ Notifying via email at the end of the ingestion """
     es_metadata = ElasticsearchMetadata()
     metadata = es_metadata.get(logID)
@@ -1061,17 +1089,28 @@ def email_notify(logID, is_successful, status_msg):
         return
 
     if is_successful:
-        subject = f'Ingestion of {logID} is successful.'
-        body = f"""
-            Ingestion of {logID} is successful.
-            Log Analyzer Dashboard: {config['LOG_VIEW_BASE_URL'].replace('LOG_ID', logID)}/dashboard
+        if is_partial:
+            subject = f'Ingestion of {logID} is successful.'
+            body = f"""
+                Ingestion of {logID} is partially successful.
+                Log Analyzer Dashboard: {config['LOG_VIEW_BASE_URL'].replace('LOG_ID', logID)}/dashboard
 
-            Time to ingest logs: {metadata.get('ingestion_time')} seconds
-        """
+                Error logs: {config['FILE_SERVER_URL']}/{logID}/file/{logID}_error.log
+                Time to ingest logs: {metadata.get('ingestion_time')} seconds
+            """
+        else:
+            subject = f'Ingestion of {logID} is successful.'
+            body = f"""
+                Ingestion of {logID} is successful.
+                Log Analyzer Dashboard: {config['LOG_VIEW_BASE_URL'].replace('LOG_ID', logID)}/dashboard
+
+                Time to ingest logs: {metadata.get('ingestion_time')} seconds
+            """
     else:
         subject = f'Ingestion of {logID} failed.'
         body = f"""
             Ingestion of {logID} failed. Please email tools-pals@fungible.com for help!
+            Error logs: {config['FILE_SERVER_URL']}/{logID}/file/{logID}_error.log
             Reason: {status_msg}
         """
 

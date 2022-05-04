@@ -21,6 +21,8 @@ import config_loader
 import pipeline
 import logger
 
+from custom_exceptions import EmptyPipelineException
+from custom_exceptions import NotFoundException
 from elastic_metadata import ElasticsearchMetadata
 from utils import archive_extractor
 from utils import manifest_parser
@@ -88,7 +90,7 @@ def main():
     }
 
     LOG_ID = f'log_{build_id}'
-    custom_logging = logger.get_logger(filename=f'{LOG_ID}.log')
+    custom_logging = logger.get_logger(filename=f'{LOG_ID}.log', separate_error_file=True)
     custom_logging.propagate = False
 
     # Initializing the timeline tracker
@@ -140,7 +142,7 @@ def start_pipeline(base_path, build_id, filters={}, metadata={}, output_block='E
             base_path = os.path.splitext(base_path)[0]
 
         if not os.path.exists(os.path.join(base_path, 'FUNLOG_MANIFEST')):
-            raise Exception('Could not find manifest file')
+            raise NotFoundException('Could not find manifest file')
 
         env = dict()
         env['logdir'] = base_path
@@ -174,8 +176,15 @@ def start_pipeline(base_path, build_id, filters={}, metadata={}, output_block='E
 
     end = time.time()
     time_taken = end - start
+
+    # Check if there are any error logs indicating partial ingestion
+    is_partial = False
+    error_log_file = f'{logger.LOGS_DIRECTORY}/{LOG_ID}_error.log'
+    if os.stat(error_log_file).st_size != 0:
+        is_partial = True
+
     es_metadata.update(LOG_ID, {
-        'ingestion_status': 'COMPLETED',
+        'ingestion_status': 'PARTIAL' if is_partial else 'COMPLETED',
         'ingestion_error': None,
         'ingestion_time': time_taken,
         **metadata
@@ -187,6 +196,7 @@ def start_pipeline(base_path, build_id, filters={}, metadata={}, output_block='E
 
     return {
         'success': True,
+        'is_partial': is_partial,
         'time_taken': time_taken
     }
 
@@ -230,7 +240,7 @@ def build_pipeline_cfg(path, filters, output_block):
     pipeline_cfg, metadata = parse_manifest(path, filters=filters)
 
     if not pipeline_cfg:
-        raise Exception('Could not form the ingestion pipeline.')
+        raise EmptyPipelineException('Could not form the ingestion pipeline.')
 
     # Adding filter pipeline
     pipeline_cfg.extend(filter_pipeline(filters))
@@ -342,7 +352,7 @@ def build_input_pipeline(path, frn_info, filters={}):
         return blocks
 
     if not source:
-        logging.error(f'Missing source in FRN: {frn_info}')
+        logging.warning(f'Missing source in FRN: {frn_info}')
         return blocks
 
     # If the folder does not exist

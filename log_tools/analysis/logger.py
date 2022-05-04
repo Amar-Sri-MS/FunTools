@@ -31,7 +31,7 @@ MEGABYTE = 1000000
 config = config_loader.get_config()
 
 
-def get_logger(name=None, filename=None):
+def get_logger(name=None, filename=None, separate_error_file=False):
     """
     Get custom logger with StreamHandler and FileHandler
     if "filename" is given and with the default log format.
@@ -67,6 +67,19 @@ def get_logger(name=None, filename=None):
         handler.setFormatter(formatter)
         custom_logger.addHandler(handler)
 
+        if separate_error_file:
+            error_file = '.'.join(filename.split('.')[:-1])
+            path = os.path.join(LOGS_DIRECTORY, f'{error_file}_error.log')
+
+            # Also route to rotating file if requested.
+            # Automatically write and rotate logs.
+            handler = logging.handlers.RotatingFileHandler(path,
+                                                        maxBytes=100 * MEGABYTE,
+                                                        backupCount=10)
+            handler.setFormatter(formatter)
+            handler.setLevel(logging.ERROR)
+            custom_logger.addHandler(handler)
+
     return custom_logger
 
 
@@ -88,6 +101,9 @@ def backup_ingestion_logs(log_id):
 
         pattern = os.path.join(LOGS_DIRECTORY, f'{log_id}.log*')
         log_files = glob.glob(pattern)
+
+        error_files = os.path.join(LOGS_DIRECTORY, f'{log_id}_error.log*')
+        log_files += glob.glob(error_files)
 
         files = list()
 

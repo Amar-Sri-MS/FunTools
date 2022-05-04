@@ -77,23 +77,26 @@ class ElasticsearchOutput(Block):
         Yields:
             tuple with log information and Elasticsearch document id
         """
-        # parallel_bulk is a wrapper around bulk to provide threading.
-        # default thread_count is 4 and it returns a generator with indexing result.
-        # chunk_size of 10k works best based on tests on existing logs on single ES node
-        # running with 4GB heap.
-        # TODO(Sourabh): Need to test again if there's any change in resources of the ES node
-        statuses = parallel_bulk(self.es,
-                                self.generate_es_doc(documents),
-                                raise_on_error=True,
-                                raise_on_exception=True,
-                                chunk_size=10000)
-        # parallel_bulk returns a generator of tuples containing two elements: status flag (bool)
-        # and result of document creation (object).
-        for idx, status in enumerate(statuses):
-            if status[0] == False:
-                logging.error(f'Failed to index a document: {status}')
-            else:
-                yield from self._add_doc_id_in_iters(documents[idx], status[1]['index']['_id'])
+        try:
+            # parallel_bulk is a wrapper around bulk to provide threading.
+            # default thread_count is 4 and it returns a generator with indexing result.
+            # chunk_size of 10k works best based on tests on existing logs on single ES node
+            # running with 4GB heap.
+            # TODO(Sourabh): Need to test again if there's any change in resources of the ES node
+            statuses = parallel_bulk(self.es,
+                                    self.generate_es_doc(documents),
+                                    raise_on_error=True,
+                                    raise_on_exception=True,
+                                    chunk_size=10000)
+            # parallel_bulk returns a generator of tuples containing two elements: status flag (bool)
+            # and result of document creation (object).
+            for idx, status in enumerate(statuses):
+                if status[0] == False:
+                    logging.error(f'Failed to index a document: {status}')
+                else:
+                    yield from self._add_doc_id_in_iters(documents[idx], status[1]['index']['_id'])
+        except:
+            logging.exception('Something went wrong while indexing.')
 
     def _add_doc_id_in_iters(self, tuple, doc_id):
         """ Adding ES doc id to the message tuple """

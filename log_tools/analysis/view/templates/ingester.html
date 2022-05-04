@@ -210,6 +210,7 @@
     <script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.4.0/min/dropzone.min.js"></script>
     <script type="text/javascript">
         let ingestType = "{{ingest_type}}", techsupportIngestType = "{{techsupport_ingest_type}}";
+        const FILE_SERVER_URL = "{{file_server_url}}";
 
         // Dropzone.js object to track the uploading of files.
         let dropzone = null;
@@ -469,7 +470,7 @@
                 <p>Status: ${statusImg} ${status}</p>
                 <p>Last checked: ${new Date()}</p>
             `;
-            if (status == "COMPLETED") {
+            if (status == "COMPLETED" || status == "PARTIAL") {
                 const logID = metadata["logID"];
                 const dashboardLink = `${window.location.origin}/log/${logID}/dashboard`;
                 const downloadTime = "download_time" in metadata ? +metadata["download_time"].toFixed(2) : "Unknown";
@@ -479,6 +480,11 @@
                     <p>Time taken to download log archive: ${downloadTime}s</p>
                     <p>Time taken to ingest: ${ingestionTime}s</p>
                 `;
+                if (status == "PARTIAL") {
+                    feedbackElement.innerHTML = `
+                        <a float-right" target="_blank" href="${FILE_SERVER_URL}/${logID}/file/${logID}_error.log">Link to error logs</a>
+                    `;
+                }
                 clearInterval(statusInterval);
             }
             else if ("download_time" in metadata &&
@@ -492,6 +498,7 @@
             else if (status == "FAILED") {
                 feedbackElement.innerHTML = `
                     <p class="text-danger float-right">ERROR: ${metadata["ingestion_error"]}</p>
+                    <a float-right" target="_blank" href="${FILE_SERVER_URL}/${logID}/file/${logID}_error.log">Link to error logs</a>
                 `;
                 clearInterval(statusInterval);
             }
