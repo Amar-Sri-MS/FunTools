@@ -115,6 +115,10 @@ class TechsupportTester(Tester):
 
         if self.techsupport_ingest_type == 'upload':
             try:
+                if os.stat(self.file_path).st_size > config["MAX_CONTENT_LENGTH"]:
+                    logging.info('Skipping upload because the file size too big.')
+                    return
+
                 URL = f'{config["LOG_ANALYZER_BASE_URL"]}/upload_file'
                 headers = {
                     'Accept': 'application/json'
