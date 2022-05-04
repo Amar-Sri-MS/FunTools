@@ -514,24 +514,24 @@ def ingest():
         return render_error_template(str(e)), 500
 
 
-def start_ingestion(job_id, ingest_type, **addtional_data):
+def start_ingestion(job_id, ingest_type, **additional_data):
     """
     Forming the command and starting the ingestion based on the
     additional data.
 
     Returns the metadata if the job_id already exists.
     """
-    test_index = addtional_data.get('test_index', 0)
-    tags = addtional_data.get('tags')
-    techsupport_ingest_type = addtional_data.get('techsupport_ingest_type')
-    mount_path = addtional_data.get('mount_path')
-    file_name = addtional_data.get('file_name')
-    downloadable_url = addtional_data.get('downloadable_url')
+    test_index = additional_data.get('test_index', 0)
+    tags = additional_data.get('tags')
+    techsupport_ingest_type = additional_data.get('techsupport_ingest_type')
+    mount_path = additional_data.get('mount_path')
+    file_name = additional_data.get('file_name')
+    downloadable_url = additional_data.get('downloadable_url')
     submitted_by = g.user
 
-    sources = addtional_data.get('sources')
-    start_time = addtional_data.get('start_time')
-    end_time = addtional_data.get('end_time')
+    sources = additional_data.get('sources')
+    start_time = additional_data.get('start_time')
+    end_time = additional_data.get('end_time')
 
     LOG_ID = _get_log_id(job_id, ingest_type, test_index=test_index)
 
