@@ -616,8 +616,6 @@ def _read_file(log_id, file_name, default={}):
         app.logger.error(f'HTTP error occurred: {http_err}')  # Python 3.6
     except Exception as err:
         app.logger.error(f'Other error occurred: {err}')  # Python 3.6
-    except Exception as e:
-        app.logger.exception('Could not find file')
 
     return data
 

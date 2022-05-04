@@ -954,7 +954,7 @@ def ingest_techsupport_logs(job_id, log_path, metadata, filters):
             raise NotFoundException('Could not find the FUNLOG_MANIFEST file.')
 
         manifest_contents = list()
-        filename = log_path.split('/')[-1].replace(' ', '_')
+        filename = log_path.split('/')[-1]
         manifest_contents.append(f'frn::::::bundle::"{filename}"')
 
         # TODO(Sourabh): This is a temp workaround to get techsupport ingestion working.

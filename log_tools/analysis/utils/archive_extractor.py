@@ -34,6 +34,10 @@ def extract(path):
         opener, mode = tarfile.open, 'r'
     elif path.endswith(('.tar.lzma', '.tlz')):
         opener, mode = tarfile.open, 'r'
+    elif tarfile.is_tarfile(path):
+        opener, mode = tarfile.open, 'r'
+    elif zipfile.is_zipfile(path):
+        opener, mode = zipfile.ZipFile, 'r'
     elif path.endswith(('.gz')):
         opener, mode = gzip.open, 'rb'
     else:
