@@ -99,6 +99,16 @@
                             <label>Enter tags (comma separated)</label>
                             <input type="text" id="tags" name="tags" class="medium-input" placeholder="Enter tags" value="{{feedback.tags if feedback else null}}">
                         </div>
+                        <div class="form-group">
+                            <label>
+                                <input
+                                    type="checkbox"
+                                    name="ignore_size_restrictions"
+                                    {{"checked" if feedback["ignore_size_restrictions"] else ""}}
+                                />
+                                Ignore size restrictions for log archive
+                            </label>
+                        </div>
                         <hr />
                         <h3>Ingestion Filters</h3>
                         <div class="form-group" style="flex-direction: column;">
@@ -346,6 +356,8 @@
                 }
                 else {
                     statusElement.innerHTML = "<p>Ingesting.. Please wait.</p>";
+                    // Check status immediately.
+                    setTimeout(checkStatus, 5 * 1000);
                     statusInterval = setInterval(checkStatus, WAIT_TIME_TO_CHECK_STATUS);
                 }
             }
@@ -440,6 +452,8 @@
                 event.elements["test_index"].value = test_index;
             }
 
+            event.elements["ignore_size_restrictions"].value = event.elements["ignore_size_restrictions"].checked;
+
             statusElement.innerHTML = "<p>Ingesting.. Please wait.</p>";
             feedbackElement.innerHTML = "";
             return true;
@@ -501,6 +515,12 @@
                     <a float-right" target="_blank" href="${FILE_SERVER_URL}/${logID}/file/${logID}_error.log">Link to error logs</a>
                 `;
                 clearInterval(statusInterval);
+            }
+            else if (status == "PROMPT_USER") {
+                // Stop checking for status since the ingestion requires
+                // more input from the user.
+                clearInterval(statusInterval);
+                alert(metadata["ingestion_error"]);
             }
         }
 

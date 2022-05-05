@@ -8,10 +8,15 @@
 
 
 class EmptyPipelineException(Exception):
+    """ Raises when the pipeline config is empty. """
     pass
 
 class NotFoundException(Exception):
     pass
 
 class NotSupportedException(Exception):
+    pass
+
+class ArchiveTooBigException(Exception):
+    """ Raises when archive is beyond restricted size. """
     pass
