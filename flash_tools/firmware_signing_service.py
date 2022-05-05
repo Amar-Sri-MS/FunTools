@@ -274,15 +274,13 @@ def hash_sign(digest, sign_key=None, modulus=None):
                                      files=multipart_form_data,
                                      params=params,
                                      timeout=DEFAULT_HTTP_TIMEOUT)
+            break
+
         except ConnectionError as ex:
             # the single signing server is unfrequently restarted to
             # install security updates
             time.sleep(RETRY_CONNECTION_SLEEP_SECS)
             retries += 1
-            continue
-
-        break
-
 
     if response.status_code != requests.codes.ok:
         raise RuntimeError("Server responded with [{}]:\n{}\n".format(
