@@ -10,6 +10,7 @@ import sys
 import struct
 import binascii
 import hashlib
+import time
 
 import requests
 
@@ -63,8 +64,9 @@ SIGNING_SERVICE_URL = SIGNING_SERVER_URL + "/cgi-bin/signing_server.cgi"
 DEVELOPMENT_CERTIFICATE_ROOT_URL = SIGNING_SERVER_URL + "/development/"
 PRODUCTION_CERTIFICATE_ROOT_URL = SIGNING_SERVER_URL + "/production/"
 
-
 DEFAULT_HTTP_TIMEOUT = 180
+MAX_CONNECTION_RETRY = 20
+RETRY_CONNECTION_SLEEP_SECS = 10
 
 # environment variable: if it is set and points to a file, it triggers the use
 # of the production keys and certificates
@@ -264,10 +266,22 @@ def hash_sign(digest, sign_key=None, modulus=None):
     if sign_key:
         params['key'] = sign_key
 
-    response = requests.post(SIGNING_SERVICE_URL,
-                             files=multipart_form_data,
-                             params=params,
-                             timeout=DEFAULT_HTTP_TIMEOUT)
+
+    retries = 0
+    while retries < MAX_CONNECTION_RETRY:
+        try:
+            response = requests.post(SIGNING_SERVICE_URL,
+                                     files=multipart_form_data,
+                                     params=params,
+                                     timeout=DEFAULT_HTTP_TIMEOUT)
+            break
+
+        except ConnectionError as ex:
+            # the single signing server is unfrequently restarted to
+            # install security updates
+            time.sleep(RETRY_CONNECTION_SLEEP_SECS)
+            retries += 1
+
     if response.status_code != requests.codes.ok:
         raise RuntimeError("Server responded with [{}]:\n{}\n".format(
             response.status_code, response.content).replace("\\n", "\n"))
