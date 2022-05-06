@@ -126,7 +126,15 @@ def merge_dicts(cfg1, cfg2):
 #  if a list entry exists in both args, then elements from 2nd are appended to 1st
 #  if a dict entry exists in both args, then rules above are applied recursively
 def merge_dicts_recursive(orig, other_):
-    other = other_.copy()
+    other = {}
+    flags = {}
+    for k, v in other_.items():
+        # '!' in key name has a special meaning to add extra processing
+        # directives
+        key = k.split("!")
+        other[key[0]] = v
+        flags[key[0]] = key[1:]
+
     res = {}
     for k, v in list(orig.items()):
         if k in other:
@@ -135,7 +143,10 @@ def merge_dicts_recursive(orig, other_):
                 res[k] = merge_dicts_recursive(v, other[k])
             elif isinstance(v, list):
                 assert isinstance(other[k], list), "{} should be a list in both dictionaries".format(k)
-                res[k] = v + other[k]
+                if 'override' in flags[k]:
+                    res[k] = other[k]
+                else:
+                    res[k] = v + other[k]
             else:
                 res[k] = other[k]
 
