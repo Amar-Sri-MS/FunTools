@@ -392,6 +392,13 @@ def build_input_pipeline(path, frn_info, filters={}):
             fun_agent_input_pipeline(frn_info, source, file_pattern)
         )
 
+    elif source in ['opsec-agent', 'opsec_agent']:
+        file_pattern = f'{path}/opsec-agent*' if resource_type == 'folder' else path
+        blocks.extend(
+            controller_input_pipeline(frn_info, source, file_pattern,
+                parse_block='KeyValueInput')
+        )
+
     elif source in ['dataplacement', 'discovery', 'metrics_manager', 'scmscv', 'expansion_rebalance']:
         file_pattern = f'{path}/info*' if resource_type == 'folder' else path
         blocks.extend(
@@ -559,6 +566,8 @@ def build_input_pipeline(path, frn_info, filters={}):
         for file in log_files:
             filename = os.path.basename(file)
             frn_info['source'] = f'cclinux_{filename}'
+            if 'opsec-agent.log' in filename:
+                frn_info['source'] = 'opsec-agent'
             blocks.extend(build_input_pipeline(file, frn_info, filters))
 
     else:

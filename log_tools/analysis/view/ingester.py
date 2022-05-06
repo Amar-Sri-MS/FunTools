@@ -26,6 +26,7 @@ import yaml
 
 sys.path.insert(0, '.')
 
+from custom_exceptions import ArchiveTooBigException
 from custom_exceptions import EmptyPipelineException
 from custom_exceptions import NotFoundException
 from custom_exceptions import NotSupportedException
@@ -51,8 +52,9 @@ QA_JOB_INFO_ENDPOINT = f'{QA_REGRESSION_BASE_ENDPOINT}/suite_executions'
 QA_LOGS_ENDPOINT = f'{QA_REGRESSION_BASE_ENDPOINT}/test_case_time_series'
 QA_SUITE_ENDPOINT = f'{QA_REGRESSION_BASE_ENDPOINT}/suites'
 QA_STATIC_ENDPOINT = 'http://integration.fungible.local/static/logs'
-# Max upload size for the techsupport archive - 2GB
-UPLOAD_MAX_FILESIZE = 2 * 1024 * 1024 * 1024
+
+# Users are required to input ingestion filters for log archives greater than 4GB.
+RESTRICTED_ARCHIVE_SIZE = 4 * 1024 * 1024 * 1024
 
 
 def main():
@@ -68,6 +70,7 @@ def main():
     parser.add_argument('--file_name', help='File name of the uploaded log archive', default=None)
     parser.add_argument('--submitted_by', help='Email address of the submitter', default=None)
     parser.add_argument('--techsupport_ingest_type', help='Techsupport ingestion type', choices=['mount_path', 'upload', 'url'])
+    parser.add_argument('--ignore_size_restrictions', default=False)
 
     try:
         status = True
@@ -85,6 +88,7 @@ def main():
         end_time = args.end_time
         sources = args.sources
         techsupport_ingest_type = args.techsupport_ingest_type
+        ignore_size_restrictions = args.ignore_size_restrictions == 'true'
 
         LOG_ID = _get_log_id(job_id, ingest_type, test_index=test_index)
         es_metadata = ElasticsearchMetadata()
@@ -98,7 +102,8 @@ def main():
         metadata = {
             'tags': tags,
             'submitted_by': submitted_by,
-            'ingest_type': ingest_type
+            'ingest_type': ingest_type,
+            'ignore_size_restrictions': ignore_size_restrictions
         }
 
         filters = {
@@ -107,6 +112,11 @@ def main():
                 'sources': sources
             }
         }
+        filters_available = is_filters_available(filters)
+        # Ignore size restrictions if filters are available.
+        metadata['ignore_size_restrictions'] = ignore_size_restrictions or filters_available
+
+        _update_metadata(es_metadata, LOG_ID, 'STARTED')
 
         # Start ingestion
         if ingest_type == 'qa':
@@ -119,11 +129,21 @@ def main():
 
             if techsupport_ingest_type == 'upload':
                 log_path = os.path.join(log_dir, file_name)
+                # Check if the archive is beyond the resricted size
+                if (not metadata['ignore_size_restrictions'] and
+                    os.stat(log_path).st_size > RESTRICTED_ARCHIVE_SIZE):
+                    raise ArchiveTooBigException()
+
                 ingestion_status = ingest_techsupport_logs(job_id, log_path, metadata, filters)
             elif techsupport_ingest_type == 'mount_path':
                 # Check if the mount path exists
                 if not os.path.exists(log_path):
                     raise FileNotFoundError('Could not find the mount path')
+                # Check if the archive is beyond the resricted size
+                if (not metadata['ignore_size_restrictions'] and
+                    os.stat(log_path).st_size > RESTRICTED_ARCHIVE_SIZE):
+                    raise ArchiveTooBigException()
+
                 metadata['mount_path'] = log_path
 
                 archive_name = os.path.basename(log_path)
@@ -145,7 +165,7 @@ def main():
                                  LOG_ID,
                                  'DOWNLOAD_STARTED',
                                  {'log_path': log_path})
-                if check_and_download_logs(log_path, log_dir):
+                if check_and_download_logs(log_path, log_dir, metadata['ignore_size_restrictions']):
                     end = time.time()
                     time_taken = end - start
 
@@ -167,6 +187,16 @@ def main():
             status_msg = ingestion_status.get('msg')
 
         is_partial = ingestion_status.get('is_partial', False)
+    except ArchiveTooBigException:
+        status = False
+        status_msg = 'Size of log archive is beyond restricted limit. ' \
+                     'Please provide ingestion filters to reduce the logs ' \
+                     'or check the ignore size restrictions checkbox.'
+        logging.exception(status_msg)
+        _update_metadata(es_metadata, LOG_ID, 'PROMPT_USER', {
+            'ingestion_error': status_msg,
+            **metadata
+        })
     except (
         EmptyPipelineException,
         NotFoundException,
@@ -216,7 +246,8 @@ def upload():
     job_id: unique job_id
     file: binary file of log archive uploaded in chunks
     """
-    # Reject if file size is greater than the UPLOAD_MAX_FILESIZE
+    # Reject if file size is greater than the MAX_CONTENT_LENGTH
+    UPLOAD_MAX_FILESIZE = current_app.config['MAX_CONTENT_LENGTH']
     if (int(request.form.get('dztotalfilesize', 0)) > UPLOAD_MAX_FILESIZE):
         return jsonify('File is too big.'
                        'Please use other methods to ingest.'), 413
@@ -425,6 +456,7 @@ def ingest():
         file_name = request.form.get('filename')
         mount_path = request.form.get('mount_path')
         downloadable_url = request.form.get('downloadable_url')
+        ignore_size_restrictions = request.form.get('ignore_size_restrictions', default=False, type=bool)
         submitted_by = g.user
 
         start_time = request.form.get('start_time', None)
@@ -447,6 +479,7 @@ def ingest():
                 'sources': sources,
                 'mount_path': mount_path,
                 'downloadable_url': downloadable_url,
+                'ignore_size_restrictions': ignore_size_restrictions,
                 'msg': msg if msg else 'Some error occurred'
             }
             if accept_type == 'application/json':
@@ -480,6 +513,7 @@ def ingest():
                                    mount_path=mount_path,
                                    downloadable_url=downloadable_url,
                                    file_name=file_name,
+                                   ignore_size_restrictions=ignore_size_restrictions,
                                    sources=sources,
                                    start_time=start_time,
                                    end_time=end_time)
@@ -498,6 +532,7 @@ def ingest():
             'sources': sources,
             'mount_path': mount_path,
             'downloadable_url': downloadable_url,
+            'ignore_size_restrictions': ignore_size_restrictions,
             'metadata': metadata
         }
 
@@ -515,24 +550,25 @@ def ingest():
         return render_error_template(str(e)), 500
 
 
-def start_ingestion(job_id, ingest_type, **addtional_data):
+def start_ingestion(job_id, ingest_type, **additional_data):
     """
     Forming the command and starting the ingestion based on the
     additional data.
 
     Returns the metadata if the job_id already exists.
     """
-    test_index = addtional_data.get('test_index', 0)
-    tags = addtional_data.get('tags')
-    techsupport_ingest_type = addtional_data.get('techsupport_ingest_type')
-    mount_path = addtional_data.get('mount_path')
-    file_name = addtional_data.get('file_name')
-    downloadable_url = addtional_data.get('downloadable_url')
+    test_index = additional_data.get('test_index', 0)
+    tags = additional_data.get('tags')
+    techsupport_ingest_type = additional_data.get('techsupport_ingest_type')
+    mount_path = additional_data.get('mount_path')
+    file_name = additional_data.get('file_name')
+    downloadable_url = additional_data.get('downloadable_url')
+    ignore_size_restrictions = additional_data.get('ignore_size_restrictions')
     submitted_by = g.user
 
-    sources = addtional_data.get('sources')
-    start_time = addtional_data.get('start_time')
-    end_time = addtional_data.get('end_time')
+    sources = additional_data.get('sources')
+    start_time = additional_data.get('start_time')
+    end_time = additional_data.get('end_time')
 
     LOG_ID = _get_log_id(job_id, ingest_type, test_index=test_index)
 
@@ -541,7 +577,7 @@ def start_ingestion(job_id, ingest_type, **addtional_data):
 
     # If metadata exists then either ingestion for this job
     # is already done or in progress
-    if not metadata or metadata['ingestion_status'] == 'FAILED':
+    if not metadata or metadata['ingestion_status'] in ['FAILED', 'PROMPT_USER']:
         cmd = ['./ingester.py', job_id, '--ingest_type', ingest_type]
         if len(tags) > 0:
             cmd.append('--tags')
@@ -579,6 +615,11 @@ def start_ingestion(job_id, ingest_type, **addtional_data):
             cmd.append('--submitted_by')
             cmd.append(submitted_by)
 
+        cmd.extend([
+            '--ignore_size_restrictions',
+            'true' if ignore_size_restrictions else 'false'
+        ])
+
         logging.info(f'Running ingestion cmd: {cmd}')
         ingestion = subprocess.Popen(cmd)
 
@@ -612,6 +653,19 @@ def _get_log_id(job_id, ingest_type, **additional_data):
         return f'log_qa-{job_id}-{test_index}'
     elif ingest_type == 'techsupport':
         return f'log_techsupport-{job_id}'
+
+
+def is_filters_available(filters):
+    """ Returns True if filters are available. """
+    included_filters = filters['include']
+    if (len(included_filters['time']) > 0 and
+        (included_filters['time'][0] or included_filters['time'][1])):
+        return True
+
+    if included_filters['sources'] and len(included_filters['sources']) > 0:
+        return True
+
+    return False
 
 
 def fetch_qa_job_info(job_id):
@@ -756,7 +810,7 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
                 continue
             log_dir = log_file.split(QA_LOGS_DIRECTORY)[1]
             url = f'{QA_STATIC_ENDPOINT}{log_dir}'
-            if check_and_download_logs(url, path):
+            if check_and_download_logs(url, path, metadata['ignore_size_restrictions']):
                 found_logs = True
                 # techsupport log archive
                 if log_file.endswith('cs_all_logs_techsupport.tar.gz'):
@@ -954,7 +1008,7 @@ def ingest_techsupport_logs(job_id, log_path, metadata, filters):
             raise NotFoundException('Could not find the FUNLOG_MANIFEST file.')
 
         manifest_contents = list()
-        filename = log_path.split('/')[-1].replace(' ', '_')
+        filename = log_path.split('/')[-1]
         manifest_contents.append(f'frn::::::bundle::"{filename}"')
 
         # TODO(Sourabh): This is a temp workaround to get techsupport ingestion working.
@@ -1041,13 +1095,18 @@ def _create_manifest(path, metadata={}, contents=[]):
 
 
 @timeline.timeline_logger('downloading_logs')
-def check_and_download_logs(url, path):
+def check_and_download_logs(url, path, ignore_size_restrictions=False):
     """ Downloading log archives from QA dashboard """
     filename = url.split('/')[-1].replace(' ', '_')
     file_path = os.path.join(path, filename)
 
     response = requests.get(url, allow_redirects=True, stream=True)
     if response.ok:
+        if not ignore_size_restrictions:
+            content_length = int(response.headers['Content-Length'])
+            if content_length > RESTRICTED_ARCHIVE_SIZE:
+                raise ArchiveTooBigException()
+
         os.makedirs(path, exist_ok=True)
         logging.info(f'Saving log archive to {os.path.abspath(file_path)}')
         with open(file_path, 'wb') as f:
