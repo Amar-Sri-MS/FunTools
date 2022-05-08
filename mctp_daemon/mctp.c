@@ -8,6 +8,7 @@
 #include "utils.h"
 #include "mctp.h"
 #include "pldm.h"
+#include "ncsi.h"
 
 /* local variables */
 static mctp_stats_t mctp_sts;
@@ -119,10 +120,6 @@ static int mctp_cmd_version_get(uint8_t *buf, mctp_ctrl_hdr_t *hdr, mctp_endpoin
 
 #ifdef CONFIG_NCSI_SUPPORT
 	case MCTP_MSG_NCSI:
-		if (!NCSI_ENABLED) {
-			rspn->reason = MCTP_MSG_TYPE_NOT_SUPPORTED;
-			break;
-		}
 		ver->major = NCSI_VER_NUM_MAJOR;
 		ver->minor = NCSI_VER_NUM_MINOR;
 		ver->update = NCSI_VER_NUM_UPDATE;
@@ -372,7 +369,7 @@ static int handle_mctp_pkt(mctp_endpoint_stct *ep)
 	case MCTP_MSG_NCSI:
 		if (check_for_unsupport(ep, SUPPORT_NCSI_OVER_MCTP))
 			return -1;
-		rc = ncsi_handler(ep->rx_ptr, ep->retain->iid);
+		rc = ncsi_handler(ep->rx_ptr, ep->rx_len, ep->tx_ptr);
 		break;
 #endif
 
