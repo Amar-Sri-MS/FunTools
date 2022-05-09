@@ -54,7 +54,7 @@ endif
 # define header and library location in FunSDK
 CFLAGS += -I./ -I./include -I./$(BUILD_ROOT) -g -Wall -Werror -Wno-multichar 
 
-SRCS = smbus.c pcie_vdm.c utils.c pldm.c pldm_mcd.c pldm_pmc.c pldm_fru.c mctp.c mctp_daemon.c main_loop.c
+SRCS = smbus.c pcie_vdm.c utils.c pldm.c pldm_mcd.c pldm_pmc.c pldm_fru.c ncsi.c ncsi_cmds.c mctp.c mctp_daemon.c main_loop.c
 OBJS = $(addprefix $(BUILD_ROOT)/,$(SRCS:.c=.o))
 
 MCTP_CONFIG ?= .config
