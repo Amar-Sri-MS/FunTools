@@ -104,16 +104,17 @@ def read_stylesheet():
 
     return style
 
-def do_output(out_fname, sections):
+def do_output(out_fname, sections, cores):
 
     # read the css formatting
     style = read_stylesheet()
-    
+
     # run the template
     args = {"style": style,
             "date": str(datetime.datetime.now()),
-            "sections": sections}
-    
+            "sections": sections,
+            "cores": cores}
+
     tpath = os.path.join(abs_app_dir_path(), "templates")
     file_loader = FileSystemLoader(tpath)
     env = Environment(loader=file_loader)
@@ -303,30 +304,47 @@ def mkmisses(raw_misses, lineinfo, regioninfo, gdbinfo):
 
     return misses
 
+
+def do_missmap_html(misses_raw, lineinfo, regioninfo, gdbinfo, out_fname,
+                    max_rows, cores):
+
+    misses = mkmisses(misses_raw, lineinfo, regioninfo, gdbinfo)
+    # template prints a list of sections
+    sections = []
+
+    for (name, info_field, func) in REKEY_LIST:
+        by_key = do_rekey(misses, func, info_field, max_rows)
+        tup = (name, by_key)
+        sections.append(tup)
+
+    # make the output
+    do_output(out_fname, sections, cores)
+
+
 ###
 ##  do the work
 #
 
 def do_missmap(misses_raw, lineinfo, regioninfo, gdbinfo, mode, out_fname, max_rows=0):
-    # process misses accoriding to available info
-    print("%d misses in input" % len(misses_raw))
-    misses = mkmisses(misses_raw, lineinfo, regioninfo, gdbinfo)
-
-    print("%d processed misses" % len(misses))
 
     if (mode == "html"):
-        # template prints a list of sections
-        sections = []
+        misslist_by_core = collections.defaultdict(list)
+        for miss in misses_raw:
+            core = miss["core"]
+            misslist_by_core[core].append(miss)
 
-        for (name, info_field, func) in REKEY_LIST:
+        for core in misslist_by_core:
+            out_fname = "missmap_%s.html" % core
+            do_missmap_html(misslist_by_core[core], lineinfo, regioninfo,
+                            gdbinfo, out_fname, max_rows, [core])
 
-            by_key = do_rekey(misses, func, info_field, max_rows)
-            tup = (name, by_key)
-            sections.append(tup)
-    
-        # make the output
-        do_output(out_fname, sections)
+        do_missmap_html(misses_raw, lineinfo, regioninfo, gdbinfo, 'missmap.html', max_rows,
+                        sorted(misslist_by_core))
     elif (mode == "csv"):
+        # process misses accoriding to available info
+        print("%d misses in input" % len(misses_raw))
+        misses = mkmisses(misses_raw, lineinfo, regioninfo, gdbinfo)
+        print("%d processed misses" % len(misses))
         do_pivot(out_fname, misses)
     else:
         raise RuntimeError("bad mode %s" % mode)

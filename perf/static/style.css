@@ -71,3 +71,19 @@ table.main tbody td {
     font-weight: normal;
     font-family: Menlo-Regular, sans-serif;
 }
+
+.breadcrumb {
+    padding: 2px 2px;
+    list-style: none;
+    background-color: #eee;
+}
+
+.breadcrumb li {
+    display: inline;
+}
+
+.breadcrumb li+li:before {
+    padding: 4px;
+    color: black;
+    content: ">";
+}
