@@ -293,6 +293,7 @@ funsdk_setup()
     cd $root_dir/FunSDK
     find . -name .git |xargs rm -rf
     find . -name .gitignore |xargs rm -rf
+    find . -name FunChip |xargs rm -rf
     rm -rf FunSDK/chip/f1d1
     rm -rf FunSDK/chip/s2
     rm -rf FunSDK/config/pipeline/*f1d1*
