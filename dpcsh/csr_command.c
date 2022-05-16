@@ -6,6 +6,7 @@
 
 #define PLATFORM_POSIX	1
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <FunOS/services/commander/fun_commander.h>
 #include <FunOS/utils/threaded/fun_malloc_threaded.h>
