@@ -1,6 +1,15 @@
 /*
  * ddr_unshard.c: decode a DDR memory dump for S1 from Palladium.
  *
+ * Usage:
+ *
+ * ddr_unshard outfile path-prefix
+ *
+ * path_prefix is path and partial name of dump files
+ * up to funos-s1-emu.64big where the "ch%d" suffix of the different
+ * shards of the dump have been omitted.
+ * wh
+
  * Copyright Fungible Inc. 2019.  All rights reserved.
  */
 
@@ -17,6 +26,9 @@
 #include <sys/stat.h>
 
 #include "ddr_address.h"
+
+// True if we should print extra debugging info.
+bool debugging = false;
 
 // TODO(bowdidge): Unify with HBM dumping.
 
@@ -58,30 +70,46 @@ void open_shard_files(const char *prefix,
 	size_t nlen = strlen(prefix) + strlen(shard_info->extension)+1;
 	int i;
 
+	printf("Expecting %d channels, %d inst\n",
+	       shard_info->num_channels, shard_info->num_inst);
 	for (i = 0; i < shard_info->num_channels; i++) {
-		/* make a filename and open it */
-		shards[i].name = malloc(nlen);
-		sprintf(shards[i].name, shard_info->extension,
-			prefix, i);
-		shards[i].srcfd = open(shards[i].name, O_RDONLY);
-		if (shards[i].srcfd < 0) {
-			printf("failed to open shard %s\n",
-			       shards[i].name);
-			exit(1);
-		}
-		struct stat st;
+		for (int j = 0; j < shard_info->num_inst; j++) {
+			/* make a filename and open it */
+			uint16_t shard_index = i * shard_info->num_inst + j;
+			shards[shard_index].name = malloc(nlen);
+			if (shard_info->num_inst <= 1) {
+				// Only one substitution - channel number.
+				sprintf(shards[shard_index].name,
+					shard_info->extension,
+					prefix, shard_index);
+			} else {
+				// Substitute channel number and instance.
+				sprintf(shards[shard_index].name,
+					shard_info->extension,
+					prefix, i, j);
+			}
+			shards[shard_index].srcfd =
+				open(shards[shard_index].name, O_RDONLY);
+			if (shards[shard_index].srcfd < 0) {
+				printf("failed to open shard %s\n",
+				       shards[shard_index].name);
+				exit(1);
+			}
+			struct stat st;
 
-		if (stat(shards[i].name, &st) != 0) {
-			perror("stat");
-			exit(1);
-		}
-		printf("file %s is %" PRId64 " bytes\n",
-		       shards[i].name, st.st_size);
-		if (st.st_size != shard_info->expected_file_size) {
-			printf("Expected shard hex file to be %" PRId64
-			       " bytes, got % " PRId64 " bytes\n",
-			       shard_info->expected_file_size, st.st_size);
-			exit(1);
+			if (stat(shards[shard_index].name, &st) != 0) {
+				perror("stat");
+				exit(1);
+			}
+			printf("file %s is %" PRId64 " bytes\n",
+			       shards[shard_index].name, st.st_size);
+			if (st.st_size != shard_info->expected_file_size) {
+				printf("Expected shard hex file to be %" PRId64
+				       " bytes, got % " PRId64 " bytes\n",
+				       shard_info->expected_file_size,
+				       st.st_size);
+				exit(1);
+			}
 		}
 	}
 }
@@ -201,6 +229,7 @@ static void decode_input(int shard_number, struct sharding_info *shard_info)
 
 	// Unlink the binary version of the shard file so that it
 	// doesn't stick around after processing.
+	// Comment this out if you want to look at the raw shards.
 	unlink(f->fname);
 
 	f->binfd = -1;
@@ -212,18 +241,22 @@ static void decode_input(int shard_number, struct sharding_info *shard_info)
  */
 static void decode_inputs(struct sharding_info *shard_info)
 {
-	int i;
+	int i, j;
 	for (i = 0; i < shard_info->num_channels; i++) {
-		printf("Converting shard %d to binary.\n", i);
-		fflush(stdout);
-		decode_input(i, shard_info);
+		for (j = 0; j < shard_info->num_inst; j++) {
+			uint16_t shard_index = i * shard_info->num_inst + j;
+			printf("Converting shard %d to binary.\n",
+			       shard_index);
+			fflush(stdout);
+			decode_input(shard_index, shard_info);
+		}
 	}
 	printf("\n");
 }
 
 /*
  * Sweep through memory finding the location of each chunk of data.
- * Pick it out of the file, and write it to the output.
+ * Pick it out of the file, and write it to the output file.
  */
 static void unshard(int dump_fd, struct sharding_info *shard_info)
 {
@@ -233,6 +266,9 @@ static void unshard(int dump_fd, struct sharding_info *shard_info)
 	ssize_t n;
 	uint16_t file_shard;
 
+	uint16_t max_shard =
+		shard_info->num_channels * shard_info->num_inst - 1;
+
 	printf("Unsharding\n");
 	for (addr = 0; addr < shard_info->memory_size;
 	     addr += shard_info->stride_size) {
@@ -240,19 +276,21 @@ static void unshard(int dump_fd, struct sharding_info *shard_info)
 		/* compute where next memory line is found in files. */
 		struct offset_pair offset_loc =
 			shard_info->addr_to_shard(addr);
-		if ((addr & 0xffffffff) == 0) {
+		if (debugging) {
 			printf("addr %" PRIx64" at file %d "
 			       "offset %" PRIx64 "\n",
 			       addr, offset_loc.file_shard, offset_loc.offset);
 		}
-		assert(offset_loc.file_shard < shard_info->num_channels);
+		assert(offset_loc.file_shard < max_shard);
 
 		file_shard = shard_info->channel_order[offset_loc.file_shard];
 
 		f = &shards[file_shard];
 
+		// Sanity check that offset is within the size of the shard.
 		if (offset_loc.offset >= f->size) {
-			printf("0x%" PRIx64 " vs 0x%" PRIx64 "\n",
+			printf("offset is 0x%" PRIx64
+			       ", but file size was 0x%" PRIx64 "\n",
 			       offset_loc.offset, f->size);
 			assert(offset_loc.offset < f->size);
 		}
@@ -270,8 +308,6 @@ int main(int argc, char *argv[])
 {
 	struct sharding_info ddr_info = ddr_shard_info();
 
-	shards = malloc(sizeof(struct infile) * ddr_info.num_channels);
-
 	const char *prefix = NULL;
 	const char *outfile = NULL;
 	uint32_t i;
@@ -285,6 +321,9 @@ int main(int argc, char *argv[])
 	/* extract the actual output filename & prefix */
 	outfile = argv[1];
 	prefix = argv[2];
+
+	uint16_t num_shards = ddr_info.num_channels * ddr_info.num_inst;
+	shards = malloc(sizeof(struct infile) * num_shards);
 
 	/* open all the files */
 	open_shard_files(prefix, &ddr_info);
