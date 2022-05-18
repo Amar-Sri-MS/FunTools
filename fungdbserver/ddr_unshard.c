@@ -281,7 +281,7 @@ static void unshard(int dump_fd, struct sharding_info *shard_info)
 			       "offset %" PRIx64 "\n",
 			       addr, offset_loc.file_shard, offset_loc.offset);
 		}
-		assert(offset_loc.file_shard < max_shard);
+		assert(offset_loc.file_shard <= max_shard);
 
 		file_shard = shard_info->channel_order[offset_loc.file_shard];
 
