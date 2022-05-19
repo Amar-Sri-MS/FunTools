@@ -111,9 +111,7 @@ uint64_t ddr_decode_lines(const char **cursor_ptr)
 	const char *ptr = *cursor_ptr;
 	assert(ptr[LINELEN-1] == '\n');
 	assert(ptr[LINELEN * 2-1] == '\n');
-	char buf[LINELEN * 2];
-	strncpy(buf, ptr, LINELEN * 2);
-	buf[LINELEN * 2 - 1] = '\0';
+
 	uint64_t value = (decode_char(ptr[2]) << 4 |
 			  decode_char(ptr[3]) << 0 |
 			  decode_char(ptr[4]) << 12 |
@@ -177,7 +175,7 @@ const uint64_t S2_DDR_QN6_MASK = 0x0;
 const uint64_t S2_DDR_QN7_MASK = 0x0;
 
 // It's a mask.  Quite obvious, really.
-const int S2_DDR_QSN_MASK = 0x17FFFFFF;
+const uint64_t S2_DDR_QSN_MASK = 0x17FFFFFF;
 
 /* Converts memory address in DDR to channel and offset where bytes will
  * be found.
