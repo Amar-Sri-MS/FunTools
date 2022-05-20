@@ -21,6 +21,7 @@ test:
 
 # install to SDK
 install:
+	mkdir -p $(FUNSDK_INSTALL_DIR)
 	install vpcie-toy-composer $(FUNSDK_INSTALL_DIR)
 
 clean:
