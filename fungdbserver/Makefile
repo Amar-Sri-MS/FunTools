@@ -47,7 +47,7 @@ install-fungdbserver: hbm_unshard ddr_unshard ddr_unshard_s2
 	install fungdbserver.py $(SDK_INSTALL_DIR)/bin/scripts
 	install bulk_publish.py $(SDK_INSTALL_DIR)/bin/scripts
 
-	mkdir -p ${SDK_INSTALL_DIR}/bin/Linux
-	install hbm_unshard ${SDK_INSTALL_DIR}/bin/Linux/
-	install ddr_unshard ${SDK_INSTALL_DIR}/bin/Linux
-	install ddr_unshard_s2 ${SDK_INSTALL_DIR}/bin/Linux
+	mkdir -p ${SDK_INSTALL_DIR}/bin/$(OS)
+	install hbm_unshard ${SDK_INSTALL_DIR}/bin/$(OS)
+	install ddr_unshard ${SDK_INSTALL_DIR}/bin/$(OS)
+	install ddr_unshard_s2 ${SDK_INSTALL_DIR}/bin/$(OS)
