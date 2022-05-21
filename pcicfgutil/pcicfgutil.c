@@ -105,6 +105,7 @@ static struct valtab _gen_valtab[] = {
 	{"GEN2", 1},
 	{"GEN3", 2},
 	{"GEN4", 3},
+	{"GEN5", 4},
 	{"DEFAULT", HW_HSU_API_LINK_CONFIG_PCIE_GEN_DEFAULT},
 
 	/* must be last */
