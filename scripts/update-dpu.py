@@ -54,7 +54,7 @@ def dpu_restart():
     url = API_FAST_RESTART.format(target=TARGET)
     try:
         requests.post(url, timeout=0.01)
-    except requests.exceptions.ReadTimeout: 
+    except requests.exceptions.ReadTimeout:
         pass
 
 ###
@@ -117,7 +117,7 @@ def setup_http_server(targetip, filename, host=None):
     # get the port our server is bound to
     port = httpd.socket.getsockname()[1]
     httpd.url = "http://%s:%s/%s" % (ip, port, httpd.getname)
-    
+
     # kick off a thread to handle the request since the http post is blocking
     thread = threading.Thread(target=server_loop, args=(httpd,), daemon=True)
     thread.start()
@@ -163,9 +163,15 @@ parser.add_argument('--host',
                     action='store', default=None,
                     help='override automatic server address')
 
-parser.add_argument('--ccfg',
+ccfg_parser = parser.add_mutually_exclusive_group()
+
+ccfg_parser.add_argument('--ccfg',
                     action='store', default=None,
-                    help='specify a feature set (ccfg)')
+                    help='update feature set (ccfg) as part of complete firmware upgrade')
+
+ccfg_parser.add_argument('--ccfg-only',
+                    action='store', default=None,
+                    help='update feature set (ccfg) only without doing a complete firmware update')
 
 parser.add_argument('--restart',
                     action='store_true', default=False,
@@ -186,11 +192,15 @@ TARGET = args.dpu + ":9332"
 filename = args.filename
 
 CCFG=None
-if (args.ccfg is not None):
-    CCFG = "ccfg=%s" % shlex.quote(args.ccfg)
+if args.ccfg:
+    CCFG = f"ccfg={shlex.quote(args.ccfg)}"
+elif args.ccfg_only:
+    CCFG = f"ccfg-only={shlex.quote(args.ccfg_only)}"
 
-print("Target: %s" % TARGET)
-print("Bundle: %s" % filename)
+print(f"Target: {TARGET}")
+print(f"Bundle: {filename}")
+if CCFG:
+    print(f"CCFG option: {CCFG}")
 
 pp = pprint.PrettyPrinter(depth=4)
 
@@ -207,12 +217,12 @@ if (filename is not None):
     else:
         print("File not found: %s" % filename)
         sys.exit(1)
-    
+
 # start communicating with the dpu
 print("Querying dpu version and boot defaults...")
 wait_for_version()
 
-if (filename is None):    
+if (filename is None):
     if (args.restart):
         # restart without checking boot defaults
         print("Restarting device...")
@@ -297,7 +307,7 @@ if (fail):
 print(r.status_code)
 pp.pprint(r.json())
 
-if (args.restart):    
+if (args.restart):
     dpu_restart()
     print("Update successful, device restart issued...")
 else:
