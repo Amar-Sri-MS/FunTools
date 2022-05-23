@@ -18,10 +18,17 @@
 #       -- Start/Stop Fungible Cluster Services implemented in a Docker
 #       -- Container.
 #
-#   DPU-ralated Commands:
+#   DPU-related Commands:
 #
-#     tc ztp <DPU ccLinux> ...
+#     tc ztp [ --ztp-cs-host] <DPU ccLinux> ...
 #       -- Perform Zero Touch Provisioning on a new DPU ccLinux instance.
+#       -- The ZTP Host parameter provides a Host/IP Address for the DPU
+#       -- to communicate with Fungible Cluster Services to retrieve its
+#       -- prosisioning information.  By default, it will use the same
+#       -- --cs-host/$CS_HOST that we use to talk to FCS, but that's only
+#       -- appropriate for Docker Container deployed FCS instances.  For
+#       -- Three-Node High-Availability FCS deployments, the DPU ZTP will
+#       -- need to use the "South" Virtual IP Address of the HA Cluster.
 #
 #   Virtual PCIe Fabric Manager Commands:
 #
@@ -377,6 +384,23 @@ def subcmd_docker_stop(args):
 #     tc ztp <DPU ccLinux> ...
 #
 def subcmd_ztp(args):
+	# Determine the Fungible Cluster Services Host for the Zero Touch
+	# Provisioning.  If an explicit ZTP CS Host has been provided, use
+	# that.  Otherwise use the CS Host/IP Address we use to talk to
+	# Fungible Cluster Services.
+	#
+	if args.ztp_cs_host != None:
+		ztp_cs_host = args.ztp_cs_host
+	else:
+		ztp_cs_host = args.cs_host
+
+	# "Localhost" is never appropriate ...
+	#
+	if ztp_cs_host == 'localhost' or ztp_cs_host == '127.0.0.1':
+		logger.error('Zero Touch Provision Fungible Cluster Services '
+		    'Host must not be "localhost"')
+		raise
+
 	# Note: I tried doing this without a temporary file, but trying to
 	# get the quoting right wich ssh was just too messy.
 	#
@@ -677,15 +701,18 @@ def main():
 	cmd_parser.add_argument('-p', '--cs-port',
 	    type=int,
 	    default=os.environ.get('CS_PORT', 50220),
-	    help='TCP Port for Fungible Cluster Services [env: CS_PORT]')
+	    help='TCP Port for Fungible Cluster Services '
+		'[default: $CS_PORT]')
 	cmd_parser.add_argument('-u', '--cs-user',
 	    type=str,
 	    default=os.environ.get('CS_USER', 'admin:password'),
-	    help='User:Password for accessing Fungible Cluster Services [env: CS_USER]')
+	    help='User:Password for accessing Fungible Cluster Services '
+		'[default: $CS_USER]')
 	cmd_parser.add_argument('-d', '--cs-dpus',
 	    type=argparse_type_json_file,
 	    default=os.environ.get('CS_DPUS', None),
-	    help='JSON File mapping DPU Names to MAC Addresses [env: CS_DPUS]')
+	    help='JSON File mapping DPU Names to MAC Addresses '
+		'[default: $CS_DPUS]')
 
 	cmd_parser.add_argument('-I', '--indent',
 	    type=argparse_type_int_none, default=4,
@@ -729,6 +756,12 @@ def main():
 	#
 	subcmd_ztp_parser = subcmd_parsers.add_parser('ztp',
 	    description='Zero Touch Provisioning for specified DPUs')
+	subcmd_ztp_parser.add_argument(
+	    '-z', '--ztp-cs-host',
+	    type=str,
+	    help='Private "South" Virtual IP for Fungible Cluster Services '
+		'[default: --cs-host/$CS_HOST, which only works when using '
+		'Docker Container deployment]')
 	subcmd_ztp_parser.add_argument(
 	    'dpus', nargs='+',
 	    help='One or more DPU ccLinuxes to Provision')
@@ -910,8 +943,7 @@ def main():
 		print('args =', args)
 
 	if 'func' not in args:
-		logger.error('Parser failed to return Command Function: '
-		    'args =', args)
+		cmd_parser.print_help()
 		exit(1)
 
 	# I've tried to use try-except here, but every time an actual error
