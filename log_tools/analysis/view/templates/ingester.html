@@ -495,7 +495,7 @@
                     <p>Time taken to ingest: ${ingestionTime}s</p>
                 `;
                 if (status == "PARTIAL") {
-                    feedbackElement.innerHTML = `
+                    feedbackElement.innerHTML += `
                         <a float-right" target="_blank" href="${FILE_SERVER_URL}/${logID}/file/${logID}_error.log">Link to error logs</a>
                     `;
                 }
