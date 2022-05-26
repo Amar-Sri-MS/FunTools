@@ -7,92 +7,8 @@
 
 # This is a very small and simple "Toy Composer" using Fungible Cluster
 # Services Virtual PCIe Fabric Manager to allow Virtual PCIe Fabrics to be
-# created, manipulated, deleted, examined, etc.
-#
-# The set of supported commands are (alias tc=vpcie-toy-composer):
-#
-#   Fungible Cluster Services Commands:
-#
-#     tc docker start
-#     tc docker stop
-#       -- Start/Stop Fungible Cluster Services implemented in a Docker
-#       -- Container.
-#
-#   DPU-related Commands:
-#
-#     tc ztp [ --ztp-cs-host] <DPU ccLinux> ...
-#       -- Perform Zero Touch Provisioning on a new DPU ccLinux instance.
-#       -- The ZTP Host parameter provides a Host/IP Address for the DPU
-#       -- to communicate with Fungible Cluster Services to retrieve its
-#       -- prosisioning information.  By default, it will use the same
-#       -- --cs-host/$CS_HOST that we use to talk to FCS, but that's only
-#       -- appropriate for Docker Container deployed FCS instances.  For
-#       -- Three-Node High-Availability FCS deployments, the DPU ZTP will
-#       -- need to use the "South" Virtual IP Address of the HA Cluster.
-#
-#   Virtual PCIe Fabric Manager Commands:
-#
-#     tc vfm create
-#         [ --max-downport-id <n> ]
-#         [ --name <name> ]
-#         <vPortSpec> ...
-#     tc vfm hot-plug <vPortSpec> ...
-#     tc vfm hot-unplug <vPortID> ...
-#     tc vfm delete <vFabricID> ...
-#       -- Create/Hot Plug/Hot Unplug/Delete Virtual PCIe Fabrics.
-#
-#     tc vfm dpus
-#       -- List all Online DPUs which have Virtual PCIe Switch Ports
-#
-#     tc vfm vfabrics
-#       -- List existing Virtual PCIe Fabrics.
-#
-#     tc vfm dpu <DPU> ...
-#     tc vfm vfabric <vFabricID> ...
-#       -- Display detailed information on specified DPUs and Virtual PCIe
-#       -- Fabrics.
-#
-#     tc vfm enumerate <PortSpec> ...
-#       -- Display PCIe Fabric Enumerations of DPU PCIe Switch Down Port
-#       -- (can only be used when not bound into a Virtual PCIe Fabric).
-#
-#     tc vfm debug <DPU>
-#         [ --trace-link ]
-#         [ --trace-tlp ]
-#         [ --trace-s2s ]
-#         [ --trace-routing ]
-#       -- Display/Set DPU Virtual PCIe Debug Flags.
-#
-#   Simple Network Service Commands:
-#
-#     tc sns dpus
-#       -- List all known DPUs and detailed information about them and
-#       -- their states.
-#
-#     tc sns dpu <DPU> ...
-#       -- List detailed information for specified DPUs.
-#
-# Nomenclature:
-#
-#     <DPU ccLinux> -- DPU ccLinux Hostname/IP Address
-#     <vPortSpec>   -- <DPU>/<Portname>/<vPortID>
-#     <PortSpec>    -- <DPU>/<Portname>
-#     <DPU>         -- DPU Ethernet Management Port MAC Address (or name, see
-#                      CS_DPUS below)
-#     <Portname>    -- DPU PCIe Controller Name
-#     <vPortID>     -- The Virtual Port Number that will be bound to the
-#                      (<DPU>, <Portname>).  Legal values are 0..31 for
-#                      PCIe Controllers configured as Switch Down Ports,
-#                      32 for PCIe Controllers configured as Switch Up Ports.
-#     <vFabricID>   -- The UUID for a Virtual PCIe Fabric.
-#
-# Useful Environment Variables:
-#
-#     CS_HOST       -- The Hostname/IP Address where Fungible Cluster Services
-#                      is running.
-#     CS_PORT       -- The TCP Port for FCS RESTful APIs (mostly for debugging).
-#     CS_DPUS       -- A JSON File containing a Dictionary of DPU Names (keys)
-#                      and Ethernet Management Port MAC Addresses (values).
+# created, manipulated, deleted, examined, etc.  See vpcie-toy-composer(1)
+# for detailed documentation on the set of supported commands.
 #
 # This application uses the Fungible Cluster Services Virtual PCIe Fabric
 # Manager for most of its actions.  Documentation for the vPCIeFM can be
@@ -454,7 +370,9 @@ def subcmd_vfm_create(args):
 	#
 	options = '--header \'Content-Type: application/json\' --data \'{}\''.format(
 	    json.dumps(create))
-	curl_api_gateway(args, options, 'virtual-fabrics')
+	result = curl_api_gateway(args, options, 'virtual-fabrics')
+	vfabric = result['virtual_fabric']
+	print(vfabric)
 
 # Implement Virtual PCIe Fabric Manager Hot-Plug command:
 #
@@ -692,7 +610,7 @@ def main():
 	cmd_parser = argparse.ArgumentParser(
 	    description="Fungible Cluster Services Client Application")
 
-	# Arguments for all sub-functions:
+	# Arguments for all sub-commands:
 	#
 	cmd_parser.add_argument('-c', '--cs-host',
 	    type=str,
@@ -764,7 +682,7 @@ def main():
 		'Docker Container deployment]')
 	subcmd_ztp_parser.add_argument(
 	    'dpus', nargs='+',
-	    help='One or more DPU ccLinuxes to Provision')
+	    help='One or more DPUs (ccLinux hostnames/IP Addresses) to Provision')
 	subcmd_ztp_parser.set_defaults(func=subcmd_ztp)
 
 	# Virtual PCIe Fabric Manager commands.  Allow alias "vsw".
