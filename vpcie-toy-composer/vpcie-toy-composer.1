@@ -105,6 +105,14 @@ and in FCS to initiate operations on Virtual PCIe Fabrics, discover
 available DPUs and DPU PCIe Controllers configured as Virtual Switch Ports,
 etc.
 
+Generally, within a production \fBFungible Data Center\fR, there will be
+existing instances of the Fungible Cluster Services and DPUs will have
+already been deployed and configured.  However, in some testing
+environments, it may be necessary to launch a Fungible Cluster Services
+instance (see the \fBdocker\fR commands below) and perform basic DPU
+configuration (see the \fBztp\fR command below), before various Virtual PCIe
+Fabric operations can be initiated.
+
 .SH "PCIe Terminology"
 
 .TP
@@ -284,8 +292,8 @@ application.
 
 .SH "Docker sub-commands"
 
-One possible deployment of the Fungible Cluster Services is within a Docker
-Container.  These sub-commands facilitate administering that form of FCS
+One possible deployment of the Fungible Cluster Services is within a \fBDocker
+Container\fR.  These sub-commands facilitate administering that form of FCS
 deployment.
 
 .TP
@@ -306,23 +314,27 @@ when it is first deployed within the Fungible Data Center.
 .TP
 \fBvpcie-toy-composer\fR [\fIoptions\fR] \fBztp\fR \fB[--ztp-cs-host\fR \fIztp-cs-host\fR] \fIDPU-Control-Plane\fR ...
 When a Fungible DPU boots up for the very first time, it doesn't know how it
-should be configured or how to reach the Fungible Cluster Services which
-will be responsible for provisioning and administering it.  The information
-for how the DPU should contact the FCS needs to be stored into the DPU,
-which will be retained on future boots.  When information this is provided
-to the DPU, it will contact FCS (and on future boots) to retrieve its
-provisioning information.  This process is called \fBZero Touch
+should be configured or how to reach the Fungible Cluster Services instance
+which will be responsible for provisioning and administering it.  The
+information for how the DPU should contact the FCS needs to be stored into
+the DPU, which will be retained on future boots.  When information this is
+provided to the DPU, it will contact FCS (and on future boots) to retrieve
+its provisioning information.  This process is called \fBZero Touch
 Provisioning\fR.
 .IP
 The FCS Host for Zero Touch Provisioning is the "South" Virtual Host / IP
-Address of FCS.  For Docker Container deployments of FCS, this is the same
-as the API Gateway Host / IP Address.  For Three-Node High-Availability
-deployments of FCS, the three nodes present two shared Virtual IP Addresses:
-The "North" IP Address for access to the API Gateway, and the "South" IP
-Address for DPUs contacting FCS.
+Address of FCS.  For \fBDocker Container\fR deployments of FCS, this is the
+same as the API Gateway Host / IP Address.  For \fBThree-Node
+High-Availability\fR deployments of FCS, the three nodes present two shared
+Virtual IP Addresses:  The "North" IP Address for access to the API Gateway,
+and the "South" IP Address for DPUs contacting FCS.
 .IP
-The \fDPU-Control-Plane\fR parameters are the Host Names / IP Addresses
+The \fIDPU-Control-Plane\fR parameters are the Host Names / IP Addresses
 of the Control Plane software running on the DPUs.
+.P
+Note that it may take a few minutes before the newly provisioned DPUs show
+up as available for Virtual PCIe Fabric operations (see the "\fBvfm dpus\fR"
+command below).
 .P
 Note: In certain testing environments DPUs will be booted "fresh" each time
 a test is initiated.  In that case, Zero Touch Provisioning will need to be

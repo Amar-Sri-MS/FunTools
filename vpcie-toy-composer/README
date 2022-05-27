@@ -1,0 +1,231 @@
+What this is:
+=============
+
+This is the Virtual PCIe Toy Composer.  It allows you to create, manipulate,
+query, and destroy Virtual PCIe Fabrics via a very simply Python Command
+Line application.  This is basically a Toy Composer layer above the Fungible
+Cluster Services Virtual PCIe Fabric Manager.  It implements many of the
+actions that a real Composer would to incorporate Virtual PCIe Support.
+
+What this isn't:
+================
+
+Did we mention "Toy"?
+
+A normal Composer would have a Pending Job Queue, it would have facilities
+for prioritizing Jobs, recharging accounts, managing resource allocations,
+enforcing security labeling, etc.  Additionally there would be surrounding
+infrastructure to help users to create jobs to inject into the Job Queue --
+either Command Line and/or GUIs ... and of course a GUI Monitor.
+
+This is nothing of those.  It has no Policy Modules, no Resource Tracking,
+etc.  It allows to to issue the commands to execute Virtual PCIe operations.
+
+More documentation on the Virtual PCIe Toy Composer:
+====================================================
+
+The Python code itself in vpcie-toy-composer is heavily commented.  In
+addition, the manual page vpcie-toy-composer.1 is a standard UNIX man page
+for the application which details all of the application usage.
+
+Special notes for Fungible Fun-on-Demand:
+=========================================
+
+Fungible Fun-on-Demand is a Testing Infrastructure which allows users to
+specify some Job Parameters and request that Fun-on-Demand build/select the
+Software for that Job, find the system resources for that Job, load the
+Software onto those system resources, and finally launch the Job on those
+systems.
+
+Fun-on-Demand does have a bit of a Composer in it ... but the emphasis is on
+clear slate testing.  As such, when a Job is launched, all of the Fungible
+Data Processing Units (DPUs) and associated systems are newly born, as if
+freshly hauled in from the loading dock, unpacked, and racked ...
+
+This is different from a Production Fungible Data Center where the initial
+Deployment of a DPU would be done once to put it into service, and then never
+again unless it was moved or reconfigured.
+
+And the same goes for any Fungible Cluster Services instances which are
+needed by the Job, etc.  Currently these are just left running on random
+machines (and Virtual Machines), but in the spirit of the Clean Slate, this
+should ~probably~ be changed ...
+
+How to Launch a Fun-on-Demand Virtual PCIe Job:
+===============================================
+
+With the above Fun-on-Demand "Clean Slate" model in mind, when we request
+that a Virtual PCIe Fabric Job be run, once it is running, we have to
+perform initial Deployment on the DPUs.  And if we change the way
+Fun-on-Demand deal with Fungible Cluster Services, we'll also need to get
+that going.
+
+Basically, a Fun-on-Demand Job once launched needs to perform all of the
+steps you'd need in order to bring up a mini Fungible Data Center.
+
+Steps to make the magic happen:
+
+ 1. Request that Fun-on-Demand run a Job for you.  See below for specific
+    examples.
+
+ 2. Once the Job is running, your Fun-on-Demand "Central Script" will need
+    to ensure that your Fungible Cluster Services instance is running.  See
+    for instance the vpcie-toy-composer "docker" commands.
+
+ 3. Once the Fungible Cluster Services instance is up and servicing
+    requests, the DPUs for the Job will need to be pointed at your Fungible
+    Cluster Services instance in an operation which is referred to as "Zero
+    Touch Provisioning".  This allows the DPUs to contact Fungible Cluster
+    Services to request their operational Provisioning and Configuration
+    information.
+
+        And yes, in a true "Clean Slate" model, this information would
+        need to be loaded into Fungible Cluster Services for each
+        Fun-on-Demand Job, but that's wildly outside the scope of what's
+        currently possible.  The Network Configuration stuff is
+        frighteningly complex ...
+
+    See the vpcie-toy-composer command "ztp".  When this is executed, it can
+    take up to a couple of minutes before the DPUs show up in the Virtual
+    PCIe Fabric Manager's results (see "vfm dpus" and "sns dpus" commands).
+
+ 4. Once the Job's DPUs are ready to participate in Virtual PCIe operations,
+    you're good to go.  You can create new Virtual PCIe Fabrics, modify them
+    by Hot Plugging new Virtual Switch Down Ports in, or Hot Unplugging
+    other, Delete the Virtual PCIe Fabrics, query them, etc.
+
+    Have Fun!
+
+Specific Fun-on-Demand Job Request Examples:
+============================================
+
+All references to Fun-on-Demand Job Fields are with reference to the main
+Jenkins Fun-on-Demand Job Launch web page:
+
+    http://jenkins-sw-master/ci/job/emulation/job/fun_on_demand/build
+
+This section will grow as we capture more efforts.
+
+Example 1: An interactive Job:
+------------------------------
+
+    We're going to run an interactive Job on a Host + FC200 + FS800v2 (F1.1)
+    Job on the Fun-on-Demand Virtual PCIe Switch Testbed.  This will set the
+    Job up and allow us to log into the Host and have fun.
+
+     1. Select RUN_TARGET = "S1".
+
+     2. Select HW_MODEL = "FC200VSwitchF1D1".
+
+     3. Use the "NOTE" field to reminding yourself what you're doing.
+
+     4. Type "team_vswitch" into the TAGS field.
+
+     5. In the BOOTARGS field enter "app=load_mods --dpc-server --all_100g".
+
+     6. In the MAX_DURATION field enter the number of minutes you want to
+        have the Job run for your testing.
+
+     7. Select any FunOS, etc. branches that you might want to test.
+
+     8. Select the USE_CC_LINUX checkbox.
+
+     9. Click the Build button at the bottom of the page.
+
+    Fun-on-Demand will send you email when your Job is running and Host and
+    the DPUs are running.
+
+    The Host is currently named "oc-dc-01" for historical reasons, but the
+    Fun-on-Demand email will tell you this regardless.  The FC200 adapter
+    in that Host is fc200-316.  The FS800v2 (F1.1) will be fs800-250.
+
+    The Fungible Cluster Services instance runs in a Docker Contain on the
+    Virtual Machine demand-vpcie-01.
+
+    Let's do something!
+
+        $ alias tc=vpcie-toy-composer
+        $ export CS_HOST=demand-vpcie-cs-01
+        $ export CS_DPUS=$WORKSPACE/FunTools/vpcie-toy-composer/cs-dpus.json
+        $ tc ztp fc200-316-cc fs800-250-cc
+        $ tc vfm create --down-port-id-max 3 --name foo \
+        >     fc200-316/PCIE0/32 fs800-250/SSD0/0 fs800-250/SSD1/1
+        8e5316bb-b29b-4d2c-abec-d172f08bfc8f
+        $ tc vfm vfabric 8e5316bb-b29b-4d2c-abec-d172f08bfc8f
+        8e5316bb-b29b-4d2c-abec-d172f08bfc8f : {
+            "down_port_id_max": 3,
+            "name": "foo",
+            "ports": [
+                {
+                    "dpu": "c8:2c:2b:00:f2:f0",
+                    "dpu_name": "fs800-250",
+                    "port_name": "SSD0",
+                    "port_state": "ready",
+                    "virtual_port_id": 0
+                },
+                {
+                    "dpu": "c8:2c:2b:00:f2:f0",
+                    "dpu_name": "fs800-250",
+                    "port_name": "SSD1",
+                    "port_state": "ready",
+                    "virtual_port_id": 1
+                },
+                {
+                    "dpu": "c8:2c:2b:00:92:58",
+                    "dpu_name": "fc200-316",
+                    "port_name": "PCIE0",
+                    "port_state": "ready",
+                    "virtual_port_id": 32
+                }
+            ],
+            "state": "online",
+            "status": true,
+            "version": "2022-05-27T14:56:04.28Z",
+            "virtual_fabric": "8e5316bb-b29b-4d2c-abec-d172f08bfc8f"
+        }
+        $ ssh localadmin@oc-dc-01 sudo reboot
+
+    Note that the above vpcie-toy-composer commands may be run from
+    anywhere, including your desktop.
+
+    NOTES:
+
+        We give ourselves a short alias for the vpcie-toy-composer command
+        because, it's a lot of typing.  The vpcie-toy-composer lives in
+        FunTools/vpcie-toy-composer/ and is also installed in FunSDK/bin/.
+
+        We point the Toy Composer at our Fungible Cluster Services instance
+        on demand-vpcie-cs-01.
+
+        We point the Toy Composer at a short JSON file which contains DPU
+        Name to Ethernet Management Port MAC Address mappings.  This allows
+        us to use human readable names instead of those horrible MAC Addresses.
+
+        We perform Zero Touch Provisioning on the DPUs.  This will use
+        $CS_HOST as the default ZTP IP Address for the DPUs to talk to
+        Fungible Cluster Services.  If you need to use a different IP
+        Address you can specify the --ztp-cs-host option.  This will emit
+        several scary looking messages saying "WARNING: REMOTE HOST
+        IDENTIFICATION HAS CHANGED!".  Ignore these.
+
+        We create a new Virtual PCIe Fabric with four Switch Down Ports,
+        0..3, named "foo".  The Switch up Port is fc200-316's PCIe0
+        controller with a Virtual Port ID of 32 (the Virtual Port ID
+        reserved for Switch Up Ports).  We connect two of the Switch Down
+        Ports, 0 and 1, to SSD0 and SSD1, respectively, on fs800-250.
+
+        We verify that the new Virtual PCIe Fabric is up, and then we
+        reboot the Host so its BIOS and Linux OS can Enumerate the new
+        Virtual PCIe Fabric.
+
+    We could now Hot Plug additional Virtual Switch Down Ports into our
+    Virtual PCIe Fabric, Hot Unplug the ones we have, etc.
+
+    Once we're done with our testing, it's time to tell Fun-on-Demand to
+    Kill the Job so we don't suck up resources unnecessarily.  In the email
+    that Fun-on-Demand sent you, there'll be a Job Link, and on that web
+    page will be a "Kill Job" button.  Go ahead, it won't hurt and you'll
+    make everyone else happy that they can run their jobs as well.
+
+Example 2: <Coming Soon!>:
+--------------------------
