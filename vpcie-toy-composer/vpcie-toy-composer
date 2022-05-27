@@ -58,8 +58,8 @@ def dpu_name_to_mac(args, dpu_name):
 	#
 	if not args.cs_dpus or dpu_name not in args.cs_dpus:
 		raise RuntimeError(
-		    'Argument DPU {} not Ethernet MAC and not in mapping table'
-		    .format(dpu_name))
+		    f'Argument DPU {dpu_name} not Ethernet MAC and not in '
+		    'mapping table')
 
 	# Return the DPU Name Translation.
 	#
@@ -96,7 +96,7 @@ def argparse_type_uuid(s):
 	# xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 	uuid = '[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}'
 	if not re.search('^' + uuid + '$', s):
-		raise RuntimeError('Illegal UUID Format "{}"'.format(s))
+		raise RuntimeError(f'Illegal UUID Format "{s}"')
 	return s
 
 # ArgumentParser JSON File type conversion.  Loads the specified JSON File and
@@ -124,7 +124,7 @@ def argparse_type_bool_onoff(s):
 		return True
 	if (ls == 'false' or ls == 'off' or ls == '0'):
 		return False
-	raise RuntimeError('"{}" not true-false/on-off/1-0'.format(s))
+	raise RuntimeError(f'"{s}" not true-false/on-off/1-0')
 
 # Convert a <DPU>/<Portname> Specification into (dpu, portname), with DPU
 # Name translations.
@@ -133,8 +133,7 @@ def portspec_to_tuple(args, portspec):
 	port = portspec.split('/')
 	if len(port) != 2:
 		raise RuntimeError(
-		    'Argument {} not in "DPU/PortName" format'
-		    .format(portspec))
+		    f'Argument {portspec} not in "DPU/PortName" format')
 
 	dpu = dpu_name_to_mac(args, port[0])
 	portname = port[1]
@@ -148,8 +147,8 @@ def vportspec_to_tuple(args, vportspec):
 	vport = vportspec.split('/')
 	if len(vport) != 3:
 		raise RuntimeError(
-		    'Argument {} not in "DPU/PortName/vPortID" format'
-		    .format(vportspec))
+		    f'Argument {vportspec} not in "DPU/PortName/vPortID" '
+		    'format')
 
 	dpu = dpu_name_to_mac(args, vport[0])
 	portname = vport[1]
@@ -157,14 +156,13 @@ def vportspec_to_tuple(args, vportspec):
 
 	if not vportid.isnumeric():
 		raise RuntimeError(
-		    'Argument {}, vportid "{}" not a number'
-		    .format(vportspec, vportid))
+		    f'Argument {vportspec}, vportid "{vportid}" not a number')
 
 	vportid = int(vportid)
 	if vportid < 0 or vportid > 32:
 		raise RuntimeError(
-		    'Argument {}, vportid {} out of range 0..32'
-		    .format(vportspec, vportid))
+		    f'Argument {vportspec}, vportid {vportid} out of range '
+		    '0..32')
 
 	return (dpu, portname, vportid)
 
@@ -193,10 +191,8 @@ def vportspec_to_json(args, vportspec):
 # decoded JSON result.
 #
 def curl_api_gateway(args, options, cmd):
-	api_gateway = 'http://{}:{}/FunCC/v1/'.format(
-	    args.cs_host, args.cs_port)
-	curl_cmd = 'curl --silent --user {} {} {}{}'.format(
-	    args.cs_user, options, api_gateway, cmd)
+	api_gateway = f'http://{args.cs_host}:{args.cs_port}/FunCC/v1/'
+	curl_cmd = f'curl --silent --user {args.cs_user} {options} {api_gateway}{cmd}'
 
 	if args.verbose or args.dry_run:
 		print(curl_cmd)
@@ -205,14 +201,14 @@ def curl_api_gateway(args, options, cmd):
 
 	curl_out = subprocess.getoutput(curl_cmd)
 	if curl_out == '':
-		raise RuntimeError('"{}" returns nothing!'.format(curl_cmd))
+		raise RuntimeError(f'"{curl_cmd}" returns nothing!')
 	result = json.loads(curl_out)
 	if args.debug:
 		print('Command =', curl_cmd)
 		print('Result  =', result)
 
 	if not result['status']:
-		raise RuntimeError('"{}" returns "{}"'.format(curl_cmd, result))
+		raise RuntimeError(f'"{curl_cmd}" returns "{result}"')
 
 	return result
 
@@ -222,7 +218,7 @@ def ssh_cs_host(args, cmd):
 	if (args.cs_host == 'localhost' or args.cs_host == '127.0.0.1'):
 		cs_cmd = cmd
 	else:
-		cs_cmd = 'ssh localadmin@{} {}'.format(args.cs_host, cmd)
+		cs_cmd = f'ssh localadmin@{args.cs_host} {cmd}'
 
 	if args.verbose or args.dry_run:
 		print(cs_cmd);
@@ -231,7 +227,7 @@ def ssh_cs_host(args, cmd):
 
 	result = os.system(cs_cmd)
 	if result !=0 or args.debug:
-		raise RuntimeError('"{}", result = {}'.format(cs_cmd, result))
+		raise RuntimeError(f'"{cs_cmd}", result = {result}')
 
 # Execute a command on a DPU ccLinux instance.
 #
@@ -243,8 +239,7 @@ def ssh_cclinux(args, cclinux, cmd):
 	# environments where DPUs are repeatedly reinstantiated and thus
 	# get new keys.
 	#
-	cc_cmd = 'ssh -o StrictHostKeyChecking=off root@{} {}'.format(
-	    cclinux, cmd)
+	cc_cmd = f'ssh -o StrictHostKeyChecking=off root@{cclinux} {cmd}'
 
 	if args.verbose or args.dry_run:
 		print(cc_cmd)
@@ -253,7 +248,7 @@ def ssh_cclinux(args, cclinux, cmd):
 
 	result = os.system(cc_cmd)
 	if result != 0 or args.debug:
-		raise RuntimeError('"{}", result = {}'.format(cc_cmd, result))
+		raise RuntimeError(f'"{cc_cmd}", result = {result}')
 
 # Execute an scp command copying a local file to a DPU ccLinux instance remote
 # file.
@@ -266,8 +261,7 @@ def scp_cclinux(args, cclinux, local_file, remote_file):
 	# environments where DPUs are repeatedly reinstantiated and thus
 	# get new keys.
 	#
-	scp_cmd = 'scp -o StrictHostKeyChecking=off {} root@{}:{}'.format(
-	    local_file, cclinux, remote_file)
+	scp_cmd = f'scp -o StrictHostKeyChecking=off {local_file} root@{cclinux}:{remote_file}'
 
 	if args.verbose or args.dry_run:
 		print(scp_cmd)
@@ -276,7 +270,7 @@ def scp_cclinux(args, cclinux, local_file, remote_file):
 
 	result = os.system(scp_cmd)
 	if result != 0 or args.debug:
-		raise RuntimeError('"{}", result = {}'.format(scp_cmd, result))
+		raise RuntimeError(f'"{scp_cmd}", result = {result}')
 
 # Implement Fungible Cluster Services Docker Start command:
 #
@@ -327,7 +321,7 @@ def subcmd_ztp(args):
 	ztp_file.flush()
 
 	for dpu in args.dpus:
-		print('ZTP {} ...'.format(dpu))
+		print(f'ZTP {dpu} ...')
 		ssh_cclinux(args, dpu, 'mkdir -p /persist/config/ztp')
 		scp_cclinux(args, dpu,
 		    ztp_file.name, '/persist/config/ztp/startup_cfg.json')
@@ -365,8 +359,7 @@ def subcmd_vfm_create(args):
 
 	# Get everything together in the POST Data and send the command off ...
 	#
-	options = '--header \'Content-Type: application/json\' --data \'{}\''.format(
-	    json.dumps(create))
+	options = f'--header \'Content-Type: application/json\' --data \'{json.dumps(create)}\''
 	result = curl_api_gateway(args, options, 'virtual-fabrics')
 	if args.dry_run:
 		return
@@ -387,8 +380,7 @@ def subcmd_vfm_hot_plug(args):
 	hot_plug['virtual_fabric'] = args.vfabric
 	hot_plug['ports'] = ports
 
-	options = '-X PATCH --header \'Content-Type: application/json\' --data \'{}\''.format(
-	    json.dumps(hot_plug))
+	options = f'-X PATCH --header \'Content-Type: application/json\' --data \'{json.dumps(hot_plug)}\''
 	curl_api_gateway(args, options, 'virtual-fabrics/add')
 
 # Implement Virtual PCIe Fabric Manager Hot-Unplug command:
@@ -404,8 +396,7 @@ def subcmd_vfm_hot_unplug(args):
 	hot_unplug['virtual_fabric'] = args.vfabric
 	hot_unplug['ports'] = ports
 
-	options = '-X PATCH --header \'Content-Type: application/json\' --data \'{}\''.format(
-	    json.dumps(hot_unplug))
+	options = f'-X PATCH --header \'Content-Type: application/json\' --data \'{json.dumps(hot_unplug)}\''
 	curl_api_gateway(args, options, 'virtual-fabrics/remove')
 
 # Implement Virtual PCIe Fabric Manager Delete vFabric command:
@@ -423,6 +414,9 @@ def subcmd_vfm_delete(args):
 #
 def subcmd_vfm_dpus(args):
 	result = curl_api_gateway(args, '', 'dpu-resources')
+	if args.dry_run:
+		return
+
 	dpus = result['dpus']
 	if dpus == None:
 		print('No DPUs with Virtual PCIe Switch Ports online')
@@ -445,6 +439,9 @@ def subcmd_vfm_dpus(args):
 #
 def subcmd_vfm_vfabrics(args):
 	result = curl_api_gateway(args, '', 'virtual-fabrics')
+	if args.dry_run:
+		return
+
 	vfabrics = result['virtual_fabrics']
 	if vfabrics == None:
 		print('No vfabrics present')
@@ -460,6 +457,9 @@ def subcmd_vfm_dpu(args):
 	for dpu in args.dpus:
 		result = curl_api_gateway(args, '',
 		    'dpu-resources/' + dpu_name_to_mac(args, dpu) + '/pcie-ports')
+		if args.dry_run:
+			continue
+
 		print(mac_to_dpu_name(args, dpu), ':',
 		    json.dumps(result['ports'], indent=args.indent,
 			sort_keys=True))
@@ -472,6 +472,8 @@ def subcmd_vfm_vfabric(args):
 	for vfabric in args.vfabrics:
 		result = curl_api_gateway(args, '',
 		    'virtual-fabrics/' + vfabric + '/ports')
+		if args.dry_run:
+			continue
 
 		# If any of the DPUs returned are in our Name:MAC Table, add
 		# their Names into the result.
@@ -494,6 +496,9 @@ def subcmd_vfm_enumerate(args):
 		(dpu, portname) = portspec_to_tuple(args, portspec)
 		result = curl_api_gateway(args, '',
 		    '/dpu-resources/' + dpu + '/pcie-ports/' + portname)
+		if args.dry_run:
+			continue
+
 		print(portspec, ':',
 		    json.dumps(result['enumeration'],
 			 indent=args.indent, sort_keys=True))
@@ -518,7 +523,7 @@ def subcmd_vfm_debug(args):
 	    args.trace_routing != None)
 
 	dpu = dpu_name_to_mac(args, args.dpu)
-	cmd = 'dpu-resources/{}/debug-flags'.format(dpu)
+	cmd = f'dpu-resources/{dpu}/debug-flags'
 
 	result = curl_api_gateway(args, '', cmd)
 
@@ -549,8 +554,7 @@ def subcmd_vfm_debug(args):
 	# Note that we need to single-quote the JSON since it will use
 	# double-quotes ...
 	#
-	options = '--header \'Content-Type: application/json\' --data \'{}\''.format(
-	    json.dumps(new_debug))
+	options = f'--header \'Content-Type: application/json\' --data \'{json.dumps(new_debug)}\''
 	curl_api_gateway(args, options, cmd)
 
 # Implement Simple Network Service List All Known DPUs command:
@@ -559,6 +563,9 @@ def subcmd_vfm_debug(args):
 #
 def subcmd_sns_dpus(args):
 	result = curl_api_gateway(args, '', 'network/dpus')
+	if args.dry_run:
+		return
+
 	dpus = result['data']['dpu']
 	if dpus == None or dpus == []:
 		print('No DPUs online')
@@ -581,6 +588,9 @@ def subcmd_sns_dpu(args):
 	# Get the list of all DPUs that Simple Network Service knows about.
 	#
 	result = curl_api_gateway(args, '', 'network/dpus')
+	if args.dry_run:
+		return
+
 	dpus = result['data']['dpu']
 	if dpus == None or dpus == []:
 		print('No DPUs online')
@@ -643,7 +653,7 @@ def main():
 	    help='Just display commands which would have been executed')
 	cmd_parser.add_argument('-D', '--debug',
 	    action='store_true',
-	    help='Debug {} ...'.format(os.path.basename(sys.argv[0])))
+	    help=f'Debug {os.path.basename(sys.argv[0])} ...')
 
 	# Add sub-parsers for various sub-commands:
 	#
@@ -852,7 +862,7 @@ def main():
 	try:
 		args = cmd_parser.parse_args()
 	except RuntimeError as err:
-		logger.error('Argument Parse: {}'.formet(err.args[0]))
+		logger.error('Argument Parse: {err.args[0]}')
 		exit(1)
 
 	if args.debug:
@@ -871,7 +881,7 @@ def main():
 	try:
 		args.func(args)
 	except RuntimeError as err:
-		logger.error('Execution: {}'.format(err.args[0]))
+		logger.error(f'Execution: {err.args[0]}')
 		exit(1)
 
 if __name__ == "__main__":
