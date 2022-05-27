@@ -14,7 +14,7 @@ def ParseLine(trace_line):
         'address': long(args[2], 16),
         'arg': long(args[3], 16),
         'cycle': int(args[5][6:]),
-        'time': int(args[6][5:])}
+        'time': int(float(args[6][5:]))}
 
 def is_return(trace_line):
     return trace_line.split()[2] == "31"
@@ -54,12 +54,12 @@ def get_asm(trace_line):
 def get_ts(trace_line):
     time_txt = trace_line.split()[6]
     timev = time_txt.split('=')[1]
-    return long(timev)    
+    return long(timev)
 
 def get_cycle(trace_line):
     cycle_txt = trace_line.split()[5]
     cycle = cycle_txt.split('=')[1]
-    return long(cycle)    
+    return long(cycle)
 
 
 # FIXME
