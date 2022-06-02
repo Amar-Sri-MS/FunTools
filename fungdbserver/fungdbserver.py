@@ -1555,36 +1555,42 @@ def main():
         LOG_ALWAYS("fungdbserver logging to %s" % opts.output)
         log_file = open(opts.output, "w")
 
-    # setup the file
-    uuid = setup_corpse(opts.hbmdump)
+    try:
+        # setup the file
+        uuid = setup_corpse(opts.hbmdump)
 
-    LOG_ALWAYS("uuid of FunOS is %s" % str(uuid))
+        LOG_ALWAYS("uuid of FunOS is %s" % str(uuid))
 
-    # setup the server
-    sock = setup_server()
+        # setup the server
+        sock = setup_server()
 
-    # start gdb and give it control of the stdin/stdout
-    if (not opts.server_only):
-        # find us a binary
-        if opts.elf:
-            elffile = opts.elf
-        else:
-            excat.parse_args(True)
-            elffile = excat.get_action(str(uuid))
+        # start gdb and give it control of the stdin/stdout
+        if (not opts.server_only):
+            # find us a binary
+            if opts.elf:
+                elffile = opts.elf
+            else:
+                excat.parse_args(True)
+                elffile = excat.get_action(str(uuid))
 
-        if (elffile is None):
-            LOG_ALWAYS("Cannot continue without symbols")
-            sys.exit(1)
+            if (elffile is None):
+                LOG_ALWAYS("Cannot continue without symbols")
+                sys.exit(1)
 
-        # run gdb
-        port = sock.getsockname()[1]
-        run_gdb_async(port, elffile)
+            # run gdb
+            port = sock.getsockname()[1]
+            run_gdb_async(port, elffile)
 
-    # listen
-    server_listen(sock)
-    # clean downloaded excat files.
-    if opts.clean_excat_files and (not opts.elf):
-        clean_elf_files(elffile)
+        # listen
+        server_listen(sock)
+        # clean downloaded excat files.
+        if opts.clean_excat_files and (not opts.elf):
+            clean_elf_files(elffile)
+    except:
+        # clean downloaded excat files and then raise exception.
+        if opts.clean_excat_files and (not opts.elf):
+            clean_elf_files(elffile)
+        raise
 
     LOG_ALWAYS("exiting")
 
