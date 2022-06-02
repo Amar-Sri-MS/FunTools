@@ -52,11 +52,11 @@ VERBOSE = False
 
 # upload to http://host/bucket/payload_name. "payload" can be a file or a
 # file-like object. must pre-compute payload_digest
-def upload_thing(host, bucket,
-                 payload_name, payload, payload_digest, payload_length,
-                 content_type = None,
-                 access_key = None, secret_key = None,
-                 region=None):
+def put_request(host, bucket,
+                payload_name, payload, payload_digest, payload_length,
+                content_type = None,
+                access_key = None, secret_key = None,
+                region=None, tags=None, query_string=''):
     
 
     # ************* REQUEST VALUES *************
@@ -98,7 +98,7 @@ def upload_thing(host, bucket,
     ## Step 3: Create the canonical query string. In this example, request
     # parameters are passed in the body of the request and the query string
     # is blank.
-    canonical_querystring = ''
+    canonical_querystring = query_string
 
 
     # Step 4: Create the canonical headers. Header names must be trimmed
@@ -109,6 +109,8 @@ def upload_thing(host, bucket,
                         'x-amz-date:' + amz_date + '\n' +
                         'x-amz-decoded-content-length:' +
                          str(payload_length) + '\n')
+    if tags:
+        canonical_headers += 'x-amz-tagging:' + tags + '\n'
 
     # Step 5: Create the list of signed headers. This lists the headers
     # in the canonical_headers list, delimited with ";" and in alpha order.
@@ -117,6 +119,8 @@ def upload_thing(host, bucket,
     # hash of the request. "Host" and "x-amz-date" are always required.
     # signed_headers = 'content-type;host;x-amz-date'
     signed_headers = 'host;x-amz-content-sha256;x-amz-date;x-amz-decoded-content-length'
+    if tags:
+        signed_headers += ';x-amz-tagging'
 
 
     # Step 7: Combine elements to create canonical request
@@ -164,13 +168,19 @@ def upload_thing(host, bucket,
                'Content-type':content_type,
                'Authorization':authorization_header}
 
+    if tags:
+        headers['x-amz-tagging'] = tags
 
     # ************* SEND THE REQUEST *************
+    url = endpoint + canonical_uri
+    if canonical_querystring:
+        url += '?' + canonical_querystring
+
     if (VERBOSE):
         print('\nBEGIN REQUEST++++++++++++++++++++++++++++++++++++')
-        print('Request URL = ' + endpoint + canonical_uri)
+        print('Request URL = ' + url)
 
-    r = requests.put(endpoint + canonical_uri,
+    r = requests.put(url,
                      data=payload,
                      headers=headers)
 
@@ -190,7 +200,8 @@ def upload_thing(host, bucket,
 BLOCKSIZE = 128*1024
 def upload_file(filename, host, bucket,
                 content_type=None,
-                remote_name=None, key=None, secret=None, region=None):
+                remote_name=None, key=None, secret=None, region=None,
+                tags=None):
 
     ### derive a name if missing
     if (remote_name is None):
@@ -219,12 +230,13 @@ def upload_file(filename, host, bucket,
     fl.seek(0)
 
     ### do the upload
-    upload_thing(host, bucket, remote_name, fl, digest, nbytes, content_type)
+    put_request(host, bucket, remote_name, fl, digest, nbytes, content_type,
+                key, secret, region, tags=tags)
         
 # given a python dict/list/whatever type, upload it as a nicely formatted
 # json
 def upload_json(obj, host, bucket, remote_name,
-                key=None, secret=None, region=None):
+                key=None, secret=None, region=None, tags=None):
 
     # convert the object to a formatted json string
     payload = json.dumps(obj, sort_keys=True, indent=4, separators=(',', ': '))
@@ -235,9 +247,9 @@ def upload_json(obj, host, bucket, remote_name,
     payload_digest = hashlib.sha256(payload).hexdigest()
 
     content_type = 'application/json'
-    upload_thing(host, bucket, remote_name, payload,
-                 payload_digest, payload_length, content_type,
-                 key, secret, region)
+    put_request(host, bucket, remote_name, payload,
+                payload_digest, payload_length, content_type,
+                key, secret, region, tags=tags)
 
 
 ###
@@ -256,6 +268,9 @@ def main():
     parser.add_argument("-k", "--key", action="store", default=None)
     parser.add_argument("-s", "--secret", action="store", default=None)
     parser.add_argument("-r", "--region", action="store", default=None)
+    parser.add_argument("-t", "--tags", default=None,
+                        help="Tags encoded as URL query parameters e.g."
+                             " tag=value")
 
     parser.add_argument("-v", "--verbose", action="store_true", default=False)
 
@@ -266,7 +281,7 @@ def main():
         VERBOSE = True
     
     upload_file(args.filename, args.host, args.bucket, args.content_type,
-                args.remote_name, args.key, args.secret, args.region)
+                args.remote_name, args.key, args.secret, args.region, args.tags)
     print("OK")
 
 if (__name__ == "__main__"):
