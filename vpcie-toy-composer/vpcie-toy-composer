@@ -442,9 +442,10 @@ def cli_vfm_dpus(args):
 	if args.dry_run:
 		return
 
-	dpus = result['dpus']
-	if dpus == None:
-		dpus = []
+	# Some versions of the Fungible Cluster Services have returned None
+	# instead of [] ...
+	#
+	dpus = result['dpus'] or []
 
 	# If any of the DPUs returned are in our Name:MAC Table, add their
 	# Names into the result.
@@ -468,9 +469,10 @@ def cli_vfm_vfabrics(args):
 	if args.dry_run:
 		return
 
-	vfabrics = result['virtual_fabrics']
-	if vfabrics == None:
-		vfabrics = []
+	# Some versions of the Fungible Cluster Services have returned None
+	# instead of [] ...
+	#
+	vfabrics = result['virtual_fabrics'] or []
 
 	print(json.dumps(vfabrics, indent=args.indent, sort_keys=True))
 
@@ -605,10 +607,10 @@ def cli_sns_dpus(args):
 	if args.dry_run:
 		return
 
-	dpus = result['data']['dpu']
-	if dpus == None or dpus == []:
-		print('No DPUs online')
-		return
+	# Some versions of the Fungible Cluster Services have returned None
+	# instead of [] ...
+	#
+	dpus = result['data']['dpu'] or []
 
 	# If any of the DPUs returned are in our Name:MAC Table, add their
 	# Names into the result.
