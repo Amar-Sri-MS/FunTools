@@ -81,12 +81,7 @@ def put_request(host, bucket,
 
     # Read AWS access key from env. variables or configuration file. Best
     # practice is NOT to embed credentials in code.
-    if ((access_key is None) or (secret_key is None)):
-        nrc = netrc.netrc()
-        (access_key, _, secret_key) = nrc.authenticators(host)
-        if access_key is None or secret_key is None:
-            raise RuntimeError('No credentials available.')
-
+    access_key, secret_key = get_auth_keys(host, access_key, secret_key)
 
     # Create a date for headers and the credential string
     t = datetime.datetime.utcnow()
@@ -103,9 +98,7 @@ def put_request(host, bucket,
     # string (use '/' if no path)
     canonical_uri = os.path.join("/", bucket, payload_name)
 
-    ## Step 3: Create the canonical query string. In this example, request
-    # parameters are passed in the body of the request and the query string
-    # is blank.
+    # Step 3: Create the canonical query string.
     canonical_querystring = query_string
 
 
@@ -136,34 +129,8 @@ def put_request(host, bucket,
                          canonical_querystring + '\n' + canonical_headers +
                          '\n' + signed_headers + '\n' + payload_digest)
 
-    # ************* TASK 2: CREATE THE STRING TO SIGN*************
-    # Match the algorithm to the hashing algorithm you use, either SHA-1 or
-    # SHA-256 (recommended)
-    algorithm = 'AWS4-HMAC-SHA256'
-    credential_scope = (date_stamp + '/' + region + '/' +
-                        service + '/' + 'aws4_request')
-    request_u8 = canonical_request.encode('utf-8')
-    request_digest = hashlib.sha256(request_u8).hexdigest()
-    string_to_sign = (algorithm + '\n' +  amz_date + '\n' +
-                      credential_scope + '\n' +
-                      request_digest)
-
-
-    # ************* TASK 3: CALCULATE THE SIGNATURE *************
-    # Create the signing key using the function defined above.
-    signing_key = getSignatureKey(secret_key, date_stamp, region, service)
-
-    # Sign the string_to_sign using the signing_key
-    signature = hmac.new(signing_key, (string_to_sign).encode('utf-8'),
-                         hashlib.sha256).hexdigest()
-
-
-    # ************* TASK 4: ADD SIGNING INFORMATION TO THE REQUEST *************
-    # Put the signature information in a header named Authorization.
-    authorization_header = (algorithm + ' ' + 'Credential=' + access_key +
-                            '/' + credential_scope + ',' +
-                            'SignedHeaders=' + signed_headers + ',' +
-                            'Signature=' + signature)
+    auth_header = generate_authorization_header(canonical_request, signed_headers, amz_date, date_stamp,
+                                                region, service, access_key, secret_key)
 
     # the headers must be included in the canonical_headers and
     # signed_headers values, as noted earlier. Order here is not
@@ -174,7 +141,7 @@ def put_request(host, bucket,
                'X-Amz-Date':amz_date,
                'x-amz-decoded-content-length':str(payload_length),
                'Content-type':content_type,
-               'Authorization':authorization_header}
+               'Authorization':auth_header}
 
     if tags_header:
         headers['x-amz-tagging'] = tags_header
@@ -203,6 +170,122 @@ def put_request(host, bucket,
 
     # barf, should that be applicable on this response
     r.raise_for_status()
+
+
+def generate_authorization_header(canonical_request, signed_headers,
+                                  amz_date, date_stamp, region, service,
+                                  access_key, secret_key):
+    # ************* TASK 2: CREATE THE STRING TO SIGN*************
+    # Match the algorithm to the hashing algorithm you use, either SHA-1 or
+    # SHA-256 (recommended)
+    algorithm = 'AWS4-HMAC-SHA256'
+    credential_scope = (date_stamp + '/' + region + '/' +
+                        service + '/' + 'aws4_request')
+
+    request_u8 = canonical_request.encode('utf-8')
+    request_digest = hashlib.sha256(request_u8).hexdigest()
+    string_to_sign = (algorithm + '\n' + amz_date + '\n' +
+                      credential_scope + '\n' +
+                      request_digest)
+
+    # ************* TASK 3: CALCULATE THE SIGNATURE *************
+    # Create the signing key using the function defined above.
+    signing_key = getSignatureKey(secret_key, date_stamp, region, service)
+    # Sign the string_to_sign using the signing_key
+    signature = hmac.new(signing_key, (string_to_sign).encode('utf-8'),
+                         hashlib.sha256).hexdigest()
+
+    # ************* TASK 4: ADD SIGNING INFORMATION TO THE REQUEST *************
+    # Put the signature information in a header named Authorization.
+    authorization_header = (algorithm + ' ' + 'Credential=' + access_key +
+                            '/' + credential_scope + ',' +
+                            'SignedHeaders=' + signed_headers + ',' +
+                            'Signature=' + signature)
+
+    return authorization_header
+
+
+def get_auth_keys(host, access_key, secret_key):
+    """
+    Read AWS access key from env. variables or configuration file. Best
+    practice is NOT to embed credentials in code.
+    """
+    if ((access_key is None) or (secret_key is None)):
+        nrc = netrc.netrc()
+        (access_key, _, secret_key) = nrc.authenticators(host)
+        if access_key is None or secret_key is None:
+            raise RuntimeError('No credentials available.')
+    return access_key, secret_key
+
+
+def get_request(host, bucket, object_key, access_key=None, secret_key=None,
+                region=None, query_string=''):
+    # ************* REQUEST VALUES *************
+    method = 'GET'
+    service = 's3'
+    endpoint = 'http://%s' % host
+
+    if (region is None):
+        region = 'us-santa-clara'
+
+    payload_digest = hashlib.sha256(b'').hexdigest()
+
+    access_key, secret_key = get_auth_keys(host, access_key, secret_key)
+
+    # Create a date for headers and the credential string
+    t = datetime.datetime.utcnow()
+    amz_date = t.strftime('%Y%m%dT%H%M%SZ')
+    date_stamp = t.strftime('%Y%m%d')  # Date w/o time, used in credential scope
+
+    canonical_uri = os.path.join("/", bucket, object_key)
+
+    canonical_querystring = query_string
+
+    # Create the canonical headers. Header names must be trimmed
+    # and lowercase, and sorted in code point order from low to high.
+    # Note that there is a trailing \n.
+    canonical_headers = ('host:' + host + '\n' +
+                         'x-amz-date:' + amz_date + '\n')
+
+    # Create the list of signed headers. This lists the headers
+    # in the canonical_headers list, delimited with ";" and in alpha order.
+    signed_headers = 'host;x-amz-date'
+
+    canonical_request = (method + '\n' + canonical_uri + '\n' +
+                         canonical_querystring + '\n' + canonical_headers +
+                         '\n' + signed_headers + '\n' + payload_digest)
+
+    auth_header = generate_authorization_header(canonical_request, signed_headers, amz_date, date_stamp,
+                                                region, service, access_key, secret_key)
+
+    # Python note: The 'host' header is added
+    # automatically by the Python 'requests' library.
+    headers = {
+        'X-Amz-Date': amz_date,
+        'Authorization': auth_header}
+
+    url = endpoint + canonical_uri
+    if canonical_querystring:
+        url += '?' + canonical_querystring
+    if (VERBOSE):
+        print('\nBEGIN REQUEST++++++++++++++++++++++++++++++++++++')
+        print('Request URL = ' + url)
+
+    r = requests.get(url, headers=headers)
+
+    if (VERBOSE):
+        print('\nRESPONSE++++++++++++++++++++++++++++++++++++')
+
+        print(r.request.body)
+        print(r.request.headers)
+
+        print('Response code: %d\n' % r.status_code)
+        print(r.text)
+
+    # barf, should that be applicable on this response
+    r.raise_for_status()
+    return r
+
 
 # given a file, upload it, with optional remote name
 BLOCKSIZE = 128*1024
@@ -267,14 +350,14 @@ def set_tags(object_key, host, bucket,
 
     tags is a dict of tag names to values, as strings please.
     """
-    xml_str = _build_xml_tags(tags)
+    xml_str = _dict_to_xml_tags(tags)
     digest = hashlib.sha256(xml_str).hexdigest()
 
     put_request(host, bucket, object_key, xml_str, digest, len(xml_str),
                 None, key, secret, region, None, 'tagging=')
 
 
-def _build_xml_tags(tags):
+def _dict_to_xml_tags(tags):
     root = et.Element('Tagging')
     tagset = et.Element('TagSet')
     root.append(tagset)
@@ -293,6 +376,32 @@ def _build_xml_tags(tags):
 
     return et.tostring(root)
 
+def get_tags(object_key, host, bucket, key=None, secret=None, region=None):
+    """ Returns the tags on an object as a dict """
+    r = get_request(host, bucket, object_key, key, secret, region, 'tagging=')
+    return _xml_tags_to_dict(r.text)
+
+
+def _xml_tags_to_dict(xml_str):
+    if not xml_str:
+        return {}
+
+    result = {}
+    try:
+        root = et.fromstring(xml_str)
+        tagset = root.find('TagSet')
+        tags = tagset.findall('Tag')
+
+        for tag in tags:
+            k = tag.find('Key')
+            v = tag.find('Value')
+            result[k.text] = v.text
+    except et.ParseError:
+        print('Error parsing response %s' % xml_str)
+        return {}
+
+    return result
+
 
 ###
 ##  stand-along script for uploading, if you please
@@ -300,7 +409,7 @@ def _build_xml_tags(tags):
 
 def main():
     parser = argparse.ArgumentParser()
-    
+
     parser.add_argument("host", help="S3 compatible host to upload to")
     parser.add_argument("bucket", help="Bucket to upload to")
     parser.add_argument("filename", help="File to upload")
