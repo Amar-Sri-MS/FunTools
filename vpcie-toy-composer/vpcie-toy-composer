@@ -444,8 +444,7 @@ def cli_vfm_dpus(args):
 
 	dpus = result['dpus']
 	if dpus == None:
-		print('No DPUs with Virtual PCIe Switch Ports online')
-		return
+		dpus = []
 
 	# If any of the DPUs returned are in our Name:MAC Table, add their
 	# Names into the result.
@@ -471,8 +470,7 @@ def cli_vfm_vfabrics(args):
 
 	vfabrics = result['virtual_fabrics']
 	if vfabrics == None:
-		print('No vfabrics present')
-		return
+		vfabrics = []
 
 	print(json.dumps(vfabrics, indent=args.indent, sort_keys=True))
 
