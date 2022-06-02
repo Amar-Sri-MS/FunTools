@@ -31,6 +31,7 @@ import netrc
 import mimetypes
 import argparse
 import json
+import xml.etree.ElementTree as et
 
 # Key derivation functions. See:
 # http://docs.aws.amazon.com/general/latest/gr/signature-v4-examples.html#signature-v4-examples-python
@@ -50,13 +51,20 @@ def getSignatureKey(key, date_stamp, regionName, serviceName):
 
 VERBOSE = False
 
-# upload to http://host/bucket/payload_name. "payload" can be a file or a
-# file-like object. must pre-compute payload_digest
 def put_request(host, bucket,
                 payload_name, payload, payload_digest, payload_length,
                 content_type = None,
                 access_key = None, secret_key = None,
-                region=None, tags=None, query_string=''):
+                region=None, tags_header=None, query_string=''):
+    """
+    Make a put request to http://host/bucket/payload_name.
+
+    "payload" can be a file or a file-like object.
+    "payload_digest" must be pre-computed.
+
+    "tags_header" will append the value to the x-amz-tagging request header.
+    "query_string" amends the PUT request with a query string.
+    """
     
 
     # ************* REQUEST VALUES *************
@@ -109,8 +117,8 @@ def put_request(host, bucket,
                         'x-amz-date:' + amz_date + '\n' +
                         'x-amz-decoded-content-length:' +
                          str(payload_length) + '\n')
-    if tags:
-        canonical_headers += 'x-amz-tagging:' + tags + '\n'
+    if tags_header:
+        canonical_headers += 'x-amz-tagging:' + tags_header + '\n'
 
     # Step 5: Create the list of signed headers. This lists the headers
     # in the canonical_headers list, delimited with ";" and in alpha order.
@@ -119,7 +127,7 @@ def put_request(host, bucket,
     # hash of the request. "Host" and "x-amz-date" are always required.
     # signed_headers = 'content-type;host;x-amz-date'
     signed_headers = 'host;x-amz-content-sha256;x-amz-date;x-amz-decoded-content-length'
-    if tags:
+    if tags_header:
         signed_headers += ';x-amz-tagging'
 
 
@@ -168,8 +176,8 @@ def put_request(host, bucket,
                'Content-type':content_type,
                'Authorization':authorization_header}
 
-    if tags:
-        headers['x-amz-tagging'] = tags
+    if tags_header:
+        headers['x-amz-tagging'] = tags_header
 
     # ************* SEND THE REQUEST *************
     url = endpoint + canonical_uri
@@ -231,7 +239,7 @@ def upload_file(filename, host, bucket,
 
     ### do the upload
     put_request(host, bucket, remote_name, fl, digest, nbytes, content_type,
-                key, secret, region, tags=tags)
+                key, secret, region, tags_header=tags)
         
 # given a python dict/list/whatever type, upload it as a nicely formatted
 # json
@@ -249,7 +257,41 @@ def upload_json(obj, host, bucket, remote_name,
     content_type = 'application/json'
     put_request(host, bucket, remote_name, payload,
                 payload_digest, payload_length, content_type,
-                key, secret, region, tags=tags)
+                key, secret, region, tags_header=tags)
+
+
+def set_tags(object_key, host, bucket,
+             key=None, secret=None, region=None, tags={}):
+    """
+    Sets the tags on an object.
+
+    tags is a dict of tag names to values, as strings please.
+    """
+    xml_str = _build_xml_tags(tags)
+    digest = hashlib.sha256(xml_str).hexdigest()
+
+    put_request(host, bucket, object_key, xml_str, digest, len(xml_str),
+                None, key, secret, region, None, 'tagging=')
+
+
+def _build_xml_tags(tags):
+    root = et.Element('Tagging')
+    tagset = et.Element('TagSet')
+    root.append(tagset)
+
+    for t in tags:
+        tag = et.Element('Tag')
+        key = et.Element('Key')
+        key.text = t
+        val = et.Element('Value')
+        val.text = str(tags[t])
+
+        tag.append(key)
+        tag.append(val)
+
+        tagset.append(tag)
+
+    return et.tostring(root)
 
 
 ###
