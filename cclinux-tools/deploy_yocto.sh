@@ -52,6 +52,7 @@ patch -p0 -d $DEPLOY_ROOT < $MYDIR/patches/rc.patch
 patch -p0 -d $DEPLOY_ROOT < $MYDIR/patches/dhclient-script.patch
 patch -p0 -d $DEPLOY_ROOT < $MYDIR/patches/nfsroot.patch
 patch -p0 -d $DEPLOY_ROOT < $MYDIR/patches/ntpd.patch
+patch -p0 -d $DEPLOY_ROOT < $MYDIR/patches/hostname.patch
 
 # Core file processing
 cp bin/scripts/gzip-stdin $DEPLOY_ROOT/usr/bin

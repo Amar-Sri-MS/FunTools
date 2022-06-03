@@ -1,0 +1,16 @@
+--- etc/init.d/hostname.sh.orig	2022-06-02 18:02:38.914522356 -0700
++++ etc/init.d/hostname.sh	2022-06-02 18:35:52.403806718 -0700
+@@ -17,6 +17,13 @@
+ 	exit
+ fi
+ 
++fun_product=$(cat /sys/firmware/devicetree/base/fungible,product 2>/dev/null | tr -d \\000)
++fun_board_mac=$(ip address show dev eth0 scope link 2>/dev/null | sed -n -e '/ether/ { s/.*ether\s\(\S\+\)\s.*/\1/ ; s/://g ; p}')
++if [ -n "${fun_product}" -a -n "${fun_board_mac}" ] ; then
++    hostname "${fun_product}-${fun_board_mac}"
++    exit
++fi
++
+ hostname -b -F /etc/hostname 2> /dev/null
+ if [ $? -eq 0 ]; then
+ 	exit
