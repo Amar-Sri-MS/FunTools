@@ -1204,6 +1204,18 @@ class CmdController(Cmd):
         iterations = args.iters
         self._peek_cmd_obj.peek_stats_hu_pcie(hu_id=hu_id, grep_regex=grep_regex, iterations=iterations)
 
+    def peek_hu_fc_stats(self, args):
+        hu_id = args.hu_id
+        grep_regex = args.grep
+        iterations = args.iters
+        self._peek_cmd_obj.peek_stats_hu_fc(hu_id=hu_id, grep_regex=grep_regex, iterations=iterations)
+
+    def peek_hu_link_stats(self, args):
+        hu_id = args.hu_id
+        grep_regex = args.grep
+        iterations = args.iters
+        self._peek_cmd_obj.peek_stats_hu_link(hu_id=hu_id, grep_regex=grep_regex, iterations=iterations)
+
     def peek_hu_pwp_stats(self, args):
         hu_id = args.hu_id
         grep_regex = args.grep
@@ -1692,6 +1704,8 @@ class CmdController(Cmd):
     peek_hu_stats_parser.set_defaults(func=peek_hu_stats)
     peek_hu_stats_pwp_parser.set_defaults(func=peek_hu_pwp_stats)
     peek_hu_stats_pcie_parser.set_defaults(func=peek_hu_pcie_stats)
+    peek_hu_stats_fc_parser.set_defaults(func=peek_hu_fc_stats)
+    peek_hu_stats_link_parser.set_defaults(func=peek_hu_link_stats)
     peek_hu_framer_stats_parser.set_defaults(func=peek_hu_framer_stats)
     peek_wus_stats_parser.set_defaults(func=peek_wus_stats)
     peek_stats_cdu_parser.set_defaults(func=peek_cdu_stats)
