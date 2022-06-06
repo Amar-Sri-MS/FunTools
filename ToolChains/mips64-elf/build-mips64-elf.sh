@@ -24,6 +24,15 @@ binutils_url="http://ftpmirror.gnu.org/binutils/${binutils_archive}"
 gcc_archive=${gcc_version}.tar.xz
 gcc_url="http://ftpmirror.gnu.org/gcc/${gcc_version}/${gcc_archive}"
 
+case ${gcc_version} in
+gcc-11.2.0)
+    gcc_patches=(970-macos_arm64-building-fix.patch)
+    ;;
+*)
+    gcc_patches=()
+    ;;
+esac
+
 gdb_archive=${gdb_version}.tar.xz
 gdb_url="http://ftpmirror.gnu.org/gdb/${gdb_archive}"
 
