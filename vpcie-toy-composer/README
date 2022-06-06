@@ -229,3 +229,84 @@ Example 1: An interactive Job:
 
 Example 2: <Coming Soon!>:
 --------------------------
+    ...
+
+Where are things on the Fun-on-Demand Fungible Cluster Services System?
+=======================================================================
+
+The Fun-on-Demand Fungible Cluster Services Virtual Machine is
+demand-vpcie-cs-01.  It can be logged into via the standard
+"localadmin"/"P...*" credentials.  Fungible Cluster services is deployed on
+demand-vpcie-cs-01 in as a Docker Container.  Relevant directories and
+interesting files are:
+
+    /opt/fungible/fc/
+        -- The source code and basic package configuration for Fungible
+        -- Cluster Services.
+
+    /opt/fungible/fc/config/network/snc.yml
+        -- Basic Networking Configuration.  Critically important FCP
+        -- parameters in this file include:
+        --     EnableFCP: true
+        --     FailureRetryTime: 1
+        --     ProbingWaitTime: 150
+        --     MaxRetryCount: 65535
+        --     SecureTunnel: 0  (Currently for F1.1, see SWLINUX-2657)
+
+    /opt/fungible/fc/etc/docker-compose.yml
+        -- Basic Docker Compose Deployment configuration.  For instance,
+        -- old (One Convergence) or the new (Shwetashree Virajamangala
+        -- rewrite) version of the Virtual PCIe Fabric Manager Service
+        -- can be selected in the "pfmservice" section by specifying an
+        -- "image" of either ".../run_fabricmanager/..." or
+        -- ".../pcie-fms/...", respectively.
+
+    /opt/fungible/fc/etc/.bundle
+        -- The Fungible Cluster Services "Bundle Number".
+
+    /var/opt/fungible/fc/
+        -- Various working files.
+
+    /var/opt/fungible/fc/network/day1_configfiles
+        -- "Day One Configuration Files" for DPUs.  DPUs are configured
+        -- with "Zero Touch Provision" files in their
+        -- /persist/config/ztp/startup_cfg.json (see below) which point
+        -- to the IP Address of the Fungible Cluster Services instance
+        -- they  should talk to.  One of a DPUs' first requests will be
+        -- for its "Day One Configuration" which is found via the DPU's
+        -- Management Port Ethernet MAC Adddress.
+        --
+        -- A DPU's Zero Touch Provisioning file in
+        -- /persist/config/ztp/startup_cfg.json looks like:
+        --
+        --     {
+        --         "mgmtif" : "eth0",
+        --         "controllers" : "<FCS IP Address>"
+        --     }
+
+    /var/log/fungible/fc/
+        -- Fungible Cluster Services Logs.
+
+    /var/log/fungible/fc/pfm/pcie_fab_mgr.log
+        -- The Log for the Virtual PCIe Fabric Manager Service.
+
+There are some interesting files located under "localadmin"'s Home Directory
+which may change at any time, but here are some of the interesting ones at
+the time of this writing:
+
+    ~/py_fabric/
+        -- The current home for the "flib"-based Fun-on-Demand tests
+        -- which have been written.
+
+    ~/py_fabric/flib.py
+    ~/py_fabric/flib-cli.py
+        -- A set of Python tools for executing various Fungible Cluster
+        -- Services operations, including but not limited to, Virtual
+        -- PCIe Fabric Manager Services.  These tools are developed and
+        -- maintained by QA.  See Parag Manjrekar for more information.
+
+    ~/py_fabric/casey/
+        -- A Daily Fun-on-Demand vSwitch Test written by Kumar Sanghvi
+        -- using ds200-105 and attached Host oc-dc-01.  The test's actions
+        -- are coordinated by the "Central Script" FunTest :
+        -- pci_tests/pcie_vswitch_ds200switch.sh ...
