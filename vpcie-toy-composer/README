@@ -255,10 +255,11 @@ interesting files are:
 
     /opt/fungible/fc/etc/docker-compose.yml
         -- Basic Docker Compose Deployment configuration.  For instance,
-        -- old (One Convergence) or the new (Shweta rewrite) version of the
-        -- Virtual PCIe Fabric Manager Service can be selected in the
-        -- "pfmservice" section by specifying an "image" of either
-        -- ".../run_fabricmanager/..." or ".../pcie-fms/...", respectively.
+        -- old (One Convergence) or the new (Shwetashree Virajamangala
+        -- rewrite) version of the Virtual PCIe Fabric Manager Service
+        -- can be selected in the "pfmservice" section by specifying an
+        -- "image" of either ".../run_fabricmanager/..." or
+        -- ".../pcie-fms/...", respectively.
 
     /opt/fungible/fc/etc/.bundle
         -- The Fungible Cluster Services "Bundle Number".
