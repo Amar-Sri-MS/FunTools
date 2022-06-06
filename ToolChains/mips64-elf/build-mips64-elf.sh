@@ -66,6 +66,7 @@ common_config='--enable-lto --enable-64-bit-bfd --enable-targets=all'
 
 if [ $(uname) = "Darwin" ] ; then
     common_config="${common_config} --with-sysroot=$(xcrun -show-sdk-path)"
+    common_config="${common_config} --without-isl"
 fi
 
 ###### binutils ######
