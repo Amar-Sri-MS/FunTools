@@ -64,6 +64,10 @@ fi
 
 common_config='--enable-lto --enable-64-bit-bfd --enable-targets=all'
 
+if [ $(uname) = "Darwin" ] ; then
+    common_config="${common_config} --with-sysroot=$(xcrun -show-sdk-path)"
+fi
+
 ###### binutils ######
 
 tar Jxf $binutils_archive
@@ -85,6 +89,9 @@ popd
 tar Jxf $gcc_archive
 
 pushd ${gcc_version}
+for gcc_patch in ${gcc_patches[@]} ; do
+    patch -p1 < ../../$gcc_patch
+done
 contrib/download_prerequisites
 popd
 
