@@ -16,6 +16,8 @@ binutils_version=binutils-2.35.2
 gcc_version=gcc-11.2.0
 gdb_version=gdb-11.1
 
+toolchain=mips64-unknown-elf-${binutils_version}_${gcc_version}_${gdb_version}-$(uname -s)_$(uname -m)
+
 binutils_archive=${binutils_version}.tar.xz
 binutils_url="http://ftpmirror.gnu.org/binutils/${binutils_archive}"
 
@@ -46,7 +48,7 @@ fi
 mkdir -p build
 cd build
 
-dest_dir=$PWD/toolchain
+dest_dir=$PWD/${toolchain}
 
 if [ ! -e $binutils_archive ] ; then
     wget $binutils_url
@@ -62,6 +64,8 @@ fi
 
 common_config='--enable-lto --enable-64-bit-bfd --enable-targets=all'
 
+###### binutils ######
+
 tar Jxf $binutils_archive
 
 binutils_dir=mips64-${binutils_version}
@@ -75,6 +79,8 @@ if [ "$config_only" = "n" ] ; then
     make -j4 install
 fi
 popd
+
+###### gcc ######
 
 tar Jxf $gcc_archive
 
@@ -107,6 +113,8 @@ if [ "$config_only" = "n" ] ; then
 fi
 popd
 
+###### gdb ######
+
 tar Jxf $gdb_archive
 
 pushd ${gdb_version}
@@ -130,8 +138,10 @@ if [ "$config_only" = "n" ] ; then
 fi
 popd
 
+###### tarball ######
+
 pushd $dest_dir
 if [ "$config_only" = "n" ] ; then
-    tar cJf ../toolchain.tar.xz *
+    tar cJf ../${toolchain}.tar.xz *
 fi
 popd
