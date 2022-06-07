@@ -7,6 +7,9 @@ Line application.  This is basically a Toy Composer layer above the Fungible
 Cluster Services Virtual PCIe Fabric Manager.  It implements many of the
 actions that a real Composer would to incorporate Virtual PCIe Support.
 
+The Python3 source for this Toy Composer is mostly self-documenting.  The
+emphasis is on readability and useability.
+
 What this isn't:
 ================
 
@@ -27,6 +30,16 @@ More documentation on the Virtual PCIe Toy Composer:
 The Python code itself in vpcie-toy-composer is heavily commented.  In
 addition, the manual page vpcie-toy-composer.1 is a standard UNIX man page
 for the application which details all of the application usage.
+
+Manifest:
+=========
+
+Makefile             -- A simple Makefile.
+LICENSE              -- A standard "2-Clause BSD-like" Copyright/License
+README               -- This file.
+vpcie-toy-composer   -- The Toy Composer itself.
+vpcie-toy-composer.1 -- A UNIX "man page" for the Toy Composer.
+cs-dpus.json         -- An example DPU Name to MAC Address $CS_DPUS table.
 
 Special notes for Fungible Fun-on-Demand:
 =========================================
