@@ -16,6 +16,8 @@ binutils_version=binutils-2.35.2
 gcc_version=gcc-11.2.0
 gdb_version=gdb-11.1
 
+toolchain=mips64-unknown-elf-$(uname -s)_$(uname -m)
+
 binutils_archive=${binutils_version}.tar.xz
 binutils_url="http://ftpmirror.gnu.org/binutils/${binutils_archive}"
 
@@ -46,7 +48,7 @@ fi
 mkdir -p build
 cd build
 
-dest_dir=$PWD/toolchain
+dest_dir=$PWD/${toolchain}
 
 if [ ! -e $binutils_archive ] ; then
     wget $binutils_url
@@ -140,6 +142,6 @@ popd
 
 pushd $dest_dir
 if [ "$config_only" = "n" ] ; then
-    tar cJf ../toolchain.tar.xz *
+    tar cJf ../${toolchain}.tar.xz *
 fi
 popd
