@@ -125,6 +125,8 @@ pushd $gcc_dir
 if [ "$config_only" = "n" ] ; then
     make -j4
     make -j4 install
+    # Install libgmp to be able to build gdb
+    make -C gmp install
 fi
 popd
 
