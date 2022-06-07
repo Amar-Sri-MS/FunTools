@@ -16,7 +16,7 @@ binutils_version=binutils-2.35.2
 gcc_version=gcc-11.2.0
 gdb_version=gdb-11.1
 
-toolchain=mips64-unknown-elf-$(uname -s)_$(uname -m)
+toolchain=mips64-unknown-elf-${binutils_version}_${gcc_version}_${gdb_version}-$(uname -s)_$(uname -m)
 
 binutils_archive=${binutils_version}.tar.xz
 binutils_url="http://ftpmirror.gnu.org/binutils/${binutils_archive}"
