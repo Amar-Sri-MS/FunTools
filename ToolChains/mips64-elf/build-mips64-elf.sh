@@ -62,6 +62,8 @@ fi
 
 common_config='--enable-lto --enable-64-bit-bfd --enable-targets=all'
 
+###### binutils ######
+
 tar Jxf $binutils_archive
 
 binutils_dir=mips64-${binutils_version}
@@ -75,6 +77,8 @@ if [ "$config_only" = "n" ] ; then
     make -j4 install
 fi
 popd
+
+###### gcc ######
 
 tar Jxf $gcc_archive
 
@@ -107,6 +111,8 @@ if [ "$config_only" = "n" ] ; then
 fi
 popd
 
+###### gdb ######
+
 tar Jxf $gdb_archive
 
 pushd ${gdb_version}
@@ -129,6 +135,8 @@ if [ "$config_only" = "n" ] ; then
     make -j4 install
 fi
 popd
+
+###### tarball ######
 
 pushd $dest_dir
 if [ "$config_only" = "n" ] ; then
