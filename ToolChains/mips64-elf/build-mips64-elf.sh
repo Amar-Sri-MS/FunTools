@@ -13,7 +13,7 @@ else
 fi
 
 binutils_version=binutils-2.35.2
-gcc_version=gcc-11.2.0
+gcc_version=gcc-11.3.0
 gdb_version=gdb-11.1
 
 toolchain=mips64-unknown-elf-${binutils_version}_${gcc_version}_${gdb_version}-$(uname -s)_$(uname -m)
@@ -25,7 +25,7 @@ gcc_archive=${gcc_version}.tar.xz
 gcc_url="http://ftpmirror.gnu.org/gcc/${gcc_version}/${gcc_archive}"
 
 case ${gcc_version} in
-gcc-11.2.0)
+gcc-11.2.0|gcc-11.3.0)
     gcc_patches=(970-macos_arm64-building-fix.patch)
     ;;
 *)
