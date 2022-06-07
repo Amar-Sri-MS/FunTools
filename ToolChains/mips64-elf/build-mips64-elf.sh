@@ -25,7 +25,7 @@ gcc_archive=${gcc_version}.tar.xz
 gcc_url="http://ftpmirror.gnu.org/gcc/${gcc_version}/${gcc_archive}"
 
 case ${gcc_version} in
-gcc-11.2.0|gcc-11.3.0)
+gcc-11.3.0)
     gcc_patches=(970-macos_arm64-building-fix.patch)
     ;;
 *)
