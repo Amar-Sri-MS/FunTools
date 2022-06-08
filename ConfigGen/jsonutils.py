@@ -174,12 +174,12 @@ def _json_ordered_pair_handler(pairs):
 
 # Load a Fungible-style json
 # A Fungible-style json may contain C-style comments, unquoted values etc
-def load_fungible_json(fname):
+def load_fungible_json(fname, strict=True):
     with open(fname, 'r') as f:
         this_json = f.read()
         this_json = standardize_json(this_json)
         try:
-            return json.loads(this_json, object_pairs_hook=_json_ordered_pair_handler)
+            return json.loads(this_json, object_pairs_hook=_json_ordered_pair_handler, strict=strict)
         except ValueError as e:
             raise ValueError("Error processing {}:{}".format(fname, str(e)))
 
