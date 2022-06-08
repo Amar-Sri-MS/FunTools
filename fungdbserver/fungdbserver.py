@@ -248,7 +248,12 @@ class FileCorpse:
                 raise RuntimeError("need pyelftools to open ELF file: "
                                    "try pip3 install pyelftools")
             print("Opening file as ELF corpse...")
-            self.elf = ELFFile(self.open_file(use_idzip, use_http))
+            fh = self.open_file(use_idzip, use_http)
+            actual_size = self.get_file_size(fh, use_idzip)
+
+            self.elf = ELFFile(fh)
+            if not opts.skip_dump_size_check:
+                self.verify_dump_size(actual_size)
 
         # ELF segment headers in memory, faster than reading from file
         self.elf_phdrs = []
@@ -268,6 +273,58 @@ class FileCorpse:
             return (magic[0] == 0x7f and magic[1] == 0x45 and
                     magic[2] == 0x4c and magic[3] == 0x46)
         return False
+
+    def verify_dump_size(self, actual_size):
+        """ Check actual file size against ELF note and bail out on mismatch """
+        edn = ELFDumpNote(self.elf)
+        note = edn.get_note()
+
+        if note:
+            expected_size = note.get("dump_size")
+            if expected_size != actual_size:
+                raise RuntimeError("bad dump size (corrupt ELF?):"
+                                   " expected %d bytes got %d bytes" % (expected_size, actual_size))
+
+    def get_file_size(self, fh, is_idzip):
+        if is_idzip:
+            return self.get_idzip_size_binary_search(fh)
+        else:
+            fh.seek(0, os.SEEK_END)
+            size = fh.tell()
+            fh.seek(0)
+            return size
+
+    def get_idzip_size_binary_search(self, fh):
+        """
+        Find the uncompressed size via binary search.
+
+        idzip does not support relative seeking from the end of file, and does
+        not have a public way to obtain the uncompressed file size. Summing
+        the file sizes of the internal members does the trick, but that's
+        internal.
+
+        Note that looking at the final 4 bytes only reveals the last member's
+        file size so that's not an option as well.
+        """
+        first = 0
+        last = 64 << 30  # 64GB, bigger than any hbm dump
+
+        # find the first point at which read(1) returns EOF
+        while first < last:
+            pos = first + (last - first) // 2
+            fh.seek(pos)
+            b = fh.read(1)
+
+            if b:
+                first = pos + 1
+            else:
+                # Traditional is pos - 1, but we want last to always be EOF.
+                # This modification should still terminate because we take
+                # the floor of (first + last) / 2.
+                last = pos
+
+        fh.seek(0)  # just be nice and undo
+        return first
 
     def badread(self, n):
         return b"\xde\xad\xbe\xef\xde\xad\xbe\xef"[:n]
@@ -564,6 +621,53 @@ class FileCorpse:
         self.symbols = d
 
         self.setup_threadlist()
+
+
+class ELFDumpNote:
+    """
+    Pulls Fungible-specific notes out of the ELF dump.
+    """
+
+    def __init__(self, elf_file):
+        """
+        elf_file should be an ELFFile.
+
+        There are no guarantees about correctness if the header is incomplete,
+        so it's wise to at least have ~10kB of the file before invoking this.
+        """
+        self.elf = elf_file
+
+    def get_note(self):
+        """
+        Returns the note information as a dict.
+
+        Expect { version: 0, num_shards: N, dump_size: Z }
+        """
+        for seg in self.elf.iter_segments():
+            if seg['p_type'] != 'PT_NOTE':
+                continue
+
+            note = self._find_note_in_segment(seg)
+            if note is not None:
+                return note
+
+    def _find_note_in_segment(self, seg):
+        """ Returns the fungible note from this segment, or None """
+
+        for note in seg.iter_notes():
+            if note['n_name'] == 'Fungible' and note['n_type'] == 0:
+                # reverse the less-than-helpful string conversion done
+                # by the pyelftools module
+                desc = note['n_desc'].encode('latin-1')
+                t = struct.unpack('>LLQ', desc)
+
+                ret = {}
+                ret['version'] = t[0]
+                ret['num_shards'] = t[1]
+                ret['dump_size'] = t[2]
+                return ret
+        return None
+
 
 ###
 ## gdb crc
@@ -1519,6 +1623,9 @@ def parse_args():
     parser.add_argument("--crashlog", action="store_true",
                         default=False,
                         help="Just execute the script to generate a crashlog and exit")
+    parser.add_argument("--skip-dump-size-check", action="store_true",
+                        default=False,
+                        help="Skip dump size verification")
     parser.add_argument("--gdb-debug", action="store_true",
                         default=False,
                         help="Enable gdb packet debugging")
