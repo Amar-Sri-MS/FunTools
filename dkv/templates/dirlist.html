@@ -1,0 +1,20 @@
+<html>
+  <head>
+    <title>{{ name }}</title>
+  </head>
+  <body>
+    <h1>Index of bucket path
+      {% for p in pathlist %}
+      <a href="{{ p['url'] }}">{{ p['key'] }}</a> /
+      {% endfor %}
+      </h1>
+    <table cellpadding="5">
+      <tr><th>Name</th><th>Last Modified (relative)</th><th>Last modified (absolute)</th><th>Size</th><th>Expiration</th></tr>
+      {% for key in keys %}
+      <tr><td><a href="{{ key['url'] }}">{{ key['key'] }}</a><td>{{ key['lastmod_rel'] }}</td><td>{{ key['lastmod'] }}</td><td>{{ key['size'] }}</td><td>{{ key['expiration'] }}</td></tr>
+      {% endfor %}
+    </table>
+    <br/>
+    {{ debug }}
+  </body>
+</html>
