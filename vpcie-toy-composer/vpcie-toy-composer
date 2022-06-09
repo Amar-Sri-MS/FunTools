@@ -378,9 +378,9 @@ def cli_vfm_create(args):
 	# Construct optional parameters ...
 	#
 	params = {}
-	if args.down_port_id_max:
+	if args.down_port_id_max != None:
 		params['down_port_id_max'] = args.down_port_id_max
-	if args.name:
+	if args.name != None:
 		params['name'] = args.name
 
 	# Construct ports ...
