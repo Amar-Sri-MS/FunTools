@@ -77,6 +77,9 @@ struct sharding_info ddr_shard_info(void);
  */
 uint64_t ddr_decode_lines(const char **cursor_ptr);
 
+// Number of bytes returned on each ddr_decode_lines call.
+#define BYTES_PER_LINE 8
+
 #ifdef __cplusplus
 };
 #endif

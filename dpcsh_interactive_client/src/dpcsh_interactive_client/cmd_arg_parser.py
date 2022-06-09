@@ -1243,6 +1243,18 @@ peek_hu_stats_pcie_parser.add_argument('-iters', type=int, help="Iteration count
 peek_hu_stats_pcie_parser.add_argument('-hu_id', type=int, help="HU ID = 0, 1", default=1)
 peek_hu_stats_pcie_parser.add_argument('-grep', help="Grep regex pattern", default=None)
 
+#Peek HU FC stats
+peek_hu_stats_fc_parser = peek_hu_stats_parsers.add_parser('fc', help="FC stats")
+peek_hu_stats_fc_parser.add_argument('-iters', type=int, help="Iteration count", default=999999)
+peek_hu_stats_fc_parser.add_argument('-hu_id', type=int, help="HU ID = 0, 1", default=1)
+peek_hu_stats_fc_parser.add_argument('-grep', help="Grep regex pattern", default=None)
+
+#Peek HU Link stats
+peek_hu_stats_link_parser = peek_hu_stats_parsers.add_parser('link', help="link state")
+peek_hu_stats_link_parser.add_argument('-iters', type=int, help="Iteration count", default=0)
+peek_hu_stats_link_parser.add_argument('-hu_id', type=int, help="HU ID = 0, 1", default=1)
+peek_hu_stats_link_parser.add_argument('-grep', help="Grep regex pattern", default=None)
+
 #Peek HU PWP stats
 peek_hu_stats_pwp_parser = peek_hu_stats_parsers.add_parser('pwp', help="PWP stats")
 peek_hu_stats_pwp_parser.add_argument('-iters', type=int, help="Iteration count", default=999999)

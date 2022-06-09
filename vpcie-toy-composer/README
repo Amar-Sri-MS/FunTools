@@ -1,0 +1,42 @@
+What this is:
+=============
+
+This is the Virtual PCIe Toy Composer.  It allows you to create, manipulate,
+query, and destroy Virtual PCIe Fabrics via a very simply Python Command
+Line application.  This is basically a Toy Composer layer above the Fungible
+Cluster Services Virtual PCIe Fabric Manager.  It implements many of the
+actions that a real Composer would to incorporate Virtual PCIe Support.
+
+The Python3 source for this Toy Composer is mostly self-documenting.  The
+emphasis is on readability and useability.
+
+What this isn't:
+================
+
+Did we mention "Toy"?
+
+A normal Composer would have a Pending Job Queue, it would have facilities
+for prioritizing Jobs, recharging accounts, managing resource allocations,
+enforcing security labeling, etc.  Additionally there would be surrounding
+infrastructure to help users to create jobs to inject into the Job Queue --
+either Command Line and/or GUIs ... and of course a GUI Monitor.
+
+This is nothing of those.  It has no Policy Modules, no Resource Tracking,
+etc.  It allows to to issue the commands to execute Virtual PCIe operations.
+
+More documentation on the Virtual PCIe Toy Composer:
+====================================================
+
+The Python code itself in vpcie-toy-composer is heavily commented.  In
+addition, the manual page vpcie-toy-composer.1 is a standard UNIX man page
+for the application which details all of the application usage.
+
+Manifest:
+=========
+
+Makefile             -- A simple Makefile.
+LICENSE              -- A standard "2-Clause BSD-like" Copyright/License
+README               -- This file.
+vpcie-toy-composer   -- The Toy Composer itself.
+vpcie-toy-composer.1 -- A UNIX "man page" for the Toy Composer.
+cs-dpus.json         -- An example DPU Name to MAC Address $CS_DPUS table.

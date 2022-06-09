@@ -1,6 +1,7 @@
 # goal: Make this file aware of different file formats and have the tprs.py
 # code stay stable
 
+import gzip
 import re
 
 from operator import itemgetter
@@ -137,7 +138,7 @@ def create_range_list(dasm_fname):
 
             if (before_text):
                 continue
-                
+
         if (not out_of_range):
             if data_section_start(line):
                 out_of_range = True
@@ -181,3 +182,34 @@ def find_function(addr, dasm_info):
         return None
 
     return func_info.name
+
+
+class TraceReader(object):
+    """Simple gzip/plaintext wrapper
+
+    Trace files can be either plaintext or gzipped text files, so this class
+    ensures we can easily read either. It will attempt to use gzip to decompress
+    the file and if that fails, it will automatically fall back to a plain text
+    mode
+    """
+    def __init__(self, fname):
+        self.fname = fname
+
+    def __enter__(self):
+        try:
+            self.f = gzip.open(self.fname)
+            # attempt to read something - this will ensure that gzip
+            # library starts processing the file and detect if it looks like
+            # a valid gzip
+            self.f.read(1)
+            self.f.rewind()
+            return self.f
+        except:
+            # Fail on any error. New versions of python implement a specific exception,
+            # older releases will fail with a generic IOError
+            pass
+        self.f = open(self.fname)
+        return self.f
+
+    def __exit__(self, *args):
+        self.f.close()

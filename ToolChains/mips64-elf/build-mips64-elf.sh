@@ -13,14 +13,25 @@ else
 fi
 
 binutils_version=binutils-2.35.2
-gcc_version=gcc-11.2.0
+gcc_version=gcc-11.3.0
 gdb_version=gdb-11.1
+
+toolchain=mips64-unknown-elf-${binutils_version}_${gcc_version}_${gdb_version}-$(uname -s)_$(uname -m)
 
 binutils_archive=${binutils_version}.tar.xz
 binutils_url="http://ftpmirror.gnu.org/binutils/${binutils_archive}"
 
 gcc_archive=${gcc_version}.tar.xz
 gcc_url="http://ftpmirror.gnu.org/gcc/${gcc_version}/${gcc_archive}"
+
+case ${gcc_version} in
+gcc-11.3.0)
+    gcc_patches=(970-macos_arm64-building-fix.patch)
+    ;;
+*)
+    gcc_patches=()
+    ;;
+esac
 
 gdb_archive=${gdb_version}.tar.xz
 gdb_url="http://ftpmirror.gnu.org/gdb/${gdb_archive}"
@@ -46,7 +57,7 @@ fi
 mkdir -p build
 cd build
 
-dest_dir=$PWD/toolchain
+dest_dir=$PWD/${toolchain}
 
 if [ ! -e $binutils_archive ] ; then
     wget $binutils_url
@@ -62,6 +73,13 @@ fi
 
 common_config='--enable-lto --enable-64-bit-bfd --enable-targets=all'
 
+if [ $(uname) = "Darwin" ] ; then
+    common_config="${common_config} --with-sysroot=$(xcrun -show-sdk-path)"
+    common_config="${common_config} --without-isl"
+fi
+
+###### binutils ######
+
 tar Jxf $binutils_archive
 
 binutils_dir=mips64-${binutils_version}
@@ -76,9 +94,14 @@ if [ "$config_only" = "n" ] ; then
 fi
 popd
 
+###### gcc ######
+
 tar Jxf $gcc_archive
 
 pushd ${gcc_version}
+for gcc_patch in ${gcc_patches[@]} ; do
+    patch -p1 < ../../$gcc_patch
+done
 contrib/download_prerequisites
 popd
 
@@ -107,6 +130,8 @@ if [ "$config_only" = "n" ] ; then
 fi
 popd
 
+###### gdb ######
+
 tar Jxf $gdb_archive
 
 pushd ${gdb_version}
@@ -130,8 +155,10 @@ if [ "$config_only" = "n" ] ; then
 fi
 popd
 
+###### tarball ######
+
 pushd $dest_dir
 if [ "$config_only" = "n" ] ; then
-    tar cJf ../toolchain.tar.xz *
+    tar cJf ../${toolchain}.tar.xz *
 fi
 popd

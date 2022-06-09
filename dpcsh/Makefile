@@ -98,6 +98,10 @@ install: dpcsh
 # FIXME: remove OS versioning on dpc_client.py when
 # integration tests are fixed
 	cp dpc_client.py dpctest.py dpc_uboot_env.py auth_firmware.py $(BUILD_ROOT)/dpcsh $(SDK_INSTALL_DIR)/bin/$(SDK_INSTALL_PREFIX)/$(OS)
+ifeq ($(MACHINE),aarch64)
+	mkdir -p ${SDK_INSTALL_DIR}/bin/scripts
+	cp deploy_dpcsh_aarch64.sh ${SDK_INSTALL_DIR}/bin/scripts
+endif
 
 .PHONY: install-init.d
 install-init.d:

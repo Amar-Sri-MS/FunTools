@@ -1439,6 +1439,7 @@ class PeekCommands(object):
                         result = self._sort_bam_keys(result=result, au_sort=au_sort)
                     if not isinstance(result, dict):
                         print "Empty result seen"
+                        return cmd, "Empty Result"
                         break
                     if 'sdn' in cmd:
                         for k,v in result.items():
@@ -2626,6 +2627,7 @@ class PeekCommands(object):
             print "ERROR: %s" % str(ex)
             self.dpc_client.disconnect()
 
+
     def peek_tcp_flows_details(self, count = 1000, dest = 0, iterations = 1):
         cmd = ["list_r"]
         iteration_count = 1
@@ -2640,7 +2642,7 @@ class PeekCommands(object):
                 else:
                     return cmd, "Empty Result"
                 if iteration_count == iterations:
-                    return cmd, output
+                    return cmd, output 
                 iteration_count += 1
                 print "\n########################  %s ########################\n" % str(self._get_timestamp())
                 do_sleep_for_interval()
@@ -2651,7 +2653,7 @@ class PeekCommands(object):
                 print "ERROR: %s" % str(ex)
                 self.dpc_client.disconnect()
                 break
-
+                
     def peek_tcp_flows_state(self,flow_id = -1,sip=None,dip=None,sport=None,dport=None,count=None):
         cmd = ["list_r",]
         arg_dict = dict()
@@ -4260,12 +4262,12 @@ class PeekCommands(object):
                         if get_result_only:
                             return cmd, "Empty Result"
                         print "Empty Result"
+                    print master_table_obj
+                    print "\n########################  %s ########################\n" % str(self._get_timestamp())
                     if get_result_only or iteration_count == iterations:
                         return cmd, master_table_obj
                     iteration_count += 1
                     prev_result = result
-                    print master_table_obj
-                    print "\n########################  %s ########################\n" % str(self._get_timestamp())
                     do_sleep_for_interval()
                 except KeyboardInterrupt:
                     self.dpc_client.disconnect()
@@ -5141,8 +5143,37 @@ class PeekCommands(object):
             self.dpc_client.disconnect()
 
     def peek_stats_hu_pcie(self, hu_id=1, grep_regex=None, iterations=9999999):
-        cmd = "stats/hu/pcie_counters/hu_slice_%d/pcie_ctrl_0" % hu_id
-        return self._display_stats(cmd=cmd, grep_regex=grep_regex, verb='peek', get_result_only=False, iterations=iterations)
+        cmd = "stats/hu/pcie_counters/hu_slice_%d" % hu_id
+        return self._get_nested_dict_stats(cmd=cmd, grep_regex=grep_regex, iterations=iterations)
+
+
+    def peek_stats_hu_link(self, hu_id=1, grep_regex=None, iterations=0):
+        cmd = "stats/hu/link/hu_slice_%d" % hu_id
+        result = self.dpc_client.execute(verb='peek', arg_list=[cmd])
+        if result:
+            temp = dict()
+            temp["bif_mode"] = {}
+            for k, v in result.items():
+                if "pcie_ctrl_" in k:
+                    temp[k] = v
+                else:
+                    temp["bif_mode"].update({k: v})
+            return self._get_nested_dict_stats(cmd=cmd, cmd_output=temp, grep_regex=grep_regex, iterations=iterations)
+
+
+    def peek_stats_hu_fc(self, hu_id=1, grep_regex=None, iterations=9999999):
+        cmd = "stats/hu/flow_control/hu_slice_%d" % hu_id
+        result = self.dpc_client.execute(verb='peek', arg_list=[cmd])
+        if result:
+            temp = dict()
+            temp["hdma"] = {}
+            for k, v in result.items():
+                if "pcie_ctrl_" in k:
+                    temp[k] = v
+                else:
+                    temp["hdma"].update({k: v}) 
+
+            return self._get_nested_dict_stats(cmd=cmd, cmd_output=temp, grep_regex=grep_regex, iterations=iterations)
 
     def peek_stats_hu_pwp(self, hu_id=1, grep_regex=None, iterations=9999999):
         cmd = "stats/hu/pwp/hu_slice_%d/pcie_ctrl_0" % hu_id
@@ -5158,7 +5189,6 @@ class PeekCommands(object):
         result.update(bw_dict)
         
         return self._get_nested_dict_stats(cmd=cmd, cmd_output=result, grep_regex=grep_regex, iterations=iterations)
-
 
 
     def peek_stats_hu(self, grep_regex=None, iterations=9999999):
@@ -5618,6 +5648,7 @@ class ShowCommands(PeekCommands):
              
             command_dict['HU PCIe'] = self.peek_stats_hu_pcie(iterations=iterations)
             command_dict['HU PWP'] = self.peek_stats_hu_pwp(iterations=iterations)
+            command_dict['HU FC'] = self.peek_stats_hu_fc(iterations=iterations)
             command_dict['HUX 0 RES'] = self.peek_hux_resource_stats(hu_id=0, iterations=iterations)
             command_dict['HUX 1 RES'] = self.peek_hux_resource_stats(hu_id=1, iterations=iterations)
 

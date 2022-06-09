@@ -38,6 +38,10 @@ struct infile {
 	char *name;
 	// File descriptor for hex dump.
 	int srcfd;
+	// Base address for memory-mapped hex dump.
+	char *hex_dump_base;
+	// Size for hex dump.
+	uint64_t hex_dump_size;
 	// Name of temporary file for binary data.
 	char *fname;
 	// File descriptor for binary data.
@@ -88,17 +92,10 @@ void open_shard_files(const char *prefix,
 					shard_info->extension,
 					prefix, i, j);
 			}
-			shards[shard_index].srcfd =
-				open(shards[shard_index].name, O_RDONLY);
-			if (shards[shard_index].srcfd < 0) {
-				printf("failed to open shard %s\n",
-				       shards[shard_index].name);
-				exit(1);
-			}
 			struct stat st;
 
 			if (stat(shards[shard_index].name, &st) != 0) {
-				perror("stat");
+				perror("stat shard hex dump file");
 				exit(1);
 			}
 			printf("file %s is %" PRId64 " bytes\n",
@@ -110,6 +107,30 @@ void open_shard_files(const char *prefix,
 				       st.st_size);
 				exit(1);
 			}
+
+			shards[shard_index].hex_dump_size = st.st_size;
+			shards[shard_index].srcfd =
+				open(shards[shard_index].name, O_RDONLY);
+
+			if (shards[shard_index].srcfd < 0) {
+				printf("failed to open shard %s\n",
+				       shards[shard_index].name);
+                                perror("open shard");
+				exit(1);
+			}
+
+			shards[shard_index].hex_dump_base = mmap(NULL,
+								 shards[shard_index].hex_dump_size,
+								 PROT_READ,
+								 MAP_FILE|MAP_PRIVATE,
+								 shards[shard_index].srcfd, 0);
+			if (shards[shard_index].hex_dump_base == MAP_FAILED) {
+				printf("Failed to mmap shard %s.\n",
+				       shards[shard_index].name);
+                                perror("mmap shard");
+				exit(1);
+			}
+
 		}
 	}
 }
@@ -117,11 +138,16 @@ void open_shard_files(const char *prefix,
 /* Cleanup shard data structures before exit. */
 void close_shard_files(struct sharding_info *shard_info) {
 	int i;
+	int ret;
 
 	for (i = 0; i < shard_info->num_channels; i++) {
 		free(shards[i].name);
 		free(shards[i].fname);
-
+		ret = munmap(shards[i].hex_dump_base,
+			     shards[i].hex_dump_size);
+		if (ret != 0) {
+			perror("close_shard_file: munmap");
+		}
 		close(shards[i].srcfd);
 	}
 }
@@ -143,8 +169,9 @@ static int create_bin_file(const char *outfile)
 	return fd;
 }
 
-// Number of words to read and write at a time for efficient disk use.
-#define CHUNK (16 * 1024)
+// Number of uint64_t words to read and write at a time for efficient disk use.
+// Memory size must be evenly divisible by CHUNK_SIZE * 8.
+#define CHUNK_SIZE (16 * 1024)
 
 /* Reads the hex dump data from shard file into a binary file.
  *
@@ -157,11 +184,10 @@ static void decode_input(int shard_number, struct sharding_info *shard_info)
 	bool done = false;
 	uint16_t file_read_chunk = shard_info->file_read_chunk;
 
-	uint64_t input_buffer_size = CHUNK * file_read_chunk;
+	uint64_t input_buffer_size = CHUNK_SIZE * file_read_chunk;
 	char *input_buffer = malloc(input_buffer_size);
-	uint64_t output_buffer[CHUNK];
+	uint64_t output_buffer[CHUNK_SIZE];
 	struct infile *f = &shards[shard_number];
-	const char *text_cursor;
 	uint32_t i;
 
 	/* create a temporary fd for the binary */
@@ -177,42 +203,20 @@ static void decode_input(int shard_number, struct sharding_info *shard_info)
 		exit(1);
 	}
 	/* do the actual decode */
-	while (true) {
-		/* read in a large number of lines */
-		n = read(f->srcfd, input_buffer, input_buffer_size);
-		text_cursor = input_buffer;
-		if (n == 0) {
-			// Out of data - we're at end of file.
-			break;
-		} else if (n < 0) {
-			perror("read");
-			exit(1);
-		}
-
-		if (n % file_read_chunk) {
-			printf("read %" PRIx64 " bytes\n", n);
-			printf("failed to read complete lines - "
-			       "is %s corrupt?\n", f->fname);
-			exit(1);
-		}
-
-		uint64_t words_in_buf = n / (file_read_chunk);
-
-		// Read pairs of lines because format of first and second
-		// line differ slightly.
-		for (i = 0; i < words_in_buf; i++) {
-			/* compute the address of the line */
+	const char *text_cursor = f->hex_dump_base;
+	char *end = f->hex_dump_base + f->hex_dump_size;
+	while (text_cursor < end) {
+		uint64_t chunk[CHUNK_SIZE];
+		for (i=0; i < CHUNK_SIZE; i++) {
 			uint64_t value = ddr_decode_lines(&text_cursor);
-			output_buffer[i] = value;
+			chunk[i] = value;
 		}
-
-		n = write(f->binfd, output_buffer,
-			  words_in_buf * sizeof(*output_buffer));
+		n = write(f->binfd, chunk, CHUNK_SIZE * BYTES_PER_LINE);
 		if (n <= 0) {
 			perror("write");
 			exit(1);
 		}
-		f->size += n;
+		f->size += i * BYTES_PER_LINE;
 	}
 
 	/* mmap the file so we can map it in and pick out bits at random. */

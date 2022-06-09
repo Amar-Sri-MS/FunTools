@@ -46,8 +46,7 @@ class SKUCfgGen():
         board_id_cfg = dict()
         file_name = os.path.join(self.input_dir, 'sku_config/fungible_boards.cfg')
         logger.debug('Processing fungible boards file: {}'.format(file_name))
-        board_id_cfg = jsonutils.load_fungible_json(file_name)
-
+        board_id_cfg = jsonutils.load_fungible_json(file_name, strict=False)
         return board_id_cfg.get('fungible_boards', None)
 
     def get_posix_or_emu_configs(self, board_cfg):
