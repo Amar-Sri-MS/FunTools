@@ -152,7 +152,7 @@ class TechsupportTester(Tester):
                         self.ingestion_status = False
                         self.ingestion_status_msg = response_data.get('ingestion_error')
                         break
-                    elif response_data.get('ingestion_status') == 'COMPLETED':
+                    elif response_data.get('ingestion_status') in ['COMPLETED', 'PARTIAL']:
                         self.ingestion_status = True
                         break
             except Exception as e:

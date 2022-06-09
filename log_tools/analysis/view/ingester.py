@@ -221,7 +221,7 @@ def main():
         })
     finally:
         # Clean up the downloaded files if successful.
-        if status and not is_partial:
+        if status:
             clean_up(LOG_ID)
 
         # Notify via email
