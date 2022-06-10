@@ -17,6 +17,7 @@ import werkzeug
 import tempfile
 import humanize
 import datetime
+import urllib.parse
 import traceback
 import netrc
 import xml.etree.ElementTree as xmlt
@@ -191,6 +192,7 @@ def bucket_get(path):
 @app.route('/buckets/<path:path>', methods=['POST'])
 def bucket_put(path):
     # POST path
+    # Each uploaded file creates a new URI based on the path route.
 
     upfiles = flask.request.files
     uplist = []
@@ -217,6 +219,7 @@ def bucket_put(path):
         remname = os.path.join(remname, fname)
 
         tags = determine_tags(bucket, fname)
+        tags_header = urllib.parse.urlencode(tags)
 
         #if (True):
         #    return "remname %s buckets %s" % (path, bucket)
@@ -229,7 +232,7 @@ def bucket_put(path):
                            key=excat_user,
                            secret=excat_pass,
                            fl=fl,
-                           tags=tags)
+                           tags=tags_header)
 
         uplist.append((bucket, remname))
 
@@ -238,16 +241,42 @@ def bucket_put(path):
 
 def determine_tags(bucket, fname):
     form_data = flask.request.form
-    source = form_data.get("source")
-    if source is None:
-        # Default for legacy clients that do not provide source information
-        source = "unknown"
+    retention = form_data.get("retention")
+    if retention is None:
+        # Default for legacy clients that do not provide retention information
+        retention = "short"
         if bucket == "excat" and fname.endswith(".json"):
             # Lame, try to treat excat metadata differently
-            source = "metadata"
+            retention = "archive"
 
-    tags = "source=%s" % source
+    # validate the retention period is legit
+    if retention not in ["short", "medium", "long", "archive"]:
+        flask.abort(400, "unknown retention period %s" % retention)
+
+    tags = {"retention": retention}
     return tags
+
+
+@app.route('/buckets/<path:path>', methods=['PUT'])
+def tag_put(path):
+    # PUT path for a specific URI, currently used for tagging
+
+    nrc = netrc.netrc()
+    (excat_user, _, excat_pass) = nrc.authenticators(MINIO_SERVER)
+
+    change_retention = flask.request.args.get("retention")
+    if change_retention is None:
+        flask.abort(404, "unsupported put request, add query ?retention=")
+
+    # extract the bucket and resource name from the path
+    pelems = path.split("/")
+    bucket = pelems[0]
+    remname = os.path.join(*pelems[1:])
+
+    tags = determine_tags(None, None)
+    s3util.set_tags(remname, MINIO_SERVER, bucket,
+                    key=excat_user, secret=excat_pass, region=None, tags=tags)
+    return "retention put: %s %s" % (remname, str(tags))
 
 
 @app.route('/', defaults={'path': ''})
