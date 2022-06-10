@@ -291,7 +291,7 @@ def get_request(host, bucket, object_key, access_key=None, secret_key=None,
 BLOCKSIZE = 128*1024
 def upload_file(filename, host, bucket,
                 content_type=None,
-                remote_name=None, key=None, secret=None, region=None,
+                remote_name=None, key=None, secret=None, region=None, fl=None,
                 tags=None):
 
     ### derive a name if missing
@@ -305,7 +305,8 @@ def upload_file(filename, host, bucket,
         print("Guessng content-type %s" % content_type)
     
     ### open the file
-    fl = open(filename, "rb")
+    if (fl is None):
+        fl = open(filename, "rb")
 
     ### hash it & compute the size as we go
     hasher = hashlib.sha256()
