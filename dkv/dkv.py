@@ -215,7 +215,9 @@ def bucket_put(path):
         bucket = pelems[0]
         remname = os.path.join(*pelems[1:])
         remname = os.path.join(remname, fname)
-       
+
+        tags = determine_tags(bucket, fname)
+
         #if (True):
         #    return "remname %s buckets %s" % (path, bucket)
     
@@ -226,11 +228,27 @@ def bucket_put(path):
                            remote_name=remname,
                            key=excat_user,
                            secret=excat_pass,
-                           fl=fl)
+                           fl=fl,
+                           tags=tags)
 
         uplist.append((bucket, remname))
 
     return "bucket put: %s/%s" % (path, uplist)
+
+
+def determine_tags(bucket, fname):
+    form_data = flask.request.form
+    source = form_data.get("source")
+    if source is None:
+        # Default for legacy clients that do not provide source information
+        source = "unknown"
+        if bucket == "excat" and fname.endswith(".json"):
+            # Lame, try to treat excat metadata differently
+            source = "metadata"
+
+    tags = "source=%s" % source
+    return tags
+
 
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
