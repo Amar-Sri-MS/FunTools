@@ -27,7 +27,7 @@ logger.setLevel(logging.INFO)
 # on "struct puf_rom_eeprom_image_s" flags
 EEPROM_IMAGE_FLAGS_S1_1_1GHZ_CHICKEN = 1
 CHIP_FLAG_EEPR_VARIANTS = {
-    "s1": [("", 0), ("_1_1G", EEPROM_IMAGE_FLAGS_S1_1_1GHZ_CHICKEN)]
+    "s1": [("", EEPROM_IMAGE_FLAGS_S1_1_1GHZ_CHICKEN), ("_1_0G", 0)]
 }
 
 class SKUCfgGen():
