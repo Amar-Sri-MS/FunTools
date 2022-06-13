@@ -31,11 +31,12 @@ import os
 
 ARGS_HELP =  \
 """usage: {0} [get] <filename>
-       {0} pub[lish] <filename>
+       {0} pub[lish] <filename> [retention-period (short,medium,long,archive)]
+       {0} ret[ain] <filename> <retention-period (short,medium,long,archive)>
 
 Publish and retrive executable file symbols to the central
 ExCat (Executable Catalogue) repository. Executables are indexed
-via their uniquie build-id.
+via their unique build-id.
 
 Options:
 -v, --verbose       extra logging information
@@ -48,6 +49,7 @@ Actions:
 
 get\t\tFind a file with symbole for executable <filename>
 pub[lish]\tPublish an executable to the executable catalog
+ret[ain]\tChange retention policy for the executable
 """
 
 opts = None
@@ -78,7 +80,7 @@ def VERBOSE(msg, level=1):
 def file_has_symbols(fname):
 
     # run a shell command and get the output
-    cmd = ["file", fname]
+    cmd = ["file", "--parameter", "elf_notes=0", fname]
     output = uuid_extract.output4command(cmd)
 
     if ("not stripped" in output):
@@ -426,7 +428,7 @@ def save_metadata(metadata, fname):
 
 
 # publish over http via dkv
-def http_publish(metadata, fname):
+def http_publish(metadata, fname, retention):
 
     # original md5
     metadata["md5"] = filemd5(fname)
@@ -444,12 +446,13 @@ def http_publish(metadata, fname):
     url = HTTP_ROOT + "/"
     # xx/yy/zz portion
     url += metadata['relpath']
-    
+
     # send it the json file
     blobname = metadata["mdblob"]
     files = {'file': (blobname, s)}
+    post_data = {'retention': 'archive'}
     LOG("publishing json via http")
-    r = requests.post(url, files=files)
+    r = requests.post(url, data=post_data, files=files)
     if (r.status_code != requests.codes.ok):
         raise(RuntimeError(r.text))
 
@@ -458,22 +461,23 @@ def http_publish(metadata, fname):
     fl = open(tmpbz, "rb")
     os.unlink(tmpbz)
     files = {'file': (blobname, fl)}
+    post_data = {'retention': retention}
     LOG("publishing bz via http")
-    r = requests.post(url, files=files)
+    r = requests.post(url, data=post_data, files=files)
     if (r.status_code != requests.codes.ok):
         raise(RuntimeError(r.text))
 
     LOG("published")
     
 
-def do_publish(uuid, fname):
+def do_publish(uuid, fname, retention):
 
     metadata = mkmetadata(uuid, fname)
 
     # decide which kind of publication
-    http_publish(metadata, fname)
+    http_publish(metadata, fname, retention)
 
-def pub_action(fname):
+def pub_action(fname, retention):
 
     # get the file UUID
     uuid = uuid_from_file(fname)
@@ -490,8 +494,38 @@ def pub_action(fname):
     LOG("UUID %s ok to publish" % uuid)
 
     # the actual publish step
-    do_publish(uuid, fname)
+    do_publish(uuid, fname, retention)
 
+def change_retention_action(fname, retention):
+
+    uuid = parse_uuid(fname)
+
+    if (os.path.exists(fname)):
+        uuid = uuid_from_file(fname)
+        if (uuid is None):
+            LOG("cannot retrieve uuid from file %s" % fname)
+            sys.exit(1)
+    elif (uuid is not None):
+        # just use a raw uuid
+        LOG("parsed UUID %s" % str(uuid))
+    else:
+        LOG("%s is neither a file nor a UUID" % fname)
+        sys.exit(1)
+
+    url = 'http://cgray-vm0/dkv/buckets/excat/'
+    relpath = mkrelpath(uuid)
+    url += relpath
+    url += '%s.bz' % uuid
+
+    r = requests.put(url, params={'retention': ''}, data={'retention': retention})
+    if (r.raise_for_status()):
+        raise(RuntimeError(r.text))
+    LOG("Changed retention of %s to %s" % (uuid, retention))
+
+def validate_retention_args(retention):
+    if retention not in ["short", "medium", "long", "archive"]:
+        LOG("error: unsupported retention %s" % retention)
+        sys.exit(1)
 
 ###
 ##  main
@@ -540,8 +574,9 @@ def parse_args(dummy=False):
 
 GET_ACTIONS = ["get", "find"]
 PUB_ACTIONS = ["pub", "publish", "put"]
+RETENTION_ACTIONS = ["ret", "retain"]
 
-VALID_ACTIONS = GET_ACTIONS + PUB_ACTIONS
+VALID_ACTIONS = GET_ACTIONS + PUB_ACTIONS + RETENTION_ACTIONS
 
 def main():
     parse_args()
@@ -567,9 +602,20 @@ def main():
             usage();
         r = get_action_stdout(arglist[0])
     elif (action in PUB_ACTIONS):
-        if (len(arglist) > 1):
+        if (len(arglist) > 2):
             usage();
-        r = pub_action(arglist[0])
+
+        retention = "medium"
+        if (len(arglist) > 1):
+            retention = arglist[1]
+
+        validate_retention_args(retention)
+        r = pub_action(arglist[0], retention)
+    elif (action in RETENTION_ACTIONS):
+        if (len(arglist) != 2):
+            usage()
+        validate_retention_args(arglist[1])
+        r = change_retention_action(arglist[0], arglist[1])
     else:
         usage()
     
