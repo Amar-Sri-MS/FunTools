@@ -545,6 +545,13 @@ run_posix()
     echo ""
     exit 1
     fi
+
+    if ! ./build/funospkg-${chip}-posix app=queued_push_demo; then
+    echo ""
+    echo "${chip}-posix queued_push_demo example fails to run to completion"
+    echo ""
+    exit 1
+    fi
 }
 
 # Clean the FunOSPackageDemo
