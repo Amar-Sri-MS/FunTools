@@ -1411,10 +1411,15 @@ def server_listen(sock):
 #
 
 def clean_elf_files(elffile):
-	# delete the .excat elf file
-	os.remove(elffile)
-	# delete the .bz file
-	os.remove(elffile.replace('excat','bz'))
+    try:
+        # delete the .excat elf file
+        os.remove(elffile)
+        # delete the .bz file
+        os.remove(elffile.replace('excat','bz'))
+    except:
+        ERROR("failed to remove elf files.")
+        sys.exit(1)
+
 
 
 ###
@@ -1580,17 +1585,15 @@ def main():
             # run gdb
             port = sock.getsockname()[1]
             run_gdb_async(port, elffile)
-
         # listen
         server_listen(sock)
-        # clean downloaded excat files.
-        if opts.clean_excat_files and (not opts.elf):
-            clean_elf_files(elffile)
     except:
+        ERROR("failed to run fungdbserver.py, exiting")
+        sys.exit(1)
+    finally:
         # clean downloaded excat files and then raise exception.
         if opts.clean_excat_files and (not opts.elf):
             clean_elf_files(elffile)
-        raise
 
     LOG_ALWAYS("exiting")
 
