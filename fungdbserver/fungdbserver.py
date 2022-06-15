@@ -1587,8 +1587,9 @@ def main():
             run_gdb_async(port, elffile)
         # listen
         server_listen(sock)
-    except:
-        LOG_ALWAYS("failed to run fungdbserver.py, exiting")
+    except Exception as e:
+        LOG_ALWAYS("Exception while running fungdbserver.py, exiting")
+        print(e)
         force_exit = True
     finally:
         # clean downloaded excat files and then raise exception.
