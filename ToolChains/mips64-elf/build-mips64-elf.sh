@@ -14,7 +14,7 @@ fi
 
 binutils_version=binutils-2.35.2
 gcc_version=gcc-11.3.0
-gdb_version=gdb-11.1
+gdb_version=gdb-11.2
 
 toolchain=mips64-unknown-elf-${binutils_version}_${gcc_version}_${gdb_version}-$(uname -s)_$(uname -m)
 
@@ -36,8 +36,6 @@ esac
 gdb_archive=${gdb_version}.tar.xz
 gdb_url="http://ftpmirror.gnu.org/gdb/${gdb_archive}"
 
-# Fix-Python for gdb-9.2 only.
-#gdb_patches=0001-Fix-Python3.9-related-runtime-problems.patch
 gdb_patches=(fungible-enable-tls.patch fungible-enable-core.patch)
 
 if [ $(uname) = 'Linux' ] ; then
@@ -127,6 +125,8 @@ pushd $gcc_dir
 if [ "$config_only" = "n" ] ; then
     make -j4
     make -j4 install
+    # Install libgmp to be able to build gdb
+    make -C gmp install
 fi
 popd
 
