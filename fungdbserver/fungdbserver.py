@@ -1553,7 +1553,7 @@ def main():
     # parse the arge
     global opts
     opts = parse_args()
-
+    force_exit = False
     # setup logging
     if ((not opts.server_only) or opts.always_log):
         global log_file
@@ -1588,12 +1588,14 @@ def main():
         # listen
         server_listen(sock)
     except:
-        ERROR("failed to run fungdbserver.py, exiting")
-        sys.exit(1)
+        LOG_ALWAYS("failed to run fungdbserver.py, exiting")
+        force_exit = True
     finally:
         # clean downloaded excat files and then raise exception.
         if opts.clean_excat_files and (not opts.elf):
             clean_elf_files(elffile)
+        if force_exit:
+            sys.exit(1)
 
     LOG_ALWAYS("exiting")
 
