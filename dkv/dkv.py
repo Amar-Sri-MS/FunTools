@@ -226,13 +226,12 @@ def bucket_put(path):
     
         # run the s3 upload
         fl.seek(0)
-        s3util.upload_file(fname, MINIO_SERVER, bucket,
-                           content_type=upfile.content_type,
-                           remote_name=remname,
-                           key=excat_user,
-                           secret=excat_pass,
-                           fl=fl,
-                           tags=tags_header)
+        s3util.upload_file_handle(fname, MINIO_SERVER, bucket, fl,
+                                  content_type=upfile.content_type,
+                                  remote_name=remname,
+                                  key=excat_user,
+                                  secret=excat_pass,
+                                  tags=tags_header)
 
         uplist.append((bucket, remname))
 

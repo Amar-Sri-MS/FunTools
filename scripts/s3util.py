@@ -287,26 +287,20 @@ def get_request(host, bucket, object_key, access_key=None, secret_key=None,
     return r
 
 
-# given a file, upload it, with optional remote name
-BLOCKSIZE = 128*1024
-def upload_file(filename, host, bucket,
-                content_type=None,
-                remote_name=None, key=None, secret=None, region=None, fl=None,
-                tags=None):
-
+# given a file handle fl, upload it with optional remote name
+def upload_file_handle(filename, host, bucket, fl,
+                       content_type=None,
+                       remote_name=None, key=None, secret=None, region=None,
+                       tags=None):
     ### derive a name if missing
     if (remote_name is None):
         remote_name = os.path.basename(filename)
-        
+
     ### guess the mimetype, if it wasn't specified
     if (content_type is None):
         mimetypes.init()
         (content_type, enc) = mimetypes.guess_type(filename)
-        print("Guessng content-type %s" % content_type)
-    
-    ### open the file
-    if (fl is None):
-        fl = open(filename, "rb")
+        print("Guessing content-type %s" % content_type)
 
     ### hash it & compute the size as we go
     hasher = hashlib.sha256()
@@ -317,14 +311,28 @@ def upload_file(filename, host, bucket,
         nbytes += len(buf)
         buf = fl.read(BLOCKSIZE)
     digest = hasher.hexdigest()
-        
+
     ### seek back to the start for the upload
     fl.seek(0)
 
     ### do the upload
     put_request(host, bucket, remote_name, fl, digest, nbytes, content_type,
                 key, secret, region, tags_header=tags)
-        
+
+
+# given a file, upload it, with optional remote name
+BLOCKSIZE = 128*1024
+def upload_file(filename, host, bucket,
+                content_type=None,
+                remote_name=None, key=None, secret=None, region=None,
+                tags=None):
+
+    ### open the file
+    fl = open(filename, "rb")
+    upload_file_handle(filename, host, bucket, fl,
+                       content_type, remote_name, key, secret, region, tags)
+
+
 # given a python dict/list/whatever type, upload it as a nicely formatted
 # json
 def upload_json(obj, host, bucket, remote_name,
