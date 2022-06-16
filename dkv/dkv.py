@@ -248,7 +248,7 @@ def determine_tags(bucket, fname):
         return None
 
     # validate the retention period is legit
-    if (retention not in ["short", "medium", "long", "archive"]):
+    if (retention not in ["short", "medium", "long", "archive", "forever"]):
         flask.abort(400, "unknown retention period %s" % retention)
 
     tags = {"retention": retention}
