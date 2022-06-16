@@ -3,7 +3,6 @@
  * Copyright Fungible Inc. 2019.  All rights reserved.
  */
 
-#include <stdbool.h>
 #include <stdint.h>
 
 #ifdef __cplusplus

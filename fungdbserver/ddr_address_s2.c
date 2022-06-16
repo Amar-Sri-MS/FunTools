@@ -29,6 +29,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 #include <inttypes.h>
 #include <stdlib.h>
 #include "ddr_address.h"
