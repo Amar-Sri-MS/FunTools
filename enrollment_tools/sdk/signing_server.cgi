@@ -22,17 +22,19 @@
 
 import sys
 import os
+import binascii
+import textwrap
 import hashlib
 import cgi
 import datetime
 
 import traceback
 
-from asn1crypto import core, algos, keys, pem
+from asn1crypto import keys, pem
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import rsa, padding, utils
+from cryptography.hazmat.primitives.asymmetric import padding, utils
 from cryptography.hazmat.primitives.serialization import (load_der_private_key,
                                                           load_der_public_key)
 
