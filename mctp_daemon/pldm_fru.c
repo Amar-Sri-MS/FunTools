@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <errno.h>
+#include <stdlib.h>
 
 #include "utils.h"
 #include "mctp.h"

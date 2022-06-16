@@ -3,9 +3,7 @@
  * Copyright Fungible Inc. 2019.  All rights reserved.
  */
 
-#include <stdbool.h>
 #include <stdint.h>
-#include <stdlib.h>
 
 #ifdef __cplusplus
 extern "C" {
