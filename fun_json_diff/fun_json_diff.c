@@ -11,6 +11,7 @@
 // The common part to all the input files is written to stdout.
 // Each of the deltas is stored on the deltas directory (or /tmp).
 
+#include <stdlib.h>
 #include <libgen.h>
 #include <FunOS/utils/threaded/fun_json.h>
 #include <FunOS/utils/threaded/fun_malloc_threaded.h>
