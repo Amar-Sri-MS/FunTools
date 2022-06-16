@@ -242,15 +242,15 @@ def bucket_put(path):
 def determine_tags(bucket, fname):
     form_data = flask.request.form
     retention = form_data.get("retention")
-    if retention is None:
+    if (retention is None):
         # Default for legacy clients that do not provide retention information
         retention = "medium"
-        if bucket == "excat" and fname.endswith(".json"):
+        if (bucket == "excat" and fname.endswith(".json")):
             # Lame, try to treat excat metadata differently
             retention = "archive"
 
     # validate the retention period is legit
-    if retention not in ["short", "medium", "long", "archive"]:
+    if (retention not in ["short", "medium", "long", "archive"]):
         flask.abort(400, "unknown retention period %s" % retention)
 
     tags = {"retention": retention}
@@ -265,7 +265,7 @@ def tag_put(path):
     (excat_user, _, excat_pass) = nrc.authenticators(MINIO_SERVER)
 
     change_retention = flask.request.args.get("retention")
-    if change_retention is None:
+    if (change_retention is None):
         flask.abort(404, "unsupported put request, add query ?retention=")
 
     # extract the bucket and resource name from the path
