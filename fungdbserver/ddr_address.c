@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
+#include <stdlib.h>
 #include "ddr_address.h"
 
 /* Calculate the reduced XOR for the value.
