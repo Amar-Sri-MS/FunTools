@@ -219,7 +219,9 @@ def bucket_put(path):
         remname = os.path.join(remname, fname)
 
         tags = determine_tags(bucket, fname)
-        tags_header = urllib.parse.urlencode(tags)
+        tags_header = None
+        if tags:
+            tags_header = urllib.parse.urlencode(tags)
 
         #if (True):
         #    return "remname %s buckets %s" % (path, bucket)
@@ -243,10 +245,7 @@ def determine_tags(bucket, fname):
     retention = form_data.get("retention")
     if (retention is None):
         # Default for legacy clients that do not provide retention information
-        retention = "medium"
-        if (bucket == "excat" and fname.endswith(".json")):
-            # Lame, try to treat excat metadata differently
-            retention = "archive"
+        return None
 
     # validate the retention period is legit
     if (retention not in ["short", "medium", "long", "archive"]):
