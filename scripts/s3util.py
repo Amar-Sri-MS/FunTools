@@ -328,9 +328,9 @@ def upload_file(filename, host, bucket,
                 tags=None):
 
     ### open the file
-    fl = open(filename, "rb")
-    upload_file_handle(filename, host, bucket, fl,
-                       content_type, remote_name, key, secret, region, tags)
+    with open(filename, "rb") as fl:
+        upload_file_handle(filename, host, bucket, fl,
+                           content_type, remote_name, key, secret, region, tags)
 
 
 # given a python dict/list/whatever type, upload it as a nicely formatted
