@@ -77,6 +77,25 @@ Saving to: ‘STDOUT’
 
 The installation script can report some errors on some preexisting Linux installations.
 
+#### HTTP Response 500
+
+The Simple Signing Server returns a 500 Error, including during the Self Test
+
+```HTTP request sent, awaiting response... 500 Internal Server Error
+2022-06-14 02:57:11 ERROR 500: Internal Server Error. <<<<<<<<
+```
+
+The Apache error.log (typically `/var/log/apache2/error.log`) will have more information about this error.
+This type of error is usually caused by a problem with the installed Python libraries. 
+
+Error messages in the Apache `error.log` should suggest ways to solve the problem. 
+
+If not, please contact Fungible Support with the information in the Apache error log.
+
+###### Tip: 
+Apache rotates its logs. If there is no error in the `error.log`, look at the previous instances of the file: `error.log.1` and `error.log.<n>.gz`
+
+
 #### The Linux installation is not using systemd as the init sytem
 
 ```
