@@ -444,7 +444,7 @@ static bool _parse_hostunit(struct hw_hsu_api_link_config *cfg,
 	fun_json_index_t i = 0, count = 0;
 	uint32_t ring = 0, cid = 0;
 	int64_t ctl_en = 0;
-	uint64_t en = 0, bif = 0;
+	uint64_t ring_flags = 0, bif = 0;
 	const char *bif_mode = NULL;
 	
 	
@@ -473,6 +473,13 @@ static bool _parse_hostunit(struct hw_hsu_api_link_config *cfg,
 			continue;			
 		}
 
+		/*
+		 * If "acu" is present and is "true", set the ring ARM Cluster
+		 * Unit flag.
+		 */
+		if (fun_json_lookup_bool_default(chu, "acu", false))
+			ring_flags |= htobe64(HW_HSU_API_LINK_CONFIG_RING_FLAGS_ACU);
+
 		/* get the bif and en bits */
 		if (!fun_json_lookup_string(chu, "bif_mode", &bif_mode)) {
 			eprintf("bad bif mode\n");
@@ -493,12 +500,13 @@ static bool _parse_hostunit(struct hw_hsu_api_link_config *cfg,
 		 * patch up the cfg
 		 */
 		cfg->ring_config[ring].bif = htobe32(bif);
+		cfg->ring_config[ring].ring_flags |= ring_flags;
 
-		en = htobe64(HW_HSU_API_LINK_CONFIG_RING_FLAGS_RING_ENABLED);
+		uint64_t cid_en = htobe64(HW_HSU_API_LINK_CONFIG_CID_FLAGS_CID_ENABLED);
 		for (cid = 0; cid < HW_HSU_API_LINK_CONFIG_V0_MAX_CIDS; cid++) {
 			if ((ctl_en & (1ULL << cid)) == 0)
 				continue;
-			cfg->ring_config[ring].cid_config[cid].cid_flags |= en;
+			cfg->ring_config[ring].cid_config[cid].cid_flags |= cid_en;
 		}
 	}
 	
