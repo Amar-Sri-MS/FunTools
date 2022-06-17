@@ -451,7 +451,7 @@ def http_publish(metadata, fname, retention):
     # send it the json file
     blobname = metadata["mdblob"]
     files = {'file': (blobname, s)}
-    post_data = {"retention": "archive"}
+    post_data = {"retention": get_metadata_retention(retention)}
     LOG("publishing json via http")
     r = requests.post(url, data=post_data, files=files)
     if (r.status_code != requests.codes.ok):
@@ -516,17 +516,34 @@ def change_retention_action(fname, retention):
     url = "http://cgray-vm0/dkv/buckets/excat/"
     relpath = mkrelpath(uuid)
     url += relpath
-    url += "%s.bz" % uuid
 
-    r = requests.put(url, params={"retention": ""}, data={"retention": retention})
+    blob_url = url + "%s.bz" % uuid
+    r = requests.put(blob_url, params={"retention": ""},
+                     data={"retention": retention})
     if (r.raise_for_status()):
         raise(RuntimeError(r.text))
+
+    metadata_url = url + "%s.json" % uuid
+    r = requests.put(metadata_url,
+                     params={"retention": get_metadata_retention(retention)},
+                     data={"retention": retention})
+    if (r.raise_for_status()):
+        raise(RuntimeError(r.text))
+
     LOG("Changed retention of %s to %s" % (uuid, retention))
 
+
+def get_metadata_retention(retention):
+    """ Always keep metadata longer than the binary blob """
+    metadata_ret = "archive"
+    if retention == "forever":
+        metadata_ret = "forever"
+    return metadata_ret
+
+
 def validate_retention_args():
-    if (opts.retention not in ["short", "medium", "long", "archive"]):
-        LOG("error: unsupported retention %s" % opts.retention)
-        sys.exit(1)
+    if (opts.retention not in ["short", "medium", "long", "archive", "forever"]):
+        LOG("warning: unknown retention %s" % opts.retention)
 
 ###
 ##  main
