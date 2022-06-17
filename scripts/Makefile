@@ -27,4 +27,4 @@ install-scripts:
 ### Deployment for projectdb target
 deploy:
 	mkdir -p ${DEPLOY_ROOT}/usr/bin
-	cp bin/scripts ${DEPLOY_ROOT}/usr/bin
+	cp bin/scripts/issu ${DEPLOY_ROOT}/usr/bin
