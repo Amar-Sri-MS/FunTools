@@ -283,6 +283,11 @@ def catch_all(path):
     print("catching all!")
     return "catch_all"
 
+@app.errorhandler(requests.exceptions.HTTPError)
+def handle_http_error(e):
+    """ Deal with http errors when making requests """
+    return "%s\n" % (traceback.format_exc()), e.response.status_code
+
 @app.errorhandler(Exception)
 def handle_exception(e):
     # now you're handling non-HTTP exceptions only
