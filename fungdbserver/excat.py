@@ -450,7 +450,7 @@ def http_publish(metadata, fname, retention):
     # send it the json file
     blobname = metadata["mdblob"]
     files = {'file': (blobname, s)}
-    post_data = {'retention': 'archive'}
+    post_data = {"retention": "archive"}
     LOG("publishing json via http")
     r = requests.post(url, data=post_data, files=files)
     if (r.status_code != requests.codes.ok):
@@ -461,7 +461,7 @@ def http_publish(metadata, fname, retention):
     fl = open(tmpbz, "rb")
     os.unlink(tmpbz)
     files = {'file': (blobname, fl)}
-    post_data = {'retention': retention}
+    post_data = {"retention": retention}
     LOG("publishing bz via http")
     r = requests.post(url, data=post_data, files=files)
     if (r.status_code != requests.codes.ok):
@@ -512,18 +512,18 @@ def change_retention_action(fname, retention):
         LOG("%s is neither a file nor a UUID" % fname)
         sys.exit(1)
 
-    url = 'http://cgray-vm0/dkv/buckets/excat/'
+    url = "http://cgray-vm0/dkv/buckets/excat/"
     relpath = mkrelpath(uuid)
     url += relpath
-    url += '%s.bz' % uuid
+    url += "%s.bz" % uuid
 
-    r = requests.put(url, params={'retention': ''}, data={'retention': retention})
+    r = requests.put(url, params={"retention": ""}, data={"retention": retention})
     if (r.raise_for_status()):
         raise(RuntimeError(r.text))
     LOG("Changed retention of %s to %s" % (uuid, retention))
 
 def validate_retention_args(retention):
-    if retention not in ["short", "medium", "long", "archive"]:
+    if (retention not in ["short", "medium", "long", "archive"]):
         LOG("error: unsupported retention %s" % retention)
         sys.exit(1)
 
