@@ -135,6 +135,7 @@ def parse_args():
     parser.add_argument("--min-bundle", help="Minimum bundle number", type=int, default=0)
     parser.add_argument("--max-bundle", help="Maximum bundle number", type=int, default=None)
     parser.add_argument("-f", "--flavour", help="Bundle flavour", default="fs1600")
+    parser.add_argument("-r", "--retention", help="Retention period")
 
     args = parser.parse_args()
 
