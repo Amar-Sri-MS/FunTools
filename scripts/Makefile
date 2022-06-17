@@ -23,9 +23,5 @@ install-scripts:
 	install dpuctl.py $(SDK_INSTALL_DIR)/bin/scripts
 	install exprom-hdrgen.py $(SDK_INSTALL_DIR)/bin/scripts
 	install issu $(SDK_INSTALL_DIR)/bin/scripts
+	install deploy-funtools.scripts.sh $(SDK_INSTALL_DIR)/bin/scripts
 
-### Deployment for projectdb target
-deploy:
-	mkdir -p ${DEPLOY_ROOT}/usr/bin
-	cp bin/scripts/issu ${DEPLOY_ROOT}/usr/bin
-	chmod 0555 ${DEPLOY_ROOT}/usr/bin/issu
