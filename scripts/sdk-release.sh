@@ -129,7 +129,7 @@ Running sample NVMe replication volume package
 ==============================================
 
 cd FunOSPackageDemo
-./build/funospkg-${chip}-posix app=pkg_repvol_template_module_init,mdt_test,volsetup_cp,voltest,vol_teardown --serial voltype=VOL_TYPE_BLK_REPLICA_TEMPLATE  numios=40 UUID=repvol-000000000 transport=TCP --csr-replay localip=29.1.1.2 remoteip=29.1.1.2 rdstype=funtcp nplex=2 remote_plex_count=0
+./build/funospkg-${chip}-posix app=pkg_repvol_template_module_init,mdt_test,volsetup_cp,voltest,vol_teardown --serial UUID=626c742d-3131-3131-3131-303030303030 voltype=VOL_TYPE_BLK_REPLICA_TEMPLATE  numios=40 transport=TCP --csr-replay localip=29.1.1.2 remoteip=29.1.1.2 rdstype=funtcp nplex=2 remote_plex_count=0
 
 
 Running sample CRC package
@@ -499,7 +499,7 @@ run_posix()
 	exit 1
     fi
 
-    if ! ./build/funospkg-${chip}-posix app=pkg_repvol_template_module_init,mdt_test,volsetup_cp,voltest,vol_teardown --serial voltype=VOL_TYPE_BLK_REPLICA_TEMPLATE  numios=40 UUID=repvol-000000000 transport=TCP --csr-replay localip=29.1.1.2 remoteip=29.1.1.2 rdstype=funtcp nplex=2 remote_plex_count=0; then
+    if ! ./build/funospkg-${chip}-posix app=pkg_repvol_template_module_init,mdt_test,volsetup_cp,voltest,vol_teardown --serial UUID=626c742d-3131-3131-3131-303030303030 voltype=VOL_TYPE_BLK_REPLICA_TEMPLATE  numios=40 transport=TCP --csr-replay localip=29.1.1.2 remoteip=29.1.1.2 rdstype=funtcp nplex=2 remote_plex_count=0; then
 	echo ""
 	echo "${chip}-posix repvol package fails to run to completion"
 	echo ""
