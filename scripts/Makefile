@@ -22,3 +22,9 @@ install-scripts:
 	install update-dpu.py $(SDK_INSTALL_DIR)/bin/scripts
 	install dpuctl.py $(SDK_INSTALL_DIR)/bin/scripts
 	install exprom-hdrgen.py $(SDK_INSTALL_DIR)/bin/scripts
+	install issu $(SDK_INSTALL_DIR)/bin/scripts
+
+### Deployment for projectdb target
+deploy:
+	mkdir -p ${DEPLOY_ROOT}/usr/bin
+	cp bin/scripts ${DEPLOY_ROOT}/usr/bin
