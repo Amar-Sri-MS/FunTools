@@ -45,6 +45,7 @@ install-fungdbserver: hbm_unshard ddr_unshard ddr_unshard_s2
 	install excat.py $(SDK_INSTALL_DIR)/bin/scripts
 	install uuid_extract.py $(SDK_INSTALL_DIR)/bin/scripts
 	install fungdbserver.py $(SDK_INSTALL_DIR)/bin/scripts
+	install bulk_excat.py $(SDK_INSTALL_DIR)/bin/scripts
 	install bulk_publish.py $(SDK_INSTALL_DIR)/bin/scripts
 
 	mkdir -p ${SDK_INSTALL_DIR}/bin/$(OS)
