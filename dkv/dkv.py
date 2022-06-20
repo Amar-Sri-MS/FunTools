@@ -17,6 +17,7 @@ import werkzeug
 import tempfile
 import humanize
 import datetime
+import urllib.parse
 import traceback
 import netrc
 import xml.etree.ElementTree as xmlt
@@ -191,6 +192,7 @@ def bucket_get(path):
 @app.route('/buckets/<path:path>', methods=['POST'])
 def bucket_put(path):
     # POST path
+    # Each uploaded file creates a new URI based on the path route.
 
     upfiles = flask.request.files
     uplist = []
@@ -215,28 +217,76 @@ def bucket_put(path):
         bucket = pelems[0]
         remname = os.path.join(*pelems[1:])
         remname = os.path.join(remname, fname)
-       
+
+        tags = determine_tags(bucket, fname)
+        tags_header = None
+        if tags:
+            tags_header = urllib.parse.urlencode(tags)
+
         #if (True):
         #    return "remname %s buckets %s" % (path, bucket)
     
         # run the s3 upload
         fl.seek(0)
-        s3util.upload_file(fname, MINIO_SERVER, bucket,
-                           content_type=upfile.content_type,
-                           remote_name=remname,
-                           key=excat_user,
-                           secret=excat_pass,
-                           fl=fl)
+        s3util.upload_file_handle(fname, MINIO_SERVER, bucket, fl,
+                                  content_type=upfile.content_type,
+                                  remote_name=remname,
+                                  key=excat_user,
+                                  secret=excat_pass,
+                                  tags=tags_header)
 
         uplist.append((bucket, remname))
 
     return "bucket put: %s/%s" % (path, uplist)
+
+
+def determine_tags(bucket, fname):
+    form_data = flask.request.form
+    retention = form_data.get("retention")
+    if (retention is None):
+        # Default for legacy clients that do not provide retention information
+        return None
+
+    # validate the retention period is legit
+    if (retention not in ["short", "medium", "long", "archive", "forever"]):
+        flask.abort(400, "unknown retention period %s" % retention)
+
+    tags = {"retention": retention}
+    return tags
+
+
+@app.route('/buckets/<path:path>', methods=['PUT'])
+def tag_put(path):
+    # PUT path for a specific URI, currently used for tagging
+
+    nrc = netrc.netrc()
+    (excat_user, _, excat_pass) = nrc.authenticators(MINIO_SERVER)
+
+    change_retention = flask.request.args.get("retention")
+    if (change_retention is None):
+        flask.abort(404, "unsupported put request, add query ?retention=")
+
+    # extract the bucket and resource name from the path
+    pelems = path.split("/")
+    bucket = pelems[0]
+    remname = os.path.join(*pelems[1:])
+
+    tags = determine_tags(None, None)
+    s3util.set_tags(remname, MINIO_SERVER, bucket,
+                    key=excat_user, secret=excat_pass, region=None, tags=tags)
+    return "retention put: %s %s" % (remname, str(tags))
+
 
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def catch_all(path):
     print("catching all!")
     return "catch_all"
+
+@app.errorhandler(requests.exceptions.HTTPError)
+def handle_http_error(e):
+    """ Deal with http errors when making requests """
+    return "%s\n" % (traceback.format_exc()), e.response.status_code
 
 @app.errorhandler(Exception)
 def handle_exception(e):
