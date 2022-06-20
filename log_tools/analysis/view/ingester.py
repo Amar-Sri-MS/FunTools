@@ -70,7 +70,7 @@ def main():
     parser.add_argument('--file_name', help='File name of the uploaded log archive', default=None)
     parser.add_argument('--submitted_by', help='Email address of the submitter', default=None)
     parser.add_argument('--techsupport_ingest_type', help='Techsupport ingestion type', choices=['mount_path', 'upload', 'url'])
-    parser.add_argument('--ignore_size_restrictions', default=False)
+    parser.add_argument('--ignore_size_restrictions', action='store_true')
 
     try:
         status = True
@@ -88,7 +88,7 @@ def main():
         end_time = args.end_time
         sources = args.sources
         techsupport_ingest_type = args.techsupport_ingest_type
-        ignore_size_restrictions = args.ignore_size_restrictions == 'true'
+        ignore_size_restrictions = args.ignore_size_restrictions
 
         LOG_ID = _get_log_id(job_id, ingest_type, test_index=test_index)
         es_metadata = ElasticsearchMetadata()
@@ -189,9 +189,9 @@ def main():
         is_partial = ingestion_status.get('is_partial', False)
     except ArchiveTooBigException:
         status = False
-        status_msg = 'Size of log archive is beyond restricted limit. ' \
-                     'Please provide ingestion filters to reduce the logs ' \
-                     'or check the ignore size restrictions checkbox.'
+        status_msg = ('Size of log archive is beyond restricted limit. '
+                     'Please provide ingestion filters to reduce the logs '
+                     'or check the ignore size restrictions checkbox.')
         logging.exception(status_msg)
         _update_metadata(es_metadata, LOG_ID, 'PROMPT_USER', {
             'ingestion_error': status_msg,
@@ -221,7 +221,7 @@ def main():
         })
     finally:
         # Clean up the downloaded files if successful.
-        if status and not is_partial:
+        if status:
             clean_up(LOG_ID)
 
         # Notify via email
@@ -615,10 +615,8 @@ def start_ingestion(job_id, ingest_type, **additional_data):
             cmd.append('--submitted_by')
             cmd.append(submitted_by)
 
-        cmd.extend([
-            '--ignore_size_restrictions',
-            'true' if ignore_size_restrictions else 'false'
-        ])
+        if ignore_size_restrictions:
+            cmd.append('--ignore_size_restrictions')
 
         logging.info(f'Running ingestion cmd: {cmd}')
         ingestion = subprocess.Popen(cmd)
@@ -1015,6 +1013,10 @@ def ingest_techsupport_logs(job_id, log_path, metadata, filters):
         # This will be removed after the fixes to manifest creation by David G.
         archive_name = os.path.basename(filename)
 
+        # The techsupport folder name inside the techsupport log archive might contain
+        # timestamps.
+        techsupport_folder_name = os.path.basename(glob.glob(f'{log_path}/techsupport?')[0])
+
         # Get the folders of each node in the cluster
         folders = glob.glob(f'{log_path}/techsupport/*[!devices][!other]')
         # HA logs
@@ -1022,45 +1024,50 @@ def ingest_techsupport_logs(job_id, log_path, metadata, filters):
             for folder in folders:
                 folder_name = folder.split('/')[-1].replace(' ', '_')
                 manifest_contents.extend([
-                    f'frn:composer:cluster:{folder_name}:host:apigateway:folder:"{archive_name}/techsupport/{folder_name}":apigateway',
-                    f'frn:composer:cluster:{folder_name}:host:cassandra:folder:"{archive_name}/techsupport/{folder_name}":cassandra',
-                    f'frn:composer:cluster:{folder_name}:host:kafka:folder:"{archive_name}/techsupport/{folder_name}":kafka',
-                    f'frn:composer:cluster:{folder_name}:host:kapacitor:folder:"{archive_name}/techsupport/{folder_name}":kapacitor',
-                    f'frn:composer:cluster:{folder_name}:host:node-service:folder:"{archive_name}/techsupport/{folder_name}":nms',
-                    f'frn:composer:cluster:{folder_name}:host:pfm:folder:"{archive_name}/techsupport/{folder_name}":pcie',
-                    f'frn:composer:cluster:{folder_name}:host:telemetry-service:folder:"{archive_name}/techsupport/{folder_name}":tms',
-                    f'frn:composer:cluster:{folder_name}:host:dataplacement:folder:"{archive_name}/techsupport/{folder_name}/sc":dataplacement',
-                    f'frn:composer:cluster:{folder_name}:host:discovery:folder:"{archive_name}/techsupport/{folder_name}/sc":discovery',
-                    f'frn:composer:cluster:{folder_name}:host:lrm_consumer:folder:"{archive_name}/techsupport/{folder_name}/sc":lrm_consumer',
-                    f'frn:composer:cluster:{folder_name}:host:expansion_rebalance:folder:"{archive_name}/techsupport/{folder_name}/sc":expansion_rebalance',
-                    f'frn:composer:cluster:{folder_name}:host:metrics_manager:folder:"{archive_name}/techsupport/{folder_name}/sc":metrics_manager',
-                    f'frn:composer:cluster:{folder_name}:host:metrics_server:folder:"{archive_name}/techsupport/{folder_name}/sc":metrics_server',
-                    f'frn:composer:cluster:{folder_name}:host:scmscv:folder:"{archive_name}/techsupport/{folder_name}/sc":scmscv',
-                    f'frn:composer:cluster:{folder_name}:host:setup_db:folder:"{archive_name}/techsupport/{folder_name}/sc":setup_db',
-                    f'frn:composer:cluster:{folder_name}:host:sns:folder:"{archive_name}/techsupport/{folder_name}":sns'
+                    f'frn:composer:cluster:{folder_name}:host:apigateway:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}":apigateway',
+                    f'frn:composer:cluster:{folder_name}:host:cassandra:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}":cassandra',
+                    f'frn:composer:cluster:{folder_name}:host:kafka:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}":kafka',
+                    f'frn:composer:cluster:{folder_name}:host:kapacitor:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}":kapacitor',
+                    f'frn:composer:cluster:{folder_name}:host:node-service:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}":nms',
+                    f'frn:composer:cluster:{folder_name}:host:pfm:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}":pcie',
+                    f'frn:composer:cluster:{folder_name}:host:telemetry-service:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}":tms',
+                    f'frn:composer:cluster:{folder_name}:host:dataplacement:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}/sc":dataplacement',
+                    f'frn:composer:cluster:{folder_name}:host:discovery:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}/sc":discovery',
+                    f'frn:composer:cluster:{folder_name}:host:lrm_consumer:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}/sc":lrm_consumer',
+                    f'frn:composer:cluster:{folder_name}:host:expansion_rebalance:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}/sc":expansion_rebalance',
+                    f'frn:composer:cluster:{folder_name}:host:metrics_manager:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}/sc":metrics_manager',
+                    f'frn:composer:cluster:{folder_name}:host:metrics_server:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}/sc":metrics_server',
+                    f'frn:composer:cluster:{folder_name}:host:scmscv:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}/sc":scmscv',
+                    f'frn:composer:cluster:{folder_name}:host:setup_db:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}/sc":setup_db',
+                    f'frn:composer:cluster:{folder_name}:host:sns:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}":sns'
                 ])
+            manifest_contents.extend([
+                f'frn:plaform:DPU::system:storage_agent:textfile:"{archive_name}/{techsupport_folder_name}/other":*storageagent.log*',
+                f'frn:plaform:DPU::system:platform_agent:textfile:"{archive_name}/{techsupport_folder_name}/other":*platformagent.log*',
+                f'frn:plaform:DPU::system:funos:textfile:"{archive_name}/{techsupport_folder_name}/other":*funos.log*'
+            ])
         else:
             manifest_contents.extend([
-                f'frn:composer:controller::host:apigateway:folder:"{archive_name}/techsupport/cs":apigateway',
-                f'frn:composer:controller::host:cassandra:folder:"{archive_name}/techsupport/cs":cassandra',
-                f'frn:composer:controller::host:kafka:textfile:"{archive_name}/techsupport/cs/container":kafka.log',
-                f'frn:composer:controller::host:kapacitor:folder:"{archive_name}/techsupport/cs":container',
-                f'frn:composer:controller::host:node-service:folder:"{archive_name}/techsupport/cs":nms',
-                f'frn:composer:controller::host:pfm:folder:"{archive_name}/techsupport/cs":pfm',
-                f'frn:composer:controller::host:telemetry-service:folder:"{archive_name}/techsupport/cs":tms',
-                f'frn:composer:controller::host:dataplacement:folder:"{archive_name}/techsupport/cs/sclogs":dataplacement',
-                f'frn:composer:controller::host:discovery:folder:"{archive_name}/techsupport/cs/sclogs":discovery',
-                f'frn:composer:controller::host:lrm_consumer:folder:"{archive_name}/techsupport/cs/sclogs":lrm_consumer',
-                f'frn:composer:controller::host:expansion_rebalance:folder:"{archive_name}/techsupport/cs/sclogs":expansion_rebalance',
-                f'frn:composer:controller::host:metrics_manager:folder:"{archive_name}/techsupport/cs/sclogs":metrics_manager',
-                f'frn:composer:controller::host:metrics_server:folder:"{archive_name}/techsupport/cs/sclogs":metrics_server',
-                f'frn:composer:controller::host:scmscv:folder:"{archive_name}/techsupport/cs/sclogs":scmscv',
-                f'frn:composer:controller::host:setup_db:folder:"{archive_name}/techsupport/cs/sclogs":setup_db',
-                f'frn:composer:controller::host:sns:folder:"{archive_name}/techsupport/cs":sns',
+                f'frn:composer:controller::host:apigateway:folder:"{archive_name}/{techsupport_folder_name}/cs":apigateway',
+                f'frn:composer:controller::host:cassandra:folder:"{archive_name}/{techsupport_folder_name}/cs":cassandra',
+                f'frn:composer:controller::host:kafka:textfile:"{archive_name}/{techsupport_folder_name}/cs/container":kafka.log',
+                f'frn:composer:controller::host:kapacitor:folder:"{archive_name}/{techsupport_folder_name}/cs":container',
+                f'frn:composer:controller::host:node-service:folder:"{archive_name}/{techsupport_folder_name}/cs":nms',
+                f'frn:composer:controller::host:pfm:folder:"{archive_name}/{techsupport_folder_name}/cs":pfm',
+                f'frn:composer:controller::host:telemetry-service:folder:"{archive_name}/{techsupport_folder_name}/cs":tms',
+                f'frn:composer:controller::host:dataplacement:folder:"{archive_name}/{techsupport_folder_name}/cs/sclogs":dataplacement',
+                f'frn:composer:controller::host:discovery:folder:"{archive_name}/{techsupport_folder_name}/cs/sclogs":discovery',
+                f'frn:composer:controller::host:lrm_consumer:folder:"{archive_name}/{techsupport_folder_name}/cs/sclogs":lrm_consumer',
+                f'frn:composer:controller::host:expansion_rebalance:folder:"{archive_name}/{techsupport_folder_name}/cs/sclogs":expansion_rebalance',
+                f'frn:composer:controller::host:metrics_manager:folder:"{archive_name}/{techsupport_folder_name}/cs/sclogs":metrics_manager',
+                f'frn:composer:controller::host:metrics_server:folder:"{archive_name}/{techsupport_folder_name}/cs/sclogs":metrics_server',
+                f'frn:composer:controller::host:scmscv:folder:"{archive_name}/{techsupport_folder_name}/cs/sclogs":scmscv',
+                f'frn:composer:controller::host:setup_db:folder:"{archive_name}/{techsupport_folder_name}/cs/sclogs":setup_db',
+                f'frn:composer:controller::host:sns:folder:"{archive_name}/{techsupport_folder_name}/cs":sns',
 
-                f'frn:plaform:DPU::system:storage_agent:textfile:"{archive_name}/techsupport/other":*storageagent.log*',
-                f'frn:plaform:DPU::system:platform_agent:textfile:"{archive_name}/techsupport/other":*platformagent.log*',
-                f'frn:plaform:DPU::system:funos:textfile:"{archive_name}/techsupport/other":*funos.log*'
+                f'frn:plaform:DPU::system:storage_agent:textfile:"{archive_name}/{techsupport_folder_name}/other":*storageagent.log*',
+                f'frn:plaform:DPU::system:platform_agent:textfile:"{archive_name}/{techsupport_folder_name}/other":*platformagent.log*',
+                f'frn:plaform:DPU::system:funos:textfile:"{archive_name}/{techsupport_folder_name}/other":*funos.log*'
             ])
 
         _create_manifest(path, contents=manifest_contents)

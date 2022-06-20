@@ -68,7 +68,9 @@ def main():
         techsupport_archive = techsupport_archives[test_index]
         ingest_type = 'techsupport'
         # Test the upload API for the last techsupport archive
-        if test_index == len(techsupport_archives)-1:
+        # if it is less than the MAX size.
+        if (test_index == len(techsupport_archives)-1 and
+            os.stat(techsupport_archive).st_size <= config["MAX_CONTENT_LENGTH"]):
             ingest_type = 'upload'
 
         logging.info('-*-'*50)
@@ -115,16 +117,13 @@ class TechsupportTester(Tester):
 
         if self.techsupport_ingest_type == 'upload':
             try:
-                if os.stat(self.file_path).st_size > config["MAX_CONTENT_LENGTH"]:
-                    logging.info('Skipping upload because the file size too big.')
-                    return
-
                 URL = f'{config["LOG_ANALYZER_BASE_URL"]}/upload_file'
                 headers = {
                     'Accept': 'application/json'
                 }
                 data = {
                     'job_id': self.job_id,
+                    'tags': 'automated_testing',
                     'submitted_by': 'sourabh.jain@fungible.com'
                 }
                 file_name = os.path.basename(self.file_path)
@@ -153,7 +152,7 @@ class TechsupportTester(Tester):
                         self.ingestion_status = False
                         self.ingestion_status_msg = response_data.get('ingestion_error')
                         break
-                    elif response_data.get('ingestion_status') == 'COMPLETED':
+                    elif response_data.get('ingestion_status') in ['COMPLETED', 'PARTIAL']:
                         self.ingestion_status = True
                         break
             except Exception as e:
@@ -165,7 +164,8 @@ class TechsupportTester(Tester):
                 '--ingest_type', 'techsupport',
                 '--techsupport_ingest_type', 'mount_path',
                 '--log_path', str(self.file_path),
-                '--tags', 'automated_testing']
+                '--tags', 'automated_testing',
+                '--ignore_size_restrictions']
             logging.info(cmd)
 
             try:

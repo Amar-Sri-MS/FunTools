@@ -389,8 +389,12 @@ def build_input_pipeline(path, frn_info, filters={}):
         # nms contains PA<MAC_ID>-platformagent.log whereas system log archive contains platform-agent.log
         file_pattern = f'{path}/*platform?agent.log*' if resource_type == 'folder' else path
         blocks.extend(
-            fun_agent_input_pipeline(frn_info, source, file_pattern)
-        )
+            fun_agent_input_pipeline(frn_info,
+                                source,
+                                file_pattern,
+                                file_info_match='PA(?P<system_id>([0-9a-fA-F]:?){12})-'
+                )
+            )
 
     elif source in ['opsec-agent', 'opsec_agent']:
         file_pattern = f'{path}/opsec-agent*' if resource_type == 'folder' else path
