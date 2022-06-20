@@ -40,6 +40,11 @@ PATHS = [ "./",
           os.path.dirname(os.path.abspath(__file__))
 ]
 
+ACTION_TO_STR = {
+    "pub": "publishing",
+    "ret": "retaining"
+}
+
 def excat_py():
     for path in PATHS:
         excat = os.path.join(path, "excat.py")
@@ -59,7 +64,9 @@ def scan_path(binpath):
         p = os.path.join(binpath, bin)
         if (not os.path.exists(p)):
             continue
-        print("Publishing file %s" % p)
+
+        verb = ACTION_TO_STR[opts.action]
+        print("%s file %s" % (verb.capitalize(), p))
 
         cmd = [excat_py(), opts.action, p]
         if opts.retention:
@@ -67,7 +74,7 @@ def scan_path(binpath):
 
         cmd = " ".join(cmd)
         os.system(cmd)
-        print("Done publishing file %s" % p)
+        print("Done %s file %s" % (verb, p))
 
 def scan_tgz(tgzpath):
     # see if it exists
