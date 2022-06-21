@@ -1024,7 +1024,7 @@ def ingest_techsupport_logs(job_id, log_path, metadata, filters):
 
         # The techsupport folder name inside the techsupport log archive might contain
         # timestamps.
-        techsupport_folder_name = os.path.basename(glob.glob(f'{log_path}/techsupport?')[0])
+        techsupport_folder_name = os.path.basename(glob.glob(f'{log_path}/techsupport*')[0])
 
         # Get the folders of each node in the cluster
         folders = glob.glob(f'{log_path}/techsupport/*[!devices][!other]')
