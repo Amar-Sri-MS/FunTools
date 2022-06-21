@@ -55,8 +55,7 @@ setup(
     install_requires = [
         'pyperclip',
         'contextlib2',
-        'jsocket==1.6',
-        'logging==0.4.9.6',
+        'jsocket==1.8.2',
         'cmd2==0.8.8',
         'argcomplete',
         'pyparsing==2.4.7',
