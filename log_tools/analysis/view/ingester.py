@@ -38,9 +38,12 @@ from view.common import login_required
 from utils import archive_extractor, manifest_parser
 from utils import mail
 from utils import timeline
-import ingest as ingest_handler
-import logger
+
 import config_loader
+import elastic_log_searcher
+import logger
+import ingest as ingest_handler
+
 
 config = config_loader.get_config()
 ingester_page = Blueprint('ingester_page', __name__)
@@ -631,6 +634,12 @@ def check_status(log_id):
     """
     es_metadata = ElasticsearchMetadata()
     metadata = es_metadata.get(log_id)
+
+    # Fetch index stats which includes log count and store size.
+    if metadata:
+        index_stats = elastic_log_searcher._get_indices(log_id)
+        index_stats = index_stats[0] if len(index_stats) else None
+        metadata['index_stats'] = index_stats
 
     # TODO(Sourabh): Need an additional check if the status is
     # not COMPLETED to see if the process is running

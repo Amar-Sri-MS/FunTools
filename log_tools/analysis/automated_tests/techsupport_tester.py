@@ -69,8 +69,9 @@ def main():
         ingest_type = 'techsupport'
         # Test the upload API for the last techsupport archive
         # if it is less than the MAX size.
-        if (test_index == len(techsupport_archives)-1 and
-            os.stat(techsupport_archive).st_size <= config["MAX_CONTENT_LENGTH"]):
+        is_archive_size_within_limit = os.stat(techsupport_archive).st_size <= config["MAX_CONTENT_LENGTH"]
+        is_last_index = test_index == len(techsupport_archives)-1
+        if is_last_index and is_archive_size_within_limit:
             ingest_type = 'upload'
 
         logging.info('-*-'*50)
