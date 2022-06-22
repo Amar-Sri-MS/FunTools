@@ -441,7 +441,7 @@ def http_publish(metadata, fname):
     s = metadata2str(metadata)
 
     # setup the URLx
-    url = 'http://cgray-vm0/dkv/buckets/excat/'
+    url = HTTP_ROOT + "/"
     # xx/yy/zz portion
     url += metadata['relpath']
     
