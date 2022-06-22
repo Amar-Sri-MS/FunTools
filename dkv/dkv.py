@@ -1,13 +1,9 @@
 import sys
 import os
-if os.path.exists("/home/cgray/dkv/FunTools/scripts"):
-    # for deployment
-    sys.path.append("/home/cgray/dkv/FunTools/scripts")
-else:
-    # for development
-    ws = os.environ.get('WORKSPACE')
-    if ws:
-        sys.path.append(os.path.join(ws, 'FunTools', 'scripts'))
+# find the extra scripts relative to our source
+script_path = os.path.join(os.path.dirname(__file__), "../scripts")
+print(script_path)
+sys.path.append(script_path)
 import s3util
 import requests
 import xml
@@ -299,5 +295,12 @@ def application(env, start_response):
     A basic WSGI application
     """
 
+    toks = __file__.split("/")
+    toks += ("", "", "")
+    if ((os.environ.get("HOME") is None)
+        and (toks[1] == "home")):
+            os.environ["HOME"] = os.path.join("/home", toks[2])
+                
+                
     #print(env)
     return app(env, start_response)
