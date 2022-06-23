@@ -15,6 +15,7 @@
 
 import argparse
 import glob
+import json
 import logging
 import os
 import requests
@@ -30,6 +31,7 @@ from custom_exceptions import ArchiveTooBigException
 from custom_exceptions import EmptyPipelineException
 from custom_exceptions import NotFoundException
 from custom_exceptions import NotSupportedException
+from dotenv import load_dotenv
 from elastic_metadata import ElasticsearchMetadata
 from flask import Blueprint, jsonify, request, render_template
 from flask import current_app, g
@@ -45,16 +47,19 @@ import logger
 import ingest as ingest_handler
 
 
+load_dotenv(override=True)
+
 config = config_loader.get_config()
 ingester_page = Blueprint('ingester_page', __name__)
 
 FILE_PATH = os.path.abspath(os.path.dirname(__file__))
 DOWNLOAD_DIRECTORY = os.path.join(FILE_PATH, 'downloads')
-QA_REGRESSION_BASE_ENDPOINT = 'http://integration.fungible.local/api/v1/regression'
+QA_BASE_ENDPOINT = 'https://integration.fungible.local'
+QA_REGRESSION_BASE_ENDPOINT = f'{QA_BASE_ENDPOINT}/api/v1/regression'
 QA_JOB_INFO_ENDPOINT = f'{QA_REGRESSION_BASE_ENDPOINT}/suite_executions'
 QA_LOGS_ENDPOINT = f'{QA_REGRESSION_BASE_ENDPOINT}/test_case_time_series'
 QA_SUITE_ENDPOINT = f'{QA_REGRESSION_BASE_ENDPOINT}/suites'
-QA_STATIC_ENDPOINT = 'http://integration.fungible.local/static/logs'
+QA_STATIC_ENDPOINT = f'{QA_BASE_ENDPOINT}/static/logs'
 
 # Users are required to input ingestion filters for log archives greater than 4GB.
 RESTRICTED_ARCHIVE_SIZE = 4 * 1024 * 1024 * 1024
@@ -168,7 +173,7 @@ def main():
                                  LOG_ID,
                                  'DOWNLOAD_STARTED',
                                  {'log_path': log_path})
-                if check_and_download_logs(log_path, log_dir, metadata['ignore_size_restrictions']):
+                if check_and_download_logs(log_path, log_dir, ignore_size_restrictions=metadata['ignore_size_restrictions']):
                     end = time.time()
                     time_taken = end - start
 
@@ -675,35 +680,37 @@ def is_filters_available(filters):
     return False
 
 
-def fetch_qa_job_info(job_id):
+def fetch_qa_job_info(session, job_id):
     """
     Fetching QA job info using QA endpoint
     Returns response (dict)
     Raises Exception if Job not found
     """
     url = f'{QA_JOB_INFO_ENDPOINT}/{job_id}'
-    response = requests.get(url)
+    headers = {"X-CSRFToken": session.cookies['csrftoken']}
+    response = requests.get(url, verify=False, headers=headers, cookies=session.cookies)
     job_info = response.json()
     if not (job_info and job_info['data']):
         raise NotFoundException('Job info not found')
     return job_info
 
 
-def fetch_qa_suite_info(suite_id):
+def fetch_qa_suite_info(session, suite_id):
     """
     Fetching QA job info using QA endpoint
     Returns response (dict)
     Raises Exception if Job not found
     """
     url = f'{QA_SUITE_ENDPOINT}/{suite_id}'
-    response = requests.get(url)
+    headers = {"X-CSRFToken": session.cookies['csrftoken']}
+    response = requests.get(url, verify=False, headers=headers, cookies=session.cookies)
     suite_info = response.json()
     if not (suite_info and suite_info['data']):
         raise NotFoundException(f'QA suite ({suite_id}) not found')
     return suite_info['data']
 
 
-def fetch_qa_logs(job_id, suite_info, test_index=None):
+def fetch_qa_logs(session, job_id, suite_info, test_index=None):
     """
     Fetches a list of QA log filenames
     QA API returns a list of log info containing data
@@ -718,7 +725,8 @@ def fetch_qa_logs(job_id, suite_info, test_index=None):
     }
     """
     url = f'{QA_LOGS_ENDPOINT}/{job_id}?type=200'
-    response = requests.get(url)
+    headers = {"X-CSRFToken": session.cookies['csrftoken']}
+    response = requests.get(url, verify=False, headers=headers, cookies=session.cookies)
     job_logs = response.json()
     if not (job_logs and job_logs['data']):
         raise NotFoundException('Logs not found')
@@ -771,6 +779,32 @@ def _get_valid_files(path):
             ]
 
 
+def get_qa_session():
+    """
+    Authenicates with QA infra using the login REST API and
+    creates a session object which contains the cookies with
+    csrftoken and sessionid.
+
+    Returns requests.Session object or raises Exception if
+    auth fails.
+    """
+    username = os.getenv('LDAP_USER')
+    password = os.getenv('LDAP_PASSWORD')
+    uri = "/api/v1/login"
+    url = f'{QA_BASE_ENDPOINT}{uri}'
+    headers = {'Content-Type': 'application/json'}
+    data = {"username": username, "password": password}
+    session = requests.Session()
+    response = session.post(url, verify=False, headers=headers, data=json.dumps(data))
+    if response.status_code == 200 and 'csrftoken' in session.cookies:
+        return session
+    else:
+        logging.error(
+            'Could not login to QA infra.'
+            'Status: {} Response: {}'.format(response.status_code, response.text))
+    raise Exception('Could not login to QA Infra.')
+
+
 def ingest_qa_logs(job_id, test_index, metadata, filters):
     """
     Ingesting logs using QA "job_id" and "test_index".
@@ -790,9 +824,10 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
 
     start = time.time()
     try:
-        job_info = fetch_qa_job_info(job_id)
-        suite_info = fetch_qa_suite_info(job_info['data']['suite_id'])
-        log_files = fetch_qa_logs(job_id, suite_info, test_index)
+        session = get_qa_session()
+        job_info = fetch_qa_job_info(session, job_id)
+        suite_info = fetch_qa_suite_info(session, job_info['data']['suite_id'])
+        log_files = fetch_qa_logs(session, job_id, suite_info, test_index)
 
         release_train = job_info['data']['primary_release_train']
 
@@ -817,7 +852,7 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
                 continue
             log_dir = log_file.split(QA_LOGS_DIRECTORY)[1]
             url = f'{QA_STATIC_ENDPOINT}{log_dir}'
-            if check_and_download_logs(url, path, metadata['ignore_size_restrictions']):
+            if check_and_download_logs(url, path, session, metadata['ignore_size_restrictions']):
                 found_logs = True
                 # techsupport log archive
                 if log_file.endswith('cs_all_logs_techsupport.tar.gz'):
@@ -1111,12 +1146,23 @@ def _create_manifest(path, metadata={}, contents=[]):
 
 
 @timeline.timeline_logger('downloading_logs')
-def check_and_download_logs(url, path, ignore_size_restrictions=False):
+def check_and_download_logs(url, path, session=None, ignore_size_restrictions=False):
     """ Downloading log archives from QA dashboard """
     filename = url.split('/')[-1].replace(' ', '_')
     file_path = os.path.join(path, filename)
 
-    response = requests.get(url, allow_redirects=True, stream=True)
+    headers = {}
+    cookies = {}
+    if session:
+        headers = {"X-CSRFToken": session.cookies['csrftoken']}
+        cookies=session.cookies
+
+    response = requests.get(url,
+        headers=headers,
+        cookies=cookies,
+        verify=False,
+        allow_redirects=True,
+        stream=True)
     if response.ok:
         if not ignore_size_restrictions:
             content_length = int(response.headers['Content-Length'])
