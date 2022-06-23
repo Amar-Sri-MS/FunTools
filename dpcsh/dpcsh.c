@@ -2038,6 +2038,12 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	if (cmd_sock.mode == SOCKMODE_UNIX && funos_sock.mode == SOCKMODE_UNIX &&
+		strcmp(funos_sock.socket_name, cmd_sock.socket_name) == 0) {
+		printf("Cannot use the same socket for FunOS and client\n");
+		exit(1);
+	}
+
 	/* sanity check */
 	if (cmd_sock.eth_name && cmd_sock.mode != SOCKMODE_IP) {
 		printf("Interface name is valid for IP proxy modes only\n");
