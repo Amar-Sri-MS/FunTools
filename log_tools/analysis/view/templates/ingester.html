@@ -485,10 +485,10 @@
                 <p>Last checked: ${new Date()}</p>
             `;
 
-            const indexStatus = "index_status" in metadata ? metadata["index_status"] : null;
-            if (indexStatus && ["INGESTION_IN_PROGRESS", "COMPLETED", "PARTIAL"].includes(status)) {
-                const logLinesCount = "docs.count" in indexStatus ? indexStatus["docs.count"] : null;
-                const logStoreSize = "store.size" in indexStatus ? indexStatus["store.size"] : null;
+            const indexStats = "index_stats" in metadata ? metadata["index_stats"] : null;
+            if (indexStats && ["INGESTION_IN_PROGRESS", "COMPLETED", "PARTIAL"].includes(status)) {
+                const logLinesCount = "docs.count" in indexStats ? indexStats["docs.count"] : null;
+                const logStoreSize = "store.size" in indexStats ? indexStats["store.size"] : null;
                 statusElement.innerHTML += `
                 <p>Total logs lines: ${logLinesCount} ${prevLogLinesCount ? `(Previous: ${prevLogLinesCount})` : ''}
                 <p>Total ingested log size: ${logStoreSize}

@@ -17,7 +17,7 @@ import requests
 import sys
 import time
 
-
+from dotenv import load_dotenv
 from flask import Flask
 from flask import jsonify
 from flask import request
@@ -44,6 +44,8 @@ import elastic_log_searcher
 import config_loader
 import logger
 
+
+load_dotenv(override=True)
 
 app = Flask(__name__)
 app.register_blueprint(ingester_page)

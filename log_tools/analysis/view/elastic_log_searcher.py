@@ -69,47 +69,49 @@ def _get_indices(prefix, limit=None):
     limit (dict) - controlling how to limit the indices
                    by count or days. Ex: last 7 days.
     """
-    ELASTICSEARCH_HOSTS = config['ELASTICSEARCH']['hosts']
-    ELASTICSEARCH_TIMEOUT = config['ELASTICSEARCH']['timeout']
-    ELASTICSEARCH_MAX_RETRIES = config['ELASTICSEARCH']['max_retries']
-    es = Elasticsearch(ELASTICSEARCH_HOSTS,
-                       timeout=ELASTICSEARCH_TIMEOUT,
-                       max_retries=ELASTICSEARCH_MAX_RETRIES,
-                       retry_on_timeout=True)
+    try:
+        ELASTICSEARCH_HOSTS = config['ELASTICSEARCH']['hosts']
+        ELASTICSEARCH_TIMEOUT = config['ELASTICSEARCH']['timeout']
+        ELASTICSEARCH_MAX_RETRIES = config['ELASTICSEARCH']['max_retries']
+        es = Elasticsearch(ELASTICSEARCH_HOSTS,
+                        timeout=ELASTICSEARCH_TIMEOUT,
+                        max_retries=ELASTICSEARCH_MAX_RETRIES,
+                        retry_on_timeout=True)
 
-    # Using the ES CAT API to get indices.
-    # CAT API supports sorting and returns more data.
-    # Args: h is for limiting the data needed.
-    # Args: s is for sorting based on the data.
-    indices = es.cat.indices(
-        index=prefix,
-        h='health,index,id,docs.count,store.size,creation.date',
-        format='json',
-        # Sorting the indices based on creation date.
-        s='creation.date:desc'
-    )
+        # Using the ES CAT API to get indices.
+        # CAT API supports sorting and returns more data.
+        # Args: h is for limiting the data needed.
+        # Args: s is for sorting based on the data.
+        indices = es.cat.indices(
+            index=prefix,
+            h='health,index,id,docs.count,store.size,creation.date',
+            format='json',
+            # Sorting the indices based on creation date.
+            s='creation.date:desc'
+        )
 
-    if limit:
-        limit_by = limit.get('by')
-        limit_value = limit.get('value')
-        if limit_by == 'count':
-            indices = indices[:int(limit_value)]
-        elif limit_by == 'days':
-            limited_indices = list()
-            limit_day = datetime.datetime.combine(
-                            datetime.datetime.today(),
-                            datetime.time.min
-                        ) - datetime.timedelta(days=limit_value)
-            # ES CAT API sends timestamp in nanoseconds.
-            limit_epoch = limit_day.timestamp() * 1000
-            for index in indices:
-                if float(index['creation.date']) < limit_epoch:
-                    break
-                limited_indices.append(index)
-            indices = limited_indices
+        if limit:
+            limit_by = limit.get('by')
+            limit_value = limit.get('value')
+            if limit_by == 'count':
+                indices = indices[:int(limit_value)]
+            elif limit_by == 'days':
+                limited_indices = list()
+                limit_day = datetime.datetime.combine(
+                                datetime.datetime.today(),
+                                datetime.time.min
+                            ) - datetime.timedelta(days=limit_value)
+                # ES CAT API sends timestamp in nanoseconds.
+                limit_epoch = limit_day.timestamp() * 1000
+                for index in indices:
+                    if float(index['creation.date']) < limit_epoch:
+                        break
+                    limited_indices.append(index)
+                indices = limited_indices
 
-    return indices
-
+        return indices
+    except Exception as e:
+        return []
 
 class ElasticLogState(object):
     """
