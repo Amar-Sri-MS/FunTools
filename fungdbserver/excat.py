@@ -32,7 +32,7 @@ import os
 ARGS_HELP =  \
 """usage: {0} [get] <filename>
        {0} pub[lish] <filename>
-       {0} ret[ain] <filename> --retention (short,medium,long,archive)
+       {0} ret[ain] <filename> --retention (short,medium,long,archive,forever)
 
 Publish and retrive executable file symbols to the central
 ExCat (Executable Catalogue) repository. Executables are indexed
@@ -41,7 +41,7 @@ via their unique build-id.
 Options:
 -v, --verbose        extra logging information
 -N <note>, --note    textual note to add to the metadata blob when publishing
--r <p>, --retention  retention period (short, medium, long, archive)
+-r <p>, --retention  retention period (short, medium, long, archive, forever)
 --ignore-source      don't return the source binary on get (force retrieval)
 --force-uuid         force uuid if a matching file exists
 --metadata           dump metadata blob on get
