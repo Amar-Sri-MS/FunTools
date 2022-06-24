@@ -18,8 +18,7 @@ def truncated_secs(time_nsecs):
     """Returns the number of seconds.
     Time is truncated to two digits for more compact displays.
     """
-    # print("type = ", type((time_nsecs / NSECS_PER_SEC) % 100))
-    # again type in 3 is float and type in 2.7 is int
+
     trunc_secs = int((time_nsecs / NSECS_PER_SEC) % 100)
     return trunc_secs
 
