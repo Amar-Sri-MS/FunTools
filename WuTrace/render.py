@@ -19,8 +19,7 @@ def truncated_secs(time_nsecs):
     Time is truncated to two digits for more compact displays.
     """
 
-    trunc_secs = int((time_nsecs / NSECS_PER_SEC) % 100)
-    return trunc_secs
+    return (time_nsecs // NSECS_PER_SEC) % 100
 
 def truncated_usecs(time_nsecs):
     """Returns number of microseconds in fractional seconds of given time."""

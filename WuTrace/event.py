@@ -81,11 +81,11 @@ class FabricAddress(object):
         if src_id > ((GID_PC_MAX + 1) * 6 * 4):
             raise ValueError('Out of range src: 0%d' % src_id)
 
-        cluster = src_id / 24
+        cluster = src_id // 24
         core_vp = (src_id % 24)
 
         faddr = FabricAddress()
-        faddr.gid = int(cluster)
+        faddr.gid = cluster
         # important thing to note -> faddr.gid is treated as a float in python3
         # and as an int in python2.7
         faddr.lid = core_vp + LID_VP_BASE
@@ -233,9 +233,9 @@ class FabricAddress(object):
         if self.lid < LID_VP_BASE:
             return '{}{}'.format(pc_lid_table[self.lid], self.gid)
         else:
-            core = (self.lid - LID_VP_BASE) / TOPO_MAX_VPS_PER_CORE
+            core = (self.lid - LID_VP_BASE) // TOPO_MAX_VPS_PER_CORE
             vp = (self.lid - LID_VP_BASE) % TOPO_MAX_VPS_PER_CORE
-            core = int(core) # core is treated as a float in 2.7 and as an int in 3
+            # core is treated as a float in 2.7 and as an int in 3
             return 'VP{}.{}.{}'.format(self.gid, core, vp)
         raise ValueError('Unknown block ' + self.block)
 
