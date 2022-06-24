@@ -110,13 +110,13 @@ class TestParseFabricAddress(unittest.TestCase):
         faddr = event.FabricAddress.from_string('FA6:3:0[DMA]')
         self.assertTrue(faddr.is_accelerator())
         self.assertTrue(faddr.is_cluster())
-        self.assertEquals('DMA6', str(faddr))
+        self.assertEqual('DMA6', str(faddr))
 
     def testRegex(self):
         faddr = event.FabricAddress.from_string('FA3:4:0[RGX]')
         self.assertTrue(faddr.is_accelerator())
         self.assertTrue(faddr.is_cluster())
-        self.assertEquals('RGX3', str(faddr))
+        self.assertEqual('RGX3', str(faddr))
 
 
 if __name__ == '__main__':

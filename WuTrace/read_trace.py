@@ -307,7 +307,7 @@ class TraceFileParser(object):
             elif evt_id == 0:
                 continue
             else:
-                print 'Skip event %d for %d bytes' % (evt_id, evt_id)
+                print("Skip event %d for %d bytes" % (evt_id, evt_id))
                 # raise ValueError('Unhandled event id %d' % evt_id)
 
             if not new_event:
@@ -337,7 +337,7 @@ class WuListExtractor(object):
     def generate_wu_list(self):
         """Generates WU list from FunOS image file."""
 
-        print 'Generating WU List'
+        print("Generating WU List")
         print
 
         linux_gdb_path = '/project/tools/mips/mips-img-elf/2015.06-05/bin/mips-img-elf-gdb'
@@ -355,15 +355,15 @@ class WuListExtractor(object):
                        self.funos_image_path]
 
         gdb_command_string = ' '.join(gdb_command).replace(' -', ' \\\n-')
-        print 'Executing GDB as:'
-        print '  ', gdb_command_string.replace('\n', '\n    ')
+        print("Executing GDB as:")
+        print("  ", gdb_command_string.replace('\n', '\n    '))
         print
 
         try:
             gdb_output = subprocess.check_output(gdb_command, stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as error:
-            print 'GDB failed with return code %d\n' % error.returncode
-            print 'GDB output:\n%s\n' % error.output
+            print("GDB failed with return code %d\n" % error.returncode)
+            print("GDB output:\n%s\n" % error.output)
             raise error
 
         # GDB output is like so:
@@ -607,8 +607,8 @@ class TraceLogParser(object):
         elif keywords['verb'] == 'FLUSH' and keywords['noun'] == 'FLUSH':
             return None
         else:
-            print 'Do not know how to handle %s/%s' % (keywords['verb'],
-                                                       keywords['noun'])
+            print("Do not know how to handle %s/%s" % (keywords['verb'],
+                                                       keywords['noun']))
         return None
 
     def parse(self, fh, filename='unknown'):

@@ -1,7 +1,7 @@
 all: test end_to_end end_to_end_raw
 
 test:
-	/usr/bin/env python2.7 -m unittest discover -p '*test.py' -v
+	/usr/bin/env python3 -m unittest discover -p '*test.py' -v
 
 end_to_end: testdata/lsv.trace
 	./wu_trace.py testdata/lsv.trace --event-output /tmp/out1.events --output  /tmp/out.html
