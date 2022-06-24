@@ -513,7 +513,7 @@ def change_retention_action(fname, retention):
         LOG("%s is neither a file nor a UUID" % fname)
         sys.exit(1)
 
-    url = "http://cgray-vm0/dkv/buckets/excat/"
+    url = HTTP_ROOT + "/"
     relpath = mkrelpath(uuid)
     url += relpath
 
