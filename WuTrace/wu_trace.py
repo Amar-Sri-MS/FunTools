@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 #
 # Converts output from funos-posix's --wulog option into a graphical
 # form to show the order and timing of work units.
@@ -312,7 +312,6 @@ def main(argv):
     args = arg_parser.parse_args()
 
     input_filename = args.inputs[0]
-
     if not os.path.exists(input_filename):
         sys.stderr.write('No such file "%s"' % input_filename)
         sys.exit(1)
@@ -331,7 +330,6 @@ def main(argv):
                 'Unknown option %s to --format. '
                 'Must be text, html, graphviz, json.\n')
             exit(1)
-
     if args.input_format == 'uart':
         with open(input_filename) as fh:
             trace_parser = read_trace.TraceLogParser()
@@ -341,7 +339,7 @@ def main(argv):
             sys.stderr.write('Must specify --funos-binary or --wu-list '
                              'when input is a trace file\n')
             exit(1)
-        with open(input_filename) as fh:
+        with open(input_filename, 'rb') as fh:
             wu_list = []
             if args.funos_binary:
                 extractor = read_trace.WuListExtractor(args.funos_binary)

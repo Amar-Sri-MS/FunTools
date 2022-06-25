@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 #
 # event_test.py: unit tests for event.py.
 #
@@ -82,7 +82,7 @@ class TestParseFabricAddress(unittest.TestCase):
         self.assertFalse(faddr.is_accelerator())
         self.assertFalse(faddr.is_hu())
         self.assertFalse(faddr.is_nu())
-        self.assertEquals('VP2.2.2', str(faddr))
+        self.assertEqual('VP2.2.2', str(faddr))
 
     def testHU(self):
         self.assertEqual('HU0',

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 #
 # Parse trace data, either from raw trace data offloaded from the chip,
 # or from console log messages.  Convert into a form that can be used for
@@ -428,6 +428,7 @@ class TraceLogParser(object):
         """
         line = line.strip()
         values = {}
+        # print("the line is: ", line)
         match = re.match('\s*([0-9]+).([0-9]+) TRACE ([A-Z_]+) ([A-Z_]+)',
                          line)
         if not match:
