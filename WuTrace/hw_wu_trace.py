@@ -68,7 +68,7 @@ def main():
         wus_str = [str(wu) for wu in group]
         res += '\n'.join(wus_str)
         res += '\n-------------------------------------------------------\n\n'
-    print("output file is: ", args.output_file)
+
     with open(args.output_file, 'w') as out_fh:
         out_fh.write(res)
 
