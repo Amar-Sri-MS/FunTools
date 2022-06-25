@@ -79,7 +79,7 @@ def read_and_validate_wu_list(wu_json_file):
 
     Exits immediately if the list is empty, else returns the list.
     """
-    print("the line 8 file is: ", wu_jason_file)
+
     with open(wu_json_file, 'r') as wu_fh:
         json_contents = json.load(wu_fh)
         wu_list = json_contents['wu_table']
@@ -128,7 +128,7 @@ class TraceFileParser(object):
         # data section, and the other at the metadata section.
         #
         # The top 80% will be data, the remaining 20% is metadata.
-        print("the tf file is: ", tf)
+
         with open(tf, 'r') as data_fh, open(tf, 'r') as meta_fh:
             meta_pos = fsize // 10 * 8
             meta_fh.seek(meta_pos, 0)
