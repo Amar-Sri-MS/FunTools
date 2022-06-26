@@ -110,7 +110,7 @@ def isByte(n: Any) -> bool:
   return False
 
 
-def isByteArray(a: list[Any]) -> bool:
+def isByteArray(a: list) -> bool:
   if len(a) > maxUInt16:
     return False
 
