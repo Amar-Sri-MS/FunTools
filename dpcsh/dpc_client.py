@@ -4,8 +4,10 @@
 ##  Created by Dan Picken on 2017-06-20
 ##  Copyright (C) 2017 Fungible. All rights reserved.
 ##
+## Example usage dpctest.py
 
 from __future__ import print_function
+from abc import abstractmethod
 import json
 import select
 import socket
@@ -17,27 +19,107 @@ try:
 except ImportError:
     pass # since types are comments it is ok to miss the module
 
-# N.B. The user must start a dpcsh in text proxy mode before
-# creating a DpcClient, e.g.
-#
-# $WORKSPACE/FunTools/dpcsh/dpcsh --text_proxy
-#
-# Example usage dpctest.py
 class DpcExecutionError(Exception):
     pass
+
 
 class DpcExecutionException(Exception):
     pass
 
+
 class DpcProxyError(Exception):
     pass
+
 
 class DpcTimeoutError(Exception):
     pass
 
+
+class DpcEncoder():
+    @abstractmethod
+    def enable_command(self):
+        # type: (Any) -> Union[bytes(), None]
+        pass
+
+    @abstractmethod
+    def serialization_size(self, buffer):
+        # type: (Any, bytes()) -> int
+        pass
+
+    @abstractmethod
+    def decode(self, buffer):
+        # type: (Any, bytes()) -> Any
+        pass
+
+    @abstractmethod
+    def encode(self, data):
+        # type: (Any, Any) -> bytes()
+        pass
+
+    @abstractmethod
+    def blob_from_string(data):
+        # type: (bytes()) -> Any
+        """
+        makes blob suitable to use with FunOS blob services from a given string
+        """
+        pass
+
+    @abstractmethod
+    def blob_to_string(data):
+        # type: (Any) -> bytes()
+        """
+        makes binary from blob returned by FunOS blob services, see dpctest.py for details
+        """
+        pass
+
+
+class TextJSONEncoder(DpcEncoder):
+    def enable_command(self):
+        # type: (Any) -> Union[bytes(), None]
+        return None
+
+    def serialization_size(self, buffer):
+        # type: (Any, bytes()) -> int
+        return buffer.find(b'\n')
+
+    def decode(self, buffer):
+        # type: (Any, bytes()) -> Any
+        try:
+            return json.loads(buffer, strict=False)
+        except:
+            raise DpcExecutionError("Unable to parse to JSON. data: %s" % buffer)
+
+    def encode(self, data):
+        # type: (Any, Any) -> bytes()
+        return json.dumps(data).encode('utf8') + b'\n'
+
+    def blob_from_string(self, data):
+        # type: (bytes()) -> Any
+        if sys.version_info[0] != 2 and not isinstance(data, bytes):
+            raise RuntimeError("wrong datatype passed to blob_from_string, expecting bytes, got ", type(data))
+        BLOB_CHUNK_SIZE = 32 * 1024
+        blob_array = []
+        position = 0
+        while position < len(data):
+            next_position = position + BLOB_CHUNK_SIZE
+            if sys.version_info[0] == 2:
+                blob_array.append(map(ord, data[position:next_position]))
+            else:
+                blob_array.append(list(data[position:next_position]))
+            position = next_position
+        return blob_array
+
+    def blob_to_string(self, data):
+        # type: (Any) -> bytes()
+        result = b''
+        for chunk in data:
+            result += bytes(bytearray(chunk))
+        return result
+
+
 class DpcSocket:
-    def __init__(self, unix_sock, server_address):
-        # type: (Any, bool, Union[None, str, Tuple[str, int]]) -> None
+    def __init__(self, unix_sock, server_address, encoder):
+        # type: (Any, bool, Union[None, str, Tuple[str, int]], DpcEncoder) -> None
         if unix_sock:
             if server_address is None:
                 server_address = '/tmp/dpc.sock'
@@ -49,8 +131,11 @@ class DpcSocket:
 
         self.__sock.connect(server_address)
         self.__sock.setblocking(False)
+        self.__encoder = encoder
         self.__buffer = b''
         self.__chunk_size = 32*1024
+        if self.__encoder.enable_command() is not None:
+            self.__write(self.__encoder.enable_command(), None)
 
     def __write(self, data, timeout_seconds):
         # type: (Any, bytes, Union[float, None]) -> Tuple[Union[float, None], int]
@@ -73,7 +158,7 @@ class DpcSocket:
 
     def send(self, data, timeout_seconds):
         # type: (Any, Any, Union[float, None]) -> None
-        data_bytes = json.dumps(data).encode('utf8') + b'\n'
+        data_bytes = self.__encoder.encode(data)
         while len(data_bytes) > 0:
             timeout_seconds, bytes_sent = self.__write(data_bytes, timeout_seconds)
             data_bytes = data_bytes[bytes_sent:]
@@ -92,7 +177,7 @@ class DpcSocket:
 
     def receive(self, timeout_seconds):
         # type: (Any, Union[float, None]) -> Any
-        position = self.__buffer.find(b'\n')
+        position = self.__encoder.serialization_size(self.__buffer)
 
         if position == -1:
             remaining_time_seconds = self.__read(timeout_seconds)
@@ -101,13 +186,7 @@ class DpcSocket:
         line = self.__buffer[:position]
         self.__buffer = self.__buffer[position + 1:]
 
-        # decode the raw json and return
-        try:
-            decoded_results = json.loads(line, strict=False)
-        except:
-            raise DpcExecutionError("Unable to parse to JSON. data: %s" % result)
-
-        return decoded_results
+        return self.__encoder.decode(line)
 
     def close(self):
         # type: (Any) -> None
@@ -115,14 +194,16 @@ class DpcSocket:
 
 
 class DpcClient(object):
-    def __init__(self, legacy_ok = True, unix_sock = False, server_address = None):
+    def __init__(self, legacy_ok = True, unix_sock = False, server_address = None, encoder = TextJSONEncoder()):
         # type: (Any, bool, bool, Union[None, str, Tuple[str, int]]) -> None
         self.__verbose = False
         self.__truncate_long_lines = False
         self.__async_queue = []
         self.__next_tid = 1
         self.__execute_timeout_seconds = None
-        self.__sock = DpcSocket(unix_sock, server_address)
+        self.__sock = DpcSocket(unix_sock, server_address, encoder)
+        self.blob_from_string = encoder.blob_from_string
+        self.blob_to_string = encoder.blob_to_string
 
     def close(self):
         self.__sock.close()
@@ -239,42 +320,12 @@ class DpcClient(object):
         self.__next_tid += 1
         return tid
 
-    @staticmethod
-    def blob_from_string(data):
-        """
-        makes blob suitable to use with FunOS blob services from a given string
-        """
-        if sys.version_info[0] != 2 and not isinstance(data, bytes):
-            raise RuntimeError("wrong datatype passed to blob_from_string, expecting bytes, got ", type(data))
-        BLOB_CHUNK_SIZE = 32 * 1024
-        blob_array = []
-        position = 0
-        while position < len(data):
-            next_position = position + BLOB_CHUNK_SIZE
-            if sys.version_info[0] == 2:
-                blob_array.append(map(ord, data[position:next_position]))
-            else:
-                blob_array.append(list(data[position:next_position]))
-            position = next_position
-        return blob_array
-
-    @staticmethod
-    def blob_from_file(filename):
+    def blob_from_file(self, filename):
         """
         makes blob suitable to use with FunOS blob services from a given string
         """
         with open(filename, 'rb') as f:
-            return DpcClient.blob_from_string(f.read())
-
-    @staticmethod
-    def blob_to_string(data):
-        """
-        makes binary from blob returned by FunOS blob services, see dpctest.py for details
-        """
-        result = b''
-        for chunk in data:
-            result += bytes(bytearray(chunk))
-        return result
+            return self.blob_from_string(f.read())
 
     @staticmethod
     def __handle_response(r):
