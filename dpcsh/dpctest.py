@@ -8,7 +8,6 @@
 
 from __future__ import print_function
 import json
-import os
 import sys
 import socket
 import subprocess
@@ -17,7 +16,7 @@ import dpc_client
 import time
 import unittest
 import xmlrunner
-
+import dpc_binary
 
 class TestDPCCommands(unittest.TestCase):
     """Tests that standard DPC commands.
@@ -216,7 +215,13 @@ def run_using_env(style, exclude):
     print('Connecting to dpc host at %s:%s' % (host, port))
     client = dpc_client.DpcClient(server_address=(host, port))
 
-    return run_tests_client(client, exclude)
+    if not run_tests_client(client, exclude):
+        return False
+
+    print('Checking the same with binary protocol')
+    binary_client = dpc_client.DpcClient(server_address=(host, port), encoder=dpc_binary.BinaryJSONEncoder())
+
+    return run_tests_client(binary_client, exclude)
 
 
 STYLES = {"tcp": (True, ["--verbose", "--tcp_proxy"], False, 0),
