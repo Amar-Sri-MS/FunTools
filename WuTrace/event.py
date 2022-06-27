@@ -81,7 +81,7 @@ class FabricAddress(object):
         if src_id > ((GID_PC_MAX + 1) * 6 * 4):
             raise ValueError('Out of range src: 0%d' % src_id)
 
-        cluster = src_id / 24
+        cluster = src_id // 24
         core_vp = (src_id % 24)
 
         faddr = FabricAddress()
@@ -150,6 +150,7 @@ class FabricAddress(object):
             fa.raw_value = (gid << 15) + (queue << 2)
         else:
             fa.raw_value = (gid << 15) + (lid << 10) + (queue << 2)
+
         fa.gid = gid
         fa.lid = lid
         fa.queue = queue
@@ -230,7 +231,7 @@ class FabricAddress(object):
         if self.lid < LID_VP_BASE:
             return '{}{}'.format(pc_lid_table[self.lid], self.gid)
         else:
-            core = (self.lid - LID_VP_BASE) / TOPO_MAX_VPS_PER_CORE
+            core = (self.lid - LID_VP_BASE) // TOPO_MAX_VPS_PER_CORE
             vp = (self.lid - LID_VP_BASE) % TOPO_MAX_VPS_PER_CORE
             return 'VP{}.{}.{}'.format(self.gid, core, vp)
         raise ValueError('Unknown block ' + self.block)

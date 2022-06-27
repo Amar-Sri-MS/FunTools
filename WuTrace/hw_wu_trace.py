@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 #
 # Parses dumps of HW WU trace data and generates a report file.
@@ -30,11 +30,11 @@ SEGMENTS = 10
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('input_dir', type=str, 
+    parser.add_argument('input_dir', type=str,
                         help='input directory containing trace files')
-    parser.add_argument('output_file', type=str, 
+    parser.add_argument('output_file', type=str,
                         help='path to output file')
-    parser.add_argument('wu_json_file', type=str, 
+    parser.add_argument('wu_json_file', type=str,
                         help='path to JSON file with list of WUs')
 
     args = parser.parse_args()
@@ -42,7 +42,7 @@ def main():
     wu_list = read_and_validate_wu_list(args.wu_json_file)
     trace_files = find_and_validate_trace_files(args.input_dir)
 
-    print 'Extracting WUs from %s' % trace_files
+    print('Extracting WUs from %s' % trace_files)
 
     # First grab all the WUs in all the trace files.
     wus = []
@@ -79,12 +79,13 @@ def read_and_validate_wu_list(wu_json_file):
 
     Exits immediately if the list is empty, else returns the list.
     """
+
     with open(wu_json_file, 'r') as wu_fh:
         json_contents = json.load(wu_fh)
         wu_list = json_contents['wu_table']
 
     if not wu_list:
-        print 'Error: empty WU list from %s' % wu_json_file
+        print('Error: empty WU list from %s' % wu_json_file)
         sys.exit(1)
 
     return wu_list
@@ -101,7 +102,7 @@ def find_and_validate_trace_files(input_dir):
     trace_files = glob.glob(glob_path)
 
     if len(trace_files) == 0:
-        print 'Error: no trace_dump_* files in %s' % input_dir
+        print('Error: no trace_dump_* files in %s' % input_dir)
         sys.exit(1)
 
     return trace_files
@@ -120,13 +121,14 @@ class TraceFileParser(object):
 
         fsize = os.path.getsize(tf)
         if fsize % SEGMENTS:
-            print 'Error: file size for %s should be a multiple of the segment count' % tf
+            print('Error: file size for %s should be a multiple of the segment count' % tf)
             return []
 
         # The idea here is to maintain two pointers: one at the
         # data section, and the other at the metadata section.
         #
         # The top 80% will be data, the remaining 20% is metadata.
+
         with open(tf, 'r') as data_fh, open(tf, 'r') as meta_fh:
             meta_pos = fsize // 10 * 8
             meta_fh.seek(meta_pos, 0)
@@ -187,7 +189,7 @@ class WU(object):
 
     def __str__(self):
         return ('%d: act %s arg0 %s arg1 %s arg2 %s' % (
-                self.time, hex(self.action), hex(self.arg0), 
+                self.time, hex(self.action), hex(self.arg0),
                 hex(self.arg1), hex(self.arg2)))
 
 
@@ -266,7 +268,7 @@ class WUFactory(object):
         if cmd == WUFactory.NORMAL_WU_CMD:
             wu = NormalWU(action, w0, w1, w2, wu_list)
         else:
-            print 'Unhandled cmd: %d' % cmd
+            print('Unhandled cmd: %d' % cmd)
             return None
 
         wu.set_trace_time(time_ns)
@@ -313,4 +315,3 @@ class StackGrouper(object):
 
 if __name__ == '__main__':
     main()
-
