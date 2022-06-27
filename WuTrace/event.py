@@ -86,8 +86,6 @@ class FabricAddress(object):
 
         faddr = FabricAddress()
         faddr.gid = cluster
-        # important thing to note -> faddr.gid is treated as a float in python3
-        # and as an int in python2.7
         faddr.lid = core_vp + LID_VP_BASE
         return faddr
 
@@ -235,7 +233,6 @@ class FabricAddress(object):
         else:
             core = (self.lid - LID_VP_BASE) // TOPO_MAX_VPS_PER_CORE
             vp = (self.lid - LID_VP_BASE) % TOPO_MAX_VPS_PER_CORE
-            # core is treated as a float in 2.7 and as an int in 3
             return 'VP{}.{}.{}'.format(self.gid, core, vp)
         raise ValueError('Unknown block ' + self.block)
 

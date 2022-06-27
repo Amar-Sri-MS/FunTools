@@ -42,7 +42,7 @@ def main():
     wu_list = read_and_validate_wu_list(args.wu_json_file)
     trace_files = find_and_validate_trace_files(args.input_dir)
 
-    print("Extracting WUs from %s" % trace_files)
+    print('Extracting WUs from %s' % trace_files)
 
     # First grab all the WUs in all the trace files.
     wus = []
@@ -85,7 +85,7 @@ def read_and_validate_wu_list(wu_json_file):
         wu_list = json_contents['wu_table']
 
     if not wu_list:
-        print("Error: empty WU list from %s" % wu_json_file)
+        print('Error: empty WU list from %s' % wu_json_file)
         sys.exit(1)
 
     return wu_list
@@ -102,7 +102,7 @@ def find_and_validate_trace_files(input_dir):
     trace_files = glob.glob(glob_path)
 
     if len(trace_files) == 0:
-        print("Error: no trace_dump_* files in %s" % input_dir)
+        print('Error: no trace_dump_* files in %s' % input_dir)
         sys.exit(1)
 
     return trace_files
@@ -121,7 +121,7 @@ class TraceFileParser(object):
 
         fsize = os.path.getsize(tf)
         if fsize % SEGMENTS:
-            print("Error: file size for %s should be a multiple of the segment count" % tf)
+            print('Error: file size for %s should be a multiple of the segment count' % tf)
             return []
 
         # The idea here is to maintain two pointers: one at the
@@ -268,7 +268,7 @@ class WUFactory(object):
         if cmd == WUFactory.NORMAL_WU_CMD:
             wu = NormalWU(action, w0, w1, w2, wu_list)
         else:
-            print("Unhandled cmd: %d" % cmd)
+            print('Unhandled cmd: %d' % cmd)
             return None
 
         wu.set_trace_time(time_ns)
