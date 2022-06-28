@@ -124,12 +124,46 @@ The Apache error log may have more information.
 
 Most likely, there is another process using port 80 on the machine that conflicts with the default Apache2 http installation.
 
+On Linux or macOS, this can be confirmed by running the following command
+
+```
+$ sudo lsof -i -P -n | grep 'TCP \*:80'
+```
+
+This will print the list of the processes that are using port 80 if `lsof` is available on your OS.
+
+```
+httpd       129           root    4u  IPv6 0x8c0a49566f1da631      0t0    TCP *:80 (LISTEN)
+httpd       781           _www    4u  IPv6 0x8c0a49566f1da631      0t0    TCP *:80 (LISTEN)
+```
+
 ##### Solution:
 This can be fixed by at least 3 different methods:
 
+##### A) reconfigure the Apache HTTP server NOT to use port 80 but another port (8080/8081/etc...) 
 
-1. stop/remove the process using port 80 on that machine.
-1. if that process is an HTTP server, use it as the signing server instead of Apache2 httpd. It might be necessary to move the files `*.pem, signing_server.cgi` that are now in the `/usr/lib/cgi-bin` to that other HTTP server cgi-bin directory. Consult that HTTP server documentation.
-1. reconfigure the Apache HTTP server NOT to use port 80 but another port (8080/8081/etc...) by editing the Apache configuration files (/etc/apache2/ports.conf and /etc/apache2/sites-enabled/000-default.conf). Consult the Apache2 documentation.
+On typical installation, this is done by editing the Apache configuration files (`/etc/apache2/ports.conf` and `/etc/apache2/sites-enabled000-default.conf`). 
+Briefly, in `/etc/apache2/ports.conf`, change the line 
 
+```Listen 80```
+to 
+```Listen <avaible_port_no>``` 
+
+ 
+in `/etc/apache2/sites-enabled/000-default.conf`, change the first line 
+
+```<VirtualHost *: 80>```
+to 
+```<VirtualHost *:<available_port_no>```
+
+where `available_port_no` is the new port to use (Example: 8080)
+
+Consult the Apache2 documentation for further details.
+	
+
+##### B) stop/remove the process using port 80 on that machine.
+
+##### C) if that process is an HTTP server, use it as the signing server instead of Apache2 httpd. 
+
+It might be necessary to move the files `*.pem, signing_server.cgi` that are now in the `/usr/lib/cgi-bin` to that other HTTP server cgi-bin directory. Consult that HTTP server documentation.
 
