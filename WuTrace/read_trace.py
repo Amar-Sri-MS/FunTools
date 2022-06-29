@@ -360,8 +360,7 @@ class WuListExtractor(object):
         print
 
         try:
-            gdb_output = subprocess.check_output(gdb_command, stderr=subprocess.STDOUT).decode('ascii')
-            print(type(gdb_output))
+            gdb_output = subprocess.check_output(gdb_command, stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as error:
             print('GDB failed with return code %d\n' % error.returncode)
             print('GDB output:\n%s\n' % error.output)
@@ -377,7 +376,7 @@ class WuListExtractor(object):
         #   0xa800000000103e80 <invalid_runtime_wuh>}
         #
 
-        wu_pattern = '<(?P<wu>.+?)>'
+        wu_pattern = r'<(?P<wu>.+?)>'
         wu_regex = re.compile(wu_pattern)
 
         wu_list = []
@@ -452,7 +451,7 @@ class TraceLogParser(object):
         # beginning, but the rest counts as the message.
         if values['verb'] == 'TRANSACTION' and values['noun'] == 'ANNOT':
             annot_match = re.match(
-                'faddr (FA[0-9]+:[0-9]+:[0-9]+\[CCV.*\]) msg (.*)', #NOTE - I think the change needs to be here
+                'faddr (FA[0-9]+:[0-9]+:[0-9]+\[CCV.*\]) msg (.*)',
                 remaining_string)
             if not annot_match:
                 error = '%s:%d: malformed transaction annotation: "%s"\n' % (
