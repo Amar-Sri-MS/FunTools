@@ -2,6 +2,7 @@
 
 import datetime
 import json
+import logging
 import time
 
 from elasticsearch7 import Elasticsearch
@@ -111,6 +112,7 @@ def _get_indices(prefix, limit=None):
 
         return indices
     except Exception as e:
+        logging.exception('Exception while fetching indices')
         return []
 
 class ElasticLogState(object):
