@@ -139,7 +139,8 @@ class FabricAddress(object):
         queue = int(match.group(3))
         block = match.group(4)
 
-        if block not in major_blocks and block not in pc_lid_table and re.match("CCV[0-9]\.[0-9]\.[0-9]", block) == None:
+        if (block not in major_blocks and block not in pc_lid_table and
+                re.match("CCV[0-9]\.[0-9]\.[0-9]", block) == None):
             raise ValueError('Unknown block ' + block)
 
         # TODO(bowdidge): Double-check block matches address.
@@ -153,7 +154,7 @@ class FabricAddress(object):
         fa.gid = gid
         fa.lid = lid
         fa.queue = queue
-        
+
         return fa
 
     def is_accelerator(self):
