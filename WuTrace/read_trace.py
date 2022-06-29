@@ -288,7 +288,7 @@ class TraceFileParser(object):
                 if not content:
                     # We have a problem: the file contents are too short
                     raise ValueError('Truncated file')
-
+            new_event = None
             if evt_id == event.WU_START_EVENT:
                 new_event = self.parse_start_event(hdr, content)
             elif evt_id == event.WU_SEND_EVENT:
@@ -360,7 +360,8 @@ class WuListExtractor(object):
         print
 
         try:
-            gdb_output = subprocess.check_output(gdb_command, stderr=subprocess.STDOUT)
+            gdb_output = subprocess.check_output(gdb_command, stderr=subprocess.STDOUT).decode('ascii')
+            print(type(gdb_output))
         except subprocess.CalledProcessError as error:
             print('GDB failed with return code %d\n' % error.returncode)
             print('GDB output:\n%s\n' % error.output)
@@ -376,10 +377,11 @@ class WuListExtractor(object):
         #   0xa800000000103e80 <invalid_runtime_wuh>}
         #
 
-        wu_pattern = r'<(?P<wu>.+?)>'
+        wu_pattern = '<(?P<wu>.+?)>'
         wu_regex = re.compile(wu_pattern)
 
         wu_list = []
+
         for line in gdb_output.split('\n'):
             match = wu_regex.search(line)
             if match:
@@ -428,7 +430,6 @@ class TraceLogParser(object):
         """
         line = line.strip()
         values = {}
-        # print("the line is: ", line)
         match = re.match('\s*([0-9]+).([0-9]+) TRACE ([A-Z_]+) ([A-Z_]+)',
                          line)
         if not match:
@@ -444,7 +445,6 @@ class TraceLogParser(object):
                   'noun': match.group(4)
                   }
         remaining_string = line[len(match.group(0)):].lstrip()
-
         if len(remaining_string) == 0:
             return (values, None)
 
@@ -452,7 +452,7 @@ class TraceLogParser(object):
         # beginning, but the rest counts as the message.
         if values['verb'] == 'TRANSACTION' and values['noun'] == 'ANNOT':
             annot_match = re.match(
-                'faddr (FA[0-9]+:[0-9]+:[0-9]+\[VP\]) msg (.*)',
+                'faddr (FA[0-9]+:[0-9]+:[0-9]+\[CCV.*\]) msg (.*)', #NOTE - I think the change needs to be here
                 remaining_string)
             if not annot_match:
                 error = '%s:%d: malformed transaction annotation: "%s"\n' % (
@@ -478,7 +478,6 @@ class TraceLogParser(object):
             error = '%s:%d: malformed log line: "%s"\n' % (
                 filename, line_number, line)
             return (None, error)
-
         for (key, value) in pairs:
             values[key] = value
 
