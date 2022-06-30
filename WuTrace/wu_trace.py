@@ -76,9 +76,7 @@ class TraceProcessor:
         self.input_filename = input_filename
 
         boot_event = event.TraceEvent(0, 0, 'boot', None)
-        print("boot event = ", boot_event)
         self.boot_transaction = event.Transaction(boot_event)
-        print("transaction = ", self.boot_transaction)
         self.transactions = [self.boot_transaction]
 
     def remember_send(self, event, wu_id, arg0, arg1, dest, send_time,
@@ -122,7 +120,6 @@ class TraceProcessor:
         return (None, 0, False, 0)
 
     def handle_log_line(self, next_event, line_number):
-        print("Inside the handle log line - ", next_event)
         """Reads in each logging event, and creates or updates log events."""
         global verbose
         if verbose:
@@ -336,7 +333,6 @@ def main(argv):
             exit(1)
     if args.input_format == 'uart':
         with open(input_filename) as fh:
-            print("Should be opened here")
             trace_parser = read_trace.TraceLogParser()
             events = trace_parser.parse(fh, filename=input_filename)
     else:
@@ -355,12 +351,9 @@ def main(argv):
 
             file_parser = read_trace.TraceFileParser(wu_list)
             events = file_parser.parse(fh, raw_event_file)
-    print("I am here")
+
     trace_parser = TraceProcessor(input_filename)
-    print("Crossed line 358\n")
-    print("events are = ", events)
     for idx, e in enumerate(events):
-        print("Going in\n")
         trace_parser.handle_log_line(e, idx)
     transactions = trace_parser.transactions
 
