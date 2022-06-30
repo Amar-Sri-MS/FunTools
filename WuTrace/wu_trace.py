@@ -145,7 +145,7 @@ class TraceProcessor:
                             self.input_filename,
                             line_number))
                     sys.stderr.write('  timestamp was %d\n' % next_event.timestamp)
-                    # raise Exception("Sorry, not correct tracing")
+                    
             current_event = event.TraceEvent(timestamp, timestamp,
                                              next_event.name, vp)
             self.vp_to_event[vp] = current_event
