@@ -131,6 +131,7 @@ def get_groups(transactions):
     comparing runs of equivalent WUs.
     """
     root_to_group = {}
+    print("Transactions are = ", transactions)
     for transaction in transactions:
         label = transaction.label
         if label not in root_to_group:

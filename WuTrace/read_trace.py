@@ -264,8 +264,8 @@ class TraceFileParser(object):
         wfh = None
         if output_file:
             wfh = open(output_file, 'w')
-        # strip initial cluster byte
-        fh.read(1)
+        # strip 5 initial cluster bytes
+        fh.read(5)
 
         while True:
             hdr = fh.read(HDR_LEN)
@@ -360,7 +360,7 @@ class WuListExtractor(object):
         print
 
         try:
-            gdb_output = subprocess.check_output(gdb_command, stderr=subprocess.STDOUT)
+            gdb_output = subprocess.check_output(gdb_command, stderr=subprocess.STDOUT).decode('ascii')
         except subprocess.CalledProcessError as error:
             print('GDB failed with return code %d\n' % error.returncode)
             print('GDB output:\n%s\n' % error.output)
@@ -633,8 +633,10 @@ class TraceLogParser(object):
                 sys.stderr.write(error)
             if not log_keywords:
                 continue
+
             event = self.create_event(log_keywords, filename=filename,
                                       line_number=line_number)
+
             if event:
                 events.append(event)
 
