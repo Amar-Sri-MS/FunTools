@@ -43,6 +43,7 @@ except:
 
 
 try:
+    import elftools
     from elftools.elf.elffile import ELFFile
     have_elftools = True
 except:
@@ -657,9 +658,12 @@ class ELFDumpNote:
 
         for note in seg.iter_notes():
             if note['n_name'] == 'Fungible' and note['n_type'] == 0:
-                # reverse the less-than-helpful string conversion done
-                # by the pyelftools module
-                desc = note['n_desc'].encode('latin-1')
+                desc = note['n_desc']
+                if float(elftools.__version__) < 0.28 and isinstance(desc, str):
+                    # reverse the less-than-helpful string conversion done
+                    # by the pyelftools module prior to v0.28. Newer versions
+                    # keep the notes as bytes.
+                    desc = desc.encode('latin-1')
                 t = struct.unpack('>LLQ', desc)
 
                 ret = {}
