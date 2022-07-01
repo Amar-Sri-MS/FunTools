@@ -93,7 +93,8 @@ def ERROR(msg):
 def get_default_gdb():
     current_os = platform.system()
     if current_os == 'Darwin':
-        gdbs = ['/Users/Shared/cross/mips64/bin/mips64-unknown-elf-gdb',
+        gdbs = ['/Users/Shared/cross-py3/bin/mipsel-unknown-linux-gnu-gdb',
+                '/Users/Shared/cross/mips64/bin/mips64-unknown-elf-gdb',
                 '/Users/Shared/cross-el/bin/mips64-gdb']
     else:
         gdbs = ['/opt/cross/mips64/bin/mips64-unknown-elf-gdb']
