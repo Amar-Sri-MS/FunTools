@@ -69,6 +69,8 @@ def scan_path(binpath):
         print("%s file %s" % (verb.capitalize(), p))
 
         cmd = [excat_py(), opts.action, p]
+        if opts.retention:
+            cmd.extend(["--retention", opts.retention])
         cmd = " ".join(cmd)
         os.system(cmd)
         print("Done %s file %s" % (verb, p))
