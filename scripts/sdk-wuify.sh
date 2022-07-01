@@ -35,8 +35,14 @@ for fname in "$@"; do
         # WU_HANDLER() with no attributes
         comby ${args} 'WU_HANDLER() void :[name](:[params])' 'WU_HANDLER(:[name], WU_ATTR_NONE, :[params])' ${fname}
 
-        # WU_HANDLER(WU_ATTR...) with no attributes
+        # WU_HANDLER(WU_ATTR...) with attributes
         comby ${args} 'WU_HANDLER(:[[attrs]]) void :[name](:[params])' 'WU_HANDLER(:[name], :[attrs], :[params])' ${fname}
+
+        # WU_HANDLER64() with no attributes
+        comby ${args} 'WU64_HANDLER() void :[name](:[params])' 'WU64_HANDLER(:[name], WU_ATTR_NONE, :[params])' ${fname}
+
+        # WU_HANDLER64(WU_ATTR...) with attributes
+        comby ${args} 'WU64_HANDLER(:[[attrs]]) void :[name](:[params])' 'WU64_HANDLER(:[name], :[attrs], :[params])' ${fname}
 
 done
 
