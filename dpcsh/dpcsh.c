@@ -696,8 +696,13 @@ static void apply_command_locally(const struct fun_json *json,
 
 	if (!strcmp(verb, "encoding_text")) {
 		*complete = true;
-		cmd->encoding = PARSE_TEXT;
-		log_debug(_debug_log, "changing encoding to text\n");
+		if (cmd->socket->server) {
+			// because macro commands are security risk SWTOOLS-2851
+			log_error("switching to text encoding in proxy mode is forbidden\n");
+		} else {
+			cmd->encoding = PARSE_TEXT;
+			log_debug(_debug_log, "changing encoding to text\n");
+		}
 		return;
 	}
 
