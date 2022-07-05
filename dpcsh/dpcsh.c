@@ -442,7 +442,7 @@ static struct fun_ptr_and_size _base64_transcode(struct fun_ptr_and_size data)
 	}
 
 	result.ptr = (uint8_t *)b64buf;
-	result.size = strlen(b64buf) + 1;
+	result.size = strlen(b64buf);
 
 	return result;
 }
@@ -450,8 +450,10 @@ static struct fun_ptr_and_size _base64_transcode(struct fun_ptr_and_size data)
 static struct fun_ptr_and_size _transcode(struct fun_ptr_and_size source,
 	struct dpcsock_connection *dest)
 {
-	if (dest->socket->base64) return _base64_transcode(source);
-	if (dest->encoding == PARSE_BINARY_JSON) return source;
+	if (dest->socket->base64)
+		return _base64_transcode(source);
+	if (dest->encoding == PARSE_BINARY_JSON)
+		return source;
 
 	struct fun_json *json = fun_json_create_from_binary_with_options(source.ptr,
 				source.size, true);
@@ -623,6 +625,11 @@ static struct fun_json *line2json(char *line, enum parsingmode pmode, const char
 	/* sanity check the global */
 	assert((pmode == PARSE_TEXT) || (pmode == PARSE_JSON));
 
+	/* empty string */
+	if (strlen(line) == 0) {
+		return NULL;
+	}
+
 	/* check for override */
 	if (strncmp(line, OVERRIDE_TEXT, strlen(OVERRIDE_TEXT)) == 0) {
 		pmode = PARSE_TEXT;
@@ -648,10 +655,12 @@ static struct fun_json *line2json(char *line, enum parsingmode pmode, const char
 static char *_get_line(uint8_t *start, size_t max)
 {
 	size_t position = 0;
-	while (position < max
-		&& start[position] != '\n' && start[position] != '\0') {
-			position++;
-		}
+	while ((position < max) &&
+	       (start[position] != '\n') &&
+	       (start[position] != '\r') &&
+	       (start[position] != '\0')) {
+		position++;
+	}
 
 	if (position < max) {
 		start[position] = 0;
@@ -740,19 +749,29 @@ static bool _decode_jsons_from_buffer(struct dpcsock_connection *connection)
 			} else {
 				char *line = _get_line(next.ptr, next.size);
 				if (line) {
-					if (_is_b64json_line(line)) {
+					/* move in the buffer */
+					position += strlen(line) + 1;
+
+					char *jsline = _is_b64json_line(line);
+					if (jsline) {
 						ssize_t line_len;
-						transcoded.ptr = _b64_to_bin(line, &line_len);
+						transcoded.ptr = _b64_to_bin(jsline, &line_len);
 						if (line_len > 0) {
 							transcoded.size = line_len;
 						} else {
-							log_error("got bad base64 line: %s\n", line);
+							log_error("got bad base64 line: %s (%zd)\n",
+								  jsline, line_len);
 							transcoded.ptr = NULL;
 						}
 					} else {
-						log_error("got bad base64 line: %s\n", line);
+						/* trim leading newlines */
+						while ((line[0] == '\n') ||
+						       (line[0] == '\r')) {
+							line++;
+						}
+						if (strlen(line) > 0)
+							log_error("$ %s\n", line);
 					}
-					position += strlen(line) + 1;
 				}
 			}
 
@@ -2065,8 +2084,6 @@ int main(int argc, char *argv[])
 		log_debug(_debug_log, "manual base64 mode");
 		break;
 	}
-
-	printf("\n");
 
 	_print_version(); /* always print this for the logs */
 
