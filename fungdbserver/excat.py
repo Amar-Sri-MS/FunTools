@@ -525,8 +525,8 @@ def change_retention_action(fname, retention):
 
     metadata_url = url + "%s.json" % uuid
     r = requests.put(metadata_url,
-                     params={"retention": get_metadata_retention(retention)},
-                     data={"retention": retention})
+                     params={"retention": ""},
+                     data={"retention": get_metadata_retention(retention)})
     if (r.raise_for_status()):
         raise(RuntimeError(r.text))
 
