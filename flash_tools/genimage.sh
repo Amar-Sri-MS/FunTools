@@ -119,6 +119,9 @@ export WORKSPACE # scripts invoked from here expect it to be set
 
 # ---- ROM ----
 cp $SBP_INSTALL_DIR/bootloader_m5150.mif ${WORKSPACE}/sbpimage/SysROM
+# || true is added because the .codefile might not be always there
+cp $SBP_INSTALL_DIR/bootloader_m5150.codefile ${WORKSPACE}/sbpimage/SysROM.codefile || true
+
 
 mkdir -p artifacts_$ARTIFACT_STYLE && cd artifacts_$ARTIFACT_STYLE
 
