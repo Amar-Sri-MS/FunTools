@@ -24,6 +24,131 @@ sys.path.append("/usr/bin") ## demo rootfs
 
 import dpc_client
 
+
+###
+##  helpers
+#
+
+def is_qemu(conn):
+
+    result = conn.execute('peek', ['config/version'])
+
+    if (result["sku"].endswith("_qemu")):
+        return True
+
+    return False
+
+def _maybe_wait_for_online(args, conn):
+    if (args.wait > 0):
+            print("Waiting for FunOS to come online...")
+            conn.wait_for_online(args.wait)
+            print("FunOS is online")
+
+###
+##  ELF loading
+#
+    
+# load an ELF file with progress dots
+def loadelf_progress(args, conn):
+        fl = open(args.elf, "rb")
+        uuid = None
+        while (True):
+            bs = fl.read(32*1024)
+            if (len(bs) == 0):
+                # done!
+                break
+            blob = conn.blob_from_string(bs)
+            if (uuid is None):
+                uuid = conn.execute('blob', ['store', ['quote', blob]])
+                print("Got uuid %s" % uuid)
+            else:
+                conn.execute('blob', ['append', uuid, ['quote', blob]])
+            sys.stdout.write(".")
+            sys.stdout.flush()
+
+# load an ELF file with a single blob_from_file call
+def loadelf_blob(args, conn):
+    print("Creating a BLOB from file (takes a few minutes) ...")
+    uuid = conn.execute('blob', ['store',
+                                 ['quote', conn.blob_from_file(args.elf)]])
+    return uuid
+
+
+# load an ELF in Qemu
+def loadelf_qemu(args, conn):
+
+    path = os.path.abspath(args.elf)
+    uuid = conn.execute('blob', ['loadfile', path])
+
+    return uuid
+
+# various ways to load an ELF
+def loadelf(args, conn):
+
+    if (is_qemu(conn)):
+        uuid = loadelf_qemu(args, conn)
+    elif(args.progress):
+        uuid = loadelf_progress(args, conn)
+    else:
+        uuid = loadelf_blob(args, conn)
+
+    return uuid
+
+###
+##  actual ISSU path
+#
+
+def _do_issu(args, conn):
+
+    _maybe_wait_for_online(args, conn)
+
+    # single-pass ISSU testing
+    print("Loading ELF file %s" % args.elf)
+
+    uuid = loadelf(args, conn)
+    print("ELF blob UUID is %s" % uuid)
+
+    result = conn.execute('issu', ['loadelf', uuid])
+    if (result):
+        print("ELF loaded OK!")
+    else:
+        print("ELF load error: %s" % result)
+        return 1
+
+    result = conn.execute('issu', ['point_of_no_return'])
+    print("Point of no return result: %s" % result)
+
+    return result["result"]
+
+###
+##  cycler testing
+#
+
+def _do_cycler(args, conn):
+
+    # get the value or set the default if unspecified
+    count = args.cycler
+    if (count is None):
+        count = 10
+
+    i = 1
+    while (i <= count):
+        print("== Cycle %d/%d ==" % (i, count))
+        r = _do_issu(args, conn)
+        if (r != True):
+            raise RuntimeError("ISSU error on cycle %d" % i)
+        result = conn.execute("issu", ["boot"])
+        print("ISSU boot info: %s" % result)
+        i += 1
+
+    _maybe_wait_for_online(args, conn)
+
+    print("All cycles complete, shutting down FunOS")
+    conn.execute("terminate", [])
+
+    return 0
+
+
 ###
 ##  main
 #
@@ -44,7 +169,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("-u", "--unix", action="store_true", default=False)
 
     # print progress of elfload command
-    parser.add_argument("-p", "--progress", action="store_true", default=False)
+    parser.add_argument("-p", "--progress", action="store_true")
+
+    # time to wait for FunOS online
+    parser.add_argument("-W", "--wait", action="store", type=int, default=0)
+
+    # run a cycler loop
+    parser.add_argument("-C", "--cycler", action="store",
+                        nargs="?", default=argparse.SUPPRESS, type=int)
 
     args: argparse.Namespace = parser.parse_args()
     return args
@@ -52,7 +184,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args: argparse.Namespace = parse_args()
 
-     # work out the args
+    # work out the args
     if (args.unix):
         addr = args.dpcaddress
     elif (args.dpcaddress is not None):
@@ -65,31 +197,13 @@ def main() -> int:
                                 unix_sock = args.unix,
                                 server_address = addr)
 
-    if (not args.progress):
-        print("Creating a BLOB from file (takes a few minutes) ...")
-        uuid = conn.execute('blob', ['store', ['quote', conn.blob_from_file(args.elf)]])
-        print("UUID ", uuid)
-    else:
-        fl = open(args.elf, "rb")
-        uuid = None
-        while (True):
-            bs = fl.read(32*1024)
-            if (len(bs) == 0):
-                # done!
-                break
-            blob = conn.blob_from_string(bs)
-            if (uuid is None):
-                uuid = conn.execute('blob', ['store', ['quote', blob]])
-                print("Got uuid %s" % uuid)
-            else:
-                conn.execute('blob', ['append', uuid, ['quote', blob]])
-            sys.stdout.write(".")
-            sys.stdout.flush()
+    # issu cycle testing for Qemu
+    if ("cycler" in args):
+        return _do_cycler(args, conn)
 
+    r = _do_issu(args, conn)   
 
-    result = conn.execute('issu', ['loadelf', uuid])
-    print("result ", result)
-    return 0
+    return r
  
 ###
 ## entrypoint
