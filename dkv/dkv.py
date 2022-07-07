@@ -182,8 +182,26 @@ def bucket_get(path):
             prefix = os.path.join(*toks[1:]) + "/"
         return bucket_list(toks[0], prefix, debug)
 
+    retention_query = flask.request.args.get("retention")
+    if (retention_query is not None):
+        return retention_get(path)
+
     # anything else, assume it's / they want a raw file
     return bucket_redir(path)
+
+def retention_get(path):
+    """ Get retention-specific information for an object """
+    pelems = path.split("/")
+    bucket = pelems[0]
+    remname = os.path.join(*pelems[1:])
+
+    nrc = netrc.netrc()
+    (excat_user, _, excat_pass) = nrc.authenticators(MINIO_SERVER)
+
+    tags = s3util.get_tags(remname, MINIO_SERVER, bucket,
+                           key=excat_user, secret=excat_pass, region=None)
+    retention = {"retention": tags.get("retention")}
+    return flask.jsonify(retention)
 
 @app.route('/buckets/<path:path>', methods=['POST'])
 def bucket_put(path):
