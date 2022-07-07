@@ -18,9 +18,11 @@ opts = None
 ##  publish
 #
 
-FUNOS_TGZS = [
-    "funos.mips64-base.tgz",
-    "funos.mips64-extra.tgz",
+FUNOS_TGZ_FLAVOURS = [
+    "funos~%s.tgz",
+    "funos~%s-release.tgz",
+    "funos~%s-emu.tgz",
+    "funos~%s-qemu.tgz"
 ]
 
 CHIPS = ["f1", "s1", "f1d1", "s2"]
@@ -35,6 +37,7 @@ FUNOS_FLAVOURS = [
 ]
 
 FUNOS_BINARIES = sum([[flav % chip for chip in CHIPS] for flav in FUNOS_FLAVOURS], [])
+FUNOS_TGZS = sum([[flav % chip for chip in CHIPS] for flav in FUNOS_TGZ_FLAVOURS], [])
 
 PATHS = [ "./",
           os.path.dirname(os.path.abspath(__file__))
@@ -102,31 +105,11 @@ def scan_os_path(sdkpath, bld):
         path = os.path.join(sdkpath, bld, tgz)
         scan_tgz(path)
 
-def scan_sdk(i):
-
-    print("Publishing sdk %s" % i)
-
-    sdkpath = "/project/users/doc/jenkins/funsdk/%s" % i
-
+def scan_sdk(sdkpath):
+    print("Scanning sdk %s" % sdkpath)
     scan_os_path(sdkpath, "Linux")
     scan_os_path(sdkpath, "Darwin")
 
-###
-##  bundle searching
-#
-
-BUNDLE_ROOT = "/project/users/doc/jenkins/master"
-PROPS_FILE = "bld_props.json"
-
-def check_bundle(i):
-    path = os.path.join(BUNDLE_ROOT, opts.flavour, str(i), PROPS_FILE)
-
-    if (not os.path.exists(path)):
-        return None
-
-    d = json.loads(open(path).read())
-
-    return d["components"]["funsdk"]
 
 ###
 ##  main
@@ -139,15 +122,12 @@ def usage():
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--count", help="Number of SDKs to scrape (default=1)", type=int, default=1)
-    parser.add_argument("--min-sdk", help="Minimum SDK number", type=int, default=0)
-    parser.add_argument("--max-sdk", help="Maximum SDK number", type=int, default=None)
-    parser.add_argument("--dir", help="A specific directory", action="store", default=None)
-    parser.add_argument("--min-bundle", help="Minimum bundle number", type=int, default=0)
-    parser.add_argument("--max-bundle", help="Maximum bundle number", type=int, default=None)
+    parser.add_argument("--dir", help="A specific directory containing FunOS binaries",
+                        action="store", default=None)
+    parser.add_argument("--sdk-dir", help="An SDK directory to search for FunOS binaries",
+                        action="store", default=None)
     parser.add_argument("--action", default="pub", choices=["pub", "ret"],
                         help="Publish (pub) or change retention period (ret)")
-    parser.add_argument("-f", "--flavour", help="Bundle flavour", default="fs1600")
     parser.add_argument("-r", "--retention", help="Retention period")
 
     args = parser.parse_args()
@@ -160,39 +140,10 @@ def main():
 
     if (opts.dir is not None):
         scan_path(opts.dir)
-    elif (opts.max_sdk is not None):
-        mx = opts.max_sdk
-        if (opts.min_sdk >0):
-            mn = opts.min_sdk
-        else:
-            mn = mx - opts.count + 1
-
-        assert(mn > 0)
-
-        for i in range(mn, mx+1):
-            scan_sdk(i)
-    elif (opts.max_bundle is not None):
-        mx = opts.max_bundle
-        if (opts.min_bundle >0):
-            mn = opts.min_bundle
-        else:
-            mn = mx - opts.count + 1
-
-        assert(mn > 0)
-
-        s = set([])
-        for i in range(mn, mx+1):
-            s.add(check_bundle(i))
-        if (None in s):
-            s.remove(None)
-        es = list(s)
-        es.sort(reverse=True)
-        for e in es:
-            scan_sdk(e)
-
-        sys.exit(0)
+    elif (opts.sdk_dir is not None):
+        scan_sdk(opts.sdk_dir)
     else:
-        print("Need SDK max, bundle max or a directory to process")
+        print("Need dir or sdk-dir to process")
         sys.exit(1)
 
     print("done")
