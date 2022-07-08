@@ -265,6 +265,8 @@ class TraceFileParser(object):
         if output_file:
             wfh = open(output_file, 'w')
         # strip 5 initial cluster bytes
+        # TODO: Verify header bytes: starting 4 bytes should be 0xcafe0004
+        # for reference: FunTools/TraceParser/csi_trace.py
         fh.read(5)
 
         while True:
