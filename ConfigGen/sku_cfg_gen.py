@@ -438,7 +438,7 @@ class SKUCfgGen():
         return CHIP_FLAG_EEPR_VARIANTS.get(chip, DEFAULT_FLAG_VAR)
 
     def write_eepr_file_data(self, sku_var, sku_name, sku_id,
-                             pci_cfg_dir, flags, chip):
+                             pci_cfg_dir, flags=0, chip=None):
         # filename for the flag variant
         fname = self.eeprom_filename(sku_var, chip)
         # PCI data for the SKU
@@ -453,6 +453,14 @@ class SKUCfgGen():
     def write_eepr_files(self, sku_name, sku_id, pci_cfg_dir):
         dentries = {}
         chips = self.get_chips_for_sku_id(sku_name)
+
+        # When using emulation skuids, there is no board/chip associated
+        # with the sku
+        if not chips:
+            dent = self.write_eepr_file_data(sku_name, sku_name, sku_id,
+                                                pci_cfg_dir)
+            dentries[sku_name] = dent
+            return dentries
 
         for chip in chips:
             # write out a file for each flag variant
