@@ -1241,8 +1241,8 @@ class PeekCommands(object):
                 print "ERROR: %s" % str(ex)
                 self.dpc_client.disconnect()
                 break
-                
-    def peek_psw_stats(self, mode='nu', port_num=None, queue_list=None, grep_regex=None, get_result_only=False, iterations=9999999):
+
+    def peek_psw_stats(self, mode='nu', port_num=None, queue_list=None, grep_regex=None, get_result_only=False, iterations=9999999, psw_ext=False):
         prev_result = None
         iteration_count = 0
         while True:
@@ -1250,9 +1250,16 @@ class PeekCommands(object):
                 is_global = False
                 if port_num is None:
                     is_global = True
-                    cmd = "stats/psw/%s/global" % mode
+                    if psw_ext == True:
+                        cmd = "stats/psw_ext/%s/global" % mode
+                    else:
+                        cmd = "stats/psw/%s/global" % mode
                 else:
-                    cmd = "stats/psw/%s/port/%d" % (mode, port_num)
+                    if psw_ext == True:
+                        cmd = "stats/psw_ext/%s/port/%d" % (mode, port_num)
+                    else:
+                        cmd = "stats/psw/%s/port/%d" % (mode, port_num)
+
                 master_table_obj = PrettyTable()
                 master_table_obj.header = False
                 master_table_obj.border = False
@@ -1425,7 +1432,7 @@ class PeekCommands(object):
                 print "ERROR: %s" % str(ex)
                 self.dpc_client.disconnect()
                 break
-     
+
     def _display_stats(self, cmd, grep_regex, prev_result=None, verb="peek", tid=0, au_sort=True, get_result_only=False, iterations=9999999):
         iteration_count = 0
         try:
@@ -3178,10 +3185,13 @@ class PeekCommands(object):
         cmd = ["get", "wred_ecn_stats", {"port": port_num, "queue": queue_num}]
         self._display_stats(cmd=cmd, verb='qos', grep_regex=grep_regex)
 
-    def peek_sfg_stats(self, mode='nu', grep_regex=None, get_result_only=False, iterations=999999):
+    def peek_sfg_stats(self, mode='nu', grep_regex=None, get_result_only=False, iterations=999999, sfg_ext=False):
         iteration_count = 0
         if mode == "nu":
-            cmd = "stats/sfg/nu"
+            if sfg_ext == True:
+                cmd = "stats/sfg_ext/nu"
+            else:
+                cmd = "stats/sfg/nu"
             if get_result_only:
                 return self._display_stats(cmd=cmd, grep_regex=grep_regex, get_result_only=get_result_only, iterations=iterations)
             else:
@@ -4322,15 +4332,21 @@ class PeekCommands(object):
             print "ERROR: %s" % str(ex)
             self.dpc_client.disconnect()
 
-    def peek_nhp_stats(self, grep_regex=None, get_result_only=False, iterations=9999999):
-        cmd = "stats/nhp"
+    def peek_nhp_stats(self, grep_regex=None, get_result_only=False, iterations=9999999, nhp_ext=False):
+        if nhp_ext == True:
+            cmd = "stats/nhp_ext"
+        else:
+            cmd = "stats/nhp"
         if get_result_only:
             return self._display_stats(cmd=cmd, grep_regex=grep_regex, get_result_only=get_result_only, iterations=iterations)
         else:
             return self._display_stats(cmd=cmd, grep_regex=grep_regex, get_result_only=get_result_only, iterations=iterations)
 
-    def peek_sse_stats(self, grep_regex=None, get_result_only=False):
-        cmd = "stats/sse"
+    def peek_sse_stats(self, grep_regex=None, get_result_only=False, sse_ext=False):
+        if sse_ext == True:
+            cmd = "stats/sse_ext"
+        else:
+            cmd = "stats/sse"
         if get_result_only:
             return self._display_stats(cmd=cmd, grep_regex=grep_regex, get_result_only=get_result_only)
         else:
@@ -5571,6 +5587,7 @@ class ShowCommands(PeekCommands):
                                                                                              get_result_only=True,
                                                                                              mode=mode)
             command_dict['%s psw stats' % mode] = self.peek_psw_stats(get_result_only=True, mode=mode)
+            command_dict['%s psw_ext stats' % mode] = self.peek_psw_stats(get_result_only=True, mode=mode, psw_ext=True)
             command_dict['%s wro stats' % mode] = self.peek_wro_stats(get_result_only=True, mode=mode)
             command_dict['%s erp stats' % mode] = self.peek_erp_stats(get_result_only=True, mode=mode)
             command_dict['%s sfg stats' % mode] = self.peek_sfg_stats(get_result_only=True, mode=mode)
@@ -5599,8 +5616,10 @@ class ShowCommands(PeekCommands):
             for i in range(9):
                 command_dict['pervppkts stats'] = self.peek_pervppkts_stats(cluster_id=i, get_result_only=True)
             command_dict['nwqm stats'] = self.peek_nwqm_stats(get_result_only=True)
-            command_dict['nhp stats'] = self.peek_nhp_stats(get_result_only=True)
-            command_dict['sse stats'] = self.peek_sse_stats(get_result_only=True)
+            command_dict['nhp stats'] = self.peek_nhp_stats(get_result_only=True, nhp_ext=False)
+            command_dict['nhp_ext stats'] = self.peek_nhp_stats(get_result_only=True, nhp_ext=True)
+            command_dict['sse stats'] = self.peek_sse_stats(get_result_only=True, sse_ext=False)
+            command_dict['sse_ext stats'] = self.peek_sse_stats(get_result_only=True, sse_ext =True)
             command_dict['resource bam stats'] = self.peek_bam_resource_stats(get_result_only=True)
             command_dict['fcp stats'] = self.peek_fcp_tunnel_stats(get_result_only=True, tunnel_id=fcp_tunnel_id)
             if mode == 'nu' or mode == 'hnu':
@@ -5643,7 +5662,8 @@ class ShowCommands(PeekCommands):
             command_dict['NU ETP'] = self.peek_etp_stats(iterations=iterations)
             command_dict['NU WRO'] = self.peek_wro_stats(iterations=iterations)
             command_dict['NU NHP'] = self.peek_nhp_stats(iterations=iterations)
-            command_dict['NU SFG'] = self.peek_sfg_stats(iterations=iterations)
+            command_dict['NU SFG'] = self.peek_sfg_stats(iterations=iterations, sfg_ext=False)
+            command_dict['NU SFG EXT'] = self.peek_sfg_ext_stats(iterations=iterations, sfg_ext=True)
             command_dict['NU RES'] = self.peek_mode_resource_stats(iterations=iterations)
              
             command_dict['HU PCIe'] = self.peek_stats_hu_pcie(iterations=iterations)
