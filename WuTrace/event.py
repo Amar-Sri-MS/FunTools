@@ -389,6 +389,8 @@ class TraceEvent(object):
         # Work units or events that were instigated by this event.
         self.successors = []
 
+        self.is_hw_wu = False
+
     def as_dict(self):
         return {'start_time': self.start_time,
                 'end_time': self.end_time,
@@ -397,6 +399,7 @@ class TraceEvent(object):
                 'vp': self.vp,
                 # No transaction because it is an object.
                 'is_timer': self.is_timer,
+                'is_hw_wu': self.is_hw_wu,
                 'is_annotation': self.is_annotation
                 }
 

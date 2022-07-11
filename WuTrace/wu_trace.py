@@ -143,7 +143,7 @@ class TraceProcessor:
         timestamp = next_event.timestamp
 
         vp = next_event.faddr
-        if next_event.event_type == event.WU_START_EVENT: # -> if this is a start event
+        if next_event.event_type == event.WU_START_EVENT:
             arg0 = next_event.arg0
             arg1 = next_event.arg1
             wu_id = next_event.wuid
@@ -165,18 +165,16 @@ class TraceProcessor:
                 # this is some hardware send that needs an end
                 previous_start = self.find_previous_start()
                 fake_hw_event = self.hardware_sends[-1]
-                fake_hw_event.end_time = timestamp # now we are giving it an end time and it is ready to be inserted in the chain
+                fake_hw_event.end_time = timestamp
                 # inserting this in the chain
                 previous_start.successors.append(fake_hw_event)
                 self.hardware_sends.pop()
 
             (predecessor, send_time,
-             is_timer, flags) = self.find_previous_send(wu_id, arg0, # -> find the previous event
+             is_timer, flags) = self.find_previous_send(wu_id, arg0,
                                                         arg1, vp)
 
-            # the start event happened because of a previous send event
-
-            if predecessor and int(flags) & 2: # -> need to determine what flag is
+            if predecessor and int(flags) & 2:
                     # Hardware WU.
                     hw_event = event.TraceEvent(send_time,
                                                 current_event.start_time,
@@ -200,7 +198,6 @@ class TraceProcessor:
                 predecessor.successors.append(current_event)
                 self.start_events.append(current_event)
 
-            # this says connect to fake event but I do not know what is going on
             elif next_event.name == 'mp_notify':
                 # Bootstrap process. Connect to fake event.
                 current_event.transaction = self.boot_transaction
@@ -262,7 +259,6 @@ class TraceProcessor:
                                                  "HW-LE: " + next_event.name, next_event.dest_faddr)
                 # will now connect this to the previous event
                 current_event.is_hw_wu = True
-                # current_event.is_timer = True
                 self.hardware_sends.append(current_event)
 
             if vp in self.vp_to_event:
