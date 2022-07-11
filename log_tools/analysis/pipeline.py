@@ -7,7 +7,6 @@
 import argparse
 import collections
 import json
-import os
 
 # Input blocks
 from blocks import file_input

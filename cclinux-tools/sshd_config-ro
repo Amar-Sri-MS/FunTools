@@ -86,7 +86,7 @@ ClientAliveInterval 15
 ClientAliveCountMax 4
 #UseDNS no
 #PidFile /var/run/sshd.pid
-#MaxStartups 10:30:100
+MaxStartups 10:30:100
 #PermitTunnel no
 #ChrootDirectory none
 #VersionAddendum none
@@ -97,6 +97,8 @@ ClientAliveCountMax 4
 # override default of no subsystems
 Subsystem	sftp	/usr/libexec/sftp-server
 
+KexAlgorithms ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,curve25519-sha256,curve25519-sha256@libssh.org
+
 # Example of overriding settings on a per-user basis
 #Match User anoncvs
 #	X11Forwarding no
@@ -106,8 +108,6 @@ Subsystem	sftp	/usr/libexec/sftp-server
 HostKey /persist/config/ssh_host_rsa_key
 HostKey /persist/config/ssh_host_ecdsa_key
 HostKey /persist/config/ssh_host_ed25519_key
-
-Include /tmp/sshd_config.d/*.conf
 
 Match User root
    AuthorizedKeysFile  /run/ssh/root.authorized_keys

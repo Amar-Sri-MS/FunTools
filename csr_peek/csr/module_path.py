@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import os
 import sys
@@ -11,8 +11,8 @@ class module_locator():
 
     def module_path(self):
        if self.is_frozen:
-           return os.path.dirname(unicode(sys.executable, self.encoding))
-       return os.path.dirname(unicode(__file__, self.encoding))
+           return os.path.dirname(sys.executable)
+       return os.path.dirname(__file__)
 
     def curr_path(self):
        return os.environ.get('OLDPWD')

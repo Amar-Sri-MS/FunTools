@@ -6,7 +6,7 @@
 #  Copyright 2019 Fungible Inc. All rights reserved.
 #
 
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 
 import argparse
@@ -16,7 +16,7 @@ import re
 import sys
 
 #from graph import Grapher
-from histogram import Histogram
+from .histogram import Histogram
 
 # Instructions belong to a basic block
 class BasicBlock(object):
@@ -85,7 +85,7 @@ class BB_Analyze(object):
 
     def __summarize(self, hist, x_len):
         m_hist = collections.OrderedDict()
-        for key, val in hist.iteritems():
+        for key, val in hist.items():
             m_hist[key/x_len] = m_hist.get(key/x_len, 0) + val
         return m_hist
 
@@ -93,7 +93,7 @@ class BB_Analyze(object):
         hist = collections.OrderedDict(sorted(o_hist.items()))
         instr_cnt_per_bucket = 1
         if self.bbs_max_val > 40:
-            max_val = hist.keys()[-1]
+            max_val = list(hist.keys())[-1]
             instr_cnt_per_bucket = max_val/40
             hist = self.__summarize(hist, instr_cnt_per_bucket)
 
@@ -145,7 +145,7 @@ class BB_Analyze(object):
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print "python bbv.py dump_file [png_file=None] [only_func=0]"
+        print("python bbv.py dump_file [png_file=None] [only_func=0]")
         sys.exit(0)
     p = BB_Analyze()
     g = len(sys.argv)

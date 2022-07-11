@@ -6,13 +6,13 @@
 #  Copyright 2019 Fungible Inc. All rights reserved.
 #
 
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import argparse
 import re
 import sys
 
-from bbv import BB_Analyze
+from .bbv import BB_Analyze
 
 class Orchestrator():
     def __init__(self, argv):
@@ -33,7 +33,7 @@ class Orchestrator():
                     self.args.out_file,
                     self.args.only_functions)
         if self.args.graph:
-            print "Graphing not implemented. Please see README for alternatives"
+            print("Graphing not implemented. Please see README for alternatives")
             sys.exit(0)
 
     def __identify(self, line):
@@ -53,7 +53,7 @@ class Orchestrator():
                 m_type = self.__identify(line)
                 if m_type:
                     if m_type != "elf64-bigmips":
-                        print "Only support elf64-bigmips"
+                        print("Only support elf64-bigmips")
                         return False
                     else:
                         return True

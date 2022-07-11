@@ -138,7 +138,12 @@ class Volume(object):
         self.config = config_loader.get_config()
 
         ELASTICSEARCH_HOSTS = self.config['ELASTICSEARCH']['hosts']
-        self.es = Elasticsearch(ELASTICSEARCH_HOSTS)
+        ELASTICSEARCH_TIMEOUT = self.config['ELASTICSEARCH']['timeout']
+        ELASTICSEARCH_MAX_RETRIES = self.config['ELASTICSEARCH']['max_retries']
+        self.es = Elasticsearch(ELASTICSEARCH_HOSTS,
+                                timeout=ELASTICSEARCH_TIMEOUT,
+                                max_retries=ELASTICSEARCH_MAX_RETRIES,
+                                retry_on_timeout=True)
 
     def _perform_es_search(self, queries, time_filters=None):
         """ Returns ES results based on the given queries """

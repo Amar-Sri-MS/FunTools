@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Sample s1 debug utility functions for convenient debugging
@@ -103,10 +103,10 @@ def main():
     parser.add_argument("--dump-hu", action='store_true', help="hu csrs")
     parser.add_argument("--dump-mio2", action='store_true', help="mio2 csrs")
     parser.add_argument("--mio2-cfg", action='store_true', help="Write mio2 config")
-    parser.add_argument("--period", type=int, default=0, choices=range(31), help="peridoc dump interval")
+    parser.add_argument("--period", type=int, default=0, choices=list(range(31)), help="peridoc dump interval")
 
     args = parser.parse_args()
-    print args
+    print(args)
 
     probe = connect(dut_name=args.dut, mode=args.mode, force_connect=True)
     if not probe:

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 import optparse
 import string
@@ -69,8 +69,8 @@ def gen_serial(opts):
     s = part + fn + fb + yr + wk + reserved + pts
     
     if (opts.verbose):
-        print "serial pts=0x%s, part=0x%s, wk=0x%s, yr = 0x%s, fb=0x%s, fn=0x%s" % (pts, part, wk, yr, fb, fn)
-        print "serial", s
+        print("serial pts=0x%s, part=0x%s, wk=0x%s, yr = 0x%s, fb=0x%s, fn=0x%s" % (pts, part, wk, yr, fb, fn))
+        print("serial", s)
 
     return s
     
@@ -90,8 +90,8 @@ def gen_info(opts):
     s = lc + reserved + oid
     
     if (opts.verbose):
-        print "info part: oid 0x%s, lc 0x%s" % (oid, lc)
-        print "info", s
+        print("info part: oid 0x%s, lc 0x%s" % (oid, lc))
+        print("info", s)
 
     return s
 
@@ -137,7 +137,7 @@ def main():
     if (len(s) != (2 * 24)):
         raise RuntimeError("failed to generate correct fuse length")
     
-    print s
+    print(s)
     
 # boilerplate
 if (__name__ == "__main__"):

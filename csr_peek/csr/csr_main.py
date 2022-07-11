@@ -12,7 +12,7 @@ import json
 import logging
 import os
 
-from module_path import module_locator
+from .module_path import module_locator
 from csr.utils.yml import YML_Reader, CSR_YML_Reader
 from csr.utils.artifacts import CSRRoot, Walker, RingUtil, TmplMgr
 from csr.utils.utilities import Filer

@@ -6,9 +6,17 @@
 #
 set -e
 
+if [ $# -ge 1 ] && [ "$1" == "config-only" ] ; then
+    config_only=y
+else
+    config_only=n
+fi
+
 binutils_version=binutils-2.35.2
-gcc_version=gcc-11.2.0
-gdb_version=gdb-9.2
+gcc_version=gcc-11.3.0
+gdb_version=gdb-11.2
+
+toolchain=mips64-unknown-elf-${binutils_version}_${gcc_version}_${gdb_version}-$(uname -s)_$(uname -m)
 
 binutils_archive=${binutils_version}.tar.xz
 binutils_url="http://ftpmirror.gnu.org/binutils/${binutils_archive}"
@@ -16,10 +24,19 @@ binutils_url="http://ftpmirror.gnu.org/binutils/${binutils_archive}"
 gcc_archive=${gcc_version}.tar.xz
 gcc_url="http://ftpmirror.gnu.org/gcc/${gcc_version}/${gcc_archive}"
 
+case ${gcc_version} in
+gcc-11.3.0)
+    gcc_patches=(970-macos_arm64-building-fix.patch)
+    ;;
+*)
+    gcc_patches=()
+    ;;
+esac
+
 gdb_archive=${gdb_version}.tar.xz
 gdb_url="http://ftpmirror.gnu.org/gdb/${gdb_archive}"
 
-gdb_patches=0001-Fix-Python3.9-related-runtime-problems.patch
+gdb_patches=(fungible-enable-tls.patch fungible-enable-core.patch)
 
 if [ $(uname) = 'Linux' ] ; then
     host_binutils_config=--with-static-standard-libraries
@@ -38,7 +55,7 @@ fi
 mkdir -p build
 cd build
 
-dest_dir=$PWD/toolchain
+dest_dir=$PWD/${toolchain}
 
 if [ ! -e $binutils_archive ] ; then
     wget $binutils_url
@@ -54,6 +71,13 @@ fi
 
 common_config='--enable-lto --enable-64-bit-bfd --enable-targets=all'
 
+if [ $(uname) = "Darwin" ] ; then
+    common_config="${common_config} --with-sysroot=$(xcrun -show-sdk-path)"
+    common_config="${common_config} --without-isl"
+fi
+
+###### binutils ######
+
 tar Jxf $binutils_archive
 
 binutils_dir=mips64-${binutils_version}
@@ -61,14 +85,21 @@ binutils_dir=mips64-${binutils_version}
 mkdir -p $binutils_dir
 pushd $binutils_dir
 ../${binutils_version}/configure --target=mips64-unknown-elf --prefix=$dest_dir $host_binutils_config \
-    $common_config
-make -j4
-make -j4 install
+   $common_config
+if [ "$config_only" = "n" ] ; then
+    make -j4
+    make -j4 install
+fi
 popd
+
+###### gcc ######
 
 tar Jxf $gcc_archive
 
 pushd ${gcc_version}
+for gcc_patch in ${gcc_patches[@]} ; do
+    patch -p1 < ../../$gcc_patch
+done
 contrib/download_prerequisites
 popd
 
@@ -91,14 +122,20 @@ pushd $gcc_dir
     --enable-plugin			\
     --enable-targets=64			\
     --with-arch=i6500 --with-abi=64
-make -j4
-make -j4 install
+if [ "$config_only" = "n" ] ; then
+    make -j4
+    make -j4 install
+    # Install libgmp to be able to build gdb
+    make -C gmp install
+fi
 popd
+
+###### gdb ######
 
 tar Jxf $gdb_archive
 
 pushd ${gdb_version}
-for gdb_patch in $gdb_patches ; do
+for gdb_patch in ${gdb_patches[@]} ; do
     patch -p1 < ../../$gdb_patch
 done
 popd
@@ -112,10 +149,16 @@ pushd $gdb_dir
 ../${gdb_version}/configure --disable-sim --target=mips64-unknown-elf --prefix=$dest_dir $host_gdb_config \
    $common_config \
    --with-python=python3
-make -j4
-make -j4 install
+if [ "$config_only" = "n" ] ; then
+    make -j4
+    make -j4 install
+fi
 popd
 
+###### tarball ######
+
 pushd $dest_dir
-tar cJf ../toolchain.tar.xz *
+if [ "$config_only" = "n" ] ; then
+    tar cJf ../${toolchain}.tar.xz *
+fi
 popd

@@ -39,7 +39,7 @@ class AnchorMatch:
         # short representation with the matchgroups.
         short_desc = anchor.get('short', '')
         if 'rematch' in anchor:
-            for key, value in match.groupdict().items():
+            for key, value in list(match.groupdict().items()):
                 short_desc = re.sub(f'<{key}>', value, short_desc)
         self.short_desc = short_desc
 
@@ -171,7 +171,12 @@ class AnalyticsOutput(Block):
         self.anchor_matches = list()
 
         ELASTICSEARCH_HOSTS = self.config['ELASTICSEARCH']['hosts']
-        self.es = Elasticsearch(ELASTICSEARCH_HOSTS)
+        ELASTICSEARCH_TIMEOUT = self.config['ELASTICSEARCH']['timeout']
+        ELASTICSEARCH_MAX_RETRIES = self.config['ELASTICSEARCH']['max_retries']
+        self.es = Elasticsearch(ELASTICSEARCH_HOSTS,
+                                timeout=ELASTICSEARCH_TIMEOUT,
+                                max_retries=ELASTICSEARCH_MAX_RETRIES,
+                                retry_on_timeout=True)
 
     def set_config(self, cfg):
         self.cfg = cfg
@@ -190,18 +195,21 @@ class AnalyticsOutput(Block):
     def process(self, iters):
         """ Performs analysis on all iterables """
         timeline.track_start('analytics')
-        for it in iters:
-            for tuple in it:
-                msg_dict = self.tuple_to_dict(tuple)
+        try:
+            for it in iters:
+                for tuple in it:
+                    msg_dict = self.tuple_to_dict(tuple)
 
-                self.check_for_duplicate_entry(msg_dict)
-                self.check_and_store_anchor_match(msg_dict)
+                    self.check_for_duplicate_entry(msg_dict)
+                    self.check_and_store_anchor_match(msg_dict)
 
-        # Anchor matches
-        self.store_anchor_matches()
+            # Anchor matches
+            self.store_anchor_matches()
 
-        # Most duplicated logs
-        self.generate_most_duplicates_entries()
+            # Most duplicated logs
+            self.generate_most_duplicates_entries()
+        except:
+            logging.exception(f'Failed while performing Analytics')
         timeline.track_end('analytics')
 
     def check_for_duplicate_entry(self, msg_dict):

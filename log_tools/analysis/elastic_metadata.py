@@ -26,7 +26,12 @@ class ElasticsearchMetadata(object):
         self.config = config_loader.get_config()
 
         ELASTICSEARCH_HOSTS = self.config['ELASTICSEARCH']['hosts']
-        self.es = Elasticsearch(ELASTICSEARCH_HOSTS)
+        ELASTICSEARCH_TIMEOUT = self.config['ELASTICSEARCH']['timeout']
+        ELASTICSEARCH_MAX_RETRIES = self.config['ELASTICSEARCH']['max_retries']
+        self.es = Elasticsearch(ELASTICSEARCH_HOSTS,
+                                timeout=ELASTICSEARCH_TIMEOUT,
+                                max_retries=ELASTICSEARCH_MAX_RETRIES,
+                                retry_on_timeout=True)
 
     def get(self, log_id):
         """ Fetches metadata for a given "log_id" """
@@ -48,6 +53,9 @@ class ElasticsearchMetadata(object):
 
     def get_by_log_ids(self, log_ids):
         """ Fetches all the metadata for the given log_ids """
+        if not log_ids or len(log_ids) == 0:
+            return {}
+
         body = {
             'ids': log_ids
         }

@@ -303,14 +303,13 @@ def parse_args():
                             metavar='FILE',
                             help="enrollment certificate to add to the image")
     bld_type = arg_parser.add_mutually_exclusive_group()
-    bld_type.add_argument("-p", "--production", action='store_const', const='', dest='debug',
-                            help="Production build")
+    bld_type.add_argument("-p", "-r", "--release", "--production",
+                          action='store_const', const='', dest='debug',
+                          help="Production/Release build")
     bld_type.add_argument("-V", "--verbose", action='store_const', const='_verbose', dest='debug',
-                            help="Production build with verbose logging")
+                          help="Production/Release build with verbose logging")
     bld_type.add_argument("-T", "--test", action='store_const', const='_test', dest='debug',
-                            help="Production build with all tests")
-    bld_type.add_argument("--debug", action='store_const', const='_debug',
-                            help="Debug build")
+                          help="Production/Release build with all tests")
     # default to --debug
     arg_parser.set_defaults(debug='_debug')
 
@@ -364,6 +363,10 @@ def sanitize_args(args, eeproms_dir):
                 args.eeprom = "eeprom_emu_s1_full"
             else:
                 args.eeprom = "eeprom_s1_dev_board"
+        else:
+            print("*** no default eeprom for that chip: %s\n" % args.chip)
+            print("Please specify an eeprom to use with the -e/--eeprom option")
+            sys.exit(1)
 
         # verify somebody did not remove the default
         if not args.eeprom in eeprom_files:
@@ -418,7 +421,7 @@ def main():
     ''' main '''
     script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
     eeproms_dir = os.path.join(os.environ['WORKSPACE'],
-                               'FunSDK/FunSDK/sbpfw/eeproms')
+                               'FunSDK/FunSDK/dpu_eepr')
 
     args = sanitize_args(parse_args(), eeproms_dir)
 

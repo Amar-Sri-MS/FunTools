@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''
 i2cclient connects to i2cproxy on remote server
 and can issue hw access commands using i2c interface
@@ -96,8 +96,8 @@ class I2C_Client(object):
                 self.glb_rd_retry+=1
                 rd_retry_perc=round(float(self.glb_rd_retry)/float(self.glb_rd_cnt),4)
                 rw_retry_perc=round(float(self.glb_rd_retry + self.glb_wr_retry)/float(self.glb_rw_cnt),4)
-                error_msg = "i2c csr peek failed! retry_cnt: {0} glb_rd_retry: {1} rd_fail_perc: {2} rw_fail_perc: {3}".format(retry_count,self.glb_rd_retry,rd_retry_perc,rw_retry_perc)
-                logger.error(error_msg)
+                error_msg = "retry_cnt: {0} glb_rd_retry: {1} rd_fail_perc: {2} rw_fail_perc: {3}".format(retry_count,self.glb_rd_retry,rd_retry_perc,rw_retry_perc)
+                #logger.error(error_msg)
                 retry_count += 1
         return (False, error_msg)
 

@@ -6,10 +6,11 @@
 
 #define PLATFORM_POSIX	1
 
+#include <stdlib.h>
 #include <stdio.h>
-#include <services/commander/fun_commander.h>
-#include <utils/threaded/fun_malloc_threaded.h>
-#include <utils/threaded/csr_utils.h>
+#include <FunOS/services/commander/fun_commander.h>
+#include <FunOS/utils/threaded/fun_malloc_threaded.h>
+#include <FunOS/utils/threaded/csr_utils.h>
 
 #include "dpcsh.h"
 #include "csr_command.h"

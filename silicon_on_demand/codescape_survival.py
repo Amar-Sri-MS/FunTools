@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 ## A set of functions to import into your codescape scripting to make
 ## life easier.
@@ -27,7 +27,7 @@ def set_axim(addr):
 
 def csr_read_sbp(address):
     if (device() != thread(9,0,0)):
-        print "not on SBP"
+        print("not on SBP")
         return
     set_axim(address)
     address = address & 0x3FFFFFFF
@@ -37,7 +37,7 @@ def csr_read_sbp(address):
 
 def csr_write_sbp(address, val):
     if (device() != thread(9,0,0)):
-        print "not on SBP"
+        print("not on SBP")
         return
     set_axim(address)
     address = address & 0x3FFFFFFF
@@ -46,7 +46,7 @@ def csr_write_sbp(address, val):
 def csr_read_n_sbp(address, count = 1):
     for i in range(0, count):
         addr = address + 8 * i
-        print "%0.16x: %0.16x" % (addr, csr_read(addr))
+        print("%0.16x: %0.16x" % (addr, csr_read(addr)))
 
 def xkw(address):
     return eword(XKPHYS_UC | address)
@@ -60,14 +60,14 @@ def xkd(address, wr=None):
 
 def csr_read_pc(address):
     if (device() == thread(9,0,0)):
-        print "not on CC"
+        print("not on CC")
         return
     CSR_VADDR = XKPHYS_UC | CCU_BASE | address
     return doubleword(CSR_VADDR)
 
 def csr_write_pc(address, val):
     if (device() == thread(9,0,0)):
-        print "not on CC"
+        print("not on CC")
         return
     CSR_VADDR = XKPHYS_UC | CCU_BASE | address
     doubleword(CSR_VADDR, val)
@@ -80,18 +80,18 @@ def csr_read(address):
         else:
             return csr_read_sbp(address)
     except:
-        print "Exception reading CSR"
+        print("Exception reading CSR")
         return 0xdeadbeefdeadbeef
 
 def csr_write(address, value):
     try:
         if (device() != thread(10,0,0)):
-            print "pc write"
+            print("pc write")
             csr_write_pc(address, value)
         else:
             csr_write_sbp(address)
     except:
-        print "Exception writing CSR", sys.exc_info()[0]
+        print("Exception writing CSR", sys.exc_info()[0])
         return None
     
 def sbp():
@@ -151,7 +151,7 @@ def hbm_read(addr):
     csr_write(MUH_SNA_EXT_MEM_RW_CMD_ADDR, 0x8002000000000000 | addr)
     for i in range(0, 8):
         r = csr_read(MUH_SNA_EXT_MEM_RW_DATA_0_ADDR + i * 8)
-        print "[%d] 0x%0.16x" % (i, r)
+        print("[%d] 0x%0.16x" % (i, r))
 
 # addr >>= 6
 # muh = addr & 3
@@ -169,18 +169,18 @@ def hbm_read_sbp(addr, clear=False):
     muh_cmd = muh_base + MUH_SNA_EXT_MEM_RW_CMD_ADDR_OFF
     muh_data = muh_base + MUH_SNA_EXT_MEM_RW_DATA_0_ADDR_OFF
     if (clear):
-        print "clearing registers..."
+        print("clearing registers...")
         for i in range(0, 8):
             # print "clearing data CSR at 0x%x" % (muh_data + i * 8)
             csr_write_sbp(muh_data + i * 8, 0xce9ce9ce9ce9ce9c)
     else:
-        print "not clearing registers..."
-    print "issuing command to 0x%x" % muh_cmd
+        print("not clearing registers...")
+    print("issuing command to 0x%x" % muh_cmd)
     csr_write_sbp(muh_cmd, 0x8000000000000000 | (muh_addr <<37))
     for i in range(0, 8):
         # print "reading data CSR at 0x%x" % (muh_data + i * 8)
         r = csr_read_sbp(muh_data + i * 8)
-        print "[0x%0.16x] 0x%0.16x" % ((cache_addr << 6) + i * 8, r)
+        print("[0x%0.16x] 0x%0.16x" % ((cache_addr << 6) + i * 8, r))
 
 
 
@@ -188,7 +188,7 @@ def print_stack(sp):
     stack_top = (sp | 0xfff) + 1
     while (stack_top >= sp):
         stack_top -= 8
-        print "0x%0.16x: 0x%0.16x" % (stack_top, doubleword(stack_top))
+        print("0x%0.16x: 0x%0.16x" % (stack_top, doubleword(stack_top)))
 
 
 
@@ -239,7 +239,7 @@ def CCU_CMD(ty, sz, rn, init, tag, adr):
 
 def csr_wide_read_cmd(addr, nwords):
     if (nwords <= 0):
-        print "bad nwords"
+        print("bad nwords")
         return None
     cmd_sz = nwords - 1
     rng_sel = ((addr >> CCU_RING_SHF) & CCU_RING_MSK)
@@ -248,7 +248,7 @@ def csr_wide_read_cmd(addr, nwords):
 
 def csr_wide_write_cmd(addr, nwords):
     if (nwords <= 0):
-        print "bad nwords"
+        print("bad nwords")
         return None
     cmd_sz = nwords - 1
     rng_sel = ((addr >> CCU_RING_SHF) & CCU_RING_MSK)
@@ -256,19 +256,19 @@ def csr_wide_write_cmd(addr, nwords):
     return cmd
 
 def resettron(fname = "/tmp/reset-device.now"):
-    print "Polling on %s" % fname
+    print("Polling on %s" % fname)
     while (1):
         if (os.path.isfile(fname)):
             try:
                 os.remove(fname)
             except:
                 raise RuntimeError("Failed to remove signal file, barf")
-            print "Restting device due to existence of %s" % fname
+            print("Restting device due to existence of %s" % fname)
             try:
                 reset(hard_run)
             except:
-                print "NOTE: exception during reset. Not entirely unexpected"
-            print "Returning to poll on %s" % fname
+                print("NOTE: exception during reset. Not entirely unexpected")
+            print("Returning to poll on %s" % fname)
         time.sleep(1)
 
 
@@ -309,15 +309,15 @@ def hbm_init_sbp(base, size):
     #data64_rb[0] = 0;
     #data64_fb[0] = qstate_base_adr;
     if (base & 0x3f):
-        print "base must be 64B aligned"
+        print("base must be 64B aligned")
         return
     if (size & 0x3f):
-        print "size must be 64B aligned"
+        print("size must be 64B aligned")
     base = base | magic
     base = base >> 6
     size = size >> 6
     if (size > 65535):
-        print "size must be  <= 65535 lines"
+        print("size must be  <= 65535 lines")
         return
     #CC_EFI_QSTATE_MEM_BASE_BASE_ADR_WRITE(data64_rb, data64_fb);
     val = base << CC_EFI_QSTATE_MEM_BASE_BASE_ADR_LSB
@@ -337,21 +337,21 @@ def hbm_init_sbp(base, size):
     csr_write_sbp(CC_EFI_MEM_INIT_START_CC, 0)
     csr_write_sbp(CC_EFI_MEM_INIT_START_CC, 1<<63)
     # print stop
-    print "done: 0x%x" % csr_read_sbp(CC_EFI_MEM_INIT_DONE_CC)
-    print "stats: 0x%x" % csr_read_sbp(CC_EFI_STATS_ADDR_CC)
+    print("done: 0x%x" % csr_read_sbp(CC_EFI_MEM_INIT_DONE_CC))
+    print("stats: 0x%x" % csr_read_sbp(CC_EFI_STATS_ADDR_CC))
 
 def zd():
     cc()
     for i in range (0,8):
-        print hex(xkd(i*64))
+        print(hex(xkd(i*64)))
 
 PROBES = { "sb-01": ("sp55e", "10.1.40.82"),
            "sb-02": ("sp0491", "10.1.40.83"),
            "sb-04": ("sp55e", "10.1.40.85"),
            }
 def connect_to_sb_probe(sbid, no_detect=False):
-    if (sbid not in PROBES.keys()):
-        raise RuntimeError("unknown probe %s (known ids %s)" % (sbid, PROBES.keys()))
+    if (sbid not in list(PROBES.keys())):
+        raise RuntimeError("unknown probe %s (known ids %s)" % (sbid, list(PROBES.keys())))
 
     p = probe(PROBES[sbid][0], ip_address=PROBES[sbid][1])
 
@@ -359,7 +359,7 @@ def connect_to_sb_probe(sbid, no_detect=False):
         return
 
     # do the sequence
-    print "handshaking..."
+    print("handshaking...")
     reset(probe)
     tckrate(25000000)
     autodetect()

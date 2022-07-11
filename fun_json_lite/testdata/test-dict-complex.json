@@ -1,0 +1,11 @@
+{
+  "dict1": {
+    "key1": 100,
+    "key2": "testing123"
+  },
+  "dict2": {
+    "dk2barray": [1, 2, 3, 90]
+  },
+  "key5": 7,
+  "arry6": [3.2, false, "TestArry123"]
+}

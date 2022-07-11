@@ -8,6 +8,7 @@
         "PUF-ROM": {
             "A": "esecure_puf_rom_packed.bin",
             "B": "esecure_puf_rom_packed.bin",
+            "minsize": "0x20000",
             "index": "10"
         },
         "FIRMWARE": {
@@ -68,7 +69,7 @@
             "fourcc": "husc",
             "cert": "",
             "customer_cert": "",
-            "key": "fpk3",
+            "key": "fpk5",
             "description": "@file:sbm_serdes.hu.conv.rom.version"
         },
         "hbm_sbus.bin": {

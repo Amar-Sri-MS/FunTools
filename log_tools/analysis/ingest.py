@@ -7,16 +7,22 @@
 import argparse
 import datetime
 import glob
+import json
 import logging
 import os
+import re
+import requests
 import sys
 import time
 
 sys.path.append('.')
 
+import config_loader
 import pipeline
 import logger
 
+from custom_exceptions import EmptyPipelineException
+from custom_exceptions import NotFoundException
 from elastic_metadata import ElasticsearchMetadata
 from utils import archive_extractor
 from utils import manifest_parser
@@ -33,6 +39,28 @@ SOURCE_ALIASES = {
     'node-service': ['nms'],
     'sns': ['network-service', 'network_service']
 }
+
+# The manifest file can contain paths for non log files or
+# files which are not needed for debugging.
+# This is a list of paths to ignore during ingestion.
+BLACKLISTED_PATHS = [
+    # Ignore files (which are not logs) collected by the HA cluster.
+    '.*/configs_baremetal/.*',
+    '.*/containers/.*',
+    '.*/debug_errors/.*',
+    '.*/deployment/.*',
+    '.*/hw_info/.*',
+    '.*/inventory/.*',
+    '.*/kafka_metadata/.*',
+    '.*/kubedump/.*',
+
+    # Ignore checking logs from BMC till Log Analyzer supports it.
+    '.*/.*_chassis_log/.*',
+    # Systemstate files are not log files.
+    '.*/systemstate.*/.*',
+]
+BLACKLISTED_PATHS_REGEX = '(%s)' % '|'.join(BLACKLISTED_PATHS)
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -62,7 +90,7 @@ def main():
     }
 
     LOG_ID = f'log_{build_id}'
-    custom_logging = logger.get_logger(filename=f'{LOG_ID}.log')
+    custom_logging = logger.get_logger(filename=f'{LOG_ID}.log', separate_error_file=True)
     custom_logging.propagate = False
 
     # Initializing the timeline tracker
@@ -114,7 +142,7 @@ def start_pipeline(base_path, build_id, filters={}, metadata={}, output_block='E
             base_path = os.path.splitext(base_path)[0]
 
         if not os.path.exists(os.path.join(base_path, 'FUNLOG_MANIFEST')):
-            raise Exception('Could not find manifest file')
+            raise NotFoundException('Could not find manifest file')
 
         env = dict()
         env['logdir'] = base_path
@@ -148,8 +176,15 @@ def start_pipeline(base_path, build_id, filters={}, metadata={}, output_block='E
 
     end = time.time()
     time_taken = end - start
+
+    # Check if there are any error logs indicating partial ingestion
+    is_partial = False
+    error_log_file = f'{logger.LOGS_DIRECTORY}/{LOG_ID}_error.log'
+    if os.stat(error_log_file).st_size != 0:
+        is_partial = True
+
     es_metadata.update(LOG_ID, {
-        'ingestion_status': 'COMPLETED',
+        'ingestion_status': 'PARTIAL' if is_partial else 'COMPLETED',
         'ingestion_error': None,
         'ingestion_time': time_taken,
         **metadata
@@ -157,11 +192,45 @@ def start_pipeline(base_path, build_id, filters={}, metadata={}, output_block='E
 
     timeline.generate_timeline()
     timeline.backup_timeline_files()
+    backup_pipeline_cfg(LOG_ID, cfg)
 
     return {
         'success': True,
+        'is_partial': is_partial,
         'time_taken': time_taken
     }
+
+
+def backup_pipeline_cfg(log_id, cfg):
+    """
+    Backing up the pipeline cfg built during the start of
+    ingestion of the given "log_id" for debugging purpose.
+
+    Sending the json cfg to FILE_SERVER.
+    """
+    try:
+        config = config_loader.get_config()
+        FILE_SERVER_URL = config['FILE_SERVER_URL']
+        url = f'{FILE_SERVER_URL}/{log_id}/file'
+
+        filename = f'{log_id}_cfg.json'
+        path = os.path.join(logger.LOGS_DIRECTORY, filename)
+
+        with open(path, 'w') as f:
+            json.dump(cfg, f, indent=4, sort_keys=True, default=str)
+
+        files = [
+            (filename, (filename, open(path, 'rb')))
+        ]
+
+        response = requests.post(url, files=files)
+        response.raise_for_status()
+        logging.info(f'Pipeline cfg file for {log_id} uploaded!')
+
+        # Removing the temp created cfg json file.
+        os.remove(path)
+    except Exception as e:
+        logging.exception(f'Uploading pipeline cfg for {log_id} failed.')
 
 
 @timeline.timeline_logger('build_pipeline')
@@ -171,7 +240,7 @@ def build_pipeline_cfg(path, filters, output_block):
     pipeline_cfg, metadata = parse_manifest(path, filters=filters)
 
     if not pipeline_cfg:
-        raise Exception('Could not form the ingestion pipeline.')
+        raise EmptyPipelineException('Could not form the ingestion pipeline.')
 
     # Adding filter pipeline
     pipeline_cfg.extend(filter_pipeline(filters))
@@ -213,12 +282,19 @@ def parse_manifest(path, parent_frn={}, filters={}):
                     continue
 
             # Path to the content in the FRN
-            content_path = os.path.join(path, frn_info['prefix_path'], frn_info['sub_path'])
+            frn_path = os.path.join(frn_info['prefix_path'], frn_info['sub_path'])
+            content_path = os.path.join(path, frn_path)
 
             # The content path does not exist
             if not glob.glob(content_path):
                 logging.warning(f'Path does not exist: {content_path}')
                 continue
+
+            # Ignore if the path is blacklisted
+            if frn_path and frn_path != '':
+                if not _should_ingest_path(frn_path):
+                    logging.info(f'Skipping blacklisted path: {frn_path}.')
+                    continue
 
             # Extract archive and check for manifest file
             if frn_info['resource_type'] in ['archive', 'compressed', 'bundle']:
@@ -252,9 +328,9 @@ def parse_manifest(path, parent_frn={}, filters={}):
             # Check for logs in the folder or textfile based on the source
             if frn_info['resource_type'] == 'folder' or frn_info['resource_type'] == 'textfile':
                 logging.info(f'Checking for logs in {content_path}')
-                # Setting source if not present on FUNLOG_MANIFEST
-                if 'system_log.tar.gz' in frn_info['prefix_path'] or 'system_log.tar.gz' in frn_info['sub_path']:
-                    frn_info['source'] = 'cclinux'
+                # Setting source for all the logs from CCLinux
+                if 'system_log.tar' in content_path:
+                    frn_info['source'] = f'cclinux_{frn_info["source"]}'
                 pipeline_cfg.extend(build_input_pipeline(content_path, frn_info, filters))
 
         else:
@@ -276,11 +352,12 @@ def build_input_pipeline(path, frn_info, filters={}):
         return blocks
 
     if not source:
-        logging.error(f'Missing source in FRN: {frn_info}')
+        logging.warning(f'Missing source in FRN: {frn_info}')
         return blocks
 
     # If the folder does not exist
-    if resource_type  == 'folder' and not os.path.exists(path):
+    if resource_type == 'folder' and not os.path.exists(path):
+        logging.warning(f'Path does not exist: {path}')
         return blocks
 
     # TODO(Sourabh): Have multiple source keywords to check for a source
@@ -293,7 +370,7 @@ def build_input_pipeline(path, frn_info, filters={}):
             )
         else:
             blocks.extend(
-                funos_input(frn_info, source, path)
+                funos_input(frn_info, source, path, file_info_match='FOS(?P<system_id>([0-9a-fA-F]:?){12})-')
             )
 
     elif source in ['storage-agent', 'storage_agent']:
@@ -312,24 +389,27 @@ def build_input_pipeline(path, frn_info, filters={}):
         # nms contains PA<MAC_ID>-platformagent.log whereas system log archive contains platform-agent.log
         file_pattern = f'{path}/*platform?agent.log*' if resource_type == 'folder' else path
         blocks.extend(
-            fun_agent_input_pipeline(frn_info, source, file_pattern)
+            fun_agent_input_pipeline(frn_info,
+                                source,
+                                file_pattern,
+                                file_info_match='PA(?P<system_id>([0-9a-fA-F]:?){12})-'
+                )
+            )
+
+    elif source in ['opsec-agent', 'opsec_agent']:
+        file_pattern = f'{path}/opsec-agent*' if resource_type == 'folder' else path
+        blocks.extend(
+            controller_input_pipeline(frn_info, source, file_pattern,
+                parse_block='KeyValueInput')
         )
 
-    elif source == 'dataplacement':
+    elif source in ['dataplacement', 'discovery', 'metrics_manager', 'scmscv', 'expansion_rebalance']:
         file_pattern = f'{path}/info*' if resource_type == 'folder' else path
         blocks.extend(
             controller_input_pipeline(frn_info, source, file_pattern,
+                # [logger.go:158] 2022-01-10T04:04:31.707689851Z info log level:debug and backupcount:8 in /var/log/dataplacement/info.log
                 multiline_settings={
-                    'pattern': r'(\[.*\])\s+(\d{4}(?:-|/)\d{2}(?:-|/)\d{2})+(?:T|\s)([:0-9]+).([0-9]+)\s?((?:\-|\+)[0-9]{4})'
-                })
-        )
-
-    elif source in ['discovery', 'metrics_manager', 'scmscv', 'expansion_rebalance']:
-        file_pattern = f'{path}/info*' if resource_type == 'folder' else path
-        blocks.extend(
-            controller_input_pipeline(frn_info, source, file_pattern,
-                multiline_settings={
-                    'pattern': r'(\[.*\])\s+(\d{4}(?:-|/)\d{2}(?:-|/)\d{2})+(?:T|\s)([:0-9]+).([0-9]+)\s?((?:\-|\+)[0-9]{4})'
+                    'pattern': r'(\[.*\])\s+(\d{4}(?:-|/)\d{2}(?:-|/)\d{2})+(?:T|\s)([:0-9]+).([0-9]+)(?:Z|)'
                 })
         )
 
@@ -340,6 +420,7 @@ def build_input_pipeline(path, frn_info, filters={}):
                 frn_info,
                 source,
                 file_pattern,
+                # 2022/01/10 04:02:17.957	INFO	Initialized logger with LoggerFile=/var/log/info.log, Verbosity=info
                 multiline_settings={
                     'pattern': r'^(\d{4}(?:-|/)\d{2}(?:-|/)\d{2})+(?:T|\s)([:0-9]+).([0-9]+)'
                 })
@@ -352,6 +433,7 @@ def build_input_pipeline(path, frn_info, filters={}):
                 frn_info,
                 source,
                 file_pattern,
+                # [2022-01-10 04:01:47,491] INFO [ThrottledChannelReaper-Fetch]: Starting (kafka.server.ClientQuotaManager$ThrottledChannelReaper)
                 multiline_settings={
                     'pattern': r'^\[(\d{4}(?:-|/)\d{2}(?:-|/)\d{2})+(?:T|\s)([:0-9]+).([0-9]+)\]'
                 }
@@ -471,7 +553,7 @@ def build_input_pipeline(path, frn_info, filters={}):
                     controller_input_pipeline(frn_info,
                         updated_source,
                         path,
-                        parse_block='JSONInput'
+                        parse_block='KeyValueInput'
                     )
                 )
             else:
@@ -483,11 +565,13 @@ def build_input_pipeline(path, frn_info, filters={}):
                 )
 
     elif source == 'cclinux' and resource_type == 'folder':
-        log_files = glob.glob(f'{path}/*.log*')
+        log_files = glob.glob(f'{path}/**/*.log*', recursive=True)
         frn_info['resource_type'] = 'textfile'
         for file in log_files:
             filename = os.path.basename(file)
             frn_info['source'] = f'cclinux_{filename}'
+            if 'opsec-agent.log' in filename:
+                frn_info['source'] = 'opsec-agent'
             blocks.extend(build_input_pipeline(file, frn_info, filters))
 
     else:
@@ -528,6 +612,14 @@ def _has_ingestion_filters(filters):
     source_filters = include.get('sources')
     if not source_filters or len(source_filters) == 0:
         return False
+
+
+def _should_ingest_path(path):
+    """
+    Returns True if the path needs to be ingested.
+    Returns False for the all the BLACKLISTED_PATHS.
+    """
+    return not re.match(BLACKLISTED_PATHS_REGEX, path)
 
 
 def _should_ingest_source(source, source_filters=[]):
@@ -572,7 +664,7 @@ def funos_input_pipeline(frn_info, path):
     blocks.extend(funos_input(frn_info, source, f'{path}/dpu_funos.txt*'))
 
     # For the funos logs within nms directory
-    blocks.extend(funos_input(frn_info, source, f'{path}/FOS*-funos.log*'))
+    blocks.extend(funos_input(frn_info, source, f'{path}/FOS*-funos.log*', file_info_match='FOS(?P<system_id>([0-9a-fA-F]:?){12})-'))
 
     return blocks
 
@@ -658,7 +750,7 @@ def fun_agent_input_pipeline(frn_info, source, file_pattern, parse_block='Generi
             **cfg,
             'file_pattern': file_pattern,
             'src': source,
-            'pattern': r'(\d{4}(?:-|/)\d{2}(?:-|/)\d{2})+(?:T|\s)([:0-9]+)(?:.|,)([0-9]{3,9})',
+            'pattern': r'(\d{4}(?:-|/)\d{2}(?:-|/)\d{2})+(?:T|\s)([:0-9]+)[\.|\,]{0,1}([0-9]*)',
             # Regex pattern to pick information from the filename
             'file_info_match': file_info_match
         },

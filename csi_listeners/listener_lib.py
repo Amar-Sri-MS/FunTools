@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 #
 # Common classes that are shared by listeners.
@@ -6,16 +6,16 @@
 # Copyright (c) 2019 Fungible Inc. All rights reserved.
 #
 
-import BaseHTTPServer
+import http.server
 import json
 import logging
 import os
 import re
 import select
-import SocketServer
+import socketserver
 import threading
 import time
-import urlparse
+import urllib.parse
 
 # Time in seconds for select and polling intervals
 TIMEOUT_INTERVAL = 5.0
@@ -51,8 +51,8 @@ class Buffer(object):
         return empty
 
 
-class ThreadedHTTPServer(SocketServer.ThreadingMixIn,
-                         BaseHTTPServer.HTTPServer):
+class ThreadedHTTPServer(socketserver.ThreadingMixIn,
+                         http.server.HTTPServer):
     """
     Handles requests in a separate thread.
     """
@@ -66,13 +66,13 @@ class ThreadedHTTPServer(SocketServer.ThreadingMixIn,
         is impossible to determine how the server will instantiate the
         handler.
         """
-        BaseHTTPServer.HTTPServer.__init__(self,
+        http.server.HTTPServer.__init__(self,
                                            server_address,
                                            RequestHandlerClass)
         self.writer = writer
 
 
-class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+class HTTPRequestHandler(http.server.BaseHTTPRequestHandler):
     """
     Handles requests that delineate the start and end of a
     performance-gathering run.
@@ -92,8 +92,8 @@ class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         /start?dir=<directory-for-data-dumps>
         /end
         """
-        url = urlparse.urlparse(self.path)
-        query_components = urlparse.parse_qs(url.query)
+        url = urllib.parse.urlparse(self.path)
+        query_components = urllib.parse.parse_qs(url.query)
 
         match = re.match('/start$', url.path)
         if match:
@@ -149,7 +149,7 @@ class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         Valid URLs are:
         /funhealth
         """
-        url = urlparse.urlparse(self.path)
+        url = urllib.parse.urlparse(self.path)
         if url.path == '/funhealth':
             self.handle_funhealth()
 

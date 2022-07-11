@@ -221,6 +221,9 @@ class FileCorpse:
             "_topo_vp",
             "exception_stack_memory",
             "stack_memory",
+            "tls_mem_block",
+            "tls_stride",
+            "tls_mem_block_size",
             "PLATFORM_DEBUG_CONSTANT_vplocal_stride",
             "PLATFORM_DEBUG_CONSTANT_debug_context_offset",
             "PLATFORM_DEBUG_CONSTANT_ccv_state_invalid",
@@ -245,7 +248,12 @@ class FileCorpse:
                 raise RuntimeError("need pyelftools to open ELF file: "
                                    "try pip3 install pyelftools")
             print("Opening file as ELF corpse...")
-            self.elf = ELFFile(self.open_file(use_idzip, use_http))
+            fh = self.open_file(use_idzip, use_http)
+            actual_size = self.get_file_size(fh, use_idzip)
+
+            self.elf = ELFFile(fh)
+            if not opts.skip_dump_size_check:
+                self.verify_dump_size(actual_size)
 
         # ELF segment headers in memory, faster than reading from file
         self.elf_phdrs = []
@@ -266,12 +274,64 @@ class FileCorpse:
                     magic[2] == 0x4c and magic[3] == 0x46)
         return False
 
+    def verify_dump_size(self, actual_size):
+        """ Check actual file size against ELF note and bail out on mismatch """
+        edn = ELFDumpNote(self.elf)
+        note = edn.get_note()
+
+        if note:
+            expected_size = note.get("dump_size")
+            if expected_size != actual_size:
+                raise RuntimeError("bad dump size (corrupt ELF?):"
+                                   " expected %d bytes got %d bytes" % (expected_size, actual_size))
+
+    def get_file_size(self, fh, is_idzip):
+        if is_idzip:
+            return self.get_idzip_size_binary_search(fh)
+        else:
+            fh.seek(0, os.SEEK_END)
+            size = fh.tell()
+            fh.seek(0)
+            return size
+
+    def get_idzip_size_binary_search(self, fh):
+        """
+        Find the uncompressed size via binary search.
+
+        idzip does not support relative seeking from the end of file, and does
+        not have a public way to obtain the uncompressed file size. Summing
+        the file sizes of the internal members does the trick, but that's
+        internal.
+
+        Note that looking at the final 4 bytes only reveals the last member's
+        file size so that's not an option as well.
+        """
+        first = 0
+        last = 64 << 30  # 64GB, bigger than any hbm dump
+
+        # find the first point at which read(1) returns EOF
+        while first < last:
+            pos = first + (last - first) // 2
+            fh.seek(pos)
+            b = fh.read(1)
+
+            if b:
+                first = pos + 1
+            else:
+                # Traditional is pos - 1, but we want last to always be EOF.
+                # This modification should still terminate because we take
+                # the floor of (first + last) / 2.
+                last = pos
+
+        fh.seek(0)  # just be nice and undo
+        return first
+
     def badread(self, n):
         return b"\xde\xad\xbe\xef\xde\xad\xbe\xef"[:n]
 
     def va_clean(self, addr):
-        # truncate remaining bits to 8gb
-        addr &= (8<<30)-1
+        # truncate remaining bits to the physical address
+        addr &= (1<<42)-1
         if (addr < self.memoffset):
             return None
 
@@ -534,6 +594,26 @@ class FileCorpse:
         vp = tid % 10
         return "ccv %d.%d.%d" % (cl, co, vp)
 
+    def GetTLSBase(self, tid):
+        cl = int(tid / 100) % 10
+        co = int(tid / 10) % 10
+        vp = tid % 10
+        vpnum = self.ccv_vpnum(cl, co, vp)
+        tls_mem_block_va = self.symbols["tls_mem_block"]
+        tls_stride_va = self.symbols["tls_stride"]
+        tls_mem_block_size_va = self.symbols["tls_mem_block_size"]
+        if (tls_mem_block_va == 0 or tls_stride_va == 0 or tls_mem_block_size_va == 0):
+            ERROR("No tls_mem_block in image")
+            return 0
+        tls_mem_block = self.ReadMemory64(self.virt2phys(tls_mem_block_va), True)
+        tls_stride = self.ReadMemory32(self.virt2phys(tls_stride_va), True)
+        tls_mem_block_size = self.ReadMemory32(self.virt2phys(tls_mem_block_size_va), True)
+
+        if (tls_stride * vpnum >= tls_mem_block_size):
+            ERROR("Thread out of range of tls_mem_block in image")
+            return 0
+        return tls_mem_block + (tls_stride * vpnum)
+
     def GetSymbolsNeeded(self):
         return self.symbollist
 
@@ -541,6 +621,53 @@ class FileCorpse:
         self.symbols = d
 
         self.setup_threadlist()
+
+
+class ELFDumpNote:
+    """
+    Pulls Fungible-specific notes out of the ELF dump.
+    """
+
+    def __init__(self, elf_file):
+        """
+        elf_file should be an ELFFile.
+
+        There are no guarantees about correctness if the header is incomplete,
+        so it's wise to at least have ~10kB of the file before invoking this.
+        """
+        self.elf = elf_file
+
+    def get_note(self):
+        """
+        Returns the note information as a dict.
+
+        Expect { version: 0, num_shards: N, dump_size: Z }
+        """
+        for seg in self.elf.iter_segments():
+            if seg['p_type'] != 'PT_NOTE':
+                continue
+
+            note = self._find_note_in_segment(seg)
+            if note is not None:
+                return note
+
+    def _find_note_in_segment(self, seg):
+        """ Returns the fungible note from this segment, or None """
+
+        for note in seg.iter_notes():
+            if note['n_name'] == 'Fungible' and note['n_type'] == 0:
+                # reverse the less-than-helpful string conversion done
+                # by the pyelftools module
+                desc = note['n_desc'].encode('latin-1')
+                t = struct.unpack('>LLQ', desc)
+
+                ret = {}
+                ret['version'] = t[0]
+                ret['num_shards'] = t[1]
+                ret['dump_size'] = t[2]
+                return ret
+        return None
+
 
 ###
 ## gdb crc
@@ -1017,6 +1144,9 @@ def checksum(data):
 
 
 DEF_SYMS = {
+    "tls_mem_block": 0,
+    "tls_stride": 0,
+    "tls_mem_block_size": 0,
     "PLATFORM_DEBUG_CONSTANT_vplocal_stride": 4160,
     "PLATFORM_DEBUG_CONSTANT_debug_context_offset": 376,
     "PLATFORM_DEBUG_CONSTANT_ccv_state_invalid": 0,
@@ -1096,6 +1226,18 @@ def deal_withsymbols(obj, reply):
     LOG("asking for symbol: %s [%s]" % (SYMLIST[0], s))
     obj.send(s)
 
+def deal_withTLSAddr(obj, cmd):
+    toks = cmd.split(":")
+    args = toks[1].split(",")
+    tid = int(args[0], 16)
+    cmd_offset = int(args[1], 16)
+
+    tls_base = corpse.GetTLSBase(tid)
+    if (tls_base == 0):
+        obj.send("E42")
+        return
+    tls_offset = tls_base + cmd_offset
+    obj.send("%X" % tls_offset)
 
 IGNORE_Q = ["TfV", "TfP"]
 
@@ -1175,6 +1317,8 @@ class GDBClientHandler(object):
                     tid = int(subcmd.split(",")[1], 16)
                     info = jtag_GetThreadInfo(tid)
                     self.send(hexstr(info))
+                elif (subcmd.startswith("GetTLSAddr:")):
+                    deal_withTLSAddr(self, subcmd)
                 elif (subcmd in IGNORE_Q):
                     DEBUG('This subcommand %r is ignored in q' % subcmd)
                     self.send('')
@@ -1365,6 +1509,23 @@ def server_listen(sock):
     GDBClientHandler(conn).run()
     return 1
 
+
+###
+##  Clean elf files downloaded from excat
+#
+
+def clean_elf_files(elffile):
+    try:
+        # delete the .excat elf file
+        os.remove(elffile)
+        # delete the .bz file
+        os.remove(elffile.replace('excat','bz'))
+    except:
+        ERROR("failed to remove elf files.")
+        sys.exit(1)
+
+
+
 ###
 ##  running a gdb client
 #
@@ -1467,6 +1628,9 @@ def parse_args():
     parser.add_argument("--crashlog", action="store_true",
                         default=False,
                         help="Just execute the script to generate a crashlog and exit")
+    parser.add_argument("--skip-dump-size-check", action="store_true",
+                        default=False,
+                        help="Skip dump size verification")
     parser.add_argument("--gdb-debug", action="store_true",
                         default=False,
                         help="Enable gdb packet debugging")
@@ -1476,6 +1640,9 @@ def parse_args():
     parser.add_argument("--ex", action="append", metavar="command", default=[],
                         help="GDB ex command to run")
     parser.add_argument("--elf", help="Use provided elf file instead of downloading from excat")
+    parser.add_argument("--clean-excat-files", action="store_true",
+                        default=False,
+                        help="Delete the elf file(s) which is downloaded from excat")
 
     # final arg is the dump file
     parser.add_argument("hbmdump", help="hbmdump file")
@@ -1493,40 +1660,50 @@ def main():
     # parse the arge
     global opts
     opts = parse_args()
-
+    force_exit = False
     # setup logging
     if ((not opts.server_only) or opts.always_log):
         global log_file
         LOG_ALWAYS("fungdbserver logging to %s" % opts.output)
         log_file = open(opts.output, "w")
 
-    # setup the file
-    uuid = setup_corpse(opts.hbmdump)
+    try:
+        # setup the file
+        uuid = setup_corpse(opts.hbmdump)
 
-    LOG_ALWAYS("uuid of FunOS is %s" % str(uuid))
+        LOG_ALWAYS("uuid of FunOS is %s" % str(uuid))
 
-    # setup the server
-    sock = setup_server()
+        # setup the server
+        sock = setup_server()
 
-    # start gdb and give it control of the stdin/stdout
-    if (not opts.server_only):
-        # find us a binary
-        if opts.elf:
-            elffile = opts.elf
-        else:
-            excat.parse_args(True)
-            elffile = excat.get_action(str(uuid))
+        # start gdb and give it control of the stdin/stdout
+        if (not opts.server_only):
+            # find us a binary
+            if opts.elf:
+                elffile = opts.elf
+            else:
+                excat.parse_args(True)
+                elffile = excat.get_action(str(uuid))
 
-        if (elffile is None):
-            LOG_ALWAYS("Cannot continue without symbols")
+            if (elffile is None):
+                LOG_ALWAYS("Cannot continue without symbols")
+                sys.exit(1)
+
+            # run gdb
+            port = sock.getsockname()[1]
+            run_gdb_async(port, elffile)
+        # listen
+        server_listen(sock)
+    except Exception as e:
+        LOG_ALWAYS("Exception while running fungdbserver.py, exiting")
+        print(e)
+        force_exit = True
+    finally:
+        # clean downloaded excat files and then raise exception.
+        if opts.clean_excat_files and (not opts.elf):
+            clean_elf_files(elffile)
+        if force_exit:
             sys.exit(1)
-
-        # run gdb
-        port = sock.getsockname()[1]
-        run_gdb_async(port, elffile)
-
-    # listen
-    server_listen(sock)
 
     LOG_ALWAYS("exiting")
 

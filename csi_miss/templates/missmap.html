@@ -1,15 +1,51 @@
+{% if cores|length > 1 %}
+  {% set global = true %}
+  {% set title = "Missmap (all cores)" %}
+{% else %}
+  {% set global = false %}
+  {% set title = "Missmap (core " ~ cores[0] ~ ")"  %}
+{% endif %}
+
 <html>
   <head>
-    <title>Missmap</title>
+    <title>{{title}}</title>
     <style>
       {{ style }}
     </style>
   </head>
   
   <body>
-    <h1>Missmap</h1>
+    <!-- Breadcrumbs, naive implementation -->
+    <nav class="breadcrumb">
+      <ul>
+        {% if global %}
+        <li>All cores</li>
+        {% else %}
+        <li><a href="missmap.html">All cores</a></li>
+        <li>Core {{cores[0]}}</li>
+        {% endif %}
+      </ul>
+    </nav>
+
+    <h1>{{title}}</h1>
     <i>{{ date }}</i>
-    
+
+    {% if global %}
+    <p>Per-core reports:</p>
+    <table>
+      <tr>
+      {% for core in cores %}
+        {% set core_count = 6 %}
+        {% if loop.index0 % core_count == 0 and not loop.first %}
+      </tr>
+      <tr>
+        {% endif %}
+        <td><a href="missmap_{{core}}.html">{{core}}</a></td>
+      {% endfor %}
+      </tr>
+    </table>
+    {% endif %}
+
     <p>Contents:</p>
     {% for (name, _) in sections %}
     <a href="#{{name}}">{{name}}</a><br/>

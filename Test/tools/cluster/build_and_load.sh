@@ -101,11 +101,11 @@ upload() {
 	then
 		gzip build/funos-s1.signed
 		mv build/funos-s1.signed.gz build/"$USER"-funos-s1.signed.gz
-		scp build/"$USER"-funos-s1.signed.gz vnc-shared-05:/home/"$USER"/tftpboot
+		scp build/"$USER"-funos-s1.signed.gz "$USER"@vnc-shared-05:/home/"$USER"/tftpboot
 	else
 		gzip build/funos-f1.signed
 		mv build/funos-f1.signed.gz build/"$USER"-funos-f1.signed.gz
-		scp build/"$USER"-funos-f1.signed.gz vnc-shared-05:/home/"$USER"/tftpboot
+		scp build/"$USER"-funos-f1.signed.gz "$USER"@vnc-shared-05:/home/"$USER"/tftpboot
 	fi
 }
 
@@ -136,8 +136,8 @@ run() {
 
 	if [ $1 == "s1" ]
 	then
-		cd $WORKSPACE/Integration/tools/platform/utils/fab-pcieproxy
-		fab -f cc_pplib.py setupS:$2 bridgeS tftpS
+		cd $WORKSPACE/Integration/tools/platform/utils/myFabCmds
+		fab -f flib.py setup:$2 bridgeS tftpS
 	else
 		cd $WORKSPACE/Integration/tools/platform/utils/myFabCmds
 		fab -f flib.py cluster_setup:$2 cluster_action connect_cs

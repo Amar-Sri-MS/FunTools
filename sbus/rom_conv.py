@@ -1,9 +1,9 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 import argparse
 import sys
 
-from itertools import izip_longest
+from itertools import zip_longest
 
 # This script is used to pre-process the SBUS FW files
 # for both HU and HBM and generate the binary format
@@ -20,7 +20,7 @@ from itertools import izip_longest
 
 def grouper(iterable, n, fillvalue=None):
 	args = [iter(iterable)] * n
-	return izip_longest(*args, fillvalue=fillvalue)
+	return zip_longest(*args, fillvalue=fillvalue)
 
 def combine(w0, w1, w2, wcnt):
 
@@ -50,7 +50,7 @@ def bin_array(val, little_endian):
 
 def rom_convert(infile, outfile, little_endian):
 
-	print "Beginning rom_convert (%s)" % infile
+	print("Beginning rom_convert (%s)" % infile)
 
 	fout = open(outfile, 'wb')
 
@@ -73,7 +73,7 @@ def rom_convert(infile, outfile, little_endian):
 
 	fout.close()
 
-	print "Rom conversion completed"
+	print("Rom conversion completed")
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()

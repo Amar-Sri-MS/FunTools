@@ -1,0 +1,1004 @@
+#!/usr/bin/env python3
+
+# Copyright (c) 2022, Fungible, Inc.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+#  1. Redistributions of source code must retain the above copyright notice,
+#     this list of conditions and the following disclaimer.
+#
+#  2. Redistributions in binary form must reproduce the above copyright
+#     notice, this list of conditions and the following disclaimer in the
+#     documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+
+#	vpcie-toy-composer -- Virtual PCIe Toy Composer
+#
+# This is a very small and simple "Toy Composer" using Fungible Cluster
+# Services Virtual PCIe Fabric Manager to allow Virtual PCIe Fabrics to be
+# created, manipulated, deleted, examined, etc.  See vpcie-toy-composer(1)
+# for detailed documentation on the set of supported commands.
+#
+# This application uses the Fungible Cluster Services Virtual PCIe Fabric
+# Manager for most of its actions.  Documentation for this can be found in
+# the Virtual PCIe Fabric Manager APIs document.
+#
+
+import logging
+import os
+import sys
+import subprocess
+import socket
+import tempfile
+import argparse
+import re
+import json
+
+# Set up basic Logging ...
+#
+logger = logging.getLogger("vpcie-toy-composer")
+logging.basicConfig(level=logging.ERROR)
+
+# General Utility Functions.
+# ==========================
+#
+
+def is_ether_mac(s):
+	'''
+	Return whether the passed string argument represents a legally
+	formated Ethernet MAC Address.
+	'''
+
+	# xx:xx:xx:xx:xx:xx
+	mac = '([0-9a-f][0-9a-f]:){5}[0-9a-f][0-9a-f]'
+	return re.search('^' + mac + '$', s) != None
+
+# The user can specify DPUs either via their Name or Management Port Ethernet
+# MAC Address.  If a Name is supplied, we need to translate that to the DPU
+# MAC ddress because that's the "True Name" of the DPU according to Fungible
+# Cluster Services.
+#
+# A DPU Name to Management Port Ethernet MAC Address table can be specified
+# via a file containing a JSON { key: value } object where the keys are DPU
+# Names and the values are the MAC Addresses.
+#
+
+def dpu_name_to_mac(dpu_name, cs_dpus):
+	'''
+	Translate a DPU Name to its respective Ethernet MAC Address,
+	given a DPU Name to MAC Address translation table in the form of
+	a { name:  mac } dictionary.  If the incoming DPU Name is
+	already an Ethernet MAC Address, then that's returned as is.
+	Otherwise, if the DPU Name is in the table, the corresponding
+	MAC Address is returned.  Otherwise we raise a RuntimeError.
+	'''
+
+	# If it's already an Ethernet MAC Address, just return that.
+	#
+	if is_ether_mac(dpu_name):
+		return dpu_name
+
+	# If we don't have a DPU Name Translation Table or the DPU Name isn't
+	# in the Table, then raise an error.
+	#
+	if not cs_dpus or dpu_name not in cs_dpus:
+		raise RuntimeError(
+		    f'Argument DPU {dpu_name} not Ethernet MAC and not in '
+		    'mapping table')
+
+	# Return the DPU Name Translation.
+	#
+	return cs_dpus[dpu_name]
+
+def mac_to_dpu_name(mac, cs_dpus):
+	'''
+	Translate an Ethernet MAC Address into a DPU Name if such a
+	translation exists in a provided DPU Name translation table in
+	the form of a { name: mac } dictionary.  If the MAC Address
+	isn't found in the table, we simply return the original MAC
+	Address and this isn't an error.
+	'''
+
+	# If it's not an Ethernet MAC Address (it's already a DPU Name) or
+	# we don't have a DPU Name to Ethernet MAC Table, then just return
+	# the original parameter.  We don't throw an error on this because
+	# this is merely a convenience to be able to provide a DPU Name
+	# corresponding to a MAC Address.
+	#
+	if not is_ether_mac(mac) or not cs_dpus:
+		return mac
+
+	# If the MAC Address is in the DPU Name to MAC Address Table, then
+	# return the DPU Name.
+	#
+	for dpu_name in cs_dpus:
+		if cs_dpus[dpu_name] == mac:
+			return dpu_name
+
+	# Otherwise, just return the original MAC Address.
+	#
+	return mac
+
+def portspec_to_tuple(portspec, cs_dpus):
+	'''
+	Convert a <DPU>/<Portname> Specification into a (dpu, portname)
+	tuple (translating DPU Names to MAC Addresses).
+	'''
+
+	port = portspec.split('/')
+	if len(port) != 2:
+		raise RuntimeError(
+		    f'Argument {portspec} not in "DPU/PortName" format')
+
+	dpu = dpu_name_to_mac(port[0], cs_dpus)
+	portname = port[1]
+
+	return (dpu, portname)
+
+def vportspec_to_tuple(vportspec, cs_dpus):
+	'''
+	Convert a <DPU>/<Portname>/<vPortID> Specification into a
+	(dpu, portname, vportid) tuple (translating DPU Names to MAC
+	Addresses).
+	'''
+
+	vport = vportspec.split('/')
+	if len(vport) != 3:
+		raise RuntimeError(
+		    f'Argument {vportspec} not in "DPU/PortName/vPortID" '
+		    'format')
+
+	dpu = dpu_name_to_mac(vport[0], cs_dpus)
+	portname = vport[1]
+	vportid = vport[2]
+
+	if not vportid.isnumeric():
+		raise RuntimeError(
+		    f'Argument {vportspec}, vportid "{vportid}" not a number')
+
+	vportid = int(vportid)
+	if vportid < 0 or vportid > 32:
+		raise RuntimeError(
+		    f'Argument {vportspec}, vportid {vportid} out of range '
+		    '0..32')
+
+	return (dpu, portname, vportid)
+
+def vportspec_to_json(vportspec, cs_dpus):
+	'''
+	Convert a <DPU>/<Portname>/<vPortID> Specification into a JSON
+	Dictionary (translating DPU Names to MAC Addresses) suitable for
+	submitting to the Virtual PCIe Fabric Manager as a Virtual PCIe
+	Port specification:
+
+	    {
+	        'dpu': '<DPU>',
+	        'port_name': '<Portname>',
+	        'virtual_port_id': '<vPortID>'
+	    }
+	'''
+
+	(dpu, portname, vportid) = vportspec_to_tuple(vportspec, cs_dpus)
+	return { 'dpu' : dpu,
+		 'port_name' : portname,
+		 'virtual_port_id' : vportid }
+
+# N.B.
+#     The following non-Command Line Interface functions still take the
+#     Command Line "args" parameter.  We'll be getting rid of that soon.
+#
+
+def curl_api_gateway(args, options, cmd_url):
+	'''
+	Construct and execute (unless dry_run is true) a curl command to
+	the API Gateway, given a possibly empty options string, and an
+	API Gateway Command URL.  If verbose, dry_run, or debug are true,
+	we print the curl command.  If dry_run is specified, we return {}
+	without executing the curl command.  Otherwise we execute the curl
+	command and return the result (printing the result first if debug
+	is true).
+	'''
+
+	api_gateway = f'http://{args.cs_host}:{args.cs_port}/FunCC/v1/'
+	curl_cmd = f'curl --silent --user {args.cs_user} {options} {api_gateway}{cmd_url}'
+
+	if args.verbose or args.dry_run or args.debug:
+		print(curl_cmd)
+		if args.dry_run:
+			return {}
+
+	curl_out = subprocess.getoutput(curl_cmd)
+	if curl_out == '':
+		raise RuntimeError(f'"{curl_cmd}" returns nothing!')
+	result = json.loads(curl_out)
+	if args.debug:
+		print('Command =', curl_cmd)
+		print('Result  =', result)
+
+	if not result['status']:
+		raise RuntimeError(f'"{curl_cmd}" returns "{result}"')
+
+	return result
+
+def ssh_cs_host(args, cmd):
+	'''
+	Execute a command on the Fungible Cluster Services Host.
+	'''
+
+	if (args.cs_host == 'localhost' or args.cs_host == '127.0.0.1'):
+		cs_cmd = cmd
+	else:
+		cs_cmd = f'ssh localadmin@{args.cs_host} {cmd}'
+
+	if args.verbose or args.dry_run or args.debug:
+		print(cs_cmd);
+		if args.dry_run:
+			return
+
+	result = os.system(cs_cmd)
+	if result != 0 or args.debug:
+		raise RuntimeError(f'"{cs_cmd}", result = {result}')
+
+def ssh_cclinux(args, cclinux, cmd):
+	'''
+	Execute a command on a DPU ccLinux instance.
+	'''
+
+	# We use -o StrictHostKeyChecking=off to prevent ssh/scp from throwing
+	# a fit when new DPU ccLinux instances have different ssh keys.  This
+	# also prevents them from asking if we "really" want to trust the
+	# remote Host, etc.  This is typically only an issue in testing
+	# environments where DPUs are repeatedly reinstantiated and thus
+	# get new keys.
+	#
+	cc_cmd = f'ssh -o StrictHostKeyChecking=off root@{cclinux} {cmd}'
+
+	if args.verbose or args.dry_run or args.debug:
+		print(cc_cmd)
+		if args.dry_run:
+			return
+
+	result = os.system(cc_cmd)
+	if result != 0 or args.debug:
+		raise RuntimeError(f'"{cc_cmd}", result = {result}')
+
+def scp_cclinux(args, cclinux, local_file, remote_file):
+	'''
+	Execute an scp command copying a local file to a DPU ccLinux instance
+	remote file.
+	'''
+
+	# We use -o StrictHostKeyChecking=off to prevent ssh/scp from throwing
+	# a fit when new DPU ccLinux instances have different ssh keys.  This
+	# also prevents them from asking if we "really" want to trust the
+	# remote Host, etc.  This is typically only an issue in testing
+	# environments where DPUs are repeatedly reinstantiated and thus
+	# get new keys.
+	#
+	scp_cmd = f'scp -o StrictHostKeyChecking=off {local_file} root@{cclinux}:{remote_file}'
+
+	if args.verbose or args.dry_run:
+		print(scp_cmd)
+		if args.dry_run:
+			return
+
+	result = os.system(scp_cmd)
+	if result != 0 or args.debug:
+		raise RuntimeError(f'"{scp_cmd}", result = {result}')
+
+# Command Line Interpreter commands.
+# ==================================
+#
+
+def cli_docker_start(args):
+	'''
+	Implement Fungible Cluster Services Docker Start command:
+
+	    docker start
+	'''
+
+	ssh_cs_host(args, 'sudo /opt/fungible/fc/etc/fun_containers.sh start')
+
+def cli_docker_stop(args):
+	'''
+	Implement Fungible Cluster Services Docker Stop command:
+
+	    docker stop
+	'''
+
+	ssh_cs_host(args, 'sudo /opt/fungible/fc/etc/fun_containers.sh clean')
+
+def cli_ztp(args):
+	'''
+	Implement DPU Zero Touch Provisioning command:
+
+	    ztp <DPU ccLinux> ...
+	'''
+
+	# Determine the Fungible Cluster Services Host for the Zero Touch
+	# Provisioning.  If an explicit ZTP CS Host has been provided, use
+	# that.  Otherwise use the CS Host/IP Address we use to talk to
+	# Fungible Cluster Services.
+	#
+	if args.ztp_cs_host != None:
+		ztp_cs_host = args.ztp_cs_host
+	else:
+		ztp_cs_host = args.cs_host
+
+	# "Localhost" is never appropriate ...
+	#
+	if ztp_cs_host == 'localhost' or ztp_cs_host == '127.0.0.1':
+		raise RuntimeError(
+		    'Zero Touch Provision Fungible Cluster Services '
+		    'Host must not be "localhost"')
+
+	# Note: I tried doing this without a temporary file, but trying to
+	# get the quoting right wich ssh was just too messy.
+	#
+	ztp_file = tempfile.NamedTemporaryFile()
+	ztp_file.write(json.dumps(
+	    {
+		 'mgmtif' : 'eth0',
+		 'controllers' : socket.gethostbyname(args.cs_host)
+	    }).encode('utf-8'))
+	ztp_file.write(b'\n')
+	ztp_file.flush()
+
+	for dpu in args.dpus:
+		print(f'ZTP {dpu} ...')
+		ssh_cclinux(args, dpu, 'mkdir -p /persist/config/ztp')
+		scp_cclinux(args, dpu,
+		    ztp_file.name, '/persist/config/ztp/startup_cfg.json')
+
+	ztp_file.close()
+
+def cli_vfm_create(args):
+	'''
+	Implement Virtual PCIe Fabric Manager Create vFabric command:
+
+	    vfm create
+	        [ --max-downport-id <n> ]
+	        [ --name <name> ]
+	        <vPortSpec> ...
+	'''
+
+	# Construct optional parameters ...
+	#
+	params = {}
+	if args.down_port_id_max != None:
+		params['down_port_id_max'] = args.down_port_id_max
+	if args.name != None:
+		params['name'] = args.name
+
+	# Construct ports ...
+	#
+	ports = []
+	for vportspec in args.vportspecs:
+		ports.append(vportspec_to_json(vportspec, args.cs_dpus))
+
+	# Put these together into the Create Virtual PCIe Fabric coammand.
+	#
+	create = {}
+	if params != {}:
+		create['params'] = params
+	create['ports'] = ports
+
+	# Get everything together in the POST Data and send the command off ...
+	#
+	options = f'--header \'Content-Type: application/json\' --data \'{json.dumps(create)}\''
+	result = curl_api_gateway(args, options, 'virtual-fabrics')
+	if args.dry_run:
+		return
+
+	vfabric = result['virtual_fabric']
+	print(vfabric)
+
+def cli_vfm_hot_plug(args):
+	'''
+	Implement Virtual PCIe Fabric Manager Hot-Plug command:
+
+	    vfm hot-plug <vFabricID> <vPortSpec> ...
+	'''
+
+	ports = []
+	for vportspec in args.vportspecs:
+		ports.append(vportspec_to_json(vportspec, args.cs_dpus))
+
+	hot_plug = {}
+	hot_plug['virtual_fabric'] = args.vfabric
+	hot_plug['ports'] = ports
+
+	options = f'-X PATCH --header \'Content-Type: application/json\' --data \'{json.dumps(hot_plug)}\''
+	curl_api_gateway(args, options, 'virtual-fabrics/add')
+
+def cli_vfm_hot_unplug(args):
+	'''
+	Implement Virtual PCIe Fabric Manager Hot-Unplug command:
+
+	    vfm hot-unplug <vFabricID> <vPortID> ...
+	'''
+
+	ports = []
+	for vportid in args.vportids:
+		ports.append({ 'virtual_port_id' : vportid })
+
+	hot_unplug = {}
+	hot_unplug['virtual_fabric'] = args.vfabric
+	hot_unplug['ports'] = ports
+
+	options = f'-X PATCH --header \'Content-Type: application/json\' --data \'{json.dumps(hot_unplug)}\''
+	curl_api_gateway(args, options, 'virtual-fabrics/remove')
+
+def cli_vfm_delete(args):
+	'''
+	Implement Virtual PCIe Fabric Manager Delete vFabric command:
+
+	    vfm delete <vFabricID> ...
+	'''
+
+	for vfabric in args.vfabrics:
+		curl_api_gateway(args, '-X DELETE',
+		    'virtual-fabrics/' + vfabric)
+
+def cli_vfm_dpus(args):
+	'''
+	Implement Virtual PCIe Fabric Manager List DPUs command:
+
+	    vfm dpus
+	'''
+
+	result = curl_api_gateway(args, '', 'dpu-resources')
+	if args.dry_run:
+		return
+
+	# Some versions of the Fungible Cluster Services have returned None
+	# instead of [] ...
+	#
+	dpus = result['dpus'] or []
+
+	# If any of the DPUs returned are in our Name:MAC Table, add their
+	# Names into the result.
+	#
+	for dpu in dpus:
+		mac = dpu['dpu']
+		name = mac_to_dpu_name(mac, args.cs_dpus)
+		if mac != name:
+			dpu['dpu_name'] = name
+
+	print(json.dumps(dpus, indent=args.indent, sort_keys=True))
+
+def cli_vfm_vfabrics(args):
+	'''
+	Implement Virtual PCIe Fabric Manager List vFabrics command:
+
+	    vfm vfabrics
+	'''
+
+	result = curl_api_gateway(args, '', 'virtual-fabrics')
+	if args.dry_run:
+		return
+
+	# Some versions of the Fungible Cluster Services have returned None
+	# instead of [] ...
+	#
+	vfabrics = result['virtual_fabrics'] or []
+
+	print(json.dumps(vfabrics, indent=args.indent, sort_keys=True))
+
+def cli_vfm_dpu(args):
+	'''
+	Implement Virtual PCIe Fabric Manager List DPU PCIe Ports command:
+
+	    vfm dpu <DPU> ...
+	'''
+
+	for dpu in args.dpus:
+		result = curl_api_gateway(args, '',
+		    'dpu-resources/' + dpu_name_to_mac(dpu, args.cs_dpus) +
+		    '/pcie-ports')
+		if args.dry_run:
+			continue
+
+		print(mac_to_dpu_name(dpu, args.cs_dpus), ':',
+		    json.dumps(result['ports'], indent=args.indent,
+			sort_keys=True))
+
+def cli_vfm_vfabric(args):
+	'''
+	Implement Virtual PCIe Fabric Manager List vFabric Ports command:
+
+	    vfm vfabric <vFabricID> ...
+	'''
+
+	for vfabric in args.vfabrics:
+		result = curl_api_gateway(args, '',
+		    'virtual-fabrics/' + vfabric + '/ports')
+		if args.dry_run:
+			continue
+
+		# If any of the DPUs returned are in our Name:MAC Table, add
+		# their Names into the result.
+		#
+		for port in result['ports']:
+			mac = port['dpu']
+			name = mac_to_dpu_name(mac, args.cs_dpus)
+			if mac != name:
+				port['dpu_name'] = name
+
+		print(vfabric, ':',
+		    json.dumps(result, indent=args.indent, sort_keys=True))
+
+def cli_vfm_enumerate(args):
+	'''
+	Implement Virtual PCIe Fabric Manager DPU/Portname Enumeration command:
+
+	    vfm enumerate <PortSpec> ...
+	'''
+
+	for portspec in args.portspecs:
+		(dpu, portname) = portspec_to_tuple(portspec, args.cs_dpus)
+		result = curl_api_gateway(args, '',
+		    '/dpu-resources/' + dpu + '/pcie-ports/' + portname)
+		if args.dry_run:
+			continue
+
+		print(portspec, ':',
+		    json.dumps(result['enumeration'],
+			 indent=args.indent, sort_keys=True))
+
+def cli_vfm_debug(args):
+	'''
+	Implement Virtual PCIe Fabric Manager DPU set/get Debug options command:
+
+	    vfm debug <DPU>
+	        [ --trace-link on/off ]
+	        [ --trace-tlp on/off ]
+	        [ --trace-s2s on/off ]
+	        [ --trace-routing on/off ]
+
+	If no debug options are provided, then the current debug options
+	will be printed.
+	'''
+
+	# There's probably an easier wat to get ArgumentParser to leave a flag
+	# if any of the Set Debug Options have been used.  But for now we'll
+	# just check them manually ...
+	#
+	set_options = (
+	    args.trace_link    != None or
+	    args.trace_tlp     != None or
+	    args.trace_s2s     != None or
+	    args.trace_routing != None)
+
+	dpu = dpu_name_to_mac(args.dpu, args.cs_dpus)
+	cmd = f'dpu-resources/{dpu}/debug-flags'
+
+	result = curl_api_gateway(args, '', cmd)
+
+	# If no Set Debug Options were present, then we can just dump out the
+	# current DPU Debug Flags and return.
+	#
+	if not set_options:
+		print(json.dumps(result, indent=args.indent))
+		return
+
+	# Annoyingly, the Virtual PCIe Fabric Manager insists that we supply
+	# all of the DPU Trace Flags, even if we only want to change a subset.
+	# Se wee need to merge our new selections into the old set.
+	#
+	new_debug = result
+	if not args.dry_run:
+		new_debug.pop('status')
+
+	if args.trace_link != None:
+		new_debug['trace_link'] = args.trace_link
+	if args.trace_tlp != None:
+		new_debug['trace_tlp'] = args.trace_tlp
+	if args.trace_s2s != None:
+		new_debug['trace_s2s'] = args.trace_s2s
+	if args.trace_routing != None:
+		new_debug['trace_routing'] = args.trace_routing
+
+	# Note that we need to single-quote the JSON since it will use
+	# double-quotes ...
+	#
+	options = f'--header \'Content-Type: application/json\' --data \'{json.dumps(new_debug)}\''
+	curl_api_gateway(args, options, cmd)
+
+def cli_sns_dpus(args):
+	'''
+	Implement Simple Network Service List All Known DPUs command:
+
+	    sns dpus
+	'''
+
+	result = curl_api_gateway(args, '', 'network/dpus')
+	if args.dry_run:
+		return
+
+	# Some versions of the Fungible Cluster Services have returned None
+	# instead of [] ...
+	#
+	dpus = result['data']['dpu'] or []
+
+	# If any of the DPUs returned are in our Name:MAC Table, add their
+	# Names into the result.
+	#
+	for dpu in dpus:
+		mac = dpu['mac']
+		name = mac_to_dpu_name(mac, args.cs_dpus)
+		if mac != name:
+			dpu['dpu_name'] = name
+
+	print(json.dumps(dpus, indent=args.indent, sort_keys=True))
+
+def cli_sns_dpu(args):
+	'''
+	Implement Simple Network Service List Detailed DPU Infomation command:
+
+	    sns dpu <DPU> ...
+	'''
+
+	# Get the list of all DPUs that Simple Network Service knows about.
+	#
+	result = curl_api_gateway(args, '', 'network/dpus')
+	if args.dry_run:
+		return
+
+	dpus = result['data']['dpu']
+	if dpus == None or dpus == []:
+		print('No DPUs online')
+		return
+
+	# Create a list of our desired DPUs MAC Addresses (translating any
+	# DPU Names along the way).
+	#
+	desired_dpus_macs = []
+	for dpu in args.dpus:
+		desired_dpus_macs.append(dpu_name_to_mac(dpu, args.cs_dpus))
+
+	# For any of the known DPUs which have MAC Addresses in our list of
+	# Desired DPU MAC Addresses, dump out their detailed information.
+	#
+	for dpu in dpus:
+		mac = dpu['mac']
+		if mac in desired_dpus_macs:
+			print(mac_to_dpu_name(mac, args.cs_dpus), ':',
+			    json.dumps(dpu, indent=args.indent,
+			    sort_keys=True))
+
+# Main Command Line Interpreter.
+# ==============================
+#
+
+def argparse_type_uuid(s):
+	'''
+	ArgumentParser UUID type "conversion".  Verify that the passed string
+	is a legal UUID and return the string unmodified.
+	'''
+
+	# xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+	uuid = '[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}'
+	if not re.search('^' + uuid + '$', s):
+		raise RuntimeError(f'Illegal UUID Format "{s}"')
+	return s
+
+def argparse_type_json_file(s):
+	'''
+	ArgumentParser JSON File type conversion.  Loads the specified JSON
+	File and returns the result as the Argument Conversion.
+	'''
+
+	with open(s, 'r') as d:
+		return json.load(d)
+
+def argparse_type_int_none(s):
+	'''
+	ArgumentParser int type conversion which returns the int() conversion
+	of the argument or None if 0 is passed in.
+	'''
+
+	val = int(s)
+	if val == 0:
+		return None
+	return val
+
+def argparse_type_bool_onoff(s):
+	'''
+	ArgumentParser boolean type conversion which accepts a number of
+	different forms for true/false, including on/off, 1/0.
+	'''
+
+	ls = s.casefold()
+	if (ls == 'true' or ls == 'on' or ls == '1'):
+		return True
+	if (ls == 'false' or ls == 'off' or ls == '0'):
+		return False
+	raise RuntimeError(f'"{s}" not true-false/on-off/1-0')
+
+def main():
+	# The vast majority of the work for main() is done in the Argument
+	# Parser ...
+	#
+	cmd_parser = argparse.ArgumentParser(
+	    description="Fungible Cluster Services Client Application")
+
+	# Arguments for all sub-commands:
+	#
+	cmd_parser.add_argument('-c', '--cs-host',
+	    type=str,
+	    default=os.environ.get('CS_HOST', 'localhost'),
+	    help='Fungible Cluster Services Host [env: CS_HOST]')
+	cmd_parser.add_argument('-p', '--cs-port',
+	    type=int,
+	    default=os.environ.get('CS_PORT', 50220),
+	    help='TCP Port for Fungible Cluster Services '
+		'[default: $CS_PORT]')
+	cmd_parser.add_argument('-u', '--cs-user',
+	    type=str,
+	    default=os.environ.get('CS_USER', 'admin:password'),
+	    help='User:Password for accessing Fungible Cluster Services '
+		'[default: $CS_USER]')
+	cmd_parser.add_argument('-d', '--cs-dpus',
+	    type=argparse_type_json_file,
+	    default=os.environ.get('CS_DPUS', None),
+	    help='JSON File mapping DPU Names to MAC Addresses '
+		'[default: $CS_DPUS]')
+
+	cmd_parser.add_argument('-I', '--indent',
+	    type=argparse_type_int_none, default=4,
+	    help='Pretty printing indentation, default 4, 0 means none')
+	cmd_parser.add_argument('-v', '--verbose',
+	    action='store_true',
+	    help='Display verbose output')
+	cmd_parser.add_argument('-n', '--dry-run',
+	    action='store_true',
+	    help='Just display commands which would have been executed')
+	cmd_parser.add_argument('-D', '--debug',
+	    action='store_true',
+	    help=f'Debug {os.path.basename(sys.argv[0])} ...')
+
+	# Add sub-parsers for various sub-commands:
+	#
+	cli_parsers = cmd_parser.add_subparsers()
+
+	# Fungible Cluster Services Docker utility commands.
+	#
+	#     tc docker start
+	#     tc docker stop
+	#
+	cli_docker_parser = cli_parsers.add_parser('docker',
+	    description='Fungible Cluster Services Docker utility commands')
+	cli_docker_parsers = cli_docker_parser.add_subparsers()
+
+	cli_docker_start_parser = cli_docker_parsers.add_parser(
+	    'start',
+	    description='Start Fungible Cluster Services Docker Container')
+	cli_docker_start_parser.set_defaults(func=cli_docker_start)
+
+	cli_docker_stop_parser = cli_docker_parsers.add_parser(
+	    'stop',
+	    description='Stop Fungible Cluster Services Docker Container')
+	cli_docker_stop_parser.set_defaults(func=cli_docker_stop)
+
+	# Zero Touch Provisioning commands.
+	#
+	#     tc ztp <DPU ccLinux> ...
+	#
+	cli_ztp_parser = cli_parsers.add_parser('ztp',
+	    description='Zero Touch Provisioning for specified DPUs')
+	cli_ztp_parser.add_argument(
+	    '-z', '--ztp-cs-host',
+	    type=str,
+	    help='Private "South" Virtual IP for Fungible Cluster Services '
+		'[default: --cs-host/$CS_HOST, which only works when using '
+		'Docker Container deployment]')
+	cli_ztp_parser.add_argument(
+	    'dpus', nargs='+',
+	    help='One or more DPUs (ccLinux hostnames/IP Addresses) to Provision')
+	cli_ztp_parser.set_defaults(func=cli_ztp)
+
+	# Virtual PCIe Fabric Manager commands.  Allow alias "vsw".
+	#
+	cli_vfm_parser = cli_parsers.add_parser('vfm',
+	    aliases=['vsw'],
+	    description='Virtual PCIe Fabric Manager commands')
+	cli_vfm_parsers = cli_vfm_parser.add_subparsers()
+
+	# tc vfm create
+	#     [ --max-downport-id <n> ]
+	#     [ --name <name> ]
+	#     <vPortSpec> ...
+	#
+	cli_vfm_create_parser = cli_vfm_parsers.add_parser(
+	    'create',
+	    description='Create Virtual PCIe Fabric')
+	cli_vfm_create_parser.add_argument(
+	    '-M', '--down-port-id-max',
+	    type=int,
+	    help='Maximum Switch Down Port ID 0..31')
+	cli_vfm_create_parser.add_argument(
+	    '-N', '--name',
+	    help='Opaque "name" of Virtual PCIe Fabric')
+	cli_vfm_create_parser.add_argument(
+	    'vportspecs', nargs='+',
+	    help='Virtual PCIe Ports in the format "DPU/Portname/vPortID"')
+	cli_vfm_create_parser.set_defaults(func=cli_vfm_create)
+
+	# tc vfm hot-plug <vFabricID> <vPortSpec> ...
+	#
+	cli_vfm_hot_plug_parser = cli_vfm_parsers.add_parser(
+	    'hot-plug',
+	    description='Hot Plug new Ports into a Virtual PCIe Fabric')
+	cli_vfm_hot_plug_parser.add_argument(
+	    'vfabric', type=argparse_type_uuid,
+	    help='Virtual PCIe Fabric ID (UUID) to operate on')
+	cli_vfm_hot_plug_parser.add_argument(
+	    'vportspecs', nargs='+',
+	    help='Virtual PCIe Ports in the format "DPU/Portname/vPortID"')
+	cli_vfm_hot_plug_parser.set_defaults(func=cli_vfm_hot_plug)
+
+	# tc vfm hot-unplug <vFabricID> <vPortID> ...
+	#
+	cli_vfm_hot_unplug_parser = cli_vfm_parsers.add_parser(
+	    'hot-unplug',
+	    description='Hot Unplug Ports from Virtual PCIe Fabric')
+	cli_vfm_hot_unplug_parser.add_argument(
+	    'vfabric', type=argparse_type_uuid,
+	    help='Virtual PCIe Fabric ID (UUID) to operate on')
+	cli_vfm_hot_unplug_parser.add_argument(
+	    'vportids', nargs='+', type=int,
+	    help='Virtual PCIe Port IDs in the format "vPortID"')
+	cli_vfm_hot_unplug_parser.set_defaults(func=cli_vfm_hot_unplug)
+
+	# tc vfm delete <vFabricID> ...
+	#
+	cli_vfm_delete_parser = cli_vfm_parsers.add_parser(
+	    'delete',
+	    description='Delete Virtual PCIe Fabric')
+	cli_vfm_delete_parser.add_argument(
+	    'vfabrics', nargs='+', type=argparse_type_uuid,
+	    help='Virtual PCIe Fabric ID (UUID) to operate on')
+	cli_vfm_delete_parser.set_defaults(func=cli_vfm_delete)
+
+	# tc vfm dpus
+	#
+	cli_vfm_dpus_parser = cli_vfm_parsers.add_parser(
+	    'dpus',
+	    description='List DPUs')
+	cli_vfm_dpus_parser.set_defaults(func=cli_vfm_dpus)
+
+	# tc vfm vfabrics
+	#
+	cli_vfm_vfabrics_parser = cli_vfm_parsers.add_parser(
+	    'vfabrics',
+	    description='List Virtual PCIe Fabrics')
+	cli_vfm_vfabrics_parser.set_defaults(func=cli_vfm_vfabrics)
+
+	# tc vfm dpu <DPU> ...
+	#
+	cli_vfm_dpu_parser = cli_vfm_parsers.add_parser(
+	    'dpu',
+	    description='List DPU PCIe Ports')
+	cli_vfm_dpu_parser.add_argument(
+	    'dpus', nargs='+',
+	    help='DPUs to list Hardware PCIe Ports')
+	cli_vfm_dpu_parser.set_defaults(func=cli_vfm_dpu)
+
+	# tc vfm vfabric <vFabricID> ...
+	#
+	cli_vfm_vfabric_parser = cli_vfm_parsers.add_parser(
+	    'vfabric',
+	    description='List Virtual PCIe Fabric Ports')
+	cli_vfm_vfabric_parser.add_argument(
+	    'vfabrics', nargs='+', type=argparse_type_uuid,
+	    help='Virtual PCIe Fabrics to list Virtual PCIe Ports')
+	cli_vfm_vfabric_parser.set_defaults(func=cli_vfm_vfabric)
+
+	# tc vfm enumerate <PortSpec> ...
+	#
+	cli_vfm_enumerate_parse = cli_vfm_parsers.add_parser(
+	    'enumerate',
+	    aliases=['enum'],
+	    description='Display DPU PCIe Switch Down Port Enumeration')
+	cli_vfm_enumerate_parse.add_argument(
+	    'portspecs', nargs='+',
+	    help='DPU Switch Down Ports in the format "DPU/Portname"')
+	cli_vfm_enumerate_parse.set_defaults(func=cli_vfm_enumerate)
+
+	# tc vfm debug <DPU>
+	#     [ --trace-link ]
+	#     [ --trace-tlp ]
+	#     [ --trace-s2s ]
+	#     [ --trace-routing ]
+	#
+	cli_vfm_debug_parser = cli_vfm_parsers.add_parser(
+	    'debug',
+	    description='Manage DPU vSwitch Debug options')
+	cli_vfm_debug_parser.add_argument(
+	    'dpu',
+	    help='DPU to operate on')
+	cli_vfm_debug_parser.add_argument(
+	    '--trace-link',
+	    type=argparse_type_bool_onoff,
+	    help='Trace PCIe Link Events')
+	cli_vfm_debug_parser.add_argument(
+	    '--trace-tlp',
+	    type=argparse_type_bool_onoff,
+	    help='Trace PCIe Transaction Layer Packets')
+	cli_vfm_debug_parser.add_argument(
+	    '--trace-s2s',
+	    type=argparse_type_bool_onoff,
+	    help='Trace Switch-to-Switch Messages')
+	cli_vfm_debug_parser.add_argument(
+	    '--trace-routing',
+	    type=argparse_type_bool_onoff,
+	    help='Trace PCIe Routing Changes')
+	cli_vfm_debug_parser.set_defaults(func=cli_vfm_debug)
+
+	# Simple Network Service commands.
+	#
+	cli_sns_parser = cli_parsers.add_parser('sns',
+	    description='Simple Network Service commands')
+	cli_sns_parsers = cli_sns_parser.add_subparsers()
+
+	# tc sns dpus
+	#
+	cli_sns_dpus_parser = cli_sns_parsers.add_parser(
+	    'dpus',
+	    description='List all DPUs that SNS knows about, '
+		'not just those with Virtual PCIe Switch Ports')
+	cli_sns_dpus_parser.set_defaults(func=cli_sns_dpus)
+
+	# tc sns dpu <DPU> ...
+	#
+	cli_sns_dpu_parser = cli_sns_parsers.add_parser(
+	    'dpu',
+	    description='List information for specific DPUs')
+	cli_sns_dpu_parser.add_argument(
+	    'dpus', nargs='+',
+	    help='DPUs to list')
+	cli_sns_dpu_parser.set_defaults(func=cli_sns_dpu)
+
+	# Parse the arguments and execute the indicated sub-command ...
+	#
+	try:
+		args = cmd_parser.parse_args()
+	except RuntimeError as err:
+		logger.error('Argument Parse: {err.args[0]}')
+		exit(1)
+
+	if args.debug:
+		print('args =', args)
+
+	# If we just type the command name and return, we get here.  Maybe
+	# there's a way to tell the Argument Parser that at least one
+	# argument is required?
+	#
+	if 'func' not in args:
+		cmd_parser.print_help()
+		exit(1)
+
+	# ... and try to run the requested command ...
+	#
+	try:
+		args.func(args)
+	except RuntimeError as err:
+		logger.error(f'Execution: {err.args[0]}')
+		exit(1)
+
+if __name__ == "__main__":
+	main()

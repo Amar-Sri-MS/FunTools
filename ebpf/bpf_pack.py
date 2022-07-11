@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import struct
 
 def packing_query(size, big_endian):
@@ -33,4 +33,4 @@ def unpack_u32(data, big_endian):
 
 
 def pack_uint(data, size, big_endian):
-  return map(ord, struct.pack(packing_query(size, big_endian), data))
+  return list(map(ord, struct.pack(packing_query(size, big_endian), data)))

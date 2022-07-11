@@ -7,6 +7,7 @@
 # Copyright (c) 2021 Fungible Inc.  All rights reserved.
 
 import logging
+import os
 import requests
 import subprocess
 
@@ -16,6 +17,9 @@ from automated_tests.tester import Tester
 from utils.cleanup import clean
 from view.ingester import _get_log_id
 
+
+FILE_PATH = os.path.abspath(os.path.dirname(__file__))
+SCRIPT_BASE_PATH = os.path.dirname(FILE_PATH)
 
 def main():
     # Setting up the logger.
@@ -40,7 +44,7 @@ def main():
         tests = tests_json['data']
 
         # Filter out the needed tests (FS1600/FS800 Bundle Sanity, FS1600/FS800 HA Sanity)
-        needed_tests = [test for test in tests if test['name'] in NEEDED_TESTS]
+        needed_tests = [test for test in tests if test['name'] in NEEDED_TESTS and test['paused'] != True]
 
         # Get the recent 5 runs of a test in a particular release
         for test in needed_tests:
@@ -77,12 +81,14 @@ class QATester(Tester):
     def __init__(self, job_id, test_index=0):
         super().__init__()
         self.job_id = str(job_id)
-        self.log_id = _get_log_id(self.job_id, 'qa', test_index=test_index)
         self.test_index = test_index
+        self.ingest_type = 'qa'
 
     def setup(self):
         """ Setting up the test ingestion """
-        pass
+        self.log_id = _get_log_id(self.job_id,
+                                  self.ingest_type,
+                                  test_index=self.test_index)
 
     def run(self):
         """
@@ -92,7 +98,7 @@ class QATester(Tester):
         logging.info(f'Ingesting: {self.job_id}')
         logging.info('*'*100)
 
-        cmd = ['../view/ingester.py', self.job_id,
+        cmd = [f'{SCRIPT_BASE_PATH}/view/ingester.py', self.job_id,
                '--ingest_type', 'qa',
                '--test_index', str(self.test_index),
                '--tags', 'automated_testing']
@@ -103,7 +109,7 @@ class QATester(Tester):
             self.ingestion_status = True
         except subprocess.CalledProcessError as e:
             self.ingestion_status = False
-            self.ingestion_status_msg = e.output
+            self.ingestion_status_msg = str(e.output)
 
     def validate(self):
         """

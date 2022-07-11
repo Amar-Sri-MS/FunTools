@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 #
 # Implementation of the csr access methods for CSR2
@@ -24,19 +24,17 @@ from csrutils.csrutils import str_to_int
 # TODO (jimmy): we need a better way to import our favourite modules
 WS = os.environ.get('WORKSPACE', None)
 if WS is None:
-    print 'Need WORKSPACE environment variable to be set: exiting'
+    print('Need WORKSPACE environment variable to be set: exiting')
     sys.exit(1)
 sys.path.append(os.path.join(WS, 'FunHW/csr2api/v2'))
 
-import csr2
+import csr2py2
 
 #
 # Use a global logger to match the convention set by related modules.
 #
 logger = logging.getLogger("csr2utils")
 logger.setLevel(logging.ERROR)
-
-csr2_chip_types = ['s1', 'f1d1']
 
 class Register(object):
     """
@@ -187,7 +185,7 @@ class RegisterFinder(object):
 
     def _descend(self, cursor, remaining_parts):
         if not remaining_parts:
-            if isinstance(cursor.typ, csr2.Arrayed):
+            if isinstance(cursor.typ, csr2py2.Arrayed):
                 logger.debug("bounds: {0}".format(cursor.typ.bounds[0]))
                 logger.debug("count_stride: {0}".format(cursor.typ.count_stride))
                 logger.debug("count: {0}".format(cursor.typ.count))
@@ -196,7 +194,7 @@ class RegisterFinder(object):
                 logger.debug("width: {0}".format(cursor.size('addr')))
             # Found the target register if all parts have been matched and
             # we landed on a register.
-            if isinstance(cursor.typ, csr2.Reg):
+            if isinstance(cursor.typ, csr2py2.Reg):
                 return cursor, None
             return None, 'Failed to find the register(possibly incomplete path?)'
 
@@ -220,7 +218,7 @@ class RegisterFinder(object):
         # Walk all children of the register, but only look at Logic and Union
         # types which represent the lowest level (i.e. bitfields).
         for child in reg_cursor.child().walk(explode=True):
-            if isinstance(child.typ, (csr2.Logic, csr2.Union)):
+            if isinstance(child.typ, (csr2py2.Logic, csr2py2.Union)):
                 fname = child.crumb.name
                 msb = reg_width - child.offset('bit') - 1
                 lsb = reg_width - (child.offset('bit') + child.size('bit'))
@@ -306,7 +304,7 @@ class RegisterNames(object):
         # Avoid exploding the graph: we typically do not need to expand
         # arrays to search for a partial path.
         for cursor in root_cursor.walk():
-            if isinstance(cursor.typ, csr2.Reg):
+            if isinstance(cursor.typ, csr2py2.Reg):
                 reg_name = ''
                 for precursor in cursor.trail():
                     crumb = precursor.crumb
@@ -325,13 +323,13 @@ class RegisterNames(object):
         For a named crumb, add a dotted fragment. For an indexed crumb,
         add the bounds [left..right].
         """
-        if isinstance(crumb, csr2.NamedCrumb):
+        if isinstance(crumb, csr2py2.NamedCrumb):
             fragment = crumb.prettyname
             if fragment:
                 if reg_name:
                     reg_name += '.'
                 reg_name += fragment
-        elif isinstance(crumb, csr2.IndexedCrumb):
+        elif isinstance(crumb, csr2py2.IndexedCrumb):
             for left, right in crumb.arr.bounds:
                 reg_name += '[%d..%d]' % (left, right)
         return reg_name
@@ -506,10 +504,6 @@ def load_csr_spec(chip_type):
     load csr2 metadata spec.
     """
 
-    if chip_type not in csr2_chip_types:
-        logger.error('Invalid chip type: {}'.format(chip_type))
-        sys.exit(1)
-
     global bundle
     global csr_names
 
@@ -520,6 +514,10 @@ def load_csr_spec(chip_type):
     logger.info('Creating CSR2 bundle at %s' % bundle_path)
 
     json_dir = os.path.join(WS, 'FunSDK', 'FunSDK', 'chip', chip_type, 'csr')
+    if not os.path.exists(json_dir):
+        logger.error('csr json spec does not exist! path: {0}'.format(json_dir))
+        sys.exit(1)
+
     bundle_cmd = [bin_path, 'chip_{}::root'.format(chip_type),
                   '-I', json_dir,
                   '-o', bundle_path,
@@ -527,11 +525,11 @@ def load_csr_spec(chip_type):
     try:
         subprocess.check_output(bundle_cmd)
     except subprocess.CalledProcessError as e:
-        logger.error('Failed to create bundle: %s' % e.output)
+        logger.error('Failed to create bundle: {0} cmd: {1}'.format(e.output, bundle_cmd))
         return False
 
     logger.info('Loading CSR2 bundle from %s' % bundle_path)
-    bundle = csr2.load_bundle(bundle_path)
+    bundle = csr2py2.load_bundle(bundle_path)
     csr_names = RegisterNames(bundle)
     return True
 
@@ -551,7 +549,7 @@ def csr2_peek(csr_path):
     accessor = CSRAccessor(dbgprobe(), finder)
     regval = accessor.peek(csr_path)
     if regval is not None:
-        print str(regval)
+        print(str(regval))
 
 def csr2_peek_args(args):
     """
@@ -583,7 +581,7 @@ def print_matching_regs(csr_path):
     csr_names.build()
     result = csr_names.find_matching(regex)
     result.sort()
-    print '\n'.join(result)
+    print('\n'.join(result))
 
 def csr2_raw_peek_args(args):
     """
@@ -597,7 +595,7 @@ def csr2_raw_peek_args(args):
 
     if data is not None:
         formatter = RawValuesFormatter()
-        print formatter.format(data)
+        print(formatter.format(data))
 
 def csr2_poke(csr_path, values):
     """
@@ -657,7 +655,7 @@ def csr2_find_by_name(csr_path):
     csr_names.build()
     matched_csrs = csr_names.find_matching(regex)
     matched_csrs.sort()
-    print '\n'.join(matched_csrs)
+    print('\n'.join(matched_csrs))
 
 def csr2_find(args):
     """

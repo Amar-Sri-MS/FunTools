@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright 2007 Neal Norwitz
 # Portions Copyright 2007 Google Inc.
@@ -37,7 +37,7 @@ try:
     import builtins
 except ImportError:
     # Python 2.x
-    import __builtin__ as builtins
+    import builtins as builtins
 
 import sys
 import traceback
@@ -56,10 +56,10 @@ if not hasattr(builtins, 'reversed'):
 if not hasattr(builtins, 'next'):
     # Support Python 2.5 and earlier.
     def next(obj):
-        return obj.next()
+        return obj.__next__()
 
 
-VISIBILITY_PUBLIC, VISIBILITY_PROTECTED, VISIBILITY_PRIVATE = range(3)
+VISIBILITY_PUBLIC, VISIBILITY_PROTECTED, VISIBILITY_PRIVATE = list(range(3))
 
 FUNCTION_NONE = 0x00
 FUNCTION_CONST = 0x01
@@ -1717,7 +1717,7 @@ def main(argv):
         print('Processing %s' % filename)
         builder = BuilderFromSource(source, filename)
         try:
-            entire_ast = filter(None, builder.Generate())
+            entire_ast = [_f for _f in builder.Generate() if _f]
         except KeyboardInterrupt:
             return
         except:

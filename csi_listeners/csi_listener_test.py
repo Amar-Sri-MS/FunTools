@@ -41,6 +41,9 @@ class TestDirLookup(unittest.TestCase):
 class TestWriter(unittest.TestCase):
     """ Tests that check writer functionality """
 
+    # magic header
+    MAGIC = b'\xca\xfe'
+
     def setUp(self):
         self.dir_lookup = csi_listener.DirLookup()
         self.ip = '192.168.2.1'
@@ -54,9 +57,11 @@ class TestWriter(unittest.TestCase):
     def test_process_one_message(self):
         msg = csi_listener.Message()
         msg.cluster = bytes('\x02', 'utf8')
+        msg.type = 0
         msg.data = bytes('vogon poetry', 'utf8')
         self.run_message_processing(msg)
-        self.check_file_contents('trace_cluster_02', '\x02vogon poetry')
+        self.check_file_contents('trace_cluster_02_type_00',
+                                 self.MAGIC + b'\x00\x00\x02vogon poetry')
 
     def run_message_processing(self, msg):
         self.writer.write(msg)
@@ -64,20 +69,23 @@ class TestWriter(unittest.TestCase):
     def check_file_contents(self, filename, expected_contents):
         expected_file = os.path.join(self.outdir, filename)
         self.assertTrue(os.path.exists(expected_file))
-        with open(expected_file, 'r') as fh:
+        with open(expected_file, 'rb') as fh:
             self.assertEqual(expected_contents, fh.read())
 
     def test_cluster_is_only_written_once(self):
         msg0 = csi_listener.Message()
         msg0.cluster = bytes('\x02', 'utf8')
+        msg0.type = 1
         msg0.data = bytes('mice', 'utf8')
         self.run_message_processing(msg0)
 
         msg1 = csi_listener.Message()
         msg1.cluster = bytes('\x02', 'utf8')
+        msg1.type = 1
         msg1.data = bytes('dolphins', 'utf8')
         self.run_message_processing(msg1)
-        self.check_file_contents('trace_cluster_02', '\x02micedolphins')
+        self.check_file_contents('trace_cluster_02_type_01',
+                                 self.MAGIC + b'\x00\x01\x02micedolphins')
 
     def test_process_messages_from_different_clusters(self):
         """
@@ -85,13 +93,17 @@ class TestWriter(unittest.TestCase):
         """
         msg0 = csi_listener.Message()
         msg0.cluster = bytes('\x02', 'utf8')
+        msg0.type = 1
         msg0.data = bytes('mice', 'utf8')
         self.run_message_processing(msg0)
 
         msg1 = csi_listener.Message()
         msg1.cluster = bytes('\x04', 'utf8')
+        msg1.type = 1
         msg1.data = bytes('dolphins', 'utf8')
         self.run_message_processing(msg1)
 
-        self.check_file_contents('trace_cluster_02', '\x02mice')
-        self.check_file_contents('trace_cluster_04', '\x04dolphins')
+        self.check_file_contents('trace_cluster_02_type_01',
+                                 self.MAGIC + b'\x00\x01\x02mice')
+        self.check_file_contents('trace_cluster_04_type_01',
+                                 self.MAGIC + b'\x00\x01\x04dolphins')

@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-from __future__ import print_function
+#!/usr/bin/env python3
+
 
 from bpf_pack import unpack_u32
 from elftools.elf.elffile import ELFFile
@@ -9,31 +9,31 @@ from elftools.dwarf.descriptions import describe_form_class, describe_attr_value
 
 # extracted from kernels/prehook.c
 prehook_wrapper = {
-  'code': {'name': u'probe',
+  'code': {'name': 'probe',
     'value': [103, 189, 255, 168, 255, 191, 0, 8, 255, 190, 0, 0, 255, 188, 0, 16, 255, 164, 0, 24, 255, 165, 0, 32, 255, 166, 0, 40, 255, 167, 0, 48, 255, 168, 0, 56, 255, 169, 0, 64, 255, 170, 0, 72, 255, 171, 0, 80, 3, 160, 240, 37, 12, 0, 0, 0, 0, 0, 0, 0, 3, 192, 232, 37, 223, 164, 0, 24, 223, 165, 0, 32, 223, 166, 0, 40, 223, 167, 0, 48, 223, 168, 0, 56, 223, 169, 0, 64, 223, 170, 0, 72, 223, 171, 0, 80, 223, 188, 0, 16, 223, 190, 0, 0, 223, 191, 0, 8, 103, 189, 0, 88, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]},
   'relocations': [
-   {'source': {'index': 1, 'kind': 'code', 'name': u'prehook'},
-     'target': {'index': 0, 'kind': 'code', 'name': u'probe'},
+   {'source': {'index': 1, 'kind': 'code', 'name': 'prehook'},
+     'target': {'index': 0, 'kind': 'code', 'name': 'probe'},
      'offset': 52, 'type': 4}]}
 
 # extracted from kernels/fullhook.c
 full_wrapper = {
-  'code': [{'name': u'probe',
+  'code': [{'name': 'probe',
     'value': [103, 189, 255, 168, 255, 191, 0, 8, 255, 190, 0, 0, 255, 188, 0, 16, 255, 164, 0, 24, 255, 165, 0, 32, 255, 166, 0, 40, 255, 167, 0, 48, 255, 168, 0, 56, 255, 169, 0, 64, 255, 170, 0, 72, 255, 171, 0, 80, 3, 160, 240, 37, 12, 0, 0, 0, 0, 0, 0, 0, 3, 192, 232, 37, 223, 164, 0, 24, 223, 165, 0, 32, 223, 166, 0, 40, 223, 167, 0, 48, 223, 168, 0, 56, 223, 169, 0, 64, 223, 170, 0, 72, 223, 171, 0, 80, 223, 188, 0, 16, 223, 190, 0, 0, 223, 191, 0, 8, 103, 189, 0, 88, 103, 189, 255, 224, 255, 191, 0, 8, 255, 162, 0, 0, 60, 1, 0, 0, 100, 33, 0, 0, 0, 1, 12, 56, 100, 33, 0, 0, 0, 1, 12, 56, 100, 63, 0, 0, 3, 160, 240, 37, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]},
-    {'name': u'probe_posthook',
+    {'name': 'probe_posthook',
     'value': [223, 164, 0, 0, 255, 162, 0, 16, 255, 163, 0, 24, 255, 190, 0, 0, 3, 160, 240, 37, 12, 0, 0, 0, 0, 0, 0, 0, 3, 192, 232, 37, 223, 190, 0, 0, 223, 162, 0, 16, 223, 163, 0, 24, 223, 191, 0, 8, 103, 189, 0, 32, 3, 224, 0, 9]}],
   'relocations': [
-   {'source': {'index': 2, 'kind': 'code', 'name': u'prehook'},
-     'target': {'index': 0, 'kind': 'code', 'name': u'probe'},
+   {'source': {'index': 2, 'kind': 'code', 'name': 'prehook'},
+     'target': {'index': 0, 'kind': 'code', 'name': 'probe'},
      'offset': 52, 'type': 4},
 
-   {'source': {'index': 1, 'kind': 'code', 'name': u'probe_posthook'}, 'type': 29, 'target': {'index': 0, 'kind': 'code', 'name': u'probe'}, 'offset': 124},
-   {'source': {'index': 1, 'kind': 'code', 'name': u'probe_posthook'}, 'type': 28, 'target': {'index': 0, 'kind': 'code', 'name': u'probe'}, 'offset': 128},
-   {'source': {'index': 1, 'kind': 'code', 'name': u'probe_posthook'}, 'type': 5, 'target': {'index': 0, 'kind': 'code', 'name': u'probe'}, 'offset': 136},
-   {'source': {'index': 1, 'kind': 'code', 'name': u'probe_posthook'}, 'type': 6, 'target': {'index': 0, 'kind': 'code', 'name': u'probe'}, 'offset': 144},
+   {'source': {'index': 1, 'kind': 'code', 'name': 'probe_posthook'}, 'type': 29, 'target': {'index': 0, 'kind': 'code', 'name': 'probe'}, 'offset': 124},
+   {'source': {'index': 1, 'kind': 'code', 'name': 'probe_posthook'}, 'type': 28, 'target': {'index': 0, 'kind': 'code', 'name': 'probe'}, 'offset': 128},
+   {'source': {'index': 1, 'kind': 'code', 'name': 'probe_posthook'}, 'type': 5, 'target': {'index': 0, 'kind': 'code', 'name': 'probe'}, 'offset': 136},
+   {'source': {'index': 1, 'kind': 'code', 'name': 'probe_posthook'}, 'type': 6, 'target': {'index': 0, 'kind': 'code', 'name': 'probe'}, 'offset': 144},
 
-   {'source': {'index': 3, 'kind': 'code', 'name': u'posthook'},
-     'target': {'index': 1, 'kind': 'code', 'name': u'probe_posthook'},
+   {'source': {'index': 3, 'kind': 'code', 'name': 'posthook'},
+     'target': {'index': 1, 'kind': 'code', 'name': 'probe_posthook'},
      'offset': 20, 'type': 4}
 ]}
 
@@ -104,7 +104,7 @@ def extract_finals(data, map_index, big_endian):
       continue
     if 'value' in d:
       del d['section']
-      definition = {'name': d['name'], 'value': map(ord, list(d['value']))}
+      definition = {'name': d['name'], 'value': list(map(ord, list(d['value'])))}
       relocations += annotate(d['locations'], {'kind': 'data', 'index': len(final_data), 'name': d['name']})
       final_data.append(definition)
 
@@ -150,10 +150,10 @@ def extract_hook(filename):
       idx += 1
       if section.name in code_sections:
         section_name = section.name
-        code.append({'name': section.name, 'value': map(ord, list(section.data()))})
+        code.append({'name': section.name, 'value': list(map(ord, list(section.data())))})
         continue
       if idx in symbols:
-        positions = sorted(symbols[idx].keys(), reverse = True)
+        positions = sorted(list(symbols[idx].keys()), reverse = True)
         section_data = section.data()
         for p in positions:
           set_data(data, symbols[idx][p], section_data[p:])

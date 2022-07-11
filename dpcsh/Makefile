@@ -15,10 +15,10 @@ else ifeq ($(MACHINE),arm64)
  TOOLCHAIN_PREFIX :=
  SDK_LIB_SUBDIR := noasan
  SDK_INSTALL_PREFIX :=
-else ifeq ($(MACHINE),arm)
- TOOLCHAIN_PREFIX := arm-linux-gnueabi-
+else ifeq ($(MACHINE),aarch64)
+ TOOLCHAIN_PREFIX := aarch64-linux-gnu-
  SDK_LIB_SUBDIR :=
- SDK_INSTALL_PREFIX := arm
+ SDK_INSTALL_PREFIX := aarch64
 else ifeq ($(MACHINE),mips64)
  SDK_LIB_SUBDIR :=
  SDK_INSTALL_PREFIX := mips64
@@ -59,17 +59,17 @@ LFUNQ_PATH = $(SDKDIR)/FunSDK/host-drivers/$(MACHINE)/user/native
 endif
 
 CFLAGS += -I $(LFUNQ_PATH)/include -DWITH_LIBFUNQ
-LDFLAGS += -L $(LFUNQ_PATH)/lib -lfunq
+LDFLAGS += -L $(LFUNQ_PATH)/lib -lbin_ctl -lfunq
 endif
 
 # define header and library location in FunSDK
-CFLAGS += -I $(SDKDIR) -I $(SDKDIR)/FunSDK -g -Wall -Werror -Wno-multichar $(BRANCH) $(VER)
+CFLAGS += -I $(SDKDIR) -I $(SDKDIR)/FunSDK/funosrt/include -g -Wall -Werror -Wno-multichar $(BRANCH) $(VER)
 
 # XXX: compatibility with FunOS build parameters
 #LDFLAGS += -L $(SDKDIR)/lib/${OS}/x86_64 -lfunclient -fsanitize=address
 LDFLAGS += -lpthread -L $(SDKDIR)/lib/$(OS)/$(SDK_LIB_SUBDIR)/$(MACHINE) -lfunclient -ldl
 
-SRCS = dpcsh.c dpcsh_nvme.c bin_ctl.c dpcsh_macros.c csr_command.c file_commands.c dpcsh_log.c dpcsh_ptr_queue.c
+SRCS = dpcsh.c dpcsh_nvme.c dpcsh_macros.c csr_command.c file_commands.c dpcsh_log.c dpcsh_ptr_queue.c
 OBJS = $(addprefix $(BUILD_ROOT)/,$(SRCS:.c=.o))
 
 # Deal with gcc versioning for ASAN
@@ -98,6 +98,10 @@ install: dpcsh
 # FIXME: remove OS versioning on dpc_client.py when
 # integration tests are fixed
 	cp dpc_client.py dpctest.py dpc_uboot_env.py auth_firmware.py $(BUILD_ROOT)/dpcsh $(SDK_INSTALL_DIR)/bin/$(SDK_INSTALL_PREFIX)/$(OS)
+ifeq ($(MACHINE),aarch64)
+	mkdir -p ${SDK_INSTALL_DIR}/bin/scripts
+	cp deploy_dpcsh_aarch64.sh ${SDK_INSTALL_DIR}/bin/scripts
+endif
 
 .PHONY: install-init.d
 install-init.d:

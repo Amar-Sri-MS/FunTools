@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys, os
 from array import array
@@ -12,7 +12,7 @@ import signal
 import socket
 import atexit
 from socket import error as socket_error
-from i2cutils import *
+from .i2cutils import *
 import functools
 
 logger = logging.getLogger("jsocket.tserver")
@@ -86,7 +86,7 @@ class i2c_obj_db:
         return None
 
     def dump(self):
-        for k,v in self.i2c_objs.items():
+        for k,v in list(self.i2c_objs.items()):
             print('Dev: {0} User: {1} Conn_obj: {2}'.format(k, v[1], v[0]))
 
 
@@ -204,7 +204,7 @@ class I2CFactoryThread(jsocket.ServerFactoryThread):
                     self.send_obj({"STATUS":[False, "Exception!"]})
                     return
             elif cmd == "CSR_PEEK":
-                print self.i2c_dev_id
+                print(self.i2c_dev_id)
                 i2c_conn = i2c_obj_db().get_i2c_conn(self.i2c_dev_id)
                 if not i2c_conn:
                     self.send_obj({"STATUS":[False, "I2c dev is not connected!"]})

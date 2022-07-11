@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import os,sys
 import json
 import logging
@@ -7,7 +7,7 @@ import code, rlcompleter, readline
 try:  
    os.environ["WORKSPACE"]
 except KeyError: 
-   print "Please set the environment variable WORKSPACE"
+   print("Please set the environment variable WORKSPACE")
    sys.exit(1)
 
 logging.basicConfig(level=logging.ERROR)
@@ -36,7 +36,7 @@ class addr_cfg(object):
          return None
 
         #convert to int
-      for x,y in dut_cfg.items():
+      for x,y in list(dut_cfg.items()):
          dut_cfg[x]=int(y,0)
         
       return dut_cfg
@@ -228,7 +228,7 @@ def addr_mgr_test():
 #      print a
    for addr in range(0x20000000000,0x20000010000,0x40):
       a=mgr.translate_paddr(addr);
-      print a
+      print(a)
 
 
 if __name__== "__main__":

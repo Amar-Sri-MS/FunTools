@@ -44,7 +44,7 @@ class CSR_YML_Reader(object):
 
     def __dump(self, yml_stream):
         lst = []
-        for key, val in yml_stream.iteritems():
+        for key, val in yml_stream.items():
             self.logger.debug("{}:".format(key))
             if isinstance(val, dict):
                 self.__dump(val)
@@ -63,14 +63,14 @@ class CSR_YML_Reader(object):
 
     def __remove_symbols(self, m_dict, allow_lst):
         m_lst = []
-        for key, val in m_dict.iteritems():
+        for key, val in m_dict.items():
             if key not in allow_lst:
                 m_lst.append(key)
 
         for key in m_lst:
             m_dict.pop(key, None)
 
-        for key, val in m_dict.iteritems():
+        for key, val in m_dict.items():
             if isinstance(val, dict):
                 m_dict = self.__remove_symbols(val, allow_lst)
         return m_dict
@@ -88,7 +88,7 @@ class CSR_YML_Reader(object):
 
     def __str__(self):
         r_str = ""
-        for key, val in self.csr_schema.iteritems():
+        for key, val in self.csr_schema.items():
             r_str += "{}:\n{}".format(key, val)
         return r_str
     __repr__ = __str__

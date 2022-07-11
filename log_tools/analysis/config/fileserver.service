@@ -3,6 +3,7 @@ Description=Gunicorn instance to serve File Server
 After=network.target
 
 [Service]
+User=localadmin
 Group=www-data
 WorkingDirectory=/home/localadmin/Fun/FunTools/log_tools/analysis/file_server
 Environment="PATH=/home/localadmin/Fun/FunTools/log_tools/analysis/.venv/bin"

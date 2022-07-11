@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #
 # Debug shell application.
@@ -22,7 +22,7 @@ logger.setLevel(logging.INFO)
 # Determine whether csr2 mode or csr1 mode based on chip type
 #
 chip_type_parser = argparse.ArgumentParser()
-chip_type_parser.add_argument('-c', nargs=1,  metavar=('chip_type'), dest='chip_type', choices=['f1', 's1', 'f1d1'], type=str, help='chip type', required = True)
+chip_type_parser.add_argument('-c', nargs=1,  metavar=('chip_type'), dest='chip_type', choices=['f1', 's1', 'f1d1', 's2'], type=str, help='chip type', required = True)
 chip_type_args, chip_type_remaining_args = chip_type_parser.parse_known_args()
 sys.argv = [sys.argv[0]] + chip_type_remaining_args
 

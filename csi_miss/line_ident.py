@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 ## read a deduped file and translate all the addresses into something
 ## interesting via addr2line
@@ -27,7 +27,14 @@ FUNOS_BINARY = "funos-f1.stripped"
 #
 
 def canonical_va(x):
-    return "%016x" % int(x, 16)
+    n = int(x, 16)
+
+    # filter out things not in the binary
+    b = n & 0xffffffffffffff
+    if (b > (256<<20)):
+        return None
+
+    return "%016x" % n
     
 
 ###
@@ -76,21 +83,29 @@ def do_line_ident(addrlist, outfname, binname):
     addrident = {}
 
     n = len(addrlist)
+    f = 0
     t0 = time.time()
+    t00 = t0
     for i in range(0, n):
         addr = canonical_va(addrlist[i])
 
         t1 = time.time()
         if ((t1 - t0) > 10):
-            print "complete: %.0f%%" % ((i * 100.0) / n)
+            rate = (i - f) / (t1 - t00)
+            print("complete: %.0f%% (%s/%s/%s)" % (((i * 100.0) / n), i, f, n))
             t0 = t1
+
+        if (addr is None):
+            f += 1
+            continue
+
         check_add(binname, addrident, addr)
                 
 
     # write it out
     fl = open(outfname, "w")
     fl.write(json.dumps(addrident, indent=4))
-    print "done"
+    print("done")
 
 ###
 ##  main

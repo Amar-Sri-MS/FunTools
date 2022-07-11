@@ -26,6 +26,10 @@ import yaml
 
 sys.path.insert(0, '.')
 
+from custom_exceptions import ArchiveTooBigException
+from custom_exceptions import EmptyPipelineException
+from custom_exceptions import NotFoundException
+from custom_exceptions import NotSupportedException
 from elastic_metadata import ElasticsearchMetadata
 from flask import Blueprint, jsonify, request, render_template
 from flask import current_app, g
@@ -49,6 +53,9 @@ QA_LOGS_ENDPOINT = f'{QA_REGRESSION_BASE_ENDPOINT}/test_case_time_series'
 QA_SUITE_ENDPOINT = f'{QA_REGRESSION_BASE_ENDPOINT}/suites'
 QA_STATIC_ENDPOINT = 'http://integration.fungible.local/static/logs'
 
+# Users are required to input ingestion filters for log archives greater than 4GB.
+RESTRICTED_ARCHIVE_SIZE = 4 * 1024 * 1024 * 1024
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -62,10 +69,12 @@ def main():
     parser.add_argument('--sources', nargs='*', help='Sources to filter the logs during ingestion', default=None)
     parser.add_argument('--file_name', help='File name of the uploaded log archive', default=None)
     parser.add_argument('--submitted_by', help='Email address of the submitter', default=None)
-    parser.add_argument('--techsupport_ingest_type', help='Techsupport ingestion type', choices=['mount_path', 'upload'])
+    parser.add_argument('--techsupport_ingest_type', help='Techsupport ingestion type', choices=['mount_path', 'upload', 'url'])
+    parser.add_argument('--ignore_size_restrictions', action='store_true')
 
     try:
         status = True
+        is_partial = False
         status_msg = None
         args = parser.parse_args()
         ingest_type = args.ingest_type
@@ -79,11 +88,12 @@ def main():
         end_time = args.end_time
         sources = args.sources
         techsupport_ingest_type = args.techsupport_ingest_type
+        ignore_size_restrictions = args.ignore_size_restrictions
 
         LOG_ID = _get_log_id(job_id, ingest_type, test_index=test_index)
         es_metadata = ElasticsearchMetadata()
 
-        custom_logging = logger.get_logger(filename=f'{LOG_ID}.log')
+        custom_logging = logger.get_logger(filename=f'{LOG_ID}.log', separate_error_file=True)
         custom_logging.propagate = False
 
         # Initializing the timeline tracker
@@ -92,7 +102,8 @@ def main():
         metadata = {
             'tags': tags,
             'submitted_by': submitted_by,
-            'ingest_type': ingest_type
+            'ingest_type': ingest_type,
+            'ignore_size_restrictions': ignore_size_restrictions
         }
 
         filters = {
@@ -101,6 +112,11 @@ def main():
                 'sources': sources
             }
         }
+        filters_available = is_filters_available(filters)
+        # Ignore size restrictions if filters are available.
+        metadata['ignore_size_restrictions'] = ignore_size_restrictions or filters_available
+
+        _update_metadata(es_metadata, LOG_ID, 'STARTED')
 
         # Start ingestion
         if ingest_type == 'qa':
@@ -113,31 +129,81 @@ def main():
 
             if techsupport_ingest_type == 'upload':
                 log_path = os.path.join(log_dir, file_name)
+                # Check if the archive is beyond the resricted size
+                if (not metadata['ignore_size_restrictions'] and
+                    os.stat(log_path).st_size > RESTRICTED_ARCHIVE_SIZE):
+                    raise ArchiveTooBigException()
+
                 ingestion_status = ingest_techsupport_logs(job_id, log_path, metadata, filters)
             elif techsupport_ingest_type == 'mount_path':
                 # Check if the mount path exists
                 if not os.path.exists(log_path):
-                    raise Exception('Could not find the mount path')
+                    raise FileNotFoundError('Could not find the mount path')
+                # Check if the archive is beyond the resricted size
+                if (not metadata['ignore_size_restrictions'] and
+                    os.stat(log_path).st_size > RESTRICTED_ARCHIVE_SIZE):
+                    raise ArchiveTooBigException()
+
                 metadata['mount_path'] = log_path
 
                 archive_name = os.path.basename(log_path)
                 path = os.path.join(log_dir, archive_name)
 
-                # Copying the log archive to download directory to avoid write
-                # permission issue when unarchiving the archive.
-                shutil.copy(log_path, log_dir)
+                if os.path.isdir(log_path):
+                    # Copying the log folder to download directory to avoid write
+                    # permission issue when accessing the archive.
+                    shutil.copytree(log_path, path)
+                else:
+                    # Copying the log archive to download directory to avoid write
+                    # permission issue when unarchiving the archive.
+                    shutil.copy(log_path, log_dir)
 
                 ingestion_status = ingest_techsupport_logs(job_id, path, metadata, filters)
+            elif techsupport_ingest_type == 'url':
+                start = time.time()
+                _update_metadata(es_metadata,
+                                 LOG_ID,
+                                 'DOWNLOAD_STARTED',
+                                 {'log_path': log_path})
+                if check_and_download_logs(log_path, log_dir, metadata['ignore_size_restrictions']):
+                    end = time.time()
+                    time_taken = end - start
+
+                    _update_metadata(es_metadata,
+                                    LOG_ID,
+                                    'DOWNLOAD_COMPLETED',
+                                    {'download_time': time_taken})
+
+                    archive_name = os.path.basename(log_path)
+                    path = os.path.join(log_dir, archive_name)
+                    ingestion_status = ingest_techsupport_logs(job_id, path, metadata, filters)
             else:
-                raise Exception('Wrong techsupport ingest type')
+                raise TypeError('Wrong techsupport ingest type')
         else:
-            raise Exception('Wrong ingest type')
+            raise TypeError('Wrong ingest type')
 
         if ingestion_status and not ingestion_status['success']:
             status = False
             status_msg = ingestion_status.get('msg')
 
-    except Exception as e:
+        is_partial = ingestion_status.get('is_partial', False)
+    except ArchiveTooBigException:
+        status = False
+        status_msg = ('Size of log archive is beyond restricted limit. '
+                     'Please provide ingestion filters to reduce the logs '
+                     'or check the ignore size restrictions checkbox.')
+        logging.exception(status_msg)
+        _update_metadata(es_metadata, LOG_ID, 'PROMPT_USER', {
+            'ingestion_error': status_msg,
+            **metadata
+        })
+    except (
+        EmptyPipelineException,
+        NotFoundException,
+        FileNotFoundError,
+        TypeError,
+        NotSupportedException
+    ) as e:
         logging.exception(f'Error when starting ingestion for job: {job_id}')
         status = False
         status_msg = str(e)
@@ -145,12 +211,21 @@ def main():
             'ingestion_error': str(e),
             **metadata
         })
+    except Exception as e:
+        logging.exception(f'Error when ingesting logs for job: {job_id}')
+        status = False
+        status_msg = str(e)
+        _update_metadata(es_metadata, LOG_ID, 'PARTIAL', {
+            'ingestion_error': str(e),
+            **metadata
+        })
     finally:
-        # Clean up the downloaded files
-        clean_up(LOG_ID)
+        # Clean up the downloaded files if successful.
+        if status:
+            clean_up(LOG_ID)
 
         # Notify via email
-        email_notify(LOG_ID)
+        email_notify(LOG_ID, status, is_partial, status_msg)
 
         # Backing up the logs generated during ingestion
         logger.backup_ingestion_logs(LOG_ID)
@@ -171,7 +246,14 @@ def upload():
     job_id: unique job_id
     file: binary file of log archive uploaded in chunks
     """
+    # Reject if file size is greater than the MAX_CONTENT_LENGTH
+    UPLOAD_MAX_FILESIZE = current_app.config['MAX_CONTENT_LENGTH']
+    if (int(request.form.get('dztotalfilesize', 0)) > UPLOAD_MAX_FILESIZE):
+        return jsonify('File is too big.'
+                       'Please use other methods to ingest.'), 413
+
     job_id = request.form.get('job_id')
+    job_id = job_id.strip().lower()
     file = request.files['file']
     LOG_ID = _get_log_id(job_id, ingest_type='techsupport')
 
@@ -179,7 +261,7 @@ def upload():
     os.makedirs(save_dir, exist_ok=True)
     save_path = os.path.join(save_dir, file.filename)
 
-    current_chunk = int(request.form['dzchunkindex'])
+    current_chunk = int(request.form.get('dzchunkindex', 0))
 
     # If the file already exists it's ok if we are appending to it,
     # but not if it's new file that would overwrite the existing one
@@ -190,22 +272,22 @@ def upload():
 
     try:
         with open(save_path, 'ab') as f:
-            f.seek(int(request.form['dzchunkbyteoffset']))
+            f.seek(int(request.form.get('dzchunkbyteoffset', 0)))
             f.write(file.stream.read())
     except OSError:
         logging.exception('Could not write to file')
         return jsonify("Not sure why,"
                     " but we couldn't write the file to disk"), 500
 
-    total_chunks = int(request.form['dztotalchunkcount'])
+    total_chunks = int(request.form.get('dztotalchunkcount', 0))
 
     if current_chunk + 1 == total_chunks:
         # This was the last chunk, the file should be complete and the size we expect
-        if os.path.getsize(save_path) != int(request.form['dztotalfilesize']):
+        if os.path.getsize(save_path) != int(request.form.get('dztotalfilesize', 0)):
             logging.error(f"File {file.filename} was completed, "
                       f"but has a size mismatch."
                       f"Was {os.path.getsize(save_path)} but we"
-                      f" expected {request.form['dztotalfilesize']}")
+                      f" expected {request.form.get('dztotalfilesize', 0)}")
             return jsonify('Size mismatch after final upload'), 500
         else:
             logging.info(f'File {file.filename} has been uploaded successfully')
@@ -215,6 +297,94 @@ def upload():
 
     return jsonify('Chunk upload successful'), 200
 
+
+@ingester_page.route('/upload_file', methods=['POST'])
+@login_required
+def upload_file():
+    """
+    Example usage with cURL:
+        curl -i -XPOST \
+        -H 'Accept: application/json' \
+        -H 'Content-Type: multipart/form-data' \
+        -F 'job_id=test' \
+        -F 'submitted_by="sourabh.jain@fungible.com"' \
+        -F 'file=@"/bugbits/test/techsupport.tgz"' \
+        'http://funlogs/upload_file'
+    """
+    try:
+        # Accept type could be either text/html or application/json if the
+        # user wants a JSON response instead of the default html response.
+        accept_type = request.headers.get('Accept', 'text/html')
+
+        job_id = request.form.get('job_id')
+        job_id = job_id.strip().lower()
+        tags = request.form.get('tags', '')
+        tags_list = [tag.strip() for tag in tags.split(',') if tag.strip() != ''] if tags else []
+        file = request.files['file']
+        submitted_by = g.user
+
+        start_time = request.form.get('start_time', None)
+        end_time = request.form.get('end_time', None)
+        sources = request.form.getlist('sources', None)
+
+        ingest_type = 'techsupport'
+        techsupport_ingest_type = 'upload'
+        file_name = os.path.basename(file.filename)
+
+        LOG_ID = _get_log_id(job_id, ingest_type=ingest_type)
+
+        save_dir = os.path.join(DOWNLOAD_DIRECTORY, LOG_ID)
+        os.makedirs(save_dir, exist_ok=True)
+        save_path = os.path.join(save_dir, file_name)
+        file.save(save_path)
+
+        metadata = start_ingestion(job_id,
+                                   ingest_type,
+                                   tags=tags_list,
+                                   techsupport_ingest_type=techsupport_ingest_type,
+                                   file_name=file_name,
+                                   sources=sources,
+                                   start_time=start_time,
+                                   end_time=end_time)
+
+        feedback = {
+            'started': True,
+            'log_id': LOG_ID,
+            'success': metadata.get('ingestion_status') == 'COMPLETED',
+            'is_partial_ingestion': metadata.get('is_partial_ingestion', False),
+            'job_id': job_id,
+            'tags': tags,
+            'submitted_by': submitted_by,
+            'start_time': start_time,
+            'end_time': end_time,
+            'sources': sources,
+            'metadata': metadata
+        }
+
+    except Exception as e:
+        current_app.logger.exception(f'Error when starting ingestion for job: {job_id}')
+        feedback = {
+            'success': False,
+            'started': False,
+            'log_id': LOG_ID,
+            'job_id': job_id,
+            'tags': tags,
+            'submitted_by': submitted_by,
+            'start_time': start_time,
+            'end_time': end_time,
+            'sources': sources,
+            'msg': str(e)
+        }
+
+    if accept_type == 'application/json':
+        return jsonify(feedback)
+    return render_template(
+        'ingester.html',
+        feedback=feedback,
+        ingest_type=ingest_type,
+        techsupport_ingest_type=techsupport_ingest_type,
+        file_server_url=config['FILE_SERVER_URL']
+    )
 
 @ingester_page.route('/remove_file', methods=['DELETE'])
 def remove_uploaded_file():
@@ -253,36 +423,47 @@ def render_ingest_page():
         'ingester.html',
         feedback={},
         ingest_type=ingest_type,
-        techsupport_ingest_type=techsupport_ingest_type)
+        techsupport_ingest_type=techsupport_ingest_type,
+        file_server_url=config['FILE_SERVER_URL'])
 
 
 @ingester_page.route('/ingest', methods=['POST'])
 @login_required
 def ingest():
     """
-    Handling ingestion of logs from QA jobs.
-    Required QA "job_id"
+    Handling ingestion of logs from either QA jobs or
+    techsupport archive.
+
+    For ingesting a QA job, requires:
+        "job_id" and "test_index"
+
+    For ingesting a techsupport archive, requires:
+        unique "job_id" and
+        "mount_path" in case the archive is in NFS mounted volume
+        "filename" in case the archive is uploaded by the user.
     """
     try:
+        # Accept type could be either text/html or application/json if the
+        # user wants a JSON response instead of the default html response.
         accept_type = request.headers.get('Accept', 'text/html')
 
         ingest_type = request.form.get('ingest_type', 'qa')
         techsupport_ingest_type = request.form.get('techsupport_ingest_type')
         job_id = request.form.get('job_id')
         test_index = request.form.get('test_index', 0)
-        tags = request.form.get('tags')
-        tags_list = [tag.strip() for tag in tags.split(',') if tag.strip() != '']
+        tags = request.form.get('tags', '')
+        tags_list = [tag.strip() for tag in tags.split(',') if tag.strip() != ''] if tags else []
         file_name = request.form.get('filename')
         mount_path = request.form.get('mount_path')
+        downloadable_url = request.form.get('downloadable_url')
+        ignore_size_restrictions = request.form.get('ignore_size_restrictions', default=False, type=bool)
         submitted_by = g.user
 
         start_time = request.form.get('start_time', None)
         end_time = request.form.get('end_time', None)
         sources = request.form.getlist('sources', None)
 
-        job_id = job_id.strip()
-
-        LOG_ID = _get_log_id(job_id, ingest_type, test_index=test_index)
+        LOG_ID = None
 
         def render_error_template(msg=None):
             feedback = {
@@ -297,6 +478,8 @@ def ingest():
                 'end_time': end_time,
                 'sources': sources,
                 'mount_path': mount_path,
+                'downloadable_url': downloadable_url,
+                'ignore_size_restrictions': ignore_size_restrictions,
                 'msg': msg if msg else 'Some error occurred'
             }
             if accept_type == 'application/json':
@@ -305,58 +488,35 @@ def ingest():
                 'ingester.html',
                 feedback=feedback,
                 ingest_type=ingest_type,
-                techsupport_ingest_type=techsupport_ingest_type
+                techsupport_ingest_type=techsupport_ingest_type,
+                file_server_url=config['FILE_SERVER_URL']
             )
 
         if not job_id:
             return render_error_template('Missing JOB ID')
 
+        job_id = job_id.strip().lower()
+        LOG_ID = _get_log_id(job_id, ingest_type, test_index=test_index)
+
         if techsupport_ingest_type == 'mount_path' and not mount_path:
             return render_error_template('Missing mount path')
         elif techsupport_ingest_type == 'upload' and not file_name:
             return render_error_template('Missing filename')
+        elif techsupport_ingest_type == 'url' and not downloadable_url:
+            return render_error_template('Missing downloadable url')
 
-        es_metadata = ElasticsearchMetadata()
-        metadata = es_metadata.get(LOG_ID)
-
-        # If metadata exists then either ingestion for this job
-        # is already done or in progress
-        if not metadata or metadata['ingestion_status'] == 'FAILED':
-            cmd = ['./ingester.py', job_id, '--ingest_type', ingest_type]
-            if len(tags_list) > 0:
-                cmd.append('--tags')
-                cmd.extend(tags_list)
-
-            if start_time:
-                cmd.append('--start_time')
-                cmd.append(start_time)
-
-            if end_time:
-                cmd.append('--end_time')
-                cmd.append(end_time)
-
-            if len(sources) > 0:
-                cmd.append('--sources')
-                cmd.extend(sources)
-
-            if ingest_type == 'qa':
-                cmd.append('--test_index')
-                cmd.append(str(test_index))
-            elif ingest_type == 'techsupport':
-                cmd.append('--techsupport_ingest_type')
-                cmd.append(techsupport_ingest_type)
-                if techsupport_ingest_type == 'mount_path':
-                    cmd.append('--log_path')
-                    cmd.append(mount_path)
-                elif techsupport_ingest_type == 'upload':
-                    cmd.append('--file_name')
-                    cmd.append(file_name)
-
-            if submitted_by:
-                cmd.append('--submitted_by')
-                cmd.append(submitted_by)
-
-            ingestion = subprocess.Popen(cmd)
+        metadata = start_ingestion(job_id,
+                                   ingest_type,
+                                   test_index=test_index,
+                                   tags=tags_list,
+                                   techsupport_ingest_type=techsupport_ingest_type,
+                                   mount_path=mount_path,
+                                   downloadable_url=downloadable_url,
+                                   file_name=file_name,
+                                   ignore_size_restrictions=ignore_size_restrictions,
+                                   sources=sources,
+                                   start_time=start_time,
+                                   end_time=end_time)
 
         feedback = {
             'started': True,
@@ -371,6 +531,8 @@ def ingest():
             'end_time': end_time,
             'sources': sources,
             'mount_path': mount_path,
+            'downloadable_url': downloadable_url,
+            'ignore_size_restrictions': ignore_size_restrictions,
             'metadata': metadata
         }
 
@@ -380,12 +542,86 @@ def ingest():
             'ingester.html',
             feedback=feedback,
             ingest_type=ingest_type,
-            techsupport_ingest_type=techsupport_ingest_type
+            techsupport_ingest_type=techsupport_ingest_type,
+            file_server_url=config['FILE_SERVER_URL']
         )
     except Exception as e:
         current_app.logger.exception(f'Error when starting ingestion for job: {job_id}')
         return render_error_template(str(e)), 500
 
+
+def start_ingestion(job_id, ingest_type, **additional_data):
+    """
+    Forming the command and starting the ingestion based on the
+    additional data.
+
+    Returns the metadata if the job_id already exists.
+    """
+    test_index = additional_data.get('test_index', 0)
+    tags = additional_data.get('tags')
+    techsupport_ingest_type = additional_data.get('techsupport_ingest_type')
+    mount_path = additional_data.get('mount_path')
+    file_name = additional_data.get('file_name')
+    downloadable_url = additional_data.get('downloadable_url')
+    ignore_size_restrictions = additional_data.get('ignore_size_restrictions')
+    submitted_by = g.user
+
+    sources = additional_data.get('sources')
+    start_time = additional_data.get('start_time')
+    end_time = additional_data.get('end_time')
+
+    LOG_ID = _get_log_id(job_id, ingest_type, test_index=test_index)
+
+    es_metadata = ElasticsearchMetadata()
+    metadata = es_metadata.get(LOG_ID)
+
+    # If metadata exists then either ingestion for this job
+    # is already done or in progress
+    if not metadata or metadata['ingestion_status'] in ['FAILED', 'PROMPT_USER']:
+        cmd = ['./ingester.py', job_id, '--ingest_type', ingest_type]
+        if len(tags) > 0:
+            cmd.append('--tags')
+            cmd.extend(tags)
+
+        if start_time:
+            cmd.append('--start_time')
+            cmd.append(start_time)
+
+        if end_time:
+            cmd.append('--end_time')
+            cmd.append(end_time)
+
+        if len(sources) > 0:
+            cmd.append('--sources')
+            cmd.extend(sources)
+
+        if ingest_type == 'qa':
+            cmd.append('--test_index')
+            cmd.append(str(test_index))
+        elif ingest_type == 'techsupport':
+            cmd.append('--techsupport_ingest_type')
+            cmd.append(techsupport_ingest_type)
+            if techsupport_ingest_type == 'mount_path':
+                cmd.append('--log_path')
+                cmd.append(mount_path)
+            elif techsupport_ingest_type == 'upload':
+                cmd.append('--file_name')
+                cmd.append(file_name)
+            elif techsupport_ingest_type == 'url':
+                cmd.append('--log_path')
+                cmd.append(downloadable_url)
+
+        if submitted_by:
+            cmd.append('--submitted_by')
+            cmd.append(submitted_by)
+
+        if ignore_size_restrictions:
+            cmd.append('--ignore_size_restrictions')
+
+        logging.info(f'Running ingestion cmd: {cmd}')
+        ingestion = subprocess.Popen(cmd)
+
+    return metadata
 
 @ingester_page.route('/ingest/<log_id>/status', methods=['GET'])
 def check_status(log_id):
@@ -417,6 +653,19 @@ def _get_log_id(job_id, ingest_type, **additional_data):
         return f'log_techsupport-{job_id}'
 
 
+def is_filters_available(filters):
+    """ Returns True if filters are available. """
+    included_filters = filters['include']
+    if (len(included_filters['time']) > 0 and
+        (included_filters['time'][0] or included_filters['time'][1])):
+        return True
+
+    if included_filters['sources'] and len(included_filters['sources']) > 0:
+        return True
+
+    return False
+
+
 def fetch_qa_job_info(job_id):
     """
     Fetching QA job info using QA endpoint
@@ -427,7 +676,7 @@ def fetch_qa_job_info(job_id):
     response = requests.get(url)
     job_info = response.json()
     if not (job_info and job_info['data']):
-        raise Exception('Job info not found')
+        raise NotFoundException('Job info not found')
     return job_info
 
 
@@ -441,7 +690,7 @@ def fetch_qa_suite_info(suite_id):
     response = requests.get(url)
     suite_info = response.json()
     if not (suite_info and suite_info['data']):
-        raise Exception(f'QA suite ({suite_id}) not found')
+        raise NotFoundException(f'QA suite ({suite_id}) not found')
     return suite_info['data']
 
 
@@ -463,7 +712,7 @@ def fetch_qa_logs(job_id, suite_info, test_index=None):
     response = requests.get(url)
     job_logs = response.json()
     if not (job_logs and job_logs['data']):
-        raise Exception('Logs not found')
+        raise NotFoundException('Logs not found')
     return _filter_qa_log_files(job_logs, suite_info, test_index)
 
 
@@ -477,6 +726,8 @@ def _filter_qa_log_files(job_logs, suite_info, test_index=None):
         # File names either start with _{test_index}{test_script_name} or
         # _{test_index}script_helper.py
         log_filename_starts = (f'_{test_index}{test_script_name}', f'_{test_index}script_helper.py')
+    else:
+        raise NotFoundException('Logs not found')
 
     # These are the log archives from QA platform to ingest.
     # fc_log.tgz & fcs_log.tgz are from single & HA node setup.
@@ -496,7 +747,8 @@ def _filter_qa_log_files(job_logs, suite_info, test_index=None):
         if test_index is not None and not filename.startswith(log_filename_starts):
             continue
 
-        if filename.endswith(log_filenames_to_ingest):
+        # NOTE: Ignoring tm_fc_log.tgz since it does contain fc logs.
+        if filename.endswith(log_filenames_to_ingest) and not filename.endswith('_tm_fc_log.tgz'):
             log_files.append(log['filename'])
 
     return log_files
@@ -522,7 +774,7 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
 
     path = f'{DOWNLOAD_DIRECTORY}/{LOG_ID}'
     file_path = os.path.abspath(os.path.dirname(__file__))
-    QA_LOGS_DIRECTORY = '/regression/Integration/fun_test/web/static/logs'
+    QA_LOGS_DIRECTORY = '/web/static/logs'
     found_logs = False
 
     manifest_contents = list()
@@ -551,9 +803,12 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
         _update_metadata(es_metadata, LOG_ID, 'DOWNLOAD_STARTED')
 
         for log_file in log_files:
+            # Ignore files which are not in the logs directory.
+            if QA_LOGS_DIRECTORY not in log_file:
+                continue
             log_dir = log_file.split(QA_LOGS_DIRECTORY)[1]
             url = f'{QA_STATIC_ENDPOINT}{log_dir}'
-            if check_and_download_logs(url, path):
+            if check_and_download_logs(url, path, metadata['ignore_size_restrictions']):
                 found_logs = True
                 # techsupport log archive
                 if log_file.endswith('cs_all_logs_techsupport.tar.gz'):
@@ -562,6 +817,12 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
                     # TODO(Sourabh): This is a temp workaround to get QA ingestion working.
                     # This will be removed after the fixes to manifest creation by David G.
                     archive_name = os.path.splitext(filename)[0]
+
+                    manifest_contents.extend([
+                        f'frn:plaform:DPU::system:storage_agent:textfile:"{archive_name}/techsupport/other":*storageagent.log*',
+                        f'frn:plaform:DPU::system:platform_agent:textfile:"{archive_name}/techsupport/other":*platformagent.log*',
+                        f'frn:plaform:DPU::system:funos:textfile:"{archive_name}/techsupport/other":*funos.log*'
+                    ])
                     # HA logs
                     if 'FC-HA-cluster' in suite_info.get('custom_test_bed_spec', {}).get('asset_request', {}):
                         archive_path = f'{path}/{filename}'
@@ -625,7 +886,7 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
                         template_path = os.path.join(file_path, '../config/templates/fc/FUNLOG_MANIFEST')
                         shutil.copy(template_path, LOG_DIR)
                     else:
-                        raise Exception('Unsupported release train')
+                        raise NotSupportedException('Unsupported release train')
 
                     manifest_contents.append(f'frn::::::bundle::"{archive_name}"')
 
@@ -646,9 +907,9 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
                         # TODO(Sourabh): This is an assumption that there will not be
                         # other files in this directory
                         if len(files) == 0:
-                            raise Exception('Could not find the CS log archive')
+                            raise NotFoundException('Could not find the CS log archive')
                         if len(files) > 1:
-                            raise Exception('There are more than 1 CS log archive')
+                            raise NotSupportedException('There are more than 1 CS log archive')
 
                         # The path contains only a tar file, with a FUNLOG_MANIFEST
                         # file, which needs to be ingested
@@ -673,7 +934,7 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
 
                         manifest_contents.append(f'frn::::::bundle:"{archive_name}/tmp/debug_logs":"{log_folder_name}"')
                     else:
-                        raise Exception('Unsupported release train')
+                        raise NotSupportedException('Unsupported release train')
 
                 # system logs
                 elif log_file.endswith('system_log.tar'):
@@ -692,10 +953,10 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
 
                         manifest_contents.append(f'frn::::::bundle::"{archive_name}"')
                     else:
-                        raise Exception('Unsupported release train')
+                        raise NotSupportedException('Unsupported release train')
 
         if not found_logs:
-            raise Exception('Logs not found')
+            raise NotFoundException('Logs not found')
 
         end = time.time()
         time_taken = end - start
@@ -741,86 +1002,73 @@ def ingest_techsupport_logs(job_id, log_path, metadata, filters):
             archive_extractor.extract(log_path)
             log_path = os.path.splitext(log_path)[0]
 
-        # TODO(Sourabh): Techsupport archive does not have the manifest
-        # at the root but one level down.
         if not manifest_parser.has_manifest(log_path):
-            folders = next(os.walk(os.path.join(log_path,'.')))[1]
+            raise NotFoundException('Could not find the FUNLOG_MANIFEST file.')
 
-            # TODO(Sourabh): This is an assumption that there will only
-            # be techsupport folder.
-            log_folder_name = folders[0]
-            log_path = os.path.join(log_path, log_folder_name)
+        manifest_contents = list()
+        filename = log_path.split('/')[-1]
+        manifest_contents.append(f'frn::::::bundle::"{filename}"')
 
-            # TODO(Sourabh): Temp workaround until David G's fix to ingest
-            # storage agent logs collected by node-service since it is the
-            # only source for storage agent debug logs.
-            manifest = manifest_parser.parse(log_path)
+        # TODO(Sourabh): This is a temp workaround to get techsupport ingestion working.
+        # This will be removed after the fixes to manifest creation by David G.
+        archive_name = os.path.basename(filename)
 
-            contents = list()
-            # TODO(Sourabh) Temp workaround for techsupport dumps generated
-            # from S1 chips.
-            for content in manifest['contents']:
-                content = content.replace('platform-agent:archive', 'cclinux:archive')
-                contents.append(content)
+        # The techsupport folder name inside the techsupport log archive might contain
+        # timestamps.
+        techsupport_folder_name = os.path.basename(glob.glob(f'{log_path}/techsupport?')[0])
 
-            contents.extend([
-                'frn:plaform:DPU::system:storage_agent:textfile:other:*storageagent.log*'
-            ])
-
-            _create_manifest(log_path, manifest['metadata'], contents)
-
-        else:
-            manifest_contents = list()
-            filename = log_path.split('/')[-1].replace(' ', '_')
-            manifest_contents.append(f'frn::::::bundle::"{filename}"')
-
-            # TODO(Sourabh): This is a temp workaround to get techsupport ingestion working.
-            # This will be removed after the fixes to manifest creation by David G.
-            archive_name = os.path.basename(filename)
-
-            # Get the folders of each node in the cluster
-            folders = glob.glob(f'{log_path}/techsupport/*[!devices][!other]')
-            # HA logs
-            if len(folders) == 3:
-                for folder in folders:
-                    folder_name = folder.split('/')[-1].replace(' ', '_')
-                    manifest_contents.extend([
-                        f'frn:composer:cluster:{folder_name}:host:apigateway:folder:"{archive_name}/techsupport/{folder_name}":apigateway',
-                        f'frn:composer:cluster:{folder_name}:host:cassandra:folder:"{archive_name}/techsupport/{folder_name}":cassandra',
-                        f'frn:composer:cluster:{folder_name}:host:kafka:folder:"{archive_name}/techsupport/{folder_name}":kafka',
-                        f'frn:composer:cluster:{folder_name}:host:kapacitor:folder:"{archive_name}/techsupport/{folder_name}":kapacitor',
-                        f'frn:composer:cluster:{folder_name}:host:node-service:folder:"{archive_name}/techsupport/{folder_name}":nms',
-                        f'frn:composer:cluster:{folder_name}:host:pfm:folder:"{archive_name}/techsupport/{folder_name}":pcie',
-                        f'frn:composer:cluster:{folder_name}:host:telemetry-service:folder:"{archive_name}/techsupport/{folder_name}":tms',
-                        f'frn:composer:cluster:{folder_name}:host:dataplacement:folder:"{archive_name}/techsupport/{folder_name}/sc":dataplacement',
-                        f'frn:composer:cluster:{folder_name}:host:discovery:folder:"{archive_name}/techsupport/{folder_name}/sc":discovery',
-                        f'frn:composer:cluster:{folder_name}:host:lrm_consumer:folder:"{archive_name}/techsupport/{folder_name}/sc":lrm_consumer',
-                        f'frn:composer:cluster:{folder_name}:host:expansion_rebalance:folder:"{archive_name}/techsupport/{folder_name}/sc":expansion_rebalance',
-                        f'frn:composer:cluster:{folder_name}:host:metrics_manager:folder:"{archive_name}/techsupport/{folder_name}/sc":metrics_manager',
-                        f'frn:composer:cluster:{folder_name}:host:metrics_server:folder:"{archive_name}/techsupport/{folder_name}/sc":metrics_server',
-                        f'frn:composer:cluster:{folder_name}:host:scmscv:folder:"{archive_name}/techsupport/{folder_name}/sc":scmscv',
-                        f'frn:composer:cluster:{folder_name}:host:setup_db:folder:"{archive_name}/techsupport/{folder_name}/sc":setup_db',
-                        f'frn:composer:cluster:{folder_name}:host:sns:folder:"{archive_name}/techsupport/{folder_name}":sns'
-                    ])
-            else:
+        # Get the folders of each node in the cluster
+        folders = glob.glob(f'{log_path}/techsupport/*[!devices][!other]')
+        # HA logs
+        if len(folders) == 3:
+            for folder in folders:
+                folder_name = folder.split('/')[-1].replace(' ', '_')
                 manifest_contents.extend([
-                    f'frn:composer:controller::host:apigateway:folder:"{archive_name}/techsupport/cs":apigateway',
-                    f'frn:composer:controller::host:cassandra:folder:"{archive_name}/techsupport/cs":cassandra',
-                    f'frn:composer:controller::host:kafka:textfile:"{archive_name}/techsupport/cs/container":kafka.log',
-                    f'frn:composer:controller::host:kapacitor:folder:"{archive_name}/techsupport/cs":container',
-                    f'frn:composer:controller::host:node-service:folder:"{archive_name}/techsupport/cs":nms',
-                    f'frn:composer:controller::host:pfm:folder:"{archive_name}/techsupport/cs":pfm',
-                    f'frn:composer:controller::host:telemetry-service:folder:"{archive_name}/techsupport/cs":tms',
-                    f'frn:composer:controller::host:dataplacement:folder:"{archive_name}/techsupport/cs/sclogs":dataplacement',
-                    f'frn:composer:controller::host:discovery:folder:"{archive_name}/techsupport/cs/sclogs":discovery',
-                    f'frn:composer:controller::host:lrm_consumer:folder:"{archive_name}/techsupport/cs/sclogs":lrm_consumer',
-                    f'frn:composer:controller::host:expansion_rebalance:folder:"{archive_name}/techsupport/cs/sclogs":expansion_rebalance',
-                    f'frn:composer:controller::host:metrics_manager:folder:"{archive_name}/techsupport/cs/sclogs":metrics_manager',
-                    f'frn:composer:controller::host:metrics_server:folder:"{archive_name}/techsupport/cs/sclogs":metrics_server',
-                    f'frn:composer:controller::host:scmscv:folder:"{archive_name}/techsupport/cs/sclogs":scmscv',
-                    f'frn:composer:controller::host:setup_db:folder:"{archive_name}/techsupport/cs/sclogs":setup_db',
-                    f'frn:composer:controller::host:sns:folder:"{archive_name}/techsupport/cs":sns'
+                    f'frn:composer:cluster:{folder_name}:host:apigateway:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}":apigateway',
+                    f'frn:composer:cluster:{folder_name}:host:cassandra:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}":cassandra',
+                    f'frn:composer:cluster:{folder_name}:host:kafka:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}":kafka',
+                    f'frn:composer:cluster:{folder_name}:host:kapacitor:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}":kapacitor',
+                    f'frn:composer:cluster:{folder_name}:host:node-service:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}":nms',
+                    f'frn:composer:cluster:{folder_name}:host:pfm:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}":pcie',
+                    f'frn:composer:cluster:{folder_name}:host:telemetry-service:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}":tms',
+                    f'frn:composer:cluster:{folder_name}:host:dataplacement:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}/sc":dataplacement',
+                    f'frn:composer:cluster:{folder_name}:host:discovery:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}/sc":discovery',
+                    f'frn:composer:cluster:{folder_name}:host:lrm_consumer:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}/sc":lrm_consumer',
+                    f'frn:composer:cluster:{folder_name}:host:expansion_rebalance:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}/sc":expansion_rebalance',
+                    f'frn:composer:cluster:{folder_name}:host:metrics_manager:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}/sc":metrics_manager',
+                    f'frn:composer:cluster:{folder_name}:host:metrics_server:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}/sc":metrics_server',
+                    f'frn:composer:cluster:{folder_name}:host:scmscv:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}/sc":scmscv',
+                    f'frn:composer:cluster:{folder_name}:host:setup_db:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}/sc":setup_db',
+                    f'frn:composer:cluster:{folder_name}:host:sns:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}":sns'
                 ])
+            manifest_contents.extend([
+                f'frn:plaform:DPU::system:storage_agent:textfile:"{archive_name}/{techsupport_folder_name}/other":*storageagent.log*',
+                f'frn:plaform:DPU::system:platform_agent:textfile:"{archive_name}/{techsupport_folder_name}/other":*platformagent.log*',
+                f'frn:plaform:DPU::system:funos:textfile:"{archive_name}/{techsupport_folder_name}/other":*funos.log*'
+            ])
+        else:
+            manifest_contents.extend([
+                f'frn:composer:controller::host:apigateway:folder:"{archive_name}/{techsupport_folder_name}/cs":apigateway',
+                f'frn:composer:controller::host:cassandra:folder:"{archive_name}/{techsupport_folder_name}/cs":cassandra',
+                f'frn:composer:controller::host:kafka:textfile:"{archive_name}/{techsupport_folder_name}/cs/container":kafka.log',
+                f'frn:composer:controller::host:kapacitor:folder:"{archive_name}/{techsupport_folder_name}/cs":container',
+                f'frn:composer:controller::host:node-service:folder:"{archive_name}/{techsupport_folder_name}/cs":nms',
+                f'frn:composer:controller::host:pfm:folder:"{archive_name}/{techsupport_folder_name}/cs":pfm',
+                f'frn:composer:controller::host:telemetry-service:folder:"{archive_name}/{techsupport_folder_name}/cs":tms',
+                f'frn:composer:controller::host:dataplacement:folder:"{archive_name}/{techsupport_folder_name}/cs/sclogs":dataplacement',
+                f'frn:composer:controller::host:discovery:folder:"{archive_name}/{techsupport_folder_name}/cs/sclogs":discovery',
+                f'frn:composer:controller::host:lrm_consumer:folder:"{archive_name}/{techsupport_folder_name}/cs/sclogs":lrm_consumer',
+                f'frn:composer:controller::host:expansion_rebalance:folder:"{archive_name}/{techsupport_folder_name}/cs/sclogs":expansion_rebalance',
+                f'frn:composer:controller::host:metrics_manager:folder:"{archive_name}/{techsupport_folder_name}/cs/sclogs":metrics_manager',
+                f'frn:composer:controller::host:metrics_server:folder:"{archive_name}/{techsupport_folder_name}/cs/sclogs":metrics_server',
+                f'frn:composer:controller::host:scmscv:folder:"{archive_name}/{techsupport_folder_name}/cs/sclogs":scmscv',
+                f'frn:composer:controller::host:setup_db:folder:"{archive_name}/{techsupport_folder_name}/cs/sclogs":setup_db',
+                f'frn:composer:controller::host:sns:folder:"{archive_name}/{techsupport_folder_name}/cs":sns',
+
+                f'frn:plaform:DPU::system:storage_agent:textfile:"{archive_name}/{techsupport_folder_name}/other":*storageagent.log*',
+                f'frn:plaform:DPU::system:platform_agent:textfile:"{archive_name}/{techsupport_folder_name}/other":*platformagent.log*',
+                f'frn:plaform:DPU::system:funos:textfile:"{archive_name}/{techsupport_folder_name}/other":*funos.log*'
+            ])
 
         _create_manifest(path, contents=manifest_contents)
         ingest_path = path
@@ -854,13 +1102,18 @@ def _create_manifest(path, metadata={}, contents=[]):
 
 
 @timeline.timeline_logger('downloading_logs')
-def check_and_download_logs(url, path):
+def check_and_download_logs(url, path, ignore_size_restrictions=False):
     """ Downloading log archives from QA dashboard """
     filename = url.split('/')[-1].replace(' ', '_')
     file_path = os.path.join(path, filename)
 
     response = requests.get(url, allow_redirects=True, stream=True)
     if response.ok:
+        if not ignore_size_restrictions:
+            content_length = int(response.headers['Content-Length'])
+            if content_length > RESTRICTED_ARCHIVE_SIZE:
+                raise ArchiveTooBigException()
+
         os.makedirs(path, exist_ok=True)
         logging.info(f'Saving log archive to {os.path.abspath(file_path)}')
         with open(file_path, 'wb') as f:
@@ -884,7 +1137,7 @@ def _update_metadata(metadata_handler, log_id, status, additional_data={}):
     return metadata_handler.update(log_id, metadata)
 
 
-def email_notify(logID):
+def email_notify(logID, is_successful, is_partial, status_msg):
     """ Notifying via email at the end of the ingestion """
     es_metadata = ElasticsearchMetadata()
     metadata = es_metadata.get(logID)
@@ -897,26 +1150,34 @@ def email_notify(logID):
         logging.warning('Sending email aborted: submitted_by email not found.')
         return
 
-    is_failed = metadata.get('ingestion_status') == 'FAILED'
-    logID = metadata.get('logID')
-
     if not logID:
         logging.warning('Sending email aborted: logID not found.')
         return
 
-    if is_failed:
+    if is_successful:
+        if is_partial:
+            subject = f'Ingestion of {logID} is successful.'
+            body = f"""
+                Ingestion of {logID} is partially successful.
+                Log Analyzer Dashboard: {config['LOG_VIEW_BASE_URL'].replace('LOG_ID', logID)}/dashboard
+
+                Error logs: {config['FILE_SERVER_URL']}/{logID}/file/{logID}_error.log
+                Time to ingest logs: {metadata.get('ingestion_time')} seconds
+            """
+        else:
+            subject = f'Ingestion of {logID} is successful.'
+            body = f"""
+                Ingestion of {logID} is successful.
+                Log Analyzer Dashboard: {config['LOG_VIEW_BASE_URL'].replace('LOG_ID', logID)}/dashboard
+
+                Time to ingest logs: {metadata.get('ingestion_time')} seconds
+            """
+    else:
         subject = f'Ingestion of {logID} failed.'
         body = f"""
             Ingestion of {logID} failed. Please email tools-pals@fungible.com for help!
-            Reason: {metadata.get('ingestion_error')}
-        """
-    else:
-        subject = f'Ingestion of {logID} is successful.'
-        body = f"""
-            Ingestion of {logID} is successful.
-            Log Analyzer Dashboard: {config['LOG_VIEW_BASE_URL'].replace('LOG_ID', logID)}/dashboard
-
-            Time to ingest logs: {metadata.get('ingestion_time')} seconds
+            Error logs: {config['FILE_SERVER_URL']}/{logID}/file/{logID}_error.log
+            Reason: {status_msg}
         """
 
     status = mail.Mail(submitted_by, subject, body)

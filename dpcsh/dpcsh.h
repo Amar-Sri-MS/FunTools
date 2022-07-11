@@ -10,7 +10,7 @@
 #define PLATFORM_POSIX	1
 
 #include "dpcsh_ptr_queue.h"
-#include <FunSDK/utils/threaded/fun_json.h>
+#include <FunOS/utils/threaded/fun_json.h>
 #include <pthread.h>
 
 /* handy socket abstraction */

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys, os
 from aardvark_py import *
@@ -10,8 +10,8 @@ import traceback
 import subprocess
 import paramiko
 
-from i2cdev import *
-from dututils import dut
+from .i2cdev import *
+from .dututils import dut
 
 logger = logging.getLogger('isbp')
 logger.setLevel(logging.DEBUG)
@@ -195,9 +195,9 @@ class aardvark:
         rdResp = aa_i2c_read(h, self.slave_addr, 0, read_data)
         #print "as;", rdResp, read_data
         if rdResp[0] != len(read_data):
-            raise("length mismatch read=%s, expected=%s ..." % (len(rdResp) != len(read_data)))
+            raise "length mismatch read=%s, expected=%s ..."
             if rdResp[1] != read_data:
-                raise("buffer mismatch %s --- %s" % (dumphex(rdResp[1]), dumphex(read_data)))
+                raise "buffer mismatch %s --- %s"
         logger.info('aa_i2c_read: expectedLen:{}({}) observedLen:{}({}) rdBuffer:{}'.format(len(read_data), hex(len(read_data)), rdResp[0], hex(rdResp[0]), dumphex(read_data)))
         return rdResp #aa_i2c_read(h, self.slave_addr, 0, read_data)
 
@@ -300,7 +300,7 @@ class i2c:
             csr_width = csr_width_words * 8
             read_data = array('B', [00]*(csr_width+1))
             read_bytes = self.master.i2c_read(read_data = read_data, chip_inst=chip_inst)
-            logger.debug(('read_bytes: {0} read_data: {1}').format(read_bytes, map(hex, read_data)))
+            logger.debug(('read_bytes: {0} read_data: {1}').format(read_bytes, list(map(hex, read_data))))
             if read_bytes[0] != (csr_width + 1):
                 logger.error(('Read Error!  read_bytes:{0}'
                        ' Expected: {1}').format(read_bytes, (csr_width + 1)))
@@ -807,7 +807,7 @@ class s1i2c(i2c):
 
     def csr_challenge_disconnect(self, chip_inst=None):
         cmd_data = array('B', [0x08])
-        logger.debug('s1 csr2 challenge disconnect'.format(map(hex, cmd_data)))
+        logger.debug('s1 csr2 challenge disconnect'.format(list(map(hex, cmd_data))))
         sent_bytes = self.master.i2c_write(write_data = cmd_data, chip_inst=chip_inst)
         logger.debug('s1 csr2 sent_bytes: {0}'.format(sent_bytes))
         if sent_bytes != len(cmd_data):
@@ -842,7 +842,7 @@ class s1i2c(i2c):
         qword = list(struct.unpack('BBBBBBBB', qword))
         cmd_data.extend(qword)
 
-        logger.debug('s1 csr2 poking bytes: {0}'.format(map(hex, cmd_data)))
+        logger.debug('s1 csr2 poking bytes: {0}'.format(list(map(hex, cmd_data))))
         sent_bytes = self.master.i2c_write(write_data = cmd_data, chip_inst=chip_inst)
         logger.debug('s1 csr2 sent_bytes: {0}'.format(sent_bytes))
         if sent_bytes != len(cmd_data):
@@ -888,7 +888,7 @@ class s1i2c(i2c):
         csr_addr = list(struct.unpack('BBBB', csr_addr))
         cmd_data = array('B', [0x00])
         cmd_data.extend(csr_addr)
-        logger.debug('s1 csr2 cmd_data bytes: {0}'.format(map(hex, cmd_data)))
+        logger.debug('s1 csr2 cmd_data bytes: {0}'.format(list(map(hex, cmd_data))))
         sent_bytes = self.master.i2c_write(write_data = cmd_data, chip_inst=chip_inst)
         logger.debug('s1 csr2 sent_bytes: {0}'.format(sent_bytes))
         if sent_bytes != len(cmd_data):
@@ -968,7 +968,7 @@ class s1i2c(i2c):
                 raise Exception('wide peek api operation failed ...')
 
     def local_csr_poke(self, csr_addr, qword_array, chip_inst=None):
-        logger.info(('s1 csr2 I2C poke! chip_inst: {0} csr_addr: {1} poke_array:{2}').format(chip_inst, hex(csr_addr), map(hex, qword_array)))
+        logger.info(('s1 csr2 I2C poke! chip_inst: {0} csr_addr: {1} poke_array:{2}').format(chip_inst, hex(csr_addr), list(map(hex, qword_array))))
         if not qword_array:
             logger.error('s1 csr2 poke array empty ...')
             return False
@@ -991,7 +991,7 @@ class s1i2c(i2c):
         return True
 
 def local_csr_i2c_probe(chip, name):
-    print (dut().get_i2c_info(name))
+    print(dut().get_i2c_info(name))
     status, serial, ip, addr = dut().get_i2c_info(name)
     if not status:
         raise Exception("name={} not in database ...".format(name))
@@ -1017,13 +1017,13 @@ def csr_peek_poke_test(chip, name):
     dbgprobe = local_csr_i2c_probe(chip, name)
 
     print('\n************POKE MIO SCRATCHPAD ***************')
-    print (dbgprobe.local_csr_poke(0x1d00e170, [0xabcd112299885566]))
+    print(dbgprobe.local_csr_poke(0x1d00e170, [0xabcd112299885566]))
     print('\n************PEEK MIO SCRATCHPAD ***************')
     (status, qword_array) = dbgprobe.local_csr_peek(0x1d00e170, 1)
     print("qword_array: {}".format([hex(x) for x in qword_array] if qword_array else None))
 
     print('\n************MULTI POKE 0x1d00c000 tx buffer on CSR ***************')
-    print (dbgprobe.local_csr_poke(0x1d00c000, [0xabcd112299885566, 0xf123456789abcde0, 0xddeeffaabb225566]))
+    print(dbgprobe.local_csr_poke(0x1d00c000, [0xabcd112299885566, 0xf123456789abcde0, 0xddeeffaabb225566]))
     print('\n************MULTI PEEK 0x1d00c000 tx buffer on CSR ***************')
     (status, qword_array) = dbgprobe.local_csr_peek(0x1d00c000, 3)
     print("qword_array: {}".format([hex(x) for x in qword_array] if qword_array else None))

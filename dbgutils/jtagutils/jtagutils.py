@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys, os
 sys.path.append('/home/'+os.environ["USER"]+'/.local/opt/imgtec/Codescape-8.6/lib/python2.7/lib-dynload')
@@ -58,9 +58,9 @@ class ChipJTAG(object):
         pass
 
 
-class F1JTAG(ChipJTAG):
+class CSR1JTAG(ChipJTAG):
     def __init__(self):
-        super(F1JTAG, self).__init__()
+        super(CSR1JTAG, self).__init__()
 
         # Pick the wide register at 0x0 on F1 (probably maps to the JTAG
         # master's wide register)
@@ -94,9 +94,9 @@ class F1JTAG(ChipJTAG):
         return jtag_ack, jtag_resp, jtag_running, jtag_status
 
 
-class S1JTAG(ChipJTAG):
+class CSR2JTAG(ChipJTAG):
     def __init__(self):
-        super(S1JTAG, self).__init__()
+        super(CSR2JTAG, self).__init__()
 
         # On S1, pick the first wide register (apparently they are all
         # accessible by any master).
@@ -131,11 +131,9 @@ class S1JTAG(ChipJTAG):
 
 def _get_chip_jtag(chip):
     if chip == 'f1':
-        return F1JTAG()
-    elif chip == 's1':
-        return S1JTAG()
+        return CSR1JTAG()
     else:
-        raise NotImplementedError('no JTAG support for chip {}'.format(chip))
+        return CSR2JTAG()
 
 
 def _ir_shiftin(width, data):
@@ -357,12 +355,12 @@ def csr_peek_poke_test():
     print("Connecting to Probe")
     csr_probe('sp55e', '10.1.40.84')
     print('\n************POKE***************')
-    print csr_poke(0x4883160000, [0x1111111111111111, 0x2222222222222222,
+    print(csr_poke(0x4883160000, [0x1111111111111111, 0x2222222222222222,
                                      0x3333333333333333, 0x4444444444444444,
                                      0x5555555555555555, 0x6666666666666666,
-                                    ])
-    print csr_poke(0xb000000078, [0xabcdabcdabcdabcd])
-    print csr_poke(0xb800000078, [0xdeadbeefdeadbeef])
+                                    ]))
+    print(csr_poke(0xb000000078, [0xabcdabcdabcdabcd]))
+    print(csr_poke(0xb800000078, [0xdeadbeefdeadbeef]))
 
     print('\n************PEEK***************')
     word_array = csr_peek(0xb000000078, 1)
@@ -385,7 +383,7 @@ def jtag_probe(name, ip, in_rom=None):
         scanonly()
     except Exception as e:
         logger.error('Error connecting to probe: %s' % e)
-        raise StandardError("Error connecting to probe")
+        raise Exception("Error connecting to probe")
 
 def mdh_read_old(byte_address):
     tapscan("5 %d" % IR_DEVICEADDR, "32 %d" % (byte_address & 0xf80) )

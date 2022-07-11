@@ -3,6 +3,7 @@
 #
 
 import datetime
+import dateutil
 import json
 import logging
 import re
@@ -74,7 +75,7 @@ class FunOSInput(Block):
 
                     yield (date_time, usecs, system_type, system_id, uid, None, None, line)
                 except:
-                    logging.warning(f'Malformed line in FUNOS logs: {line}')
+                    logging.error(f'Malformed line in FUNOS logs: {line}')
                     continue
 
     @staticmethod
@@ -167,7 +168,7 @@ class GenericInput(Block):
                 # 2021-02-11T12:08:00.951926Z DBG XXX
                 # [2021-04-29 04:20:32,492] INFO shutting down (kafka.server.KafkaServer)
                 m = re.match(
-                    r'^(\[[\S]+\]\s|[\S]+\s|)(?:\[|)(\d{4}(?:-|/)\d{2}(?:-|/)\d{2})+(?:T|\s)([:0-9]+)[\.|\,]{0,1}([0-9]+)(?:\]|)\s?((?:-|\+|)[0-9]{2}[:]{0,1}[0-9]{2}|Z|)([\s\S]*)',
+                    r'^(\[[\S]+\]\s|[\S]+\s|)(?:\[|)(\d{2,4}(?:-|/)\d{2}(?:-|/)\d{2,4})+(?:T|\s)([:0-9]+)[\.|\,]{0,1}([0-9]*)(?:\]|)\s?((?:-|\+|)[0-9]{2}[:]{0,1}[0-9]{2}|Z|)([\s\S]*)',
                     line)
 
                 if m:
@@ -182,7 +183,7 @@ class GenericInput(Block):
                         msg = filename.strip() + ' ' + msg.strip()
                     yield (date_time, usecs, system_type, system_id, uid, None, None, msg)
                 else:
-                    logging.warning(f'Malformed line in {uid}: {line}')
+                    logging.error(f'Malformed line in {uid}: {line}')
             except:
                 logging.exception(f'Malformed line in {uid}: {line}')
         timeline.track_end('log_parser')
@@ -195,7 +196,7 @@ class GenericInput(Block):
 
         day_str = day_str.replace('-', '/')
         log_time = f"{day_str} {time_str}.{usecs_str}" if usecs_str else f"{day_str} {time_str}.0"
-        d = datetime.datetime.strptime(log_time, '%Y/%m/%d %H:%M:%S.%f')
+        d = dateutil.parser.parse(log_time)
 
         return d, d.microsecond
 
@@ -257,7 +258,7 @@ class KeyValueInput(Block):
 
                     yield (date_time, usecs, system_type, system_id, uid, None, level, msg)
                 else:
-                    logging.warning(f'Malformed timestamp in {uid}: {line}')
+                    logging.error(f'Malformed timestamp in {uid}: {line}')
             except:
                 logging.exception(f'Malformed line in {uid}: {line}')
 
@@ -277,9 +278,8 @@ class KeyValueInput(Block):
 
         day_str = day_str.replace('-', '/')
         log_time = f"{day_str} {time_str}.{usecs_str}" if usecs_str else f"{day_str} {time_str}.0"
-        log_time_format = '%Y/%m/%d %H:%M:%S.%f'
 
-        d = datetime.datetime.strptime(log_time, log_time_format)
+        d = dateutil.parser.parse(log_time)
 
         # adding if timezone offset is present, converting to UTC
         # if tz_offset:
@@ -329,7 +329,7 @@ class JSONInput(Block):
 
                     yield (date_time, usecs, system_type, system_id, uid, None, level, msg)
                 else:
-                    logging.warning(f'Malformed timestamp in {uid}: {line}')
+                    logging.error(f'Malformed timestamp in {uid}: {line}')
             except:
                 logging.exception(f'Malformed line in {uid}: {line}')
 
@@ -348,9 +348,8 @@ class JSONInput(Block):
 
         day_str = day_str.replace('-', '/')
         log_time = f"{day_str} {time_str}.{usecs_str}" if usecs_str else f"{day_str} {time_str}.0"
-        log_time_format = '%Y/%m/%d %H:%M:%S.%f'
 
-        d = datetime.datetime.strptime(log_time, log_time_format)
+        d = dateutil.parser.parse(log_time)
 
         # adding if timezone offset is present, converting to UTC
         # if tz_offset:

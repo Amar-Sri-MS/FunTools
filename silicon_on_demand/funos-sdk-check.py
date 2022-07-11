@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 # automatically download and run a funos-f1 binary from a specified
 # FunSDK build
@@ -53,7 +53,7 @@ def main():
     
     os.system("/home/cgray/bin/silicon_on_demand.py -x '-P \"/home/cgray/sdk-check/sdk-check-post.py %s\"' -e chip-chums@fungible.com submit %s/bin/funos-f1.gz" % (bldno, path))
 
-    print "job scheduled"
+    print("job scheduled")
     
 ###
 ##   entrypoint

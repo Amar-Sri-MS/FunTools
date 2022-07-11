@@ -27,6 +27,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
+#include <stdbool.h>
+#include <stdlib.h>
 #include "ddr_address.h"
 
 /* Calculate the reduced XOR for the value.
@@ -159,7 +161,8 @@ const int S1_DDR_QN3_MASK = 0x48;
 const int S1_DDR_QN4_MASK = 0x84;
 
 // la la la la la la la I can't hear you!
-const int S1_DDR_QSN_MASK = 0x10000000;
+const uint64_t S1_DDR_QSN_MASK = 0x10000000;
+const uint64_t S1_DDR_QSYS_MASK = (1 << S1_DDR_QSYS_SEL);
 
 /* Converts memory address in DDR to channel and offset where bytes will
  * be found.
@@ -168,7 +171,7 @@ const int S1_DDR_QSN_MASK = 0x10000000;
  *
  * Offset must be aligned to 64 byte stride for shard.
  */
-struct offset_pair s1_ddr_address_to_offset(uint64_t address) {
+struct offset_pair ddr_address_to_offset(uint64_t address) {
 	// This code was converted verbatim from
 	// Memory line of interest.
 	assert((address & 0x3f) == 0);
@@ -184,8 +187,8 @@ struct offset_pair s1_ddr_address_to_offset(uint64_t address) {
 		shard_line = addr_line & 0x1fffffff;
 	}
 
-	uint64_t line_prehash = (shard_line & ~S1_DDR_QSN_MASK) >> 1 |
-		(shard_line & 1) << S1_DDR_QSYS_SEL;
+	uint64_t line_prehash = ((shard_line & ~S1_DDR_QSYS_MASK) >> 1) |
+		((shard_line & 1) << S1_DDR_QSYS_SEL);
 	uint64_t line_hashed = line_prehash & S1_DDR_QADDR_MASK;
 
 	line_hashed |= (reduced_xor64(line_prehash & S1_DDR_QN1_MASK)
@@ -241,7 +244,7 @@ struct sharding_info ddr_shard_info(void) {
 	ddr_info.channel_order[2] = 2;
 	ddr_info.channel_order[3] = 3;
 
-	ddr_info.addr_to_shard = &s1_ddr_address_to_offset;
+	ddr_info.addr_to_shard = &ddr_address_to_offset;
 
 	// Expected file size should be
 	// memory_size_bytes * lines / word * 1 word / 8 bytes * 1/4 shards

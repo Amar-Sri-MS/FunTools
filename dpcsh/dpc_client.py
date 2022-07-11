@@ -7,9 +7,15 @@
 
 from __future__ import print_function
 import json
+import select
 import socket
+import sys
 import time
 
+try:
+    from typing import Any, Tuple, Union
+except ImportError:
+    pass # since types are comments it is ok to miss the module
 
 # N.B. The user must start a dpcsh in text proxy mode before
 # creating a DpcClient, e.g.
@@ -29,17 +35,11 @@ class DpcProxyError(Exception):
 class DpcTimeoutError(Exception):
     pass
 
-class DpcClient(object):
-    def __init__(self, legacy_ok = True, unix_sock = False, server_address = None):
-        self.__legacy_ok = legacy_ok
-        self.__verbose = False
-        self.__truncate_long_lines = False
-        self.__async_queue = []
-        self.__next_tid = 1
-        self.__execute_timeout_seconds = None
-
-        if (unix_sock):
-            if (server_address is None):
+class DpcSocket:
+    def __init__(self, unix_sock, server_address):
+        # type: (Any, bool, Union[None, str, Tuple[str, int]]) -> None
+        if unix_sock:
+            if server_address is None:
                 server_address = '/tmp/dpc.sock'
             self.__sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         else:
@@ -48,13 +48,96 @@ class DpcClient(object):
             self.__sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         self.__sock.connect(server_address)
-        self.__sock_file = self.__sock.makefile(mode='rb')
+        self.__sock.setblocking(False)
+        self.__buffer = b''
+        self.__chunk_size = 32*1024
+
+    def __write(self, data, timeout_seconds):
+        # type: (Any, bytes, Union[float, None]) -> Tuple[Union[float, None], int]
+
+        start_time = time.time()
+        ready = select.select([], [self.__sock], [], timeout_seconds)
+        if ready[1]:
+            bytes_sent = self.__sock.send(data)
+        else:
+            raise DpcTimeoutError('receive() timeout')
+
+        if timeout_seconds is None:
+            return None, bytes_sent
+
+        remaining_time = timeout_seconds - start_time + time.time()
+        if remaining_time is not None and remaining_time < 0:
+            raise DpcTimeoutError('receive() timeout')
+
+        return remaining_time, bytes_sent
+
+    def send(self, data, timeout_seconds):
+        # type: (Any, Any, Union[float, None]) -> None
+        data_bytes = json.dumps(data).encode('utf8') + b'\n'
+        while len(data_bytes) > 0:
+            timeout_seconds, bytes_sent = self.__write(data_bytes, timeout_seconds)
+            data_bytes = data_bytes[bytes_sent:]
+
+    def __read(self, timeout_seconds):
+        # type: (Any, Union[float, None]) -> None
+        start_time = time.time()
+        ready = select.select([self.__sock], [], [], timeout_seconds)
+        if ready[0]:
+            self.__buffer += self.__sock.recv(self.__chunk_size)
+            remaining_time = timeout_seconds - start_time + time.time() if timeout_seconds is not None else None
+            if remaining_time is not None and remaining_time < 0:
+                raise DpcTimeoutError('receive() timeout')
+            return remaining_time
+        raise DpcTimeoutError('receive() timeout')
+
+    def receive(self, timeout_seconds):
+        # type: (Any, Union[float, None]) -> Any
+        position = self.__buffer.find(b'\n')
+
+        if position == -1:
+            remaining_time_seconds = self.__read(timeout_seconds)
+            return self.receive(remaining_time_seconds)
+
+        line = self.__buffer[:position]
+        self.__buffer = self.__buffer[position + 1:]
+
+        # decode the raw json and return
+        try:
+            decoded_results = json.loads(line, strict=False)
+        except:
+            raise DpcExecutionError("Unable to parse to JSON. data: %s" % result)
+
+        return decoded_results
+
+    def close(self):
+        # type: (Any) -> None
+        self.__sock.close()
+
+
+class DpcClient(object):
+    def __init__(self, legacy_ok = True, unix_sock = False, server_address = None):
+        # type: (Any, bool, bool, Union[None, str, Tuple[str, int]]) -> None
+        self.__verbose = False
+        self.__truncate_long_lines = False
+        self.__async_queue = []
+        self.__next_tid = 1
+        self.__execute_timeout_seconds = None
+        self.__sock = DpcSocket(unix_sock, server_address)
+
+    def close(self):
+        self.__sock.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self):
+        self.close()
 
     # main interface for running DPC commands
     def execute(self, verb, arg_list, tid = None, custom_timeout = False, timeout_seconds = None):
+        # type: (Any, str, list[Any], Union[None, int], bool, Union[float, None]) -> Any
 
-        # make sure verb is just a verb
-        if (" " in verb):
+        if " " in verb:
             raise RuntimeError("no spaces allowed in verbs")
         # make it a string and send it & get results
         tid = self.async_send(verb, arg_list, tid, custom_timeout, timeout_seconds)
@@ -62,79 +145,48 @@ class DpcClient(object):
 
         return results
 
-    # XXX: legacy interface. Avoid using this
-    def execute_command(self, command, args, custom_timeout = False, timeout_seconds = None):
-
-        if (not self.__legacy_ok):
-            raise RuntimeError("Attempted legacy command on non-legacy client instance")
-
-        encoded_args = json.dumps(args)
-
-        # #!sh prefix to ensure it's parsed as legacy input
-        cmd_line = "#!sh " + command + ' ' + encoded_args
-
-        # send the request
-        self.__send_raw(cmd_line, custom_timeout, timeout_seconds)
-
-        # XXX: we know what dpcsh will always stuff a zero tid for
-        # legacy commands
-        results = self.async_recv_wait()
-
-        if (command == 'execute'):
-            # XXX: flatten it back down for legacy clients
-            return json.dumps(results)
-        return results
-
     # Whether to print each command line and its result
     def set_verbose(self, verbose = True):
+        # type: (Any, bool) -> None
         self.__verbose = verbose
 
     def set_truncate_long_lines(self, truncate = True):
+        # type: (Any, bool) -> None
         self.__truncate_long_lines = truncate
 
     # passing None disables timeout
-    # passing 0 makes socket Non-blocking and not supported
-    # complete time spend in execute may be 2x higher
-    # because send and receive timeouts add
     def set_timeout(self, timeout_seconds):
+        # type: (Any,  Union[float, None]) -> None
         self.__execute_timeout_seconds = timeout_seconds
-        self.__sock.settimeout(timeout_seconds)
 
-    def async_send(self, verb, arg_list, tid = None, custom_timeout = False, timeout_seconds = None):
+    def async_send(self, verb, args, tid = None, custom_timeout = False, timeout_seconds = None):
+        # type: (Any,  str, Any, Union[int, None], bool, Union[float, None]) -> int
 
-        if (tid is None):
+        if tid is None:
             tid = self.__get_next_tid()
 
         # make the args a list if it's just a dict or int or something
-        if (type(arg_list) is not list):
-            arg_list = [arg_list]
+        arg_list = args if type(args) is list else [args]
+
+        if not custom_timeout:
+            timeout_seconds = self.__execute_timeout_seconds
 
         # make a json request in dict from
-        json_dict = { "verb": verb, "arguments": arg_list, "tid": tid }
-
-        # stringify and send it
-        json_str = json.dumps(json_dict)
-        self.__send_raw(json_str, custom_timeout, timeout_seconds)
+        self.__sock.send({ "verb": verb, "arguments": arg_list, "tid": tid }, timeout_seconds)
 
         return tid
 
     def async_wait(self, custom_timeout = False, timeout_seconds = None):
+        # type: (Any,  bool, Union[float, None]) -> Any
         # just pull the first thing off the wire and return it
-        result = self.__recv_json(custom_timeout, timeout_seconds)
+        if not custom_timeout:
+            timeout_seconds = self.__execute_timeout_seconds
+        result = self.__sock.receive(timeout_seconds)
         self.__print(result)
-
-        if not result:
-            return None
-
-        # decode the raw json and return
-        try:
-            decoded_results = json.loads(result, strict=False)
-        except:
-            raise DpcExecutionError("Unable to parse to JSON. data: %s" % result)
-
-        return decoded_results
+        return result
 
     def async_recv_any_raw(self, custom_timeout = False, timeout_seconds = None):
+        # type: (Any,  bool, Union[float, None]) -> Any
         # try and dequeue the first queued
         if (len(self.__async_queue) > 0):
             r = self.__async_queue.pop(0)
@@ -174,33 +226,6 @@ class DpcClient(object):
 
         return DpcClient.__handle_response(r)
 
-    def __recv_one_line(self, custom_timeout, timeout_seconds):
-        old_timeout = self.__sock.gettimeout()
-        if custom_timeout:
-            self.__sock.settimeout(timeout_seconds)
-        try:
-            return self.__sock_file.readline().rstrip()
-        except socket.timeout:
-            raise DpcTimeoutError('readline() timeout(cur timeout: {}(custom {}, new to {}))'.format(old_timeout, custom_timeout, timeout_seconds))
-        finally:
-            if custom_timeout:
-                self.__sock.settimeout(old_timeout)
-
-    def __recv_json(self, custom_timeout, timeout_seconds):
-        return self.__recv_one_line(custom_timeout, timeout_seconds)
-
-    def __send_line(self, line, custom_timeout, timeout_seconds):
-        old_timeout = self.__sock.gettimeout()
-        if custom_timeout:
-            self.__sock.settimeout(timeout_seconds)
-        try:
-            self.__sock.sendall((line + '\n').encode())
-        except socket.timeout:
-            raise DpcTimeoutError('sendall() timeout(cur timeout: {}(custom {}, new to {}))'.format(old_timeout, custom_timeout, timeout_seconds))
-        finally:
-            if custom_timeout:
-                self.__sock.settimeout(old_timeout)
-
     def __print(self, text, end = '\n'):
         if self.__verbose != True:
             return
@@ -214,21 +239,22 @@ class DpcClient(object):
         self.__next_tid += 1
         return tid
 
-    def __send_raw(self, json_str, custom_timeout, timeout_seconds):
-        self.__print(json_str, ' -> ')
-        self.__send_line(json_str, custom_timeout, timeout_seconds)
-
     @staticmethod
     def blob_from_string(data):
         """
         makes blob suitable to use with FunOS blob services from a given string
         """
+        if sys.version_info[0] != 2 and not isinstance(data, bytes):
+            raise RuntimeError("wrong datatype passed to blob_from_string, expecting bytes, got ", type(data))
         BLOB_CHUNK_SIZE = 32 * 1024
         blob_array = []
         position = 0
         while position < len(data):
             next_position = position + BLOB_CHUNK_SIZE
-            blob_array.append(map(ord, list(data[position:next_position])))
+            if sys.version_info[0] == 2:
+                blob_array.append(map(ord, data[position:next_position]))
+            else:
+                blob_array.append(list(data[position:next_position]))
             position = next_position
         return blob_array
 
@@ -237,7 +263,7 @@ class DpcClient(object):
         """
         makes blob suitable to use with FunOS blob services from a given string
         """
-        with open(filename, 'r') as f:
+        with open(filename, 'rb') as f:
             return DpcClient.blob_from_string(f.read())
 
     @staticmethod

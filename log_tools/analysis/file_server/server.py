@@ -28,7 +28,8 @@ import logger
 
 
 ALLOWED_EXTENSIONS = {'json'}
-DEFAULT_UPLOAD_DIRECTORY = 'files/analytics'
+FILE_PATH = os.path.abspath(os.path.dirname(__file__))
+DEFAULT_UPLOAD_DIRECTORY = f'{FILE_PATH}/files/analytics'
 
 app = Flask(__name__)
 
@@ -169,9 +170,14 @@ if __name__ == '__main__':
     flask_logger.propagate = False
     main()
 else:
+    log_handler = logger.get_logger(filename='file_server.log')
+
+    # Get the gunicorn logger and add our custom handler
     gunicorn_logger = logging.getLogger('gunicorn.error')
     app.logger.handlers = gunicorn_logger.handlers
     app.logger.setLevel(gunicorn_logger.level)
+    app.logger.addHandler(log_handler)
+    app.logger.propagate = False
 
     app.config.update({
         'UPLOAD_DIRECTORY': DEFAULT_UPLOAD_DIRECTORY

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 #  start_ptf_svr.py
 #
@@ -81,7 +81,7 @@ def run_testcase(ptf_testcases_loc, testcase_name, intf_map_file,
     #
     intf_map = json.load(open(intf_map_file))
     interfaces = ''
-    for intf_name, intf in intf_map.iteritems():
+    for intf_name, intf in intf_map.items():
         interfaces = interfaces + ''.join(' --interface %s@%s' % (intf['id'], intf_name))
 
     cmd = "%s --test-dir %s %s --relax --log-file %s --debug debug %s " % (

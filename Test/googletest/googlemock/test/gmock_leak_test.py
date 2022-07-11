@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright 2009, Google Inc.
 # All rights reserved.
@@ -66,12 +66,12 @@ class GMockLeakTest(gmock_test_utils.TestCase):
                                     env=environ).exit_code)
 
   def testDoesNotCatchLeakedMockWhenDisabled(self):
-    self.assertEquals(
+    self.assertEqual(
         0,
         gmock_test_utils.Subprocess(TEST_WITH_EXPECT_CALL +
                                     ['--gmock_catch_leaked_mocks=0'],
                                     env=environ).exit_code)
-    self.assertEquals(
+    self.assertEqual(
         0,
         gmock_test_utils.Subprocess(TEST_WITH_ON_CALL +
                                     ['--gmock_catch_leaked_mocks=0'],

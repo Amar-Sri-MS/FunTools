@@ -116,8 +116,8 @@
                 endTime = timeFilter[1];
                 // Setting values of date picker. Epoch in milliseconds
                 // is converted to seconds.
-                dt_start.value = startTime ? startTime/1000 : startTime;
-                dt_end.value = endTime ? endTime/1000 : endTime;
+                dt_start.value = isNumber(startTime) ? startTime/1000 : startTime;
+                dt_end.value = isNumber(endTime) ? endTime/1000 : endTime;
             }
         }
 
@@ -131,6 +131,11 @@
                 alert("ERROR: Could not parse the search string.");
             }
         }
+    }
+
+    // Check if the variable is a number
+    function isNumber(n){
+        return n !== "" && typeof(n) != "boolean" && !isNaN(n);
     }
 
     // When the user clicks on the button, scroll to the top of the document
@@ -179,13 +184,23 @@
 
     function handleTimeFilters(element, type="start") {
         const datetimeStr = element.value;
-        validateTimeFilter(datetimeStr);
-        // ES supports epoch in milliseconds.
-        if (type === "start") {
-            startTime = datetimeStr !== "" ? datetimeStr * 1000 : "";
+        const isValid = validateTimeFilter(datetimeStr);
+        if (!isValid) return;
+
+        let time;
+        if (isNumber(datetimeStr)) {
+            time = datetimeStr !== "" ? datetimeStr * 1000 : "";
         }
         else {
-            endTime = datetimeStr !== "" ? datetimeStr * 1000 : "";
+            time = datetimeStr ? datetimeStr : "";
+        }
+
+        // ES supports epoch in milliseconds.
+        if (type === "start") {
+            startTime = time;
+        }
+        else {
+            endTime = time;
         }
     }
 
@@ -585,8 +600,8 @@
             <div></div>
             <div style="display: flex;">
                 <a id="anchor_link" data-web_event="ANCHOR_LINK" style="display: none;" href="#0">Link to the selected log</a>
-                <button class="btn" data-web_event="VSWITCH_TOOL" onclick="window.open('/tools/{{log_id}}/vswitch')">vSwitch Tool</button>
-                <button class="btn" data-web_event="STORAGE_TOOL" onclick="window.open('/tools/{{log_id}}/volume')">Storage Tools</button>
+                <button class="btn" data-web_event="VSWITCH_TOOL_BUTTON" onclick="window.open('/tools/{{log_id}}/vswitch')">vSwitch Tool</button>
+                <button class="btn" data-web_event="STORAGE_TOOL_BUTTON" onclick="window.open('/tools/{{log_id}}/volume')">Storage Tools</button>
                 <button class="btn" onclick="toggleNotesOverlay()">
                     Add/Show notes({{ metadata.notes|length }})
                 </button>

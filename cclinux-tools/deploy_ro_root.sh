@@ -45,7 +45,6 @@ ln -f -s /tmp/localtime $DEPLOY_ROOT/etc/localtime
 #
 # NTP things
 #
-patch -p0 -d $DEPLOY_ROOT < $MYDIR/patches/ntpd.patch
 ln -s /tmp/ntp.conf $DEPLOY_ROOT/etc/ntp.conf
 
 #

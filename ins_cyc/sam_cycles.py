@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 # input:  dir containining .annotate (use sam_enc_ann.py to generate .annotate from samurai data)
 # output: .annotate_detail .cost_tree .cost_tree_detail
@@ -36,7 +36,7 @@ def funos_path(wdir):
   if wdir:
     funos = '%s/%s' % (wdir, funos)
   if not os.path.exists(funos):
-    print '%s not found' % funos
+    print('%s not found' % funos)
     sys.exit(-1)
   return funos
 
@@ -94,7 +94,7 @@ class FunctionState(object):
     prev_row = FunctionState.prev_i_row
     FunctionState.prev_i_row = next_row
     if prev_row != None:
-      cycles = long(next_row[0][1]) - long(prev_row[0][1])
+      cycles = int(next_row[0][1]) - int(prev_row[0][1])
       if cycles >= FunctionState.bubble_limit:
         bubble = 'bubble(%s cycles)' % cycles
         return bubble
@@ -162,7 +162,7 @@ class SummaryOutputState(object):
 
   def bubble_output(self, new_row):
     if self.old_row and new_row:
-      cycles = long(new_row[0][1]) - long(self.old_row[0][1])
+      cycles = int(new_row[0][1]) - int(self.old_row[0][1])
       if cycles > 4:
         return 'bubble(%s cycles)' % cycles
     return None
@@ -241,7 +241,7 @@ class SummaryOutputState(object):
       self.fst = self.fst.func_ret(None)
     # dump
     for inx in [0, 1]:
-      print '\twriting file %s' % out_file_list[inx]
+      print('\twriting file %s' % out_file_list[inx])
       with open(out_file_list[inx], 'w') as out_f:
         for fst in self.fst_list:
           fst.dump_recursive(out_f.write, is_detail=inx)
@@ -251,18 +251,18 @@ def output_cost_tree(in_file, out_file_list):
 
   lnum = 0 # line number
   with open(in_file, 'r') as f:
-    print '\twriting file %s' % out_file_list[0]
+    print('\twriting file %s' % out_file_list[0])
     with open(out_file_list[0], 'w') as out_f:
       #out_f = sys.stdout
       st.set_output_file_hdl(out_f)
       for line in f:
         lnum += 1
         (rec_type, cycle_inx, addr, asm_code) = line.strip().split(' ', 3)
-        cycle_inx = long(cycle_inx.split(':')[0])
+        cycle_inx = int(cycle_inx.split(':')[0])
         (func, loc) = gdb_get_addr_func_loc('0x%s' % addr)
         tmp = func[1:-1].split('+')
         func_name = tmp[0]
-        func_offset = long(tmp[1]) if len(tmp) == 2 else 0
+        func_offset = int(tmp[1]) if len(tmp) == 2 else 0
         (loc_f, loc_l) = loc.split(':')
         row = [(rec_type, cycle_inx, addr, func, loc, asm_code), [lnum, func_name, func_offset, loc_f, loc_l]]
         st.check_new_row(row)
@@ -270,7 +270,7 @@ def output_cost_tree(in_file, out_file_list):
       st.finish_output(out_file_list[1:])
 
 def annotate_single(funos, in_file, is_detail=False):
-  print 'processing %s' % in_file
+  print('processing %s' % in_file)
   with open(in_file, 'r') as f:
     addr_list = []
     for line in f:
@@ -280,11 +280,11 @@ def annotate_single(funos, in_file, is_detail=False):
 
   addr_list = set(addr_list)
 
-  print 'running: addr to func'
+  print('running: addr to func')
   d = obj_tools.prepare_addr_func(tool_map, funos, addr_list)
   addr_to_func_map.update(d)
 
-  print 'running: addr to line'
+  print('running: addr to line')
   d = obj_tools.prepare_addr_line(tool_map, funos, addr_list)
   addr_to_loc_map.update(d)
 

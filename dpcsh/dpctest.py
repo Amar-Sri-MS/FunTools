@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 ##
 ##  dpc_test.py
 ##
@@ -6,6 +6,7 @@
 ##  Copyright (C) 2018 Fungible. All rights reserved.
 ##
 
+from __future__ import print_function
 import json
 import os
 import sys
@@ -40,19 +41,19 @@ class TestDPCCommands(unittest.TestCase):
         self.addTypeEqualityFunc(tuple, self.assertTupleEqual)
         self.addTypeEqualityFunc(set, self.assertSetEqual)
         self.addTypeEqualityFunc(frozenset, self.assertSetEqual)
-        self.addTypeEqualityFunc(unicode, self.assertMultiLineEqual)
+        self.addTypeEqualityFunc(str, self.assertMultiLineEqual)
 
     def testEcho(self):
         """Tests the echo command returns the string passed in."""
         label = 'foo'
         ret = self.client.execute('echo', [label])
-        print 'dpc.execute returned %s' % ret
-        self.assertEquals(label, ret)
+        print('dpc.execute returned %s' % ret)
+        self.assertEqual(label, ret)
 
     def checkEchoMessage(self, message):
         result = self.client.execute('echo', [message])
         self.assertIsNotNone(result)
-        self.assertEquals(message, result.strip())
+        self.assertEqual(message, result.strip())
 
     def testSeveralEcho(self):
         """Tests the echo command returns the string passed in."""
@@ -62,11 +63,11 @@ class TestDPCCommands(unittest.TestCase):
     def testMath(self):
         ret = self.client.execute('math', ['+', 2, 3, 4, 5, 6])
         self.assertIsNotNone(ret)
-        self.assertEquals(20, int(ret))
+        self.assertEqual(20, int(ret))
 
     def testApp(self):
         ret = self.client.execute('debug', ['fibo', 10])
-        print 'testApp returned %s' % ret
+        print('testApp returned %s' % ret)
 
     def testTimeout(self):
         self.client.set_timeout(0.5)
@@ -74,20 +75,20 @@ class TestDPCCommands(unittest.TestCase):
             self.client.execute('sleep', [2])
             self.assertTrue(False)
         except dpc_client.DpcTimeoutError:
-            print 'timeout works'
+            print('timeout works')
             self.client.set_timeout(None)
             self.client.async_recv_any()
 
     def testLargeCommands(self):
         """Tests that long messages don't get truncated or corrupted."""
         for i in (10, 100, 1000):
-            print 'Attempting message of length %d' % i
+            print('Attempting message of length %d' % i)
             self.checkEchoMessage('a' * i)
 
     def testVeryLargeCommands(self):
         """Tests that long messages don't get truncated or corrupted."""
         for i in (10000, 50000, 100000, 1000000):
-            print 'Attempting message of length %d' % i
+            print('Attempting message of length %d' % i)
             self.checkEchoMessage('b' * i)
 
     def testAsync(self):
@@ -117,9 +118,25 @@ class TestDPCCommands(unittest.TestCase):
         self.assertEqual(r2, r1)
         self.assertEqual(r3, r1)
 
+    def testSubscription(self):
+        """ Testing subscriptions """
+        ticket = self.client.execute('notification', ['register', 'test_note_1', ''])
+        self.assertIsInstance(ticket, int)
+        ret = self.client.execute('notification', ['test_emit_periodic'])
+        self.assertEqual(ret, u'timer will post \'test_note_1\' every second')
+        for _ in range(0, 3):
+            ret = self.client.async_recv_wait(0, True, 2)
+            self.assertEqual(ret['cookie'], '')
+            self.assertEqual(ret['note'], 'test_note_1')
+        ret = self.client.execute('notification', ['unregister', 'test_note_1', ticket])
+        self.assertEqual(ret, True)
+        ret = self.client.execute('notification', ['test_emit_periodic'])
+        self.assertEqual(ret, u'timer stopped')
+
+
     def testBlob(self):
         with tempfile.NamedTemporaryFile() as fp:
-            original_data = 'b' * 100000
+            original_data = b'b' * 100000
             fp.write(original_data)
             fp.flush()
             uuid = self.client.execute('blob', ['store', ['quote', self.client.blob_from_file(fp.name)]])
@@ -143,10 +160,10 @@ def run_tests_client(client, exclude):
 
 def run_dpc_test(args, unix_sock, delay):
     """ Load up a dpcsh tcp socket """
-    print "### Running dpcsh as text proxy"
+    print("### Running dpcsh as text proxy")
     pid = subprocess.Popen(["./dpcsh", "--oneshot"] + args)
 
-    print "### pid is %s" % pid
+    print("### pid is %s" % pid)
     time.sleep(1)
 
     try:
@@ -196,7 +213,7 @@ def run_using_env(style, exclude):
     host, port = get_dpc_host_and_port(style)
     wait_for_port(host, port, 60)
 
-    print 'Connecting to dpc host at %s:%s' % (host, port)
+    print('Connecting to dpc host at %s:%s' % (host, port))
     client = dpc_client.DpcClient(server_address=(host, port))
 
     return run_tests_client(client, exclude)
@@ -212,16 +229,16 @@ def run_style(manual, style):
     (auto, args, unix_sock, delay) = STYLES[style]
 
     if (manual or auto):
-        print "Running tests for '%s'" % style
+        print("Running tests for '%s'" % style)
         return run_dpc_test(args, unix_sock, delay)
     else:
-        print "Skipping '%s'" % style
+        print("Skipping '%s'" % style)
         # Pretend all tests passed.
         return True
 
 
 def usage():
-    print "usage: %s [tcp, unix, qemu, fun-on-demand, fun-on-demand-cc, fun-on-demand-reduced]" % sys.argv[0]
+    print("usage: %s [tcp, unix, qemu, fun-on-demand, fun-on-demand-cc, fun-on-demand-reduced]" % sys.argv[0])
     sys.exit(1)
 
 

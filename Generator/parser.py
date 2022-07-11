@@ -1,4 +1,3 @@
-#!/usr/bin/python
 #
 # Code for parsing generator files.
 #
@@ -8,10 +7,6 @@ import os
 import re
 import sys
 import utils
-
-import yaml
-import yaml.composer
-import yaml.constructor
 
 # Fake value for width of field, used when we can't define the value
 # correctly on creation.
@@ -73,27 +68,20 @@ class BaseType:
     # Assume remaining fields are aligned at same as bit size.
     return self.bit_width
 
-  def __cmp__(self, other):
+  def IsSameBaseType(self, other):
     if other is None:
-      return -1
+      print('Comparing base type against None')
+      return False
 
     if self.name != other.name:
-      if self.name < other.name:
-        return -1
-      else:
-        return 1
+       return False
+
     if self.bit_width != other.bit_width:
-      if self.bit_width < other.bit_width:
-        return -1
-      else:
-        return 1
+        return False
     if self.node or other.node:
       if self.node.name != other.node.name:
-        if self.node.name < other.node.name:
-          return -1
-        else:
-          return 1
-    return 0
+          return False
+    return True
 
 
 # Types for fields with preferred endianness.
@@ -168,7 +156,7 @@ def NoStraddle(width, offset, bound):
   Used for determining appropriate types for fields not aligned on obvious
   boundaries.
   """
-  return offset / bound == (offset + width - 1) / bound
+  return offset // bound == (offset + width - 1) // bound
 
 
 def DefaultTypeForWidth(width, offset):
@@ -193,7 +181,7 @@ def DefaultTypeForWidth(width, offset):
     return TypeForName('uint128_t')
   elif width % 8 == 0:
     # Not quite correct- can't align array at less than 8 bit boundary.
-    return ArrayTypeForName('unsigned char', width / 8)
+    return ArrayTypeForName('unsigned char', width // 8)
   else:
     return TypeForName('uint64_t')
 
@@ -387,27 +375,26 @@ class Type:
   def Alignment(self):
     """Returns natural alignment for the type in bits."""
     if self.alignment == 0:
-      return utils.FLIT_SIZE / 8
+      return utils.FLIT_SIZE // 8
     return self.alignment
 
   def BitWidth(self):
     """Returns width of type in bits."""
     return self.bit_width
 
-  def __cmp__(self, other_type):
+  def IsSameType(self, other_type):
+    """Returns True if other_type is same exact type as this."""
     if other_type is None:
-      return -1
+      print('Invalid comparison against null type')
+      return False
 
-    if self.base_type != other_type.base_type:
-      if self.base_type < other_type.base_type:
-        return -1
-      else:
-        return 1
+    if not self.base_type.IsSameBaseType(other_type.base_type):
+        return False
     if self.is_array != other_type.is_array:
-      return self.is_array.__cmp__(other_type.is_array)
+      return False
     if self.is_array:
-      return self.array_size.__cmp__(other_type.array_size)
-    return 0
+      return self.array_size == other_type.array_size
+    return True
 
   def __str__(self):
     if self.is_array:
@@ -527,6 +514,7 @@ class Field(Declaration):
 
     # Bit offset from top of first word.
     self.offset_start = offset_start
+    # Width of field in bits, or None if field doesn't have an offset.
     self.bit_width = bit_width
 
     # True if the field the same width as the type.
@@ -628,13 +616,13 @@ class Field(Declaration):
     """Returns the flit in the container holding the start of this field."""
     if self.no_offset:
       return None
-    return self.StartOffset() / utils.FLIT_SIZE
+    return self.StartOffset() // utils.FLIT_SIZE
 
   def EndFlit(self):
     """Returns the flit in the container holding the end of this field."""
     if self.no_offset:
       return None
-    return (self.StartOffset() + self.BitWidth() - 1) / utils.FLIT_SIZE
+    return (self.StartOffset() + self.BitWidth() - 1) // utils.FLIT_SIZE
 
   def StartBit(self):
     """Returns the bit offset in the start flit.
@@ -739,7 +727,7 @@ class Field(Declaration):
 
     for proto_field in self.type.base_type.node.fields:
       if proto_field.no_offset:
-        new_subfield = Field(proto_field.Name(), proto_field.Type(), None, None)
+        new_subfield = Field(proto_field.Name(), proto_field.Type(), 0, 0)
       else:
         new_subfield = Field(proto_field.Name(), proto_field.Type(),
                              self.StartOffset() + proto_field.StartOffset(),
@@ -923,7 +911,8 @@ class Const(Declaration):
     self.name = name
     self.variables = []
     self.is_const = True
-    self.max_value = sys.maxint
+    # Any integer value is legal.
+    self.max_value = sys.maxsize
 
   def AddVariable(self, var):
     """Adds a new flagset variable to the flagset."""
@@ -1069,19 +1058,27 @@ class Struct(Declaration):
     return 0
 
   def EndOffset(self):
-    """Returns last offset (numbered from 0) for any field in the structure."""
+    """Returns furthest bit range for struct.
+
+    Ignores variable length fields.
+    """
     if not self.fields:
       return 0
 
-    return max([f.EndOffset() for f in self.fields])
+    return max([f.EndOffset() for f in self.fields
+                if f.EndOffset() is not None])
 
   def StartFlit(self):
     """Returns the flit in the container holding the start of this field."""
-    return self.StartOffset() / utils.FLIT_SIZE
+    if no_offset:
+        return 0
+    return self.StartOffset() // utils.FLIT_SIZE
 
   def EndFlit(self):
     """Returns the flit in the container holding the end of this field."""
-    return (self.StartOffset() + self.BitWidth() - 1) / utils.FLIT_SIZE
+    if no_offset:
+        return 0
+    return (self.StartOffset() + self.BitWidth() - 1) // utils.FLIT_SIZE
 
 
   def Flits(self):
@@ -2016,150 +2013,3 @@ class GenParser:
       return self.errors
     return None
 
-class YAMLParser:
-  """Parser that accepts hardware definitions generated by Ravi's Perl scripts.
-  """
-
-  def __init__(self):
-    # Current document is the top-level object.
-    self.current_document = Document()
-
-    # Map from YAML file name to parsed yaml.
-    self.all_yamls = {}
-
-    # YAML for the top-level file to generate.
-    self.yaml_to_generate = None
-
-    self.errors = []
-    # Relative path to directory containing file.
-    # For finding dependent YAML files.
-    self.current_directory = None
-
-  def ParseYAML(self, yaml, input_filename):
-    # We've now seen all dependencies - start parsing this file.
-    # Only render the structures if C_STRUCT is defined in the yaml file.
-    render_structures = False
-    if 'C_STRUCT' in yaml:
-      render_structures = True
-    if 'ENUMLIST' in yaml:
-      for enum in yaml['ENUMLIST']:
-        name = enum['NAME']
-        comment = enum.get('DESCRIPTION', None)
-        width = int(enum.get('WIDTH', 0))
-
-        enum_decl = Enum(name)
-        enum_decl.body_comment = comment
-        enum_decl.filename = input_filename
-        enum_decl.line_number = 0
-        self.current_document.AddEnum(enum_decl)
-
-        # TODO(bowdidge): Set limits on enum based on width,
-        # and double-check when we fill in values.
-
-        for enum_var in enum['ENUMS']:
-          name = enum_var['NAME']
-          comment = enum_var.get('DESCRIPTION', None)
-          value = int(enum_var.get('VALUE', 0))
-
-          var_decl = EnumVariable(name, value)
-          var_decl.key_comment = comment
-          var_decl.filename = input_filename
-          var_decl.line_number = 0
-          enum_decl.AddVariable(var_decl)
-
-    if not render_structures:
-      return yaml
-    if 'IS_STRUCT' in yaml:
-      structs = yaml['LIST']
-      for struct in structs:
-        name = struct['NAME']
-        comment = struct.get('DESCRIPTION', None)
-        is_union = False
-        if 'IS_UNION' in struct and struct['IS_UNION'] == 1:
-          is_union = True
-        struct_decl = Struct(name, is_union)
-        struct_decl.body_comment = comment
-        struct_decl.filename = input_filename
-        struct_decl.line_number = 0
-
-        self.current_document.AddStruct(struct_decl)
-
-        offset = 0
-        for f in struct['SIGLIST']:
-          field_name = f['NAME']
-          width = int(f.get('WIDTH', 0))
-          comment = f.get('DESCRIPTION', None)
-          type = None
-          if 'ENUM_NAME' in f:
-            enum_name = f['ENUM_NAME']
-            enum_decl = self.current_document.EnumWithName(enum_name)
-            type = DefaultTypeForWidth(enum_decl.BitWidth(), offset)
-            width = enum_decl.BitWidth()
-          elif 'STRUCT_NAME' in f:
-            struct_name = f['STRUCT_NAME']
-            struct = self.current_document.StructWithName(struct_name)
-            if not struct:
-              print('Unknown struct %s\n', struct_name)
-              type = TypeForName('uint64_t')
-            else:
-              type = RecordTypeForStruct(struct)
-              width = struct.BitWidth()
-          else:
-            type = DefaultTypeForWidth(width, offset)
-
-          if struct_decl.HasFieldWithName(field_name):
-            self.AddError(
-              'Field with name "%s" already exists in struct "%s"' % (
-                field_name, struct_decl.Name()))
-            return True
-
-          field_decl = Field(field_name, type, offset, width)
-          field_decl.body_comment = comment
-          field_decl.filename = input_filename
-          field_decl.line_number = 0
-
-          struct_decl.AddField(field_decl)
-
-          if not is_union:
-            offset += width
-
-    return yaml
-
-  def ParseFile(self, input_filename, is_root=False):
-    """Parse an individual YAML file.
-
-    is_root is true if this is the top file to parse.
-
-    Called recursively to handle dependent YAML files.
-    """
-    result = yaml.load(file(input_filename, 'r').read())
-
-    self.all_yamls[input_filename] = result
-
-    if 'INCLIST' in result:
-      for included_file in result['INCLIST']:
-        included_path = included_file
-        if self.current_directory:
-          included_path = self.current_directory + '/' + included_file
-        included_path += '.yaml'
-
-        self.ParseFile(included_path, is_root=False)
-
-    # Need to provide file and line.
-    self.ParseYAML(result, input_filename)
-
-  def Parse(self, input_filename):
-    """Parses a generated file provided as text.
-
-    Parse the file and all dependent files, then add all to the parse
-    tree.
-
-    Returns array of errors, or None if no errors occurred.
-    """
-    self.current_document.filename = input_filename
-    self.current_directory = os.path.dirname(input_filename)
-
-    result = self.ParseFile(input_filename, is_root=True)
-
-    # Should return something like declarations in current file?
-    return None

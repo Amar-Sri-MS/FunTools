@@ -2,6 +2,7 @@ from prettytable import PrettyTable, FRAME
 from datetime import datetime
 import time
 import re
+import json
 from nu_commands import do_sleep_for_interval
 
 VOL_TYPE_BLK_LOCAL_THIN = 'VOL_TYPE_BLK_LOCAL_THIN'
@@ -10,6 +11,19 @@ VOL_TYPE_BLK_RDS = 'VOL_TYPE_BLK_RDS'
 class StorageCommands(object):
     def __init__(self, dpc_client):
         self.dpc_client = dpc_client
+
+    def execute_commands(self, verb, command):
+        try:
+            if verb == "sdebug" or verb == "storage":
+                 jsoncommand = json.loads(command)
+                 result = self.dpc_client.execute(verb=verb, arg_list=[jsoncommand])
+            else:
+                result = self.dpc_client.execute(verb=verb, arg_list=[command])
+            if result:
+                print(json.dumps(result, indent=3))
+        except Exception as ex:
+            print "ERROR: %s" % str(ex)
+            self.dpc_client.disconnect()
 
     def storage_list_controllers(self, grep=None):
         cmd = "storage/ctrlr/info/7/0"
@@ -34,7 +48,7 @@ class StorageCommands(object):
         try:
             result = self.dpc_client.execute(verb="peek", arg_list=[cmd])
             if result:
-                table_obj = PrettyTable(['sl no', 'device_type'])
+                table_obj = PrettyTable(['sl no', 'device_id'])
                 table_obj.align = 'l' 
                 counter = 0                                           
                 for key, val in result.iteritems():
@@ -63,6 +77,34 @@ class StorageCommands(object):
                 print "******* %s ********" % voltype
                 print table_obj
         except Exception as ex: 
+            print "ERROR: %s" % str(ex)
+            self.dpc_client.disconnect()
+
+    def storage_list_volumes_pv(self, voltype):
+        cmd = "storage/volumes/"+voltype
+        try:
+            result = self.dpc_client.execute(verb="peek", arg_list=[cmd])
+            if result:
+                table_obj = PrettyTable(['sl no', 'volume uuid', 'pvg_uuid', 'lsv_uuid'])
+                table_obj.align = 'l'
+                counter = 0
+                for key, val in result.iteritems():
+                    for ikey, ival in val.iteritems():
+                        for inner_key in ival:
+                            if inner_key == "pvg_uuid":
+                                pvg_uuid = ival[inner_key]
+                                pv_uuid = key
+                                counter += 1
+                    cmd1 = "storage/volumes/VOL_TYPE_BLK_PART_VG/%s" % pvg_uuid
+                    result1 = self.dpc_client.execute(verb="peek", arg_list=[cmd1])
+                    if result1:
+                        for key, val in result1.iteritems():
+                            for ikey in val:
+                                if ikey == "md_vol_uuid":
+                                    table_obj.add_row([counter, pv_uuid, pvg_uuid, val[ikey]])
+                print "******* %s ********" % voltype
+                print table_obj
+        except Exception as ex:
             print "ERROR: %s" % str(ex)
             self.dpc_client.disconnect()
 
@@ -304,7 +346,7 @@ class StorageCommands(object):
                 table1_obj = PrettyTable(['slba', 'pba_info'])
                 table1_obj.align = 'l'
                 for key, val in result.iteritems():
-                    if key == "vol-uuid":
+                    if key == "vol_uuid":
                         table_obj.add_column("vol_uuid", [val])
                     elif key == "drive_id":
                         table_obj.add_column("drive_id", [val])
@@ -341,7 +383,7 @@ class StorageCommands(object):
                                 for _key in sorted(result[key]):
                                     if result[key][_key] == ctrlr_uuid:
                                         for _key in sorted(result[key]):
-                                            if _key == "Name spaces":
+                                            if _key == "name_spaces":
                                                 continue
                                             else:
                                                 table_obj.add_row([_key, result[key][_key], diff_result[key][_key]])
@@ -355,7 +397,7 @@ class StorageCommands(object):
                                 for _key in sorted(result[key]):
                                     if result[key][_key] == ctrlr_uuid:
                                         for _key in sorted(result[key]):
-                                            if _key == "Name spaces":
+                                            if _key == "name_spaces":
                                                 continue
                                             else:
                                                 table_obj.add_row([_key, result[key][_key]])
@@ -378,6 +420,7 @@ class StorageCommands(object):
             while True:
                 try:
                     result = self.dpc_client.execute(verb="peek", arg_list=[cmd])
+                    result.pop('controller', None)
                     master_table_obj = PrettyTable()
                     master_table_obj.align = 'l'
                     master_table_obj.header = False
@@ -412,6 +455,47 @@ class StorageCommands(object):
         except Exception as ex:
             print "ERROR: %s" % str(ex)
             self.dpc_client.disconnect()
+
+    def storage_device_stats(self, device_id):
+       cmd = "storage/devices/nvme/ssds"
+       storagepeekcommands = StoragePeekCommands(self.dpc_client)
+       try:
+           prev_result = None
+           while True:
+               try:
+                   result = self.dpc_client.execute(verb="peek", arg_list=[cmd])
+                   if result:
+                       if prev_result:
+                           diff_result = storagepeekcommands._get_difference(result=result, prev_result=prev_result)
+                           for key in sorted(result):
+                               table_obj = PrettyTable(['Field Name', 'Counter', 'Counter Diff'])
+                               table_obj.align = 'l'
+                               table_obj.sortby = 'Field Name'
+                               if key == device_id:
+                                   for _key in sorted(result[key]):
+                                       table_obj.add_row([_key, result[key][_key], diff_result[key][_key]])
+			           print table_obj
+                       else:
+                           for key in sorted(result):
+                               table_obj = PrettyTable(['Field Name', 'Counter'])
+                               table_obj.align = 'l'
+                               table_obj.sortby = 'Field Name'
+                               if key == device_id:
+                                   for _key in sorted(result[key]):
+                                       table_obj.add_row([_key, result[key][_key]])
+			           print table_obj
+                       prev_result = result
+                       print "\n########################  %s ########################\n" % str(storagepeekcommands._get_timestamp())
+                       do_sleep_for_interval()
+                   else:
+                       print "Empty result"
+                       break
+               except KeyboardInterrupt:
+                   self.dpc_client.disconnect()
+                   break
+       except Exception as ex:
+           print "ERROR: %s" % str(ex)
+           self.dpc_client.disconnect()
 
     def storage_rdsock_vp_stats(self, controller='controller', opcode='GET_RDSOCK_VP_STATS'):
         try:

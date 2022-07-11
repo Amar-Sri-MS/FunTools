@@ -1,8 +1,9 @@
-#!/usr/bin/python2.7
+#!/usr/bin/python3
+
 import os
 import re
 import sys
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 import copy
 import collections
 import shutil
@@ -25,11 +26,11 @@ def download_files(url):
     if not os.path.exists(local_job_dir):
         os.makedirs(local_job_dir)
 
-    print "Downloading files"
+    print("Downloading files")
 
     # html
     html_path = os.path.join(local_job_dir, "html")
-    resp = urllib2.urlopen(url)
+    resp = urllib.request.urlopen(url)
     html_data = resp.read()
     assert html_data
     m = re.search(r"<td>Job State</td><td>\"(?P<job_state>\w+)\"</td>", html_data)
@@ -121,11 +122,11 @@ def get_wu_list(job_dir, uart_timestamp):
     wu_path = job_dir + "/wu.list"
     if (os.path.exists(wu_path)
         and (os.stat(wu_path).st_mtime > uart_timestamp)):
-        print "Using cached WU list"
+        print("Using cached WU list")
         with open(wu_path, "r") as f:
             return f.read().split()
 
-    print "Generating WU list"
+    print("Generating WU list")
 
     if os.uname()[0] == "Darwin":
         gdb_path = "/Users/Shared/cross/mips64/bin/mips64-unknown-elf-gdb"
@@ -206,15 +207,15 @@ def parse_perfmon_data(job_dir, wu_list):
     assert count % LINES_PER_SAMPLE == 0
 
     samples = []
-    for vp in vp_to_values.keys():
+    for vp in list(vp_to_values.keys()):
         values = vp_to_values[vp]
         del vp_to_values[vp]
         assert len(values) % LINES_PER_SAMPLE == 0, len(values)
         ccv = vp2ccv(vp)
-        for i in xrange(0, len(values), LINES_PER_SAMPLE):
+        for i in range(0, len(values), LINES_PER_SAMPLE):
             sample = PerfSample(ccv, wu_list, *values[i:i+LINES_PER_SAMPLE]);
             if sample.cp0_count == 0xacce00000000:
-                print "Skipping custom data:", sample
+                print("Skipping custom data:", sample)
                 continue
             #print sample
             samples.append(sample)
@@ -285,7 +286,7 @@ def main(url):
     else:
         # accept a local path as pre-downloaded data
         job_dir = url
-        print "Using local job direcotry '%s'" % job_dir
+        print("Using local job direcotry '%s'" % job_dir)
     (uart_data, timestamp) = get_uart_data(job_dir)
     wu_list = get_wu_list(job_dir, timestamp)
     event_types = parse_event_types(uart_data)
@@ -294,9 +295,9 @@ def main(url):
     wustack_start, wustack_end = parse_wustack_range(uart_data, debug_build)
 
     if debug_build:
-        print
-        print "WARNING!!! This appears to be a debug build, which is not a good candidate for perf testing"
-        print
+        print()
+        print("WARNING!!! This appears to be a debug build, which is not a good candidate for perf testing")
+        print()
 
     with open(os.path.join(job_dir, "perf.data"), "w") as f:
         pd = PerfData()
@@ -306,14 +307,14 @@ def main(url):
         pd.debug_build = debug_build
         pd.rows = table_from_samples(samples, event_types)
         pickle.dump(pd, f)
-    print "Data imported successfully"
+    print("Data imported successfully")
 
     # for manual validation purposes, make a simple text version
     with open(os.path.join(job_dir, "samples.txt"), "w") as f:
         f.write("%s\n" % samples[0].header_str())
         for sample in samples:
             f.write("%s\n" % sample)
-    print "Samples saved to samples.txt"
+    print("Samples saved to samples.txt")
 
 
 if __name__ == '__main__':

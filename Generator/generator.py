@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 # generator.py
 # Generator takes descriptions of structures describing device commands
@@ -250,7 +250,7 @@ class Packer(Pass):
       # field, or if the packed field is already full (or too full).
       # Code outside checks for packed fields too large for the type.
       if (field.type.BitWidth() == field.BitWidth() or
-          current_type != field.type or
+          (not current_type or not current_type.IsSameType(field.type)) or
           bits_occupied >= field.type.BitWidth()):
         fields_to_pack.append((current_type, current_group))
         current_group = []
@@ -341,7 +341,7 @@ class Packer(Pass):
     new_fields = []
     flit_field_map = the_struct.FlitFieldMap()
 
-    for flit, fields_in_flit in flit_field_map.iteritems():
+    for flit, fields_in_flit in flit_field_map.items():
       self.PackFlit(the_struct, flit, fields_in_flit)
 
 
@@ -420,14 +420,15 @@ def ReformatCodeWithIndent(source):
                        stderr=subprocess.STDOUT,
                        bufsize=1)
   # indent requires line feed after last line.
-  out = p.communicate(source + '\n')
+  source = source + '\n'
+  out = p.communicate(source.encode('utf-8'))
 
   # If there was an indent fail
   if (p.returncode != 0):
-    print "%s returned error %d, ignoring output" % (indent_path, p.returncode)
+    print("%s returned error %d, ignoring output" % (indent_path, p.returncode))
     return None
 
-  return out[0]
+  return out[0].decode('utf-8')
 
 def ReformatCodeWithAStyle(source):
   """Reformats provided source with AStyle.
@@ -456,13 +457,14 @@ def ReformatCodeWithAStyle(source):
                        stderr=subprocess.STDOUT,
                        bufsize=1)
   # Make sure there's a line feed after last line.
-  out = p.communicate(source + '\n')
+  source = source + '\n'
+  out = p.communicate(source.encode('utf-8'))
   # If there was an indent fail
   if (p.returncode != 0):
-    print "%s returned error %d, ignoring output" % (indent_path, p.returncode)
+    print("%s returned error %d, ignoring output" % (indent_path, p.returncode))
     return None
 
-  return out[0]
+  return out[0].decode('utf-8')
 
 # Incremented whenever the generator's algorithm changes in ways that
 # would affect output.
@@ -481,7 +483,7 @@ def FileHash(filename):
     return GENERATOR_VERSION
   readFile = f.read()
   f.close()
-  hash_as_int = int(hashlib.md5(readFile).hexdigest(), 16)
+  hash_as_int = int(hashlib.md5(readFile.encode('utf-8')).hexdigest(), 16)
   return (hash_as_int & 0xfffffff) + GENERATOR_VERSION
 
 def GenerateFromTemplate(doc, template_filename, generator_file, output_base,
@@ -560,7 +562,11 @@ def PrintErrors(error_list):
 
 
 def WriteFile(filename, contents):
-  """Writes generated code to a specified file."""
+  """Writes generated code to a specified file.
+
+  filename: string name of file to send output to.
+  contents: bytes containing contents.
+  """
   f = open(filename, 'w')
   f.write(contents)
   f.close()
@@ -583,12 +589,8 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
     gen_parser = parser.GenParser(use_linux_types)
     errors = gen_parser.Parse(input_filename, input_stream)
     doc = gen_parser.current_document
-  elif input_filename.endswith('.yaml'):
-    yaml_parser = parser.YAMLParser()
-    errors = yaml_parser.Parse(input_filename)
-    doc = yaml_parser.current_document
   else:
-    error = 'Expected input filename to end in .gen or .yaml, got %s.' % (
+    error = 'Expected input filename to end in .gen, got %s.' % (
         input_filename)
     error += 'Rename file to match input file format.'
     return (None, [error])
@@ -722,7 +724,7 @@ def ShowDeps(style):
   elif style == OutputStyleLinux:
     deps.extend(['header-linux.tmpl', 'source-linux.tmpl'])
 
-  print ' '.join(os.path.join(basepath, f) for f in deps)
+  print(' '.join(os.path.join(basepath, f) for f in deps))
 
 
 def main():
@@ -730,7 +732,7 @@ def main():
     opts, args = getopt.getopt(sys.argv[1:], 'hc:g:o:d',
                                ['help', 'output=', 'codegen=', 'deps'])
   except getopt.GetoptError as err:
-    print str(err)
+    print(str(err))
     Usage()
     sys.exit(2)
 
@@ -823,7 +825,7 @@ def main():
     sys.exit(1)
 
   if out:
-    print out
+    print(out)
 
 if __name__ == '__main__':
   main()

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright 2006, Google Inc.
 # All rights reserved.
@@ -256,7 +256,7 @@ class Subprocess:
         # Changes made by os.environ.clear are not inheritable by child
         # processes until Python 2.6. To produce inheritable changes we have
         # to delete environment items with the del statement.
-        for key in dest.keys():
+        for key in list(dest.keys()):
           del dest[key]
         dest.update(src)
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import argparse
 import socket
 import sys
@@ -17,7 +17,7 @@ from threading import Thread
 try:
    os.environ["WORKSPACE"]
 except KeyError:
-   print "Please set the environment variable WORKSPACE"
+   print("Please set the environment variable WORKSPACE")
    sys.exit(1)
 sys.path.append(os.environ["WORKSPACE"]+"/FunTools/dbgutils")
 sys.path.append(os.environ["WORKSPACE"]+"/FunTools/dbgutils/probeutils")
@@ -93,7 +93,7 @@ def rcv_packets_from_server(self, sock):
             return
         jdata = json.loads(result)
         intf = jdata["intf"]
-        print (("Received PTF Response on intf %s: " % str(intf)) + str(jdata))
+        print(("Received PTF Response on intf %s: " % str(intf)) + str(jdata))
         #get rid of the fpg prefix
         if("hnu" in intf):
             intf = intf.replace("hnu_fpg", "")
@@ -105,12 +105,12 @@ def rcv_packets_from_server(self, sock):
         pkt = jdata["pkt"]
         pkt_byte_list = pkt.split()
         pkt_byte_list=[int(i,16) for i in pkt_byte_list]
-        print (tuple((intf, pkt_byte_list)))
+        print(tuple((intf, pkt_byte_list)))
         #store the return data into a list
         if not (intf in ignore_ports) :
             rcv_pkt_list.append(tuple((intf, pkt_byte_list)))
         else :
-            print ("Ignoring packet on intf %s from PTF" % intf)
+            print("Ignoring packet on intf %s from PTF" % intf)
 
     except(socket.timeout):
         pass
@@ -132,7 +132,7 @@ def connect_ptf():
     global ptf_sock
     ptf_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     ptf_sock.connect((args.ptf_host,args.ptf_port))
-    print 'Connected with PTF server. Start listening for packets from DUT'
+    print('Connected with PTF server. Start listening for packets from DUT')
     ptf_sock.settimeout(0.5)
 # Start receving thread
     rcvthread = RcvThread(ptf_sock)
@@ -150,7 +150,7 @@ def connect_ptf():
 #      07:    pkt req         2B msglen, 1B cmd
 
 def test_ptf():
-    print 'do test_ptf'
+    print('do test_ptf')
     if 1:
        pkt_data_with_space = ""
        pkt_data="00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
@@ -159,8 +159,8 @@ def test_ptf():
        #get rid of the trailing space
        pkt_data_with_space = pkt_data_with_space[0:-1]
        json_pkt = '{ "intf" :  '+ '"' + "fpg" + str(0) + '"' ', "pkt" : "' +pkt_data_with_space+'"}'
-       print "Sending pkt to PTF server:"
-       print json_pkt
+       print("Sending pkt to PTF server:")
+       print(json_pkt)
        ptf_sock.sendall(json_pkt)
        time.sleep(0.5)
     else:
@@ -182,23 +182,23 @@ CMD_PKT_REQ       = 7
 
 def print_command(data):
   if (data == CMD_ACK_NOP) :
-     print "ACK_NOP"
+     print("ACK_NOP")
   elif (data == CMD_RESETA) :
-     print "CMD_RESETA"
+     print("CMD_RESETA")
   elif (data == CMD_RESETD) :
-     print "CMD_RESETD"
+     print("CMD_RESETD")
   elif (data == CMD_CSR_WRITE) :
-     print "CMD_CSR_WRITE"
+     print("CMD_CSR_WRITE")
   elif (data == CMD_CSR_READ) :
-     print "CMD_CSR_READ"
+     print("CMD_CSR_READ")
   elif (data == CMD_CSR_READ_RSP) :
-     print "CMD_CSR_READ_RSP"
+     print("CMD_CSR_READ_RSP")
   elif (data == CMD_PKT) :
-     print "CMD_PKT"
+     print("CMD_PKT")
   elif (data == CMD_PKT_REQ) :
-     print "CMD_PKT_REQ"
+     print("CMD_PKT_REQ")
   else :
-     print "unknown command!"
+     print("unknown command!")
 
 ##########recv_str#################################
 #recv n bytes and returns a string of size n
@@ -216,17 +216,17 @@ def recv_str(n):
 def process_cmd (cmd, msg_len):
   #print_command(cmd)
   if (cmd == CMD_ACK_NOP):
-     print 'not implemented yet'
+     print('not implemented yet')
   elif (cmd == CMD_RESETA):
-     print 'not implemented yet'
+     print('not implemented yet')
   elif (cmd == CMD_RESETD):
-     print 'not implemented yet'
+     print('not implemented yet')
   elif (cmd == CMD_CSR_WRITE):
      process_cmd_csr_write(msg_len)
   elif (cmd == CMD_CSR_READ):
      process_cmd_csr_read(msg_len)
   elif (cmd == CMD_CSR_READ_RSP):
-     print 'not implemented yet'
+     print('not implemented yet')
   elif (cmd == CMD_PKT):
      process_cmd_pkt(msg_len)
   elif (cmd == CMD_PKT_REQ):
@@ -279,7 +279,7 @@ def process_cmd_csr_write (msg_len):
 ##########process_cmd_pkt##########################
 def process_cmd_pkt (msg_len):
 
-  print 'in process_cmd_pkt'
+  print('in process_cmd_pkt')
 
   if not args.ptf_dis:
     buf = recv_str(2) #get the 2B port number
@@ -287,7 +287,7 @@ def process_cmd_pkt (msg_len):
 
     data_len = msg_len - 2 - 1 -2  #msg_len - MSGLEN_SIZE - CMD_SIZE - PORT_SIZE
     data_byte_arr = recv_str(data_len)
-    print 'recvd pkt from client length=%d on port %d' % (len(data_byte_arr), pkt_port)
+    print('recvd pkt from client length=%d on port %d' % (len(data_byte_arr), pkt_port))
 
     pkt_data = binascii.hexlify(data_byte_arr)
     #ptf server wants a space after every byte
@@ -302,8 +302,8 @@ def process_cmd_pkt (msg_len):
         json_pkt = '{ "intf" :  '+ '"' + "hnu_fpg" + str(pkt_port-hnu_port_base) + '"' ', "pkt" : "' +pkt_data_with_space+'"}'
     else:
         json_pkt = '{ "intf" :  '+ '"' + "fpg" + str(pkt_port) + '"' ', "pkt" : "' +pkt_data_with_space+'"}'
-    print "Sending pkt to PTF server:"
-    print json_pkt
+    print("Sending pkt to PTF server:")
+    print(json_pkt)
     ptf_sock.sendall(json_pkt)
     #Sleep to make sure message is out
     time.sleep(0.5)
@@ -317,7 +317,7 @@ def process_cmd_pkt (msg_len):
 
   reply = bytearray(reply)
 
-  print "server reply done for pkt_send: "
+  print("server reply done for pkt_send: ")
   conn.sendall(reply)
 ###################################################
 ##########process_cmd_pkt_req######################
@@ -334,7 +334,7 @@ def process_cmd_pkt_req (msg_len):
       if(len(pkt_bytes) > 127 ) :
           exit_loop = 1
       else:
-          print "dropping pkt < 100 bytes  mostly icmp discovery pkts"
+          print("dropping pkt < 100 bytes  mostly icmp discovery pkts")
           exit_loop = 0
     else :
       pkt_port = 0;
@@ -342,9 +342,9 @@ def process_cmd_pkt_req (msg_len):
       exit_loop = 1
 
   if (len(pkt_bytes) == 0 ) :
-      print "process_cmd_pkt_req:no pkt available req_cnt=%0d" %(req_cnt)
+      print("process_cmd_pkt_req:no pkt available req_cnt=%0d" %(req_cnt))
   else :
-      print "process_cmd_pkt_req:reply pkt_len is %d,req_cnt=%0d" % (len(pkt_bytes),req_cnt)
+      print("process_cmd_pkt_req:reply pkt_len is %d,req_cnt=%0d" % (len(pkt_bytes),req_cnt))
 
   #print "reply pkt = " + ",".join(repr(hex(n)) for n in pkt_bytes)
   #print "recv pkt = " + pkt_bytes
@@ -356,10 +356,10 @@ def process_cmd_pkt_req (msg_len):
   reply.insert(3, int(pkt_port) >>8)
   reply.insert(4, int(pkt_port) & 0xff)
   if(len(pkt_bytes) !=0 ):
-    print pkt_bytes
+    print(pkt_bytes)
    # pkt_bytes=[int(i,16) for i in pkt_bytes]
     reply += pkt_bytes
-    print reply
+    print(reply)
 
 
   reply = bytearray(reply)
@@ -417,10 +417,10 @@ def process_cmd_csr_read (msg_len):
 def do_server_speed_test():
     addr=0x5015c00078
     data_words_list=[0x12341234]
-    print "start:",datetime.datetime.now()
+    print("start:",datetime.datetime.now())
     for i in range(1000):
          (status, result) = dbgprobe().csr_poke(addr, len(data_words_list), data_words_list, chip_inst=bmc_chip_inst)
-    print "end  :",datetime.datetime.now()
+    print("end  :",datetime.datetime.now())
 
 def handle_connection(conn):
     buf = ''
@@ -445,7 +445,7 @@ def connect_dbgprobe(tpod,tpod_jtag,tpod_pcie,tpod_force):
     if tpod_jtag:
        jtag_info=duts.get_jtag_info(tpod)
        (bmc,jtag_probe_id, jtag_probe_ip,chip_type,jtag_bitrate)=jtag_info
-       print "connecting to JTAG Proxy "+jtag_probe_ip
+       print("connecting to JTAG Proxy "+jtag_probe_ip)
        status = dbgprobe().connect(mode='jtag',
                                    probe_ip_addr=jtag_probe_ip,
                                    probe_id=jtag_probe_id,
@@ -492,7 +492,7 @@ def connect_dbgprobe(tpod,tpod_jtag,tpod_pcie,tpod_force):
                                       chip_type=chip_type)
        else:
           (bmc,i2c_probe_serial, i2c_proxy_ip, i2c_slave_addr, this_i2c_bitrate,chip_type)=i2c_info
-          print "connecting to I2C Proxy "+i2c_proxy_ip
+          print("connecting to I2C Proxy "+i2c_proxy_ip)
           status = dbgprobe().connect(bmc_board=bmc,
                                       mode='i2c',
                                       probe_ip_addr=i2c_proxy_ip,

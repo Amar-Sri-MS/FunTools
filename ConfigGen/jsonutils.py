@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Converts lenient json to standard json
 #The input files are allowed to make two side-steps from the standard JSON
@@ -120,15 +120,67 @@ def merge_dicts(cfg1, cfg2):
 
     return new_cfg
 
-# Merge two dictionaries
-# Like merge_dicts above, but recursively merges dictionaries too
-def merge_dicts_recursive(cfg1, cfg2):
-    for k, v in cfg1.items():
-        if isinstance(v, dict):
-            merge_dicts_recursive(v, cfg2.setdefault(k, {}))
-        elif isinstance(v, list) and k in cfg2:
-            cfg2[k].extend(v)
-        elif not k in cfg2:
-            cfg2[k] = v
+# Create a new dictionary with merged contents of 1st and 2nd, using the following rules:
+#  if a value entry exists in only either of the args, then use it in returned dict
+#  if a value entry exists in both args, use 2nd value in returned dict
+#  if a list entry exists in both args, then elements from 2nd are appended to 1st
+#  if a dict entry exists in both args, then rules above are applied recursively
+def merge_dicts_recursive(orig, other_):
+    other = {}
+    flags = {}
+    for k, v in other_.items():
+        # '!' in key name has a special meaning to add extra processing
+        # directives
+        key = k.split("!")
+        other[key[0]] = v
+        flags[key[0]] = key[1:]
 
-    return cfg2
+    res = {}
+    for k, v in list(orig.items()):
+        if k in other:
+            if isinstance(v, dict):
+                assert isinstance(other[k], dict), "{} should be a dict in both dictionaries".format(k)
+                res[k] = merge_dicts_recursive(v, other[k])
+            elif isinstance(v, list):
+                assert isinstance(other[k], list), "{} should be a list in both dictionaries".format(k)
+                if 'override' in flags[k]:
+                    res[k] = other[k]
+                else:
+                    res[k] = v + other[k]
+            else:
+                res[k] = other[k]
+
+            del other[k]
+        else:
+            res[k] = v
+
+    for k, v in list(other.items()):
+        res[k] = v
+
+    return res
+
+
+# Raise an error when duplicate keys are found
+# Otherwise the default loader silently loads the last value, which
+#  can lead to subtle and hard to find errors
+def _json_ordered_pair_handler(pairs):
+    d = {}
+    for k, v in pairs:
+        if k in d:
+           raise ValueError("Duplicate key: {}".format(k))
+        else:
+           d[k] = v
+    return d
+
+# Load a Fungible-style json
+# A Fungible-style json may contain C-style comments, unquoted values etc
+def load_fungible_json(fname, strict=True):
+    with open(fname, 'r') as f:
+        this_json = f.read()
+        this_json = standardize_json(this_json)
+        try:
+            return json.loads(this_json, object_pairs_hook=_json_ordered_pair_handler, strict=strict)
+        except ValueError as e:
+            raise ValueError("Error processing {}:{}".format(fname, str(e)))
+
+    return None

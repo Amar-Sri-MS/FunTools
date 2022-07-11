@@ -13,7 +13,7 @@ function trackWebEvent(eventName, data=null) {
         event: eventName,
         data,
         timestamp: Date.now(),
-        logID: logId
+        logID: typeof logId !== "undefined" ? logId : null
     }
 
     const TRACK_WEB_EVENT_API = `${window.location.origin}/events/track`;

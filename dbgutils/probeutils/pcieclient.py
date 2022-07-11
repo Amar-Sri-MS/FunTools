@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''
 pcieclient connects to pcieproxy on remote server which can issue register
 access commands on our behalf using an mmap()'ed PCIe BAR Control/Status

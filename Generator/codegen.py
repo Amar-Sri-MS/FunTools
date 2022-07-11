@@ -1,4 +1,3 @@
-#!/usr/bin/python
 #
 # Code related to generating C headers and sources.
 #

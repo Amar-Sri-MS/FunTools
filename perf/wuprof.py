@@ -1,11 +1,11 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 import io
 import os
 import re
 import cgi
 import sys
 import math
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 import optparse
 import subprocess
 import svghistogram
@@ -35,10 +35,10 @@ import bottle
 BLOCK_SIZE = 1024 * 1024 # decent size payload
 
 def read_web_file(url):
-    print "Reading text URL %s" % url
+    print("Reading text URL %s" % url)
 
     s = ""
-    u = urllib2.urlopen(url)
+    u = urllib.request.urlopen(url)
     while True:
         buf = u.read(BLOCK_SIZE)
         if (not buf):
@@ -46,18 +46,18 @@ def read_web_file(url):
 
         s += buf
 
-    print "Read %d bytes from remote" % len(s)
+    print("Read %d bytes from remote" % len(s))
     return s
 
 def download_file(url, dest):
 
-    print "Downloading file %s" % url
+    print("Downloading file %s" % url)
 
     try:
-        u = urllib2.urlopen(url)
+        u = urllib.request.urlopen(url)
     except Exception as e:
-        print "Failed to download file\n"
-        print "(Exception was %s)" % e
+        print("Failed to download file\n")
+        print("(Exception was %s)" % e)
         return False
 
     f = open(dest, "wb")
@@ -73,7 +73,7 @@ def download_file(url, dest):
         sys.stdout.write("#")
         sys.stdout.flush()
 
-    print " Downloaded %dkB" % (total_bytes / 1024)
+    print(" Downloaded %dkB" % (total_bytes / 1024))
 
     return True
 
@@ -277,7 +277,7 @@ def parse_uart_log_for_benches(ufile):
 
         # check for new bench
         if (BENCH_HDR in line):
-            print "Found bench start: %s" % line
+            print("Found bench start: %s" % line)
             assert(bench is None)
             bench = SoakBench(line)
             continue
@@ -455,10 +455,8 @@ class Aggregate:
         return "%d/s" % (self.total_count / fdelta)
 
     def nvps(self):
-        ccvps = filter(lambda vp: get_cluster(vp) in CCCs,
-                       self.ccvcounts.keys())
-        pcvps = filter(lambda vp: get_cluster(vp) not in CCCs,
-                       self.ccvcounts.keys())
+        ccvps = [vp for vp in list(self.ccvcounts.keys()) if get_cluster(vp) in CCCs]
+        pcvps = [vp for vp in list(self.ccvcounts.keys()) if get_cluster(vp) not in CCCs]
        
         return "%spc/%scc" % (len(pcvps), len(ccvps))
 
@@ -497,7 +495,7 @@ class Aggregate:
 def aggregate_samples(samples, ilog):
 
     aglist = []
-    for k in samples.keys():
+    for k in list(samples.keys()):
 
         # make an aggregate for this WU name
         ag = Aggregate(k, ilog)
@@ -567,7 +565,7 @@ def bench_data_make_aggregates(bench, pd, ilog):
     ags = aggregate_samples(samples, ilog)
 
     # the VP list sorted
-    vplist = vps.keys()
+    vplist = list(vps.keys())
     vplist.sort()
 
     # now extract the wustats for those aggregates
@@ -605,7 +603,7 @@ def parse_dasm_file(dfile):
         dasm_insts[addr] = inst
     fl.close()
 
-    print "Parsed %d instructions from dasm  file" % count
+    print("Parsed %d instructions from dasm  file" % count)
 
 ###
 ##  instruction log parsing
@@ -639,7 +637,7 @@ def parse_instruction_log(ifile):
         line = line.strip()
         m = ire.match(line)
         if (m is None):
-            print "skipping line '%s'" % line
+            print("skipping line '%s'" % line)
             continue
 
         ccv = vp2ccv(int(m.group("vpnum")))
@@ -673,23 +671,23 @@ def do_all_bench_stats(jobsdir, style, opts):
     benches = parse_uart_log_for_benches(ufile)
 
     if (len(benches) == 0):
-        print "Failed to find any soak_bench runs in %s" % ufile
+        print("Failed to find any soak_bench runs in %s" % ufile)
 
-    print "Scraped %d bench soaks from %s" % (len(benches), ufile)
+    print("Scraped %d bench soaks from %s" % (len(benches), ufile))
 
     # make sure we have a pickle
     pd = controller.read_pd_from_file(pfile)
 
     # parse the instruction log, if it exists
-    print "parsing instruction log"
+    print("parsing instruction log")
     ilog = parse_instruction_log(ifile)
 
     # parse the dasm dump
-    print "parsing dasm file"
+    print("parsing dasm file")
     parse_dasm_file(dfile)
 
     # for each bench, do data aggregation into the bench
-    print "Crunching benchmark data"
+    print("Crunching benchmark data")
     for bench in benches:
         bench_data_make_aggregates(bench, pd, ilog)
 
@@ -701,7 +699,7 @@ def do_all_bench_stats(jobsdir, style, opts):
     fl.write(s)
     fl.close()
 
-    print "Write output to %s" % fname
+    print("Write output to %s" % fname)
 
 ###
 ##   histogramming
@@ -939,7 +937,7 @@ def aggregate_wus(vp_wu_list, perf_headers, bench, count_vps=False):
         for i in range(0, COL_PERF_COUNT):
             ag.total_perf.append(mk_avg_tuple(ag.perf[i]))
         if (count_vps):
-            vs = ag.ccvcounts.values()
+            vs = list(ag.ccvcounts.values())
             ag.avg_vp_count = mk_avg_tuple(vs)
 
         ags.append(ag)
@@ -952,7 +950,7 @@ def wuvp_split_trace(pd, opts):
     header = pd.rows[0]
     rows = pd.rows[1:]
 
-    print header
+    print(header)
 
     # validate all the headers
     assert(header[COL_TS] == "timestamp")
@@ -1010,9 +1008,9 @@ def wuvp_split_trace(pd, opts):
         benches.append(bench)
         
     for bench in benches:
-        print "bench span:"
-        print "\t%s" % (bench[0],)
-        print "\t%s" % (bench[-1],)
+        print("bench span:")
+        print("\t%s" % (bench[0],))
+        print("\t%s" % (bench[-1],))
 
     return benches
 
@@ -1072,17 +1070,17 @@ def process_bench(opts, rows, perf_headers, bid):
             vp.idletime += rt
 
     # compute the utilisation on the vps and setup their href name
-    for vp in bench.vps.values():
+    for vp in list(bench.vps.values()):
         vp.href = "%s-%s" % (bench.bid, vp.ccv)
         vp.compute_util(bench)
 
     # sort and trim the VPs
-    bench.sorted_vps = bench.vps.values()
+    bench.sorted_vps = list(bench.vps.values())
     bench.sorted_vps.sort(key=lambda vp: vp.get_field(opts.sort_vp), reverse=True)
     bench.sorted_vps = bench.sorted_vps[:opts.nvps]
 
     # aggregate the global WUs
-    bench.global_wus = aggregate_wus(bench.wus.values(), perf_headers,
+    bench.global_wus = aggregate_wus(list(bench.wus.values()), perf_headers,
                                      bench, count_vps=True)
     bench.global_wus.sort(key=lambda ag:ag.get_by_key(opts.sort_wu),
                           reverse=True)
@@ -1090,7 +1088,7 @@ def process_bench(opts, rows, perf_headers, bid):
     
     # for each of the VPs, sort and trim the WUs
     for vp in bench.sorted_vps:
-        vp.sorted_wus = aggregate_wus(vp.wus.values(), perf_headers, bench)
+        vp.sorted_wus = aggregate_wus(list(vp.wus.values()), perf_headers, bench)
         vp.sorted_wus.sort(key=lambda ag:ag.get_by_key(opts.sort_wu), reverse=True)
         vp.sorted_wus = vp.sorted_wus[:opts.nwus]
 
@@ -1124,26 +1122,26 @@ def html_uart_log(opts):
     try:
         fpath = os.path.dirname(os.path.realpath(__file__))
         p = "%s/../silicon_on_demand" % (fpath)
-        print "appending %s" % p
+        print("appending %s" % p)
         sys.path.append(p)
 
         import uart2html
         s = uart2html.str2html(s)
 
         # deal with potentially corrupt chars
-        s = unicode(s, errors="replace")
+        s = str(s, errors="replace")
         opts.uart_log = s
     except Exception as e:
-        print "Error processing UART to HTML: " + str(e)
+        print("Error processing UART to HTML: " + str(e))
 
-        s = unicode(s, errors="replace")
+        s = str(s, errors="replace")
         opts.uart_log = "<pre>\n" + cgi.escape(s) + "\n</pre>\n"
 
 
 def load_sample_file(opts, fname):
 
     if (opts.uart is not None):
-        print "reading uart file %s" % opts.uart
+        print("reading uart file %s" % opts.uart)
 
         fl = open(opts.uart)
         opts.uart_log = "".join(fl.readlines())
@@ -1159,7 +1157,7 @@ def load_sample_file(opts, fname):
         opts.uart_scrape["version"] = "[no uart log]"
 
         
-    print "loading samples file %s" % fname
+    print("loading samples file %s" % fname)
 
     fl = open(fname)
     rows = []
@@ -1169,7 +1167,7 @@ def load_sample_file(opts, fname):
     # validate the table headers
     for i in range(len(SAMPNM)):
         if ((SAMPNM[i] is not None) and (toks[i] != SAMPNM[i])):
-            print "Invalid sample header row: %s (%s)" % (toks, toks[i])
+            print("Invalid sample header row: %s (%s)" % (toks, toks[i]))
             sys.exit(1)            
 
     # FIXME: it would be good to understand the perf count headers
@@ -1208,7 +1206,7 @@ def load_sample_file(opts, fname):
                 start = i
                 seen.add(cluster)
         rows = rows[start:]
-        print "trimmed to %d rows" % len(rows)
+        print("trimmed to %d rows" % len(rows))
 
     # re-prepend the header
     rows = header + rows
@@ -1240,7 +1238,7 @@ def do_wu_vp_stats(input_name, style, opts):
     fl.write(s)
     fl.close()
 
-    print "Write output to %s" % fname
+    print("Write output to %s" % fname)
 
     if (opts.open):
         os.system("open '%s'" % fname)
@@ -1298,9 +1296,9 @@ def do_parse_perf(jobsdir):
 def maybe_parse_perf(jobsdir, ufile, pfile, ffile):
 
     if (os.stat(ufile).st_mtime < os.stat(pfile).st_mtime):
-        print "Cached perf data OK"
+        print("Cached perf data OK")
     else:
-        print "Rebuilding perf data"
+        print("Rebuilding perf data")
         do_parse_perf(jobsdir)
 
 
@@ -1308,9 +1306,9 @@ OBJDUMP = "/Users/Shared/cross/mips64/bin/mips64-unknown-elf-objdump"
 def maybe_dasm_dump(dfile, ffile):
     if (os.path.exists(dfile)
         and (os.stat(ffile).st_mtime < os.stat(dfile).st_mtime)):
-        print "Cached DASM file OK"
+        print("Cached DASM file OK")
     else:
-        print "Rebuilding DASM dump"
+        print("Rebuilding DASM dump")
         subprocess.check_call("%s -d -z %s > %s" % (OBJDUMP, ffile, dfile), shell=True)
 
 def maybe_regen_perf_data(jobsdir, ufile, pfile, dfile, ffile):

@@ -1,0 +1,84 @@
+version: "3.8"
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.12.0
+    container_name: elasticsearch
+    environment:
+      - node.name=node1
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms4g -Xmx4g"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+    networks:
+      - loganalyzer
+    healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:9200"]
+        interval: 30s
+        timeout: 10s
+        retries: 5
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.12.0
+    container_name: kibana
+    ports:
+      - 5601:5601
+    environment:
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - loganalyzer
+
+  analyzer:
+    build: .
+    image: analyzer
+    container_name: log-analyzer
+    command: ./START_LOG_ANALYZER.sh
+    expose:
+      - 5000
+    ports:
+      - "5000:5000"
+    environment:
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      KIBANA_URL: http://kibana:5601
+      FILE_SERVER_URL: http://fileserver:11000
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    volumes:
+      - .:/analyzer
+    networks:
+      - loganalyzer
+
+  fileserver:
+    # Reusing the Log Analyzer's docker image
+    image: analyzer
+    container_name: file-server
+    command: ./START_FILE_SERVER.sh
+    expose:
+      - 11000
+    ports:
+      - "11000:11000"
+    depends_on:
+      - analyzer
+    volumes:
+      - .:/analyzer
+    networks:
+      - loganalyzer
+
+volumes:
+  es_data:
+    driver: local
+
+networks:
+  loganalyzer:
+    driver: bridge

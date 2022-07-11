@@ -7,7 +7,10 @@ SDK_INSTALL_DIR ?= $(SDKDIR)
 
 MACHINE ?= $(shell uname -m)
 
-ifeq ($(MACHINE),mips64)
+ifeq ($(MACHINE),x86_64)
+ SDK_LIB_SUBDIR := noasan
+ SDK_INSTALL_PREFIX :=
+else ifeq ($(MACHINE),mips64)
  SDK_LIB_SUBDIR :=
  SDK_INSTALL_PREFIX := mips64
 else
@@ -34,10 +37,14 @@ branch := $(shell git rev-parse --short HEAD)
 VER     = -DVER=$(version)
 BRANCH  = -DBRANCH=$(branch)
 
+ifeq ($(MACHINE),x86_64)
+LFUNQ_PATH = $(SDKDIR)/FunSDK/host-drivers/$(MACHINE)/user/posix
+else
 LFUNQ_PATH = $(SDKDIR)/FunSDK/host-drivers/$(MACHINE)/user/native
+endif
 
 CFLAGS += -I $(LFUNQ_PATH)/include -DWITH_LIBFUNQ
-LDFLAGS += -L $(LFUNQ_PATH)/lib -lfunq
+LDFLAGS += -L $(LFUNQ_PATH)/lib -lbin_ctl -lfunq
 
 # define header and library location in FunSDK
 CFLAGS += -I $(SDKDIR) -I $(SDKDIR)/FunSDK -g -Wall -Werror -Wno-multichar $(BRANCH) $(VER)
@@ -46,7 +53,7 @@ CFLAGS += -I $(SDKDIR) -I $(SDKDIR)/FunSDK -g -Wall -Werror -Wno-multichar $(BRA
 #LDFLAGS += -L $(SDKDIR)/lib/${OS}/x86_64 -lfunclient -fsanitize=address
 LDFLAGS += -lpthread -L $(SDKDIR)/lib/$(OS)/$(SDK_LIB_SUBDIR)/$(MACHINE) -lfunclient -ldl
 
-SRCS = bin_ctl_sample.c bin_ctl.c bin_ctl_log.c
+SRCS = bin_ctl_sample.c
 OBJS = $(addprefix $(BUILD_ROOT)/,$(SRCS:.c=.o))
 
 # default target goes first

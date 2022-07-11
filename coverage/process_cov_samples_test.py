@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 #
 # Unit tests for coverage processing.
@@ -7,7 +7,7 @@
 #
 
 import json
-import StringIO
+import io
 import struct
 import unittest
 
@@ -33,7 +33,7 @@ class TestGCDAConverter(unittest.TestCase):
 
     def test_file_contents(self):
         _, contents = self.converter.generate_file_contents()
-        buf = StringIO.StringIO(contents)
+        buf = io.StringIO(contents)
 
         # These checks read the buffer, and therefore modify its state (the
         # buffer is a file-like object)

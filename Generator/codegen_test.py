@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 #
 # Unit tests for Generator's code generation.
 #
@@ -55,7 +55,7 @@ class CodegenEndToEnd(unittest.TestCase):
     self.assertNotIn('#define FOO_RESERVED', out)
 
     # Did bitfield get initialized?'
-    self.assertIn('s->b_to_c = FOO_B_P(b) | FOO_C_P(c);', out)
+    self.assertIn('s->b_to_c = FOO_B_P(b) | FOO_C_P(c)', out)
 
   def testZeroDimensionArray(self):
     input = ['STRUCT Foo',
@@ -65,7 +65,7 @@ class CodegenEndToEnd(unittest.TestCase):
     out, errors = generator.GenerateFile(generator.OutputStyleLinux, None,
                                          input, 'foo.gen',
                                          ['pack', 'json', 'swap'])
-    print errors
+    print(errors)
     self.assertEqual(0, len(errors))
     self.assertIsNotNone(out)
 
@@ -173,6 +173,7 @@ class CodegenEndToEnd(unittest.TestCase):
              'END']
     (out, errors) = generator.GenerateFile(generator.OutputStyleHeader, None,
                                            input, 'foo.gen', OPTIONS_PACK)
+    print(out)
     self.assertEqual(0, len(errors))
     self.assertIsNotNone(out)
     self.assertIn('#define A_A_S 4', out)
@@ -283,7 +284,7 @@ class CodegenEndToEnd(unittest.TestCase):
 
     (out, errors)  = generator.GenerateFile(generator.OutputStyleHeader, None,
                                             input, 'foo.gen', OPTIONS_PACK)
-    print errors
+    print(errors)
     self.assertEqual(0, len(errors))
     self.assertIsNotNone(out)
     self.assertIn('struct fun_admin_cmd_common c;', out)
@@ -456,7 +457,7 @@ class TestComments(unittest.TestCase):
     self.assertEqual(0, len(errors))
 
     out = RemoveWhitespace(out)
-    print out
+    print(out)
     # TODO(bowdidge): Check comments.
     self.assertIn('enum max_buffer_len', out)
     self.assertIn('MAX_BUF = 0xfa0,' ,out)
@@ -544,7 +545,7 @@ class TestComments(unittest.TestCase):
 
     (out, errors) = generator.GenerateFile(generator.OutputStyleLinux, None,
                                            contents, 'foo.gen', OPTIONS_PACK)
-    print errors
+    print(errors)
     self.assertEqual(0, len(errors))
 
     out = RemoveWhitespace(out);
@@ -719,7 +720,7 @@ class TestComments(unittest.TestCase):
     (out, errors) = generator.GenerateFile(generator.OutputStyleLinux,
                                            None, contents, 'foo.gen',
                                            ['pack', 'swap', 'le'])
-    print errors
+    print(errors)
     self.assertEqual(1, len(errors))
     self.assertIn('field with endian-specific type __le64 cannot '
                   'be a bitfield', errors[0])

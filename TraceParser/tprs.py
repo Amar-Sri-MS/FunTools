@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python2.7
 
 # external libs
 import sys, pickle, json, os, time
@@ -16,7 +16,7 @@ from ttypes import TTree
 import tutils_hdr as tutils
 import tutils_sim
 #
-# 
+#
 
 # True if should print extra messages explaining what the tree builder i
 # doing.
@@ -134,7 +134,7 @@ def output_trace_as_json(output_stream, roots, stats):
 
 def ValidateSummaryTrees(roots):
     """Returns False if tree is invalid or odd.
-    
+
     For now, only check that the number of cycles spent in a child is
     smaller than the number of cycles spent in the parent.
     ."""
@@ -415,7 +415,7 @@ def read_trace(trace_fname, dasm_info, filter_fns, follow, core_id):
     last_print_cycles = 0
     tree_builder = TreeBuilder(dasm_info, core_id)
 
-    with open(trace_fname) as infile:
+    with tutils.TraceReader(trace_fname) as infile:
         while (True):
             line = read_a_line(infile, follow)
             if not line:
@@ -440,7 +440,7 @@ def read_trace(trace_fname, dasm_info, filter_fns, follow, core_id):
                     stat['idles'] += entry.get_ccount()
                     stats.real_idles += (
                         stat['idles']/tutils.get_num_pipelines())
-                    
+
                 if func in filterlist:
                     continue
 
@@ -452,7 +452,6 @@ def read_trace(trace_fname, dasm_info, filter_fns, follow, core_id):
             elif False:
                 if tutils.is_loadstore_miss(line):
                     stats.loadstore_misses += 1
-    infile.close()
 
     print "Run complete..."
 

@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#!/usr/bin/env python2.7
 #
 #  dpc_cli
 #
@@ -8,6 +8,15 @@
 #
 
 import sys
+import imp
+import os
+
+## Add import paths so we can run in place
+scriptroot = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(scriptroot)
+sys.path.append(os.path.join(scriptroot, "src"))
+sys.path.append(os.path.join(scriptroot, "src/dpcsh_interactive_client"))
+
 from dpcsh_interactive_client.cmd_controller import CmdController
 
 INTRO = """

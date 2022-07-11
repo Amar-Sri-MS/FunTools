@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 from setuptools import setup, find_packages
 import os.path
@@ -6,7 +6,7 @@ from distutils import dir_util
 from os.path import expanduser
 import shutil
 import tempfile
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import ssl
 
 from setuptools.command.install import install
@@ -18,13 +18,13 @@ class JtagExtCommands(install):
             fp = tempfile.NamedTemporaryFile(delete=False)
             url = 'https://s3-eu-west-1.amazonaws.com/downloads-mips/mips-downloads/tools/Codescape-Debugger/Codescape-Debugger-8.5.6.4.CentOS-5.x86_64.py'
             ctx = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
-            print "Downloading codescape libraries. It may take few minutes ..."
-            filedata = urllib.urlopen(url, context=ctx)
+            print("Downloading codescape libraries. It may take few minutes ...")
+            filedata = urllib.request.urlopen(url, context=ctx)
             datatowrite = filedata.read()
             fp.write(datatowrite)
             tempfile_name = fp.name
             fp.close()
-            print "Installing codescape libraries..."
+            print("Installing codescape libraries...")
             os.system('sudo python ' + fp.name + ' --accept-licence --shared'
                       ' --install-scripting')
             os.unlink(fp.name)

@@ -11,8 +11,8 @@
 
 #define PLATFORM_POSIX	1
 
-#include <utils/threaded/fun_json.h>
-#include <services/commander/fun_commander.h>
+#include <FunOS/utils/threaded/fun_json.h>
+#include <FunOS/services/commander/fun_commander.h>
 
 #ifndef MIN
 #define MIN(x,y) ((x) < (y) ? (x) : (y))

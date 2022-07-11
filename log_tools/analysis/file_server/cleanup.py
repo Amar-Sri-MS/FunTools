@@ -36,7 +36,12 @@ logging.propagate = False
 
 def main():
     ELASTICSEARCH_HOSTS = config['ELASTICSEARCH']['hosts']
-    es = Elasticsearch(ELASTICSEARCH_HOSTS)
+    ELASTICSEARCH_TIMEOUT = config['ELASTICSEARCH']['timeout']
+    ELASTICSEARCH_MAX_RETRIES = config['ELASTICSEARCH']['max_retries']
+    es = Elasticsearch(ELASTICSEARCH_HOSTS,
+                            timeout=ELASTICSEARCH_TIMEOUT,
+                            max_retries=ELASTICSEARCH_MAX_RETRIES,
+                            retry_on_timeout=True)
     es_metadata = ElasticsearchMetadata()
 
     indices = es.cat.indices(

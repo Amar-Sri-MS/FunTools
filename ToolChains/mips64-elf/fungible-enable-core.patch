@@ -1,0 +1,127 @@
+--- gdb-11.1/gdb/mips-tdep.c.orig	2022-03-28 13:40:35.096929283 -0700
++++ gdb-11.1/gdb/mips-tdep.c	2022-03-28 17:01:50.173922817 -0700
+@@ -51,6 +51,8 @@
+ #include "infcall.h"
+ #include "remote.h"
+ #include "target-descriptions.h"
++#include "regset.h"
++#include "mips-linux-tdep.h"
+ #include "dwarf2/frame.h"
+ #include "user-regs.h"
+ #include "valprint.h"
+@@ -8042,6 +8044,105 @@
+   return 0;
+ }
+ 
++static void
++mipsxx_supply_gregset_wrapper (const struct regset *regset,
++			       struct regcache *regcache,
++			       int regnum, const void *gregs, size_t len)
++{
++  gdb_assert (len >= sizeof (mips_elf_gregset_t));
++
++  mips_supply_gregset (regcache, (const mips_elf_gregset_t *)gregs);
++}
++
++static void
++mipsxx_fill_gregset_wrapper (const struct regset *regset,
++			     const struct regcache *regcache,
++			     int regnum, void *gregs, size_t len)
++{
++  gdb_assert (len >= sizeof (mips_elf_gregset_t));
++
++  mips_fill_gregset (regcache, (mips_elf_gregset_t *)gregs, regnum);
++}
++
++static void
++mips64xx_supply_gregset_wrapper (const struct regset *regset,
++			       struct regcache *regcache,
++			       int regnum, const void *gregs, size_t len)
++{
++  gdb_assert (len >= sizeof (mips64_elf_gregset_t));
++
++  mips64_supply_gregset (regcache, (const mips64_elf_gregset_t *)gregs);
++}
++
++static void
++mips64xx_fill_gregset_wrapper (const struct regset *regset,
++			     const struct regcache *regcache,
++			     int regnum, void *gregs, size_t len)
++{
++  gdb_assert (len >= sizeof (mips64_elf_gregset_t));
++
++  mips64_fill_gregset (regcache, (mips64_elf_gregset_t *)gregs, regnum);
++}
++
++static void
++mips64xx_supply_fpregset_wrapper (const struct regset *regset,
++				struct regcache *regcache,
++				int regnum, const void *gregs, size_t len)
++{
++  gdb_assert (len >= sizeof (mips64_elf_fpregset_t));
++
++  mips64_supply_fpregset (regcache, (const mips64_elf_fpregset_t *)gregs);
++}
++
++static void
++mips64xx_fill_fpregset_wrapper (const struct regset *regset,
++			      const struct regcache *regcache,
++			      int regnum, void *gregs, size_t len)
++{
++  gdb_assert (len >= sizeof (mips64_elf_fpregset_t));
++
++  mips64_fill_fpregset (regcache, (mips64_elf_fpregset_t *)gregs, regnum);
++}
++
++static const struct regset mips_gregset =
++  {
++    NULL, mipsxx_supply_gregset_wrapper, mipsxx_fill_gregset_wrapper
++  };
++
++static const struct regset mips64_gregset =
++  {
++    NULL, mips64xx_supply_gregset_wrapper, mips64xx_fill_gregset_wrapper
++  };
++
++static const struct regset mips64_fpregset =
++  {
++    NULL, mips64xx_supply_fpregset_wrapper, mips64xx_fill_fpregset_wrapper
++  };
++
++static void
++mips_iterate_over_regset_sections (struct gdbarch *gdbarch,
++				   iterate_over_regset_sections_cb *cb,
++				   void *cb_data,
++				   const struct regcache *regcache)
++{
++  if (register_size (gdbarch, MIPS_ZERO_REGNUM) == 4)
++    {
++      cb (".reg", sizeof (mips_elf_gregset_t), sizeof (mips_elf_gregset_t),
++	  &mips_gregset, NULL, cb_data);
++      cb (".reg2", sizeof (mips64_elf_fpregset_t),
++	  sizeof (mips64_elf_fpregset_t), &mips64_fpregset,
++	  NULL, cb_data);
++    }
++  else
++    {
++      cb (".reg", sizeof (mips64_elf_gregset_t), sizeof (mips64_elf_gregset_t),
++	  &mips64_gregset, NULL, cb_data);
++      cb (".reg2", sizeof (mips64_elf_fpregset_t),
++	  sizeof (mips64_elf_fpregset_t), &mips64_fpregset,
++	  NULL, cb_data);
++    }
++}
++
+ static struct gdbarch *
+ mips_gdbarch_init (struct gdbarch_info info, struct gdbarch_list *arches)
+ {
+@@ -8788,6 +8889,9 @@
+   /* Enable TLS support. hack!  */
+   set_gdbarch_fetch_tls_load_module_address (gdbarch,
+ 					     my_dummy_fetch_tls_load_module_address);
++  set_gdbarch_iterate_over_regset_sections
++    (gdbarch, mips_iterate_over_regset_sections);
++
+   return gdbarch;
+ }
+ 

@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-from __future__ import print_function
+#!/usr/bin/env python3
+
 import sys
 
 from elftools.common.py3compat import maxint, bytes2str
@@ -56,7 +56,7 @@ def in_pc_range(function, addresses):
     high_pc = low_pc + high_pc_attr.value
   else:
     return False
-  return any(map(lambda x: low_pc <= x <= high_pc, addresses))
+  return any([low_pc <= x <= high_pc for x in addresses])
 
 def extract_rec(parameters, local_variables, function, compile_unit, dwarfinfo, addresses):
   match = in_pc_range(function, addresses)

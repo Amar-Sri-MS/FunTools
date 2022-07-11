@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # This module generates the default dictionary which contains blocks of
 # parameters/values. Each of these blocks can then be used by SKU files as
@@ -46,6 +46,9 @@ import json
 import jsonutils
 import collections
 
+logger = logging.getLogger('cfg_gen')
+logger.setLevel(logging.INFO)
+
 class DefaultCfgGen():
     def __init__(self, input_dir, target_chip):
         self.input_dir = input_dir
@@ -80,7 +83,7 @@ class DefaultCfgGen():
         """Only expand and add keys prefixed with "DEFAULT_" to the default
         dictionary.
         """
-        for def_key, val in def_json.items():
+        for def_key, val in list(def_json.items()):
             # Only process keys prefixed with "DEFAULT_"
             if 'DEFAULT_' in def_key:
                 # Build the entry.
@@ -107,14 +110,11 @@ class DefaultCfgGen():
         # Process every single default configuration file
         for file_pat in file_patterns:
             for def_file in glob.glob(os.path.join(self.input_dir, file_pat)):
-                with open(def_file, 'r') as f:
-                    def_json = f.read()
-                    def_json = jsonutils.standardize_json(def_json)
-                    try:
-                        def_json = json.loads(def_json)
-                    except:
-                        logger.error("Failed to load defaults file: {}".format(def_file))
-                        raise
+                try:
+                    def_json = jsonutils.load_fungible_json(def_file)
+                except:
+                    logger.error("Failed to load defaults file: {}".format(def_file))
+                    raise
 
                 self.process_default_file(def_json, def_cfg)
 
@@ -125,7 +125,7 @@ class DefaultCfgGen():
         in entry is a dictionary, and the corresponding value in cfg_json is
         also a dictionary, then merge them in place.
         """
-        for key, val_json in cfg_json.items():
+        for key, val_json in list(cfg_json.items()):
             val_entry = entry.get(key)
             if (isinstance(val_entry, collections.Mapping) and
                  isinstance(val_json, collections.Mapping)):

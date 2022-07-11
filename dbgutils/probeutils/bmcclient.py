@@ -1,9 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import string, os
 import logging
 import subprocess
-from i2cutils import *
+from .i2cutils import *
 
 logger = logging.getLogger("bmcclient")
 logger.setLevel(logging.INFO)

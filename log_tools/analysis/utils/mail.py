@@ -8,6 +8,11 @@ import logging
 import subprocess
 
 
+# Max log length before truncating the log file in the email message.
+MAX_LOG_LENGTH = 20000
+MAX_LOG_LENGTH_HALF = int(MAX_LOG_LENGTH / 2)
+
+
 def Mail(owner_email, subject, mail_body, cc_list=[]):
     """Send completion mail to job submitter.
 
@@ -40,13 +45,27 @@ def Mail(owner_email, subject, mail_body, cc_list=[]):
 
     from_email = 'Log Analyzer<localadmin@funlogs01.fungible.local>'
 
-    cmd = f'/usr/bin/mail -s "{subject}" "{recipient_emails}" -aFrom:"{from_email}"'
+    # Mail only the first MAX_LOG_LENGTH/2 and last MAX_LOG_LENGTH/2 characters of the log file
+    # if it is over MAX_LOG_LENGTH characters long.
+    log_length = len(mail_body)
+    if log_length > MAX_LOG_LENGTH:
+        shrunk_by = log_length - MAX_LOG_LENGTH
+        output_text = mail_body[:MAX_LOG_LENGTH_HALF]
+        output_text += "\n\n...\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n"
+        output_text += "= Skipping this part of the log because it is too long for email.\n"
+        output_text += "= Only the first and last %6d lines are included.\n" % MAX_LOG_LENGTH_HALF
+        output_text += "= A total of %8d lines in the middle were skipped.\n" % shrunk_by
+        output_text += "= Go to URL above to view the entire log.\n"
+        output_text += "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n...\n\n"
+        output_text += mail_body[-MAX_LOG_LENGTH_HALF:]
+
+        mail_body = output_text
+
+    cmd = f'echo "{mail_body}" | /usr/bin/mail -s "{subject}" "{recipient_emails}" -aFrom:"{from_email}"'
 
     if len(cc_list) > 0:
         cc_emails = ','.join(cc_list)
-        cmd = f'{cmd} -c {cc_emails}'
-
-    cmd = f'{cmd} <<< {mail_body}'
+        cmd = f'{cmd} -aCC:"{cc_emails}"'
 
     logging.info(f'Will execute {cmd}')
     try:

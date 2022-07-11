@@ -81,6 +81,16 @@
                                     />
                                     Local Upload
                                 </label>
+                                <label>
+                                    <input
+                                        type="radio"
+                                        name="techsupport_ingest_type"
+                                        value="url"
+                                        {{"checked" if techsupport_ingest_type == "url" else ""}}
+                                        onchange="onChangeTechsupportIngestType(this.value)"
+                                    />
+                                    Downloadable URL
+                                </label>
                             </div>
                             <div id="techsupport_ingest_type">
                             </div>
@@ -88,6 +98,16 @@
                         <div class="form-group">
                             <label>Enter tags (comma separated)</label>
                             <input type="text" id="tags" name="tags" class="medium-input" placeholder="Enter tags" value="{{feedback.tags if feedback else null}}">
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input
+                                    type="checkbox"
+                                    name="ignore_size_restrictions"
+                                    {{"checked" if feedback["ignore_size_restrictions"] else ""}}
+                                />
+                                Ignore size restrictions for log archive
+                            </label>
                         </div>
                         <hr />
                         <h3>Ingestion Filters</h3>
@@ -200,6 +220,7 @@
     <script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.4.0/min/dropzone.min.js"></script>
     <script type="text/javascript">
         let ingestType = "{{ingest_type}}", techsupportIngestType = "{{techsupport_ingest_type}}";
+        const FILE_SERVER_URL = "{{file_server_url}}";
 
         // Dropzone.js object to track the uploading of files.
         let dropzone = null;
@@ -235,6 +256,8 @@
             if (ingestType) params.set("techsupport_ingest_type", ingestType);
             window.history.replaceState(null, null, `?${params.toString()}`);
 
+            techsupportIngestType = ingestType;
+
             if (ingestType === "upload") {
                 techsupportIngestTypeElement.innerHTML = `
                     <div class="form-group">
@@ -243,6 +266,14 @@
                     </div>
                 `;
                 initializeDropzone();
+            }
+            else if (ingestType === "url") {
+                techsupportIngestTypeElement.innerHTML = `
+                    <div class="form-group">
+                        <label>Downloadable URL</label>
+                        <input type="text" id="downloadable_url" name="downloadable_url" class="large-input" value="{{feedback.downloadable_url if feedback else null}}" required>
+                    </div>
+                `;
             }
             else {
                 techsupportIngestTypeElement.innerHTML = `
@@ -266,10 +297,10 @@
                 autoProcessQueue: false,
                 processingmultiple: false,
                 uploadMultiple: false,
-                maxFilesize: 1024 * 10, // 10GB
+                maxFilesize: 1024 * 2, // 2GB
                 maxFiles: 1,
                 addRemoveLinks: true,
-                chunkSize: 1000000 // (in bytes) => 1MB
+                chunkSize: 2 * 1024 * 1024 // (in bytes) => 2MB
             });
 
             dropzone.on("addedfile", file => {
@@ -291,6 +322,8 @@
 
             dropzone.on("error", (file, error) => {
                 alert(`UPLOAD FAILED: ${error}`);
+                if (error.includes("File is too big")) return;
+                dropzone.removeFile(file);
             });
 
             // Delete the uploaded files on the server
@@ -323,6 +356,8 @@
                 }
                 else {
                     statusElement.innerHTML = "<p>Ingesting.. Please wait.</p>";
+                    // Check status immediately.
+                    setTimeout(checkStatus, 5 * 1000);
                     statusInterval = setInterval(checkStatus, WAIT_TIME_TO_CHECK_STATUS);
                 }
             }
@@ -407,6 +442,17 @@
                     }
                 }
             }
+            else if (ingestType === 'qa') {
+                let test_index = event.elements["test_index"].value;
+                test_index = test_index === '' ? 0 : parseInt(test_index);
+                if (isNaN(test_index)) {
+                    alert("Test index should be a number.");
+                    return false;
+                }
+                event.elements["test_index"].value = test_index;
+            }
+
+            event.elements["ignore_size_restrictions"].value = event.elements["ignore_size_restrictions"].checked;
 
             statusElement.innerHTML = "<p>Ingesting.. Please wait.</p>";
             feedbackElement.innerHTML = "";
@@ -438,7 +484,7 @@
                 <p>Status: ${statusImg} ${status}</p>
                 <p>Last checked: ${new Date()}</p>
             `;
-            if (status == "COMPLETED") {
+            if (status == "COMPLETED" || status == "PARTIAL") {
                 const logID = metadata["logID"];
                 const dashboardLink = `${window.location.origin}/log/${logID}/dashboard`;
                 const downloadTime = "download_time" in metadata ? +metadata["download_time"].toFixed(2) : "Unknown";
@@ -448,6 +494,11 @@
                     <p>Time taken to download log archive: ${downloadTime}s</p>
                     <p>Time taken to ingest: ${ingestionTime}s</p>
                 `;
+                if (status == "PARTIAL") {
+                    feedbackElement.innerHTML += `
+                        <a float-right" target="_blank" href="${FILE_SERVER_URL}/${logID}/file/${logID}_error.log">Link to error logs</a>
+                    `;
+                }
                 clearInterval(statusInterval);
             }
             else if ("download_time" in metadata &&
@@ -461,8 +512,15 @@
             else if (status == "FAILED") {
                 feedbackElement.innerHTML = `
                     <p class="text-danger float-right">ERROR: ${metadata["ingestion_error"]}</p>
+                    <a float-right" target="_blank" href="${FILE_SERVER_URL}/${logID}/file/${logID}_error.log">Link to error logs</a>
                 `;
                 clearInterval(statusInterval);
+            }
+            else if (status == "PROMPT_USER") {
+                // Stop checking for status since the ingestion requires
+                // more input from the user.
+                clearInterval(statusInterval);
+                alert(metadata["ingestion_error"]);
             }
         }
 

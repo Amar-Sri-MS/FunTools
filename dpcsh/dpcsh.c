@@ -30,17 +30,20 @@
 #include "dpcsh_nvme.h"
 #include "csr_command.h"
 #include "file_commands.h"
+
+#ifdef WITH_LIBFUNQ
 #include "bin_ctl.h"
+#endif
 
-#include <FunSDK/utils/threaded/fun_map_threaded.h>
-#include <FunSDK/services/commander/fun_commander.h>
-#include <FunSDK/services/commander/fun_commander_basic_commands.h>
-#include <FunSDK/utils/threaded/fun_malloc_threaded.h>
-#include <FunSDK/utils/common/base64.h>
-#include <FunSDK/platform/include/platform/utils_platform.h>
+#include <FunOS/utils/threaded/fun_map_threaded.h>
+#include <FunOS/services/commander/fun_commander.h>
+#include <FunOS/services/commander/fun_commander_basic_commands.h>
+#include <FunOS/utils/threaded/fun_malloc_threaded.h>
+#include <FunOS/utils/common/base64.h>
+#include <FunOS/platform/include/platform/utils_platform.h>
 
-#define SOCK_NAME	"/tmp/funos-dpc.sock"      /* default FunOS socket */
-#define PROXY_NAME      "/tmp/funos-dpc-text.sock" /* default unix proxy name */
+#define FUNOS_SOCKET	"/tmp/funos-dpc.sock"      /* default FunOS socket */
+#define PROXY_SOCKET      "/tmp/dpc.sock" /* default unix proxy name */
 #define DPC_PORT_STR    "20110"   /* default FunOS port */
 #define DPC_PROXY_PORT  40221   /* default TCP proxy port */
 #define DPC_B64_PORT    40222   /* default dpcuart port in qemu */
@@ -247,7 +250,7 @@ static char *getline_with_history(OUT ssize_t *nbytes)
 static int _open_sock_inet(const char *host_port, uint16_t port)
 {
 	int sock = -1;
-	int r = -1, tries = 0;
+	int r = -1;
 	struct addrinfo hints;
 	struct addrinfo *result, *rp;
 
@@ -262,13 +265,13 @@ static int _open_sock_inet(const char *host_port, uint16_t port)
 		int s = getaddrinfo("127.0.0.1", port_str, &hints, &result);
 		if (s != 0) {
 				log_error("getaddrinfo: %s\n", gai_strerror(s));
-				exit(EXIT_FAILURE);
+				return -1;
 		}
 	} else {
 		char *host_port_d = strdup(host_port);
 		if (!host_port_d) {
 			log_error("failed to copy host_port string");
-			exit(EXIT_FAILURE);
+			return -1;
 		}
 
 		char *delimiter = strstr(host_port_d, ":");
@@ -281,38 +284,29 @@ static int _open_sock_inet(const char *host_port, uint16_t port)
 		int s = getaddrinfo(host_s, port_s, &hints, &result);
 		if (s != 0) {
 			log_error("getaddrinfo: %s\n", gai_strerror(s));
-			exit(EXIT_FAILURE);
+			return -1;
 		}
 		free(host_port_d);
 	}
 
-	do {
-		for (rp = result; rp != NULL; rp = rp->ai_next) {
-				sock = socket(rp->ai_family, rp->ai_socktype,
-										rp->ai_protocol);
-				if (sock == -1) {
-					continue;
-				}
+	for (rp = result; rp != NULL; rp = rp->ai_next) {
+			sock = socket(rp->ai_family, rp->ai_socktype,
+									rp->ai_protocol);
+			if (sock == -1) {
+				continue;
+			}
 
-				r = connect(sock, rp->ai_addr, rp->ai_addrlen);
-				if (r != -1) break;
-				close(sock);
-		}
-
-		if (tries > 0) {
-			log_error("connect error, retry %d\n", tries);
-			sleep(1);
-		}
-
-		tries++;
-	} while ((r < 0) && (tries < connect_retries));
+			r = connect(sock, rp->ai_addr, rp->ai_addrlen);
+			if (r != -1) break;
+			close(sock);
+	}
 
 	freeaddrinfo(result);
 
 	if (r < 0 || sock < 0) {
 		log_error("can't connect\n");
 		perror("connect");
-		exit(1);
+		return -1;
 	}
 
 	if (host_port == NULL) {
@@ -476,7 +470,7 @@ static struct fun_ptr_and_size _transcode(struct fun_ptr_and_size source,
 		fun_json_fill_error_message(json, &msg);
 		log_info("Transcode error: %s\n", msg);
 	} else if (dest->socket->mode == SOCKMODE_TERMINAL) {
-		uint32_t flags = use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0;
+		uint32_t flags = FUN_JSON_PRETTY_PRINT_HUMAN_READABLE_STRINGS | (use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0);
 		json_text = fun_json_pretty_print(json,
 							  0, "    ",
 							  100, flags,
@@ -707,10 +701,10 @@ static void apply_command_locally(const struct fun_json *json,
 		return;
 	}
 
-	struct fun_json_command_environment *env = fun_json_command_environment_create();
+	struct fun_command_environment *env = fun_command_environment_create();
 	struct fun_json *j = fun_commander_execute(env, json);
 
-	fun_json_command_environment_release(env);
+	fun_command_environment_release(env);
 	if (!j || fun_json_fill_error_message(j, NULL)) {
 		return;
 	}
@@ -941,20 +935,47 @@ bool dpcsocket_init(struct dpcsock *sock)
 		_listen_sock_init(sock);
 	}
 
+#ifdef WITH_LIBFUNQ
 	if(sock->mode == SOCKMODE_FUNQ) {
 		sock->funq_handle = bin_ctl_init_dpc(sock->socket_name, _debug_log);
 		return sock->funq_handle != NULL;
 	}
+#endif
 
 	return true;
 }
 
+bool retry_function(void *context, bool (func)(void *)) {
+	int tries = 0;
+	do {
+		if (func(context))
+			return true;
+
+		if (tries > 0) {
+			log_error("connect error, retry %d\n", tries);
+			sleep(1);
+		}
+
+		tries++;
+	} while (tries < connect_retries);
+
+	log_error("too many attempts, giving up\n");
+	return false;
+}
+
+bool dpcsocket_init_retry(struct dpcsock *sock)
+{
+	return retry_function(sock, (void *)dpcsocket_init);
+}
+
 static void dpcsocket_destroy(struct dpcsock *sock)
 {
+#ifdef WITH_LIBFUNQ
 	if(sock->mode == SOCKMODE_FUNQ) {
 		bin_ctl_destroy(sock->funq_handle);
 		free(sock->funq_handle);
 	}
+#endif
 }
 
 static void set_nonblocking_fd(int fd)
@@ -1025,12 +1046,14 @@ bool dpcsocket_open(struct dpcsock_connection *connection)
 		return true;
 	}
 
+#ifdef WITH_LIBFUNQ
 	if (sock->mode == SOCKMODE_FUNQ) {
 		connection->funq_connection = bin_ctl_open_connection(sock->funq_handle);
 		if (!connection->funq_connection) {
 			return false;
 		}
 	}
+#endif
 
 	/* unused == no-op */
 	if (sock->mode == SOCKMODE_TERMINAL) {
@@ -1040,16 +1063,22 @@ bool dpcsocket_open(struct dpcsock_connection *connection)
 
 	if (sock->mode == SOCKMODE_DEV) {
 		connection->fd = open(sock->socket_name, O_RDWR | O_NOCTTY);
-		if (connection->fd < 0)
+		if (connection->fd < 0) {
 			perror("open");
+			return false;
+		}
 	}
 
 	if (sock->mode == SOCKMODE_UNIX) {
 		connection->fd = _open_sock_unix(sock->socket_name);
+		if (connection->fd < 0)
+			return false;
 	}
 
 	if (sock->mode == SOCKMODE_IP) {
 		connection->fd = _open_sock_inet(sock->socket_name, sock->port_num);
+		if (connection->fd < 0)
+			return false;
 	}
 
 	if (connection->fd > 0) {
@@ -1064,6 +1093,11 @@ bool dpcsocket_open(struct dpcsock_connection *connection)
 	return true;
 }
 
+bool dpcsocket_open_retry(struct dpcsock_connection *connection)
+{
+	return retry_function(connection, (void *)dpcsocket_open);
+}
+
 void dpcsocket_close(struct dpcsock_connection *connection)
 {
 	if (connection == NULL) return;
@@ -1074,12 +1108,14 @@ void dpcsocket_close(struct dpcsock_connection *connection)
 		close(connection->fd);
 	}
 
+#ifdef WITH_LIBFUNQ
 	if (connection->socket->mode == SOCKMODE_FUNQ) {
 		if (!bin_ctl_close_connection(connection->funq_connection)) {
 			perror("bin_ctl_close_connection");
 		}
 		pthread_cond_signal(&connection->data_available);
 	}
+#endif
 
 	if (connection->socket->mode == SOCKMODE_NVME) {
 		pthread_cond_signal(&connection->data_available);
@@ -1153,6 +1189,7 @@ void dpcsh_unregister_pretty_printer(uint64_t tid, void *context)
 
 // ===============  RUN LOOP ===============
 
+#ifdef WITH_LIBFUNQ
 static bool _write_dequeue_funq(struct dpcsock_connection *dest,
 			 struct dpcsock_connection *source)
 {
@@ -1176,6 +1213,7 @@ static bool _write_dequeue_funq(struct dpcsock_connection *dest,
 	}
 	return true;
 }
+#endif
 
 static bool _write_dequeue_nvme(struct dpcsock_connection *dest,
 			 struct dpcsock_connection *source)
@@ -1259,7 +1297,9 @@ static bool _write_dequeue(struct dpcsock_connection *dest,
 			 struct dpcsock_connection *source)
 {
 
+#ifdef WITH_LIBFUNQ
 	if (dest->socket->mode == SOCKMODE_FUNQ) return _write_dequeue_funq(dest, source);
+#endif
 	if (dest->socket->mode == SOCKMODE_NVME) return _write_dequeue_nvme(dest, source);
 
 	_lock_queue_if_needed(source);
@@ -1291,6 +1331,7 @@ static bool _write_dequeue(struct dpcsock_connection *dest,
 	return true;
 }
 
+#ifdef WITH_LIBFUNQ
 static void _recv_callback(struct fun_ptr_and_size response, void *context)
 {
 	struct dpcsock_connection *connection = (struct dpcsock_connection *)context;
@@ -1319,6 +1360,7 @@ static void _recv_callback(struct fun_ptr_and_size response, void *context)
 	pthread_cond_signal(&connection->data_available);
 	pthread_mutex_unlock(&connection->funq_queue_lock);
 }
+#endif
 
 static void terminal_set_per_character(bool enable)
 {
@@ -1449,15 +1491,17 @@ static void open_new_connections(struct dpcsock *funos_socket,
 	*funos = dpcsocket_new(funos_socket);
 	*cmd = dpcsocket_new(cmd_socket);
 
-	if (!dpcsocket_open(*funos) || !dpcsocket_open(*cmd)) {
+	if (!dpcsocket_open_retry(*funos) || !dpcsocket_open(*cmd)) {
 		log_error("unable to open connection");
 	}
 
+#ifdef WITH_LIBFUNQ
 	if (funos_socket->mode == SOCKMODE_FUNQ) {
 		if (!bin_ctl_register_receive_callback((*funos)->funq_connection, _recv_callback, *funos)) {
 			log_error("can't register a callback for libfunq\n");
 		}
 	}
+#endif
 }
 
 static void _finalize_worker(struct dpc_worker *worker, bool force_terminate)
@@ -1829,7 +1873,7 @@ int main(int argc, char *argv[])
 			funos_sock.mode = SOCKMODE_UNIX;
 			cmd_sock.server = false;
 			funos_sock.socket_name = opt_sockname(optarg,
-							      SOCK_NAME);
+							      FUNOS_SOCKET);
 			autodetect_input_device = false;
 			break;
 // DPC over NVMe is needed only in Linux
@@ -1847,7 +1891,7 @@ int main(int argc, char *argv[])
 			funos_sock.mode = SOCKMODE_FUNQ;
 			funos_sock.server = false;
 			funos_sock.socket_name = opt_sockname(optarg,
-							      FUNQ_DEV_NAME);
+							      BIN_CTL_DEFAULT_DEVICE);
 			autodetect_input_device = false;
 			break;
 #endif
@@ -1866,7 +1910,7 @@ int main(int argc, char *argv[])
 			cmd_sock.mode = SOCKMODE_UNIX;
 			cmd_sock.server = true;
 			cmd_sock.socket_name = opt_sockname(optarg,
-							    PROXY_NAME);
+							    PROXY_SOCKET);
 
 			mode = MODE_PROXY;
 
@@ -1963,16 +2007,21 @@ int main(int argc, char *argv[])
 	}
 
 	if (autodetect_input_device) {
-		/* check whether NVMe connection to DPU is available */
-		/* DPC over NVMe will work only in Linux */
-		/* In macOS, libfunq is used */
+		/*
+			Autodetection order:
+			1. system-wide dpc proxy it is availabe if PROXY_SOCKET exists
+			2. NVMe transport, only on Linux
+			3. posix simulator port
+		*/
 
-		/* In macOS, always returns false */
-		bool nvme_dpu_found = find_nvme_dpu_device(detected_nvme_device_name,
-							sizeof(detected_nvme_device_name));
-
-		/* In Linux, use NVMe as default if present */
-		if (nvme_dpu_found) {
+		if( access( PROXY_SOCKET, F_OK ) == 0 ) {
+			funos_sock.dpcsh_connection = true;
+			funos_sock.mode = SOCKMODE_UNIX;
+			funos_sock.server = false;
+			funos_sock.socket_name = PROXY_SOCKET;
+		} else
+		if (find_nvme_dpu_device(detected_nvme_device_name,
+							sizeof(detected_nvme_device_name))) {
 			funos_sock.mode = SOCKMODE_NVME;
 			funos_sock.socket_name = detected_nvme_device_name;
 			funos_sock.server = false;
@@ -1980,9 +2029,7 @@ int main(int argc, char *argv[])
 			if (!cmd_timeout_is_set) {
 				funos_sock.cmd_timeout = atoi(DEFAULT_NVME_CMD_TIMEOUT_MS);
 			}
-		}
-		/* Use libfunq otherwise */
-		else {
+		} else {
 			/* default connection to FunOS posix simulator dpcsock */
 			funos_sock.mode = SOCKMODE_IP;
 			funos_sock.server = false;
@@ -2018,7 +2065,7 @@ int main(int argc, char *argv[])
 	_print_version(); /* always print this for the logs */
 
 	/* start by initializing the sockets */
-	if (!dpcsocket_init(&funos_sock) || !dpcsocket_init(&cmd_sock)) {
+	if (!dpcsocket_init_retry(&funos_sock) || !dpcsocket_init(&cmd_sock)) {
 		log_error("can't initialize connections\n");
 		exit(1);
 	}

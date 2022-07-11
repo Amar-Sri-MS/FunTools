@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-from __future__ import print_function
+#!/usr/bin/env python3
+
 import sys
 from elftools.elf.elffile import ELFFile
 from elftools.elf.sections import SymbolTableSection
@@ -25,7 +25,7 @@ def einc(d, key):
 
 
 def has_attrs(d, l):
-  return all(map(lambda attr: attr in d.attributes, l))
+  return all([attr in d.attributes for attr in l])
 
 
 def get_origin_name(d, compile_unit, dwarfinfo):
@@ -69,7 +69,7 @@ def get_functions_info(dwarfinfo):
 
 def get_callers(functions):
   callers = {}
-  for n, f in functions.items():
+  for n, f in list(functions.items()):
     for c in f['calls']:
       if c not in callers:
         callers[c] = set()

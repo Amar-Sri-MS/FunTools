@@ -66,8 +66,8 @@ if __name__ == '__main__':
     m.build()
     value = m.eval("B")
     value = m.eval("0")
-    print "Value = {}".format(value)
+    print("Value = {}".format(value))
     value = m.eval("(0b10100 + 0x3)- ((A.p | B) + (C))")
-    print "Value = {}".format(value)
+    print("Value = {}".format(value))
     assert value == eval("0b1010 + 0x3 - (0xf | 4) + (3 | 2)"), "Custom lexer not working!"
 

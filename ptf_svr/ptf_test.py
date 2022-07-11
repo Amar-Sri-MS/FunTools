@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 #  ptf_test.py
 #
@@ -41,7 +41,7 @@ def send_rcvd_pkt_to_ptf(self, jdata):
                 return
         
         pkt = Ether(pkt_decode(jdata["pkt"]))
-        print ("\nReceiving Pkt from Client and send to port " + str(in_intf)+ " :\n " + str(inspect_packet(pkt)))
+        print("\nReceiving Pkt from Client and send to port " + str(in_intf)+ " :\n " + str(inspect_packet(pkt)))
 
         try:            
             logging.debug(inspect_packet(pkt))

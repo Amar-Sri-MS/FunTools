@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """Usage: run_dharma.py [-h] [-c=<N>] [-p=<prefix>]
 
@@ -30,5 +30,5 @@ if __name__ == '__main__':
     else:
       with open(prefix + str(i) + '.txt', 'w') as f:
         f.write(out)
-        print "Saved case " + str(i)
+        print("Saved case " + str(i))
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 #
 # Telemetry receiver.
@@ -41,18 +41,18 @@
 #
 
 import argparse
-import BaseHTTPServer
+import http.server
 import glob
 import json
 import os
 import re
 import signal
 import socket
-import SocketServer
+import socketserver
 import sys
 import threading
 import time
-import urlparse
+import urllib.parse
 
 from functools import partial
 
@@ -119,8 +119,8 @@ class Buffer:
         return empty
 
 
-class ThreadedHTTPServer(SocketServer.ThreadingMixIn,
-                         BaseHTTPServer.HTTPServer):
+class ThreadedHTTPServer(socketserver.ThreadingMixIn,
+                         http.server.HTTPServer):
     """
     Handles requests in a separate thread.
     """
@@ -134,13 +134,13 @@ class ThreadedHTTPServer(SocketServer.ThreadingMixIn,
         is impossible to determine how the server will instantiate the
         handler.
         """
-        BaseHTTPServer.HTTPServer.__init__(self,
+        http.server.HTTPServer.__init__(self,
                                            server_address,
                                            RequestHandlerClass)
         self.telemetry_writer = telemetry_writer
 
 
-class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+class HTTPRequestHandler(http.server.BaseHTTPRequestHandler):
     """
     Handles requests that delineate the start and end of a telemetry
     run.
@@ -153,8 +153,8 @@ class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         /start?dir=<directory-for-telemetry-data-dumps>
         /end
         """
-        url = urlparse.urlparse(self.path)
-        query_components = urlparse.parse_qs(url.query)
+        url = urllib.parse.urlparse(self.path)
+        query_components = urllib.parse.parse_qs(url.query)
 
         match = re.match('/start$', url.path)
         if match:
@@ -210,7 +210,7 @@ class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         Valid URLs are:
         /funhealth
         """
-        url = urlparse.urlparse(self.path)
+        url = urllib.parse.urlparse(self.path)
         if url.path == '/funhealth':
             self.handle_funhealth()
 
@@ -377,7 +377,7 @@ def quit_if_telemetry_dumps_exist(dump_dir):
     path = os.path.join(dump_dir, 'telemetry_dump_*')
     files = glob.glob(path)
     if files:
-        print ('Telemetry dumps already exist in %s\n'
+        print('Telemetry dumps already exist in %s\n'
                'Exiting to prevent overwriting of telemetry data\n'
                'Please delete the telemetry_dump_* files if you want to\n'
                'start a new run' % dump_dir)

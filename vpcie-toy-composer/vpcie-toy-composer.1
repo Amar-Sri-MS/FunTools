@@ -1,0 +1,538 @@
+.\" -*- nroff -*-
+.\" Copyright (c) 2022 by Fungible, Inc.  All Rights Reserved
+.TH VPCIE-TOY-COMPOSER "1" "May 2022" "vpcie-toy-composer 1.0" "Python"
+.SH "NAME"
+vpcie-toy-composer \- manage Virtual PCIe Fabrics
+.SH "SYNOPSIS"
+General form:
+
+\fBvpcie-toy-composer\fR
+[\fIoptions\fR]
+\fIsubcmd\fR
+[\fIsubcmd-options\fR]
+\fIsubcmd-parameters\fR
+
+Specific commands:
+
+\fBvpcie-toy-composer\fR [\fIoptions\fR]
+.B docker start
+
+\fBvpcie-toy-composer\fR [\fIoptions\fR]
+.B docker stop
+
+\fBvpcie-toy-composer\fR [\fIoptions\fR]
+.B ztp
+[\fB--ztp-cs-host\fR \fIztp-cs-host\fR]
+\fIDPU-Control-Plane\fR ...
+
+\fBvpcie-toy-composer\fR [\fIoptions\fR]
+.B vfm create
+[\fB--down-port-id-max\fR \fIn\fR]
+[\fB--name\fR \fIname\fR]
+\fIvPortSpec\fR ...
+
+\fBvpcie-toy-composer\fR [\fIoptions\fR]
+.B vfm hot-plug
+\fIvPortSpec\fR ...
+
+\fBvpcie-toy-composer\fR [\fIoptions\fR]
+.B vfm hot-unplug
+\fIvPortID\fR ...
+
+\fBvpcie-toy-composer\fR [\fIoptions\fR]
+.B vfm delete
+\fIvFabricID\fR ...
+
+\fBvpcie-toy-composer\fR [\fIoptions\fR]
+.B vfm dpus
+
+\fBvpcie-toy-composer\fR [\fIoptions\fR]
+.B vfm dpu
+\fIDPUID\fR ...
+
+\fBvpcie-toy-composer\fR [\fIoptions\fR]
+.B vfm vfabrics
+
+\fBvpcie-toy-composer\fR [\fIoptions\fR]
+.B vfm vfabric
+\fIvFabricID\fR ...
+
+\fBvpcie-toy-composer\fR [\fIoptions\fR]
+.B vfm enumerate
+\fIPortSpec\fR ...
+
+\fBvpcie-toy-composer\fR [\fIoptions\fR]
+.B vfm debug
+\fIDPUID\fR [\fIdebug-options\fR]
+
+\fBvpcie-toy-composer\fR [\fIoptions\fR]
+.B sns dpus
+
+\fBvpcie-toy-composer\fR [\fIoptions\fR]
+.B sns dpu
+\fIDPUID\fR ...
+.SH "DESCRIPTION"
+\fBvpcie-toy-composer\fR allows the user to manage the state of \fBVirtual
+PCIe Fabrics\fR.  A Virtual PCIe Fabric is a standard PCIe Fabric which has
+been transparently extended across standard Ethernet.  (See \fBPCIe
+Terminology\fR for background information on PCIe.)
+
+Traditionally, a PCIe Fabric exists completely within a Host Chassis, with
+PCIe Devices plugged into PCIe Slots on the Host Motherboard.  This
+\fBaggregates\fR the PCIe Devices with the Host, making them unavailable to
+any other Host.  Virtual PCIe Fabrics \fBdisaggregate\fR Hosts and PCIe
+Devices.
+
+With Hosts and PCIe Devices disaggregated, and able to be connected
+dynamically across Ethernet, PCIe Devices may be used by any Host which
+happens to need them at the time.
+
+Virtual PCIe Fabrics take advantage of the central role of the PCIe Switch
+within a PCIe Fabric, by implementing a \fBVirtual PCIe Switch\fR where the
+\fBVirtual PCIe Switch Ports\fR are connected across Ethernet.
+
+Virtual Switch Ports are implemented by Fungible \fBData Processing Unit\fR
+(\fBDPU\fR) PCIe Controllers which have been configured as Virtual Switch
+Ports, either Virtual Switch Up Ports or Virtual Switch Down Ports.
+
+Software on the DPU and within a set of Micro Services called \fBFungible
+Cluster Services\fR (\fBFCS\fR) is used to coordinate stitching these
+Virtual PCIe Ports into Virtual PCIe Fabrics.  Virtual PCIe Fabrics can be
+created, modified, and deleted dynamically.
+
+\fBvpcie-toy-composer\fR communicates with the software elements on the DPU
+and in FCS to initiate operations on Virtual PCIe Fabrics, discover
+available DPUs and DPU PCIe Controllers configured as Virtual Switch Ports,
+etc.
+
+Generally, within a production \fBFungible Data Center\fR, there will be
+existing instances of the Fungible Cluster Services and DPUs will have
+already been deployed and configured.  However, in some testing
+environments, it may be necessary to launch a Fungible Cluster Services
+instance (see the \fBdocker\fR commands below) and perform basic DPU
+configuration (see the \fBztp\fR command below), before various Virtual PCIe
+Fabric operations can be initiated.
+
+.SH "PCIe Terminology"
+
+.TP
+.B PCIe Port
+A PCIe Controller.
+
+.TP
+.B PCIe Link
+A Link between two PCIe Ports.
+
+.TP
+.B PCIe Fabric
+A tree-structured fabric of PCIe Ports and PCIe Links between them.
+
+.TP
+\fBRoot Complex\fR or \fBRoot Port\fR
+The root of a PCIe Fabric.
+
+.TP
+.B PCIe Switch
+A branching node withing the PCIe Fabric.  A PCIe Switch has exactly one
+\fBSwitch Up Port\fR and up to 32 \fBSwitch Down Ports\fR, numbered \fB0..31\fR.
+
+.TP
+.B Upstream
+Towards the Root Complex.
+
+.TP
+.B Downstream
+Away from the Root Complex.
+
+.TP
+\fBEndpoint\fR [\fBDevice\fR]
+The leafs of the PCIe Fabric tree.
+
+.SH "Toy Composer Command Nomanclature and Terminology"
+
+.TP
+.I DPU-Control-Plane
+The DPU Control Plane Host Name / IP Address.  The DPU runs Control Plane
+software which is reachable via this Host Name / IP Address.
+
+.TP
+.I DPUID
+The DPU Ethernet Management Port MAC Address.  This is what Fungible Cluster
+Services uses to identify a DPU.  (See \fBDPU Naming\fR for a mechanism to
+provide human-readable DPU IDs.)
+
+.TP
+.I Portname
+The name of a PCIe Controller on a DPU which is configured as a Virtual PCIe
+Port.
+
+.TP
+.I PortType
+The type of a Virtual PCIe Switch Port \(em either "UP" or "DOWN" \(em to
+indicate whether it may operate as a Switch Up Port or a Switch Down Port
+within a Virtual PCIe Fabric.
+
+.TP
+.I vPortID
+The Virtual Port ID role bound to a Virtual Switch Port within a Virtual PCIe
+Fabric Switch.  Within a Virtual PCIe Switch, Virtual PCIe Switch Ports may
+have Virtual Port IDs 0..31 for Virtual Switch Down Ports, or 32 for Virtual
+Switch Up Ports.  A DPU PCIe Controller configured as a Virtual Switch Up
+Port, may only take that role within a Virtual PCIe Switch.  Similarly, a
+DPU PCIe Controller configured as a Virtual Switch Down Port may only take
+on that role within a Virtual PCIe Switch.
+
+.TP
+.I PortSpec
+A two tuple, \fIDPUID\fR\fB/\fR\fIPortname\fR, uniquely identifying a DPU and
+PCIe Controller in that DPU within the Fungible Data Center.
+
+.TP
+.I vPortSpec
+A three-tuple, \fIDPUID\fR\fB/\fR\fIPortname\fR\fB/\fR\fIvPortID\fR uniquely
+identifying a DPU PCIe Controller, and the Virtual Port ID role it will play
+within a Virtual PCIe Switch.
+
+.TP
+.I vFabricID
+A Universally Unique Identifier (UUID) for a Virtual PCIe Fabric.  This is
+created when a Virtual PCIe Fabric is created (see \fBvfm create\fR) and is
+used in all subsequent operations on the Virtual PCIe Fabric (see sub-commands
+\fBvfm hot-plug\fR, \fBvfm hot-unplug\fR, \fBvfm delete\fR, and \fBvfm
+vfabric\fR).
+
+.SH "Virtual PCIe Fabric Rules"
+
+.IP \(bu 4
+A Virtual PCIe Fabric consists of a set of DPU PCIe Controllers configured
+as Virtual Switch Ports, bound into the Virtual PCIe Fabric, each taking on
+the role of a particular \fIvPortID\fR.  These are usually specified via
+\fIvPortSpecs\fR: \fIDPUID\fR\fB/\fR\fIPortname\fR\fB/\fR\fIvPortID\fR.
+
+.IP \(bu 4
+A DPU PCIe Controller configured as a Virtual Switch Port may only be bound
+into a single Virtual PCIe Fabric at any one time.  When a DPU PCIe
+Controller is not bound into any existing Virtual PCIe Fabric, it is "free"
+and therefore eligable to be bound a Virtual PCIe Fabric via a \fBvfm
+create\fR or \fBvfm hot-plug\fR sub-command.
+
+.IP \(bu 4
+Every Virtual PCIe Fabric must have a Virtual PCIe Switch Up Port
+(\fIvPortID\fR \fB32\fR).
+
+.IP \(bu 4
+Virtual Switch Down Ports within a Virtual PCIe Fabric may have \fIvPortID\fRs
+\fB0..31\fR, but potentially limited by the use of the \fB--down-port-id-max\fR
+option.
+
+.IP \(bu 4
+No \fIvPortID\fRs may be repeated.
+
+.SH "DPU Naming"
+
+In Fungible Cluster Services, Fungible DPUs are identified via their
+Ethernet Management Port MAC Address.  This is clumsy for humans.
+
+The \fB--cs-dpus\fR and \fBCS_DPUS\fR environment variable may be used to
+provide the name of a file which contains a JSON dictionary providing
+convenient human-readable names for DPUs.
+
+The JSON dictionary keys are arbitrary DPU "names" for human consumption and
+the values are the DPU Ethernet Management Port MAC Addresses.  For example:
+
+.RS
+.EX
+{
+    "foo" : "c8:2c:2b:00:00:08",
+    "bar" : "c8:2c:2b:00:00:18"
+}
+.EE
+.RE
+
+.SH "Options"
+
+These general options are applicable to most sub-commands.
+
+.TP
+\fB--cs-host\fR \fIhost\fR, \fB-c\fR \fIhost\fR
+The host name or IP Address of the Fungible Cluster Services API Gateway.
+(See also the environment variable \fBCS_HOST\fR.)
+
+.TP
+\fB--cs-port\fR \fIport\fR, \fB-p\fR \fIport\fR
+The TCP port number that the Fungible Cluster Services API Gateway is
+listening on.  (See also the environment variable \fBCS_PORT\fR.)
+
+.TP
+\fB--cs-user\fR \fIuser\fR\fB:\fR\fIpassword\fR, \fB-u\fR \fIuser\fR\fB:\fR\fIpassword\fR
+The user name and password to use for accessing the Fungible Cluster
+Services API Gateway.  (See also the environment variable \fBCS_USER\fR.)
+
+.TP
+\fB--indent\fR \fIn\fR, \fB-I\fR \fIn\fR
+For JSON output, the "pretty printing" indentation to use.  \fB0\fR means
+no pretty printing which is sometimes more suitable for consumption by other
+programs.
+
+.TP
+\fB--verbose\fR, \fB-v\fR
+Generate more verbose output, including RESTful API calls to the Fungible
+Cluster Services API Gateway.
+
+.TP
+\fB--dry-run\fR, \fB-n\fR
+Go through all the steps of processing the requested command and display the
+various actions which would have been taken, including RESTful API calls to
+the Fungible Cluster Services API Gateway, but don't execute anything.
+
+.TP
+\fB--debug\fR, \fB-D\fR
+Generate lots of debugging output, primarily useful for developers of the
+application.
+
+.SH "Docker sub-commands"
+
+One possible deployment of the Fungible Cluster Services is within a \fBDocker
+Container\fR.  These sub-commands facilitate administering that form of FCS
+deployment.
+
+.TP
+\fBvpcie-toy-composer\fR [\fIoptions\fR] \fBdocker start\fR
+ssh into the Fungible Cluster Services host as the user \fBlocaladmin\fR and
+start the FCS Docker Container.
+
+.TP
+\fBvpcie-toy-composer\fR [\fIoptions\fR] \fBdocker stop\fR
+ssh into the Fungible Cluster Services host as the user \fBlocaladmin\fR and
+stop the FCS Docker Container.
+
+.SH "DPU Zero Touch Provisioning sub-commands"
+
+These sub-commands deal with the initial configuration of a Fungible DPU
+when it is first deployed within the Fungible Data Center.
+
+.TP
+\fBvpcie-toy-composer\fR [\fIoptions\fR] \fBztp\fR \fB[--ztp-cs-host\fR \fIztp-cs-host\fR] \fIDPU-Control-Plane\fR ...
+When a Fungible DPU boots up for the very first time, it doesn't know how it
+should be configured or how to reach the Fungible Cluster Services instance
+which will be responsible for provisioning and administering it.  The
+information for how the DPU should contact the FCS needs to be stored into
+the DPU, which will be retained on future boots.  When information this is
+provided to the DPU, it will contact FCS (and on future boots) to retrieve
+its provisioning information.  This process is called \fBZero Touch
+Provisioning\fR.
+.IP
+The FCS Host for Zero Touch Provisioning is the "South" Virtual Host / IP
+Address of FCS.  For \fBDocker Container\fR deployments of FCS, this is the
+same as the API Gateway Host / IP Address.  For \fBThree-Node
+High-Availability\fR deployments of FCS, the three nodes present two shared
+Virtual IP Addresses:  The "North" IP Address for access to the API Gateway,
+and the "South" IP Address for DPUs contacting FCS.
+.IP
+The \fIDPU-Control-Plane\fR parameters are the Host Names / IP Addresses
+of the Control Plane software running on the DPUs.
+.P
+Note that it may take a few minutes before the newly provisioned DPUs show
+up as available for Virtual PCIe Fabric operations (see the "\fBvfm dpus\fR"
+command below).
+.P
+Note: In certain testing environments DPUs will be booted "fresh" each time
+a test is initiated.  In that case, Zero Touch Provisioning will need to be
+performed for each test instance.  In these cases it is normal to see a
+complaint like "WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!" since the
+freshly redeployed DPU will now have a different Public Key than the last
+time it was booted.
+
+.SH "Virtual PCIe Fabric Manager sub-commands"
+
+These sub-commands target the Virtual PCIe Fabric Manager within the
+Fungible Cluster Services.
+
+.TP
+\fBvpcie-toy-composer\fR [\fIoptions\fR] \fBvfm create\fR [\fB--max-downport-id\fR \fIn\fR] [\fB--name\fR \fIname\fR] \fIvPortSpec\fR ...
+Create a new Virtual PCIe Fabric from the specified \fIvPortSpecs\fR (see
+\fBVirtual PCIe Fabric Rules\fR).  On success a new Virtual PCIe Fabric ID
+will be output.
+
+.RS
+.TP
+\fB--down-port-id_max\fR \fIn\fR
+May be used to limit the size of the new Virtual PCIe Fabric via the number
+of Switch Down Ports it supports.  Valid values are 0..31, default is 32.
+
+.TP
+\fB--name\fR \fIname\fR
+Is an opaque string which is not interpreted in any manner.  This \fIname\fR
+is returned in all operations which provide detailed information on the
+Virtual PCIe Fabric Rules.
+.RE
+
+Example:
+
+.RS
+.EX
+$ vpcie-toy-composer vfm create \\
+    --down-port-id-max 3 \\
+    --name foo \\
+    dpu-bar/PCIE0/32 \\
+    dpu-baz/SSD0/0 \\
+    dpu-baz/SSD1/3
+a9ebef1f-e314-44a0-8100-d58f1d9811cd
+.EE
+.RE
+
+.TP
+\fBvpcie-toy-composer\fR [\fIoptions\fR] \fBvfm hot-plug\fR \fIvPortSpec\fR ...
+Hot Plug a new Virtual PCIe Switch Down Port into an existing Virtual PCIe
+Fabric.  The resulting Virtual PCIe Fabric must follow all the standard
+rules (see \fBVirtual PCIe Fabric Rules\fR).
+
+.TP
+\fBvpcie-toy-composer\fR [\fIoptions\fR] \fBvfm hot-unplug\fR \fIvPortID\fR ...
+Hot Unplug one or more Virtual PCIe Switch Down Ports from an existing
+Virtual PCIe Fabric.  This unbinds the underlying DPU PCIe Controllers
+configured as a Virtual Switch Ports, and make eligable for reuse in
+other Virtual PCIe Fabrics.
+
+Note that it is illegal to attempt to Hot Unplug the Virtual Switch Up Port
+(\fIvPortID\fR \fB32\fR).  See \fBVirtual PCIe Fabric Rules\fR.
+
+.TP
+\fBvpcie-toy-composer\fR [\fIoptions\fR] \fBvfm delete\fR \fIvFabricID\fR ...
+Delete one or more existing Virtual PCIe Fabrics.  This unbinds any
+remaining DPU PCIe Controllers configured as Virtual Switch Ports from their
+roles within the Virtual PCIe Fabrics, and makes them eligable for reuse in
+other Virtual PCIe Fabrics.
+
+.TP
+\fBvpcie-toy-composer\fR [\fIoptions\fR] \fBvfm dpus\fR
+Display a list of all operational DPUs which have PCIe Controllers
+configured as Virtual PCIe Ports.
+
+.TP
+\fBvpcie-toy-composer\fR [\fIoptions\fR] \fBvfm dpu\fR \fIDPUID\fR ...
+Display detailed information on the specified operational DPUs which have
+PCIe Controllers configured as Virtual PCIe Ports.  The infomation provided
+will include all of the PCIe Controller Port Names and whether they are
+configured as Virtual Switch Up Ports, or Virtual Switch Down Ports.  See
+\fBDPU Naming\fR.
+
+.TP
+\fBvpcie-toy-composer\fR [\fIoptions\fR] \fBvfm vfabrics\fR
+Display a list of all existing Virtual PCIe Fabrics.
+
+.TP
+\fBvpcie-toy-composer\fR [\fIoptions\fR] \fBvfm vfabric\fR \fIvFabricID\fR ...
+Display detailed information about the indicated Virtual PCIe Fabrics.
+
+.TP
+\fBvpcie-toy-composer\fR [\fIoptions\fR] \fBvfm enumerate\fR \fIPortSpec\fR ...
+Display a PCIe Enumeration of a DPU PCIe Controller which is configured as a
+Switch Down Port.  This may only be done when the Virtual PCIe Down Port is
+not bbound into an existing Virtual PCIe Fabric.
+
+.TP
+\fBvpcie-toy-composer\fR [\fIoptions\fR] \fBvfm debug\fR \fIDPUID\fR [\fIdebug-options\fR]
+If no \fIdebug-options\fR are provided, display the current
+\fIdebug-options\fR set for the DPU.  Otherwise, set the indicated
+\fIdebug-options\fR.  Valid settings are \fBon\fR, \fBtrue\fR, or \fB1\fR to
+enable a debug option; or \fBoff\fR, \fBfalse\fR, or \fB0\fR to disable it.
+
+Valid debug options are:
+.RS
+.TP
+\fB[--trace-link\fR \fIon/off\fR\fB]
+DPU Logging for PCIe Link Events.
+
+.TP
+\fB[--trace-tlp\fR \fIon/off\fR\fB]
+DPU Logging for PCIe Transaction Layer Packets sent and received on PCIe Links.
+
+.TP
+\fB[--trace-s2s\fR \fIon/off\fR\fB]
+DPU Logging for Switch-to-Switch Messages sent between Virtual PCIe Ports.
+
+.TP
+\fB[--trace-routing\fR \fIon/off\fR\fB]
+DPU Logging for PCIe Routing changes for Virtual PCIe Ports.
+.RE
+
+.SH "Simple Network Service sub-commands"
+
+These sub-commands target the Simple Network Service within the Fungible
+Cluster Services.
+
+.TP
+\fBvpcie-toy-composer\fR [\fIoptions\fR] \fBsns dpus\fR
+Display a list of all known DPUs.  This list may include DPUs which do not
+currrently provide PCIe Controllers configured as Virtual PCIe Ports and/or
+DPUs which are in various non-operational states.
+
+.TP
+\fBvpcie-toy-composer\fR [\fIoptions\fR] \fBsns dpu\fR \fIDPUID\fR ...
+Display detailed information on the specified DPUs.  The specified DPUs may
+or may not have PCIe Controllers configured as Virtual PCIe Ports.  See \fDPU
+Naming\fR.
+
+.SH "ENVIRONMENT VARIABLES"
+
+.TP
+.B CS_HOST
+The host name or IP Address for the Fungible Cluster Services API Gateway.
+
+.TP
+.B CS_PORT
+The TCP port number that the Fungible Cluster Services API Gateway is
+listening on.
+
+.TP
+.B CS_USER
+The colon-separated user name and password, \fIuser\fR\fB:\fR\fIpassword\fR,
+to use for accessing the Fungible Cluster Services API Gateway.
+
+.TP
+.B CS_DPUS
+The name of a file providing a simple convenient naming facility for
+Fungible DPUs.  See \fBDPU Naming\fR.
+
+.SH "FILES"
+
+The \fBCS_DPUS\fR environment variable or the \fB--cs-dpus\fR command line
+option indicate a file containing a mapping between DPU "names" and their
+Ethernet Management Port MAC Addresses.  See \fBDPU Naming\fR.
+
+.SH "SEE ALSO"
+
+Fungible Cluster Services Administration Guide.
+
+Virtual PCIe Fabric Manager APIs
+
+.SH "COPYRIGHT"
+Copyright (c) 2022 Fungible, Inc.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+.TP
+1.
+Redistributions of source code must retain the above copyright notice,
+this list of conditions and the following disclaimer.
+
+.TP
+2.
+Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+.P
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+

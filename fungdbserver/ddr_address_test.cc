@@ -5,6 +5,7 @@
  */
 
 #include <inttypes.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -30,13 +31,13 @@ TEST(AddressToOffset, ShardsMapToSameOffset)
 	// TODO(bowdidge): Switch to GUnit or another existing framework.
 	struct offset_pair expected;
 	EXPECT_EQ_OFFSET(make_offset(0, 0x21d96240),
-		  s1_ddr_address_to_offset(0x76584900));
+		  ddr_address_to_offset(0x76584900));
 	EXPECT_EQ_OFFSET(make_offset(2, 0x21d96240),
-		     s1_ddr_address_to_offset(0x76584940));
+		     ddr_address_to_offset(0x76584940));
 	EXPECT_EQ_OFFSET(make_offset(1, 0x21d96240),
-		     s1_ddr_address_to_offset(0x76584980));
+		     ddr_address_to_offset(0x76584980));
 	EXPECT_EQ_OFFSET(make_offset(3, 0x21d96240),
-		     s1_ddr_address_to_offset(0x765849c0));
+		     ddr_address_to_offset(0x765849c0));
 }
 
 TEST(AddressToOffset, AdjacentAddressMapToDifferentOffsets)
@@ -44,17 +45,17 @@ TEST(AddressToOffset, AdjacentAddressMapToDifferentOffsets)
 	// Adjacent addresses in the same shard map to wildly different
 	// addresses because of scattering across high bits.
 	EXPECT_EQ_OFFSET(make_offset(0, 0x11d96280),
-		     s1_ddr_address_to_offset(0x76584a00));
+		     ddr_address_to_offset(0x76584a00));
 	EXPECT_EQ_OFFSET(make_offset(0, 0x31d962c0),
-		     s1_ddr_address_to_offset(0x76584b00));
+		     ddr_address_to_offset(0x76584b00));
 	EXPECT_EQ_OFFSET(make_offset(0, 0x81d96300),
-		     s1_ddr_address_to_offset(0x76584c00));
+		     ddr_address_to_offset(0x76584c00));
 	EXPECT_EQ_OFFSET(make_offset(0, 0xa1d96340),
-		     s1_ddr_address_to_offset(0x76584d00));
+		     ddr_address_to_offset(0x76584d00));
 	EXPECT_EQ_OFFSET(make_offset(0, 0x91d96380),
-		     s1_ddr_address_to_offset(0x76584e00));
+		     ddr_address_to_offset(0x76584e00));
 	EXPECT_EQ_OFFSET(make_offset(0, 0xb1d963c0),
-		     s1_ddr_address_to_offset(0x76584f00));
+		     ddr_address_to_offset(0x76584f00));
 }
 
 TEST(DecodeLine, Simple)

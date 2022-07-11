@@ -38,4 +38,19 @@ def get_config():
         logging.error('Default config file not found!')
         sys.exit('Default config file not found! Exiting..')
 
+    # Configs set as environment variables takes higher priority.
+    # This is primarily needed when running inside docker where the
+    # URLs are set during runtime.
+    ELASTICSEARCH_URL = os.getenv('ELASTICSEARCH_URL')
+    if ELASTICSEARCH_URL:
+        config["ELASTICSEARCH"]["hosts"] = ELASTICSEARCH_URL
+
+    KIBANA_URL = os.getenv('KIBANA_URL')
+    if KIBANA_URL:
+        config["KIBANA"] = KIBANA_URL
+
+    FILE_SERVER_URL = os.getenv('FILE_SERVER_URL')
+    if FILE_SERVER_URL:
+        config["FILE_SERVER_URL"] = FILE_SERVER_URL
+
     return config
