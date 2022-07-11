@@ -44,8 +44,8 @@ class PCIE_Client(object):
             con_handle.close()
             return None
 
-        con_handle.sendall('CONNECT {} {}\n'.format(pcie_ccu_bar, pcie_mem_offset))
-        connect_rsp = str(con_handle.recv(1024))
+        con_handle.sendall('CONNECT {} {}\n'.format(pcie_ccu_bar, pcie_mem_offset).encode())
+        connect_rsp = (con_handle.recv(1024)).decode()
 
         # Successful response: OKAY CONNECT
         connect_rsp_words = connect_rsp.split()
@@ -67,8 +67,8 @@ class PCIE_Client(object):
 
         logger.info('Disconnecting from PICe Server')
 
-        self.con_handle.sendall('DISCONNECT\n')
-        disconnect_rsp = str(self.con_handle.recv(1024))
+        self.con_handle.sendall('DISCONNECT\n'.encode())
+        disconnect_rsp = (self.con_handle.recv(1024)).decode()
 
         # Successful response: OKAY DISCONNECT
         disconnect_rsp_words = disconnect_rsp.split()
@@ -102,12 +102,9 @@ class PCIE_Client(object):
             logger.error(error_msg)
             return (False, error_msg)
 
-        self.con_handle.sendall('READ '
-                                + str(csr_addr)
-                                + ' '
-                                + str(csr_width_words * 64)
-                                + '\n')
-        csr_peek_rsp = str(self.con_handle.recv(1024))
+        send_payload = 'READ ' + str(csr_addr) + ' ' + str(csr_width_words * 64) + '\n'
+        self.con_handle.sendall(send_payload.encode())
+        csr_peek_rsp = (self.con_handle.recv(1024)).decode()
 
         # Successful response: OKAY READ <64-bit word> ...
         csr_peek_rsp_words = csr_peek_rsp.split()
@@ -134,14 +131,9 @@ class PCIE_Client(object):
             logger.error(error_msg)
             return (False, error_msg)
 
-        self.con_handle.sendall('WRITE '
-                                + str(csr_addr)
-                                + ' '
-                                + str(len(word_array) * 64)
-                                + ' '
-                                + ' '.join(str_array)
-                                + '\n')
-        csr_poke_rsp = str(self.con_handle.recv(1024))
+        send_payload = 'WRITE ' + str(csr_addr) + ' ' + str(len(word_array) * 64)  + ' ' + ' '.join(str_array) + '\n'
+        self.con_handle.sendall(send_payload.encode())
+        csr_poke_rsp = (self.con_handle.recv(1024)).decode()
 
         # Successful response: OKAY WRITE
         csr_poke_rsp_words = csr_poke_rsp.split()

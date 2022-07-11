@@ -108,6 +108,8 @@ static CALLER_TO_RELEASE struct fun_json * blob_file_macro(const struct fun_json
 {
 	struct fun_json *args = fun_json_lookup(input, "arguments");
 	struct fun_json *varj = fun_json_array_at(args, 0);
+	struct fun_json *ret = NULL;
+
 	const char *var = fun_json_to_string(varj, "");
 	if (!strlen(var)) {
 		return fun_json_create_error("Expecting " BLOB_HELP ", where var is an environment variable", fun_json_copy);
@@ -127,8 +129,17 @@ static CALLER_TO_RELEASE struct fun_json * blob_file_macro(const struct fun_json
 	if (! blob) {
 		return fun_json_create_errorf("Can't read file at '%s'", file);
 	}
-	printf("Successfully read file '%s' as blob and stored in environment variable '%s'\n", file, var);
-	return wrap_with_setenv(varj, blob);
+
+	printf("Successfully read file '%s' as blob. Storing to var... \n", file);
+	ret =  wrap_with_setenv(varj, blob);
+
+	if ((ret != NULL) && !fun_json_is_error_message(ret)) {
+		printf("Stored blob in environment variable '%s'\n", var);
+	} else {
+		fun_json_printf("Error on blob: %s\n", ret);
+	}
+
+	return ret;
 }
 
 // ===============  REGISTRATION ===============

@@ -23,6 +23,8 @@ sys.path.append(os.path.join(SDKDIR, "bin", OSNAME))
 sys.path.append("/usr/bin") ## demo rootfs
 
 import dpc_client
+from dpc_client import DpcClient
+import dpc_binary
 
 ###
 ##  main
@@ -43,6 +45,9 @@ def parse_args() -> argparse.Namespace:
     # use a unix socket
     parser.add_argument("-u", "--unix", action="store_true", default=False)
 
+    # print progress of elfload command
+    parser.add_argument("-p", "--progress", action="store_true", default=False)
+
     args: argparse.Namespace = parser.parse_args()
     return args
   
@@ -58,13 +63,29 @@ def main() -> int:
         raise RuntimeError("unspecified dpc connection")
 
     # construct the dpc client
-    conn = dpc_client.DpcClient(legacy_ok=False,
-                                unix_sock = args.unix,
-                                server_address = addr)
+    conn = DpcClient(unix_sock = args.unix, server_address=addr, encoder=dpc_binary.BinaryJSONEncoder())
 
-    print("Creating a BLOB from file (takes a few minutes) ...")
-    uuid = conn.execute('blob', ['store', ['quote', conn.blob_from_file(args.elf)]])
-    print("UUID ", uuid)
+    if (not args.progress):
+        print("Creating a BLOB from file (takes a few minutes) ...")
+        uuid = conn.execute('blob', ['store', ['quote', conn.blob_from_file(args.elf)]])
+        print("UUID ", uuid)
+    else:
+        fl = open(args.elf, "rb")
+        uuid = None
+        while (True):
+            bs = fl.read(32*1024)
+            if (len(bs) == 0):
+                # done!
+                break
+            blob = conn.blob_from_string(bs)
+            if (uuid is None):
+                uuid = conn.execute('blob', ['store', ['quote', blob]])
+                print("Got uuid %s" % uuid)
+            else:
+                conn.execute('blob', ['append', uuid, ['quote', blob]])
+            sys.stdout.write(".")
+            sys.stdout.flush()
+
 
     result = conn.execute('issu', ['loadelf', uuid])
     print("result ", result)

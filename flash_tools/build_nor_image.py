@@ -350,19 +350,19 @@ def sanitize_args(args, eeproms_dir):
 
     # eeprom
     # verify the file exists; if not show the list
-    eeprom_files = os.listdir(eeproms_dir)
+    eeprom_files = sorted(os.listdir(eeproms_dir))
 
     if args.eeprom is None:
         if args.chip == 'f1':
             if args.emulation:
                 args.eeprom = "eeprom_emu_f1"
             else:
-                args.eeprom = "eeprom_f1_dev_board"
+                args.eeprom = "eeprom_f1_f1_dev_board"
         elif args.chip == 's1':
             if args.emulation:
                 args.eeprom = "eeprom_emu_s1_full"
             else:
-                args.eeprom = "eeprom_s1_dev_board"
+                args.eeprom = "eeprom_s1_s1_dev_board"
         else:
             print("*** no default eeprom for that chip: %s\n" % args.chip)
             print("Please specify an eeprom to use with the -e/--eeprom option")

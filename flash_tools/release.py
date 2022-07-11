@@ -35,7 +35,7 @@ HOST_FIRMWARE_CONFIG_OVERRIDE="""
 EEPROM_CONFIG_OVERRIDE="""
 { "signed_images": {
      "eeprom_packed.bin": {
-         "source":"eeprom_f1_dev_board"
+         "source":"eeprom_f1_f1_dev_board"
          }
      }
 }

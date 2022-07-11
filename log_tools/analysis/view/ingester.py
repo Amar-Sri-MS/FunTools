@@ -15,6 +15,7 @@
 
 import argparse
 import glob
+import json
 import logging
 import os
 import requests
@@ -30,6 +31,7 @@ from custom_exceptions import ArchiveTooBigException
 from custom_exceptions import EmptyPipelineException
 from custom_exceptions import NotFoundException
 from custom_exceptions import NotSupportedException
+from dotenv import load_dotenv
 from elastic_metadata import ElasticsearchMetadata
 from flask import Blueprint, jsonify, request, render_template
 from flask import current_app, g
@@ -38,20 +40,26 @@ from view.common import login_required
 from utils import archive_extractor, manifest_parser
 from utils import mail
 from utils import timeline
-import ingest as ingest_handler
-import logger
+
 import config_loader
+import elastic_log_searcher
+import logger
+import ingest as ingest_handler
+
+
+load_dotenv(override=True)
 
 config = config_loader.get_config()
 ingester_page = Blueprint('ingester_page', __name__)
 
 FILE_PATH = os.path.abspath(os.path.dirname(__file__))
 DOWNLOAD_DIRECTORY = os.path.join(FILE_PATH, 'downloads')
-QA_REGRESSION_BASE_ENDPOINT = 'http://integration.fungible.local/api/v1/regression'
+QA_BASE_ENDPOINT = 'https://integration.fungible.local'
+QA_REGRESSION_BASE_ENDPOINT = f'{QA_BASE_ENDPOINT}/api/v1/regression'
 QA_JOB_INFO_ENDPOINT = f'{QA_REGRESSION_BASE_ENDPOINT}/suite_executions'
 QA_LOGS_ENDPOINT = f'{QA_REGRESSION_BASE_ENDPOINT}/test_case_time_series'
 QA_SUITE_ENDPOINT = f'{QA_REGRESSION_BASE_ENDPOINT}/suites'
-QA_STATIC_ENDPOINT = 'http://integration.fungible.local/static/logs'
+QA_STATIC_ENDPOINT = f'{QA_BASE_ENDPOINT}/static/logs'
 
 # Users are required to input ingestion filters for log archives greater than 4GB.
 RESTRICTED_ARCHIVE_SIZE = 4 * 1024 * 1024 * 1024
@@ -165,7 +173,7 @@ def main():
                                  LOG_ID,
                                  'DOWNLOAD_STARTED',
                                  {'log_path': log_path})
-                if check_and_download_logs(log_path, log_dir, metadata['ignore_size_restrictions']):
+                if check_and_download_logs(log_path, log_dir, ignore_size_restrictions=metadata['ignore_size_restrictions']):
                     end = time.time()
                     time_taken = end - start
 
@@ -632,6 +640,12 @@ def check_status(log_id):
     es_metadata = ElasticsearchMetadata()
     metadata = es_metadata.get(log_id)
 
+    # Fetch index stats which includes log count and store size.
+    if metadata:
+        index_stats = elastic_log_searcher._get_indices(log_id)
+        index_stats = index_stats[0] if len(index_stats) else None
+        metadata['index_stats'] = index_stats
+
     # TODO(Sourabh): Need an additional check if the status is
     # not COMPLETED to see if the process is running
 
@@ -666,35 +680,37 @@ def is_filters_available(filters):
     return False
 
 
-def fetch_qa_job_info(job_id):
+def fetch_qa_job_info(session, job_id):
     """
     Fetching QA job info using QA endpoint
     Returns response (dict)
     Raises Exception if Job not found
     """
     url = f'{QA_JOB_INFO_ENDPOINT}/{job_id}'
-    response = requests.get(url)
+    headers = {"X-CSRFToken": session.cookies['csrftoken']}
+    response = requests.get(url, verify=False, headers=headers, cookies=session.cookies)
     job_info = response.json()
     if not (job_info and job_info['data']):
         raise NotFoundException('Job info not found')
     return job_info
 
 
-def fetch_qa_suite_info(suite_id):
+def fetch_qa_suite_info(session, suite_id):
     """
     Fetching QA job info using QA endpoint
     Returns response (dict)
     Raises Exception if Job not found
     """
     url = f'{QA_SUITE_ENDPOINT}/{suite_id}'
-    response = requests.get(url)
+    headers = {"X-CSRFToken": session.cookies['csrftoken']}
+    response = requests.get(url, verify=False, headers=headers, cookies=session.cookies)
     suite_info = response.json()
     if not (suite_info and suite_info['data']):
         raise NotFoundException(f'QA suite ({suite_id}) not found')
     return suite_info['data']
 
 
-def fetch_qa_logs(job_id, suite_info, test_index=None):
+def fetch_qa_logs(session, job_id, suite_info, test_index=None):
     """
     Fetches a list of QA log filenames
     QA API returns a list of log info containing data
@@ -709,7 +725,8 @@ def fetch_qa_logs(job_id, suite_info, test_index=None):
     }
     """
     url = f'{QA_LOGS_ENDPOINT}/{job_id}?type=200'
-    response = requests.get(url)
+    headers = {"X-CSRFToken": session.cookies['csrftoken']}
+    response = requests.get(url, verify=False, headers=headers, cookies=session.cookies)
     job_logs = response.json()
     if not (job_logs and job_logs['data']):
         raise NotFoundException('Logs not found')
@@ -762,6 +779,32 @@ def _get_valid_files(path):
             ]
 
 
+def get_qa_session():
+    """
+    Authenicates with QA infra using the login REST API and
+    creates a session object which contains the cookies with
+    csrftoken and sessionid.
+
+    Returns requests.Session object or raises Exception if
+    auth fails.
+    """
+    username = os.getenv('LDAP_USER')
+    password = os.getenv('LDAP_PASSWORD')
+    uri = "/api/v1/login"
+    url = f'{QA_BASE_ENDPOINT}{uri}'
+    headers = {'Content-Type': 'application/json'}
+    data = {"username": username, "password": password}
+    session = requests.Session()
+    response = session.post(url, verify=False, headers=headers, data=json.dumps(data))
+    if response.status_code == 200 and 'csrftoken' in session.cookies:
+        return session
+    else:
+        logging.error(
+            'Could not login to QA infra.'
+            'Status: {} Response: {}'.format(response.status_code, response.text))
+    raise Exception('Could not login to QA Infra.')
+
+
 def ingest_qa_logs(job_id, test_index, metadata, filters):
     """
     Ingesting logs using QA "job_id" and "test_index".
@@ -781,9 +824,10 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
 
     start = time.time()
     try:
-        job_info = fetch_qa_job_info(job_id)
-        suite_info = fetch_qa_suite_info(job_info['data']['suite_id'])
-        log_files = fetch_qa_logs(job_id, suite_info, test_index)
+        session = get_qa_session()
+        job_info = fetch_qa_job_info(session, job_id)
+        suite_info = fetch_qa_suite_info(session, job_info['data']['suite_id'])
+        log_files = fetch_qa_logs(session, job_id, suite_info, test_index)
 
         release_train = job_info['data']['primary_release_train']
 
@@ -808,68 +852,13 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
                 continue
             log_dir = log_file.split(QA_LOGS_DIRECTORY)[1]
             url = f'{QA_STATIC_ENDPOINT}{log_dir}'
-            if check_and_download_logs(url, path, metadata['ignore_size_restrictions']):
+            if check_and_download_logs(url, path, session, metadata['ignore_size_restrictions']):
                 found_logs = True
                 # techsupport log archive
                 if log_file.endswith('cs_all_logs_techsupport.tar.gz'):
                     filename = log_file.split('/')[-1].replace(' ', '_')
-                    manifest_contents.append(f'frn::::::archive::"{filename}"')
-                    # TODO(Sourabh): This is a temp workaround to get QA ingestion working.
-                    # This will be removed after the fixes to manifest creation by David G.
                     archive_name = os.path.splitext(filename)[0]
-
-                    manifest_contents.extend([
-                        f'frn:plaform:DPU::system:storage_agent:textfile:"{archive_name}/techsupport/other":*storageagent.log*',
-                        f'frn:plaform:DPU::system:platform_agent:textfile:"{archive_name}/techsupport/other":*platformagent.log*',
-                        f'frn:plaform:DPU::system:funos:textfile:"{archive_name}/techsupport/other":*funos.log*'
-                    ])
-                    # HA logs
-                    if 'FC-HA-cluster' in suite_info.get('custom_test_bed_spec', {}).get('asset_request', {}):
-                        archive_path = f'{path}/{filename}'
-                        # Extracting the archive
-                        archive_extractor.extract(archive_path)
-
-                        # Get the folders of each node in the cluster
-                        folders = glob.glob(f'{path}/{archive_name}/techsupport/*[!devices][!other]')
-                        for folder in folders:
-                            folder_name = folder.split('/')[-1].replace(' ', '_')
-                            manifest_contents.extend([
-                                f'frn:composer:cluster:{folder_name}:host:apigateway:folder:"{archive_name}/techsupport/{folder_name}":apigateway',
-                                f'frn:composer:cluster:{folder_name}:host:cassandra:folder:"{archive_name}/techsupport/{folder_name}":cassandra',
-                                f'frn:composer:cluster:{folder_name}:host:kafka:folder:"{archive_name}/techsupport/{folder_name}":kafka',
-                                f'frn:composer:cluster:{folder_name}:host:kapacitor:folder:"{archive_name}/techsupport/{folder_name}":kapacitor',
-                                f'frn:composer:cluster:{folder_name}:host:node-service:folder:"{archive_name}/techsupport/{folder_name}":nms',
-                                f'frn:composer:cluster:{folder_name}:host:pfm:folder:"{archive_name}/techsupport/{folder_name}":pcie',
-                                f'frn:composer:cluster:{folder_name}:host:telemetry-service:folder:"{archive_name}/techsupport/{folder_name}":tms',
-                                f'frn:composer:cluster:{folder_name}:host:dataplacement:folder:"{archive_name}/techsupport/{folder_name}/sc":dataplacement',
-                                f'frn:composer:cluster:{folder_name}:host:discovery:folder:"{archive_name}/techsupport/{folder_name}/sc":discovery',
-                                f'frn:composer:cluster:{folder_name}:host:lrm_consumer:folder:"{archive_name}/techsupport/{folder_name}/sc":lrm_consumer',
-                                f'frn:composer:cluster:{folder_name}:host:expansion_rebalance:folder:"{archive_name}/techsupport/{folder_name}/sc":expansion_rebalance',
-                                f'frn:composer:cluster:{folder_name}:host:metrics_manager:folder:"{archive_name}/techsupport/{folder_name}/sc":metrics_manager',
-                                f'frn:composer:cluster:{folder_name}:host:metrics_server:folder:"{archive_name}/techsupport/{folder_name}/sc":metrics_server',
-                                f'frn:composer:cluster:{folder_name}:host:scmscv:folder:"{archive_name}/techsupport/{folder_name}/sc":scmscv',
-                                f'frn:composer:cluster:{folder_name}:host:setup_db:folder:"{archive_name}/techsupport/{folder_name}/sc":setup_db',
-                                f'frn:composer:cluster:{folder_name}:host:sns:folder:"{archive_name}/techsupport/{folder_name}":sns'
-                            ])
-                    else:
-                        manifest_contents.extend([
-                            f'frn:composer:controller::host:apigateway:folder:"{archive_name}/techsupport/cs":apigateway',
-                            f'frn:composer:controller::host:cassandra:folder:"{archive_name}/techsupport/cs":cassandra',
-                            f'frn:composer:controller::host:kafka:textfile:"{archive_name}/techsupport/cs/container":kafka.log',
-                            f'frn:composer:controller::host:kapacitor:folder:"{archive_name}/techsupport/cs":container',
-                            f'frn:composer:controller::host:node-service:folder:"{archive_name}/techsupport/cs":nms',
-                            f'frn:composer:controller::host:pfm:folder:"{archive_name}/techsupport/cs":pfm',
-                            f'frn:composer:controller::host:telemetry-service:folder:"{archive_name}/techsupport/cs":tms',
-                            f'frn:composer:controller::host:dataplacement:folder:"{archive_name}/techsupport/cs/sclogs":dataplacement',
-                            f'frn:composer:controller::host:discovery:folder:"{archive_name}/techsupport/cs/sclogs":discovery',
-                            f'frn:composer:controller::host:lrm_consumer:folder:"{archive_name}/techsupport/cs/sclogs":lrm_consumer',
-                            f'frn:composer:controller::host:expansion_rebalance:folder:"{archive_name}/techsupport/cs/sclogs":expansion_rebalance',
-                            f'frn:composer:controller::host:metrics_manager:folder:"{archive_name}/techsupport/cs/sclogs":metrics_manager',
-                            f'frn:composer:controller::host:metrics_server:folder:"{archive_name}/techsupport/cs/sclogs":metrics_server',
-                            f'frn:composer:controller::host:scmscv:folder:"{archive_name}/techsupport/cs/sclogs":scmscv',
-                            f'frn:composer:controller::host:setup_db:folder:"{archive_name}/techsupport/cs/sclogs":setup_db',
-                            f'frn:composer:controller::host:sns:folder:"{archive_name}/techsupport/cs":sns'
-                        ])
+                    manifest_contents.extend(_get_fixed_manifest_contents(f'{path}/{archive_name}'))
 
                 # single node FC
                 elif log_file.endswith('_fc_log.tgz'):
@@ -984,6 +973,74 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
         }
 
 
+def _get_fixed_manifest_contents(log_path):
+    """ Temporary fixes to the manifest file. """
+    manifest_contents = list()
+    filename = log_path.split('/')[-1]
+    manifest_contents.append(f'frn::::::bundle::"{filename}"')
+
+    # TODO(Sourabh): This is a temp workaround to get techsupport ingestion working.
+    # This will be removed after the fixes to manifest creation by David G.
+    archive_name = os.path.basename(filename)
+
+    # The techsupport folder name inside the techsupport log archive might contain
+    # timestamps.
+    techsupport_folder_name = os.path.basename(glob.glob(f'{log_path}/techsupport*')[0])
+
+    # Get the folders of each node in the cluster
+    folders = glob.glob(f'{log_path}/{techsupport_folder_name}/*[!devices][!other]')
+
+    manifest_contents.extend([
+        f'frn:plaform:DPU::system:storage_agent:textfile:"{archive_name}/{techsupport_folder_name}/other":*storageagent.log*',
+        f'frn:plaform:DPU::system:platform_agent:textfile:"{archive_name}/{techsupport_folder_name}/other":*platformagent.log*',
+        f'frn:plaform:DPU::system:funos:textfile:"{archive_name}/{techsupport_folder_name}/other":*funos.log*'
+    ])
+
+    # HA logs
+    if len(folders) == 3:
+        for folder in folders:
+            folder_name = folder.split('/')[-1].replace(' ', '_')
+            manifest_contents.extend([
+                f'frn:composer:cluster:{folder_name}:host:apigateway:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}":apigateway',
+                f'frn:composer:cluster:{folder_name}:host:cassandra:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}":cassandra',
+                f'frn:composer:cluster:{folder_name}:host:kafka:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}":kafka',
+                f'frn:composer:cluster:{folder_name}:host:kapacitor:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}":kapacitor',
+                f'frn:composer:cluster:{folder_name}:host:node-service:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}":nms',
+                f'frn:composer:cluster:{folder_name}:host:pfm:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}":pcie',
+                f'frn:composer:cluster:{folder_name}:host:telemetry-service:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}":tms',
+                f'frn:composer:cluster:{folder_name}:host:dataplacement:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}/sc":dataplacement',
+                f'frn:composer:cluster:{folder_name}:host:discovery:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}/sc":discovery',
+                f'frn:composer:cluster:{folder_name}:host:lrm_consumer:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}/sc":lrm_consumer',
+                f'frn:composer:cluster:{folder_name}:host:expansion_rebalance:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}/sc":expansion_rebalance',
+                f'frn:composer:cluster:{folder_name}:host:metrics_manager:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}/sc":metrics_manager',
+                f'frn:composer:cluster:{folder_name}:host:metrics_server:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}/sc":metrics_server',
+                f'frn:composer:cluster:{folder_name}:host:scmscv:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}/sc":scmscv',
+                f'frn:composer:cluster:{folder_name}:host:setup_db:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}/sc":setup_db',
+                f'frn:composer:cluster:{folder_name}:host:sns:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}":sns',
+            ])
+    else:
+        manifest_contents.extend([
+            f'frn:composer:controller::host:apigateway:folder:"{archive_name}/{techsupport_folder_name}/cs":apigateway',
+            f'frn:composer:controller::host:cassandra:folder:"{archive_name}/{techsupport_folder_name}/cs":cassandra',
+            f'frn:composer:controller::host:kafka:textfile:"{archive_name}/{techsupport_folder_name}/cs/container":kafka.log',
+            f'frn:composer:controller::host:kapacitor:folder:"{archive_name}/{techsupport_folder_name}/cs":container',
+            f'frn:composer:controller::host:node-service:folder:"{archive_name}/{techsupport_folder_name}/cs":nms',
+            f'frn:composer:controller::host:pfm:folder:"{archive_name}/{techsupport_folder_name}/cs":pfm',
+            f'frn:composer:controller::host:telemetry-service:folder:"{archive_name}/{techsupport_folder_name}/cs":tms',
+            f'frn:composer:controller::host:dataplacement:folder:"{archive_name}/{techsupport_folder_name}/cs/sclogs":dataplacement',
+            f'frn:composer:controller::host:discovery:folder:"{archive_name}/{techsupport_folder_name}/cs/sclogs":discovery',
+            f'frn:composer:controller::host:lrm_consumer:folder:"{archive_name}/{techsupport_folder_name}/cs/sclogs":lrm_consumer',
+            f'frn:composer:controller::host:expansion_rebalance:folder:"{archive_name}/{techsupport_folder_name}/cs/sclogs":expansion_rebalance',
+            f'frn:composer:controller::host:metrics_manager:folder:"{archive_name}/{techsupport_folder_name}/cs/sclogs":metrics_manager',
+            f'frn:composer:controller::host:metrics_server:folder:"{archive_name}/{techsupport_folder_name}/cs/sclogs":metrics_server',
+            f'frn:composer:controller::host:scmscv:folder:"{archive_name}/{techsupport_folder_name}/cs/sclogs":scmscv',
+            f'frn:composer:controller::host:setup_db:folder:"{archive_name}/{techsupport_folder_name}/cs/sclogs":setup_db',
+            f'frn:composer:controller::host:sns:folder:"{archive_name}/{techsupport_folder_name}/cs":sns',
+        ])
+
+    return manifest_contents
+
+
 def ingest_techsupport_logs(job_id, log_path, metadata, filters):
     """
     Ingesting logs using an uploaded techsupport log archive.
@@ -1005,70 +1062,7 @@ def ingest_techsupport_logs(job_id, log_path, metadata, filters):
         if not manifest_parser.has_manifest(log_path):
             raise NotFoundException('Could not find the FUNLOG_MANIFEST file.')
 
-        manifest_contents = list()
-        filename = log_path.split('/')[-1]
-        manifest_contents.append(f'frn::::::bundle::"{filename}"')
-
-        # TODO(Sourabh): This is a temp workaround to get techsupport ingestion working.
-        # This will be removed after the fixes to manifest creation by David G.
-        archive_name = os.path.basename(filename)
-
-        # The techsupport folder name inside the techsupport log archive might contain
-        # timestamps.
-        techsupport_folder_name = os.path.basename(glob.glob(f'{log_path}/techsupport?')[0])
-
-        # Get the folders of each node in the cluster
-        folders = glob.glob(f'{log_path}/techsupport/*[!devices][!other]')
-        # HA logs
-        if len(folders) == 3:
-            for folder in folders:
-                folder_name = folder.split('/')[-1].replace(' ', '_')
-                manifest_contents.extend([
-                    f'frn:composer:cluster:{folder_name}:host:apigateway:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}":apigateway',
-                    f'frn:composer:cluster:{folder_name}:host:cassandra:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}":cassandra',
-                    f'frn:composer:cluster:{folder_name}:host:kafka:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}":kafka',
-                    f'frn:composer:cluster:{folder_name}:host:kapacitor:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}":kapacitor',
-                    f'frn:composer:cluster:{folder_name}:host:node-service:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}":nms',
-                    f'frn:composer:cluster:{folder_name}:host:pfm:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}":pcie',
-                    f'frn:composer:cluster:{folder_name}:host:telemetry-service:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}":tms',
-                    f'frn:composer:cluster:{folder_name}:host:dataplacement:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}/sc":dataplacement',
-                    f'frn:composer:cluster:{folder_name}:host:discovery:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}/sc":discovery',
-                    f'frn:composer:cluster:{folder_name}:host:lrm_consumer:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}/sc":lrm_consumer',
-                    f'frn:composer:cluster:{folder_name}:host:expansion_rebalance:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}/sc":expansion_rebalance',
-                    f'frn:composer:cluster:{folder_name}:host:metrics_manager:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}/sc":metrics_manager',
-                    f'frn:composer:cluster:{folder_name}:host:metrics_server:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}/sc":metrics_server',
-                    f'frn:composer:cluster:{folder_name}:host:scmscv:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}/sc":scmscv',
-                    f'frn:composer:cluster:{folder_name}:host:setup_db:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}/sc":setup_db',
-                    f'frn:composer:cluster:{folder_name}:host:sns:folder:"{archive_name}/{techsupport_folder_name}/{folder_name}":sns'
-                ])
-            manifest_contents.extend([
-                f'frn:plaform:DPU::system:storage_agent:textfile:"{archive_name}/{techsupport_folder_name}/other":*storageagent.log*',
-                f'frn:plaform:DPU::system:platform_agent:textfile:"{archive_name}/{techsupport_folder_name}/other":*platformagent.log*',
-                f'frn:plaform:DPU::system:funos:textfile:"{archive_name}/{techsupport_folder_name}/other":*funos.log*'
-            ])
-        else:
-            manifest_contents.extend([
-                f'frn:composer:controller::host:apigateway:folder:"{archive_name}/{techsupport_folder_name}/cs":apigateway',
-                f'frn:composer:controller::host:cassandra:folder:"{archive_name}/{techsupport_folder_name}/cs":cassandra',
-                f'frn:composer:controller::host:kafka:textfile:"{archive_name}/{techsupport_folder_name}/cs/container":kafka.log',
-                f'frn:composer:controller::host:kapacitor:folder:"{archive_name}/{techsupport_folder_name}/cs":container',
-                f'frn:composer:controller::host:node-service:folder:"{archive_name}/{techsupport_folder_name}/cs":nms',
-                f'frn:composer:controller::host:pfm:folder:"{archive_name}/{techsupport_folder_name}/cs":pfm',
-                f'frn:composer:controller::host:telemetry-service:folder:"{archive_name}/{techsupport_folder_name}/cs":tms',
-                f'frn:composer:controller::host:dataplacement:folder:"{archive_name}/{techsupport_folder_name}/cs/sclogs":dataplacement',
-                f'frn:composer:controller::host:discovery:folder:"{archive_name}/{techsupport_folder_name}/cs/sclogs":discovery',
-                f'frn:composer:controller::host:lrm_consumer:folder:"{archive_name}/{techsupport_folder_name}/cs/sclogs":lrm_consumer',
-                f'frn:composer:controller::host:expansion_rebalance:folder:"{archive_name}/{techsupport_folder_name}/cs/sclogs":expansion_rebalance',
-                f'frn:composer:controller::host:metrics_manager:folder:"{archive_name}/{techsupport_folder_name}/cs/sclogs":metrics_manager',
-                f'frn:composer:controller::host:metrics_server:folder:"{archive_name}/{techsupport_folder_name}/cs/sclogs":metrics_server',
-                f'frn:composer:controller::host:scmscv:folder:"{archive_name}/{techsupport_folder_name}/cs/sclogs":scmscv',
-                f'frn:composer:controller::host:setup_db:folder:"{archive_name}/{techsupport_folder_name}/cs/sclogs":setup_db',
-                f'frn:composer:controller::host:sns:folder:"{archive_name}/{techsupport_folder_name}/cs":sns',
-
-                f'frn:plaform:DPU::system:storage_agent:textfile:"{archive_name}/{techsupport_folder_name}/other":*storageagent.log*',
-                f'frn:plaform:DPU::system:platform_agent:textfile:"{archive_name}/{techsupport_folder_name}/other":*platformagent.log*',
-                f'frn:plaform:DPU::system:funos:textfile:"{archive_name}/{techsupport_folder_name}/other":*funos.log*'
-            ])
+        manifest_contents = _get_fixed_manifest_contents(log_path)
 
         _create_manifest(path, contents=manifest_contents)
         ingest_path = path
@@ -1102,12 +1096,23 @@ def _create_manifest(path, metadata={}, contents=[]):
 
 
 @timeline.timeline_logger('downloading_logs')
-def check_and_download_logs(url, path, ignore_size_restrictions=False):
+def check_and_download_logs(url, path, session=None, ignore_size_restrictions=False):
     """ Downloading log archives from QA dashboard """
     filename = url.split('/')[-1].replace(' ', '_')
     file_path = os.path.join(path, filename)
 
-    response = requests.get(url, allow_redirects=True, stream=True)
+    headers = {}
+    cookies = {}
+    if session:
+        headers = {"X-CSRFToken": session.cookies['csrftoken']}
+        cookies=session.cookies
+
+    response = requests.get(url,
+        headers=headers,
+        cookies=cookies,
+        verify=False,
+        allow_redirects=True,
+        stream=True)
     if response.ok:
         if not ignore_size_restrictions:
             content_length = int(response.headers['Content-Length'])

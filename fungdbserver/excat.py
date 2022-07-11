@@ -32,22 +32,25 @@ import os
 ARGS_HELP =  \
 """usage: {0} [get] <filename>
        {0} pub[lish] <filename>
+       {0} ret[ain] <filename> --retention (short,medium,long,archive,forever)
 
 Publish and retrive executable file symbols to the central
 ExCat (Executable Catalogue) repository. Executables are indexed
-via their uniquie build-id.
+via their unique build-id.
 
 Options:
--v, --verbose       extra logging information
--N <note>, --note   textual note to add to the metadata blob when publishing
---ignore-source     don't return the source binary on get (force retrieval)
---force-uuid        force uuid if a matching file exists
---metadata          dump metadata blob on get
+-v, --verbose        extra logging information
+-N <note>, --note    textual note to add to the metadata blob when publishing
+-r <p>, --retention  retention period (short, medium, long, archive, forever)
+--ignore-source      don't return the source binary on get (force retrieval)
+--force-uuid         force uuid if a matching file exists
+--metadata           dump metadata blob on get
 
 Actions:
 
 get\t\tFind a file with symbole for executable <filename>
 pub[lish]\tPublish an executable to the executable catalog
+ret[ain]\tChange retention policy for the executable
 """
 
 opts = None
@@ -78,7 +81,7 @@ def VERBOSE(msg, level=1):
 def file_has_symbols(fname):
 
     # run a shell command and get the output
-    cmd = ["file", fname]
+    cmd = ["file", "--parameter", "elf_notes=0", fname]
     output = uuid_extract.output4command(cmd)
 
     if ("not stripped" in output):
@@ -426,7 +429,7 @@ def save_metadata(metadata, fname):
 
 
 # publish over http via dkv
-def http_publish(metadata, fname):
+def http_publish(metadata, fname, retention):
 
     # original md5
     metadata["md5"] = filemd5(fname)
@@ -441,15 +444,16 @@ def http_publish(metadata, fname):
     s = metadata2str(metadata)
 
     # setup the URLx
-    url = 'http://cgray-vm0/dkv/buckets/excat/'
+    url = HTTP_ROOT + "/"
     # xx/yy/zz portion
     url += metadata['relpath']
-    
+
     # send it the json file
     blobname = metadata["mdblob"]
     files = {'file': (blobname, s)}
+    post_data = {"retention": get_metadata_retention(retention)}
     LOG("publishing json via http")
-    r = requests.post(url, files=files)
+    r = requests.post(url, data=post_data, files=files)
     if (r.status_code != requests.codes.ok):
         raise(RuntimeError(r.text))
 
@@ -458,20 +462,21 @@ def http_publish(metadata, fname):
     fl = open(tmpbz, "rb")
     os.unlink(tmpbz)
     files = {'file': (blobname, fl)}
+    post_data = {"retention": retention}
     LOG("publishing bz via http")
-    r = requests.post(url, files=files)
+    r = requests.post(url, data=post_data, files=files)
     if (r.status_code != requests.codes.ok):
         raise(RuntimeError(r.text))
 
     LOG("published")
     
 
-def do_publish(uuid, fname):
+def do_publish(uuid, fname, retention):
 
     metadata = mkmetadata(uuid, fname)
 
     # decide which kind of publication
-    http_publish(metadata, fname)
+    http_publish(metadata, fname, retention)
 
 def pub_action(fname):
 
@@ -490,8 +495,55 @@ def pub_action(fname):
     LOG("UUID %s ok to publish" % uuid)
 
     # the actual publish step
-    do_publish(uuid, fname)
+    do_publish(uuid, fname, opts.retention)
 
+def change_retention_action(fname, retention):
+
+    uuid = parse_uuid(fname)
+
+    if (os.path.exists(fname)):
+        uuid = uuid_from_file(fname)
+        if (uuid is None):
+            LOG("cannot retrieve uuid from file %s" % fname)
+            sys.exit(1)
+    elif (uuid is not None):
+        # just use a raw uuid
+        LOG("parsed UUID %s" % str(uuid))
+    else:
+        LOG("%s is neither a file nor a UUID" % fname)
+        sys.exit(1)
+
+    url = HTTP_ROOT + "/"
+    relpath = mkrelpath(uuid)
+    url += relpath
+
+    blob_url = url + "%s.bz" % uuid
+    r = requests.put(blob_url, params={"retention": ""},
+                     data={"retention": retention})
+    if (r.raise_for_status()):
+        raise(RuntimeError(r.text))
+
+    metadata_url = url + "%s.json" % uuid
+    r = requests.put(metadata_url,
+                     params={"retention": ""},
+                     data={"retention": get_metadata_retention(retention)})
+    if (r.raise_for_status()):
+        raise(RuntimeError(r.text))
+
+    LOG("Changed retention of %s to %s" % (uuid, retention))
+
+
+def get_metadata_retention(retention):
+    """ Always keep metadata longer than the binary blob """
+    metadata_ret = "archive"
+    if retention == "forever":
+        metadata_ret = "forever"
+    return metadata_ret
+
+
+def validate_retention_args():
+    if (opts.retention not in ["short", "medium", "long", "archive", "forever"]):
+        LOG("warning: unknown retention %s" % opts.retention)
 
 ###
 ##  main
@@ -509,6 +561,9 @@ def parse_args(dummy=False):
                         default=0)
     parser.add_argument("-N", "--note", action="store",
                         default="")
+    parser.add_argument("-r", "--retention", action="store",
+                        default="medium",
+                        help="Retention time for publish")
     parser.add_argument("--ignore-source", action="store_true",
                         default=False)
     parser.add_argument("--force-uuid", action="store_true",
@@ -540,8 +595,9 @@ def parse_args(dummy=False):
 
 GET_ACTIONS = ["get", "find"]
 PUB_ACTIONS = ["pub", "publish", "put"]
+RETENTION_ACTIONS = ["ret", "retain"]
 
-VALID_ACTIONS = GET_ACTIONS + PUB_ACTIONS
+VALID_ACTIONS = GET_ACTIONS + PUB_ACTIONS + RETENTION_ACTIONS
 
 def main():
     parse_args()
@@ -569,7 +625,14 @@ def main():
     elif (action in PUB_ACTIONS):
         if (len(arglist) > 1):
             usage();
+
+        validate_retention_args()
         r = pub_action(arglist[0])
+    elif (action in RETENTION_ACTIONS):
+        if (len(arglist) > 1):
+            usage()
+        validate_retention_args()
+        r = change_retention_action(arglist[0], opts.retention)
     else:
         usage()
     

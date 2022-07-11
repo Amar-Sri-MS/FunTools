@@ -1369,10 +1369,10 @@ def csr_get_field(fld_pos, fld_size, word_array):
     rem_size = fld_size
 
     # compute the last word of the output buffer because big endian
-    out_idx = (fld_size - 1) / constants.WORD_SIZE_BITS
+    out_idx = (fld_size - 1) // constants.WORD_SIZE_BITS
     logger.debug("first output word: {0}".format(out_idx))
 
-    fld_size_words = (fld_size + (constants.WORD_SIZE_BITS - 1)) / constants.WORD_SIZE_BITS
+    fld_size_words = (fld_size + (constants.WORD_SIZE_BITS - 1)) // constants.WORD_SIZE_BITS
     fld_word_array = [0x0] * fld_size_words
 
     # count up bits from fld_pos
@@ -1385,7 +1385,7 @@ def csr_get_field(fld_pos, fld_size, word_array):
         # find the input word for the lowest significant bit
         if not ((reg_padded_size - fld_pos - fld_size + rem_size) > 0):
             sys.exit(1)
-        in_idx = (reg_padded_size - fld_pos - fld_size + rem_size - 1) / constants.WORD_SIZE_BITS
+        in_idx = (reg_padded_size - fld_pos - fld_size + rem_size - 1) // constants.WORD_SIZE_BITS
 
         # calculate the base bit position in this word
         in_pos = fld_pos % constants.WORD_SIZE_BITS
@@ -1453,12 +1453,12 @@ def csr_set_field(fld_pos, fld_size, csr_word_array, fld_word_array):
         sys.exit(1)
 
     rem_size = fld_size
-    in_idx = (fld_size - 1) / constants.WORD_SIZE_BITS
+    in_idx = (fld_size - 1) // constants.WORD_SIZE_BITS
     while (rem_size > 0):
         # find the LSB word on the output register
         if not ((reg_padded_size - fld_pos - fld_size + rem_size) > 0):
             sys.exit(1)
-        out_idx = (reg_padded_size - fld_pos - fld_size + rem_size - 1) / constants.WORD_SIZE_BITS
+        out_idx = (reg_padded_size - fld_pos - fld_size + rem_size - 1) // constants.WORD_SIZE_BITS
 
         # calculate the base bit position in this word
         out_pos = fld_pos % constants.WORD_SIZE_BITS

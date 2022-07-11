@@ -44,7 +44,7 @@ import os, sys, logging, glob
 import copy
 import json
 import jsonutils
-import collections
+from collections.abc import Mapping
 
 logger = logging.getLogger('cfg_gen')
 logger.setLevel(logging.INFO)
@@ -127,8 +127,8 @@ class DefaultCfgGen():
         """
         for key, val_json in list(cfg_json.items()):
             val_entry = entry.get(key)
-            if (isinstance(val_entry, collections.Mapping) and
-                 isinstance(val_json, collections.Mapping)):
+            if (isinstance(val_entry, Mapping) and
+                 isinstance(val_json, Mapping)):
                 self.merge_entry(val_entry, val_json)
             else:
                 entry[key] = val_json

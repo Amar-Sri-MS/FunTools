@@ -29,7 +29,7 @@ class BMC_Client(object):
             self.disconnect()
 
     def connect(self):
-	(status, status_msg) = self.probe.i2c_connect()
+        (status, status_msg) = self.probe.i2c_connect()
         if status is True:
             self.connected = True
             logger.info("Connection Successful!")
@@ -97,7 +97,7 @@ class BMC_Client(object):
         if data is not None:
             logger.debug(("dbg chal data:{0}").format(
                     [hex(x) for x in data]))
-	(status, return_data)  = self.probe.i2c_dbg_chal_cmd(cmd = cmd,
+            (status, return_data)  = self.probe.i2c_dbg_chal_cmd(cmd = cmd,
 						data = data,
 						chip_inst = chip_inst)
         if status is not True:
