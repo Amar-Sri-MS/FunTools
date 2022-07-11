@@ -166,7 +166,7 @@ class TraceProcessor:
                 previous_start = self.find_previous_start()
                 fake_hw_event = self.hardware_sends[-1]
                 fake_hw_event.end_time = timestamp
-                # inserting this in the chain
+
                 previous_start.successors.append(fake_hw_event)
                 self.hardware_sends.pop()
 
@@ -209,14 +209,11 @@ class TraceProcessor:
 
             else:
                 # New event not initiated by a previous WU.
-                print("This was not initiated by the previous wu -> ")
-                # we should need to create a fake event here in my opinion
                 if len(self.start_events) != 0:
                     previous_start = self.find_previous_start()
                     previous_start.successors.append(current_event)
                     self.start_events.append(current_event)
                 else:
-                    # -> commenting this thing out for now
                     transaction = event.Transaction(current_event)
                     self.transactions.append(transaction)
                     current_event.transaction = transaction
@@ -250,11 +247,7 @@ class TraceProcessor:
             curr = None
 
             # -> we need a better way but using re for now
-            print("faddr = ", next_event.dest_faddr, line_number)
             if re.match(".*LE.*", str(next_event.dest_faddr)) != None:
-                print("I am here creating a fake event")
-                # we need to modify the second send time to represent the actual
-                # time and this should be the send event
                 current_event = event.TraceEvent(send_time, send_time,
                                                  "HW-LE: " + next_event.name, next_event.dest_faddr)
                 # will now connect this to the previous event
