@@ -96,6 +96,8 @@ struct dpc_worker {
 /* cmd timeout, use driver default timeout */
 #define DEFAULT_NVME_CMD_TIMEOUT_MS "0"
 
+#define SOCKET_WRITE_TIMEOUT_SEC (60)
+
 /* socket connect retry parameters */
 #define RETRY_DEFAULT (100)  /* retry for 100 seconds; 60 is not enough sometimes in jenkins */
 #define RETRY_NOARG   (RETRY_DEFAULT)
@@ -1279,7 +1281,7 @@ static void _unlock_queue_if_needed(struct dpcsock_connection *connection)
 static bool _wait_write_unlocked(struct dpcsock_connection *dest,
 			 struct dpcsock_connection *source)
 {
-	int r;
+	int r, attempts = SOCKET_WRITE_TIMEOUT_SEC;
 	_unlock_queue_if_needed(source);
 
 	do {
@@ -1301,6 +1303,11 @@ static bool _wait_write_unlocked(struct dpcsock_connection *dest,
 
 		if (r < 0) {
 			perror("select");
+			_lock_queue_if_needed(source);
+			return false;
+		}
+		if (--attempts == 0) {
+			log_error("unable to write to fd %d in %d seconds, closing connection\n", dest->fd, SOCKET_WRITE_TIMEOUT_SEC);
 			_lock_queue_if_needed(source);
 			return false;
 		}
