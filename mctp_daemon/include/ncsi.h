@@ -9,12 +9,7 @@
 #include "auto_conf.h"
 
 #define ncsi_err(fmt, arg...)		log_n_print("NCSI: ERROR - "fmt, ##arg)
-
-#ifdef CONFIG_NCSI_DEBUG
-#define ncsi_dbg(fmt, arg...)		log_n_print("%s: "fmt, __func__, ##arg)
-#else
-#define ncsi_dbg(fmt, arg...)
-#endif
+#define ncsi_dbg(fmt, arg...)		if (cfg.debug & NCSI_DEBUG) printf("%s: "fmt, __func__, ##arg)
 
 #ifndef NULL
 #define NULL                    ((void *)0)

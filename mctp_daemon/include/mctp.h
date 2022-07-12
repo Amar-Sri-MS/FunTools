@@ -8,13 +8,8 @@
 #include <stdint.h>
 #include "auto_conf.h"
 
-#define mctp_err(fmt, arg...)          log("MCTP: ERROR - "fmt, ##arg)
-
-#ifdef CONFIG_MCTP_DEBUG
-#define mctp_dbg(fmt, arg...)          printf("%s: "fmt,__func__, ##arg)
-#else
-#define mctp_dbg(fmt, arg...)
-#endif
+#define mctp_err(fmt, arg...)          	log("MCTP: ERROR - "fmt, ##arg)
+#define mctp_dbg(fmt, arg...)		if (cfg.debug & MCTP_DEBUG) printf("%s: "fmt,__func__, ##arg)
 
 #define MAX_MCTP_PKT_SIZE	(64 + 4)
 

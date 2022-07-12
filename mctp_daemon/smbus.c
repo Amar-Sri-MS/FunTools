@@ -89,7 +89,7 @@ static int __receive(uint8_t *buf, int len)
 	struct smbus_hdr_stc *hdr = (struct smbus_hdr_stc *)buf;
 	uint8_t pec;
 
-	if (cfg.debug)
+	if (cfg.debug & EP_DEBUG)
 		hexdump(buf, len);
 
 	if (!(flags & FLAGS_NO_SMBUS_PEC_CHECK)) {
@@ -168,7 +168,7 @@ static int __send(int len)
 
 	set_smbus_hdr(&len);
 
-	if (cfg.debug)
+	if (cfg.debug & EP_DEBUG)
 		hexdump(tx_pkt_buf, len);
 
 #ifdef CONFIG_USE_SMBUS_INTERFACE

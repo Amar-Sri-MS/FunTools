@@ -100,7 +100,7 @@ static int __receive(uint8_t *buf, int len)
 	vdm_ep.rx_cnt = len - sizeof(struct pcie_vdm_hdr_stc);
 	vdm_ep.rx_pkt_buf = hdr->data;
 
-	if (cfg.debug) 
+	if (cfg.debug & EP_DEBUG) 
 		hexdump(buf, len);
 
         if (mctp_recieve(&vdm_ep) < 0) {
@@ -167,7 +167,7 @@ static int __async(uint8_t *buf)
 	vdm_ep.tx_len = len;
 	vdm_ep.tx_cnt = 0;
 
-	if (cfg.debug)
+	if (cfg.debug & EP_DEBUG)
 		hexdump(vdm_ep.tx_ptr, vdm_ep.tx_len);
 
 	return mctp_transmit(&vdm_ep);
@@ -188,7 +188,7 @@ static int __send(int len)
 
 	set_pcie_vdm_hdr(&len);
 
-	if (cfg.debug)
+	if (cfg.debug & EP_DEBUG)
 		hexdump(tx_pkt_buf, len);
 
 #ifdef CONFIG_USE_PCIE_VDM_INTERFACE
@@ -200,7 +200,7 @@ static int __send(int len)
 		vdm_ep.tx_cnt += vdm_ep.payload;
 		
 		set_pcie_vdm_hdr(&len);
-		if (cfg.debug)
+		if (cfg.debug & EP_DEBUG)
 			hexdump(tx_pkt_buf, len);
 
 #ifdef CONFIG_USE_PCIE_VDM_INTERFACE
