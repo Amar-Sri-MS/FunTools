@@ -10,8 +10,6 @@ try:
         sys.path.append(os.environ["SDKDIR"] + sdkdir)
     elif ("WORKSPACE" in os.environ):
         sys.path.append(os.environ["WORKSPACE"] + "/FunSDK/" + sdkdir)
-    else:
-        raise RuntimeError("Please specify WORKSPACE or SDKDIR environment variable")
 
     # import dpc_client
 except ImportError as ex:
