@@ -9,12 +9,7 @@
 #include "auto_conf.h"
 
 #define pldm_err(fmt, arg...)          log("pldm error: "fmt, ##arg)
-
-#ifdef CONFIG_PLDM_DEBUG
-#define pldm_dbg(fmt, arg...)          log_n_print("%s: "fmt, __func__, ##arg)
-#else
-#define pldm_dbg(fmt, arg...)
-#endif
+#define pldm_dbg(fmt, arg...)		if (cfg.debug & PLDM_DEBUG) printf("%s: "fmt,__func__, ##arg)
 
 #ifndef NULL
 #define NULL                    ((void *)0)

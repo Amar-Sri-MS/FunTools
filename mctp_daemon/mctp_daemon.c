@@ -135,6 +135,10 @@ int main(int argc, char *argv[])
 
 		case 'D':
 			cfg.debug = 1;
+			if (optarg == NULL && argv[optind] != NULL && argv[optind][0] != '-') {
+				cfg.debug = (uint8_t)strtol(argv[optind], NULL, 0);
+				optind++;
+			}
 			break;
 
 		case 'E':

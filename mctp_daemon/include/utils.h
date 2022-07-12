@@ -19,6 +19,13 @@
 #define FLAGS_DEBUG			(1 << 3)
 #define FLAGS_NO_SMBUS_PEC_CHECK	(1 << 4)
 
+// define debug bits
+#define GENERAL_DEBUG			(1 << 0)
+#define EP_DEBUG			(1 << 1)
+#define MCTP_DEBUG			(1 << 2)
+#define PLDM_DEBUG			(1 << 3)
+#define NCSI_DEBUG			(1 << 4)
+
 #define _CONCAT(x, y)   x ## y
 #define CONCAT(x, y)    _CONCAT(x, y)
 
