@@ -391,6 +391,9 @@ class TraceEvent(object):
 
         self.is_hw_wu = False
 
+        # to recognize the WUs processed in compression/decompression engine
+        self.is_hw_zip = False
+
     def as_dict(self):
         return {'start_time': self.start_time,
                 'end_time': self.end_time,
@@ -400,6 +403,7 @@ class TraceEvent(object):
                 # No transaction because it is an object.
                 'is_timer': self.is_timer,
                 'is_hw_wu': self.is_hw_wu,
+                'is_hw_zip': self.is_hw_zip,
                 'is_annotation': self.is_annotation
                 }
 

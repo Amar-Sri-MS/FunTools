@@ -59,6 +59,11 @@
   height: 5px;
 }
 
+/* Drawing the fake ZIP events */
+.is_hw_zip {
+  background-color: #ddf731;
+  height: 8px;
+}
 /* Bar representing a timer start. */
 .schedule {
   background-color: #0000ff;
@@ -186,6 +191,15 @@ maximum duration {{group['stats']['max_nsec'] | as_duration }},
   <div class="timeline">
     <div style="width: {{event['offset_pct']}}%;" class="space"></div>
     <div style="width: {{event['duration_pct']}}%;" class="bar is_hw_wu"></div>
+  </div>
+  {% elif event['is_hw_zip'] %}
+  <div class="label">{{ event['label'] }} </div>
+  <div class="time" title="{{event['start_time']|as_ns}}-{{event['end_time']|as_ns}}">{{ event['start_time'] | as_time }}-{{ event['end_time'] | as_time }}</div>
+  <div class="duration">{{event['duration'] | as_duration}}</div>
+  <div class="vp">{{event['vp']}}</div>
+  <div class="timeline">
+    <div style="width: {{event['offset_pct']}}%;" class="space"></div>
+    <div style="width: {{event['duration_pct']}}%;" class="bar is_hw_zip"></div>
   </div>
   {% elif event['is_annotation'] %}
   <div class="label"></div>
