@@ -7,7 +7,7 @@
 mkdir -p $DEPLOY_ROOT/bin/scripts
 mkdir -p $DEPLOY_ROOT/bin/Linux/x86_64
 
-install bin/mips64/Linux/dpc_client.py $DEPLOY_ROOT/bin/scripts
+install bin/mips64/Linux/{dpc_client.py,dpc_binary.py,binary_json.py} $DEPLOY_ROOT/bin/scripts
 
 # TODO(bowdidge):jsonutil, log_tools.
 install bin/scripts/fungdbserver.py $DEPLOY_ROOT/bin/scripts
