@@ -389,7 +389,7 @@ class TraceEvent(object):
         # Work units or events that were instigated by this event.
         self.successors = []
 
-        self.is_hw_wu = False
+        self.is_hw_le = False
 
         # to recognize the WUs processed in compression/decompression engine
         self.is_hw_zip = False
@@ -402,7 +402,7 @@ class TraceEvent(object):
                 'vp': self.vp,
                 # No transaction because it is an object.
                 'is_timer': self.is_timer,
-                'is_hw_wu': self.is_hw_wu,
+                'is_hw_le': self.is_hw_le,
                 'is_hw_zip': self.is_hw_zip,
                 'is_annotation': self.is_annotation
                 }

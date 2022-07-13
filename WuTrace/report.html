@@ -53,17 +53,18 @@
   border: 1px solid blue;
 }
 
-/* Drawing the fake LE events */
-.is_hw_wu {
+/* For synthesized LE events */
+.is_hw_le {
   background-color: #61e8e3;
   height: 5px;
 }
 
-/* Drawing the fake ZIP events */
+/* For synthesized ZIP events */
 .is_hw_zip {
   background-color: #ddf731;
   height: 8px;
 }
+
 /* Bar representing a timer start. */
 .schedule {
   background-color: #0000ff;
@@ -183,14 +184,14 @@ maximum duration {{group['stats']['max_nsec'] | as_duration }},
     <div style="width: {{event['offset_pct']}}%;" class="space"></div>
     <div style="width: {{event['duration_pct']}}%;" class="bar timer"></div>
   </div>
-  {% elif event['is_hw_wu'] %}
+  {% elif event['is_hw_le'] %}
   <div class="label">{{ event['label'] }} </div>
   <div class="time" title="{{event['start_time']|as_ns}}-{{event['end_time']|as_ns}}">{{ event['start_time'] | as_time }}-{{ event['end_time'] | as_time }}</div>
   <div class="duration">{{event['duration'] | as_duration}}</div>
   <div class="vp">{{event['vp']}}</div>
   <div class="timeline">
     <div style="width: {{event['offset_pct']}}%;" class="space"></div>
-    <div style="width: {{event['duration_pct']}}%;" class="bar is_hw_wu"></div>
+    <div style="width: {{event['duration_pct']}}%;" class="bar is_hw_le"></div>
   </div>
   {% elif event['is_hw_zip'] %}
   <div class="label">{{ event['label'] }} </div>
