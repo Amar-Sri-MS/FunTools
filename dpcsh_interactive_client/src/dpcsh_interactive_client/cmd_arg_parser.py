@@ -919,6 +919,19 @@ base_peek_subparsers = base_peek_parser.add_subparsers(title="subcommands", help
 peek_stats_parser = base_peek_subparsers.add_parser('stats', help="Peek stats")
 peek_stats_parsers = peek_stats_parser.add_subparsers(title="subcommands", help="")
 
+# fun_malloc stats
+peek_fun_malloc_parser = peek_stats_parsers.add_parser('fun_malloc',help="Fun_malloc stats")
+peek_fun_malloc_subparsers = peek_fun_malloc_parser.add_subparsers(title="subcommands", help="")
+# TODO add more options for fun_malloc
+peek_fun_malloc_slot_parser = peek_fun_malloc_subparsers.add_parser('slot',help="Fun_malloc stats")
+peek_fun_malloc_slot_parser.add_argument('-non_coh', type=int, help="Choose from < 0 | 1 >, 0 for non_coh, 1 for coherent")
+
+# malloc_caches stats
+peek_malloc_caches_parser = peek_stats_parsers.add_parser('malloc_caches',help="malloc caches")
+peek_malloc_caches_parser.add_argument('-slot', type=int, default=6, help="Mcache slot, 6-15")
+peek_malloc_caches_parser.add_argument('-non_coh', type=int, help="Choose from < 0 | 1 >, 0 for non_coh, 1 for coherent")
+peek_malloc_caches_parser.add_argument('-grep', help="Grep regex pattern", default=None)
+
 #nhp_status commands
 peek_stats_nhp_status_parser = peek_stats_parsers.add_parser('nhp_status',help="Peek nhp stats")
 
@@ -977,6 +990,18 @@ peek_psw_nu_stats_parser.add_argument('-grep', help="Grep regex pattern", defaul
 peek_psw_hnu_stats_parser.add_argument('-port_num', type=int, help="Port num", default=None)
 peek_psw_hnu_stats_parser.add_argument('-queues', nargs='+', help="Queue List", default=None)
 peek_psw_hnu_stats_parser.add_argument('-grep', help="Grep regex pattern", default=None)
+
+# PSW_EXT Stats
+peek_psw_ext_stats_parser = peek_stats_parsers.add_parser('psw_ext', help="NU Peek PSW EXT Stats")
+peek_psw_ext_stats_parsers = peek_psw_ext_stats_parser.add_subparsers(title='subcommands', help="")
+
+peek_psw_ext_nu_stats_parser = peek_psw_ext_stats_parsers.add_parser('nu', help="NU Peek PSW EXT Stats")
+
+peek_psw_ext_nu_stats_parser.add_argument('-iters', type=int, help="Iteration count", default=9999999)
+
+peek_psw_ext_nu_stats_parser.add_argument('-port_num', type=int, help="Port num", default=None)
+peek_psw_ext_nu_stats_parser.add_argument('-queues', nargs='+', help="Queue List", default=None)
+peek_psw_ext_nu_stats_parser.add_argument('-grep', help="Grep regex pattern", default=None)
 
 # VP Stats
 peek_vp_stats_parser = peek_stats_parsers.add_parser('vppkts', help="NU Peek VP Stats")
@@ -1077,6 +1102,15 @@ peek_nu_sfg_stats_parser.add_argument('-grep', help="Grep regex pattern", defaul
 peek_hnu_sfg_stats_parser = peek_sfg_stats_parsers.add_parser('hnu', help="Peek HNU SFG stats")
 peek_hnu_sfg_stats_parser.add_argument('-grep', help="Grep regex pattern", default=None)
 
+# Peek NU SFG EXT  Stats
+peek_sfg_ext_stats_parser = peek_stats_parsers.add_parser('sfg_ext', help="Peek SFG EXT Stats")
+peek_sfg_ext_stats_parser.add_argument('-iters', type=int, help="Iteration count", default=9999999)
+peek_sfg_ext_stats_parsers = peek_sfg_ext_stats_parser.add_subparsers(title='subcommands', help="")
+
+# Nu SFG EXT stats
+peek_nu_sfg_ext_stats_parser = peek_sfg_ext_stats_parsers.add_parser('nu', help="Peek NU SFG EXT stats")
+peek_nu_sfg_ext_stats_parser.add_argument('-grep', help="Grep regex pattern", default=None)
+
 # NU/HU Flow_control
 peek_flowcontrol_parser = peek_stats_parsers.add_parser('flow_control', help="Peek NU flow_control")
 peek_flowcontrol_parsers = peek_flowcontrol_parser.add_subparsers(title='subcommands', help="")
@@ -1144,9 +1178,18 @@ peek_nhp_stats_parser = peek_stats_parsers.add_parser('nhp', help="Peek nhp stat
 peek_nhp_stats_parser.add_argument('-iters', type=int, help="Iteration count", default=999999)
 peek_nhp_stats_parser.add_argument('-grep', help='Grep regex pattern', default=None)
 
+# nhp ext stats
+peek_nhp_ext_stats_parser = peek_stats_parsers.add_parser('nhp_ext', help="Peek nhp_ext stats")
+peek_nhp_ext_stats_parser.add_argument('-iters', type=int, help="Iteration count", default=999999)
+peek_nhp_ext_stats_parser.add_argument('-grep', help='Grep regex pattern', default=None)
+
 # sse stats
 peek_sse_stats_parser = peek_stats_parsers.add_parser('sse', help='Peek sse stats')
 peek_sse_stats_parser.add_argument('-grep', help='Grep regex pattern', default=None)
+
+# sse ext stats
+peek_sse_ext_stats_parser = peek_stats_parsers.add_parser('sse_ext', help='Peek sse ext stats')
+peek_sse_ext_stats_parser.add_argument('-grep', help='Grep regex pattern', default=None)
 
 # Resource stats
 peek_resource_stats_parser = peek_stats_parsers.add_parser('resource', help="Resource Stats")

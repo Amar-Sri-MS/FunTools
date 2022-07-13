@@ -2,6 +2,7 @@ from dpc_shell import DpcShell
 from dpc_client import DpcClient
 from cmd2 import Cmd, with_argparser
 from nu_commands import *
+from funos_commands import *
 from storage_commands import *
 from cmd_arg_parser import *
 import sys
@@ -14,6 +15,7 @@ class CmdController(Cmd):
         self.prompt = "(dpc_cli) "
         self.dpc_client = DpcClient(target_ip=target_ip, target_port=target_port, verbose=verbose)
         self._port_cmd_obj = PortCommands(dpc_client=self.dpc_client)
+        self._funos_cmd_obj = FunOSCommands(dpc_client=self.dpc_client)
         self._sys_cmd_obj = SystemCommands(dpc_client=self.dpc_client)
         self._qos_cmd_obj = QosCommands(dpc_client=self.dpc_client)
         self._peek_cmd_obj = PeekCommands(dpc_client=self.dpc_client)
@@ -644,19 +646,36 @@ class CmdController(Cmd):
         queues = args.queues
         iterations = args.iters
         grep_regex = args.grep
-        self._peek_cmd_obj.peek_psw_stats(mode='nu', port_num=port_num, queue_list=queues, grep_regex=grep_regex, iterations=iterations)
+        self._peek_cmd_obj.peek_psw_stats(mode='nu', port_num=port_num, queue_list=queues, grep_regex=grep_regex, iterations=iterations, psw_ext=False)
 
     def peek_psw_hnu_stats(self, args):
         port_num = args.port_num
         queues = args.queues
         grep_regex = args.grep
-        self._peek_cmd_obj.peek_psw_stats(mode='hnu', port_num=port_num, queue_list=queues, grep_regex=grep_regex)
+        self._peek_cmd_obj.peek_psw_stats(mode='hnu', port_num=port_num, queue_list=queues, grep_regex=grep_regex, psw_ext=False)
+
+    def peek_psw_ext_nu_stats(self, args):
+        port_num = args.port_num
+        queues = args.queues
+        iterations = args.iters
+        grep_regex = args.grep
+        self._peek_cmd_obj.peek_psw_stats(mode='nu', port_num=port_num, queue_list=queues, grep_regex=grep_regex, iterations=iterations, psw_ext=True)
 
     def peek_meter_stats(self, args):
         bank = args.bank
         index = args.index
         grep_regex = args.grep
         self._peek_cmd_obj.peek_meter_stats(bank=bank, index=index, grep_regex=grep_regex)
+
+    def peek_fun_malloc_slot_stats(self, args):
+        non_coh = args.non_coh
+        self._funos_cmd_obj.peek_fun_malloc_slot_stats(non_coh)
+
+    def peek_malloc_caches_slot_stats(self, args):
+        slot = args.slot
+        non_coh = args.non_coh
+        grep_regex = args.grep
+        self._funos_cmd_obj.peek_malloc_caches_slot_stats(slot, non_coh, grep_regex=grep_regex)
 
     def peek_erp_meter_stats(self, args):
         bank = args.bank
@@ -737,11 +756,16 @@ class CmdController(Cmd):
     def peek_nu_sfg_stats(self, args):
         grep_regex = args.grep
         iterations = args.iters
-        self._peek_cmd_obj.peek_sfg_stats(mode='nu', grep_regex=grep_regex, iterations=iterations)
+        self._peek_cmd_obj.peek_sfg_stats(mode='nu', grep_regex=grep_regex, iterations=iterations, sfg_ext=False)
 
     def peek_hnu_sfg_stats(self, args):
         grep_regex = args.grep
         self._peek_cmd_obj.peek_sfg_stats(mode='hnu', grep_regex=grep_regex)
+
+    def peek_nu_sfg_ext_stats(self, args):
+        grep_regex = args.grep
+        iterations = args.iters
+        self._peek_cmd_obj.peek_sfg_stats(mode='nu', grep_regex=grep_regex, iterations=iterations, sfg_ext=True)
 
     def peek_nu_flowcontrol_stats(self, args):
         grep_regex = args.grep
@@ -833,11 +857,20 @@ class CmdController(Cmd):
     def peek_stats_nhp(self, args):
         grep_regex = args.grep
         iterations = args.iters
-        self._peek_cmd_obj.peek_nhp_stats(grep_regex=grep_regex, iterations=iterations)
+        self._peek_cmd_obj.peek_nhp_stats(grep_regex=grep_regex, iterations=iterations, nhp_ext=False)
+
+    def peek_stats_nhp_ext(self, args):
+        grep_regex = args.grep
+        iterations = args.iters
+        self._peek_cmd_obj.peek_nhp_stats(grep_regex=grep_regex, iterations=iterations, nhp_ext=True)
 
     def peek_stats_sse(self, args):
         grep_regex = args.grep
-        self._peek_cmd_obj.peek_sse_stats(grep_regex=grep_regex)
+        self._peek_cmd_obj.peek_sse_stats(grep_regex=grep_regex, sse_ext=False)
+
+    def peek_stats_sse_ext(self, args):
+        grep_regex = args.grep
+        self._peek_cmd_obj.peek_sse_stats(grep_regex=grep_regex, sse_ext=True)
 
     def peek_pc_resource_stats(self, args):
         grep_regex = args.grep
@@ -1651,6 +1684,7 @@ class CmdController(Cmd):
     peek_hnu_fpg_stats_parser.set_defaults(func=peek_hnu_fpg_stats)
     peek_psw_nu_stats_parser.set_defaults(func=peek_psw_nu_stats)
     peek_psw_hnu_stats_parser.set_defaults(func=peek_psw_hnu_stats)
+    peek_psw_ext_nu_stats_parser.set_defaults(func=peek_psw_ext_nu_stats)
     peek_meter_nu_stats_parser.set_defaults(func=peek_meter_stats)
     peek_meter_erp_stats_parser.set_defaults(func=peek_erp_meter_stats)
     peek_vp_stats_parser.set_defaults(func=peek_vp_stats)
@@ -1667,6 +1701,7 @@ class CmdController(Cmd):
     peek_parser_hnu_stats_parser.set_defaults(func=peek_hnu_parser_stats)
     peek_wred_ecn_stats_parser.set_defaults(func=peek_nu_qos_wred_ecn_stats)
     peek_nu_sfg_stats_parser.set_defaults(func=peek_nu_sfg_stats)
+    peek_nu_sfg_ext_stats_parser.set_defaults(func=peek_nu_sfg_ext_stats)
     peek_hnu_sfg_stats_parser.set_defaults(func=peek_hnu_sfg_stats)
     peek_flowcontrol_nu_parser.set_defaults(func=peek_nu_flowcontrol_stats)
     peek_per_vp_stats_parser.set_defaults(func=peek_per_vp_stats)
@@ -1678,7 +1713,9 @@ class CmdController(Cmd):
     peek_mpg_stats_parser.set_defaults(func=peek_mpg_stats)
     peek_pervppkts_stats_parser.set_defaults(func=peek_pervppkts_stats)
     peek_nhp_stats_parser.set_defaults(func=peek_stats_nhp)
+    peek_nhp_ext_stats_parser.set_defaults(func=peek_stats_nhp_ext)
     peek_sse_stats_parser.set_defaults(func=peek_stats_sse)
+    peek_sse_ext_stats_parser.set_defaults(func=peek_stats_sse_ext)
     peek_pc_resource_stats_parser.set_defaults(func=peek_pc_resource_stats)
     peek_cc_resource_stats_parser.set_defaults(func=peek_cc_resource_stats)
     peek_dma_resource_stats_parser.set_defaults(func=peek_dma_resource_stats)
@@ -1754,6 +1791,12 @@ class CmdController(Cmd):
     
     # Storage Peek Commands
     peek_storage_vol_parser.set_defaults(func=peek_storage_vols)
+
+    # funos peek fun_malloc Peek commands
+    # fun_malloc Peek commands
+    peek_fun_malloc_slot_parser.set_defaults(func=peek_fun_malloc_slot_stats)
+    # malloc caches slot Peek commands
+    peek_malloc_caches_parser.set_defaults(func=peek_malloc_caches_slot_stats)
 
     # Status peek commands
     peek_status_nhp_parser.set_defaults(func=peek_nhp_status)
