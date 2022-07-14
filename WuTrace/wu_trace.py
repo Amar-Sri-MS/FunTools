@@ -161,14 +161,15 @@ class TraceProcessor:
             current_event = event.TraceEvent(timestamp, timestamp,
                                              next_event.name, vp)
             self.vp_to_event[vp] = current_event
-            while len(self.hardware_sends) > 0:
-                # this is some hardware send that needs an end
-                previous_start = self.find_previous_start()
-                fake_hw_event = self.hardware_sends[-1]
-                fake_hw_event.end_time = timestamp
+            if len(self.start_events) != 0:
+                while len(self.hardware_sends) > 0:
+                    # this is some hardware send that needs an end
+                    previous_start = self.find_previous_start()
+                    fake_hw_event = self.hardware_sends[-1]
+                    fake_hw_event.end_time = timestamp
 
-                previous_start.successors.append(fake_hw_event)
-                self.hardware_sends.pop()
+                    previous_start.successors.append(fake_hw_event)
+                    self.hardware_sends.pop()
 
             (predecessor, send_time,
              is_timer, flags) = self.find_previous_send(wu_id, arg0,
@@ -217,6 +218,7 @@ class TraceProcessor:
                     transaction = event.Transaction(current_event)
                     self.transactions.append(transaction)
                     current_event.transaction = transaction
+                    self.start_events.append(current_event)
 
         elif next_event.event_type == event.WU_END_EVENT:
             # Identify the matching start event, and set the end time.
@@ -246,12 +248,18 @@ class TraceProcessor:
 
             curr = None
 
-            # -> we need a better way but using re for now
+            # TODO(sanyasriv): Identify associated hardware accelerator WU using faddr, not regex.
             if re.match(".*LE.*", str(next_event.dest_faddr)) != None:
                 current_event = event.TraceEvent(send_time, send_time,
-                                                 "HW-LE: " + next_event.name, next_event.dest_faddr)
+                    "HW-LE: " + next_event.name, next_event.dest_faddr)
                 # will now connect this to the previous event
-                current_event.is_hw_wu = True
+                current_event.is_hw_le = True
+                self.hardware_sends.append(current_event)
+
+            if re.match(".*ZIP.*", str(next_event.dest_faddr)) != None:
+                current_event = event.TraceEvent(send_time, send_time,
+                    "HW-ZIP: " + next_event.name, next_event.dest_faddr)
+                current_event.is_hw_zip = True
                 self.hardware_sends.append(current_event)
 
             if vp in self.vp_to_event:
