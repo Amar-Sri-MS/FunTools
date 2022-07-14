@@ -5,10 +5,6 @@ import socket, fcntl, errno
 import os, sys
 
 
-def _is_python2():
-    return sys.version_info[0] < 3
-
-
 class DpcClient(object):
     def __init__(self, target_ip, target_port, verbose=False):
         self.target_ip = target_ip
@@ -29,18 +25,12 @@ class DpcClient(object):
 
     def _read(self):
         chunk = 4096
-        if _is_python2():
-            output = ""
-        else:
-            output = []
+        output = []
 
         def _check_cr(output):
-            if _is_python2():
-                return output.endswith("\n")
-            else:
-                if len(output) == 0:
-                    return False
-                return output[-1][-1] == 10  # check `\n', unicode 10 is '\n'
+            if len(output) == 0:
+                return False
+            return output[-1][-1] == 10  # check `\n', unicode 10 is '\n'
 
         while not _check_cr(output):
             try:
@@ -54,17 +44,11 @@ class DpcClient(object):
                     print(e)
                     sys.exit(1)
             else:
-                if _is_python2():
-                    output += buffer
-                else:
-                    output.append(buffer)
+                output.append(buffer)
 
-        if _is_python2():
-            output = output.rstrip("\n")
-        else:
-            output[-1] = output[-1].rstrip()  # remove '\n'
-            output = [o.decode("utf-8") for o in output]  # byte to string
-            output = "".join(output)  # list to string
+        output[-1] = output[-1].rstrip()  # remove '\n'
+        output = [o.decode("utf-8") for o in output]  # byte to string
+        output = "".join(output)  # list to string
 
         return output
 
@@ -147,10 +131,7 @@ class DpcClient(object):
             else:
                 jdict = {"verb": verb, "arguments": [], "tid": tid}
 
-            if _is_python2():
-                command = "{}\n".format(json.dumps(jdict))
-            else:
-                command = "{}\n".format(json.dumps(jdict)).encode("utf-8")
+            command = "{}\n".format(json.dumps(jdict)).encode("utf-8")
 
             self.sendall(command)
             output = self.read()
