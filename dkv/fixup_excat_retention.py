@@ -6,6 +6,7 @@
 
 
 import argparse
+import logging
 import os
 import requests
 import sys
@@ -22,13 +23,18 @@ args = None
 host = "cgray-vm0:9000"
 dkv_excat_url = "http://cgray-vm0/dkv/buckets/excat"
 
+logging.basicConfig(level=logging.INFO, format="%(levelname)s - %(message)s")
+log = logging.getLogger(__name__)
+
 
 def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("-k", "--key", action="store", default=None)
     parser.add_argument("-s", "--secret", action="store", default=None)
-    parser.add_argument("-n", "--dryrun", action="store_true")
+    parser.add_argument(
+        "--sure", action="store_true", help="Perform the fix-up actions"
+    )
     parser.add_argument("--token", default=None)
     parser.add_argument("--bucket", default="excat")
 
@@ -38,7 +44,7 @@ def main():
     token = args.token
     count = 0
     while True:
-        print("Count: %d from token %s" % (count, token))
+        log.info("Count: %d from token %s" % (count, token))
         token, objs = s3util.list_bucket(
             host, args.bucket, args.key, args.secret, token, 100
         )
@@ -51,8 +57,8 @@ def main():
             if "retention" not in tags:
                 set_retention(obj)
             else:
-                if args.dryrun:
-                    print("(dryrun) %s: skipping" % obj)
+                if not args.sure:
+                    log.info("(dryrun) %s: skipping" % obj)
             count += 1
 
         if not token:
@@ -67,9 +73,7 @@ def set_retention(obj):
     """Sets a retention length on the object and its metadata"""
     retention = determine_retention_from_metadata(obj)
 
-    if args.dryrun:
-        print("(dryrun) %s: retention ==> %s" % (obj, retention))
-    else:
+    if args.sure:
         s3util.set_tags(
             obj,
             host,
@@ -86,7 +90,9 @@ def set_retention(obj):
             mdblob, host, args.bucket, args.key, args.secret, None, {"retention": mdret}
         )
 
-        print("%s: retention ==> %s" % (obj, retention))
+        log.info("%s: retention ==> %s" % (obj, retention))
+    else:
+        log.info("(dryrun) %s: retention ==> %s" % (obj, retention))
 
 
 def determine_retention_from_metadata(obj):
@@ -101,7 +107,7 @@ def determine_retention_from_metadata(obj):
     if resp.status_code == requests.codes.ok:
         js = resp.json()
         bldname = js.get("fname", "")
-        return determine_retention_from_bldname(bldname)
+        return determine_retention_from_bldname(bldname, obj)
 
     return None
 
@@ -109,7 +115,7 @@ def determine_retention_from_metadata(obj):
 SDK_PRESERVE = ["rel_", "patch_", "poc_"]
 
 
-def determine_retention_from_bldname(bldname):
+def determine_retention_from_bldname(bldname, obj):
     """
     Determine retention length from original path during the build.
     Cribbed from previous cleanup script.
@@ -142,6 +148,7 @@ def determine_retention_from_bldname(bldname):
         return "medium"
 
     # unknown path
+    log.warning("Unknown build path %s for %s" % (bldname, obj))
     return "medium"
 
 
