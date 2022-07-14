@@ -12,6 +12,8 @@ echo """#!/bin/sh
 while [ true ]; do
     rsync -ac --ignore-missing-args --delete /persist/config/ $CONFIG_DIR
     rsync -ac --ignore-missing-args --delete /persist/upgrades/ $UPGRADE_DIR
+    sync $CONFIG_DIR
+    sync $UPGRADE_DIR
     sleep 60
 done
 
@@ -46,9 +48,14 @@ case "$1" in
         chmod 0777 $UPGRADE_DIR
         ;;
     sync)
+        stop_sync_daemon
+        # first make sure we do rsync synchronously to script flow, before
+        # starting the daemon in the background - in case the system is restarted
+        # before the daemon runs
+        rsync -ac --ignore-missing-args --delete /persist/config/ $CONFIG_DIR
+        rsync -ac --ignore-missing-args --delete /persist/upgrades/ $UPGRADE_DIR
         rm -rf /b-persist/logs/*
         rm -rf /b-persist/log-prev*
-        stop_sync_daemon
         generate_config_script
         start_sync_daemon
         ;;
