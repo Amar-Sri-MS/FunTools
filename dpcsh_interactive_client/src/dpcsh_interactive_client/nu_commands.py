@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from prettytable import PrettyTable, FRAME
 from datetime import datetime
 from collections import OrderedDict
@@ -32,9 +34,9 @@ class PortCommands(object):
             else:
                 arg_list = ["mtuget", cmd_arg_dict]
             result = self.dpc_client.execute(verb="port", arg_list=arg_list)
-            print result
+            print(result)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def enable_disable_port(self, port_num, shape, enable=True):
         try:
@@ -44,9 +46,9 @@ class PortCommands(object):
             else:
                 arg_list = ["disable", cmd_arg_dict]
             result = self.dpc_client.execute(verb="port", arg_list=arg_list)
-            print result
+            print(result)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def enable_disable_link_pause(self, port_num, shape, enable=True):
         try:
@@ -56,9 +58,9 @@ class PortCommands(object):
             else:
                 arg_list = ["lpdis", cmd_arg_dict]
             result = self.dpc_client.execute(verb="port", arg_list=arg_list)
-            print result
+            print(result)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def enable_disable_tx_link_pause(self, port_num, shape, enable=True):
         try:
@@ -68,9 +70,9 @@ class PortCommands(object):
             else:
                 arg_list = ["lptxoff", cmd_arg_dict]
             result = self.dpc_client.execute(verb="port", arg_list=arg_list)
-            print result
+            print(result)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def port_pause_quanta(self, port_num, shape, quanta=None):
         try:
@@ -81,9 +83,9 @@ class PortCommands(object):
             else:
                 arg_list = ["lpqget", cmd_arg_dict]
             result = self.dpc_client.execute(verb="port", arg_list=arg_list)
-            print result
+            print(result)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def port_pause_threshold(self, port_num, shape, threshold=None):
         try:
@@ -94,9 +96,9 @@ class PortCommands(object):
             else:
                 arg_list = ["lptget", cmd_arg_dict]
             result = self.dpc_client.execute(verb="port", arg_list=arg_list)
-            print result
+            print(result)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def _sort_key_by_int(self, result):
         sorted_keys = []
@@ -115,11 +117,11 @@ class PortCommands(object):
                 table_obj.align = 'l'
                 for key in sorted(result):
                     table_obj.add_row([key, result[key]])
-                print table_obj
+                print(table_obj)
             else:
-                print "Unable to get linkstatus: %s" % result
+                print("Unable to get linkstatus: %s" % result)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def enable_disable_pfc(self, port_num, shape, enable=True):
         try:
@@ -129,9 +131,9 @@ class PortCommands(object):
             else:
                 arg_list = ["pfcdis", cmd_arg_dict]
             result = self.dpc_client.execute(verb="port", arg_list=arg_list)
-            print result
+            print(result)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def enable_disable_tx_pfc(self, port_num, shape, class_num, enable=True):
         try:
@@ -141,9 +143,9 @@ class PortCommands(object):
             else:
                 arg_list = ["pfctxoff", cmd_arg_dict, {'class': class_num}]
             result = self.dpc_client.execute(verb="port", arg_list=arg_list)
-            print result
+            print(result)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def port_pfc_quanta(self, port_num, shape, class_num=None, quanta=None):
         try:
@@ -155,9 +157,9 @@ class PortCommands(object):
                 arg_dict = {"class": class_num}
                 arg_list = ["pfcqget", cmd_arg_dict, arg_dict]
             result = self.dpc_client.execute(verb="port", arg_list=arg_list)
-            print result
+            print(result)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def port_pfc_threshold(self, port_num, shape, class_num=None, threshold=None):
         try:
@@ -169,9 +171,9 @@ class PortCommands(object):
                 arg_dict = {"class": class_num}
                 arg_list = ["pfctget", cmd_arg_dict, arg_dict]
             result = self.dpc_client.execute(verb="port", arg_list=arg_list)
-            print result
+            print(result)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def enable_disable_ptp_peer_delay(self, port_num, shape, enable=True):
         try:
@@ -181,9 +183,9 @@ class PortCommands(object):
             else:
                 arg_list = ["ptppeerdelaydis", cmd_arg_dict]
             result = self.dpc_client.execute(verb="port", arg_list=arg_list)
-            print result
+            print(result)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def ptp_peer_delay(self, port_num, shape, delay=None):
         try:
@@ -194,17 +196,17 @@ class PortCommands(object):
             else:
                 arg_list = ["ptppeerdelayget", cmd_arg_dict]
             result = self.dpc_client.execute(verb="port", arg_list=arg_list)
-            print result
+            print(result)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def get_ptp_tx_ts(self, port_num, shape):
         try:
             cmd_arg_dict = {"portnum": port_num, "shape": shape}
             result = self.dpc_client.execute(verb="port", arg_list=["ptptxtsget", cmd_arg_dict])
-            print result
+            print(result)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def enable_disable_ptp_1step(self, port_num, shape, enable=True):
         try:
@@ -214,26 +216,26 @@ class PortCommands(object):
             else:
                 arg_list = ["ptp1stepdis", cmd_arg_dict]
             result = self.dpc_client.execute(verb="port", arg_list=arg_list)
-            print result
+            print(result)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def set_runt_filter(self, port_num, shape, buffer, runt_err_en, en_delete):
         try:
             cmd_arg_dict = {"portnum": port_num, "shape": shape}
             runt_dict = {"buffer_64": buffer, "runt_err_en": runt_err_en, "en_delete": en_delete}
             result = self.dpc_client.execute(verb='port', arg_list=["runtfilterset", cmd_arg_dict, runt_dict])
-            print result
+            print(result)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def dump_runt_filter(self, port_num, shape):
         try:
             cmd_arg_dict = {"portnum": port_num, "shape": shape}
             result = self.dpc_client.execute(verb='port', arg_list=["runtfilterdump", cmd_arg_dict])
-            print result
+            print(result)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def port_speed(self, port_num, shape, brkmode=None):
         try:
@@ -244,9 +246,9 @@ class PortCommands(object):
             else:
                 arg_list = ["breakoutget", cmd_arg_dict]
             result = self.dpc_client.execute(verb="port", arg_list=arg_list)
-            print result
+            print(result)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
 
 class SystemCommands(object):
@@ -257,21 +259,21 @@ class SystemCommands(object):
         global TIME_INTERVAL
         if time_interval:
             TIME_INTERVAL = time_interval
-            print "Time interval between stats iteration set to %d secs" % TIME_INTERVAL
+            print("Time interval between stats iteration set to %d secs" % TIME_INTERVAL)
         else:
-            print TIME_INTERVAL
+            print(TIME_INTERVAL)
 
     def system_syslog_level(self, level_val=None):
         try:
             if level_val:
                 result = self.dpc_client.execute(verb="poke", arg_list=["params/syslog/level", level_val])
-                print result
+                print(result)
             else:
                 cmd = "params/syslog/level"
                 result = self.dpc_client.execute(verb='peek', arg_list=[cmd])
-                print result
+                print(result)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
 
 class QosCommands(object):
@@ -318,11 +320,11 @@ class QosCommands(object):
                 if not mode == 'nu':
                     set_cmd_arg_list.insert(1, mode)
                 result = self.dpc_client.execute(verb='qos', arg_list=set_cmd_arg_list)
-                print result
+                print(result)
             else:
                 self._display_qos_config(config_dict=buffer_config)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def _display_qos_config(self, config_dict, column_list=['Field Name', 'Value']):
         try:
@@ -330,9 +332,9 @@ class QosCommands(object):
             table_obj.align = "l"
             for key in sorted(config_dict):
                 table_obj.add_row([key, config_dict[key]])
-            print table_obj
+            print(table_obj)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def egress_port_buffer(self, port_num, min_thr=None, shared_thr=None, update_config=True, mode='nu'):
         try:
@@ -351,11 +353,11 @@ class QosCommands(object):
                 if not mode == 'nu':
                     set_cmd_arg_list.insert(1, mode)
                 result = self.dpc_client.execute(verb='qos', arg_list=set_cmd_arg_list)
-                print result
+                print(result)
             else:
                 self._display_qos_config(config_dict=buffer_config)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def egress_queue_buffer(self, port_num, queue, min_thr=None, static_shared_thr_green=None, dynamic_enable=None,
                             shared_thr_alpha=None, shared_thr_offset_yellow=None, shared_thr_offset_red=None,
@@ -385,11 +387,11 @@ class QosCommands(object):
                 if not mode == 'nu':
                     set_cmd_arg_list.insert(1, mode)
                 result = self.dpc_client.execute(verb='qos', arg_list=set_cmd_arg_list)
-                print result
+                print(result)
             else:
                 self._display_qos_config(config_dict=buffer_config)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def egress_queue_to_priority_map(self, port_num, map_list=None, update=True, mode='nu'):
         try:
@@ -405,11 +407,11 @@ class QosCommands(object):
                 if not mode == 'nu':
                     set_cmd_args.insert(1, mode)
                 result = self.dpc_client.execute(verb='qos', arg_list=set_cmd_args)
-                print result
+                print(result)
             else:
                 self._display_qos_config(config_dict=config)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def ecn_glb_sh_threshold(self, en=None, green=None, red=None, yellow=None, update=True, mode='nu'):
         try:
@@ -431,11 +433,11 @@ class QosCommands(object):
                 if not mode == 'nu':
                     set_cmd_args.insert(1, mode)
                 result = self.dpc_client.execute(verb='qos', arg_list=set_cmd_args)
-                print result
+                print(result)
             else:
                 self._display_qos_config(config_dict=config)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def ecn_profile(self, prof_num, min_thr=None, max_thr=None, ecn_prob_index=None, update=True, mode='nu'):
         try:
@@ -456,11 +458,11 @@ class QosCommands(object):
                 if not mode == 'nu':
                     set_cmd_args.insert(1, mode)
                 result = self.dpc_client.execute(verb='qos', arg_list=set_cmd_args)
-                print result
+                print(result)
             else:
                 self._display_qos_config(config_dict=config)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def ecn_prob(self, prob_idx, prob=None, update=True, mode='nu'):
         try:
@@ -476,11 +478,11 @@ class QosCommands(object):
                 if not mode == 'nu':
                     set_cmd_args.insert(1, mode)
                 result = self.dpc_client.execute(verb='qos', arg_list=set_cmd_args)
-                print result
+                print(result)
             else:
                 self._display_qos_config(config_dict=config)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def wred_profile(self, prof_num, min_thr=None, max_thr=None, wred_prob_index=None, update=True, mode='nu'):
         try:
@@ -501,11 +503,11 @@ class QosCommands(object):
                 if not mode == 'nu':
                     set_cmd_args.insert(1, mode)
                 result = self.dpc_client.execute(verb='qos', arg_list=set_cmd_args)
-                print result
+                print(result)
             else:
                 self._display_qos_config(config_dict=config)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def wred_prob(self, prob_idx, prob=None, update=True, mode='nu'):
         try:
@@ -521,11 +523,11 @@ class QosCommands(object):
                 if not mode == 'nu':
                     set_cmd_args.insert(1, mode)
                 result = self.dpc_client.execute(verb='qos', arg_list=set_cmd_args)
-                print result
+                print(result)
             else:
                 self._display_qos_config(config_dict=config)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def wred_queue_config(self, port_num, queue_num, wred_en=None, wred_weight=None, wred_prof_num=None, ecn_en=None,
                           ecn_prof_num=None, update=True, mode='nu'):
@@ -552,11 +554,11 @@ class QosCommands(object):
                 if not mode == 'nu':
                     set_cmd_args.insert(1, mode)
                 result = self.dpc_client.execute(verb='qos', arg_list=set_cmd_args)
-                print result
+                print(result)
             else:
                 self._display_qos_config(config_dict=config)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def wred_avg_q_config(self, q_avg_en=None, cap_avg_sz=None, avg_period=None, update=True, mode='nu'):
         try:
@@ -576,11 +578,11 @@ class QosCommands(object):
                 if not mode == 'nu':
                     set_cmd_args.insert(1, mode)
                 result = self.dpc_client.execute(verb='qos', arg_list=set_cmd_args)
-                print result
+                print(result)
             else:
                 self._display_qos_config(config_dict=config)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def get_scheduler_config(self, port_num, queue_num, scheduler_type=None, mode='nu'):
         try:
@@ -617,9 +619,9 @@ class QosCommands(object):
                     for _key in sorted(config):
                         inner_table_obj.add_row([_key, config[_key]])
                     table_obj.add_row([key, inner_table_obj])
-                print table_obj
+                print(table_obj)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def scheduler_config_dwrr(self, port_num, queue_num, weight, mode='nu'):
         try:
@@ -635,9 +637,9 @@ class QosCommands(object):
             if not mode == 'nu':
                 set_cmd_args.insert(1, mode)
             result = self.dpc_client.execute(verb='qos', arg_list=set_cmd_args)
-            print result
+            print(result)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def scheduler_config_shaper(self, port_num, queue_num, shaper_enable=None, shaper_type=0, shaper_rate=None, shaper_threshold=None, mode='nu'):
         try:
@@ -655,9 +657,9 @@ class QosCommands(object):
             if not mode == 'nu':
                 set_cmd_args.insert(1, mode)
             result = self.dpc_client.execute(verb='qos', arg_list=set_cmd_args)
-            print result
+            print(result)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def scheduler_config_strict_priority(self, port_num, queue_num, strict_priority_enable=None, extra_bandwidth=None, mode='nu'):
         try:
@@ -676,9 +678,9 @@ class QosCommands(object):
             if not mode == 'nu':
                 set_cmd_args.insert(1, mode)
             result = self.dpc_client.execute(verb='qos', arg_list=set_cmd_args)
-            print result
+            print(result)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def ingress_priority_group(self, port_num, pg_num, min_thr=None, shared_thr=None, headroom_thr=None,
                                xoff_enable=None, shared_xon_thr=None, update=True, mode='nu'):
@@ -704,11 +706,11 @@ class QosCommands(object):
                 if not mode == 'nu':
                     set_cmd_args.insert(1, mode)
                 result = self.dpc_client.execute(verb='qos', arg_list=set_cmd_args)
-                print result
+                print(result)
             else:
                 self._display_qos_config(config_dict=config)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def ingress_priority_to_pg_map(self, port_num, map_list=None, update=True, mode='nu'):
         try:
@@ -724,11 +726,11 @@ class QosCommands(object):
                 if not mode == 'nu':
                     set_cmd_args.insert(1, mode)
                 result = self.dpc_client.execute(verb='qos', arg_list=set_cmd_args)
-                print result
+                print(result)
             else:
                 self._display_qos_config(config_dict=config)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def pfc(self, enable=None, update=True, disable=None, mode='nu'):
         try:
@@ -742,7 +744,7 @@ class QosCommands(object):
                 if not mode == 'nu':
                     set_cmd_args.insert(1, mode)
                 result = self.dpc_client.execute(verb='qos', arg_list=set_cmd_args)
-                print result
+                print(result)
             else:
                 get_cmd_args = ['get', 'pfc']
                 if not mode == 'nu':
@@ -750,7 +752,7 @@ class QosCommands(object):
                 config = self.dpc_client.execute(verb='qos', arg_list=get_cmd_args)
                 self._display_qos_config(config_dict=config)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def arb_cfg(self, en=None, update=True, mode='nu'):
         try:
@@ -765,11 +767,11 @@ class QosCommands(object):
                 if not mode == 'nu':
                     set_cmd_args.insert(1, mode)
                 result = self.dpc_client.execute(verb='qos', arg_list=set_cmd_args)
-                print result
+                print(result)
             else:
                 self._display_qos_config(config_dict=config)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def xoff_status(self, port_num, pg, status=None, update=True, mode='nu'):
         try:
@@ -786,11 +788,11 @@ class QosCommands(object):
                 if not mode == 'nu':
                     set_cmd_args.insert(1, mode)
                 result = self.dpc_client.execute(verb='qos', arg_list=set_cmd_args)
-                print result
+                print(result)
             else:
                 self._display_qos_config(config_dict=config)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
 class NuClearCommands(object):
 
@@ -801,57 +803,57 @@ class NuClearCommands(object):
         try:
             cmd_arg_dict = {"portnum": port_num, "shape": shape}
             result = self.dpc_client.execute(verb="port", arg_list=["clearstats", cmd_arg_dict])
-            print result
+            print(result)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def clear_nu_fwd_stats(self):
         try:
             cmd = ["clear", "fwd"] 
             result = self.dpc_client.execute(verb="nu", arg_list=cmd)
-            print result
+            print(result)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def clear_nu_erp_stats(self):
         try:
             cmd = ["clear", "erp"]
             result = self.dpc_client.execute(verb="nu", arg_list=cmd)
-            print result
+            print(result)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def clear_nu_parser_stats(self):
         try:
             cmd = ["clear", "prsr"]
             result = self.dpc_client.execute(verb="nu", arg_list=cmd)
-            print result
+            print(result)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def clear_nu_all_stats(self):
         try:
             cmd = ["clear"]
             result = self.dpc_client.execute(verb="nu", arg_list=cmd)
-            print result
+            print(result)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def clear_nu_nwqm_stats(self):
         try:
             cmd = ["clear", "nwqm"]
             result = self.dpc_client.execute(verb="nu", arg_list=cmd)
-            print result
+            print(result)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
     def clear_nu_vppkts_stats(self):
         try:
             cmd = ["clear", "vppkts"]
             result = self.dpc_client.execute(verb="nu", arg_list=cmd)
-            print result
+            print(result)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
 
 class PeekCommands(object):
@@ -932,7 +934,7 @@ class PeekCommands(object):
                 if re.search(r'usage', key):
                     new_usage_dict[key] = result[key]
                     pool_word = key.split(" ")[1]
-                    usage_dict[key] = int(filter(str.isdigit, str(pool_word)))
+                    usage_dict[key] = int(list(filter(str.isdigit, str(pool_word))))
                 else:
                     new_color_dict[key] = result[key]
                     # pool_word = key.split(" ")[0]
@@ -1004,7 +1006,7 @@ class PeekCommands(object):
                 "total_rx_payload_bytes"
             ]
 
-        for target, data in target_stats.items():
+        for target, data in list(target_stats.items()):
             _calculate_target_percentage("total_tx_packets", global_stats, data)
             _calculate_target_percentage("total_tx_bytes", global_stats, data)
             _calculate_target_percentage("total_rx_packets", global_stats, data)
@@ -1081,7 +1083,7 @@ class PeekCommands(object):
             "RX (Packets%)",
         ]
 
-        flattened = target_stats.items()
+        flattened = list(target_stats.items())
         ranked = sorted(
             flattened, key=lambda x: x[1]["total_tx_bytes_percentage"], reverse=True
         )
@@ -1185,14 +1187,14 @@ class PeekCommands(object):
                 if get_result_only or iteration_count == iterations:
                     return cmd, master_table_obj
                 iteration_count += 1
-                print master_table_obj
-                print "\n########################  %s ########################\n" % str(self._get_timestamp())
+                print(master_table_obj)
+                print("\n########################  %s ########################\n" % str(self._get_timestamp()))
                 do_sleep_for_interval()
             except KeyboardInterrupt:
                 self.dpc_client.disconnect()
                 break
             except Exception as ex:
-                print "ERROR: %s" % str(ex)
+                print("ERROR: %s" % str(ex))
                 self.dpc_client.disconnect()
 
     def peek_meter_stats(self, bank, index, grep_regex=None, erp=False):
@@ -1204,7 +1206,7 @@ class PeekCommands(object):
                 else:
                     cmd = "stats/meter/nu/bank/%d/meter[%d]" % (bank, index)
                 result = self.dpc_client.execute(verb="peek", arg_list=[cmd])
-                print "--------------> Meter %d  <--------------" % index
+                print("--------------> Meter %d  <--------------" % index)
                 table_obj = None
                 if result:
                     if prev_result:
@@ -1231,14 +1233,14 @@ class PeekCommands(object):
                             else:
                                 table_obj.add_row([key, result[key]['bytes'], result[key]['pkts']])
                 prev_result = result
-                print table_obj
-                print "\n########################  %s ########################\n" % str(self._get_timestamp())
+                print(table_obj)
+                print("\n########################  %s ########################\n" % str(self._get_timestamp()))
                 do_sleep_for_interval()
             except KeyboardInterrupt:
                 self.dpc_client.disconnect()
                 break
             except Exception as ex:
-                print "ERROR: %s" % str(ex)
+                print("ERROR: %s" % str(ex))
                 self.dpc_client.disconnect()
                 break
 
@@ -1311,7 +1313,7 @@ class PeekCommands(object):
                             if table_obj.rowcount > 0:
                                 master_table_obj.add_row([key, table_obj])
                 else:
-                    print "--------------> Port %d  <--------------" % port_num
+                    print("--------------> Port %d  <--------------" % port_num)
                     if prev_result:
                         for key in result:
                             count_table_obj = PrettyTable(['Field Name', 'Counter', 'Counter Diff'])
@@ -1422,14 +1424,14 @@ class PeekCommands(object):
                     return cmd, master_table_obj
                 iteration_count += 1
                 prev_result = result
-                print master_table_obj
-                print "\n########################  %s ########################\n" % str(self._get_timestamp())
+                print(master_table_obj)
+                print("\n########################  %s ########################\n" % str(self._get_timestamp()))
                 do_sleep_for_interval()
             except KeyboardInterrupt:
                 self.dpc_client.disconnect()
                 break
             except Exception as ex:
-                print "ERROR: %s" % str(ex)
+                print("ERROR: %s" % str(ex))
                 self.dpc_client.disconnect()
                 break
 
@@ -1445,11 +1447,11 @@ class PeekCommands(object):
                     if 'bam' in cmd:
                         result = self._sort_bam_keys(result=result, au_sort=au_sort)
                     if not isinstance(result, dict):
-                        print "Empty result seen"
+                        print("Empty result seen")
                         return cmd, "Empty Result"
                         break
                     if 'sdn' in cmd:
-                        for k,v in result.items():
+                        for k,v in list(result.items()):
                             if isinstance(v, int):
                                 continue
                             else:
@@ -1483,19 +1485,19 @@ class PeekCommands(object):
                             return cmd, table_obj
                         iteration_count += 1
                         prev_result = result
-                        print table_obj
-                        print "\n########################  %s ########################\n" % str(self._get_timestamp())
+                        print(table_obj)
+                        print("\n########################  %s ########################\n" % str(self._get_timestamp()))
                         do_sleep_for_interval()
                     else:
                         if get_result_only:
                             return cmd, "Empty Result"
-                        print "Empty Result"
+                        print("Empty Result")
                         do_sleep_for_interval()
                 except KeyboardInterrupt:
                     self.dpc_client.disconnect()
                     break
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
     def _display_all_erp_stats(self, grep_regex, global_prev_result=None, nu_prev_result=None, hnu_prev_result=None,
@@ -1617,14 +1619,14 @@ class PeekCommands(object):
                     nu_prev_result = nu_result
                     hnu_prev_result = hnu_result
                     nuflex_prev_result = nuflex_result
-                    print master_table_obj
-                    print "\n########################  %s ########################\n" % str(self._get_timestamp())
+                    print(master_table_obj)
+                    print("\n########################  %s ########################\n" % str(self._get_timestamp()))
                     do_sleep_for_interval()
                 except KeyboardInterrupt:
                     self.dpc_client.disconnect()
                     break
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
     def peek_vp_stats(self, grep_regex=None, get_result_only=False, iterations=9999999):
@@ -1671,14 +1673,14 @@ class PeekCommands(object):
                         if get_result_only:
                             return cmd, table_obj
                         prev_result = result
-                        print table_obj
-                        print "\n########################  %s ########################\n" % str(self._get_timestamp())
+                        print(table_obj)
+                        print("\n########################  %s ########################\n" % str(self._get_timestamp()))
                         do_sleep_for_interval()
                 except KeyboardInterrupt:
                     self.dpc_client.disconnect()
                     break
                 except Exception as ex:
-                    print "ERROR: %s" % str(ex)
+                    print("ERROR: %s" % str(ex))
                     self.dpc_client.disconnect()
                     break
 
@@ -1745,19 +1747,19 @@ class PeekCommands(object):
                             prev_result_list = result_list
                             if get_result_only:
                                 return cmd, table_obj
-                            print table_obj
-                            print "\n########################  %s ########################\n" % \
-                                  str(self._get_timestamp())
+                            print(table_obj)
+                            print("\n########################  %s ########################\n" % \
+                                  str(self._get_timestamp()))
                             do_sleep_for_interval()
                         else:
                             if get_result_only:
                                 return cmd, "Empty Result"
-                            print "Empty Result"
+                            print("Empty Result")
                     except KeyboardInterrupt:
                         self.dpc_client.disconnect()
                         break
             except Exception as ex:
-                print "ERROR: %s" % str(ex)
+                print("ERROR: %s" % str(ex))
                 self.dpc_client.disconnect()
 
     def peek_etp_stats(self, mode='nu', grep_regex=None, get_result_only=False, iterations=9999999):
@@ -1818,14 +1820,14 @@ class PeekCommands(object):
                     return cmd, master_table_obj
                 iteration_count += 1
                 prev_result = result
-                print master_table_obj
-                print "\n########################  %s ########################\n" % str(self._get_timestamp())
+                print(master_table_obj)
+                print("\n########################  %s ########################\n" % str(self._get_timestamp()))
                 do_sleep_for_interval()
             except KeyboardInterrupt:
                 self.dpc_client.disconnect()
                 break
             except Exception as ex:
-                print "ERROR: %s" % str(ex)
+                print("ERROR: %s" % str(ex))
                 self.dpc_client.disconnect()
                 break
 
@@ -1891,17 +1893,17 @@ class PeekCommands(object):
                             return cmd, table_obj
                         iteration_count += 1
                         prev_result = result['cdu_cnts']
-                        print table_obj
-                        print "\n########################  %s ########################\n" % \
-                              str(self._get_timestamp())
+                        print(table_obj)
+                        print("\n########################  %s ########################\n" % \
+                              str(self._get_timestamp()))
                         do_sleep_for_interval()
                     else:
-                        print "Empty Result"
+                        print("Empty Result")
                 except KeyboardInterrupt:
                     self.dpc_client.disconnect()
                     break
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
     def peek_ddr_stats(self, grep=None, iterations=9999999):
@@ -1938,17 +1940,17 @@ class PeekCommands(object):
                             return cmd, master_table_obj
                         iteration_count += 1
                         prev_result = result
-                        print master_table_obj
-                        print "\n########################  %s ########################\n" % \
-                              str(self._get_timestamp())
+                        print(master_table_obj)
+                        print("\n########################  %s ########################\n" % \
+                              str(self._get_timestamp()))
                         do_sleep_for_interval()
                     else:
-                        print "Empty Result"
+                        print("Empty Result")
                 except KeyboardInterrupt:
                     self.dpc_client.disconnect()
                     break
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
     def peek_stats_mud(self, qdepth=0, iterations=9999999, grep_regex=None):
@@ -1978,7 +1980,7 @@ class PeekCommands(object):
         cmd = "stats/malloc_caches"
         result = self.dpc_client.execute(verb='peek', arg_list=[cmd])
         total = {'bytes_available': result.pop('bytes_available'), 'num_available': result.pop('num_available')} 
-        for k,v in result.iteritems():
+        for k,v in result.items():
             del v["cached"]
         result['total'] = total 
         return self._get_nested_dict_stats(cmd, cmd_output=result, iterations=iterations, grep_regex=grep_regex)
@@ -2007,9 +2009,9 @@ class PeekCommands(object):
                         master_table_obj = self._build_diff_grid(col_titles, col_titles_diff, result, diff_result)
                     else:
                         master_table_obj = self._build_grid(col_titles, result)
-                    print master_table_obj
+                    print(master_table_obj)
                 prev_result = result
-                print "\n########################  %s ########################\n" % str(self._get_timestamp())
+                print("\n########################  %s ########################\n" % str(self._get_timestamp()))
                 if iteration_count == iterations:
                     return cmd, master_table_obj
                 iteration_count += 1 
@@ -2018,7 +2020,7 @@ class PeekCommands(object):
                 self.dpc_client.disconnect()
                 break
             except Exception as ex:
-                print "ERROR: %s" % str(ex)
+                print("ERROR: %s" % str(ex))
                 self.dpc_client.disconnect()
                 break
 
@@ -2034,16 +2036,16 @@ class PeekCommands(object):
             try:
                 result = self.dpc_client.execute(verb='peek', arg_list=[cmd])
                 if result:
-                    for k,v in result.iteritems():
+                    for k,v in result.items():
                         result[k] = v['cache_1']
                     if prev_result:
                         diff_result = self._get_difference(result, prev_result)
                         master_table_obj = self._build_diff_grid(col_titles, col_titles_diff, result, diff_result)
                     else:
                         master_table_obj = self._build_grid(col_titles, result)
-                    print master_table_obj
+                    print(master_table_obj)
                 prev_result = result
-                print "\n########################  %s ########################\n" % str(self._get_timestamp())
+                print("\n########################  %s ########################\n" % str(self._get_timestamp()))
                 if iteration_count == iterations:
                     return cmd, master_table_obj
                 iteration_count += 1
@@ -2052,7 +2054,7 @@ class PeekCommands(object):
                 self.dpc_client.disconnect()
                 break
             except Exception as ex:
-                print "ERROR: %s" % str(ex)
+                print("ERROR: %s" % str(ex))
                 self.dpc_client.disconnect()
                 break
 
@@ -2140,17 +2142,17 @@ class PeekCommands(object):
                             return cmd, master_table_obj
                         iteration_count += 1
                         prev_result = result['ca_cnts']
-                        print master_table_obj
-                        print "\n########################  %s ########################\n" % \
-                              str(self._get_timestamp())
+                        print(master_table_obj)
+                        print("\n########################  %s ########################\n" % \
+                              str(self._get_timestamp()))
                         do_sleep_for_interval()
                     else:
-                        print "Empty Result"
+                        print("Empty Result")
                 except KeyboardInterrupt:
                     self.dpc_client.disconnect()
                     break
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
     def peek_l2_cache_stats(self, grep=None, iterations=9999999):
@@ -2202,17 +2204,17 @@ class PeekCommands(object):
                             return cmd, master_table_obj
                         iteration_count += 1
                         prev_result = result['ca_cnts']
-                        print master_table_obj
-                        print "\n########################  %s ########################\n" % \
-                              str(self._get_timestamp())
+                        print(master_table_obj)
+                        print("\n########################  %s ########################\n" % \
+                              str(self._get_timestamp()))
                         do_sleep_for_interval()
                     else:
-                        print "Empty Result"
+                        print("Empty Result")
                 except KeyboardInterrupt:
                     self.dpc_client.disconnect()
                     break
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
     
     def peek_le_tables_sdn_in(self, grep=None):
@@ -2243,17 +2245,17 @@ class PeekCommands(object):
                             master_table_obj.add_row([key, table_obj])
 
                         prev_result = result
-                        print master_table_obj
-                        print "\n########################  %s ########################\n" % \
-                              str(self._get_timestamp())
+                        print(master_table_obj)
+                        print("\n########################  %s ########################\n" % \
+                              str(self._get_timestamp()))
                         do_sleep_for_interval()
                     else:
-                        print "Empty Result"
+                        print("Empty Result")
                 except KeyboardInterrupt:
                     self.dpc_client.disconnect()
                     break
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
     def _get_vr_flow_stats(self, offset, num_flows):
@@ -2262,7 +2264,7 @@ class PeekCommands(object):
         cmd = ["flow_show", "tf", arg_dict]
         output = self.dpc_client.execute(verb='overlay', arg_list=cmd)
         if output:
-            for mkey, mval in output.items():
+            for mkey, mval in list(output.items()):
                 if mkey.startswith('vp_'):
                     fwd_flows_dict[mkey] = mval
         return fwd_flows_dict
@@ -2277,7 +2279,7 @@ class PeekCommands(object):
                         table_obj = PrettyTable(['flow_id', 'sip:sport -> dip:dport protocol',
                             'pkt', 'pkt_diff', 'byte', 'byte_diff'])
                         table_obj.align = 'l'
-                        sorted_flows = flows_dict.keys()
+                        sorted_flows = list(flows_dict.keys())
                         sorted_flows.sort()
                         for vp_flows in sorted_flows:
                             flows_in_vp = flows_dict[vp_flows]
@@ -2297,7 +2299,7 @@ class PeekCommands(object):
                     else:
                         table_obj = PrettyTable(['flow_id', 'sip:sport -> dip:dport protocol', 'pkt', 'byte'])
                         table_obj.align = 'l'
-                        sorted_flows = flows_dict.keys()
+                        sorted_flows = list(flows_dict.keys())
                         sorted_flows.sort()
                         for vp_flows in sorted_flows:
                             flows_in_vp = flows_dict[vp_flows]
@@ -2309,12 +2311,12 @@ class PeekCommands(object):
                                 table_obj.add_row([flow_id , tpl, stats['in_pkts'],
                                                    stats['in_bytes']])
                     old_fwd_flows = flows_dict
-                    print table_obj
-                    print "\n########################  %s ########################\n" % \
-                          str(self._get_timestamp())
+                    print(table_obj)
+                    print("\n########################  %s ########################\n" % \
+                          str(self._get_timestamp()))
                     do_sleep_for_interval()
             except Exception as ex:
-                print "ERROR: %s" % str(ex)
+                print("ERROR: %s" % str(ex))
                 self.dpc_client.disconnect()
 
     def _get_sdn_meter_stats(self, policy_id, direction):
@@ -2361,12 +2363,12 @@ class PeekCommands(object):
                     for entry in result:
                         table_obj.add_row([entry['name'], entry['bucket_id'], entry['bytes'], entry['pkts']])
                 prev_result = result
-                print table_obj
-                print "\n########################  %s ########################\n" % \
-                      str(self._get_timestamp())
+                print(table_obj)
+                print("\n########################  %s ########################\n" % \
+                      str(self._get_timestamp()))
                 do_sleep_for_interval()
             except Exception as ex:
-                print "ERROR: %s" % str(ex)
+                print("ERROR: %s" % str(ex))
                 self.dpc_client.disconnect()
 
     def peek_sdn_vp_stats(self,grep=None):
@@ -2380,7 +2382,7 @@ class PeekCommands(object):
         cmd = ["sdn", arg_dict]
         output = self.dpc_client.execute(verb='network', arg_list=cmd)
         if output:
-            for key, val in output.items():
+            for key, val in list(output.items()):
                 if key.startswith('flow_'):
                     fwd_flows_dict[key] = val
                 elif key.startswith('r_flow_'):
@@ -2394,7 +2396,7 @@ class PeekCommands(object):
                 table_obj = PrettyTable(
                     ['flow_id', 'sip', 'sport', 'dip', 'dport', 'protocol', 'layer_id', 'action', 'action_data'])
                 table_obj.align = 'l'
-                flow_ids = fwd_flows.keys()
+                flow_ids = list(fwd_flows.keys())
                 flow_ids.sort()
                 for flow_id in flow_ids:
                     if not flow_id.startswith('flow_'):
@@ -2406,7 +2408,7 @@ class PeekCommands(object):
                             forward_data = layer['forward']
                             reverse_data = layer['reverse']
                             if 'action_data' in layer:
-                                for k,v in layer['action_data'].items():
+                                for k,v in list(layer['action_data'].items()):
                                     if 'forward' in k.split('_'):
                                         forward_action_data = v
                                     else:
@@ -2421,13 +2423,13 @@ class PeekCommands(object):
                             table_obj.add_row([flow_id.split("_")[-1], reverse_data['sip'], reverse_data['sport'],
                                                reverse_data['dip'], reverse_data['dport'], layer['protocol'],
                                                layer['layer_id'], layer['action'], reverse_action_data])
-                print table_obj
-                print "\n########################  %s ########################\n" % \
-                      str(self._get_timestamp())
+                print(table_obj)
+                print("\n########################  %s ########################\n" % \
+                      str(self._get_timestamp()))
             else:
-                print "No flows found for offset {} and num flows {}".format(offset, num_flows)
+                print("No flows found for offset {} and num flows {}".format(offset, num_flows))
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
     
     def peek_sdn_flow_stats(self):
@@ -2441,7 +2443,7 @@ class PeekCommands(object):
                             ['flow_id', 'sip', 'sport', 'dip', 'dport', 'protocol', 'pkt', 'pkt_diff', 'byte',
                              'byte_diff'])
                         table_obj.align = 'l'
-                        sorted_flows = fwd_flows.keys()
+                        sorted_flows = list(fwd_flows.keys())
                         sorted_flows.sort()
                         for flow in sorted_flows:
                             flow_id = flow.split('_')[-1]
@@ -2470,7 +2472,7 @@ class PeekCommands(object):
                     else:
                         table_obj = PrettyTable(['flow_id', 'sip', 'sport', 'dip', 'dport', 'protocol', 'pkt', 'byte'])
                         table_obj.align = 'l'
-                        sorted_flows = fwd_flows.keys()
+                        sorted_flows = list(fwd_flows.keys())
                         sorted_flows.sort()
                         for flow in sorted_flows:
                             flow_id = flow.split('_')[-1]
@@ -2483,12 +2485,12 @@ class PeekCommands(object):
                                                rflow['protocol'], rflow['stats_pkts'], rflow['stats_bytes']])
                     old_fwd_flows = fwd_flows
                     old_rev_flows = rev_flows
-                    print table_obj
-                    print "\n########################  %s ########################\n" % \
-                          str(self._get_timestamp())
+                    print(table_obj)
+                    print("\n########################  %s ########################\n" % \
+                          str(self._get_timestamp()))
                     do_sleep_for_interval()
             except Exception as ex:
-                print "ERROR: %s" % str(ex)
+                print("ERROR: %s" % str(ex))
                 self.dpc_client.disconnect()
 
     def peek_copp_stats(self, grep=None):
@@ -2533,17 +2535,17 @@ class PeekCommands(object):
                                 if table_obj:
                                     master_table_obj.add_row([key, table_obj])
                         prev_result = result
-                        print master_table_obj
-                        print "\n########################  %s ########################\n" % \
-                              str(self._get_timestamp())
+                        print(master_table_obj)
+                        print("\n########################  %s ########################\n" % \
+                              str(self._get_timestamp()))
                         do_sleep_for_interval()
                     else:
-                        print "Empty Result"
+                        print("Empty Result")
                 except KeyboardInterrupt:
                     self.dpc_client.disconnect()
                     break
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
     def peek_eqm_event_q(self, grep_regex=None, iterations=9999999):
@@ -2556,13 +2558,13 @@ class PeekCommands(object):
                 new_result = {}
                 for item in result:
                     new_result[item["cache_line_info"].pop("rid")] = item["cache_line_info"]
-                print "--------------> EQM Event Queue  <--------------" 
+                print("--------------> EQM Event Queue  <--------------") 
                 if new_result:
                     if prev_result:
                         diff_result = self._get_difference(result=new_result, prev_result=prev_result)
                         table_obj = PrettyTable(['RID', 'Depth', 'Depth Diff', 'nhe', 'nhe Diff', 'nte', 'nte Diff'])
                         table_obj.align = 'l'
-                        for key,val in new_result.iteritems():
+                        for key,val in new_result.items():
                             table_obj.add_row([key, val["depth"], 
                                                    diff_result[key]['depth'],
                                                    val['nhe'],
@@ -2572,20 +2574,20 @@ class PeekCommands(object):
                     else:
                         table_obj = PrettyTable(['RID', 'Depth', 'nhe', 'nte'])
                         table_obj.align = 'l'
-                        for key,val in new_result.iteritems():
+                        for key,val in new_result.items():
                             table_obj.add_row([key, val["depth"], val["nhe"], val["nte"]])
                 if iteration_count == iterations:
                     return cmd, table_obj
                 iteration_count += 1
                 prev_result = new_result
-                print table_obj
-                print "\n########################  %s ########################\n" % str(self._get_timestamp())
+                print(table_obj)
+                print("\n########################  %s ########################\n" % str(self._get_timestamp()))
                 do_sleep_for_interval()
             except KeyboardInterrupt:
                 self.dpc_client.disconnect()
                 break
             except Exception as ex:
-                print "ERROR: %s" % str(ex)
+                print("ERROR: %s" % str(ex))
                 self.dpc_client.disconnect()
                 break
 
@@ -2617,21 +2619,21 @@ class PeekCommands(object):
                 table_obj = PrettyTable(['Flow-id','SIP','SPORT','DIP','DPORT','MSS','FCP','STATE'])
                 table_obj.align = 'l'
                 for tcp_entry in tcp_dict:
-                    cur_flowid = tcp_entry[unicode('flow')][unicode('id')]
-                    state = tcp_entry[unicode('tcp_state')][pos:]
+                    cur_flowid = tcp_entry[str('flow')][str('id')]
+                    state = tcp_entry[str('tcp_state')][pos:]
                     if flow_id >= 0:
                         if flow_id == cur_flowid:
-                            table_obj.add_row([cur_flowid,tcp_entry[unicode('tcp_saddr')],tcp_entry[unicode('tcp_sport')],tcp_entry[unicode('tcp_daddr')],tcp_entry[unicode('tcp_dport')],tcp_entry[unicode('tcp_mss')],tcp_entry[unicode('tcp_wuqueue')][unicode('is_fcp')],state])
+                            table_obj.add_row([cur_flowid,tcp_entry[str('tcp_saddr')],tcp_entry[str('tcp_sport')],tcp_entry[str('tcp_daddr')],tcp_entry[str('tcp_dport')],tcp_entry[str('tcp_mss')],tcp_entry[str('tcp_wuqueue')][str('is_fcp')],state])
                             print(table_obj)
                             return cmd
                     else:
-                        table_obj.add_row([cur_flowid,tcp_entry[unicode('tcp_saddr')],tcp_entry[unicode('tcp_sport')],tcp_entry[unicode('tcp_daddr')],tcp_entry[unicode('tcp_dport')],tcp_entry[unicode('tcp_mss')],tcp_entry[unicode('tcp_wuqueue')][unicode('is_fcp')],state])
+                        table_obj.add_row([cur_flowid,tcp_entry[str('tcp_saddr')],tcp_entry[str('tcp_sport')],tcp_entry[str('tcp_daddr')],tcp_entry[str('tcp_dport')],tcp_entry[str('tcp_mss')],tcp_entry[str('tcp_wuqueue')][str('is_fcp')],state])
                 print(table_obj)
                 return cmd,table_obj
             else:
                 return cmd, "Empty Result"
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
 
@@ -2651,13 +2653,13 @@ class PeekCommands(object):
                 if iteration_count == iterations:
                     return cmd, output 
                 iteration_count += 1
-                print "\n########################  %s ########################\n" % str(self._get_timestamp())
+                print("\n########################  %s ########################\n" % str(self._get_timestamp()))
                 do_sleep_for_interval()
             except KeyboardInterrupt:
                 self.dpc_client.disconnect()
                 break
             except Exception as ex:
-                print "ERROR: %s" % str(ex)
+                print("ERROR: %s" % str(ex))
                 self.dpc_client.disconnect()
                 break
                 
@@ -2694,7 +2696,7 @@ class PeekCommands(object):
                     table_obj = PrettyTable(['Field Name', 'Counter'])
                     table_obj.align = 'l'
                     for _key in sorted(tcp_entry):
-                        if _key == unicode('stats') or _key == unicode('xmt_stats'):
+                        if _key == str('stats') or _key == str('xmt_stats'):
                             continue
                         key = tcp_entry[_key]
                         if type(key) is dict:
@@ -2707,12 +2709,12 @@ class PeekCommands(object):
                     master_table_obj.add_row([cur_flowid, table_obj])                    
                     #print table_obj
                     if flow_seen: break
-                print master_table_obj
+                print(master_table_obj)
                 return cmd, master_table_obj 
             else:
                 return cmd, "Empty Result"
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
     def peek_tcp_flows_fc(self,flow_id = -1,sip=None,dip=None,sport=None,dport=None,count=None):
@@ -2760,13 +2762,13 @@ class PeekCommands(object):
                         table_obj.add_row(['xmt_res_pag_buf',tcp_entry['xmt_res_page_buf_cnt'],'X','X','X'])
                         table_obj.add_row(['xmt_res_r_pag_buf',tcp_entry['xmt_res_page_buf_restart_cnt'],'X','X','X'])
                         print_flag = True
-                    if print_flag: print table_obj
+                    if print_flag: print(table_obj)
                     if flow_seen: break
                 return cmd, table_obj
             else:
                 return cmd, "Empty Result"
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
     def peek_tcp_flows_stats(self,flow_id = -1,sip=None,dip=None,sport=None,dport=None,count=None,drops=False,rate=False,other=False, iterations=9999999):
@@ -2816,7 +2818,7 @@ class PeekCommands(object):
                         stat_dict = OrderedDict(sorted(stat_dict.items()))
                         if entry['flow']['id'] not in prev_result:
                             if any(stat_dict.values()):
-                                table_obj.add_row([entry['flow']['id']] + stat_dict.values())
+                                table_obj.add_row([entry['flow']['id']] + list(stat_dict.values()))
                                 row_cnt += 1
                         else:
                             diff_result = self._get_difference(result=stat_dict, prev_result=prev_result[entry['flow']['id']])
@@ -2828,22 +2830,22 @@ class PeekCommands(object):
                                 row_cnt += 1
                         prev_result[entry['flow']['id']] = stat_dict
                         if flow_seen: break
-                    if row_cnt > 0: print table_obj
-                    print "\n########################  %s ########################\n" % \
-                    str(self._get_timestamp())
+                    if row_cnt > 0: print(table_obj)
+                    print("\n########################  %s ########################\n" % \
+                    str(self._get_timestamp()))
                     if iteration_count == iterations:
                         return cmd, table_obj
                     iteration_count += 1 
                     do_sleep_for_interval()
                 else:
-                    print "Empty Result"
+                    print("Empty Result")
                     return cmd, "Empty Result"
                     break 
             except KeyboardInterrupt:
                 self.dpc_client.disconnect()
                 break
             except Exception as ex:
-                print "ERROR: %s" % str(ex)
+                print("ERROR: %s" % str(ex))
                 self.dpc_client.disconnect()
 
     def peek_stats_nhp_status(self):
@@ -2853,15 +2855,15 @@ class PeekCommands(object):
                 table_obj = PrettyTable(['Key','Value'])
                 table_obj.align = 'l'
                 row_cnt = 0
-                for k,v in (result.items()):
+                for k,v in (list(result.items())):
                     table_obj.add_row([k,v])
                     row_cnt += 1
                 table_obj.sortby = 'Key'
-                if row_cnt: print table_obj
+                if row_cnt: print(table_obj)
             else:
-                print "Empty Result"
+                print("Empty Result")
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
     def peek_stats_fcp_nu_gph(self,gph_cache):
@@ -2871,7 +2873,7 @@ class PeekCommands(object):
                 table_obj = PrettyTable(['Instance ID', 'gph_vec0','gph_vec1','lock','qos_vec','tunnel-id','Vld',])
                 table_obj.align = 'l'
                 row_cnt = 0
-                for k,v in (result.items()):
+                for k,v in (list(result.items())):
                     if len(v) > 1:
                         row_list = [int(k[len('inst-'):]),]
                         for i,j in sorted(v.items()):
@@ -2879,11 +2881,11 @@ class PeekCommands(object):
                         table_obj.add_row(row_list)
                         row_cnt += 1
                 table_obj.sortby = 'Instance ID'
-                if row_cnt > 0: print table_obj
+                if row_cnt > 0: print(table_obj)
             else:
-                print "Empty Result"
+                print("Empty Result")
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
     def peek_stats_probetest(self,summary=None,localityinfo=None,pathinfo=None,path_id=-1,status=None,tunnelinfo=None,streaminfo=None):
@@ -2895,22 +2897,22 @@ class PeekCommands(object):
                 if result:
                     table_obj = PrettyTable(['Key','Value'])
                     table_obj.align = 'l'
-                    for k,v in (result.items()):
+                    for k,v in (list(result.items())):
                         if k == 'total_path_list':
                             continue
                         table_obj.add_row([k,v])
-                    print table_obj
+                    print(table_obj)
             elif localityinfo:
                 arg_list.append("localityinfo")
                 result = self.dpc_client.execute(verb="probetest",arg_list=arg_list)
                 if result:
                     table_obj = PrettyTable(['Location', 'BMAP0','BMAP1', 'BMAP2', 'BMAP3'])
-                    for entry,value in (result.items()):
+                    for entry,value in (list(result.items())):
                         row_list = [entry,]
-                        for k,v in (value.items()):
+                        for k,v in (list(value.items())):
                             row_list.append(v)
                         table_obj.add_row(row_list)
-                    print table_obj
+                    print(table_obj)
             elif pathinfo:
                 arg_list = []
                 if status is not None:
@@ -2935,7 +2937,7 @@ class PeekCommands(object):
                             continue
                         path_cnt += 1
                         cur_path = result[path]
-                        for k,v in (cur_path.items()):
+                        for k,v in (list(cur_path.items())):
                             if k in key_filter:
                                 path_dict[k] = v
                         path_dict = OrderedDict(sorted(path_dict.items()))
@@ -2943,31 +2945,31 @@ class PeekCommands(object):
                         path_dict['state'] = state_map[path_dict['state']]
                         path_dict['status'] = status_map[path_dict['status']]
                         path_dict['cfg_locality'] = locality_map[path_dict['cfg_locality']]
-                        table_obj.add_row([int(path[len("path_"):])] + path_dict.values())
+                        table_obj.add_row([int(path[len("path_"):])] + list(path_dict.values()))
                     table_obj.sortby = 'Path_id'
-                    if path_cnt > 0: print table_obj
+                    if path_cnt > 0: print(table_obj)
             elif tunnelinfo:
                 arg_list.append("tunnelinfo")
                 result = self.dpc_client.execute(verb="probetest",arg_list=arg_list)
                 if result:
                     table_obj = PrettyTable(['Tunnel ID','Locality','Remote_ftep','wro_tunnel_timeout_bmap'])
-                    for tunnel,tdict in (result.items()):
+                    for tunnel,tdict in (list(result.items())):
                         table_obj.add_row([tunnel,tdict['locality'],tdict['remote_ftep'],tdict['wro_tunnel_timeout_bmap']])
-                    print table_obj
+                    print(table_obj)
             elif streaminfo:
                 arg_list.append("all")
                 result = self.dpc_client.execute(verb="probetest",arg_list=arg_list)
                 if result:
                     table_obj = PrettyTable(['Key','Value'])
                     streaminfo = result['streaminfo']
-                    for stream,value in streaminfo.items():
+                    for stream,value in list(streaminfo.items()):
                         table_obj.add_row([stream,value])
-                    print table_obj
+                    print(table_obj)
             else:
                 return arg_list, "Empty Result"
             return arg_list
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
     def set_nu_probetest(self,setpath=False,path_index=-1,state=-1,status=-1,reset=False,localtrigger=False,nacktrigger=False,rcvprobe=False,setuppath= False,inner_dip=None,locality= -1):
@@ -2980,34 +2982,34 @@ class PeekCommands(object):
                 else:
                     return arg_list,"Invalid input, enter <path_index> <state> <status>"
                 result = self.dpc_client.execute(verb="probetest",arg_list=arg_list)
-                print result
+                print(result)
             elif reset:
                 arg_list.append('reset')
                 result = self.dpc_client.execute(verb="probetest",arg_list=arg_list)
-                print result
+                print(result)
             elif localtrigger:
                 arg_list.append('localtrigger')
                 result = self.dpc_client.execute(verb="probetest",arg_list=arg_list)
-                print result
+                print(result)
             elif nacktrigger:
                 arg_list.extend(['nacktrigger',path_index])
                 result = self.dpc_client.execute(verb="probetest",arg_list=arg_list)
-                print result
+                print(result)
             elif locality >= 0:
                 arg_list.extend('setlocality',locality)
                 result = self.dpc_client.execute(verb="probetest",arg_list=arg_list)
-                print result
+                print(result)
             elif rcvprobe:
                 arg_list.extend(['rcvprobe',path_index])
                 result = self.dpc_client.execute(verb="probetest",arg_list=arg_list)
-                print result
+                print(result)
             elif setuppath:
                 arg_list.extend(['setuppath',path_index,inner_dip])
                 result = self.dpc_client.execute(verb="probetest",arg_list=arg_list)
-                print result
+                print(result)
             return arg_list
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
     
     def peek_fcp_path_stats(self,path_id = -1):
@@ -3028,7 +3030,7 @@ class PeekCommands(object):
                         path_dict = OrderedDict(sorted(path.items()))
                         path_dict.pop('path-num')
                         if path_num not in prev_result:
-                            table_obj.add_row([path_num,] + path_dict.values())
+                            table_obj.add_row([path_num,] + list(path_dict.values()))
                             row_cnt += 1
                         else:
                             diff_result = self._get_difference(result=path_dict, prev_result=prev_result[path_num])
@@ -3038,17 +3040,17 @@ class PeekCommands(object):
                             table_obj.add_row(row_entry)
                             row_cnt += 1
                         prev_result[path_num] = path_dict
-                    if row_cnt > 0: print table_obj
-                    print "\n########################  %s ########################\n" % \
-                    str(self._get_timestamp())
+                    if row_cnt > 0: print(table_obj)
+                    print("\n########################  %s ########################\n" % \
+                    str(self._get_timestamp()))
                     do_sleep_for_interval()
                 else:
-                    print "Empty Result"
+                    print("Empty Result")
             except KeyboardInterrupt:
                 self.dpc_client.disconnect()
                 break
             except Exception as ex:
-                print "ERROR: %s" % str(ex)
+                print("ERROR: %s" % str(ex))
                 self.dpc_client.disconnect()
 
     def peek_fcp_stats_tunnel_stats(self,path_id = -1,tunnel_id = -1):
@@ -3058,13 +3060,13 @@ class PeekCommands(object):
             try:
                 result = self.dpc_client.execute(verb="peek",arg_list=['stats/fcp_tunnels'])
                 if is_vpcie:
-                    print 'Ftep/Tunnel(lslice, lcontroller, lport => rslice, rcontroller, rport)'
+                    print('Ftep/Tunnel(lslice, lcontroller, lport => rslice, rcontroller, rport)')
                 if result:
                     table_obj = PrettyTable(['Ftep/Tunnel#','Dest Bytes','Dest Packets','Src Bytes','Src Packets'])
                     row_cnt = 0
                     if prev_result:
                         table_obj = PrettyTable(['Ftep/Tunnel#','Dest Bytes','Dest Bytes Diff','Dest Packets','Dest Packets Diff','Src Bytes','Src Bytes Diff','Src Packets','Src Packets Diff'])
-                    for path,tunnel in (result.items()):
+                    for path,tunnel in (list(result.items())):
                         if path_id >= 0 and int(path) != path_id:
                             continue
                         for entry in tunnel:
@@ -3072,11 +3074,11 @@ class PeekCommands(object):
                                 continue
                             tunnel_dict = OrderedDict()
                             idx  = str(path) + "_" + str(entry['tunnel-num'])
-                            if entry.has_key('dst_tunnel_num'):
+                            if 'dst_tunnel_num' in entry:
                                 ftep = str( entry['ftep']) + "/(" + str(entry['tunnel-num']) + "->" + str(entry['dst_tunnel_num']) + ")"
                             else:
                                 ftep = str( entry['ftep']) + "/" + str(entry['tunnel-num'])
-                            if entry.has_key('vpcie_lslice'):
+                            if 'vpcie_lslice' in entry:
                                 vpcie = "/({},{},{} => {},{},{})".format(str(entry['vpcie_lslice']),
                                         str(entry['vpcie_lcontroller']),
                                         str(entry['vpcie_lport']),
@@ -3091,7 +3093,7 @@ class PeekCommands(object):
                             tunnel_dict['fcp-src-bytes'] = entry['fcp-src-bytes']
                             tunnel_dict['fcp-src-pkts'] = entry['fcp-src-pkts']
                             if idx not in prev_result:
-                                row_entry = [ftep] + tunnel_dict.values()
+                                row_entry = [ftep] + list(tunnel_dict.values())
                                 table_obj.add_row(row_entry)
                                 row_cnt += 1
                             else:
@@ -3104,17 +3106,17 @@ class PeekCommands(object):
                             prev_result[idx] = OrderedDict(sorted(tunnel_dict.items()))
                     table_obj.sortby = 'Ftep/Tunnel#'
                     table_obj.align = 'l'
-                    if row_cnt > 0: print table_obj
-                    print "\n########################  %s ########################\n" % \
-                    str(self._get_timestamp())
+                    if row_cnt > 0: print(table_obj)
+                    print("\n########################  %s ########################\n" % \
+                    str(self._get_timestamp()))
                     do_sleep_for_interval()
                 else:
-                    print "Empty Result"
+                    print("Empty Result")
             except KeyboardInterrupt:
                 self.dpc_client.disconnect()
                 break
             except Exception as ex:
-                print "ERROR: %s" % str(ex)
+                print("ERROR: %s" % str(ex))
                 self.dpc_client.disconnect()
 
     def _get_parser_stats(self, grep_regex=None, hnu=False, get_result_only=False):
@@ -3158,18 +3160,18 @@ class PeekCommands(object):
                     else:
                         if get_result_only:
                             return cmd, "Empty Result"
-                        print "Empty Result"
+                        print("Empty Result")
                     if get_result_only:
                         return cmd, master_table_obj
                     prev_result = global_result
-                    print master_table_obj
-                    print "\n########################  %s ########################\n" % str(self._get_timestamp())
+                    print(master_table_obj)
+                    print("\n########################  %s ########################\n" % str(self._get_timestamp()))
                     do_sleep_for_interval()
                 except KeyboardInterrupt:
                     self.dpc_client.disconnect()
                     break
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
     def peek_parser_stats(self, mode='nu', grep_regex=None, get_result_only=False):
@@ -3239,31 +3241,31 @@ class PeekCommands(object):
                             if get_result_only:
                                 return cmd, master_table_obj
                             prev_result = result
-                            print master_table_obj
-                            print "\n########################  %s ########################\n" % \
-                                  str(self._get_timestamp())
+                            print(master_table_obj)
+                            print("\n########################  %s ########################\n" % \
+                                  str(self._get_timestamp()))
                             do_sleep_for_interval()
                         else:
                             if get_result_only:
                                 return cmd, "Empty Result"
-                            print "Empty Result"
+                            print("Empty Result")
                     except KeyboardInterrupt:
                         self.dpc_client.disconnect()
                         break
             except Exception as ex:
-                print "ERROR: %s" % str(ex)
+                print("ERROR: %s" % str(ex))
                 self.dpc_client.disconnect()
 
     def _get_vp_number_key(self, output_dict, vp_number):
         result = None
         try:
-            dict_keys = output_dict.keys()
+            dict_keys = list(output_dict.keys())
             for key in dict_keys:
                 if int(key.split(":")[1]) == int(vp_number):
                     result = key
                     break
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
         return result
 
     def _get_vp_numbers_from_core_id(self, core_id):
@@ -3273,9 +3275,9 @@ class PeekCommands(object):
             if core_id != 0:
                 start_vp_num = START_VP_NUMBER + TOTAL_VPS_PER_CORE * core_id
             end_vp_num = start_vp_num + TOTAL_VPS_PER_CORE
-            result = range(start_vp_num, end_vp_num, 1)
+            result = list(range(start_vp_num, end_vp_num, 1))
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
         return result
 
     def _get_cluster_core_parsed_dict(self, output_dict, cluster_id, core_id=None, pc_resource=False):
@@ -3283,12 +3285,12 @@ class PeekCommands(object):
         try:
             if pc_resource and (core_id is not None):
                 core_id = '0' + str(core_id)
-                dict_keys = output_dict.keys()
+                dict_keys = list(output_dict.keys())
                 for key in dict_keys:
                     if str(core_id) in key.split(":")[1]:
                         result[key] = output_dict[key]
             else:
-                dict_keys = output_dict.keys()
+                dict_keys = list(output_dict.keys())
                 for key in dict_keys:
                     if str(cluster_id) in key.split(":")[0]:
                         if core_id is not None:
@@ -3298,7 +3300,7 @@ class PeekCommands(object):
                         else:
                             result[key] = output_dict[key]
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
         return result
 
     def get_required_per_vp_result(self, output_result):
@@ -3433,19 +3435,19 @@ class PeekCommands(object):
                             return cmd, master_table_obj
                         iteration_count += 1
                         prev_result = result
-                        print master_table_obj
-                        print "\n########################  %s ########################\n" % \
-                              str(self._get_timestamp())
+                        print(master_table_obj)
+                        print("\n########################  %s ########################\n" % \
+                              str(self._get_timestamp()))
                         do_sleep_for_interval()
                     else:
                         if get_result_only:
                             return cmd, "Empty Result"
-                        print "Empty Result"
+                        print("Empty Result")
                 except KeyboardInterrupt:
                     self.dpc_client.disconnect()
                     break
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
     def peek_stats_per_vp_pp(self, cluster_id=None, core_id=None, rx=False, tx=False, q=False, grep_regex=None,
@@ -3470,12 +3472,12 @@ class PeekCommands(object):
                 tx = True
                 q = True
             while True:
-                print "%s = %s" % (display_rx_key_name, rx_key_name)
-                print "%s = %s" % (display_tx_key_name, tx_key_name)
-                print "%s = %s" % (display_lo_q_key_name, lo_q_key_name)
-                print "%s = %s" % (display_hi_q_key_name, hi_q_key_name)
-                print "%s = %s" % (display_hi_rx_key_name, hi_rx_key_name)
-                print "%s = %s" % (display_hi_tx_key_name, hi_tx_key_name)
+                print("%s = %s" % (display_rx_key_name, rx_key_name))
+                print("%s = %s" % (display_tx_key_name, tx_key_name))
+                print("%s = %s" % (display_lo_q_key_name, lo_q_key_name))
+                print("%s = %s" % (display_hi_q_key_name, hi_q_key_name))
+                print("%s = %s" % (display_hi_rx_key_name, hi_rx_key_name))
+                print("%s = %s" % (display_hi_tx_key_name, hi_tx_key_name))
                 try:
                     cmd = "stats/per_vp"
                     output_result = self.dpc_client.execute(verb='peek', arg_list=[cmd])
@@ -3686,7 +3688,7 @@ class PeekCommands(object):
                             return print_values
 
                         def get_per_vp_dict_table_obj(result, prev_result=None):
-                            all_keys = result.keys()
+                            all_keys = list(result.keys())
                             cluster_core_key = "Cls/Core"
                             row_list = [cluster_core_key, "0", "1", "2", "3"]
 
@@ -3711,14 +3713,14 @@ class PeekCommands(object):
                             print_dict = get_complete_dict(result=result, tabular_list=tabular_list,
                                                            prev_result=prev_result)
 
-                            print_keys = print_dict.keys()
+                            print_keys = list(print_dict.keys())
                             print_keys = [print_key.replace(tx_key_name, display_tx_key_name) for print_key in print_keys]
                             print_keys = [print_key.replace(rx_key_name, display_rx_key_name) for print_key in print_keys] 
                             print_keys = [print_key.replace(hi_tx_key_name, display_hi_tx_key_name) for print_key in print_keys]
                             print_keys = [print_key.replace(hi_rx_key_name, display_hi_rx_key_name) for print_key in print_keys]
                             print_keys = [print_key.replace(lo_q_key_name, display_lo_q_key_name) for print_key in print_keys]
                             print_keys = [print_key.replace(hi_q_key_name, display_hi_q_key_name) for print_key in print_keys]
-                            print_values = print_dict.values()
+                            print_values = list(print_dict.values())
                             print_values = eliminate_zero_val_rows(print_keys, print_values)
                             all_empty_list = True
                             for print_val_list in print_values:
@@ -3744,19 +3746,19 @@ class PeekCommands(object):
                             return cmd, master_table_obj
                         iteration_count += 1
                         prev_result = result
-                        print master_table_obj
-                        print "\n########################  %s ########################\n" % \
-                              str(self._get_timestamp())
+                        print(master_table_obj)
+                        print("\n########################  %s ########################\n" % \
+                              str(self._get_timestamp()))
                         do_sleep_for_interval()
                     else:
                         if get_result_only:
                             return cmd, "Empty Result"
-                        print "Empty Result"
+                        print("Empty Result")
                 except KeyboardInterrupt:
                     self.dpc_client.disconnect()
                     break
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
     def peek_stats_l1_cache_pp(self, cluster_id=None, core_id=None, load=False, store=False, grep_regex=None,
@@ -3774,8 +3776,8 @@ class PeekCommands(object):
             cmd = "start"
             output_result = self.dpc_client.execute(verb='l1_cache_ctrs', arg_list=[cmd])
             while True:
-                print "%s = %s" % (display_load_key_name, load_key_name)
-                print "%s = %s" % (display_store_key_name, store_key_name)
+                print("%s = %s" % (display_load_key_name, load_key_name))
+                print("%s = %s" % (display_store_key_name, store_key_name))
                 try:
                     cmd = "start"
                     output_result = self.dpc_client.execute(verb='l1_cache_ctrs ', arg_list=[cmd])
@@ -3900,9 +3902,9 @@ class PeekCommands(object):
                             # Find all diff columns
                             for key in print_keys:
                                 if key.startswith('d_'):
-                                    print "true:", key
+                                    print("true:", key)
                                     diff_indexes.append(print_keys.index(key))
-                                    print "done"
+                                    print("done")
                             if diff_indexes:
                                 del_indexes = []
                                 # Check all lists simultaneously if their diff value is 0 and note its index
@@ -3950,7 +3952,7 @@ class PeekCommands(object):
                             return print_values
 
                         def get_l1_cache_dict_table_obj(result, prev_result=None):
-                            all_keys = result.keys()
+                            all_keys = list(result.keys())
                             cluster_core_key = "Cls/Core"
                             row_list = [cluster_core_key, "0", "1", "2", "3"]
 
@@ -3970,11 +3972,11 @@ class PeekCommands(object):
                             print_dict = get_complete_dict(result=result, tabular_list=tabular_list,
                                                            prev_result=prev_result)
 
-                            print_keys = print_dict.keys()
+                            print_keys = list(print_dict.keys())
                             print_keys = [print_key.replace(load_key_name, display_load_key_name) for print_key in print_keys]
                             print_keys = [print_key.replace(store_key_name, display_store_key_name) for print_key in
                                           print_keys]
-                            print_values = print_dict.values()
+                            print_values = list(print_dict.values())
 
                             print_values = eliminate_zero_val_rows(print_keys, print_values)
                             all_empty_list = True
@@ -4002,21 +4004,21 @@ class PeekCommands(object):
                             return cmd, master_table_obj
                         iteration_count += 1
                         prev_result = result
-                        print master_table_obj
-                        print "\n########################  %s ########################\n" % \
-                              str(self._get_timestamp())
+                        print(master_table_obj)
+                        print("\n########################  %s ########################\n" % \
+                              str(self._get_timestamp()))
                         do_sleep_for_interval()
                     else:
                         if get_result_only:
                             return cmd, "Empty Result"
-                        print "Empty Result"
+                        print("Empty Result")
                 except KeyboardInterrupt:
                     cmd = "stop"
                     output_result = self.dpc_client.execute(verb='l1_cache_ctrs ', arg_list=[cmd])
                     self.dpc_client.disconnect()
                     break
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
     def peek_mpg_stats(self, grep_regex=None, get_result_only=False):
@@ -4083,18 +4085,18 @@ class PeekCommands(object):
                                 master_table_obj.add_column('Rx Stats', [rx_table_obj])
                     else:
                         if get_result_only:
-                            print cmd, "Empty Result"
-                        print "Empty Result"
+                            print(cmd, "Empty Result")
+                        print("Empty Result")
                     if get_result_only:
                         return cmd, master_table_obj
-                    print master_table_obj
-                    print "\n########################  %s ########################\n" % str(self._get_timestamp())
+                    print(master_table_obj)
+                    print("\n########################  %s ########################\n" % str(self._get_timestamp()))
                     do_sleep_for_interval()
                 except KeyboardInterrupt:
                     self.dpc_client.disconnect()
                     break
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
     def print_diff_result_single_dict_table_obj(self, master_table_obj, result, prev_result, grep_regex=None):
@@ -4177,19 +4179,19 @@ class PeekCommands(object):
                             return cmd, master_table_obj
                         iteration_count += 1
                         prev_result = result
-                        print master_table_obj
-                        print "\n########################  %s ########################\n" % \
-                              str(self._get_timestamp())
+                        print(master_table_obj)
+                        print("\n########################  %s ########################\n" % \
+                              str(self._get_timestamp()))
                         do_sleep_for_interval()
                     else:
                         if get_result_only:
                             return cmd, "Empty Result"
-                        print "Empty Result"
+                        print("Empty Result")
                 except KeyboardInterrupt:
                     self.dpc_client.disconnect()
                     break
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
     def _get_nested_dict_stats(self, cmd, verb='peek', cmd_output = {}, stop_regex="does not exist", grep_regex=None, get_result_only=False, iterations=9999999):
@@ -4271,9 +4273,9 @@ class PeekCommands(object):
                     else:
                         if get_result_only:
                             return cmd, "Empty Result"
-                        print "Empty Result"
-                    print master_table_obj
-                    print "\n########################  %s ########################\n" % str(self._get_timestamp())
+                        print("Empty Result")
+                    print(master_table_obj)
+                    print("\n########################  %s ########################\n" % str(self._get_timestamp()))
                     if get_result_only or iteration_count == iterations:
                         return cmd, master_table_obj
                     iteration_count += 1
@@ -4283,7 +4285,7 @@ class PeekCommands(object):
                     self.dpc_client.disconnect()
                     break
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
     def _display_list_of_dict_stats(self, cmd, grep_regex=None):
@@ -4319,17 +4321,17 @@ class PeekCommands(object):
                                     else:
                                         table_obj.add_row([_key, out[_key]])
                     else:
-                        print "Empty Result"
+                        print("Empty Result")
 
                     prev_result = result
-                    print table_obj
-                    print "\n########################  %s ########################\n" % str(self._get_timestamp())
+                    print(table_obj)
+                    print("\n########################  %s ########################\n" % str(self._get_timestamp()))
                     do_sleep_for_interval()
                 except KeyboardInterrupt:
                     self.dpc_client.disconnect()
                     break
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
     def peek_nhp_stats(self, grep_regex=None, get_result_only=False, iterations=9999999, nhp_ext=False):
@@ -4407,19 +4409,19 @@ class PeekCommands(object):
                             return cmd, master_table_obj
                         iteration_count += 1
                         prev_result = result
-                        print master_table_obj
-                        print "\n########################  %s ########################\n" % \
-                              str(self._get_timestamp())
+                        print(master_table_obj)
+                        print("\n########################  %s ########################\n" % \
+                              str(self._get_timestamp()))
                         do_sleep_for_interval()
                     else:
                         if get_result_only:
                             return cmd, "Empty Result"
-                        print "Empty Result"
+                        print("Empty Result")
                 except KeyboardInterrupt:
                     self.dpc_client.disconnect()
                     break
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
     def peek_cc_resource_stats(self, grep_regex=None, iterations=9999999):
@@ -4442,16 +4444,16 @@ class PeekCommands(object):
                     else:
                         table_obj = PrettyTable(['color', 'qdepth'])
                         for record in sorted(result):
-                            table_obj.add_row(record.values())
+                            table_obj.add_row(list(record.values()))
                 prev_result = result
-                print table_obj
-                print "\n########################  %s ########################\n" % str(self._get_timestamp())
+                print(table_obj)
+                print("\n########################  %s ########################\n" % str(self._get_timestamp()))
                 do_sleep_for_interval()
             except KeyboardInterrupt:
                 self.dpc_client.disconnect()
                 break
             except Exception as ex:
-                print "ERROR: %s" % str(ex)
+                print("ERROR: %s" % str(ex))
                 self.dpc_client.disconnect()
                 break
 
@@ -4505,7 +4507,7 @@ class PeekCommands(object):
             else:
                 self._get_nested_dict_stats(cmd=cmd, grep_regex=grep_regex, stop_regex="does not exist", iterations=iterations)
         except Exception as ex:
-            print "ERROR:  %s" % str(ex)
+            print("ERROR:  %s" % str(ex))
 
     def peek_dam_resource_stats(self, grep_regex=None):
         cmd = "stats/resource/dam"
@@ -4591,11 +4593,11 @@ class PeekCommands(object):
     #         self.dpc_client.disconnect()
 
     def _get_max_reference_keys(self, result, reference_cluster):
-        reference_keys = reference_cluster.keys()
+        reference_keys = list(reference_cluster.keys())
         num_keys = len(reference_keys)
-        for key, val in result.iteritems():
+        for key, val in result.items():
             if len(val) > num_keys:
-                reference_keys = val.keys()
+                reference_keys = list(val.keys())
         return reference_keys
 
     def _print_master_table_columns(self, print_keys, print_values):
@@ -4605,19 +4607,19 @@ class PeekCommands(object):
         master_table_obj.align = 'l'
         for col_name, col_values in zip(print_keys, print_values):
             master_table_obj.add_column(col_name, col_values)
-        print master_table_obj
+        print(master_table_obj)
 
     def get_bam_flow_control_configs(self, per_pool):
         try:
-            print "bam flow_control configs"
+            print("bam flow_control configs")
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
     def _invert_output_dict(self, output_dict):
         new_output = OrderedDict()
         temp_list = []
-        for key, val in output_dict.iteritems():
+        for key, val in output_dict.items():
             val.insert(0, key)
             temp_list.append(val)
         for key in temp_list[0]:
@@ -4652,8 +4654,8 @@ class PeekCommands(object):
                         output[col_name].append(cls_output[display_key][key_name])
                     else:
                         output[col_name].append(0)
-        print_keys = output.keys()
-        print_values = output.values()
+        print_keys = list(output.keys())
+        print_values = list(output.values())
         self._print_master_table_columns(print_keys, print_values)
 
     def _get_bam_pool_config(self):
@@ -4676,15 +4678,15 @@ class PeekCommands(object):
                 if _key in result[key]:
                     val = result[key][_key]
                 output[_key].append(val)
-        print_keys = output.keys()
-        print_values = output.values()
+        print_keys = list(output.keys())
+        print_values = list(output.values())
         self._print_master_table_columns(print_keys, print_values)
 
     def _get_bam_ncv_config(self):
         cmd = "config/bam/ncv_config"
         result = self.dpc_client.execute(verb="peek", arg_list=[cmd])
         pc_result = result['pc_count']
-        print "pc_count:%s" % pc_result
+        print("pc_count:%s" % pc_result)
         del result['pc_count']
         all_keys = sorted(result.keys())
         reference_pool = all_keys[0]
@@ -4703,19 +4705,19 @@ class PeekCommands(object):
                     val = result[key][_key]
                 output[_key].append(val)
         output = self._invert_output_dict(output)
-        print_keys = output.keys()
-        print_values = output.values()
+        print_keys = list(output.keys())
+        print_values = list(output.values())
         self._print_master_table_columns(print_keys, print_values)
 
     def _get_bam_global_flow_control(self):
         cmd = "config/bam/global_flow_control"
         result = self.dpc_client.execute(verb="peek", arg_list=[cmd])
-        print "Not implemented"
+        print("Not implemented")
 
     def _get_bam_per_pool_flow_control(self):
         cmd = "config/bam/per_pool_flow_control"
         result = self.dpc_client.execute(verb="peek", arg_list=[cmd])
-        print "Not implemented"
+        print("Not implemented")
 
     def get_nu_configs(self, config_type):
         try:
@@ -4728,13 +4730,13 @@ class PeekCommands(object):
             elif config_type == 'global_flow_control':
                 self._get_bam_global_flow_control()
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
     def _get_cid_bam_results(self, result, cid):
-        for key in result.keys():
+        for key in list(result.keys()):
             if key == 'bm_usage_per_pool_per_cluster':
-                for _key in result[key].keys():
+                for _key in list(result[key].keys()):
                     if not str(cid) == _key.split("_")[1]:
                         del result[key][_key]
         return result
@@ -4759,7 +4761,7 @@ class PeekCommands(object):
 
                     table_obj = PrettyTable(row_list)
                     table_obj.align = 'l'
-                    for key, val in result.iteritems():
+                    for key, val in result.items():
                         #print diff_result[key]
                         row_list = [key]
                         for val_key in sorted(val.keys()):
@@ -4777,7 +4779,7 @@ class PeekCommands(object):
 
                     table_obj = PrettyTable(row_list)
                     table_obj.align = 'l'
-                    for key, val in result.iteritems():
+                    for key, val in result.items():
                         row_list = [key]
                         for val_key in sorted(val.keys()):
                             v = val[val_key]
@@ -4788,14 +4790,14 @@ class PeekCommands(object):
                     return cmd, table_obj
                 iteration_count += 1 
                 prev_result = result
-                print table_obj
-                print "\n########################  %s ########################\n" % str(self._get_timestamp())
+                print(table_obj)
+                print("\n########################  %s ########################\n" % str(self._get_timestamp()))
                 do_sleep_for_interval()
             except KeyboardInterrupt:
                 self.dpc_client.disconnect()
                 break
             except Exception as ex:
-                print "ERROR: %s" % str(ex)
+                print("ERROR: %s" % str(ex))
                 self.dpc_client.disconnect()
                 break
 
@@ -4819,7 +4821,7 @@ class PeekCommands(object):
                     diff_result = self._get_nested_dict_difference(result=gloabl_result, prev_result=prev_global_result)
                     global_table_obj = PrettyTable(['Field Name', 'Counter', 'Counter Diff'])
                     global_table_obj.align = 'l'
-                    for key, val in gloabl_result.iteritems():
+                    for key, val in gloabl_result.items():
                         global_table_obj.add_row([key, val, diff_result[key]])
                 if prev_per_cluster_result and diff:
                     row_list = ['key names']
@@ -4858,7 +4860,7 @@ class PeekCommands(object):
                     # Global table object
                     global_table_obj = PrettyTable(['Field Name', 'Counter'])
                     global_table_obj.align = 'l'
-                    for key, val in gloabl_result.iteritems():
+                    for key, val in gloabl_result.items():
                         global_table_obj.add_row([key, val])
 
                     # Per cluster table
@@ -4890,8 +4892,8 @@ class PeekCommands(object):
                                         output[col_name].append(0)
                                 else:
                                     output[col_name].append(0)
-                print_keys = output.keys()
-                print_values = output.values()
+                print_keys = list(output.keys())
+                print_values = list(output.values())
                 for col_name, col_values in zip(print_keys, print_values):
                     per_cluster_table_obj.add_column(col_name, col_values)
 
@@ -4901,15 +4903,15 @@ class PeekCommands(object):
                 iteration_count += 1
                 prev_global_result = gloabl_result
                 prev_per_cluster_result = per_cluster_result
-                print global_table_obj
-                print per_cluster_table_obj
-                print "\n########################  %s ########################\n" % str(self._get_timestamp())
+                print(global_table_obj)
+                print(per_cluster_table_obj)
+                print("\n########################  %s ########################\n" % str(self._get_timestamp()))
                 do_sleep_for_interval()
             except KeyboardInterrupt:
                 self.dpc_client.disconnect()
                 break
             except Exception as ex:
-                print "ERROR: %s" % str(ex)
+                print("ERROR: %s" % str(ex))
                 self.dpc_client.disconnect()
                 break
 
@@ -5008,17 +5010,17 @@ class PeekCommands(object):
                                     master_table_obj.add_row([key, table_obj])
                                 else:
                                     master_table_obj.add_row([key, result[key]])
-                        print master_table_obj
+                        print(master_table_obj)
                         prev_result = result
-                        print "\n########################  %s ########################\n" % str(self._get_timestamp())
+                        print("\n########################  %s ########################\n" % str(self._get_timestamp()))
                         do_sleep_for_interval()
                     else:
-                        print 'Empty Result'
+                        print('Empty Result')
                 except KeyboardInterrupt:
                     self.dpc_client.disconnect()
                     break
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
     def peek_malloc_agent_stats(self, grep_regex=None):
@@ -5107,17 +5109,17 @@ class PeekCommands(object):
                                         master_table_obj.add_row([key, table_obj])
                                 else:
                                     master_table_obj.add_row([key, table_obj])
-                        print master_table_obj
+                        print(master_table_obj)
                         prev_result = result
-                        print "\n########################  %s ########################\n" % str(self._get_timestamp())
+                        print("\n########################  %s ########################\n" % str(self._get_timestamp()))
                         do_sleep_for_interval()
                     else:
-                        print 'Empty Result'
+                        print('Empty Result')
                 except KeyboardInterrupt:
                     self.dpc_client.disconnect()
                     break
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
     def peek_stats_wustacks(self, iterations=9999999):
@@ -5146,16 +5148,16 @@ class PeekCommands(object):
                         if iteration_count == iterations:
                             return cmd, table_obj
                         iteration_count += 1
-                        print table_obj
-                        print "\n########################  %s ########################\n" % str(self._get_timestamp())
+                        print(table_obj)
+                        print("\n########################  %s ########################\n" % str(self._get_timestamp()))
                         do_sleep_for_interval()
                     else:
-                        print "Empty Result"
+                        print("Empty Result")
                 except KeyboardInterrupt:
                     self.dpc_client.disconnect()
                     break
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
     def peek_stats_hu_pcie(self, hu_id=1, grep_regex=None, iterations=9999999):
@@ -5169,7 +5171,7 @@ class PeekCommands(object):
         if result:
             temp = dict()
             temp["bif_mode"] = {}
-            for k, v in result.items():
+            for k, v in list(result.items()):
                 if "pcie_ctrl_" in k:
                     temp[k] = v
                 else:
@@ -5183,7 +5185,7 @@ class PeekCommands(object):
         if result:
             temp = dict()
             temp["hdma"] = {}
-            for k, v in result.items():
+            for k, v in list(result.items()):
                 if "pcie_ctrl_" in k:
                     temp[k] = v
                 else:
@@ -5279,16 +5281,16 @@ class PeekCommands(object):
                         if iteration_count == iterations:
                             return cmd, master_table_obj
                         iteration_count += 1
-                        print master_table_obj
-                        print "\n########################  %s ########################\n" % str(self._get_timestamp())
+                        print(master_table_obj)
+                        print("\n########################  %s ########################\n" % str(self._get_timestamp()))
                         do_sleep_for_interval()
                     else:
-                        print "Empty Result"
+                        print("Empty Result")
                 except KeyboardInterrupt:
                     self.dpc_client.disconnect()
                     break
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
     def peek_stats_hu_framer(self, grep_regex=None):
@@ -5333,14 +5335,14 @@ class PeekCommands(object):
                     row_list.append(output[k])
                     table_obj.add_row([k] + output[k])
                 prev_result = result
-                print table_obj
-                print "\n########################  %s ########################\n" % str(self._get_timestamp())
+                print(table_obj)
+                print("\n########################  %s ########################\n" % str(self._get_timestamp()))
                 do_sleep_for_interval()
             except KeyboardInterrupt:
                 self.dpc_client.disconnect()
                 break
             except Exception as ex:
-                print "ERROR: %s" % str(ex)
+                print("ERROR: %s" % str(ex))
                 self.dpc_client.disconnect()
 
     def peek_stats_wus(self):
@@ -5373,25 +5375,25 @@ class PeekCommands(object):
                                     for _key in result[key]:
                                         table_obj.add_row([_key, result[key][_key]])
                                     master_table_obj.add_row([key, table_obj])
-                        print master_table_obj
+                        print(master_table_obj)
                         prev_result = result
-                        print "\n########################  %s ########################\n" % str(self._get_timestamp())
+                        print("\n########################  %s ########################\n" % str(self._get_timestamp()))
                         do_sleep_for_interval()
                     else:
-                        print "Empty Result"
+                        print("Empty Result")
                 except KeyboardInterrupt:
                     self.dpc_client.disconnect()
                     break
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
 
     def _get_all_rdma(self, output_dict, hu_id, qpn_number=None):
         result = {}
         result['rdma'] = {}
-        for key, val in output_dict.iteritems():
-            if key.split(".")[0] == str(hu_id) and 'rdma' in val.keys():
+        for key, val in output_dict.items():
+            if key.split(".")[0] == str(hu_id) and 'rdma' in list(val.keys()):
                 if qpn_number:
                     for item in val['rdma']:
                         if str(qpn_number) == str(item['QPN']):
@@ -5415,7 +5417,7 @@ class PeekCommands(object):
                             result = result['rdma']
                             master_table_obj = PrettyTable(['id:qpn', 'values'])
                             master_table_obj.align = 'l'
-                            for key, val in result.iteritems():
+                            for key, val in result.items():
                                 for item in val:
                                     table_obj = PrettyTable(['Field', 'Counter', "Counter_Diff"])
                                     table_obj.align = 'l'
@@ -5426,7 +5428,7 @@ class PeekCommands(object):
                                             break
                                     for _key in sorted(item):
                                         if isinstance(item[_key], dict):
-                                            for inner_key, inner_val in item[_key].iteritems():
+                                            for inner_key, inner_val in item[_key].items():
                                                 if isinstance(inner_val, int):
                                                     table_obj.add_row([_key + ":" + inner_key, inner_val,
                                                                        int(inner_val) - int(diff_item[_key][inner_key])])
@@ -5438,32 +5440,32 @@ class PeekCommands(object):
                             result = result['rdma']
                             master_table_obj = PrettyTable(['id:qpn', 'values'])
                             master_table_obj.align = 'l'
-                            for key, val in result.iteritems():
+                            for key, val in result.items():
                                 for item in val:
                                     table_obj = PrettyTable(['Field', 'Counter'])
                                     table_obj.align = 'l'
                                     qpn_id = item['QPN']
                                     for _key in sorted(item):
                                         if isinstance(item[_key], dict):
-                                            for inner_key, inner_val in item[_key].iteritems():
+                                            for inner_key, inner_val in item[_key].items():
                                                 if isinstance(inner_val, int):
                                                     table_obj.add_row([_key + ":" + inner_key, inner_val])
                                         else:
                                             if isinstance(item[_key], int):
                                                 table_obj.add_row([_key, item[_key]])
                                     master_table_obj.add_row([key + ":" + str(qpn_id), table_obj])
-                        print master_table_obj
+                        print(master_table_obj)
                         prev_result = result
-                        print "\n########################  %s ########################\n" % str(self._get_timestamp())
+                        print("\n########################  %s ########################\n" % str(self._get_timestamp()))
                         do_sleep_for_interval()
                     else:
-                        print "Empty Result"
+                        print("Empty Result")
                         break
                 except KeyboardInterrupt:
                     self.dpc_client.disconnect()
                     break
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
     def peek_nhp_status(self, grep_regex=None, get_result_only=False, iterations=9999999):
@@ -5480,7 +5482,7 @@ class PeekCommands(object):
             result = self.dpc_client.execute(verb='sdebug', arg_list=[cmd])
             if result:
                 new_result = {}
-                for key,val in result.iteritems():
+                for key,val in result.items():
                     temp_dict = {}
                     temp_dict["stats_client"] = val["instances"]
                     temp_dict["stats_client"].update(val["stats_client"])
@@ -5489,7 +5491,7 @@ class PeekCommands(object):
             else:
                 return cmd, table_obj     
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
 
@@ -5504,7 +5506,7 @@ class SampleCommands(object):
             if result:
                 master_table_obj = PrettyTable(['Field Name', 'Counter'])
                 master_table_obj.align = 'l'
-                for key, val in sorted(result.iteritems()):
+                for key, val in sorted(result.items()):
                     if isinstance(val, dict):
                         table_obj = PrettyTable(['Field Name', 'Counter'])
                         table_obj.align = 'l'
@@ -5513,9 +5515,9 @@ class SampleCommands(object):
                         master_table_obj.add_row([key, table_obj])
                     else:
                         master_table_obj.add_row([key, val])
-                print master_table_obj
+                print(master_table_obj)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
     def set_sample(self, id, dest, fpg=None, acl=None, flag_mask=None, hu=None, psw_drop=None, pps_en=None,
@@ -5552,9 +5554,9 @@ class SampleCommands(object):
 
             result = self.dpc_client.execute(verb='sample', arg_list=cmd_arg_dict)
             if result:
-                print result
+                print(result)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
 
@@ -5564,7 +5566,7 @@ class ShowCommands(PeekCommands):
         try:
             with open(filepath, 'a') as f:
                 f.write('\n######### Show start time %s #########\n' % self._get_timestamp())
-                for command in command_dict.iterkeys():
+                for command in command_dict.keys():
                     cmd, result = command_dict[command]
                     f.write("Executed command: %s" % cmd)
                     f.write("\nOutput is:\n")
@@ -5576,7 +5578,7 @@ class ShowCommands(PeekCommands):
                     f.write('\n===============================================================\n')
                 result = True
         except Exception as ex:
-            print "Error: %s" % str(ex)
+            print("Error: %s" % str(ex))
         return result
 
     def append_mode_specific_commands(self, command_dict, port_list=[], mode='nu'):
@@ -5595,7 +5597,7 @@ class ShowCommands(PeekCommands):
             command_dict['%s etp stats' % mode] = self.peek_etp_stats(get_result_only=True, mode=mode)
             command_dict['%s resource stats' % mode] = self.peek_mode_resource_stats(get_result_only=True, mode=mode)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
         return command_dict
 
     def delete_filepath(self, filepath):
@@ -5632,14 +5634,14 @@ class ShowCommands(PeekCommands):
                                                                   mode='hnu')
             write_result = self.do_write_on_file(filepath=filepath, command_dict=command_dict)
             if write_result:
-                print "Filepath is %s" % filepath
+                print("Filepath is %s" % filepath)
             else:
-                print "Error in execution. Deleting file"
+                print("Error in execution. Deleting file")
                 self.delete_filepath(filepath)
             self.dpc_client.disconnect()
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
-            print "Error in execution. Deleting file"
+            print("ERROR: %s" % str(ex))
+            print("Error in execution. Deleting file")
             if filepath:
                 self.delete_filepath(filepath)
             self.dpc_client.disconnect()
@@ -5714,14 +5716,14 @@ class ShowCommands(PeekCommands):
              
             write_result = self.do_write_on_file(filepath=filepath, command_dict=command_dict)
             if write_result:
-                print "Filepath is %s" % filepath
+                print("Filepath is %s" % filepath)
             else:
-                print "Error in execution. Deleting file"
+                print("Error in execution. Deleting file")
                 self.delete_filepath(filepath)
             self.dpc_client.disconnect()
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
-            print "Error in execution. Deleting file"
+            print("ERROR: %s" % str(ex))
+            print("Error in execution. Deleting file")
             if filepath:
                 self.delete_filepath(filepath)
             self.dpc_client.disconnect()       
@@ -5746,9 +5748,9 @@ class MeterCommands(object):
                             "color_aware": color_aware, "unit": unit, "rsvd": rsvd}
 
             result = self.dpc_client.execute(verb='req', arg_list=cmd_arg_dict)
-            print result
+            print(result)
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
 
 
 class FlowCommands(object):
@@ -5813,7 +5815,7 @@ class FlowCommands(object):
                         if type(record) == dict:
                             inner_table = PrettyTable()
                             inner_table.align = 'l'
-                            for _key, val in record.iteritems():
+                            for _key, val in record.items():
                                 if type(val) == dict:
                                     if 'packets' in val or 'bytes' in val:
                                         _table_obj = PrettyTable(['Field Name', 'Counter'])
@@ -5839,7 +5841,7 @@ class FlowCommands(object):
                         if type(record) == dict:
                             inner_table = PrettyTable()
                             inner_table.align = 'l'
-                            for _key, val in record.iteritems():
+                            for _key, val in record.items():
                                 if type(val) == dict:
                                     if 'packets' in val or 'bytes' in val:
                                         _table_obj = PrettyTable(['Field Name', 'Counter'])
@@ -5863,15 +5865,15 @@ class FlowCommands(object):
             vp_num = int(val) % TOTAL_VPS_PER_CORE
             core_id = (int(val)/TOTAL_VPS_PER_CORE) - 2
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
         return core_id, vp_num
 
     def _get_callee_list(self, result):
         callee_list = []
-        for key, val in result.iteritems():
+        for key, val in result.items():
             if str(key) == '3.2.2':
                 if isinstance(val, dict):
-                    for _key, _val in val.iteritems():
+                    for _key, _val in val.items():
                         if isinstance(_val, list):
                             for value in _val:
                                 if 'callee' in value:
@@ -5883,7 +5885,7 @@ class FlowCommands(object):
     def _get_info_for_id(self, queues, id, module_name):
         output = {}
         for queue in queues:
-            if 'flow' in queue.keys():
+            if 'flow' in list(queue.keys()):
                 #print "id:", id, "flow_id:", queue['flow']['id']
                 if queue['flow']['id'] == id or queue['flow'].get('id_in_flow') == id:
                     if module_name == 'ethernet':
@@ -5910,18 +5912,18 @@ class FlowCommands(object):
 
     def get_queue_parsed_dict(self, result, queue, flag=None):
         output = {}
-        for key, val in result.iteritems():
+        for key, val in result.items():
             if isinstance(val, dict):
-                if ('epsq' in val.keys() and 'epcq' in val.keys() and 'ethernet' in val.keys()) or \
-                   ('epsq' in val.keys() and 'epcq' in val.keys() and 'nss' in val.keys()):
+                if ('epsq' in list(val.keys()) and 'epcq' in list(val.keys()) and 'ethernet' in list(val.keys())) or \
+                   ('epsq' in list(val.keys()) and 'epcq' in list(val.keys()) and 'nss' in list(val.keys())):
                     total_in_flight = 0
-                    if queue in val.keys():
+                    if queue in list(val.keys()):
                         output[key] = OrderedDict()
                         epsqs = val['epsq']
                         epcqs = val['epcq']
                         queuess = val[queue]
                         for epsq in epsqs:
-                            for _key, _val in epsq.iteritems():
+                            for _key, _val in epsq.items():
                                 if 'callee' in str(_key) and _val['module'] in queue:
                                     if queue == 'nss':
                                         _val['id'] = epsq['flow']['id']
@@ -5929,7 +5931,7 @@ class FlowCommands(object):
                                     output[key][_val['id']]['flow_id'] = epsq['flow']['id']
                                     output[key][_val['id']]['epsq_vp'] = epsq['flow']['dest']
                                     output[key][_val['id']]['epsq_dest_vp'] = epsq['callee']['dest']
-                                    if 'ac_on' in epsq.keys():
+                                    if 'ac_on' in list(epsq.keys()):
                                         output[key][_val['id']]['epsq_ac_on'] = epsq['ac_on']
                                     output[key][_val['id']]['reqs_in_flight'] = epsq['reqs_in_flight']
                                     output[key][_val['id']]['ready_to_fetch'] = (epsq['tail'] - epsq['head_fetch'])
@@ -5984,40 +5986,40 @@ class FlowCommands(object):
                                                 output[key][_val['id']]['epcq_sw_bcnt'] = epcq['sw_blockedcnt']
                                             else:
                                                 del output[key][_val['id']]
-        print "total_in_flight:", total_in_flight
+        print("total_in_flight:", total_in_flight)
         return output
 
     def _get_flow_list_diff_dict(self, parsed_result, prev_parsed_result):
         diff_dict = OrderedDict()
-        for key, val in parsed_result.iteritems():
+        for key, val in parsed_result.items():
             if key not in diff_dict:
                 diff_dict[key] = OrderedDict()
-            for key1, val1 in val.iteritems():
+            for key1, val1 in val.items():
                 diff_dict[key][key1] = OrderedDict()
                 current_id_key = val1['flow_id']
                 prev_result_id_key = None
                 if key1 in prev_parsed_result[key]:
                     prev_result_id_key = prev_parsed_result[key][key1]['flow_id']
                 if current_id_key == prev_result_id_key:
-                    for _key, _val in val1.iteritems():
+                    for _key, _val in val1.items():
                         diff_dict[key][key1][_key] = _val
                         if 'id' not in _key and isinstance(_val, int):
                             diff_dict[key][key1]['d_' + _key] = int(_val) - int(prev_parsed_result[key][key1][_key])
         return diff_dict
 
     def _print_flow_list_table(self, output_dict):
-        tx_entry = output_dict.values()[0]
-        first_entry = tx_entry.values()[0]
-        col_names = first_entry.keys()
+        tx_entry = list(output_dict.values())[0]
+        first_entry = list(tx_entry.values())[0]
+        col_names = list(first_entry.keys())
         col_names.insert(0, 'id')
 
         master_table_obj = PrettyTable(col_names)
-        for key, val in output_dict.iteritems():
-            for _key, _val in val.iteritems():
-                all_vals = _val.values()
+        for key, val in output_dict.items():
+            for _key, _val in val.items():
+                all_vals = list(_val.values())
                 all_vals.insert(0, key)
                 master_table_obj.add_row(all_vals)
-        print master_table_obj
+        print(master_table_obj)
         return master_table_obj
 
     def get_flow_list_pp(self, hcf_id=None,hu_id=None, tx=None, rx=None, storage=None, grep_regex=None, iterations=9999999):
@@ -6037,22 +6039,22 @@ class FlowCommands(object):
                         if hu_id:
                             result = {}
                             key_list = []
-                            for key in output.keys():
+                            for key in list(output.keys()):
                                 if hu_id == key.split(".")[0]:
                                     key_list.append(key)
                             if not key_list:
-                                print "hu_id %s entry not found" % hu_id
+                                print("hu_id %s entry not found" % hu_id)
                                 return self.dpc_client.disconnect()
                             for id in key_list:
                                 result[str(id)] = output[str(id)]
                         elif hcf_id:
                             result = {}
-                            if not hcf_id in output.keys():
-                                print "hcf_id %s entry not found" % hcf_id
+                            if not hcf_id in list(output.keys()):
+                                print("hcf_id %s entry not found" % hcf_id)
                                 return self.dpc_client.disconnect()
                             result[hcf_id] = output[hcf_id]
                         if tx:
-                            print "\n********** Displaying tx table below **********\n"
+                            print("\n********** Displaying tx table below **********\n")
                             if storage:
                                 tx_parsed_dict = self.get_queue_parsed_dict(result, queue='nss')
                             else:
@@ -6062,11 +6064,11 @@ class FlowCommands(object):
                             elif tx_parsed_dict:
                                 table_obj = self._print_flow_list_table(tx_parsed_dict)
                             else:
-                                print "No tx entries found"
+                                print("No tx entries found")
                                 self.dpc_client.disconnect()
                                 break
                         if rx:
-                            print "\n********** Displaying rx table below **********\n"
+                            print("\n********** Displaying rx table below **********\n")
                             if storage:
                                 rx_parsed_dict = self.get_queue_parsed_dict(result, queue='nss', flag=1)
                             else:
@@ -6077,10 +6079,10 @@ class FlowCommands(object):
                             elif rx_parsed_dict:
                                 table_obj = self._print_flow_list_table(rx_parsed_dict)
                             else:
-                                print "No rx entries found"
+                                print("No rx entries found")
                                 self.dpc_client.disconnect()
                                 break
-                    print "\n########################  %s ########################\n" % str(self._get_timestamp())
+                    print("\n########################  %s ########################\n" % str(self._get_timestamp()))
                     prev_tx_parsed_dict = tx_parsed_dict
                     prev_rx_parsed_dict = rx_parsed_dict
                     if iteration_count == iterations:
@@ -6090,7 +6092,7 @@ class FlowCommands(object):
             except KeyboardInterrupt:
                 self.dpc_client.disconnect()
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
     def get_flow_list(self, hcf_id=None,hu_id=None, grep_regex=None):
@@ -6108,18 +6110,18 @@ class FlowCommands(object):
                         if hu_id:
                             result = {}
                             key_list = []
-                            for key in output.keys():
+                            for key in list(output.keys()):
                                 if hu_id == key.split(".")[0]:
                                     key_list.append(key)
                             if not key_list:
-                                print "hu_id %s entry not found" % hu_id
+                                print("hu_id %s entry not found" % hu_id)
                                 return self.dpc_client.disconnect()
                             for id in key_list:
                                 result[str(id)] = output[str(id)]
                         elif hcf_id:
                             result = {}
-                            if not hcf_id in output.keys():
-                                print "hcf_id %s entry not found" % hcf_id
+                            if not hcf_id in list(output.keys()):
+                                print("hcf_id %s entry not found" % hcf_id)
                                 return self.dpc_client.disconnect()
                             result[hcf_id] = output[hcf_id]
                         if prev_result:
@@ -6139,24 +6141,24 @@ class FlowCommands(object):
                                         master_table_obj.add_row([key, table_obj])
                                 else:
                                     master_table_obj.add_row([key, table_obj])
-                        print master_table_obj
+                        print(master_table_obj)
                         prev_result = result
-                        print "\n########################  %s ########################\n" % str(self._get_timestamp())
+                        print("\n########################  %s ########################\n" % str(self._get_timestamp()))
                         do_sleep_for_interval()
                     else:
-                        print "Empty Result"
+                        print("Empty Result")
                 except KeyboardInterrupt:
                     self.dpc_client.disconnect()
                     break
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
     def _get_all_rdma(self, output_dict, hu_id, qpn_number=None):
         result = {}
         result['rdma'] = {}
-        for key, val in output_dict.iteritems():
-            if key.split(".")[0] == str(hu_id) and 'rdma' in val.keys():
+        for key, val in output_dict.items():
+            if key.split(".")[0] == str(hu_id) and 'rdma' in list(val.keys()):
                 if qpn_number:
                     for item in val['rdma']:
                         if str(qpn_number) == str(item['QPN']):
@@ -6177,25 +6179,25 @@ class FlowCommands(object):
                     result = result['rdma']
                     master_table_obj = PrettyTable(['id:qpn', 'values'])
                     master_table_obj.align = 'l'
-                    for key, val in result.iteritems():
+                    for key, val in result.items():
                         for item in val:
                             table_obj = PrettyTable(['Field', 'Counter'])
                             table_obj.align = 'l'
                             qpn_id = item['QPN']
                             for _key in sorted(item):
                                 if isinstance(item[_key], dict):
-                                    for inner_key, inner_val in item[_key].iteritems():
+                                    for inner_key, inner_val in item[_key].items():
                                         table_obj.add_row([_key + ":" + inner_key, inner_val])
                                 else:
                                     table_obj.add_row([_key, item[_key]])
                             master_table_obj.add_row([key + ":" + str(qpn_id), table_obj])
-                    print master_table_obj
+                    print(master_table_obj)
                 else:
-                    print "Empty Result"
+                    print("Empty Result")
             except KeyboardInterrupt:
                 self.dpc_client.disconnect()
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
     def get_flow_blocked(self, grep_regex=None):
@@ -6226,17 +6228,17 @@ class FlowCommands(object):
                                         master_table_obj.add_row([key, table_obj])
                                 else:
                                     master_table_obj.add_row([key, table_obj])
-                        print master_table_obj
+                        print(master_table_obj)
                         prev_result = result
-                        print "\n########################  %s ########################\n" % str(self._get_timestamp())
+                        print("\n########################  %s ########################\n" % str(self._get_timestamp()))
                         do_sleep_for_interval()
                     else:
-                        print "Empty Result"
+                        print("Empty Result")
                 except KeyboardInterrupt:
                     self.dpc_client.disconnect()
                     break
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
 
@@ -6245,7 +6247,7 @@ class DebugCommands(PeekCommands):
     def get_filtered_dict(self, output_dict, cluster_id=None, core_id=None):
         result = OrderedDict()
         start_key_name = 'CCV'
-        for key, val in output_dict.iteritems():
+        for key, val in output_dict.items():
             if cluster_id is not None and core_id is not None:
                 key_name = start_key_name + "%s.%s" % (cluster_id, core_id)
                 if key_name in key:
@@ -6287,7 +6289,7 @@ class DebugCommands(PeekCommands):
         rows_list = ["Cls/Core", "0", "1", "2", "3"]
         for col_name in rows_list:
             complete_dict[col_name] = []
-        for key, val in result.iteritems():
+        for key, val in result.items():
             val = self._format_data_output(val)
             cluster_id = key.split(".")[0][3]
             core_id = key.split(".")[1]
@@ -6303,15 +6305,15 @@ class DebugCommands(PeekCommands):
 
     def get_vp_util_table_obj(self, complete_dict):
         master_table_obj = PrettyTable()
-        print_keys = complete_dict.keys()
-        print_values = complete_dict.values()
+        print_keys = list(complete_dict.keys())
+        print_values = list(complete_dict.values())
         print_values = self._format_non_zero_values(print_values)
         for col_name, col_values in zip(print_keys, print_values):
             master_table_obj.add_column(col_name, col_values)
         return master_table_obj
 
     def get_normalized_data_vp_data(self, complete_dict):
-        print_values = complete_dict.values()
+        print_values = list(complete_dict.values())
         sum = 0
         counter = 0
         for item in print_values:
@@ -6326,7 +6328,7 @@ class DebugCommands(PeekCommands):
                     counter += 1
         if counter == 0:
             counter = 1
-        print "Total VP Util: {}".format(sum) 
+        print("Total VP Util: {}".format(sum)) 
         return sum/counter
 
     def get_vp_util_histogram_table_obj(self, complete_dict):
@@ -6334,7 +6336,7 @@ class DebugCommands(PeekCommands):
         histo_dict = {'1-10': 0, '11-20': 0, '21-30': 0, '31-40': 0, '41-50': 0, '51-60': 0, '61-70': 0,
                       '71-80': 0, '81-90': 0, '91-100': 0}
         final_list = []
-        print_values = complete_dict.values()
+        print_values = list(complete_dict.values())
         for inner_list in print_values:
             final_list.extend(inner_list)
 
@@ -6398,17 +6400,17 @@ class DebugCommands(PeekCommands):
 
                         # print normalized data
                         normalized_value = self.get_normalized_data_vp_data(complete_dict=complete_dict)
-                        print "Normalized VP Util: {}".format(normalized_value)
+                        print("Normalized VP Util: {}".format(normalized_value))
 
                         # print histogram
                         histogram_table_obj = self.get_vp_util_histogram_table_obj(complete_dict=complete_dict)
-                        print "\nHistogram table: Num of VPs in util range"
-                        print histogram_table_obj
+                        print("\nHistogram table: Num of VPs in util range")
+                        print(histogram_table_obj)
 
-                        print "\nVP util table"
-                        print master_table_obj
-                        print "\n########################  %s ########################\n" % \
-                              str(self._get_timestamp())
+                        print("\nVP util table")
+                        print(master_table_obj)
+                        print("\n########################  %s ########################\n" % \
+                              str(self._get_timestamp()))
                         if iteration_count == iterations:
                             return cmd, master_table_obj
                         iteration_count += 1
@@ -6418,9 +6420,9 @@ class DebugCommands(PeekCommands):
                     break
         except Exception as ex:
             if str(ex) == 'Column length 0 does not match number of rows 4!':
-                print "1st data set captured. Please re-run the command"
+                print("1st data set captured. Please re-run the command")
             else:
-                print "ERROR: %s" % str(ex)
+                print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
     def debug_vp_util(self, cluster_id=None, core_id=None, grep_regex=None, get_result_only=False):
@@ -6443,19 +6445,19 @@ class DebugCommands(PeekCommands):
                                 table_obj.add_row([key, result[key]])
                         if get_result_only:
                             return cmd, table_obj
-                        print table_obj
-                        print "\n########################  %s ########################\n" % \
-                              str(self._get_timestamp())
+                        print(table_obj)
+                        print("\n########################  %s ########################\n" % \
+                              str(self._get_timestamp()))
                         do_sleep_for_interval()
                     else:
                         if get_result_only:
                             return cmd, "Empty Result"
-                        print "Empty Result"
+                        print("Empty Result")
                 except KeyboardInterrupt:
                     self.dpc_client.disconnect()
                     break
         except Exception as ex:
-            print "ERROR: %s" % str(ex)
+            print("ERROR: %s" % str(ex))
             self.dpc_client.disconnect()
 
     def debug_vp_state(self, vp_num, grep_regex):
@@ -6521,7 +6523,7 @@ class TCPFlow(object):
 
 
 if __name__ == "__main__":
-    from dpc_client import DpcClient
+    from .dpc_client import DpcClient
     dpc_client = DpcClient(target_ip="fs278-come", target_port=42220)
     pc = PeekCommands(dpc_client)
     pc.peek_stats_per_vp_pp()

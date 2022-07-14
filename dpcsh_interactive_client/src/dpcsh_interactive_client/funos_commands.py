@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from prettytable import PrettyTable, FRAME
 from datetime import datetime
 import time

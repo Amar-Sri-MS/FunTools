@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import json, time, re
 import socket, fcntl, errno
 import os, sys

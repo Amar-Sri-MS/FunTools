@@ -1,10 +1,12 @@
-from dpc_shell import DpcShell
-from dpc_client import DpcClient
+#!/usr/bin/env python3
+
+from .dpc_shell import DpcShell
+from .dpc_client import DpcClient
 from cmd2 import Cmd, with_argparser
-from nu_commands import *
-from funos_commands import *
-from storage_commands import *
-from cmd_arg_parser import *
+from .nu_commands import *
+from .funos_commands import *
+from .storage_commands import *
+from .cmd_arg_parser import *
 import sys
 
 
@@ -32,14 +34,14 @@ class CmdController(Cmd):
     def check_cluster_id_range(self, cluster_id):
         result = True
         if not ((int(cluster_id) <= 8) and (int(cluster_id) >= 0)):
-            print "Enter cluster id between 0 and 7. You entered %s" % cluster_id
+            print("Enter cluster id between 0 and 7. You entered %s" % cluster_id)
             result = False
         return result
 
     def check_core_id_range(self, core_id):
         result = True
         if not ((core_id <= 5) and (core_id >= 0)):
-            print "Enter core id between 0 and 5. You entered %s" % core_id
+            print("Enter core id between 0 and 5. You entered %s" % core_id)
             result = False
         return result
 
@@ -788,7 +790,7 @@ class CmdController(Cmd):
         if core_id is not None:
             core_id_flag = self.check_core_id_range(core_id=core_id)
         if core_id and (cluster_id is None):
-            print "Please enter value for cluster_id with core_id"
+            print("Please enter value for cluster_id with core_id")
             return self.dpc_client.disconnect()
         if cid_flag and core_id_flag and pp:
             self._peek_cmd_obj.peek_stats_per_vp_pp(cluster_id=cluster_id, core_id=core_id, rx=rx, tx=tx, q=q,
@@ -812,7 +814,7 @@ class CmdController(Cmd):
         if core_id is not None:
             core_id_flag = self.check_core_id_range(core_id=core_id)
         if core_id and (cluster_id is None):
-            print "Please enter value for cluster_id with core_id"
+            print("Please enter value for cluster_id with core_id")
             return self.dpc_client.disconnect()
         self._peek_cmd_obj.peek_stats_l1_cache_pp(cluster_id=cluster_id, core_id=core_id, load=load, store=store,
                                                 grep_regex=grep_regex, iterations=iterations)
@@ -849,7 +851,7 @@ class CmdController(Cmd):
         if core_id is not None:
             core_id_flag = self.check_core_id_range(core_id=core_id)
         if core_id and not cluster_id:
-            print "Please enter value for cluster_id with "
+            print("Please enter value for cluster_id with ")
             return self.dpc_client.disconnect()
         if cid_flag and core_id_flag:
             self._peek_cmd_obj.peek_pervppkts_stats(cluster_id=cluster_id, core_id=core_id, grep_regex=grep_regex, iterations=iterations)
@@ -884,7 +886,7 @@ class CmdController(Cmd):
         if core_id is not None:
             core_id_flag = self.check_core_id_range(core_id=core_id)
         if core_id and not cluster_id:
-            print "Please enter value for cluster_id with "
+            print("Please enter value for cluster_id with ")
             return self.dpc_client.disconnect()
         if cid_flag and core_id_flag:
             self._peek_cmd_obj.peek_pc_resource_stats(cluster_id=cluster_id, core_id=core_id, grep_regex=grep_regex, iterations=iterations)
@@ -951,7 +953,7 @@ class CmdController(Cmd):
     def get_nu_configs(self, args):
         config_type = args.config_type
         if not config_type in ['pool_config', 'ncv_config', 'per_pool_flow_control', 'global_flow_control']:
-            print "Please give config_type in: \n1. pool_config\n2. ncv_config\n3. per_pool_flow_control\n4. global_flow_control"
+            print("Please give config_type in: \n1. pool_config\n2. ncv_config\n3. per_pool_flow_control\n4. global_flow_control")
             self.dpc_client.disconnect()
         self._peek_cmd_obj.get_nu_configs(config_type=config_type)
 
@@ -1052,13 +1054,13 @@ class CmdController(Cmd):
     def peek_sdn_stats(self, args):
         offset = args.offset
         num_flows = args.num_flows
-        print offset, num_flows
+        print(offset, num_flows)
         self._peek_cmd_obj.peek_sdn_stats(offset=offset, num_flows=num_flows)
 
     def peek_vr_flow_stats(self, args):
         offset = args.offset
         num_flows = args.num_flows
-        print offset, num_flows
+        print(offset, num_flows)
         self._peek_cmd_obj.peek_vr_flow_stats(offset=offset, num_flows=num_flows)
 
     def peek_sdn_meter_stats(self, args):
@@ -1379,10 +1381,10 @@ class CmdController(Cmd):
             rx=1
         if pp:
             if hcf_id and (('.' not in hcf_id) or len(hcf_id.split(".")) != 3):
-                print "Please enter hcf_id(hu.cntrl.fnid) in x.x.x format. Current given %s" % hcf_id
+                print("Please enter hcf_id(hu.cntrl.fnid) in x.x.x format. Current given %s" % hcf_id)
                 return self.dpc_client.disconnect()
             elif hu_id and hcf_id:
-                print "Please enter either hu_id in x or hcf_id in x.x.x format"
+                print("Please enter either hu_id in x or hcf_id in x.x.x format")
                 return self.dpc_client.disconnect()
             self._flow_cmd_obj.get_flow_list_pp(hcf_id=hcf_id, hu_id=hu_id, tx=tx, rx=rx, storage=storage, grep_regex=grep_regex, iterations=iterations)
         else:
@@ -1421,7 +1423,7 @@ class CmdController(Cmd):
         if core_id is not None:
             core_id_flag = self.check_core_id_range(core_id=core_id)
         if core_id and (cluster_id is None):
-            print "Please enter value for cluster_id with core_id"
+            print("Please enter value for cluster_id with core_id")
             return self.dpc_client.disconnect()
         if cid_flag and core_id_flag and pp:
             self._debug_cmd_obj.debug_vp_util_pp(cluster_id=cluster_id, core_id=core_id, grep_regex=grep_regex)
@@ -1469,13 +1471,13 @@ class CmdController(Cmd):
             self._storage_obj.storage_list_volumes(voltype = 'VOL_TYPE_BLK_FILE')
             self._storage_obj.storage_list_volumes_ec(voltype = 'VOL_TYPE_BLK_EC')
             self._storage_obj.storage_list_volumes(voltype = 'VOL_TYPE_BLK_NV_MEMORY')
-	    self._storage_obj.storage_list_volumes_pv(voltype = 'VOL_TYPE_BLK_PART_VOL')
-	    self._storage_obj.storage_list_volumes(voltype = 'VOL_TYPE_BLK_LSV')
-	    self._storage_obj.storage_list_volumes_replica(voltype = 'VOL_TYPE_BLK_REPLICA')
+            self._storage_obj.storage_list_volumes_pv(voltype = 'VOL_TYPE_BLK_PART_VOL')
+            self._storage_obj.storage_list_volumes(voltype = 'VOL_TYPE_BLK_LSV')
+            self._storage_obj.storage_list_volumes_replica(voltype = 'VOL_TYPE_BLK_REPLICA')
             self._storage_obj.storage_list_volumes(voltype = 'VOL_TYPE_BLK_MEMORY')
             self._storage_obj.storage_list_volumes(voltype = 'VOL_TYPE_SDK_BLK_MEMORY')
         else:
-            print "unknown voltype"
+            print("unknown voltype")
 
     def storage_list_ctrls(self, args):
         self._storage_obj.storage_list_controllers()
@@ -1513,11 +1515,11 @@ class CmdController(Cmd):
         elif voltype == "replica":
             self._storage_obj.storage_volume_stats(vol_uuid, voltype = 'VOL_TYPE_BLK_REPLICA')
         elif voltype == "memvol":
-	    self._storage_obj.storage_volume_stats(vol_uuid, voltype = 'VOL_TYPE_BLK_MEMORY')
-	elif voltype == "sdk_memvol":
-	    self._storage_obj.storage_volume_stats(vol_uuid, voltype = 'VOL_TYPE_SDK_BLK_MEMORY')
-	else:
-            print "Unknown voltype"
+            self._storage_obj.storage_volume_stats(vol_uuid, voltype = 'VOL_TYPE_BLK_MEMORY')
+        elif voltype == "sdk_memvol":
+            self._storage_obj.storage_volume_stats(vol_uuid, voltype = 'VOL_TYPE_SDK_BLK_MEMORY')
+        else:
+            print("Unknown voltype")
 
     def storage_ctrlr_stats(self, args):
         ctrlr_uuid = args.ctrlr_uuid

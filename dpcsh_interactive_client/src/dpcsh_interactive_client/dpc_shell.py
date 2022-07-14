@@ -1,9 +1,11 @@
+#!/usr/bin/env python3
+
 import os
 import sys
 import socket
 import time
 import json
-from dpc_client import DpcClient
+from .dpc_client import DpcClient
 try:
     sdkdir = "/bin/" + os.uname()[0]
     if ("SDKDIR" in os.environ):
@@ -13,10 +15,10 @@ try:
 
     # import dpc_client
 except ImportError as ex:
-    print "Failed to import dpc_client ensure FunSDK repo is clone under WORKSPACE dir"
+    print("Failed to import dpc_client ensure FunSDK repo is clone under WORKSPACE dir")
     sys.exit(1)
 except Exception as ex:
-    print ex
+    print(ex)
     sys.exit(1)
 
 
@@ -24,7 +26,7 @@ class DpcShell(object):
     def __init__(self, target_ip, target_port, verbose=False):
         self.target_ip = target_ip
         self.target_port = target_port
-        print "Connecting to DPC server..."
+        print("Connecting to DPC server...")
         self.dpc_client = DpcClient(target_ip=target_ip, target_port=target_port, verbose=verbose)
         # self.dpc_client.set_verbose()
         # Ensure DPC tcp_proxy is connected
