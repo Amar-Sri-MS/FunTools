@@ -6,11 +6,12 @@ import socket
 import time
 import json
 from .dpc_client import DpcClient
+
 try:
     sdkdir = "/bin/" + os.uname()[0]
-    if ("SDKDIR" in os.environ):
+    if "SDKDIR" in os.environ:
         sys.path.append(os.environ["SDKDIR"] + sdkdir)
-    elif ("WORKSPACE" in os.environ):
+    elif "WORKSPACE" in os.environ:
         sys.path.append(os.environ["WORKSPACE"] + "/FunSDK/" + sdkdir)
 
     # import dpc_client
@@ -27,11 +28,13 @@ class DpcShell(object):
         self.target_ip = target_ip
         self.target_port = target_port
         print("Connecting to DPC server...")
-        self.dpc_client = DpcClient(target_ip=target_ip, target_port=target_port, verbose=verbose)
+        self.dpc_client = DpcClient(
+            target_ip=target_ip, target_port=target_port, verbose=verbose
+        )
         # self.dpc_client.set_verbose()
         # Ensure DPC tcp_proxy is connected
 
-    '''
+    """
     def _ensure_connect(self, print_msg=True):
         result = self.dpc_client.execute(verb="echo", arg_list=["hello"])
         if result != 'hello':
@@ -53,4 +56,4 @@ class DpcShell(object):
                 print "Unable to set syslog level"
         except Exception as ex:
             print "ERROR: %s" % str(ex)
-    '''
+    """

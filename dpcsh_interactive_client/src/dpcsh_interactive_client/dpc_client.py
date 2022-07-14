@@ -7,6 +7,8 @@ import os, sys
 
 def _is_python2():
     return sys.version_info[0] < 3
+
+
 class DpcClient(object):
     def __init__(self, target_ip, target_port, verbose=False):
         self.target_ip = target_ip
@@ -26,19 +28,19 @@ class DpcClient(object):
                     continue
 
     def _read(self):
-        chunk = 4096 
+        chunk = 4096
         if _is_python2():
             output = ""
         else:
             output = []
-        
+
         def _check_cr(output):
             if _is_python2():
-                return output.endswith('\n')
+                return output.endswith("\n")
             else:
                 if len(output) == 0:
                     return False
-                return output[-1][-1] == 10 # check `\n', unicode 10 is '\n'
+                return output[-1][-1] == 10  # check `\n', unicode 10 is '\n'
 
         while not _check_cr(output):
             try:
@@ -58,11 +60,11 @@ class DpcClient(object):
                     output.append(buffer)
 
         if _is_python2():
-            output = output.rstrip('\n')
+            output = output.rstrip("\n")
         else:
-            output[-1] = output[-1].rstrip() # remove '\n'
-            output = [o.decode('utf-8') for o in output] # byte to string
-            output = "".join(output) # list to string
+            output[-1] = output[-1].rstrip()  # remove '\n'
+            output = [o.decode("utf-8") for o in output]  # byte to string
+            output = "".join(output)  # list to string
 
         return output
 
@@ -76,7 +78,11 @@ class DpcClient(object):
 
     def read(self):
         json = self._read()
-        while (not json) or (json.count('{') != json.count('}')) or (json.count('[') != json.count(']')):
+        while (
+            (not json)
+            or (json.count("{") != json.count("}"))
+            or (json.count("[") != json.count("]"))
+        ):
             json += self._read()
         return json
 
@@ -85,7 +91,8 @@ class DpcClient(object):
             self.sock.close()
         self.sock = None
         return True
-    '''
+
+    """
     def command(self, command, legacy=False):
         result = None
         output = ""
@@ -114,11 +121,12 @@ class DpcClient(object):
         if self.verbose:
             self._print_result(result=output)
         return result
-    '''
+    """
+
     def _parse_actual_output(self, output):
         actual_output = output
-        if re.search(r'.*arguments.*', output, re.MULTILINE):
-            actual_output = re.sub(r'.*arguments.*', "", output, re.MULTILINE)
+        if re.search(r".*arguments.*", output, re.MULTILINE):
+            actual_output = re.sub(r".*arguments.*", "", output, re.MULTILINE)
         return actual_output
 
     def _print_result(self, result):
@@ -142,21 +150,21 @@ class DpcClient(object):
             if _is_python2():
                 command = "{}\n".format(json.dumps(jdict))
             else:
-                command = "{}\n".format(json.dumps(jdict)).encode('utf-8')
+                command = "{}\n".format(json.dumps(jdict)).encode("utf-8")
 
             self.sendall(command)
             output = self.read()
             if output:
-                #actual_output = self._parse_actual_output(output=output)
+                # actual_output = self._parse_actual_output(output=output)
                 try:
-                    #json_output = json.loads(actual_output.strip())
+                    # json_output = json.loads(actual_output.strip())
                     json_output = json.loads(output)
                 except:
                     if self.verbose:
                         print("Unable to parse JSON data")
                     json_output = output
                 if "result" in json_output:
-                    result = json_output['result']
+                    result = json_output["result"]
                 else:
                     result = json_output
         except socket.error as e:
@@ -170,13 +178,18 @@ class DpcClient(object):
 
     def ensure_connect(self):
         result = self.execute(verb="echo", arg_list=["hello"])
-        if result != 'hello':
-            print('Connection to DPC server via tcp_proxy at %s:%s failed. ' % (
-                    self.target_ip, self.target_port))
+        if result != "hello":
+            print(
+                "Connection to DPC server via tcp_proxy at %s:%s failed. "
+                % (self.target_ip, self.target_port)
+            )
             sys.exit(1)
         else:
-            print('Connected to DPC server via tcp_proxy at %s:%s.' % (self.target_ip, self.target_port))
-            #self._set_syslog_level(level=3)
+            print(
+                "Connected to DPC server via tcp_proxy at %s:%s."
+                % (self.target_ip, self.target_port)
+            )
+            # self._set_syslog_level(level=3)
 
     def _set_syslog_level(self, level):
         try:
@@ -187,5 +200,3 @@ class DpcClient(object):
                 print("Unable to set syslog level")
         except Exception as ex:
             print("ERROR: %s" % str(ex))
-
-
