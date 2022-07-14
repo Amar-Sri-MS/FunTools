@@ -384,6 +384,8 @@ echo """#!/bin/sh
 while [ true ]; do
     rsync -ac --ignore-missing-args --delete /persist/config/ /b-persist/config
     rsync -ac --ignore-missing-args --delete /persist/upgrades/ /b-persist/upgrades
+    sync /b-persist/config
+    sync /b-persist/upgrades
     sleep 60
 done
 
