@@ -165,10 +165,13 @@ class BoardLayer():
 
         final_override_json = dict()
 
+        if isinstance(self.board_layer_name, dict):
+            self.board_layer_name = self.board_layer_name[self.target_chip]
+
         if not isinstance(self.board_layer_name, list):
             self.board_layer_name = [ self.board_layer_name ]
 
-        for index, board in enumerate(self.board_layer_name):
+        for board in self.board_layer_name:
             # Get the board layer config
             logger.info('Processing {}'.format(board))
             bl_json = self.get_board_layer_config(board)
