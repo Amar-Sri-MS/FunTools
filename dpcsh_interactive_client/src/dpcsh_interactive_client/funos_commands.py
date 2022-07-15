@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from prettytable import PrettyTable, FRAME
 from datetime import datetime
 import time
@@ -41,7 +43,7 @@ class _default_logger:
 
 
 class FunOSCommands(object):
-    __version__ = "0.0.2"
+    __version__ = "0.0.3"
 
     def __init__(self, dpc_client, logger=None, temp_dir=None):
         """Handling FunOS related dpcsh
