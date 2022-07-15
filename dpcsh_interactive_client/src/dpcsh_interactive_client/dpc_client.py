@@ -6,11 +6,27 @@ import os, sys
 
 
 class DpcClient(object):
-    def __init__(self, target_ip, target_port, verbose=False):
+    def __init__(
+        self, target_ip, target_port, verbose=False, throw_exception_instead=False
+    ):
+        """
+        Parameters
+        ----------
+        target_ip: str
+            ip
+        target_port: int
+            port
+        verbose: bool
+            default False
+        throw_exception_instead: bool
+            throw exception instead of sys.exit(1), default False
+
+        """
         self.target_ip = target_ip
         self.target_port = target_port
         self.sock = None
         self.verbose = verbose
+        self.throw_exception_instead = throw_exception_instead
         self.connect(ensure_connect=True)
 
     def sendall(self, data):
@@ -24,6 +40,12 @@ class DpcClient(object):
                     continue
 
     def _read(self):
+        """
+        Raises
+        ------
+        ValueError: exception
+            exception raised when self.throw_exception_instead is True
+        """
         chunk = 4096
         output = []
 
@@ -42,7 +64,14 @@ class DpcClient(object):
                 else:
                     # a "real" error occurred
                     print(e)
-                    sys.exit(1)
+                    if self.throw_exception_instead:
+                        raise ValueError(
+                            "read from {}:{} failed".format(
+                                self.target_ip, self.target_port
+                            )
+                        )
+                    else:
+                        sys.exit(1)
             else:
                 output.append(buffer)
 
@@ -158,13 +187,26 @@ class DpcClient(object):
         return result
 
     def ensure_connect(self):
+        """
+        Raises
+        ------
+        ValueError: exception
+            exception raised when self.throw_exception_instead is True
+        """
         result = self.execute(verb="echo", arg_list=["hello"])
         if result != "hello":
             print(
                 "Connection to DPC server via tcp_proxy at %s:%s failed. "
                 % (self.target_ip, self.target_port)
             )
-            sys.exit(1)
+            if self.throw_exception_instead:
+                raise ValueError(
+                    "connection to {}:{} failed".format(
+                        self.target_ip, self.target_port
+                    )
+                )
+            else:
+                sys.exit(1)
         else:
             print(
                 "Connected to DPC server via tcp_proxy at %s:%s."
