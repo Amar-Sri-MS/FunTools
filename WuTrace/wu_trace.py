@@ -264,7 +264,7 @@ class TraceProcessor:
 
             if re.match(".*HU.*", str(next_event.dest_faddr)) != None:
                 current_event = event.TraceEvent(send_time, send_time,
-                    next_event.name, next_event.dest_faddr)
+                    "HW-HU: " + next_event.name, next_event.dest_faddr)
                 current_event.is_hw_hu = True
                 self.hardware_sends.append(current_event)
 
