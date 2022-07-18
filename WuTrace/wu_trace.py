@@ -248,7 +248,7 @@ class TraceProcessor:
 
             curr = None
 
-            # TODO(sanyasriv): Identify associated hardware accelerator WU using faddr, not regex.
+            # TODO(SanyaSriv): Identify associated hardware accelerator WU using faddr, not regex.
             if re.match(".*LE.*", str(next_event.dest_faddr)) != None:
                 current_event = event.TraceEvent(send_time, send_time,
                     "HW-LE: " + next_event.name, next_event.dest_faddr)
@@ -260,6 +260,12 @@ class TraceProcessor:
                 current_event = event.TraceEvent(send_time, send_time,
                     "HW-ZIP: " + next_event.name, next_event.dest_faddr)
                 current_event.is_hw_zip = True
+                self.hardware_sends.append(current_event)
+
+            if re.match(".*HU.*", str(next_event.dest_faddr)) != None:
+                current_event = event.TraceEvent(send_time, send_time,
+                    next_event.name, next_event.dest_faddr)
+                current_event.is_hw_hu = True
                 self.hardware_sends.append(current_event)
 
             if vp in self.vp_to_event:

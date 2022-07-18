@@ -39,6 +39,8 @@ LID_VP_BASE = 8
 pc_lid_table = ['CA', 'UA', 'BAM', 'DMA', 'RGX', 'LE', 'ZIP', 'WQM']
 # Other valid values for block.
 major_blocks = ['VP', 'HU', 'NU']
+#HU block with numerical value
+HU_block = ['HU[0-9]']
 
 TOPO_MAX_VPS_PER_CORE = 4
 
@@ -140,7 +142,8 @@ class FabricAddress(object):
         block = match.group(4)
 
         if (block not in major_blocks and block not in pc_lid_table and
-                re.match("CCV[0-9]\.[0-9]\.[0-9]", block) == None):
+                re.match("CCV[0-9]\.[0-9]\.[0-9]", block) == None and
+                re.match(HU_block[0], block) == None):
             raise ValueError('Unknown block ' + block)
 
         # TODO(bowdidge): Double-check block matches address.
@@ -389,10 +392,14 @@ class TraceEvent(object):
         # Work units or events that were instigated by this event.
         self.successors = []
 
+        #to recognize the WUs processed in LE
         self.is_hw_le = False
 
         # to recognize the WUs processed in compression/decompression engine
         self.is_hw_zip = False
+
+        #to recognize the WUs processed in HU
+        self.is_hw_hu = False
 
     def as_dict(self):
         return {'start_time': self.start_time,
@@ -404,6 +411,7 @@ class TraceEvent(object):
                 'is_timer': self.is_timer,
                 'is_hw_le': self.is_hw_le,
                 'is_hw_zip': self.is_hw_zip,
+                'is_hw_hu': self.is_hw_hu,
                 'is_annotation': self.is_annotation
                 }
 
