@@ -40,7 +40,7 @@ pc_lid_table = ['CA', 'UA', 'BAM', 'DMA', 'RGX', 'LE', 'ZIP', 'WQM']
 # Other valid values for block.
 major_blocks = ['VP', 'HU', 'NU']
 #HU block with numerical value
-HU_block = ['HU[0-9]']
+HU_block = 'HU[0-9]'
 
 TOPO_MAX_VPS_PER_CORE = 4
 
@@ -143,7 +143,7 @@ class FabricAddress(object):
 
         if (block not in major_blocks and block not in pc_lid_table and
                 re.match("CCV[0-9]\.[0-9]\.[0-9]", block) == None and
-                re.match(HU_block[0], block) == None):
+                re.match(HU_block, block) == None):
             raise ValueError('Unknown block ' + block)
 
         # TODO(bowdidge): Double-check block matches address.
