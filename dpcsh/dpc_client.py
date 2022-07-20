@@ -307,21 +307,6 @@ class DpcClient(object):
 
         return DpcClient.__handle_response(r)
 
-    def wait_for_online(self, timeout):
-        while(True):
-            r = self.async_recv_wait(-1, custom_timeout=True, timeout_seconds=timeout)
-
-            if (r is None):
-                raise RuntimeError("FunOS online timeout")
-
-            # pend any other messages
-            if ("FUNOS_STATUS" not in r):
-                self.__async_queue.append(r)
-            else:
-                break
-
-        return r["FUNOS_STATUS"]
-
     def __print(self, text, end = '\n'):
         if self.__verbose != True:
             return
