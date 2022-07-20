@@ -79,6 +79,12 @@ class TraceProcessor:
         self.boot_transaction = event.Transaction(boot_event)
         self.transactions = [self.boot_transaction]
 
+        # list to keep a track of previous start-end events
+        self.start_events = []
+
+        # this is a queue representing all the hardware sends
+        self.hardware_sends = []
+
     def remember_send(self, event, wu_id, arg0, arg1, dest, send_time,
                       is_timer, flags):
         """Records the WU send event for later matching with a start.
@@ -119,6 +125,12 @@ class TraceProcessor:
                 return (sender, send_time, is_timer, flags)
         return (None, 0, False, 0)
 
+    def find_previous_start(self):
+        """ This function will be returning the previous start event so we can
+        create a link between the previous start and end using a fake send
+        event"""
+        return self.start_events[-1]
+
     def handle_log_line(self, next_event, line_number):
         """Reads in each logging event, and creates or updates log events."""
         global verbose
@@ -145,12 +157,24 @@ class TraceProcessor:
                             self.input_filename,
                             line_number))
                     sys.stderr.write('  timestamp was %d\n' % next_event.timestamp)
+
             current_event = event.TraceEvent(timestamp, timestamp,
                                              next_event.name, vp)
             self.vp_to_event[vp] = current_event
+            if len(self.start_events) != 0:
+                while len(self.hardware_sends) > 0:
+                    # this is some hardware send that needs an end
+                    previous_start = self.find_previous_start()
+                    fake_hw_event = self.hardware_sends[-1]
+                    fake_hw_event.end_time = timestamp
+
+                    previous_start.successors.append(fake_hw_event)
+                    self.hardware_sends.pop()
+
             (predecessor, send_time,
              is_timer, flags) = self.find_previous_send(wu_id, arg0,
                                                         arg1, vp)
+
             if predecessor and int(flags) & 2:
                     # Hardware WU.
                     hw_event = event.TraceEvent(send_time,
@@ -160,7 +184,7 @@ class TraceProcessor:
                     hw_event.is_timer = True
                     predecessor.successors.append(hw_event)
                     predecessor = hw_event
-
+                    self.start_events.append(predecessor)
             if predecessor:
                 current_event.transaction = predecessor.transaction
                 if is_timer:
@@ -173,6 +197,7 @@ class TraceProcessor:
                     predecessor = timer_event
 
                 predecessor.successors.append(current_event)
+                self.start_events.append(current_event)
 
             elif next_event.name == 'mp_notify':
                 # Bootstrap process. Connect to fake event.
@@ -185,9 +210,15 @@ class TraceProcessor:
 
             else:
                 # New event not initiated by a previous WU.
-                transaction = event.Transaction(current_event)
-                self.transactions.append(transaction)
-                current_event.transaction = transaction
+                if len(self.start_events) != 0:
+                    previous_start = self.find_previous_start()
+                    previous_start.successors.append(current_event)
+                    self.start_events.append(current_event)
+                else:
+                    transaction = event.Transaction(current_event)
+                    self.transactions.append(transaction)
+                    current_event.transaction = transaction
+                    self.start_events.append(current_event)
 
         elif next_event.event_type == event.WU_END_EVENT:
             # Identify the matching start event, and set the end time.
@@ -216,6 +247,27 @@ class TraceProcessor:
             send_time = next_event.timestamp
 
             curr = None
+
+            # TODO(SanyaSriv): Identify associated hardware accelerator WU using faddr, not regex.
+            if re.match(".*LE.*", str(next_event.dest_faddr)) != None:
+                current_event = event.TraceEvent(send_time, send_time,
+                    "HW-LE: " + next_event.name, next_event.dest_faddr)
+                # will now connect this to the previous event
+                current_event.is_hw_le = True
+                self.hardware_sends.append(current_event)
+
+            if re.match(".*ZIP.*", str(next_event.dest_faddr)) != None:
+                current_event = event.TraceEvent(send_time, send_time,
+                    "HW-ZIP: " + next_event.name, next_event.dest_faddr)
+                current_event.is_hw_zip = True
+                self.hardware_sends.append(current_event)
+
+            if re.match(".*HU.*", str(next_event.dest_faddr)) != None:
+                current_event = event.TraceEvent(send_time, send_time,
+                    "HW-HU: " + next_event.name, next_event.dest_faddr)
+                current_event.is_hw_hu = True
+                self.hardware_sends.append(current_event)
+
             if vp in self.vp_to_event:
                 curr = self.vp_to_event[vp]
                 self.remember_send(curr, wuid, arg0, arg1,

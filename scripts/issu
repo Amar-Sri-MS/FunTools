@@ -23,6 +23,8 @@ sys.path.append(os.path.join(SDKDIR, "bin", OSNAME))
 sys.path.append("/usr/bin") ## demo rootfs
 
 import dpc_client
+from dpc_client import DpcClient
+import dpc_binary
 
 
 ###
@@ -193,9 +195,7 @@ def main() -> int:
         raise RuntimeError("unspecified dpc connection")
 
     # construct the dpc client
-    conn = dpc_client.DpcClient(legacy_ok=False,
-                                unix_sock = args.unix,
-                                server_address = addr)
+    conn = DpcClient(unix_sock = args.unix, server_address=addr, encoder=dpc_binary.BinaryJSONEncoder())
 
     # issu cycle testing for Qemu
     if ("cycler" in args):

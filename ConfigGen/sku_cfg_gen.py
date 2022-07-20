@@ -47,7 +47,24 @@ class SKUCfgGen():
         file_name = os.path.join(self.input_dir, 'sku_config/fungible_boards.cfg')
         logger.debug('Processing fungible boards file: {}'.format(file_name))
         board_id_cfg = jsonutils.load_fungible_json(file_name, strict=False)
-        return board_id_cfg.get('fungible_boards', None)
+        boards = board_id_cfg.get('fungible_boards')
+        if not boards:
+            return None
+
+        # expand lists of asics
+        extra_boards = []
+        for board in boards:
+            if isinstance(board['asic'],list):
+                # Create new entries in the list for asics
+                # found in the asic list. Original entry
+                # is updated to define asic[0]
+                for asic in board['asic'][1:]:
+                    new_board = copy.deepcopy(board)
+                    new_board['asic'] = asic
+                    extra_boards.append(new_board)
+                board['asic'] = board['asic'][0]
+        boards.extend(extra_boards)
+        return boards
 
     def get_posix_or_emu_configs(self, board_cfg):
         """Get the configuration for all the posix or emulations that
@@ -83,17 +100,28 @@ class SKUCfgGen():
 
         return board_cfg
 
-    def is_cfg_target_board(self, sku_json):
+    def cfg_target_board(self, sku_json):
         """Check if the configuration file is for the target
-        being built.
+        being built. If it is and it contains a list of compatible
+        targets then update the board config to include a currently used
+        chip only
         """
         for key in list(sku_json['skus'].keys()):
             # First check the target chip
             if 'chip' not in sku_json['skus'].get(key, {}).get('PlatformInfo', {}):
                 continue
             chip = sku_json['skus'][key]['PlatformInfo']['chip']
-            if chip != self.target_chip:
-                return False
+            if isinstance(chip, list):
+                for c in chip:
+                    if c == self.target_chip:
+                        # replace array with the matched target chip
+                        sku_json['skus'][key]['PlatformInfo']['chip'] = c
+                        break
+                else: # nb: for/else
+                    return False
+            else:
+                if chip != self.target_chip:
+                    return False
             # Next check the configuration file is for a board
             if 'machine' not in sku_json['skus'].get(key, {}).get('PlatformInfo', {}):
                 return False
@@ -151,7 +179,7 @@ class SKUCfgGen():
                 # this is not done earlier to allow inherited boards to override
                 # target choice, so a board for a 'wrong' target may still be added
                 # to 'raw_board_configs'
-                if not self.is_cfg_target_board(sku_json):
+                if not self.cfg_target_board(sku_json):
                     continue
 
                 # Apply defaults to the SKU file
@@ -169,7 +197,7 @@ class SKUCfgGen():
 
             # check if the board is for a given target - if this is a 'base' board that was
             # used for inheriting a config, then it may be targeting a different dpu
-            if not self.is_cfg_target_board(sku_json):
+            if not self.cfg_target_board(sku_json):
                 continue
 
             # Create new sku based on the parent sku but retain original PlatformInfo
@@ -257,19 +285,23 @@ class SKUCfgGen():
 
         return sku_id_list
 
-    def get_chip_for_sku_id(self, sku_id):
+    def get_chips_for_sku_id(self, sku_id):
         # get the full list
         fun_board_cfg = self._get_fungible_board_id_config()
+        chips = []
         for board in fun_board_cfg:
             board_name = board.get('name', None)
-            if (board_name != sku_id):
-                continue
 
-            # we found the board, return the chip name
-            return board.get("asic")
+            if (board_name == sku_id):
+                chips.append(board.get("asic"))
 
-        # board not found?
-        return None
+            asic_count = board.get('asic_count', 0)
+            if asic_count > 1:
+                for asic in range(asic_count):
+                    if sku_id == f'{board_name}_{asic}':
+                        chips.append(board.get("asic"))
+
+        return set(chips)
 
     def _get_board_id_from_offset(self, board_id_offset):
         return (0x1 << 8) + board_id_offset
@@ -393,8 +425,11 @@ class SKUCfgGen():
 
 
     # generate uniform eeprom file filenames
-    def eeprom_filename(self, sku_name):
-        return 'eeprom_{}'.format(sku_name)
+    def eeprom_filename(self, sku_name, chip):
+        if chip:
+            return 'eeprom_{}_{}'.format(chip, sku_name)
+        else:
+            return 'eeprom_{}'.format(sku_name)
 
     def flag_variants_for_chip(self, chip):
         # If there's no entries in the variants table, just use
@@ -403,9 +438,9 @@ class SKUCfgGen():
         return CHIP_FLAG_EEPR_VARIANTS.get(chip, DEFAULT_FLAG_VAR)
 
     def write_eepr_file_data(self, sku_var, sku_name, sku_id,
-                             pci_cfg_dir, flags):
+                             pci_cfg_dir, flags=0, chip=None):
         # filename for the flag variant
-        fname = self.eeprom_filename(sku_var)
+        fname = self.eeprom_filename(sku_var, chip)
         # PCI data for the SKU
         version1_data = self._get_version1_data(pci_cfg_dir, sku_name, flags)
         abs_eeprom_file_path = os.path.join(self.output_dir, fname)
@@ -417,15 +452,25 @@ class SKUCfgGen():
 
     def write_eepr_files(self, sku_name, sku_id, pci_cfg_dir):
         dentries = {}
-        chip = self.get_chip_for_sku_id(sku_name)
+        chips = self.get_chips_for_sku_id(sku_name)
 
-        # write out a file for each flag variant
-        flagvars = self.flag_variants_for_chip(chip)
-        for (suffix, flags) in flagvars:
-            skuvar = "{}{}".format(sku_name, suffix)
-            dent = self.write_eepr_file_data(skuvar, sku_name, sku_id,
-                                             pci_cfg_dir, flags)
+        # When using emulation skuids, there is no board/chip associated
+        # with the sku
+        if not chips:
+            dent = self.write_eepr_file_data(sku_name, sku_name, sku_id,
+                                                pci_cfg_dir)
             dentries[sku_name] = dent
+            return dentries
+
+        for chip in chips:
+            # write out a file for each flag variant
+            flagvars = self.flag_variants_for_chip(chip)
+            for (suffix, flags) in flagvars:
+                skuvar = f'{sku_name}{suffix}'
+                dent = self.write_eepr_file_data(skuvar, sku_name, sku_id,
+                                                pci_cfg_dir, flags, chip)
+                key = f'{chip}_{sku_name}' if chip else f'{sku_name}'
+                dentries[key] = dent
 
         return dentries
 
@@ -482,7 +527,7 @@ class SKUCfgGen():
                 for (suffix, _) in self.flag_variants_for_chip(chip_type):
                     sku_var = sku_name + suffix
                     eeprom_list[sku_var] = {
-                        'filename' : self.eeprom_filename(sku_var),
+                        'filename' : self.eeprom_filename(sku_var, chip_type),
                         'image_type' : sku_var
                     }
 

@@ -4,6 +4,30 @@ PATH="/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
 
 CONFIG_DIR=/b-persist/config
 UPGRADE_DIR=/b-persist/upgrades
+CONFIG_SYNC_SCRIPT=/tmp/b-persist-sync
+
+generate_config_script() {
+echo """#!/bin/sh
+
+while [ true ]; do
+    rsync -ac --ignore-missing-args --delete /persist/config/ $CONFIG_DIR
+    rsync -ac --ignore-missing-args --delete /persist/upgrades/ $UPGRADE_DIR
+    sync $CONFIG_DIR
+    sync $UPGRADE_DIR
+    sleep 60
+done
+
+""" > ${CONFIG_SYNC_SCRIPT}
+    chmod a+x ${CONFIG_SYNC_SCRIPT}
+}
+
+stop_sync_daemon() {
+    start-stop-daemon -o -p ${CONFIG_SYNC_SCRIPT}.pid -K
+}
+
+start_sync_daemon() {
+    start-stop-daemon -b -m -p ${CONFIG_SYNC_SCRIPT}.pid -x ${CONFIG_SYNC_SCRIPT} -S
+}
 
 case "$1" in
     mount-rw)
@@ -24,10 +48,16 @@ case "$1" in
         chmod 0777 $UPGRADE_DIR
         ;;
     sync)
+        stop_sync_daemon
+        # first make sure we do rsync synchronously to script flow, before
+        # starting the daemon in the background - in case the system is restarted
+        # before the daemon runs
         rsync -ac --ignore-missing-args --delete /persist/config/ $CONFIG_DIR
         rsync -ac --ignore-missing-args --delete /persist/upgrades/ $UPGRADE_DIR
         rm -rf /b-persist/logs/*
         rm -rf /b-persist/log-prev*
+        generate_config_script
+        start_sync_daemon
         ;;
     *)
         echo "Unhandled argument: [$1]"

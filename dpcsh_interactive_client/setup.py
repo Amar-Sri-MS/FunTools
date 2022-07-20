@@ -1,17 +1,17 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/python3
 
 from setuptools import setup
 
 
 setup(
     name="dpcsh_interactive_client",
-    version="1.0",
+    version="1.1",
     description="Interactive Client over DPC",
     scripts=["dpc_cli"],
     packages=["dpcsh_interactive_client"],
-    package_dir={'': 'src'},
+    package_dir={"": "src"},
     zip_safe=False,
-    keywords='dpcsh_interactive_client',
+    keywords="dpcsh_interactive_client",
     install_requires=[
         "ipaddress",
         "netaddr",

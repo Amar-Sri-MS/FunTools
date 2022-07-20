@@ -224,6 +224,7 @@ static int mctp_cmd_discover(uint8_t *buf, mctp_ctrl_hdr_t *hdr, mctp_endpoint_s
 
 	discovered = 1;
 	rspn->reason = MCTP_RESP_SUCCESS;
+	mctp_dbg("MCTP_RESP_SUCCESS\n");
 
 	return sizeof(mctp_discover_resp_t);
 }
@@ -237,32 +238,39 @@ static int mctp_control_handler(mctp_endpoint_stct *ep)
 
 	switch (hdr->cmd) {
 	case MCTP_CMD_EID_SET:
+		mctp_dbg("cmd = MCTP_CMD_EID_SET\n");
 		rc = mctp_cmd_eid_set(rspn->data, hdr, ep);
 		break;
 
 	case MCTP_CMD_EID_GET:
+		mctp_dbg("cmd = MCTP_CMD_EID_GET\n");
 		rc = mctp_cmd_eid_get(rspn->data, hdr, ep);
 		break;
 
 	case MCTP_CMD_UUID_GET:
+		mctp_dbg("cmd = MCTP_CMD_UUID_GET\n");
 		rc = mctp_cmd_uuid_get(rspn->data, hdr, ep);
 		break;
 
 	case MCTP_CMD_VER_GET:
+		mctp_dbg("cmd = MCTP_CMD_VER_GET\n");
 		rc = mctp_cmd_version_get(rspn->data, hdr, ep);
 		break;
 
 	case MCTP_CMD_MSG_GET:
+		mctp_dbg("cmd = MCTP_CMD_MSG_GET\n");
 		rc = mctp_cmd_msg_get(rspn->data, hdr, ep);
 		break;
 
 #if defined(CONFIG_HP_DCI_SUPPORT) || defined(CONFIG_HPE_AHS_SUPPORT)
 	case MCTP_CMD_VDM_GET:
+		mctp_dbg("cmd = MCTP_CMD_VDM_GET\n");
 		rc = mctp_cmd_vdm_get(rspn->data, hdr, ep);
 		break;
 #endif
 
 	case MCTP_CMD_PRE_EP_DISC:
+		mctp_dbg("cmd = MCTP_CMD_PRE_EP_DISC\n");
 		if (!discovered)
 			return 0;
 
@@ -270,8 +278,11 @@ static int mctp_control_handler(mctp_endpoint_stct *ep)
 		break;
 
 	case MCTP_CMD_EP_DISC:
+		mctp_dbg("cmd = MCTP_CMD_EP_DISC\n");
+#ifdef CONFIG_SINGLE_MCTP_DISCOVERY
 		if (discovered)
 			return 0;
+#endif
 		rc = mctp_cmd_discover(rspn->data, hdr, ep);
 		break;
 
@@ -353,6 +364,7 @@ static int handle_mctp_pkt(mctp_endpoint_stct *ep)
 
 	switch (ep->msgtype) {
 	case MCTP_MSG_CONTROL:
+		mctp_dbg("msgtype = MCTP_MSG_CONTROL\n");
 		if (check_for_unsupport(ep, SUPPORT_MCTP_CNTROL_MSG))
 			return -1;
 		rc = mctp_control_handler(ep);
@@ -360,6 +372,7 @@ static int handle_mctp_pkt(mctp_endpoint_stct *ep)
 
 #ifdef CONFIG_PLDM_SUPPORT
 	case MCTP_MSG_PLDM:
+		mctp_dbg("msgtype = MCTP_MSG_PLDM\n");
 		if (check_for_unsupport(ep, SUPPORT_PLDM_OVER_MCTP))
 			return -1;
 		rc = pldm_handler(ep->rx_ptr, ep->rx_len, ep->tx_ptr);
@@ -368,6 +381,7 @@ static int handle_mctp_pkt(mctp_endpoint_stct *ep)
 
 #ifdef CONFIG_NCSI_SUPPORT
 	case MCTP_MSG_NCSI:
+		mctp_dbg("msgtype = MCTP_MSG_NCSI\n");
 		if (check_for_unsupport(ep, SUPPORT_NCSI_OVER_MCTP))
 			return -1;
 		rc = ncsi_handler(ep->rx_ptr, ep->rx_len, ep->tx_ptr);
@@ -443,6 +457,8 @@ int mctp_recieve(mctp_endpoint_stct *ep)
 		ep->ic = hdr->data[0] >> 7;
 		ep->msgtype = hdr->data[0] & 0x7f;
 		ep->src_eid = hdr->src_eid;
+
+		mctp_dbg("msgtype = %02x, src_eid = %02x, dst_eid = %02x\n", ep->msgtype, ep->src_eid, hdr->dst_eid);
 
 #ifdef CONFIG_CHECK_SEQ_NUM
 		/* seq for som must be 0 */

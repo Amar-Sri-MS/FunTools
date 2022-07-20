@@ -1,0 +1,14 @@
+# @package _global_
+hydra/job_logging: colorlog 
+hydra/runtime:
+  cwd: ${hydra:runtime.cwd}
+dut:
+  target_ip: "localhost"
+  target_port: "40221"
+  verbose: False
+input:
+  report_notebook: "malloc_report.ipynb"
+  desc: "desc"
+output:
+  save_df: True
+  generate_report: False
