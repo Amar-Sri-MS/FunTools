@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# This file defines the user level JTAG call via otpions to initialize, read and 
+# This file defines the user level JTAG call via otpions to initialize, read and
 # write commands over JTAG transport.
 
 # This actively used the code-scape8.6 python libraries.
@@ -17,8 +17,8 @@ sys.path.append('/home/'+os.environ["USER"]+'/.local/opt/imgtec/Codescape-8.6/li
 sys.path.append('/home/'+os.environ["USER"]+'/.local/opt/imgtec/Codescape-8.6/lib/python2.7/site-packages/sitepackages.zip')
 
 # dutdb.cfg + dututils.py has probe-details
-from .dututils import dut
-from .gpioutils import tap as gpiotap
+from dututils import dut
+from gpioutils import tap as gpiotap
 import time
 
 import sys
@@ -42,7 +42,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.asymmetric import padding
 
-from .jsbp import *
+from jsbp import *
 
 logger = logging.getLogger('jcli')
 logger.setLevel(logging.DEBUG)
@@ -192,7 +192,7 @@ def my_tapi(ir, verbose=False):
         ia, ib = list(map(hex, list(map(int, ir.split()))))
         logger.info("ir={} {}".format(ia, ib))
     return tapi(ir)
-    
+
 def mdh_read_old(byte_address):
     tapscan("5 %d" % IR_DEVICEADDR, "32 %d" % (byte_address & 0xf80) )
     tapscan("5 %d" % IR_APBACCESS, "39 %d" % ((byte_address & 0x7c) | 0x3) )
@@ -803,7 +803,7 @@ def main():
     parser.add_argument("--csr-peek", action='store_true', help="CSR peek of a register with nqwords")
     parser.add_argument("--csr-poke", action='store_true', help="CSR poke at register with given array of qwords")
     parser.add_argument("--csr-verify", action='store_true', help="CSR poke and peek at register with given array of qwords")
-    parser.add_argument("--regadr", default=0x1d00e170, type=auto_int, help="CSR address or or flash offset")
+    parser.add_argument("--regadr", default=0x440080a0, type=auto_int, help="CSR address or or flash offset")
     parser.add_argument("--reglen", default=1, type=auto_int, help="CSR qwords to peek/poke or flash words")
     parser.add_argument("--regval", action='store', dest='regval', type=auto_int, nargs='+', default=[0xaabbccdd11223344], help="CSR qwords to poke or flash words")
 
@@ -841,30 +841,34 @@ def main():
     probe_connect(probe_id, probe_addr, args.in_rom)
     check_for_esecure()
 
+    constants.GLOBAL_EMULATION_ROM_MODE = True if args.in_rom else False
+
     if args.cm_unlock:
         if args.in_rom:
             # in_rom mode provide, so feed the inject_certificate with cert file provided by user.
             esecure_inject_certificate(args.in_rom, customer=False)
+            time.sleep(5)
         device_unlock_CM(args.cm_key, args.cm_cert, args.cm_grant, args.cm_pass)
 
     if args.sm_unlock:
         if args.in_rom:
             # in_rom mode provide, so feed the inject_certificate with cert file provided by user.
             inject_certificate(args.in_rom, customer=True)
-        password = None if 'nopass' in args.quicktest else args.sm_pass
+            time.sleep(5)
+        password = None if 'nopass' in args.quicktest else None if 'nopass' in args.sm_pass else args.sm_pass
         device_unlock_SM(args.sm_key, args.sm_cert, args.sm_grant, password)
 
     # Once unlocked proceed with dump_status to verify if the grant are enabled as required.
     if args.status:
         dump_status()
 
-    # Once unlocked proceed with get otp (a secure access command). 
+    # Once unlocked proceed with get otp (a secure access command).
     # Intentionally didn't handle the unlock failure above
     # to test if read_otp is denied if unlock fails above.
     if args.otp:
         read_otp()
 
-    # Once unlocked proceed with set upgrade flag (a secure access command). 
+    # Once unlocked proceed with set upgrade flag (a secure access command).
     #Intentionally didn't handle the unlock failure above
     # to test if set upgrade flag is denied if unlock fails above.
     if args.set_upgrade:
@@ -874,7 +878,7 @@ def main():
     if args.serial:
         get_serial()
 
-    # Once unlocked proceed with flash API (a secure access) command. 
+    # Once unlocked proceed with flash API (a secure access) command.
     # Intentionally didn't handle the unlock failure above
     # to test if read_otp is denied if unlock fails above.
     if args.flash:
@@ -904,21 +908,21 @@ def main():
         flash_data_new = d.read(0, len(flash_data) * 4)
         print("Flash data verified correctly: %s" % ("True" if flash_data_new == flash_data else "FALSE"))
 
-    # Once unlocked proceed with CSR poke and peek as a !!!! SEPERATE !!!! command. 
+    # Once unlocked proceed with CSR poke and peek as a !!!! SEPERATE !!!! command.
     # Remember to run this command seperately without disconnecting the probe as we need t oconnnect probe to set CSR ring
     if args.csr or args.csr_peek or args.csr_poke or args.csr_verify :
         change_to_csr_mode(args.tap, t)
         if args.csr:
             print('\n************POKE MIO SCRATCHPAD ***************')
-            print(local_csr_poke(0x1d00e170, [0xabcd112299885566]))
+            print(local_csr_poke(0x440080a0, [0xabcd112299885566]))
             print('\n************PEEK MIO SCRATCHPAD ***************')
-            word_array = local_csr_peek(0x1d00e170, 1)
+            word_array = local_csr_peek(0x440080a0, 1)
             print("word_array: {}".format([hex(x) for x in word_array] if word_array else None))
 
         if args.csr_peek:
             print('\n************PEEK CSR2 ***************')
             print('\nregadr={} reglen={}'.format(hex(args.regadr), hex(args.reglen)))
-            status, word_array = local_csr_peek(args.regadr, args.reglen)
+            word_array = local_csr_peek(args.regadr, args.reglen)
             print("word_array: {}".format(list(map(hex, word_array)) if word_array else None))
 
         if args.csr_poke:
@@ -950,7 +954,7 @@ def main():
     if args.reboot:
         change_to_csr_mode(args.tap, t)
         print('\n************POKE RESET REGISTER ***************')
-        print(local_csr_poke(0x1d00e0a0, [0x0000000000000010]))
+        print(local_csr_poke(0x440080e8, [0x0000000000000010]))
         change_back_to_dbg_mode(args.tap, t)
 
 if __name__ == "__main__":

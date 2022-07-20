@@ -4,8 +4,8 @@ import sys
 import sys
 from array import array
 import logging
-from .i2cdev import *
-from .dututils import dut
+from i2cdev import *
+from dututils import dut
 
 logger = logging.getLogger('gpiotest')
 logger.setLevel(logging.DEBUG)

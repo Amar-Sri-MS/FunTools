@@ -5,8 +5,8 @@ import sys
 from array import array
 import logging
 
-from .dututils import dut
-from .i2cdev import *
+from dututils import dut
+from i2cdev import *
 
 logger = logging.getLogger('tap-gpio')
 logger.setLevel(logging.DEBUG)

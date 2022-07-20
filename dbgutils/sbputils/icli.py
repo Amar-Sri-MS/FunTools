@@ -2,10 +2,10 @@ import sys
 import os
 sys.path.append("../software/devtools/firmware")
 #import utils
-from .sbp_structs import *
+from sbp_structs import *
 
-from .dututils import dut
-from .isbp import s1i2c
+from dututils import dut
+from isbp import s1i2c, constants
 import binascii
 import json
 from array import array
@@ -50,6 +50,7 @@ CMD_STATUS_CODE_STR = {
     6 : 'Crypto error',
     7 : 'Invalid parameter',
 }
+
 
 SBP_STATUS_STR = [
     "Status at last tamper",
@@ -104,7 +105,7 @@ class dbgi2c(s1i2c):
         if cmd in list(DBG_CMDRESP.keys()):
             DBG_CMDRESP[cmd](RDATA).show2()
         else:
-            HEADER(RDATA).show2() 
+            HEADER(RDATA).show2()
         print('#', "-"*80)
         return True #data
 
@@ -304,7 +305,7 @@ class dbgi2c(s1i2c):
             print ('Succefully injected certificate!')
             return (True, None)
         else:
-            err_msg = "Dbg chal command error! {0}".format(rdata)
+            err_msg = "Dbg chal command error! {0}: {1}".format(rdata, hex(CMD.INJECT_CERTIFICATE))
             print (err_msg)
             return (False, err_msg)
 
@@ -430,7 +431,7 @@ def main():
     parser.add_argument("--csr-peek", action='store_true', help="CSR peek of a register with nqwords")
     parser.add_argument("--csr-poke", action='store_true', help="CSR poke at register with given array of qwords")
     parser.add_argument("--csr-verify", action='store_true', help="CSR poke and peek at register with given array of qwords")
-    parser.add_argument("--regadr", default=0x1d00e170, type=auto_int, help="CSR address or or flash offset")
+    parser.add_argument("--regadr", default=0x440080a0, type=auto_int, help="CSR address or or flash offset")
     parser.add_argument("--reglen", default=1, type=auto_int, help="CSR qwords to peek/poke or flash words")
     parser.add_argument("--regval", action='store', dest='regval', type=auto_int, nargs='+', default=[0xaabbccdd11223344], help="CSR qwords to poke or flash words")
 
@@ -447,6 +448,7 @@ def main():
     if args.sm_unlock and not all([args.sm_key, args.sm_cert, args.sm_grant]):
         parser.error("--unlock requires all SM keys and certificates to be specified")
 
+    constants.GLOBAL_EMULATION_ROM_MODE = True if args.in_rom else False
 
     print(dut().get_i2c_info(args.dut))
     status, serial, ip, addr = dut().get_i2c_info(args.dut)
@@ -468,13 +470,16 @@ def main():
             print('Failed to get status! Error: {0}'.format(data))
             return False
 
+
     if args.cm_unlock:
         if args.in_rom:
+            print('cm inject dev certificate! from file: {0}'.format(args.in_rom))
             (status, data) = dbgprobe.inject_cert(args.in_rom, customer=False)
+            print('response: cm dev certificate! {0}'.format(status))
             if status is False:
-                print('Failed to cm inject certificate! Error: {0}'.format(data))
+                print('Failed to cm inject dev certificate! Error: {0}'.format(data))
                 return False
-            print('Injected cm certificate!')
+            print('Injected cm dev certificate!')
 
         (status, data) = dbgprobe.get_dbg_access(args.cm_key, args.cm_cert, grants=args.cm_grant, password=args.cm_pass, customer=False, quicktest=args.quicktest)
         if status is False:
@@ -484,11 +489,12 @@ def main():
 
     if args.sm_unlock:
         if args.in_rom:
+            print('sm inject dev certificate! from file: {0}'.format(args.in_rom))
             (status, data) = dbgprobe.inject_cert(args.in_rom, customer=True)
             if status is False:
-                print('Failed to sm inject certificate! Error: {0}'.format(data))
+                print('Failed to sm inject dev certificate! Error: {0}'.format(data))
                 return False
-            print('Injected sm certificate!')
+            print('Injected sm dev certificate!')
 
         password = None if 'nopass' in args.quicktest else args.sm_pass
         (status, data) = dbgprobe.get_dbg_access(args.sm_key, args.sm_cert, grants=args.sm_grant, password=password, customer=True, quicktest=args.quicktest)
@@ -547,15 +553,12 @@ def main():
     if args.csr:
         print('\n************POKE MIO SCRATCHPAD ***************')
         if args.mioval:
-            print(dbgprobe.local_csr_poke(0x1d00e170, [args.mioval]))
+            print(dbgprobe.local_csr_poke(0x440080a0, [args.mioval]))
         else:
-            print(dbgprobe.local_csr_poke(0x1d00e170, [0xabcd112299885566]))
+            print(dbgprobe.local_csr_poke(0x440080a0, [0xabcd112299885566]))
         print('\n************PEEK MIO SCRATCHPAD ***************')
-        status, word_array = dbgprobe.local_csr_peek(0x1d00e170, 1)
+        status, word_array = dbgprobe.local_csr_peek(0x440080a0, 1)
         print("word_array: {}".format(list(map(hex, word_array)) if word_array else None))
-        #word_array = local_csr_peek(0x1d00e160, 1)
-        #word_array = local_csr_peek(0x1d00e0a0, 1)
-        #word_array = local_csr_peek(0x1d00e2c8, 1)
 
     if args.csr_peek:
         print('\n************PEEK CSR2 ***************')
@@ -581,16 +584,16 @@ def main():
             if peekstatus:
                 if (args.regval == word_array):
                     print("Success")
-                    return True
+                    #return True
                 else:
                     print("Fail: word_array={} regval={}".format(list(map(hex, word_array)) if word_array else None, list(map(hex, args.regval))))
-                    return False
+                    #return False
             else:
                 print("peek failed with status: {}".format(peekstatus))
-                return False
+                #return False
         else:
             print("poke failed with status: {}".format(pokestatus))
-            return False
+            #return False
 
     if args.disconnect:
         print('\n************debug disconnect command ***************')
@@ -598,7 +601,7 @@ def main():
 
     if args.reboot:
         print('\n************POKE RESET REGISTER ***************')
-        print(dbgprobe.local_csr_poke(0x1d00e0a0, [0x0000000000000010]))
+        print(dbgprobe.local_csr_poke(0x440080e8, [0x0000000000000010]))
 
     #else:
     #    print('Invalid option: {0}'.format(args))
