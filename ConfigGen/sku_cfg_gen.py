@@ -25,9 +25,10 @@ logger.setLevel(logging.INFO)
 
 # For each EEPR file, emit multiple variants based
 # on "struct puf_rom_eeprom_image_s" flags
-EEPROM_IMAGE_FLAGS_S1_1_1GHZ_CHICKEN = 1
+EEPROM_IMAGE_FLAGS_FAST_CLOCK_CHICKEN = 1
 CHIP_FLAG_EEPR_VARIANTS = {
-    "s1": [("", EEPROM_IMAGE_FLAGS_S1_1_1GHZ_CHICKEN), ("_1_0G", 0)]
+    "s1": [("", EEPROM_IMAGE_FLAGS_FAST_CLOCK_CHICKEN), ("_1_0GHz_SoC", 0)],
+    "f1d1" : [("", 0), ("_1_1GHz_SoC_1_7GHz_PC", EEPROM_IMAGE_FLAGS_FAST_CLOCK_CHICKEN)]
 }
 
 class SKUCfgGen():
