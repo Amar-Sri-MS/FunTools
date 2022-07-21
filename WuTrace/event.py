@@ -401,6 +401,9 @@ class TraceEvent(object):
         #to recognize the WUs processed in HU
         self.is_hw_hu = False
 
+        # to represent the WUs processed in RGX
+        self.is_hw_rgx = False
+
     def as_dict(self):
         return {'start_time': self.start_time,
                 'end_time': self.end_time,
@@ -412,6 +415,7 @@ class TraceEvent(object):
                 'is_hw_le': self.is_hw_le,
                 'is_hw_zip': self.is_hw_zip,
                 'is_hw_hu': self.is_hw_hu,
+                'is_hw_rgx': self.is_hw_rgx,
                 'is_annotation': self.is_annotation
                 }
 
