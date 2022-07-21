@@ -32,6 +32,7 @@ import mimetypes
 import argparse
 import json
 import xml.etree.ElementTree as et
+import urllib.parse
 
 # Key derivation functions. See:
 # http://docs.aws.amazon.com/general/latest/gr/signature-v4-examples.html#signature-v4-examples-python
@@ -410,6 +411,39 @@ def _xml_tags_to_dict(xml_str):
         return {}
 
     return result
+
+
+def list_bucket(host, bucket, key, secret, continuation_token, max_keys=1000):
+    params = []
+    if continuation_token:
+        params.append(('continuation-token', continuation_token))
+    params.append(('list-type', 2))
+    params.append(('max-keys', max_keys))
+
+    query = urllib.parse.urlencode(params)
+    r = get_request(host, bucket, '', key, secret, None, query)
+
+    objects = []
+    token = None
+    try:
+        root = et.fromstring(r.text)
+        token_elem = root.find(s3ify_xml_tag('NextContinuationToken'))
+        if token_elem is not None:
+            token = token_elem.text
+
+        contents = root.findall(s3ify_xml_tag('Contents'))
+        for content in contents:
+            key_elem = content.find(s3ify_xml_tag('Key'))
+            objects.append(key_elem.text)
+
+    except et.ParseError:
+        print('Error parsing response' % r.text)
+        return []
+
+    return token, objects
+
+def s3ify_xml_tag(element_tag):
+    return '{http://s3.amazonaws.com/doc/2006-03-01/}' + element_tag
 
 
 ###
