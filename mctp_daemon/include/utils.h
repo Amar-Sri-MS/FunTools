@@ -32,8 +32,17 @@
 #define SWAP32(x)       (((x) >> 24) | (((x) & 0x0000ff) << 24) | (((x) & 0x00ff00) << 8) | (((x) & 0xff0000) >> 8))
 #define SWAP16(x)       ((((x) & 0xff00) >> 8) | (((x) & 0x00ff) << 8))
 
+#ifdef ARCH_BIG_ENDIAN
+#define hton32(x)       (x)
+#define hton16(x)       (x)
+#define ntoh32(x)       (x)
+#define ntoh16(x)       (x)
+#else
 #define hton32(x)	SWAP32((x))
+#define ntoh32(x)	SWAP32((x))
 #define hton16(x)	SWAP16((x))
+#define ntoh16(x)	SWAP16((x))
+#endif
 
 #define MIN(x, y)	((x) < (y) ? (x) : (y))
 
@@ -102,6 +111,7 @@ struct server_cfg_stc {
 	uint16_t sleep;
 	uint16_t timeout;
 	uint8_t debug;
+	uint16_t pcie_req_id;
 	char *logfile;
 	char *lockfile;
 	char *fru_filename;

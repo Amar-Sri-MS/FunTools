@@ -30,10 +30,15 @@ static uint8_t rx_buf[MCTP_MAX_MESSAGE_DATA];
 static uint8_t tx_pkt_buf[MAX_PCIE_TX_PKT_SIZE];
 static mctp_endpoint_stct vdm_ep;
 static int rx_fifo_fd, tx_fifo_fd;
-static struct pcie_vdm_rec_data vdm_data;
+
+static struct pcie_vdm_rec_data vdm_data = {
+	.vendor_id = 0,
+	.trgt_id = 0,
+	.cookie = 0,
+};
 
 static struct mctp_ep_retain_stc vdm_retain = {
-	.eid = 1,
+	.eid = 0,
 	.iid = 0,
 	.fragsize = DEFAULT_MCTP_FRAGMENT_SIZE,
 	.support = SUPPORT_MCTP_CNTROL_MSG | SUPPORT_PLDM_OVER_MCTP | SUPPORT_VDM_OVER_MCTP | SUPPORT_OEM_OVER_MCTP | SUPPORT_ASYNC_EVENTS,
@@ -92,10 +97,9 @@ static int __receive(uint8_t *buf, int len)
 	struct pcie_vdm_hdr_stc *hdr = (struct pcie_vdm_hdr_stc *)buf;
 	struct pcie_vdm_rec_data *hdr_data = (struct pcie_vdm_rec_data *)vdm_ep.retain->ep_priv_data;
 
-	hdr_data->cookie = hdr->cookie;
-	hdr_data->trgt_id = hdr->trgt_id;
-	hdr_data->req_id = hdr->req_id;
-	hdr_data->vendor_id = hdr->vendor_id;
+	hdr_data->cookie = ntoh32(hdr->cookie);
+	hdr_data->trgt_id = ntoh16(hdr->req_id);
+	hdr_data->vendor_id = ntoh16(hdr->vendor_id);
 
 	vdm_ep.rx_cnt = len - sizeof(struct pcie_vdm_hdr_stc);
 	vdm_ep.rx_pkt_buf = hdr->data;
@@ -117,24 +121,27 @@ static void set_pcie_vdm_hdr(int *len)
 	struct pcie_vdm_rec_data *hdr_data = (struct pcie_vdm_rec_data *)vdm_ep.retain->ep_priv_data;
 	int pad = (4 - (*len & 3)) & 3;
 
+
 	bzero((uint8_t *)&vdm_ep.tx_pkt_buf[*len], pad);
 	bzero((uint8_t *)hdr, sizeof(*hdr));
 	*len += pad;
 
-	hdr->cookie = hdr_data->cookie;
+	hdr->cookie = hton32(hdr_data->cookie);
 
 	hdr->fmt = 3;
-	hdr->type = (2 << 3) | (PCIE_ROUTE_BY_ID << 0);
+	hdr->type = (2 << 3);
+	hdr->type |= (vdm_retain.eid) ? PCIE_ROUTE_BY_ID :  PCIE_ROUTE_TO_RC;
 
 	// count mctp header as pcie_vdm hdr
-	hdr->len = DWORD(*len) - 1;
+	hdr->len = hton16((DWORD(*len) - 1));
 
+	hdr->req_id = (cfg.pcie_req_id) ? hton16(cfg.pcie_req_id) : hton16(FUNGIBLE_PCIE_BUS_ID(hdr_data->cookie)  << 8);
+	hdr->tag = (pad << 4);
 	hdr->msg_code = MCTP_MSG_CODE;
-	hdr->vendor_id = MCTP_VENDOR_ID;
+	hdr->vendor_id = hton16(MCTP_VENDOR_ID);
 
 	// reply with the origin hdr data
-	hdr->trgt_id = hdr_data->req_id;
-	hdr->req_id = hdr_data->trgt_id;
+	hdr->trgt_id = hton16(hdr_data->trgt_id);
 
 	*len += sizeof(struct pcie_vdm_hdr_stc);
 }

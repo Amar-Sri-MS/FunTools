@@ -35,10 +35,12 @@ static int mctp_cmd_eid_set(uint8_t *buf, mctp_ctrl_hdr_t *hdr, mctp_endpoint_st
 
 	if ((eid != 0) && (eid != 0xff)) {
 		log("eid changed from %u to %u\n", retain->eid, eid);
+		mctp_dbg("eid changed from %u to %u\n", retain->eid, eid);
 		retain->eid = eid;
 		rspn->reason = MCTP_RESP_SUCCESS;
 	}
 	else {
+		mctp_err("eid = %u\n", eid);
 		rspn->reason = MCTP_RESP_INVAL_DATA;
 	}
 
@@ -291,7 +293,7 @@ static int mctp_control_handler(mctp_endpoint_stct *ep)
 	}
 
 	rspn->cmd = hdr->cmd;
-	rspn->hdr_data = hdr->hdr_data & 0xf8;
+	rspn->hdr_data = hdr->hdr_data & 0x7f;
 
 	return rc + sizeof(mctp_ctrl_hdr_t);
 }
@@ -536,7 +538,7 @@ int mctp_transmit(mctp_endpoint_stct *ep)
 	hdr->dst_eid = ep->src_eid;
 	hdr->src_eid = retain->eid;
 	ep->txseq = (som & !(ep->flags & MCTP_SEQ_ROLL)) ? 0 : ((ep->txseq + 1) & 3);
-	hdr->hdr_data = som | eom | (ep->txseq << 5) | (ep->to << 3) | ep->tag;
+	hdr->hdr_data = som | eom | (ep->txseq << 5) | ep->tag;
 
 	ep->flags &= ~MCTP_COMPLETE;
 
