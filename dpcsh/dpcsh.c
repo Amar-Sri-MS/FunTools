@@ -910,7 +910,7 @@ void _configure_device(struct dpcsock *sock)
 	 */
 	char *cmdfmt  = "stty -F %s %s sane -echo -onlcr -icrnl crtscts "
 			"-brkint -echoctl -echoe -echok -echoke -icanon -iexten "
-			"-imaxbel -isig -opost ignbrk time 5 cs8 hupcl -clocal";
+			"-imaxbel -isig -opost ignbrk min 1 cs8 hupcl -clocal";
 	char cmd[strlen(cmdfmt) + FMT_PAD];
 	int r;
 
