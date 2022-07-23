@@ -20,9 +20,11 @@
 struct pcie_vdm_hdr_stc {
 	uint32_t cookie;
 #ifndef ARCH_BIG_ENDIAN
-	uint32_t len:10, r_at:2, attr:2, ep:1, td:1, t8:4, tc:3, t9:1, type:5, fmt:2, t2:1;
-	uint32_t msg_code:8, tag:8, req_id:16;
-	uint32_t vendor_id:16, trgt_id:16;
+	uint32_t type:5, fmt:2, t2:1, t8:4, tc:3, t9:1, len:10, r_at:2, attr:2, ep:1, td:1;
+        uint32_t req_id:16, tag:8, msg_code:8;
+	//uint32_t tag:8, msg_code:8, req_id:16;
+        uint32_t trgt_id:16, vendor_id:16;
+	//uint32_t vendor_id:16, trgt_id:16;
 #else
         uint32_t t2:1, fmt:2, type:5, t9:1, tc:3, t8:4, td:1, ep:1, attr:2, r_at:2, len:10;
         uint32_t req_id:16, tag:8, msg_code:8;
@@ -31,10 +33,11 @@ struct pcie_vdm_hdr_stc {
         uint8_t data[0];
 };
 
+#define FUNGIBLE_PCIE_BUS_ID(n)         ((n & 0x000000ff))
+#define FUNGIBLE_PCIE_FUN_ID(n)         ((n & 0x0000ff00) >> 8)
 struct pcie_vdm_rec_data {
 	uint16_t vendor_id;
 	uint16_t trgt_id;
-	uint16_t req_id;
 	uint32_t cookie;
 };
 

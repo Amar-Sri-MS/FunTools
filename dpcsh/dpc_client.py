@@ -282,7 +282,7 @@ class DpcClient(object):
     def async_recv_wait_raw(self, tid = None, custom_timeout = False, timeout_seconds = None):
         # see if it's already pending
         for r in self.__async_queue:
-            if (tid is None or r['tid'] == tid or r['tid'] == -1):
+            if (tid is None or r['tid'] == tid):
                 self.__async_queue.remove(r)
                 return r
 
@@ -297,7 +297,7 @@ class DpcClient(object):
             r = self.async_wait(custom_timeout, timeout_seconds)
             if r is None:
                 return r
-            if tid is None or r['tid'] == tid or r['tid'] == -1:
+            if tid is None or r['tid'] == tid:
                 return r
 
             self.__async_queue.append(r)

@@ -29,6 +29,7 @@ uint8_t eid = 0;
 struct server_cfg_stc cfg = {
 	.sleep = 60,
 	.timeout = 10,
+	.pcie_req_id = 0,
 	.lockfile = "/tmp/mctp_daemon.lock",
 	.logfile = "/tmp/mctp_daemon.log",
 	.fru_filename = NULL,
@@ -79,6 +80,7 @@ int main(int argc, char *argv[])
                 {"help",        1, 0, 'h'},
                 {"log",         1, 0, 'l'},
 		{"nosu",	0, 0, 'n'},
+		{"pcie_id",	0, 0, 'p'},
                 {"verbose",     1, 0, 'v'},
 		{"debug",	0, 0, 'D'},
 		{"eid",		1, 0, 'E'},
@@ -103,7 +105,7 @@ int main(int argc, char *argv[])
         sigaction(SIGSEGV, &sa, NULL);
 
 
-        while ((c = getopt_long(argc, argv, "abhl:nvDE:F:IL:T:V", long_args, &index)) != -1) {
+        while ((c = getopt_long(argc, argv, "abhl:np:vDE:F:IL:T:V", long_args, &index)) != -1) {
 		switch (c) {
 		case 'a':
 			pldm_vars.flags |= MCTP_VDM_ASYNC_ENABLED;
@@ -119,6 +121,10 @@ int main(int argc, char *argv[])
 
 		case 'n':
 			flags |= FLAGS_NO_SU_CHECK;
+			break;
+
+		case 'p':
+			cfg.pcie_req_id = (uint16_t)strtol(optarg, NULL, 0);
 			break;
 
 		case 'L':
@@ -166,6 +172,8 @@ int main(int argc, char *argv[])
 			exit(EXIT_FAILURE);
 		}
 	}
+
+	printf("Running debugging daemon\n");
 
 	if ((log_fd = fopen(log_file, "a+")) == NULL) {
 		fprintf(stderr, "Error - cannot open logfile %s\n", log_file);
