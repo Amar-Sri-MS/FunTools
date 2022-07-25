@@ -41,7 +41,7 @@ class _default_logger:
 
 
 class FunOSCommands(object):
-    __version__ = "0.0.4"
+    __version__ = "0.0.5"
 
     def __init__(self, dpc_client, logger=None, temp_dir=None):
         """Handling FunOS related dpcsh
