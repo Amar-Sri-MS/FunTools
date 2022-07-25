@@ -4,14 +4,12 @@ from prettytable import PrettyTable, FRAME
 from datetime import datetime
 import time
 import re
-import json
 import os
 import tempfile
 import shutil
 
 try:
     import pandas as pd
-
     pd.options.display.float_format = "{:,.0f}".format
 except ImportError:
     print("{}: Import failed, pandas numpy!".format(__file__))
@@ -468,6 +466,21 @@ class FunOSCommands(object):
                         format(size_in_use_percent, ",d")
                     )
                 )
+
+                # ws_alloc fail check
+                cmd = "stats/ws_alloc"
+                result = self.dpc_client.execute(verb="peek", arg_list=[cmd])
+                if "flow_ctl_ws_alloc_first_attempt_failures" in result:
+                    self.logger.info("")
+                    self.logger.info(
+                        "flow_ctl_ws_alloc_first_attempt_failures: {}".format(
+                            result["flow_ctl_ws_alloc_first_attempt_failures"]
+                        )
+                    )
+                    self.logger.info(
+                        "ws_alloc_failures: {}".format(result["ws_alloc_failures"])
+                    )
+                    self.logger.info("")
 
                 self.logger.info("{}".format(self.gets_version()))
                 self.logger.info("open {}".format(self.gets_git_url()))
