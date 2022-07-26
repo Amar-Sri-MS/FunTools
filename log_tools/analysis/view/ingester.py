@@ -995,7 +995,7 @@ def _get_fixed_manifest_contents(log_path):
     techsupport_folder_name = os.path.basename(glob.glob(f'{log_path}/techsupport*')[0])
 
     # Get the folders of each node in the cluster
-    folders = glob.glob(f'{log_path}/{techsupport_folder_name}/*[!devices][!other]')
+    folders = glob.glob(f'{log_path}/{techsupport_folder_name}/*[!devices][!memory][!other]')
 
     manifest_contents.extend([
         f'frn:plaform:DPU::system:storage_agent:textfile:"{archive_name}/{techsupport_folder_name}/other":*storageagent.log*',
