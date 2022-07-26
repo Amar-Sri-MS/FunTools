@@ -887,12 +887,19 @@ static bool _read_all_available_data_from_fd(struct dpcsock_connection *connecti
 			bytes_available = connection->read_buffer.size - connection->read_buffer_position;
 		}
 
-		bytes_read = read(connection->fd, connection->read_buffer.ptr + connection->read_buffer_position, bytes_available);
+		// SOCKMODE_DEV reads one-by-one
+		bytes_read = read(connection->fd, connection->read_buffer.ptr + connection->read_buffer_position, connection->socket->mode == SOCKMODE_DEV ? 1 : bytes_available);
 		if (bytes_read > 0) {
 			connection->read_buffer_position += bytes_read;
 			productive = true;
 		}
 		log_debug(_debug_log, "%s: read returned %zd, requested %zu\n", connection->socket->verbose_log_name, bytes_read, bytes_available);
+
+		// SOCKMODE_DEV works blocking
+		if (productive && connection->socket->mode == SOCKMODE_DEV && _get_line(connection->read_buffer.ptr, connection->read_buffer_position) != NULL) {
+			return true;
+		}
+
 	} while (bytes_read > 0);
 
 	return (errno == EAGAIN || errno == EWOULDBLOCK) && productive;
@@ -910,7 +917,7 @@ void _configure_device(struct dpcsock *sock)
 	 */
 	char *cmdfmt  = "stty -F %s %s sane -echo -onlcr -icrnl crtscts "
 			"-brkint -echoctl -echoe -echok -echoke -icanon -iexten "
-			"-imaxbel -isig -opost ignbrk time 5 cs8 hupcl -clocal";
+			"-imaxbel -isig -opost ignbrk min 1 cs8 hupcl -clocal";
 	char cmd[strlen(cmdfmt) + FMT_PAD];
 	int r;
 
@@ -1102,7 +1109,7 @@ bool dpcsocket_open(struct dpcsock_connection *connection)
 			return false;
 	}
 
-	if (connection->fd > 0) {
+	if (connection->fd > 0 && sock->mode != SOCKMODE_DEV) {
 		set_nonblocking_fd(connection->fd);
 	}
 
@@ -1416,6 +1423,9 @@ static bool _wait_cond_unlock(pthread_cond_t *cond, pthread_mutex_t *lock)
 static bool _wait_read(struct dpcsock_connection *source)
 {
 	if (source->closing) return false;
+
+	// since SOCKMODE_DEV is blocking
+	if (source->socket->mode == SOCKMODE_DEV) return true;
 
 	if (source->socket->mode == SOCKMODE_TERMINAL) return true;
 
