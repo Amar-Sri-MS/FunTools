@@ -5,7 +5,7 @@ from setuptools import setup
 
 setup(
     name="dpcsh_interactive_client",
-    version="1.1",
+    version="1.2",
     description="Interactive Client over DPC",
     scripts=["dpc_cli"],
     packages=["dpcsh_interactive_client"],
