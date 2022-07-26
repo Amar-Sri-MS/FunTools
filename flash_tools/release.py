@@ -384,7 +384,7 @@ def main():
 
         if not args.dev_image:
             for rootfs, _ in rootfs_files:
-                cmd = [ 'gen_hash_tree.py',
+                cmd = [ localdir('gen_hash_tree.py'),
                         '-O', _rootfs('fvht.bin', rootfs),
                         'insert',
                         '--signed', _rootfs('fvht.signed', rootfs) ]
