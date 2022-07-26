@@ -292,7 +292,7 @@ def main():
         if not wanted('sdk-prepare'):
             # in sdk builds, the bootscript will need to be
             # generated later when a new funos image is present
-            cmd = [ 'python', 'make_emulation_emmc.py',
+            cmd = [ 'make_emulation_emmc.py',
                     '-w', '.',
                     '-o', '.',
                     '--appfile', funos_appname,
@@ -303,10 +303,10 @@ def main():
 
         if not args.dev_image:
             # dev images do not need cclinux stuff
-            cmd = [ 'python3', 'gen_fgpt.py', 'fgpt.unsigned' ]
+            cmd = [ 'gen_fgpt.py', 'fgpt.unsigned' ]
             subprocess.call(cmd)
 
-            cmd = [ 'python3', 'xdata.py',
+            cmd = [ 'xdata.py',
                     '-r',
                     '--data-offset=4096',
                     '--data-alignment=512',
@@ -318,7 +318,7 @@ def main():
             subprocess.call(cmd)
 
             for rootfs, _ in rootfs_files:
-                cmd = [ 'python3', 'gen_hash_tree.py',
+                cmd = [ 'gen_hash_tree.py',
                         '-O', _rootfs('fvht.bin', rootfs),
                         'hash',
                         '-N', 'rootfs.hashtree',
@@ -343,7 +343,7 @@ def main():
     if wanted('funos_loader'):
         # if funos image is different then create a new bootloader script
         os.chdir(args.destdir)
-        cmd = [ 'python', 'make_emulation_emmc.py',
+        cmd = [ 'make_emulation_emmc.py',
                 '-w', '.',
                 '-o', '.',
                 '--appfile', funos_appname,
@@ -370,7 +370,7 @@ def main():
         os.chdir(args.destdir)
         gf.run('flash')
 
-        cmd = [ 'python', 'make_emulation_emmc.py',
+        cmd = [ 'make_emulation_emmc.py',
                 '-w', '.',
                 '-o', '.',
                 '--appfile', 'funos.signed.bin',
@@ -381,7 +381,7 @@ def main():
 
         if not args.dev_image:
             for rootfs, _ in rootfs_files:
-                cmd = [ 'python3', 'gen_hash_tree.py',
+                cmd = [ 'gen_hash_tree.py',
                         '-O', _rootfs('fvht.bin', rootfs),
                         'insert',
                         '--signed', _rootfs('fvht.signed', rootfs) ]
@@ -597,7 +597,7 @@ def main():
                 for fname in mfgxdata_lists:
                     f.write("{} {}\n".format(fname, os.path.join(os.getcwd(), fname)))
 
-            cmd = [ 'python3', 'xdata.py',
+            cmd = [ 'xdata.py',
                     outname_modifier(funos_appname),
                     'add-file-lists',
                     'fw_upgrade_xdata' ]
