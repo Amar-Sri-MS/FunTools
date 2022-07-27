@@ -7,6 +7,7 @@ import re
 import os
 import tempfile
 import shutil
+import numpy as np
 
 try:
     import pandas as pd
@@ -23,6 +24,12 @@ TOTAL_CLUSTERS = 8
 TOTAL_CORES_PER_CLUSTER = 6
 TOTAL_VPS_PER_CORE = 4
 START_VP_NUMBER = 8
+
+
+"""MCACHE_RULES """
+SZ_ST1 = 8  # state1
+SZ_ST2 = 8  # state2
+SZ_A = 3  # action
 
 
 def do_sleep_for_interval():
@@ -561,6 +568,7 @@ class FunOSCommands(object):
             "Miss",
             "Max",
             "Repl_th_val",
+            "Avg_rewards",
         ]
         # TODO
         # handle wild card slot
@@ -620,7 +628,16 @@ class FunOSCommands(object):
                                 if "replenish_th_idx" in vp
                                 else 0
                             )
+
+                            val_func = vp["val_func"] if "val_func" in vp else []
+                            val_func_np = (
+                                np.reshape(val_func, (SZ_ST1, SZ_ST2, SZ_A))
+                                if "val_func" in vp
+                                else np.zeros((SZ_ST1, SZ_ST2, SZ_A))
+                            )
+
                             repl_th_val = (int)((vp["max"] / 8) * (repl_th_idx + 1))
+                            avg_reward = vp["avg_reward"] if "avg_reward" in vp else 0.0
                             val = [
                                 key,
                                 self._fmt(vp["avail"], sh_d),
@@ -633,6 +650,7 @@ class FunOSCommands(object):
                                 self._fmt(vp["miss"], sh_d),
                                 self._fmt(vp["max"], sh_d),
                                 self._fmt(repl_th_val, sh_d),
+                                "{:7.2f}".format(avg_reward),
                             ]
 
                             row = [
@@ -647,6 +665,8 @@ class FunOSCommands(object):
                                 vp["miss"],
                                 vp["max"],
                                 repl_th_val,
+                                avg_reward,
+                                val_func_np,
                             ]
                             rows.append(row)
 
@@ -659,6 +679,8 @@ class FunOSCommands(object):
                             total_avail_byte += int(2**slot * int(vp["avail"]))
                             total_hit += int(vp["hit"])
                             total_miss += int(vp["miss"])
+
+                            # import pdb;pdb.set_trace()
                     # total
                     self._add_hline(table_obj, col)
 
@@ -681,6 +703,7 @@ class FunOSCommands(object):
                             ),
                             "-",
                             "-",
+                            "-",
                         ]
                     )
 
@@ -688,6 +711,7 @@ class FunOSCommands(object):
                 # print max, and threhold...
                 self.logger.info("\n{}".format(table_obj))
                 # summary stat
+                pd_cols = col.append("val_func")
                 df = pd.DataFrame(rows, columns=col)
                 df.set_index("VP", inplace=True)
                 # df_str = df[['Avail', 'Avail Bytes', 'Avail(max)', 'Avail(min)', 'Hit', 'Miss']].describe().to_string()
@@ -702,6 +726,9 @@ class FunOSCommands(object):
                         str(self.gets_timestamp())
                     )
                 )
+
+                # import pdb;pdb.set_trace()
+                # TODO plot function
 
                 if save_df:
                     df.to_pickle(df_filename)
