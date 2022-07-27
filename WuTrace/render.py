@@ -111,15 +111,17 @@ def transaction_group_stats(transactions):
     number_of_events = 0
     standard_deviation = 0
     event_dictionary = {}
+    duration_list = []
     for event in events_list:
         for e in event:
             mean += e.duration()
-            event_dictionary[e.duration()] = e
+            # we need a unique key to represent every event
+            event_dictionary['%s-%s' % (e.start_time, e.end_time)] = e
             number_of_events += 1
+            duration_list.append(e.duration())
 
     mean = mean / number_of_events
-
-    duration_list = sorted(event_dictionary, key=lambda key: key)
+    duration_list = sorted(duration_list)
     q1 = duration_list[int(number_of_events * (1/4))]
     q3 = duration_list[int(number_of_events * (3/4))]
     iqr = q3 - q1 # Interquartile range
@@ -130,7 +132,7 @@ def transaction_group_stats(transactions):
     for i in event_dictionary:
         # not adding events with duration < lower_fence because we do not want
         # events that took too less time as outliers.
-        if i > upper_fence:
+        if event_dictionary[i].duration() > upper_fence:
             outliers.append(event_dictionary[i])
 
     result['outliers'] = outliers
