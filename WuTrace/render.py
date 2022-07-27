@@ -195,15 +195,15 @@ def get_transaction_dicts(transactions):
         result.append(transaction_dict)
     return result
 
-def outlier_list_to_string(outlier_list):
+def outlier_string(outlier_list):
     if len(outlier_list) == 0: # there are no outliers
-        return "There are 0 outliers for this transaction."
+        return "There are 0 outliers for this sequence."
     k = ''
     for i in range(0, len(outlier_list)):
         outlier = outlier_list[i]
-        k += '%s: %s - %s' % (outlier.label,
-                              nanosecond_time_string(outlier.start_time),
-                              nanosecond_time_string(outlier.end_time))
+        k += '%s: %s: %s' % (outlier.label,
+                             range_string(outlier.start_time, outlier.end_time),
+                             duration_string(outlier.duration()))
         if i != len(outlier_list) - 1:
             k += '\n'
     return k
@@ -215,7 +215,7 @@ def render_html(transactions):
     env.filters['as_duration'] = lambda nsecs: duration_string(nsecs)
     env.filters['as_time'] = lambda nsecs: time_string(nsecs)
     env.filters['as_ns'] = lambda nsecs: nanosecond_time_string(nsecs)
-    env.filters['as_string'] = lambda lis: outlier_list_to_string(lis)
+    env.filters['as_string'] = lambda lis: outlier_string(lis)
     page_dict = {
         'groups': get_groups(transactions)
         }
