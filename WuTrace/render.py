@@ -132,7 +132,9 @@ def transaction_group_stats(transactions):
     for i in event_dictionary:
         # not adding events with duration < lower_fence because we do not want
         # events that took too less time as outliers.
-        if event_dictionary[i].duration() > upper_fence:
+        if (event_dictionary[i].duration() > upper_fence and
+                event_dictionary[i].duration() > 100000):
+            # Should not add events with duration in usec
             outliers.append(event_dictionary[i])
 
     result['outliers'] = outliers
