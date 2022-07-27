@@ -4,12 +4,20 @@ import sys
 import sys
 from array import array
 import logging
+import signal
 
 from dututils import dut
 from i2cdev import *
 
 logger = logging.getLogger('tap-gpio')
 logger.setLevel(logging.DEBUG)
+
+def signal_handler(sig, frame):
+        print('You pressed Ctrl+C! ... exiting ...')
+        sys.stdout.flush()
+        sys.exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
 
 TAPs = {
     'i2c'   : 0x24,
@@ -144,7 +152,8 @@ class gpio_get(aardvark_gpio):
     def monitor_gpio_autfail(self):
         return self.any_change_in_gpio(0x04, "Observe gpio/pin5 flip UP on AUTHFAIL")
 
-def test1(name, tapname):
+
+def setTapMode(name, tapname, keepforever=True):
     try:
         setval = TAPs[tapname]
     except:
@@ -160,6 +169,12 @@ def test1(name, tapname):
         t.setjcsr()
     else:
         logger.info( "should never reach here")
+        sys.exit(1)
+
+    while(keepforever):
+        logger.info(" holding the tap in mode=%s ... sleeping 10s ..." % tapname)
+        sleep(10)
+
     t.close()
 
 def test2(name):
@@ -185,8 +200,7 @@ def test4(name):
 if __name__== "__main__":
     name = sys.argv[1]
     tapname = sys.argv[2]
-    pass
-    #test1(name, tapname)
+    setTapMode(name, tapname)
     #test2(name)
     #test3(name)
     #test4(name)
