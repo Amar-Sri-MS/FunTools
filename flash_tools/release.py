@@ -309,7 +309,7 @@ def main():
             cmd = [ localdir('gen_fgpt.py'), 'fgpt.unsigned' ]
             subprocess.call(cmd)
 
-            cmd = [ 'xdata.py',
+            cmd = [ localdir('xdata.py'),
                     '-r',
                     '--data-offset=4096',
                     '--data-alignment=512',
