@@ -76,7 +76,7 @@ static int mctp_cmd_uuid_get(uint8_t *buf, mctp_ctrl_hdr_t *hdr, mctp_endpoint_s
 	mctp_get_udid_resp_t *rspn = (mctp_get_udid_resp_t *)buf;
 
 	rspn->reason = MCTP_RESP_SUCCESS;
-	memcpy(&rspn->udid, ep->retain->uuid, sizeof(ep->retain->uuid));
+	memcpy(&rspn->udid, cfg.uuid, sizeof(cfg.uuid));
 
 	return sizeof(mctp_get_udid_resp_t);
 }

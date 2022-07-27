@@ -115,6 +115,7 @@ struct server_cfg_stc {
 	char *logfile;
 	char *lockfile;
 	char *fru_filename;
+	uint8_t uuid[16];
 };
 
 extern struct server_cfg_stc cfg;
