@@ -90,6 +90,15 @@
   display: inline-block;
   font-size: small;
 }
+
+/* Forn to represnt outliers. */
+.outlier {
+  display: block;
+  margin-left: 15px;
+  font-size: 15px;
+  white-space: pre-wrap;
+}
+
 /* Column showing the time range in the WU. */
 .time {
    width: 12%;
@@ -179,7 +188,7 @@ maximum duration {{group['stats']['max_nsec'] | as_duration }},
 <br>
 Outliers:
 <br>
-{{group['stats']['outliers'] | as_string}}
+<div class="outlier">&nbsp;&nbsp;{{group['stats']['outliers'] | as_string}}</div>
 
 <h3>Individual sequences</h3>
 

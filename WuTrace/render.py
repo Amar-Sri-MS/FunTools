@@ -133,8 +133,8 @@ def transaction_group_stats(transactions):
         # not adding events with duration < lower_fence because we do not want
         # events that took too less time as outliers.
         if (event_dictionary[i].duration() > upper_fence and
-                event_dictionary[i].duration() > 100000):
-            # Should not add events with duration in usec
+                event_dictionary[i].duration() > 1000000):
+            # Should not add events with duration < 1000 usec
             outliers.append(event_dictionary[i])
 
     result['outliers'] = outliers
@@ -200,6 +200,7 @@ def get_transaction_dicts(transactions):
     return result
 
 def outlier_string(outlier_list):
+    # TODO(SanyaSriv): Sort the events in decreasing order of duration
     if len(outlier_list) == 0: # there are no outliers
         return "There are 0 outliers for this sequence."
     k = ''
