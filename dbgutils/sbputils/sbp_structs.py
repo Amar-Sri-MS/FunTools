@@ -263,6 +263,9 @@ class RESP_getStatus(Packet):
         CLEIntField('esecureFirmwareVersion', 0x0),
         CLEIntField('hostFirmwareVersion', 0x0),
         CLEIntEnumField('debugGrants', 0x0, { 0xFFFFFFFF : 'full-access' }),
+        CLEIntField('MagicVersion', 0x0),
+        CLEIntField('qspiFlashSize', 0x0),
+        CLELongField('qspiStatusFlags', 0x0),
         XStrLenField('firmwareString', '\x00', 20),
     ]
     def extract_padding(self, p):
