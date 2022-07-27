@@ -268,6 +268,12 @@ class TraceProcessor:
                 current_event.is_hw_hu = True
                 self.hardware_sends.append(current_event)
 
+            if re.match(".*RGX.*", str(next_event.dest_faddr)) != None:
+                current_event = event.TraceEvent(send_time, send_time,
+                    "HW-RGX: " + next_event.name, next_event.dest_faddr)
+                current_event.is_hw_rgx = True
+                self.hardware_sends.append(current_event)
+
             if vp in self.vp_to_event:
                 curr = self.vp_to_event[vp]
                 self.remember_send(curr, wuid, arg0, arg1,
