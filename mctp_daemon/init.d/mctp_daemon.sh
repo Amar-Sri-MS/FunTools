@@ -49,7 +49,7 @@ if [[ ! -x ${SERVICE} ]] ||
 fi
 
 if [ ! -f $UUID_FILE ]; then
-	cat /dev/urandom | tr -dc '0-9a-f' | head -c 32 > $UUID_FILE
+	uuidgen | tr -d '-' > $UUID_FILE
 fi
 
 UUID=$(cat $UUID_FILE)
