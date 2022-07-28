@@ -207,7 +207,6 @@ struct mctp_ops_stc {
 #define DEFAULT_MCTP_FRAGMENT_SIZE		68
 struct mctp_ep_retain_stc {
 	uint32_t eid:8, iid:8, fragsize:8, support:8;
-	uint8_t uuid[16];
 	void *ep_priv_data;
 };
 

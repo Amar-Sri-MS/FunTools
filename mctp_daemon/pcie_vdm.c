@@ -42,8 +42,6 @@ static struct mctp_ep_retain_stc vdm_retain = {
 	.iid = 0,
 	.fragsize = DEFAULT_MCTP_FRAGMENT_SIZE,
 	.support = SUPPORT_MCTP_CNTROL_MSG | SUPPORT_PLDM_OVER_MCTP | SUPPORT_VDM_OVER_MCTP | SUPPORT_OEM_OVER_MCTP | SUPPORT_ASYNC_EVENTS,
-	.uuid = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-		 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f},
 	.ep_priv_data = (void *)&vdm_data,
 };
 

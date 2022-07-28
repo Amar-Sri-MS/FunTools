@@ -25,6 +25,8 @@ MT_GL_PID_FILE=/tmp/${MCTP_TRANSPORT_GLUE_LAYER}.pid
 MT_TA_PID_FILE=/tmp/${MCTP_TRANSPORT_TEMPERATURE_AGENT}.pid
 MT_TA_POLLING_INT=3
 
+UUID_FILE=/persist/config/mctp.uuid
+
 die() {
 	[ ! -z "$1" ] && echo "$1"
 	exit 1
@@ -45,6 +47,12 @@ if [[ ! -x ${SERVICE} ]] ||
         die "Either of ${SERVICE}, ${ST_STP_D}, ${MCTP_TRANSPORT_GLUE_LAYER}, ${MCTP_TRANSPORT_TEMPERATURE_AGENT} not found or not executable"
 	exit 1
 fi
+
+if [ ! -f $UUID_FILE ]; then
+	uuidgen | tr -d '-' > $UUID_FILE
+fi
+
+UUID=$(cat $UUID_FILE)
 
 failed="no"
 
@@ -97,7 +105,7 @@ start_mctp_daemon()
 		fail
 		exit 1
 	fi
-	$SERVICE -n -b -l /persist/logs/mctp_daemon.log >&/dev/null && pass || fail
+	$SERVICE -n -b -l /persist/logs/mctp_daemon.log -u "$UUID" >&/dev/null && pass || fail
 }
 
 stop_mctp_daemon()
