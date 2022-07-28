@@ -92,6 +92,9 @@ def calculate_outlier(events_list):
             number_of_events += 1
             duration_list.append(e.duration())
 
+    if number_of_events == 0:
+        return []
+
     mean = mean / number_of_events
     duration_list = sorted(duration_list)
     q1 = duration_list[int(number_of_events * (1/4))]
