@@ -163,6 +163,8 @@ def start_pipeline(base_path, build_id, filters={}, metadata={}, output_block='E
         p = pipeline.Pipeline(block_factory, cfg, env)
         p.process()
 
+        backup_pipeline_cfg(LOG_ID, cfg)
+
     except Exception as e:
         logging.exception(f'Ingestion failed for {build_id}')
         es_metadata.update(LOG_ID, {
@@ -192,7 +194,6 @@ def start_pipeline(base_path, build_id, filters={}, metadata={}, output_block='E
 
     timeline.generate_timeline()
     timeline.backup_timeline_files()
-    backup_pipeline_cfg(LOG_ID, cfg)
 
     return {
         'success': True,
