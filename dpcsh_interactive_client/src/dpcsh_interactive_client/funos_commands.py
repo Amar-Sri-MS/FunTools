@@ -10,6 +10,7 @@ import shutil
 
 try:
     import pandas as pd
+
     pd.options.display.float_format = "{:,.0f}".format
 except ImportError:
     print("{}: Import failed, pandas numpy!".format(__file__))
@@ -41,7 +42,7 @@ class _default_logger:
 
 
 class FunOSCommands(object):
-    __version__ = "0.0.5"
+    __version__ = "0.0.6"
 
     def __init__(self, dpc_client, logger=None, temp_dir=None):
         """Handling FunOS related dpcsh
@@ -225,6 +226,29 @@ class FunOSCommands(object):
             slot_max.append(int(result[key]))
 
         return slot_max
+
+    def _get_stats_ws_stack_in_use(self):
+        # wu stack in_use check
+        cmd = "stats/wustacks"
+        result = self.dpc_client.execute(verb="peek", arg_list=[cmd])
+        if "in_use" in result:
+            self.logger.info("")
+            self.logger.info("wu stack in_use: {}".format(result["in_use"]))
+
+    def _get_stats_ws_alloc(self):
+        # ws_alloc fail check
+        cmd = "stats/ws_alloc"
+        result = self.dpc_client.execute(verb="peek", arg_list=[cmd])
+        if "flow_ctl_ws_alloc_first_attempt_failures" in result:
+            self.logger.info("")
+            self.logger.info(
+                "flow_ctl_ws_alloc_first_attempt_failures: {}".format(
+                    result["flow_ctl_ws_alloc_first_attempt_failures"]
+                )
+            )
+            self.logger.info(
+                "ws_alloc_failures: {}".format(result["ws_alloc_failures"])
+            )
 
     def peek_fun_malloc_slot_stats(
         self, non_coh, from_cli=True, grep_regex=None, sh_d=True
@@ -467,20 +491,9 @@ class FunOSCommands(object):
                     )
                 )
 
-                # ws_alloc fail check
-                cmd = "stats/ws_alloc"
-                result = self.dpc_client.execute(verb="peek", arg_list=[cmd])
-                if "flow_ctl_ws_alloc_first_attempt_failures" in result:
-                    self.logger.info("")
-                    self.logger.info(
-                        "flow_ctl_ws_alloc_first_attempt_failures: {}".format(
-                            result["flow_ctl_ws_alloc_first_attempt_failures"]
-                        )
-                    )
-                    self.logger.info(
-                        "ws_alloc_failures: {}".format(result["ws_alloc_failures"])
-                    )
-                    self.logger.info("")
+                self._get_stats_ws_alloc()
+                self._get_stats_ws_stack_in_use()
+                self.logger.info("")
 
                 self.logger.info("{}".format(self.gets_version()))
                 self.logger.info("open {}".format(self.gets_git_url()))
