@@ -126,7 +126,7 @@
         }
 
         function getTable(title, info) {
-            if (!info) {
+            if (!info || info.length === 0) {
                 return `Data not found for table: ${title}`;
             }
             let table = new window.AsciiTable(title);
