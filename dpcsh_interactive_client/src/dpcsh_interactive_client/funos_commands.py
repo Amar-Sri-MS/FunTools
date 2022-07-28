@@ -681,7 +681,7 @@ class FunOSCommands(object):
                             total_miss += int(vp["miss"])
 
                             # import pdb;pdb.set_trace()
-                            print(val_func_np)
+                            # print(val_func_np)
                     # total
                     self._add_hline(table_obj, col)
 
@@ -712,8 +712,8 @@ class FunOSCommands(object):
                 # print max, and threhold...
                 self.logger.info("\n{}".format(table_obj))
                 # summary stat
-                pd_col = col.append("val_func")
-                df = pd.DataFrame(rows, columns=pd_col)
+                col.append("val_func")
+                df = pd.DataFrame(rows, columns=col)
                 df.set_index("VP", inplace=True)
                 # df_str = df[['Avail', 'Avail Bytes', 'Avail(max)', 'Avail(min)', 'Hit', 'Miss']].describe().to_string()
                 df_str = df.describe().to_string()
