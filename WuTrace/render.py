@@ -78,35 +78,7 @@ def percentile_index(percent, itemCount):
     index = int(math.ceil(percent * itemCount / 100.0))
     return index - 1
 
-def transaction_group_stats(transactions):
-    """Returns dictionary describing stats on a set of transactions.
-
-    This is used to describe min, max, average, etc. times for the same
-    WU.
-    """
-    result = {'count': 0,
-              'min_nsec': 0,
-              'max_nsec': 0,
-              'average_nsec': 0,
-              '50ile_nsec': 0,
-              '90ile_nsec': 0,
-              '95ile_nsec': 0,
-              'outliers'  : [],
-              }
-
-    count = len(transactions)
-    if count == 0:
-        return result
-    events_list = [x.flatten() for x in transactions]
-    durations = [x.duration() for x in transactions]
-    sorted_durations = sorted(durations)
-
-    result['min_nsec'] = sorted_durations[0]
-    result['max_nsec'] = sorted_durations[-1]
-    result['average_nsec'] = sum(durations) / len(transactions)
-    result['count'] = count
-
-    # calcuating the outliers
+def calculate_outlier(events_list):
     mean = 0
     number_of_events = 0
     standard_deviation = 0
@@ -136,8 +108,37 @@ def transaction_group_stats(transactions):
                 event_dictionary[i].duration() > 1000000):
             # Should not add events with duration < 1000 usec
             outliers.append(event_dictionary[i])
+    return outliers
 
-    result['outliers'] = outliers
+def transaction_group_stats(transactions):
+    """Returns dictionary describing stats on a set of transactions.
+
+    This is used to describe min, max, average, etc. times for the same
+    WU.
+    """
+    result = {'count': 0,
+              'min_nsec': 0,
+              'max_nsec': 0,
+              'average_nsec': 0,
+              '50ile_nsec': 0,
+              '90ile_nsec': 0,
+              '95ile_nsec': 0,
+              'outliers'  : [],
+              }
+
+    count = len(transactions)
+    if count == 0:
+        return result
+    events_list = [x.flatten() for x in transactions]
+    durations = [x.duration() for x in transactions]
+    sorted_durations = sorted(durations)
+
+    result['min_nsec'] = sorted_durations[0]
+    result['max_nsec'] = sorted_durations[-1]
+    result['average_nsec'] = sum(durations) / len(transactions)
+    result['count'] = count
+
+    result['outliers'] = calculate_outlier(events_list)
 
     percentile50Index = percentile_index(50, count)
     percentile90Index = percentile_index(90, count)
