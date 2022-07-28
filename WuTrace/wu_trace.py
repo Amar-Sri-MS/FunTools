@@ -85,8 +85,7 @@ class TraceProcessor:
         # this is a queue representing all the hardware sends
         self.hardware_sends = []
 
-        # this is a list that will store all the LE events so we can pair
-        # them with hw_le_flush_rsp handler
+        # this is a list that will store all the LE events so we can pair them
         self.le_sends = []
 
     def remember_send(self, event, wu_id, arg0, arg1, dest, send_time,
