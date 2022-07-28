@@ -85,6 +85,10 @@ class TraceProcessor:
         # this is a queue representing all the hardware sends
         self.hardware_sends = []
 
+        # this is a list that will store all the LE events so we can pair
+        # them with hw_le_flush_rsp handler
+        self.le_sends = []
+
     def remember_send(self, event, wu_id, arg0, arg1, dest, send_time,
                       is_timer, flags):
         """Records the WU send event for later matching with a start.
@@ -161,6 +165,8 @@ class TraceProcessor:
             current_event = event.TraceEvent(timestamp, timestamp,
                                              next_event.name, vp)
             self.vp_to_event[vp] = current_event
+
+            # flushing the buffer
             if len(self.start_events) != 0:
                 while len(self.hardware_sends) > 0:
                     # this is some hardware send that needs an end
@@ -169,11 +175,20 @@ class TraceProcessor:
                     fake_hw_event.end_time = timestamp
 
                     previous_start.successors.append(fake_hw_event)
+                    if fake_hw_event.is_hw_le == True:
+                        self.le_sends.append(fake_hw_event)
                     self.hardware_sends.pop()
 
             (predecessor, send_time,
              is_timer, flags) = self.find_previous_send(wu_id, arg0,
                                                         arg1, vp)
+
+            # matching LE events and allocating time
+            if re.match(".*LE.*", str(next_event.origin_faddr)) != None:
+                if len(self.le_sends) > 0:
+                    print(self.le_sends)
+                    self.le_sends[-1].end_time = next_event.timestamp
+                    self.le_sends.pop()
 
             if predecessor and int(flags) & 2:
                     # Hardware WU.
@@ -210,6 +225,7 @@ class TraceProcessor:
 
             else:
                 # New event not initiated by a previous WU.
+                # TODO (SanyaSriv): Remove the merge-all strategy
                 if len(self.start_events) != 0:
                     previous_start = self.find_previous_start()
                     previous_start.successors.append(current_event)
@@ -254,6 +270,8 @@ class TraceProcessor:
                     "HW-LE: " + next_event.name, next_event.dest_faddr)
                 # will now connect this to the previous event
                 current_event.is_hw_le = True
+                # to keep a track of which event has been mapped yet in case of LE
+                current_event.end_time = -1
                 self.hardware_sends.append(current_event)
 
             if re.match(".*ZIP.*", str(next_event.dest_faddr)) != None:
