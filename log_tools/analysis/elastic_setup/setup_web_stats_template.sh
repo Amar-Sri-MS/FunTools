@@ -12,7 +12,7 @@ else
   URL="${ELASTICSEARCH_URL}"
 fi
 
-curl -X PUT "${URL}:9200/_index_template/web_stats_template" -H 'Content-Type: application/json' -d'
+curl -X PUT "${URL}/_index_template/web_stats_template" -H 'Content-Type: application/json' -d'
 {
     "index_patterns": ["web_stats*"],
     "template": {

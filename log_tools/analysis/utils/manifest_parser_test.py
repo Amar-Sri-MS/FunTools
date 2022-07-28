@@ -23,7 +23,7 @@ class ManifestParserTest(unittest.TestCase):
             'component': 'host',
             'source': 'funos',
             'resource_type': 'textfile',
-            'prefix_path': None,
+            'prefix_path': '',
             'sub_path': 'odp/uartout0.0.txt'
         }
 
@@ -40,7 +40,7 @@ class ManifestParserTest(unittest.TestCase):
             'component': 'host',
             'source': 'funos',
             'resource_type': 'textfile',
-            'prefix_path': None,
+            'prefix_path': '',
             'sub_path': 'odp/uartout0.0.txt'
         }
 
@@ -57,7 +57,7 @@ class ManifestParserTest(unittest.TestCase):
             'component': 'host',
             'source': 'funos',
             'resource_type': 'textfile',
-            'prefix_path': None,
+            'prefix_path': '',
             'sub_path': 'cs-logs-2021-04-28-11:25:20.tgz'
         }
 
@@ -73,7 +73,7 @@ class ManifestParserTest(unittest.TestCase):
             'component': 'host',
             'source': 'funos',
             'resource_type': 'textfile',
-            'prefix_path': None,
+            'prefix_path': '',
             'sub_path': 'odp/uartout0.0.txt'
         }
 
@@ -97,3 +97,21 @@ class ManifestParserTest(unittest.TestCase):
 
         merged_frn = manifest_parser.merge_frn(frn_1, frn_2)
         self.assertDictEqual(frn, merged_frn)
+
+    def test_duplicate_frn_entries(self):
+        """ Check if the manifest contents does not have duplicate FRN entries """
+        manifest = {
+            'contents': [
+                'frn:platform:DPU::host:funos:textfile::cs-logs-2021-04-28-11:25:20.tgz',
+                'frn:platform:DPU::host:funos:textfile::cs-logs-2021-04-28-11:25:20.tgz'
+            ]
+        }
+
+        expected_manifest = {
+            'contents': [
+                'frn:platform:DPU::host:funos:textfile::cs-logs-2021-04-28-11:25:20.tgz'
+            ]
+        }
+
+        formatted_manifest = manifest_parser._format_manifest(manifest)
+        self.assertDictEqual(expected_manifest, formatted_manifest)

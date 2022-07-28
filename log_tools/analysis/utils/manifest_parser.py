@@ -37,18 +37,22 @@ def has_manifest(dir):
 
 
 def _format_manifest(manifest):
-    contents = list()
+    # Creating a set of FRN entries to remove duplicates.
+    contents = set()
     for content in manifest['contents']:
+        if content in contents:
+            continue
+
         if type(content) == str:
-            contents.append(content)
+            contents.add(content)
 
         # In case the last element of the FRN is empty, pyyaml
         # considers it a dict since the last character is :
         if type(content) == dict:
             frn = list(content.keys())[0]
-            contents.append(f'{frn}:')
+            contents.add(f'{frn}:')
 
-    manifest['contents'] = contents
+    manifest['contents'] = list(contents)
     return manifest
 
 
@@ -57,9 +61,10 @@ def parse_FRN(frn_str):
     frn_pattern = r'(?:\"(.*?)\"(?::|\Z)|(.*?)(?::|\Z))'
     frn_match = re.findall(frn_pattern, frn_str)
 
-    def get_frn_component(index):
+    def get_frn_component(index, default=None):
         frn = frn_match[index]
-        return frn[0] if frn[0] and frn[0] != '' else frn[1]
+        frn_value = frn[1] if frn[1] and frn[1] != '' else default
+        return frn[0] if frn[0] and frn[0] != '' else frn_value
 
     return {
         'namespace': get_frn_component(1),
@@ -68,14 +73,14 @@ def parse_FRN(frn_str):
         'component': get_frn_component(4),
         'source': get_frn_component(5),
         'resource_type': get_frn_component(6),
-        'prefix_path': get_frn_component(7),
+        'prefix_path': get_frn_component(7, default=''),
         # TODO(Sourabh): Need to enusure all the values are enclosed
         # with quotes so to avoid this issue. Left the fallback for
         # now.
         #
         # The file names of some log archives are of the format:
         # cs-logs-2021-04-28-11:25:20.tgz
-        'sub_path': get_frn_component(8)
+        'sub_path': get_frn_component(8, default='')
                     # Regex finds 10 matches for the frn string
                     if len(frn_match) == 10
                     else ':'.join([get_frn_component(index)

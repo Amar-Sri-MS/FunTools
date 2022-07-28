@@ -1,0 +1,204 @@
+<html>
+    <head>
+        <title>Network Tool - Log Analyzer</title>
+        <link rel="stylesheet" type="text/css" href="/static/css/index.css">
+    </head>
+    <body>
+        {% include "nav_bar.html" ignore missing %}
+        <div class="content" id="network_info" style="display: none;">
+            <h2 class="center-align">Network Tool</h2>
+            <div class="container">
+                <h3>DPU Healthcheck Info</h3>
+                <pre id="healthcheck_info"></pre>
+            </div>
+            <div class="container">
+                <h3>DPU registration info with SNS</h3>
+                <pre id="registration_info"></pre>
+            </div>
+            <div class="container">
+                <h3>FunOS Events</h3>
+                <pre id="funos_events"></pre>
+            </div>
+        </div>
+        {% include "loader.html" %}
+    </body>
+    <script type="text/javascript" src="/static/js/fetchWrapper.js"></script>
+    <script type="text/javascript" src="/static/js/tracker.js"></script>
+    <script src="/static/js/ascii-table.js"></script>
+    <script type="text/javascript">
+        const logID = "{{log_id}}";
+        const network_info_element = document.getElementById("network_info");
+        const healthcheck_info_element = document.getElementById("healthcheck_info");
+        const registration_info_element = document.getElementById("registration_info");
+        const funos_events_element = document.getElementById("funos_events");
+        const LOG_PAGE_URL = `${window.location.origin}/log/${logID}`;
+
+        // Self invocation function
+        (async function() {
+            showNetworkInfo();
+        })();
+
+        function showNetworkInfo() {
+            // Clearing HTML before fetching new data
+            clearTables();
+            toggleElementDisplay(network_info_element, false);
+            toggleLoader(true);
+
+            const uri = `${window.location.origin}${window.location.pathname}/info`;
+            fetchWrapper.get(uri)
+                .then(data => {
+                    toggleLoader(false);
+                    renderInfo(data);
+                })
+                .catch(error => {
+                    toggleLoader(false);
+                    console.log(error.stack);
+                    alert(`${error.stack ? 'UI' : 'Backend'} Error: ${error}`);
+                });
+        }
+
+        function clearTables() {
+            healthcheck_info_element.innerHTML = "";
+            registration_info_element.innerHTML = "";
+            funos_events_element.innerHTML = "";
+        }
+
+        // Generic function to toggle any HTML element's display property
+        /* TODO: UTIL FUNCTION - Need to create a separate JS script */
+        function toggleElementDisplay(element, flag) {
+            if (flag) {
+                element.style = "display: block";
+            }
+            else {
+                element.style = "display: none";
+            }
+        }
+
+        function renderInfo(network_info) {
+            toggleElementDisplay(network_info_element, true);
+            console.log(network_info);
+
+            // Show DPU health check info
+            renderHealthcheckInfo(network_info["health_info"]);
+
+            // Show DPU registration info
+            renderDPURegistrationInfo(network_info["registration_info"]);
+
+            // Show funos events
+            renderFunOSEvents(network_info["funos_events"]);
+        }
+
+        function renderHealthcheckInfo(healthcheckInfo) {
+            const firstSuccess = healthcheckInfo["first_success"];
+            const recentFail = healthcheckInfo["fail"];
+
+            const firstSuccessTable = getTable("First Success Healthcheck", firstSuccess);
+            addTableToElement(healthcheck_info_element, firstSuccessTable);
+
+            const recentFailTable = getTable("Failed Healthchecks", recentFail);
+            addTableToElement(healthcheck_info_element, recentFailTable);
+        }
+
+        function renderDPURegistrationInfo(registrationInfo) {
+            const registerInfo = registrationInfo["register"];
+            const disconnectInfo = registrationInfo["disconnect"];
+
+            const registerInfoTable = getTable("DPU registration Info", registerInfo);
+            addTableToElement(registration_info_element, registerInfoTable);
+
+            const disconnectInfoTable = getTable("DPU disconnection Info", disconnectInfo);
+            addTableToElement(registration_info_element, disconnectInfoTable);
+        }
+
+        function renderFunOSEvents(funosEvents) {
+            const ccInitInfo = funosEvents["cc_init"];
+            const dpuPingableStatusInfo = funosEvents["dpu_pingable_status"];
+            const networkRoutesAdded = funosEvents["network_routes_added"];
+
+            const ccInitInfoTable = getTable("CC Initialization Info", ccInitInfo);
+            addTableToElement(funos_events_element, ccInitInfoTable);
+
+            const dpuPingableStatusInfoTable = getTable("DPU Pingable Status Info", dpuPingableStatusInfo);
+            addTableToElement(funos_events_element, dpuPingableStatusInfoTable);
+
+            const networkRoutesAddedTable = getTable("Network Routes Info", networkRoutesAdded);
+            addTableToElement(funos_events_element, networkRoutesAddedTable);
+        }
+
+        function getTable(title, info) {
+            if (!info || info.length === 0) {
+                return `Data not found for table: ${title}`;
+            }
+            let table = new window.AsciiTable(title);
+            table.setHeading("Timestamp", "Source", "Log Message");
+
+            info.forEach(item => {
+                const timestamp = item["@timestamp"];
+                const URL = formLogURL(timestamp, item["_id"]);
+                const anchorTag = formAnchorTag(URL, item["msg"]);
+                table.addRow(
+                    item["@timestamp"],
+                    item["system_id"],
+                    anchorTag
+                )
+            });
+            return table;
+        }
+
+        /* TODO: UTIL FUNCTION - Need to create a separate JS script */
+        function addTableToElement(element, table, spacing=2) {
+            element.innerHTML += table.toString();
+            for (let i=0; i<spacing; i++) {
+                element.innerHTML += "\n";
+            }
+        }
+
+        /*
+            Log Analyzer tracks System ID for FunOS logs which is MAC address of the
+            DPU. The MAC address is not well formed. This function is to parse and
+            format it.
+        */
+        /* TODO: UTIL FUNCTION - Need to create a separate JS script */
+        function convertSystemIDtoMAC(systemID) {
+            if (!systemID || systemID.length !== 12) {
+                return "";
+            }
+            systemID = systemID.toLowerCase();
+            let chunks = [];
+            for (let i=0; i<systemID.length; i+=2) {
+                chunks.push(systemID.slice(i,i+2));
+            }
+            return chunks.join(":");
+        }
+
+        /* TODO: UTIL FUNCTION - Need to create a separate JS script */
+        function formAnchorTag(href, text, openNewTab=true) {
+            let a = document.createElement("a");
+            let linkText = document.createTextNode(text);
+            a.appendChild(linkText);
+            a.href = href;
+            a.target = openNewTab ? "_blank" : "_self";
+            return a;
+        }
+
+        /* TODO: UTIL FUNCTION - Need to create a separate JS script */
+        function formSearchState(before, after) {
+            return {
+                "before": before,
+                "after": after
+            }
+        }
+
+        /* TODO: UTIL FUNCTION - Need to create a separate JS script */
+        function formLogURL(timestamp, docID) {
+            const state = formSearchState(timestamp, timestamp);
+            let params = new URLSearchParams();
+            params.set("next", true);
+            params.set("prev", true);
+            if (state) params.set("state", JSON.stringify(state));
+            if (docID) params.set("include", docID);
+            const url = `${LOG_PAGE_URL}?${params.toString()}#0`;
+            return url;
+        }
+    </script>
+</html>

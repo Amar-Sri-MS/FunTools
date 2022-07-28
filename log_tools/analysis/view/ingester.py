@@ -857,8 +857,15 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
                 # techsupport log archive
                 if log_file.endswith('cs_all_logs_techsupport.tar.gz'):
                     filename = log_file.split('/')[-1].replace(' ', '_')
-                    archive_name = os.path.splitext(filename)[0]
-                    manifest_contents.extend(_get_fixed_manifest_contents(f'{path}/{archive_name}'))
+                    log_path = f'{path}/{filename}'
+                    # Extract if the file is an archive
+                    if archive_extractor.is_archive(log_path):
+                        archive_extractor.extract(log_path)
+                        log_path = os.path.splitext(log_path)[0]
+
+                    if not manifest_parser.has_manifest(log_path):
+                        raise NotFoundException('Could not find the FUNLOG_MANIFEST file.')
+                    manifest_contents.extend(_get_fixed_manifest_contents(f'{log_path}'))
 
                 # single node FC
                 elif log_file.endswith('_fc_log.tgz'):
@@ -988,7 +995,7 @@ def _get_fixed_manifest_contents(log_path):
     techsupport_folder_name = os.path.basename(glob.glob(f'{log_path}/techsupport*')[0])
 
     # Get the folders of each node in the cluster
-    folders = glob.glob(f'{log_path}/{techsupport_folder_name}/*[!devices][!other]')
+    folders = glob.glob(f'{log_path}/{techsupport_folder_name}/*[!devices][!memory][!other]')
 
     manifest_contents.extend([
         f'frn:plaform:DPU::system:storage_agent:textfile:"{archive_name}/{techsupport_folder_name}/other":*storageagent.log*',
