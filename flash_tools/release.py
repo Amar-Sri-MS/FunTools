@@ -600,7 +600,7 @@ def main():
                 for fname in mfgxdata_lists:
                     f.write("{} {}\n".format(fname, os.path.join(os.getcwd(), fname)))
 
-            cmd = [ 'xdata.py',
+            cmd = [ localdir('xdata.py'),
                     outname_modifier(funos_appname),
                     'add-file-lists',
                     'fw_upgrade_xdata' ]
