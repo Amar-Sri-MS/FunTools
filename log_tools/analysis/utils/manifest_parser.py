@@ -61,9 +61,9 @@ def parse_FRN(frn_str):
     frn_pattern = r'(?:\"(.*?)\"(?::|\Z)|(.*?)(?::|\Z))'
     frn_match = re.findall(frn_pattern, frn_str)
 
-    def get_frn_component(index):
+    def get_frn_component(index, default=None):
         frn = frn_match[index]
-        frn_value = frn[1] if frn[1] and frn[1] != '' else None
+        frn_value = frn[1] if frn[1] and frn[1] != '' else default
         return frn[0] if frn[0] and frn[0] != '' else frn_value
 
     return {
@@ -73,14 +73,14 @@ def parse_FRN(frn_str):
         'component': get_frn_component(4),
         'source': get_frn_component(5),
         'resource_type': get_frn_component(6),
-        'prefix_path': get_frn_component(7),
+        'prefix_path': get_frn_component(7, default=''),
         # TODO(Sourabh): Need to enusure all the values are enclosed
         # with quotes so to avoid this issue. Left the fallback for
         # now.
         #
         # The file names of some log archives are of the format:
         # cs-logs-2021-04-28-11:25:20.tgz
-        'sub_path': get_frn_component(8)
+        'sub_path': get_frn_component(8, default='')
                     # Regex finds 10 matches for the frn string
                     if len(frn_match) == 10
                     else ':'.join([get_frn_component(index)

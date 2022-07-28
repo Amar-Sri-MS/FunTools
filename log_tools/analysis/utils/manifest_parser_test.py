@@ -23,7 +23,7 @@ class ManifestParserTest(unittest.TestCase):
             'component': 'host',
             'source': 'funos',
             'resource_type': 'textfile',
-            'prefix_path': None,
+            'prefix_path': '',
             'sub_path': 'odp/uartout0.0.txt'
         }
 
@@ -40,7 +40,7 @@ class ManifestParserTest(unittest.TestCase):
             'component': 'host',
             'source': 'funos',
             'resource_type': 'textfile',
-            'prefix_path': None,
+            'prefix_path': '',
             'sub_path': 'odp/uartout0.0.txt'
         }
 
@@ -57,7 +57,7 @@ class ManifestParserTest(unittest.TestCase):
             'component': 'host',
             'source': 'funos',
             'resource_type': 'textfile',
-            'prefix_path': None,
+            'prefix_path': '',
             'sub_path': 'cs-logs-2021-04-28-11:25:20.tgz'
         }
 
@@ -73,7 +73,7 @@ class ManifestParserTest(unittest.TestCase):
             'component': 'host',
             'source': 'funos',
             'resource_type': 'textfile',
-            'prefix_path': None,
+            'prefix_path': '',
             'sub_path': 'odp/uartout0.0.txt'
         }
 
