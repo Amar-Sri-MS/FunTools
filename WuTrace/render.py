@@ -78,6 +78,41 @@ def percentile_index(percent, itemCount):
     index = int(math.ceil(percent * itemCount / 100.0))
     return index - 1
 
+def calculate_outlier(events_list):
+    mean = 0
+    number_of_events = 0
+    standard_deviation = 0
+    event_dictionary = {}
+    duration_list = []
+    for event in events_list:
+        for e in event:
+            mean += e.duration()
+            # we need a unique key to represent every event
+            event_dictionary['%s-%s' % (e.start_time, e.end_time)] = e
+            number_of_events += 1
+            duration_list.append(e.duration())
+
+    if number_of_events == 0:
+        return []
+
+    mean = mean / number_of_events
+    duration_list = sorted(duration_list)
+    q1 = duration_list[int(number_of_events * (1/4))]
+    q3 = duration_list[int(number_of_events * (3/4))]
+    iqr = q3 - q1 # Interquartile range
+    upper_fence = q3 + (1.5 * iqr)
+    lower_fence = q1 - (1.5 * iqr)
+
+    outliers = []
+    for i in event_dictionary:
+        # not adding events with duration < lower_fence because we do not want
+        # events that took too less time as outliers.
+        if (event_dictionary[i].duration() > upper_fence and
+                event_dictionary[i].duration() > 1000000):
+            # Should not add events with duration < 1000 usec
+            outliers.append(event_dictionary[i])
+    return outliers
+
 def transaction_group_stats(transactions):
     """Returns dictionary describing stats on a set of transactions.
 
@@ -91,12 +126,13 @@ def transaction_group_stats(transactions):
               '50ile_nsec': 0,
               '90ile_nsec': 0,
               '95ile_nsec': 0,
+              'outliers'  : [],
               }
 
     count = len(transactions)
     if count == 0:
         return result
-
+    events_list = [x.flatten() for x in transactions]
     durations = [x.duration() for x in transactions]
     sorted_durations = sorted(durations)
 
@@ -104,6 +140,8 @@ def transaction_group_stats(transactions):
     result['max_nsec'] = sorted_durations[-1]
     result['average_nsec'] = sum(durations) / len(transactions)
     result['count'] = count
+
+    result['outliers'] = calculate_outlier(events_list)
 
     percentile50Index = percentile_index(50, count)
     percentile90Index = percentile_index(90, count)
@@ -165,6 +203,20 @@ def get_transaction_dicts(transactions):
         result.append(transaction_dict)
     return result
 
+def outlier_string(outlier_list):
+    # TODO(SanyaSriv): Sort the events in decreasing order of duration
+    if len(outlier_list) == 0: # there are no outliers
+        return "There are 0 outliers for this sequence."
+    k = ''
+    for i in range(0, len(outlier_list)):
+        outlier = outlier_list[i]
+        k += '%s: %s: %s' % (outlier.label,
+                             range_string(outlier.start_time, outlier.end_time),
+                             duration_string(outlier.duration()))
+        if i != len(outlier_list) - 1:
+            k += '\n'
+    return k
+
 def render_html(transactions):
     """Generates HTML page showing the listed events."""
     this_dir = os.path.dirname(os.path.abspath(__file__))
@@ -172,7 +224,7 @@ def render_html(transactions):
     env.filters['as_duration'] = lambda nsecs: duration_string(nsecs)
     env.filters['as_time'] = lambda nsecs: time_string(nsecs)
     env.filters['as_ns'] = lambda nsecs: nanosecond_time_string(nsecs)
-
+    env.filters['as_string'] = lambda lis: outlier_string(lis)
     page_dict = {
         'groups': get_groups(transactions)
         }
