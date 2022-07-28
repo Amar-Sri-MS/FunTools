@@ -185,7 +185,6 @@ class TraceProcessor:
             # matching LE events and allocating time
             if re.match(".*LE.*", str(next_event.origin_faddr)) != None:
                 if len(self.le_sends) > 0:
-                    print(self.le_sends)
                     self.le_sends[-1].end_time = next_event.timestamp
                     self.le_sends.pop()
 
@@ -269,8 +268,6 @@ class TraceProcessor:
                     "HW-LE: " + next_event.name, next_event.dest_faddr)
                 # will now connect this to the previous event
                 current_event.is_hw_le = True
-                # to keep a track of which event has been mapped yet in case of LE
-                current_event.end_time = -1
                 self.hardware_sends.append(current_event)
 
             if re.match(".*ZIP.*", str(next_event.dest_faddr)) != None:
