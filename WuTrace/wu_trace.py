@@ -88,6 +88,15 @@ class TraceProcessor:
         # this is a list that will store all the LE events so we can pair them
         self.le_sends = []
 
+        # this is a list that will store all the ZIP events so we can pair them
+        self.zip_sends = []
+
+        # to store all the HU sends
+        self.hu_sends = []
+
+        # to store all the RGX sends
+        self.rgx_sends = []
+
     def remember_send(self, event, wu_id, arg0, arg1, dest, send_time,
                       is_timer, flags):
         """Records the WU send event for later matching with a start.
@@ -176,6 +185,12 @@ class TraceProcessor:
                     previous_start.successors.append(fake_hw_event)
                     if fake_hw_event.is_hw_le == True:
                         self.le_sends.append(fake_hw_event)
+                    elif fake_hw_event.is_hw_zip == True:
+                        self.zip_sends.append(fake_hw_event)
+                    elif fake_hw_event.is_hw_hu == True:
+                        self.hu_sends.append(fake_hw_event)
+                    elif fake_hw_event.is_hw_rgx == True:
+                        self.rgx_sends.append(fake_hw_event)
                     self.hardware_sends.pop()
 
             (predecessor, send_time,
@@ -187,6 +202,18 @@ class TraceProcessor:
                 if len(self.le_sends) > 0:
                     self.le_sends[-1].end_time = next_event.timestamp
                     self.le_sends.pop()
+            elif re.match(".*ZIP.*", str(next_event.origin_faddr)) != None:
+                if len(self.zip_sends) > 0:
+                    self.zip_sends[-1].end_time = next_event.timestamp
+                    self.zip_sends.pop()
+            elif re.match(".*HU.*", str(next_event.origin_faddr)) != None:
+                if len(self.hu_sends) > 0:
+                    self.hu_sends[-1].end_time = next_event.timestamp
+                    self.hu_sends.pop()
+            elif re.match(".*RGX.*", str(next_event.origin_faddr)) != None:
+                if len(self.rgx_sends) > 0:
+                    self.rgx_sends[-1].end_time = next_event.time_stamp
+                    self.rgx_sends.pop()
 
             if predecessor and int(flags) & 2:
                     # Hardware WU.
