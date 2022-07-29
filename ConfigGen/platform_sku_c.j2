@@ -8,7 +8,13 @@
  */
 #include "{{meta_data.filename_prefix}}.h"
 
-struct platform_sku_t platform_sku_db[{{(emu_sku_list|length) + (fun_board_sku_list|length)}}] = {
+struct platform_sku_t platform_sku_db[1 + {{(emu_sku_list|length) + (fun_board_sku_list|length)}}] = {
+	/* special fallback SKU */
+	{
+		.sku_id = SKU__unknown_sku,
+		.sku_name = "unknown_sku",
+	},
+
 	/* sku list of emulation builds */
 	{% for sku_name,sku_id in emu_sku_list.items() -%}
 	{
