@@ -15,6 +15,8 @@ import re
 
 import config_loader
 
+from elastic_log_searcher import build_query_body
+
 from elasticsearch7 import Elasticsearch
 
 
@@ -70,41 +72,6 @@ def convert_to_json(log_line):
         logging.exception(f'Malformed JSON: {log_line}')
         return None
 
-def build_search_body(queries, time_filters=None, operator='AND'):
-    """
-    Building ES query body based on the given list of queries and time
-    filters.
-    """
-    must_queries = list()
-    if queries and len(queries) > 0:
-        must_queries.append({'query_string': {
-            'query': f' {operator} '.join([f'{query}' for query in queries])
-        }})
-
-    filter_queries = list()
-    # Time filters are range filters
-    if time_filters:
-        start = time_filters[0]
-        end = time_filters[1]
-        time_range = {}
-        if start:
-            time_range['gte'] = start
-        if end:
-            time_range['lte'] = end
-        range = {'range': {
-            '@timestamp': time_range
-        }}
-        filter_queries.append(range)
-
-    compound_query = {}
-    compound_query['must'] = must_queries
-    compound_query['filter'] = filter_queries
-
-    body = {}
-    body['query'] = {}
-    body['query']['bool'] = compound_query
-    return body
-
 def get_value_from_params(info, key, default=None):
     """ Extracts value from the FunOS JSON log """
     if (info and info.get('msg') and 'params' in info['msg']
@@ -117,6 +84,12 @@ def convert_datetime_str(datetime_str, format= '%Y-%m-%dT%H:%M:%S.%f'):
         return None
     return datetime.datetime.strptime(datetime_str, format)
 
+def _format_document_hit(hit):
+    return {
+        '_id': hit['_id'],
+        **hit['_source'],
+        'msg': convert_to_json(hit['_source']['msg'])
+    }
 
 class Volume(object):
     def __init__(self, log_id, pvol_id):
@@ -145,9 +118,11 @@ class Volume(object):
                                 max_retries=ELASTICSEARCH_MAX_RETRIES,
                                 retry_on_timeout=True)
 
-    def _perform_es_search(self, queries, time_filters=None):
+    def _perform_es_search(self, queries, time_filters=None,
+                           format_hit_fn=_format_document_hit, match_all=True):
         """ Returns ES results based on the given queries """
-        body = build_search_body(queries, time_filters)
+        query_term = f' '.join([f'{query}' for query in queries])
+        body = build_query_body(query_term, None, time_filters, match_all=match_all)
         result = self.es.search(body=body,
                                 index=self.index,
                                 size=1000,
@@ -156,11 +131,13 @@ class Volume(object):
 
         results = list()
         for hit in result['hits']['hits']:
-            document = {
-                '_id': hit['_id'],
-                **hit['_source'],
-                'msg': convert_to_json(hit['_source']['msg'])
-            }
+            if format_hit_fn:
+                document = format_hit_fn(hit)
+            else:
+                document = {
+                    '_id': hit['_id'],
+                    **hit['_source']
+                }
             results.append(document)
 
         return results
@@ -319,14 +296,7 @@ class Volume(object):
         ]
         time_filters = (start_time, end_time)
 
-        body = build_search_body(queries, time_filters)
-        result = self.es.search(body=body,
-                                index=self.index,
-                                size=1000,
-                                sort='@timestamp:asc',
-                                ignore_throttled=False)
-
-        return result['hits']['hits']
+        return self._perform_es_search(queries, time_filters, format_hit_fn=None)
 
     def get_plex_status(self, vol_id, vol_type='EC', start_time=None, end_time=None):
         """ Returns the plex status for the given JVOL/EC uuid """
@@ -334,7 +304,7 @@ class Volume(object):
 
         plex_status = dict()
         for hit in result:
-            log = hit['_source']['msg']
+            log = hit['msg']
             m = re.match('.*UUID: ([\S]+) plex(?:|\S) ([0-9]+) marked ([\S]+) total failed:([0-9]+)', log)
             if m:
                 uuid, plex_num, status, total_failed = m.group(1), m.group(2), m.group(3), m.group(4)

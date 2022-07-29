@@ -361,7 +361,7 @@
                 const location = is_local_plex ? "local" : "remote";
                 let status = plex_status && plex_number in plex_status ? plex_status[plex_number]["status"] : "NA";
                 if (status !== "active" && plex_status && plex_number in plex_status) {
-                    const timestamp = plex_status[plex_number]["info"]["_source"]["@timestamp"];
+                    const timestamp = plex_status[plex_number]["info"]["@timestamp"];
                     const URL = formLogURL(timestamp, plex_status[plex_number]["info"]["_id"]);
                     status = formAnchorTag(URL, status);
                 }
@@ -419,12 +419,12 @@
             table.setHeading("Timestamp", "Source", "Log Message");
 
             history.forEach(item => {
-                const timestamp = item["_source"]["@timestamp"];
+                const timestamp = item["@timestamp"];
                 const URL = formLogURL(timestamp, item["_id"]);
-                const anchorTag = formAnchorTag(URL, item["_source"]["msg"]);
+                const anchorTag = formAnchorTag(URL, item["msg"]);
                 table.addRow(
-                    item["_source"]["@timestamp"],
-                    convertSystemIDtoMAC(item["_source"]["system_id"]),
+                    item["@timestamp"],
+                    convertSystemIDtoMAC(item["system_id"]),
                     anchorTag
                 )
             });
