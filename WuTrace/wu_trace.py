@@ -200,20 +200,32 @@ class TraceProcessor:
             # matching LE events and allocating time
             if re.match(".*LE.*", str(next_event.origin_faddr)) != None:
                 if len(self.le_sends) > 0:
-                    self.le_sends[-1].end_time = next_event.timestamp
-                    self.le_sends.pop()
+                    for i in range(len(self.le_sends) - 1, -1, -1):
+                        if next_event.origin_faddr == self.le_sends[i].vp:
+                            self.le_sends[i].end_time = next_event.timestamp
+                            self.le_sends.pop(i)
+                            break;
             elif re.match(".*ZIP.*", str(next_event.origin_faddr)) != None:
                 if len(self.zip_sends) > 0:
-                    self.zip_sends[-1].end_time = next_event.timestamp
-                    self.zip_sends.pop()
+                    for i in range(len(self.zip_sends) - 1, -1, -1):
+                        if next_event.origin_faddr == self.zip_sends[i].vp:
+                            self.zip_sends[i].end_time = next_event.timestamp
+                            self.zip_sends.pop(i)
+                            break;
             elif re.match(".*HU.*", str(next_event.origin_faddr)) != None:
                 if len(self.hu_sends) > 0:
-                    self.hu_sends[-1].end_time = next_event.timestamp
-                    self.hu_sends.pop()
+                    for i in range(len(self.hu_sends) -1, -1, -1):
+                        if next_event.origin_faddr == self.hu_sends[i].vp:
+                            self.hu_sends[i].end_time = next_event.timestamp
+                            self.hu_sends.pop(i)
+                            break;
             elif re.match(".*RGX.*", str(next_event.origin_faddr)) != None:
                 if len(self.rgx_sends) > 0:
-                    self.rgx_sends[-1].end_time = next_event.time_stamp
-                    self.rgx_sends.pop()
+                    for i in range(len(self.rgx_sends) -1, -1, -1):
+                        if next_event.origin_faddr == self.rgx_sends[i].vp:
+                            self.rgx_sends[i].end_time = next_event.time_stamp
+                            self.rgx_sends.pop(i)
+                            break;
 
             if predecessor and int(flags) & 2:
                     # Hardware WU.
