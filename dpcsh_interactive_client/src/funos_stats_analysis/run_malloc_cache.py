@@ -63,7 +63,8 @@ def TEST_save_collect_malloc_caches(funos_cmd_obj):
 
 
 def collect_malloc_caches(funos_cmd_obj, save_df):
-    for nc in range(2):
+    #for nc in range(2):
+    for nc in range(1):
         for i in range(6, 16):
             funos_cmd_obj.peek_malloc_caches_slot_stats(
                 i, non_coh=nc, from_cli=False, save_df=save_df

@@ -27,8 +27,8 @@ START_VP_NUMBER = 8
 
 
 """MCACHE_RULES """
-SZ_ST1 = 8  # state1
-SZ_ST2 = 8  # state2
+SZ_ST1 = 4#8  # state1
+SZ_ST2 = 4#8  # state2
 SZ_A = 3  # action
 
 
