@@ -650,7 +650,7 @@ class FunOSCommands(object):
                                 self._fmt(vp["miss"], sh_d),
                                 self._fmt(vp["max"], sh_d),
                                 self._fmt(repl_th_val, sh_d),
-                                "{:7.2f}".format(avg_reward),
+                                "{:7.4f}".format(avg_reward),
                             ]
 
                             row = [
