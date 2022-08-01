@@ -85,6 +85,14 @@ class TraceProcessor:
         # this is a queue representing all the hardware sends
         self.hardware_sends = []
 
+        # this is a dictionary of hardware sends. Mapping is done using LID from from faddr.
+        self.unpaired_hw_sends = {4: [],       # to store all the RGX sends
+                                  5: [],       # to store all the LE sends
+                                  6: [],       # to store all the ZIP sends
+                                  0: []}       # to store all the HU sends
+
+        # TODO (SanyaSriv): Remove the individual lists after confirming the lid
+        # dictionary works well.
         # this is a list that will store all the LE events so we can pair them
         self.le_sends = []
 
@@ -191,16 +199,25 @@ class TraceProcessor:
                         self.hu_sends.append(fake_hw_event)
                     elif fake_hw_event.is_hw_rgx == True:
                         self.rgx_sends.append(fake_hw_event)
+
+                    lid_value = fake_hw_event.vp.lid
+                    if (lid_value == 0) or (4 <= lid_value <= 6):
+                        self.unpaired_hw_sends[lid_value].append(fake_hw_event)
+
                     self.hardware_sends.pop()
 
             (predecessor, send_time,
              is_timer, flags) = self.find_previous_send(wu_id, arg0,
                                                         arg1, vp)
 
+            # TODO (SanyaSriv): Swap reg-ex matgching with LID comparision
             # matching LE events and allocating time
             if re.match(".*LE.*", str(next_event.origin_faddr)) != None:
                 if len(self.le_sends) > 0:
                     for i in range(len(self.le_sends) - 1, -1, -1):
+                        # TODO (SanyaSriv): Remove the code for iterating over
+                        # the individual lists and replace it with the dictionary
+                        # after confirming the dictionary works
                         if next_event.origin_faddr == self.le_sends[i].vp:
                             self.le_sends[i].end_time = next_event.timestamp
                             self.le_sends.pop(i)
