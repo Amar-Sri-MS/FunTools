@@ -45,6 +45,11 @@ verbose = False
 last_time = 0
 saw_time_backwards = False
 
+HU_LID = 0
+RGX_LID = 4
+LE_LID = 5
+ZIP_LID = 6
+
 class TraceProcessor:
     """Converts list of events into transactions.
 
@@ -85,25 +90,12 @@ class TraceProcessor:
         # this is a queue representing all the hardware sends
         self.hardware_sends = []
 
-        # this is a dictionary of hardware sends. Mapping is done using LID from from faddr.
-        self.unpaired_hw_sends = {4: [],       # to store all the RGX sends
+        # this is a dictionary of unpaired hardware sends.
+        # Mapping is done using LID from from faddr.
+        self.unpaired_hw_sends = {0: [],       # to store all the HU sends
+                                  4: [],       # to store all the RGX sends
                                   5: [],       # to store all the LE sends
-                                  6: [],       # to store all the ZIP sends
-                                  0: []}       # to store all the HU sends
-
-        # TODO (SanyaSriv): Remove the individual lists after confirming the lid
-        # dictionary works well.
-        # this is a list that will store all the LE events so we can pair them
-        self.le_sends = []
-
-        # this is a list that will store all the ZIP events so we can pair them
-        self.zip_sends = []
-
-        # to store all the HU sends
-        self.hu_sends = []
-
-        # to store all the RGX sends
-        self.rgx_sends = []
+                                  6: []}       # to store all the ZIP sends
 
     def remember_send(self, event, wu_id, arg0, arg1, dest, send_time,
                       is_timer, flags):
@@ -189,16 +181,7 @@ class TraceProcessor:
                     previous_start = self.find_previous_start()
                     fake_hw_event = self.hardware_sends[-1]
                     fake_hw_event.end_time = timestamp
-
                     previous_start.successors.append(fake_hw_event)
-                    if fake_hw_event.is_hw_le == True:
-                        self.le_sends.append(fake_hw_event)
-                    elif fake_hw_event.is_hw_zip == True:
-                        self.zip_sends.append(fake_hw_event)
-                    elif fake_hw_event.is_hw_hu == True:
-                        self.hu_sends.append(fake_hw_event)
-                    elif fake_hw_event.is_hw_rgx == True:
-                        self.rgx_sends.append(fake_hw_event)
 
                     lid_value = fake_hw_event.vp.lid
                     if (lid_value == 0) or (4 <= lid_value <= 6):
@@ -210,39 +193,31 @@ class TraceProcessor:
              is_timer, flags) = self.find_previous_send(wu_id, arg0,
                                                         arg1, vp)
 
-            # TODO (SanyaSriv): Swap reg-ex matgching with LID comparision
-            # matching LE events and allocating time
-            if re.match(".*LE.*", str(next_event.origin_faddr)) != None:
-                if len(self.le_sends) > 0:
-                    for i in range(len(self.le_sends) - 1, -1, -1):
-                        # TODO (SanyaSriv): Remove the code for iterating over
-                        # the individual lists and replace it with the dictionary
-                        # after confirming the dictionary works
-                        if next_event.origin_faddr == self.le_sends[i].vp:
-                            self.le_sends[i].end_time = next_event.timestamp
-                            self.le_sends.pop(i)
-                            break;
-            elif re.match(".*ZIP.*", str(next_event.origin_faddr)) != None:
-                if len(self.zip_sends) > 0:
-                    for i in range(len(self.zip_sends) - 1, -1, -1):
-                        if next_event.origin_faddr == self.zip_sends[i].vp:
-                            self.zip_sends[i].end_time = next_event.timestamp
-                            self.zip_sends.pop(i)
-                            break;
-            elif re.match(".*HU.*", str(next_event.origin_faddr)) != None:
-                if len(self.hu_sends) > 0:
-                    for i in range(len(self.hu_sends) -1, -1, -1):
-                        if next_event.origin_faddr == self.hu_sends[i].vp:
-                            self.hu_sends[i].end_time = next_event.timestamp
-                            self.hu_sends.pop(i)
-                            break;
-            elif re.match(".*RGX.*", str(next_event.origin_faddr)) != None:
-                if len(self.rgx_sends) > 0:
-                    for i in range(len(self.rgx_sends) -1, -1, -1):
-                        if next_event.origin_faddr == self.rgx_sends[i].vp:
-                            self.rgx_sends[i].end_time = next_event.time_stamp
-                            self.rgx_sends.pop(i)
-                            break;
+            next_event_lid = next_event.origin_faddr.lid
+            if next_event_lid == HU_LID:
+                for i in range(len(self.unpaired_hw_sends[HU_LID]) -1, -1, -1):
+                    if next_event.origin_faddr == self.unpaired_hw_sends[HU_LID][i].vp:
+                        self.unpaired_hw_sends[HU_LID][i].end_time = next_event.timestamp
+                        self.unpaired_hw_sends[HU_LID].pop(i)
+                        break;
+            elif next_event_lid == RGX_LID:
+                for i in range(len(self.unpaired_hw_sends[RGX_LID]) -1, -1, -1):
+                    if next_event.origin_faddr == self.unpaired_hw_sends[RGX_LID][i].vp:
+                        self.unpaired_hw_sends[RGX_LID][i].end_time = next_event.timestamp
+                        self.unpaired_hw_sends[RGX_LID].pop(i)
+                        break;
+            elif next_event_lid == LE_LID:
+                for i in range(len(self.unpaired_hw_sends[LE_LID]) -1, -1, -1):
+                    if next_event.origin_faddr == self.unpaired_hw_sends[LE_LID][i].vp:
+                        self.unpaired_hw_sends[LE_LID][i].end_time = next_event.timestamp
+                        self.unpaired_hw_sends[LE_LID].pop(i)
+                        break;
+            elif next_event_lid == ZIP_LID:
+                for i in range(len(self.unpaired_hw_sends[ZIP_LID]) -1, -1, -1):
+                    if next_event.origin_faddr == self.unpaired_hw_sends[ZIP_LID][i].vp:
+                        self.unpaired_hw_sends[ZIP_LID][i].end_time = next_event.timestamp
+                        self.unpaired_hw_sends[ZIP_LID].pop(i)
+                        break;
 
             if predecessor and int(flags) & 2:
                     # Hardware WU.
