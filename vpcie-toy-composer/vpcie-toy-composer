@@ -360,7 +360,7 @@ def cli_dpu_ztp(args):
 	# XXX There's a '/platform/services/ztp_boot/url/set' Platform Agent
 	# XXX RESTful API but it uses 'boot_script_url' instead of
 	# XXX 'controllers' in /persist/config/ztp/startup_cfg.json and I
-	# XXX can't anyone to tell me how to use that form ... (sigh)
+	# XXX can't get anyone to tell me how to use that form ... (sigh)
 
 	# Determine the Fungible Cluster Services Host for the Zero Touch
 	# Provisioning.  If an explicit ZTP CS Host has been provided, use
