@@ -194,30 +194,14 @@ class TraceProcessor:
                                                         arg1, vp)
 
             next_event_lid = next_event.origin_faddr.lid
-            if next_event_lid == HU_LID:
-                for i in range(len(self.unpaired_hw_sends[HU_LID]) -1, -1, -1):
-                    if next_event.origin_faddr == self.unpaired_hw_sends[HU_LID][i].vp:
-                        self.unpaired_hw_sends[HU_LID][i].end_time = next_event.timestamp
-                        self.unpaired_hw_sends[HU_LID].pop(i)
-                        break;
-            elif next_event_lid == RGX_LID:
-                for i in range(len(self.unpaired_hw_sends[RGX_LID]) -1, -1, -1):
-                    if next_event.origin_faddr == self.unpaired_hw_sends[RGX_LID][i].vp:
-                        self.unpaired_hw_sends[RGX_LID][i].end_time = next_event.timestamp
-                        self.unpaired_hw_sends[RGX_LID].pop(i)
-                        break;
-            elif next_event_lid == LE_LID:
-                for i in range(len(self.unpaired_hw_sends[LE_LID]) -1, -1, -1):
-                    if next_event.origin_faddr == self.unpaired_hw_sends[LE_LID][i].vp:
-                        self.unpaired_hw_sends[LE_LID][i].end_time = next_event.timestamp
-                        self.unpaired_hw_sends[LE_LID].pop(i)
-                        break;
-            elif next_event_lid == ZIP_LID:
-                for i in range(len(self.unpaired_hw_sends[ZIP_LID]) -1, -1, -1):
-                    if next_event.origin_faddr == self.unpaired_hw_sends[ZIP_LID][i].vp:
-                        self.unpaired_hw_sends[ZIP_LID][i].end_time = next_event.timestamp
-                        self.unpaired_hw_sends[ZIP_LID].pop(i)
-                        break;
+            if (next_event_lid == HU_LID or next_event_lid == RGX_LID or
+                next_event_lid == LE_LID or next_event_lid == ZIP_LID):
+                start = len(self.unpaired_hw_sends[next_event_lid]) -1
+                for i in range(start, -1, -1):
+                    if next_event.origin_faddr == self.unpaired_hw_sends[next_event_lid][i].vp:
+                        self.unpaired_hw_sends[next_event_lid][i].end_time = next_event.timestamp
+                        self.unpaired_hw_sends[next_event_lid].pop(i)
+                        break
 
             if predecessor and int(flags) & 2:
                     # Hardware WU.
