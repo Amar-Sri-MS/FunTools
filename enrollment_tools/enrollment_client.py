@@ -16,7 +16,7 @@ import argparse
 import requests
 import json
 import socket
-import logger
+import logging as logger
 from os import path
 from pathlib import Path
 
@@ -347,7 +347,7 @@ def main():
 
     print('Connected to probe')
     # verify we are in the correct step
-    boot_step, version = dbg_probe.get_boot_step_and_version()
+    boot_step, version = dbgprobe.get_boot_step_and_version()
     expected_boot_step = get_expected_boot_step(version)
 
     if boot_step != expected_boot_step:
