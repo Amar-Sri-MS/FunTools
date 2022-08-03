@@ -104,6 +104,7 @@ class Volume(object):
         # Part volume ID
         self.pvol_id = pvol_id
 
+        self.dp_transitions = ['rebuild_start', 'rebuild_done', 'rebuild_failed', 'rdsvol_close', 'degraded', 'online']
         # Time of the current operation
         self.op_time = None
         # Time of the previous operation
@@ -323,8 +324,13 @@ class Volume(object):
             return []
 
         type = get_value_from_params(results[0], 'type')
+
+        dp_transitions_info = self.get_dp_transitions_info(pvol_id, start_time, end_time)
         info = list()
-        info.append(results[0])
+        info.append({
+            **results[0],
+            'transitions_info': dp_transitions_info
+        })
         # Getting info for primary volume if it is replica volume.
         if type == VOLUME_TYPES.get('RDS'):
             # CHECK: What if there are more than 1 entry?
@@ -402,6 +408,27 @@ class Volume(object):
             rebuild_info[uuid] = result
 
         return rebuild_info
+
+    def get_dp_transitions_info(self, uuid, start_time=None, end_time=None):
+        """ """
+        queries = [
+            '(src:funos OR src:funos_0 OR src:funos_1 OR src:dpu)',
+            '("rdsvol_close" OR "degraded: True" OR "online")',
+            uuid
+        ]
+        time_filters = (start_time, end_time)
+
+        results = self._perform_es_search(queries, time_filters)
+        transitions_info = list()
+        for result in results:
+            msg = result['msg']
+            transition_state = re.search("({0})".format('|'.join(self.dp_transitions)), msg)
+            if transition_state:
+                transitions_info.append({
+                    **result,
+                    'state': transition_state.group(1)
+                })
+        return transitions_info
 
     def get_lifecycle(self):
         """
@@ -512,6 +539,7 @@ class Volume(object):
                 jvol_uuid = get_value_from_params(lsv_info, 'jvol_uuid')
                 # CHECK: Why is this a list?
                 ec_uuids = get_value_from_params(lsv_info, 'pvol_id')
+                durability_scheme = get_value_from_params(lsv_info, 'durability_scheme')
                 if len(ec_uuids) == 0:
                     raise Exception(f'Could not find EC UUIDs from LSV UUID: {lsv_uuid}')
 
@@ -525,7 +553,8 @@ class Volume(object):
                     'lsv_uuid': lsv_uuid,
                     'lsv_info': lsv_info,
                     'jvol_uuid': jvol_uuid,
-                    'ec_uuid': ec_uuid
+                    'ec_uuid': ec_uuid,
+                    'durability_scheme': durability_scheme
                 }
 
                 jvol_info = self.get_journal_volume_info(jvol_uuid, end_time=self.op_time, operation=operation)
