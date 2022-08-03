@@ -25,6 +25,10 @@
                 <button class="btn btn-primary" onclick="showAllUUIDLogs()">Show logs of all UUIDs</button>
             </div>
             <div class="container">
+                <h3>DPU Info</h3>
+                <div id="dpu_info"></div>
+            </div>
+            <div class="container">
                 <h3>CREATE Phase</h3>
                 <pre id="create_phase"></pre>
             </div>
@@ -49,6 +53,7 @@
     <script type="text/javascript">
         const logID = "{{log_id}}";
         const lifecycle_element = document.getElementById("lifecycle");
+        const dpu_info_element = document.getElementById("dpu_info");
         const create_phase_element = document.getElementById("create_phase");
         const mount_phase_element = document.getElementById("mount_phase");
         const plex_status_history_element = document.getElementById("plex_status_history");
@@ -127,6 +132,7 @@
         function clearTables() {
             // Resetting the UUIDs set.
             uuids = new Set();
+            dpu_info_element.innerHTML = "";
             create_phase_element.innerHTML = "";
             mount_phase_element.innerHTML = "";
             plex_status_history_element.innerHTML = "";
@@ -146,6 +152,13 @@
         function showLifecycle(lifecycle) {
             toggleElementDisplay(lifecycle_element, true);
             console.log(lifecycle);
+
+            // DPU Info table
+            const dpuInfo = "dpu_info" in lifecycle ? lifecycle["dpu_info"] : null;
+            if (dpuInfo) {
+                renderDPUInfo(dpuInfo);
+            }
+
             // Create phase
             const createPhase = "create" in lifecycle ? lifecycle["create"] : null;
             if (createPhase) {
@@ -170,6 +183,56 @@
             if (uuids.size > 0) {
                 toggleElementDisplay(document.getElementById("show_plex_logs"), true);
             }
+        }
+
+        function renderDPUInfo(dpuInfo) {
+            for (const [mac, info] of Object.entries(dpuInfo)) {
+                const dpuInfoTable = getDPUInfoTable(info);
+                const dpuCrashTable = getDPUCrashTable(info);
+
+                dpu_info_element.innerHTML += `
+                    <div style="display:flex;">
+                        <pre>${dpuInfoTable.toString()}</pre>
+                        <pre>${dpuCrashTable.toString()}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        function getDPUInfoTable(dpuInfo) {
+            const mac = dpuInfo["mac"];
+            const ip = dpuInfo["ipcfg"];
+            const title = `DPU Transitions Table: ${mac} (${ip})`;
+
+            let table = new window.AsciiTable(title);
+
+            if ("ipcfg_timestamp" in dpuInfo) {
+                table.setHeading("Time of DPU Boot", "Boot Reason", "IPCFG");
+                dpuInfo["ipcfg_timestamp"].map(doc => {
+                    const timestamp = doc["@timestamp"];
+                    const URL = formLogURL(timestamp, doc["_id"])
+                    table.addRow("", "", formAnchorTag(URL, timestamp));
+                });
+            }
+            else {
+                table.addRow("No data for transitions");
+            }
+            return table;
+        }
+
+        function getDPUCrashTable(dpuInfo) {
+            let table = new window.AsciiTable("Crash Log");
+            if ("crash" in dpuInfo) {
+                table.setHeading("Time", "Reason");
+                dpuInfo["crash"].map(crash => {
+                    const URL = formLogURL(crash["time"], crash["document"]["_id"]);
+                    table.addRow(formAnchorTag(URL, crash["time"]), crash["reason"]);
+                });
+            }
+            else {
+                table.addRow("No crash log found!");
+            }
+            return table;
         }
 
         function renderPhases(operation="CREATE", element, phases) {

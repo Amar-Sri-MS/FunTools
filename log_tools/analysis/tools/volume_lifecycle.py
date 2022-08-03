@@ -40,6 +40,11 @@ OPERATIONS = {
     'REBUILD': 'VOL_ADMIN_OPCODE_REBUILD'
 }
 
+CRASH_KEYWORDS = ['"app=no_hbmdump_crash"',
+                  'bug_check',
+                  '"opcode: IPCFG"',
+                  '"Listening on LPF/eth0/"']
+
 def convert_to_json(log_line):
     """
     FunOS logs JSON as string. This function extracts the JSON out of
@@ -64,13 +69,15 @@ def convert_to_json(log_line):
                 # End of the json
                 if line != '}"':
                     json_list.append(line)
+        if len(json_list) == 0:
+            raise Exception
         json_str = ' '.join(json_list)
 
         ret_json = json.loads('{' + json_str + '}')
         return ret_json
     except:
         logging.exception(f'Malformed JSON: {log_line}')
-        return None
+        return log_line
 
 def get_value_from_params(info, key, default=None):
     """ Extracts value from the FunOS JSON log """
@@ -172,6 +179,44 @@ class Volume(object):
         """ Returns info of MOUNT operation """
         return self.get_info('MOUNT')
 
+    def _get_dpu_dataplane_ip(self, text):
+        m = re.search('"ip":\s*"(\S+?)"', str(text))
+        if m:
+            return m.group(1)
+
+    def get_all_dpu_info(self):
+        """ Searches for crash logs on funos logs """
+        dpu_info = dict()
+        results = self._perform_es_search(CRASH_KEYWORDS, format_hit_fn=None, match_all=False)
+        for result in results:
+            system_id = result['system_id']
+            line = result['msg']
+            if system_id is not None and system_id not in dpu_info:
+                dpu_info[system_id] = {}
+            if 'IPCFG' in line:
+                if 'ipcfg' not in dpu_info[system_id]:
+                    dpu_info[system_id]['ipcfg'] = self._get_dpu_dataplane_ip(line)
+                if 'ipcfg_timestamp' not in dpu_info[system_id]:
+                    dpu_info[system_id]['ipcfg_timestamp'] = []
+                dpu_info[system_id]['ipcfg_timestamp'].append(result)
+
+            elif 'Listening on' in line:
+                if 'mac' not in dpu_info[system_id]:
+                    m = re.search("([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}", line)
+                    if m:
+                        dpu_info[system_id]['mac'] = m.group(0)
+            else:
+                if 'crash' not in dpu_info[system_id]:
+                    dpu_info[system_id]['crash'] = []
+                m = re.search(('|'.join(CRASH_KEYWORDS)), line)
+                reason = m.group(0)
+                dpu_info[system_id]['crash'].append({
+                    'time': result['@timestamp'],
+                    'reason': reason,
+                    'document': result
+                })
+
+        return dpu_info
     def get_snapshot_info(self, uuid, operation='CREATE'):
         queries = self._build_query(operation, VOLUME_TYPES.get('SNAPSHOT'), uuid)
         if operation == 'CREATE':
@@ -381,6 +426,8 @@ class Volume(object):
                                                     for uuid in self.jvol_uuids}
         lifecycle['ec_failed_plex_ack_history'] = {uuid: self._get_failed_plex_ack_info_logs(uuid)
                                                     for uuid in self.ec_uuids}
+
+        lifecycle['dpu_info'] = self.get_all_dpu_info()
 
         return lifecycle
 
