@@ -238,15 +238,16 @@ class TraceProcessor:
             else:
                 # New event not initiated by a previous WU.
                 # TODO (SanyaSriv): Remove the merge-all strategy
-                if len(self.start_events) != 0:
-                    previous_start = self.find_previous_start()
-                    previous_start.successors.append(current_event)
-                    self.start_events.append(current_event)
-                else:
-                    transaction = event.Transaction(current_event)
-                    self.transactions.append(transaction)
-                    current_event.transaction = transaction
-                    self.start_events.append(current_event)
+                if next_event.origin_faddr.lid in [HU_LID, RGX_LID, LE_LID, ZIP_LID]:
+                    if len(self.start_events) != 0:
+                        previous_start = self.find_previous_start()
+                        previous_start.successors.append(current_event)
+                        self.start_events.append(current_event)
+                        return
+                transaction = event.Transaction(current_event)
+                self.transactions.append(transaction)
+                current_event.transaction = transaction
+                self.start_events.append(current_event)
 
         elif next_event.event_type == event.WU_END_EVENT:
             # Identify the matching start event, and set the end time.
