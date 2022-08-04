@@ -11,6 +11,9 @@
     <body>
         {% include "nav_bar.html" ignore missing %}
         <div class="container">
+            <div class="content">
+                <button class="btn" data-web_event="DASHBOARD_BUTTON" onclick="window.open('/log/{{log_id}}/dashboard', '_self')">Back to Dashboard</button>
+            </div>
             <h2 class="center-align">Lifecycle of a Volume</h2>
             <div class="form-group">
                 <label for="volume_id">Volume UUID (PV, Snapshot or Clone)</label>

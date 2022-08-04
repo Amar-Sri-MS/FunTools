@@ -5,6 +5,9 @@
     </head>
     <body>
         {% include "nav_bar.html" ignore missing %}
+        <div class="content">
+            <button class="btn" data-web_event="DASHBOARD_BUTTON" onclick="window.open('/log/{{log_id}}/dashboard', '_self')">Back to Dashboard</button>
+        </div>
         <div class="content" id="network_info" style="display: none;">
             <h2 class="center-align">Network Tool</h2>
             <div class="container">

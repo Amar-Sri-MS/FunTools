@@ -597,7 +597,9 @@
             </div>
         {% endif %}
         <div id="quicklinks">
-            <div></div>
+            <div>
+                <button class="btn" data-web_event="DASHBOARD_BUTTON" onclick="window.open('/log/{{log_id}}/dashboard', '_self')">Back to Dashboard</button>
+            </div>
             <div style="display: flex;">
                 <a id="anchor_link" data-web_event="ANCHOR_LINK" style="display: none;" href="#0">Link to the selected log</a>
                 <button class="btn" data-web_event="VSWITCH_TOOL_BUTTON" onclick="window.open('/tools/{{log_id}}/vswitch')">vSwitch Tool</button>
