@@ -566,7 +566,7 @@
 <body>
     {% include 'nav_bar.html' ignore missing %}
     <!-- Calculating total log entries -->
-    {% set total_entries = sources.values()|sum() %}
+    {% set total_entries = sources.values()|sum() if sources is defined else 0 %}
     <div class="content">
         <h2 id="top" class="center-align">Logs from
             {% if job_link is not none %}

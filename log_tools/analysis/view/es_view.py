@@ -395,6 +395,7 @@ def get_temporally_close_hits(es, state, size, filters, next, prev):
 def _render_log_page(log_id, jinja_env, template):
     """ Renders the log page """
     try:
+        template_dict = {}
         es = ElasticLogSearcher(log_id)
         es_metadata = ElasticsearchMetadata()
 
@@ -403,7 +404,6 @@ def _render_log_page(log_id, jinja_env, template):
         sources = es.get_unique_entries('src')
         unique_entries = es.get_aggregated_unique_entries(['system_type', 'system_id'], ['src'])
 
-        template_dict = {}
         template_dict['log_id'] = log_id
         template_dict['sources'] = sources
         template_dict['unique_entries'] = unique_entries
@@ -424,8 +424,10 @@ def _render_log_page(log_id, jinja_env, template):
     except Exception as e:
         app.logger.exception('Error while rendering log page')
         template_dict['error'] = str(e)
+        template_dict['log_id'] = log_id
         template_dict['state'] = {}
         template_dict['search_results'] = {}
+        template_dict['metadata'] = {}
 
     result = template.render(template_dict, env=jinja_env)
     return result
@@ -763,47 +765,53 @@ def _get_actual_job_link(log_id):
         return f'http://palladium-jobs.fungible.local:8080/job/{job_id}'
 
 def _render_dashboard_page(log_id, jinja_env, template):
+    try:
+        template_dict = {}
+        es = ElasticLogSearcher(log_id)
+        es_metadata = ElasticsearchMetadata()
 
-    es = ElasticLogSearcher(log_id)
-    es_metadata = ElasticsearchMetadata()
+        log_view_base_url = _get_log_view_base_url(log_id)
+        keyword_for_level = app.config.get('LEVEL_KEYWORDS')
 
-    log_view_base_url = _get_log_view_base_url(log_id)
-    keyword_for_level = app.config.get('LEVEL_KEYWORDS')
+        default_log_levels = list(keyword_for_level.keys())
+        # Number of documents to fetch for most recent logs
+        RECENT_LOGS_SIZE = 50
 
-    default_log_levels = list(keyword_for_level.keys())
-    # Number of documents to fetch for most recent logs
-    RECENT_LOGS_SIZE = 50
+        sources = es.get_unique_entries('src')
+        system_types = es.get_unique_entries('system_type')
+        system_ids = es.get_unique_entries('system_id')
+        unique_entries = es.get_aggregated_unique_entries(['system_type', 'system_id'], ['src'])
+        log_level_stats = _get_log_level_stats(log_id)
+        log_event_stats = _get_log_event_stats(log_id)
 
-    sources = es.get_unique_entries('src')
-    system_types = es.get_unique_entries('system_type')
-    system_ids = es.get_unique_entries('system_id')
-    unique_entries = es.get_aggregated_unique_entries(['system_type', 'system_id'], ['src'])
-    log_level_stats = _get_log_level_stats(log_id)
-    log_event_stats = _get_log_event_stats(log_id)
+        # Fetch the first non zero log level
+        nonzero_log_levels = [level for level in default_log_levels if log_level_stats[level]['count'] > 0]
 
-    # Fetch the first non zero log level
-    nonzero_log_levels = [level for level in default_log_levels if log_level_stats[level]['count'] > 0]
+        recent_logs = _get_recent_logs(log_id, RECENT_LOGS_SIZE, log_levels=nonzero_log_levels[0:1])
 
-    recent_logs = _get_recent_logs(log_id, RECENT_LOGS_SIZE, log_levels=nonzero_log_levels[0:1])
+        analytics_data = _get_analytics_data(log_id)
 
-    analytics_data = _get_analytics_data(log_id)
+        metadata = es_metadata.get(log_id)
 
-    metadata = es_metadata.get(log_id)
-
-    template_dict = {}
-    template_dict['log_id'] = log_id
-    template_dict['sources'] = sources
-    template_dict['system_types'] = system_types
-    template_dict['system_ids'] = system_ids
-    template_dict['unique_entries'] = unique_entries
-    template_dict['log_view_base_url'] = log_view_base_url
-    template_dict['log_level_stats'] = log_level_stats
-    template_dict['log_event_stats'] = log_event_stats
-    template_dict['log_level_for_recent_logs'] = nonzero_log_levels[0] if len(nonzero_log_levels) > 0 else None
-    template_dict['recent_logs'] = _render_log_entries(recent_logs)
-    template_dict['analytics_data'] = json.dumps(analytics_data)
-    template_dict['metadata'] = metadata
-    template_dict['job_link'] = _get_actual_job_link(log_id)
+        template_dict['log_id'] = log_id
+        template_dict['sources'] = sources
+        template_dict['system_types'] = system_types
+        template_dict['system_ids'] = system_ids
+        template_dict['unique_entries'] = unique_entries
+        template_dict['log_view_base_url'] = log_view_base_url
+        template_dict['log_level_stats'] = log_level_stats
+        template_dict['log_event_stats'] = log_event_stats
+        template_dict['log_level_for_recent_logs'] = nonzero_log_levels[0] if len(nonzero_log_levels) > 0 else None
+        template_dict['recent_logs'] = _render_log_entries(recent_logs)
+        template_dict['analytics_data'] = json.dumps(analytics_data)
+        template_dict['metadata'] = metadata
+        template_dict['job_link'] = _get_actual_job_link(log_id)
+    except Exception as e:
+        app.logger.exception('Error while rendering log page')
+        template_dict['error'] = str(e)
+        template_dict['log_id'] = log_id
+        template_dict['metadata'] = {}
+        template_dict['unique_entries'] = []
 
     result = template.render(template_dict, env=jinja_env)
     return result
