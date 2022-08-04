@@ -276,27 +276,26 @@ class TraceProcessor:
 
             curr = None
 
-            # TODO(SanyaSriv): Identify associated hardware accelerator WU using faddr, not regex.
-            if re.match(".*LE.*", str(next_event.dest_faddr)) != None:
+            if next_event.dest_faddr.lid == LE_LID:
                 current_event = event.TraceEvent(send_time, send_time,
                     "HW-LE: " + next_event.name, next_event.dest_faddr)
                 # will now connect this to the previous event
                 current_event.is_hw_le = True
                 self.hardware_sends.append(current_event)
 
-            if re.match(".*ZIP.*", str(next_event.dest_faddr)) != None:
+            if next_event.dest_faddr.lid == ZIP_LID:
                 current_event = event.TraceEvent(send_time, send_time,
                     "HW-ZIP: " + next_event.name, next_event.dest_faddr)
                 current_event.is_hw_zip = True
                 self.hardware_sends.append(current_event)
 
-            if re.match(".*HU.*", str(next_event.dest_faddr)) != None:
+            if next_event.dest_faddr.lid == HU_LID:
                 current_event = event.TraceEvent(send_time, send_time,
                     "HW-HU: " + next_event.name, next_event.dest_faddr)
                 current_event.is_hw_hu = True
                 self.hardware_sends.append(current_event)
 
-            if re.match(".*RGX.*", str(next_event.dest_faddr)) != None:
+            if next_event.dest_faddr.lid == RGX_LID:
                 current_event = event.TraceEvent(send_time, send_time,
                     "HW-RGX: " + next_event.name, next_event.dest_faddr)
                 current_event.is_hw_rgx = True
