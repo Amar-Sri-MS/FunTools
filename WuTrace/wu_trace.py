@@ -184,7 +184,7 @@ class TraceProcessor:
                     previous_start.successors.append(fake_hw_event)
 
                     lid_value = fake_hw_event.vp.lid
-                    if (lid_value in [HU_LID, RGX_LID, LE_LID, ZIP_LID]):
+                    if (lid_value in [RGX_LID, LE_LID, ZIP_LID]) or (next_event.origin_faddr.is_hu()):
                         self.unpaired_hw_sends[lid_value].append(fake_hw_event)
 
                     self.hardware_sends.pop()
@@ -194,7 +194,7 @@ class TraceProcessor:
                                                         arg1, vp)
 
             next_event_lid = next_event.origin_faddr.lid
-            if (next_event_lid in [HU_LID, RGX_LID, LE_LID, ZIP_LID]):
+            if (next_event_lid in [RGX_LID, LE_LID, ZIP_LID]) or (next_event.origin_faddr.is_hu()):
                 start = len(self.unpaired_hw_sends[next_event_lid]) -1
                 for i in range(start, -1, -1):
                     if next_event.origin_faddr == self.unpaired_hw_sends[next_event_lid][i].vp:
@@ -276,8 +276,6 @@ class TraceProcessor:
 
             curr = None
 
-            # TODO (SanyaSriv): HU and CA are both represnted with LID=0,
-            # so find a new way to represent HU.
             if next_event.dest_faddr.lid == LE_LID:
                 current_event = event.TraceEvent(send_time, send_time,
                     "HW-LE: " + next_event.name, next_event.dest_faddr)
@@ -291,7 +289,7 @@ class TraceProcessor:
                 current_event.is_hw_zip = True
                 self.hardware_sends.append(current_event)
 
-            if next_event.dest_faddr.lid == HU_LID:
+            if next_event.dest_faddr.is_hu():
                 current_event = event.TraceEvent(send_time, send_time,
                     "HW-HU: " + next_event.name, next_event.dest_faddr)
                 current_event.is_hw_hu = True
