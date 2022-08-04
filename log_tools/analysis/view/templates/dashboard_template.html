@@ -52,9 +52,9 @@
                 <a data-web_event="DUPLICATES_LINK" href="#duplicates">Duplicate Logs</a>
             </div>
             <div>
-                <button class="btn" data-web_event="VSWITCH_TOOL_BUTTON" onclick="window.open('/tools/{{log_id}}/vswitch')">vSwitch Tool</button>
-                <button class="btn" data-web_event="STORAGE_TOOL_BUTTON" onclick="window.open('/tools/{{log_id}}/volume')">Storage Tools</button>
-                <button class="btn" data-web_event="NETWORK_TOOL_BUTTON" onclick="window.open('/tools/{{log_id}}/network')">Network Tool</button>
+                <button class="btn open-new-tab" data-web_event="VSWITCH_TOOL_BUTTON" onclick="window.open('/tools/{{log_id}}/vswitch')">vSwitch Tool</button>
+                <button class="btn open-new-tab" data-web_event="STORAGE_TOOL_BUTTON" onclick="window.open('/tools/{{log_id}}/volume')">Storage Tools</button>
+                <button class="btn open-new-tab" data-web_event="NETWORK_TOOL_BUTTON" onclick="window.open('/tools/{{log_id}}/network')">Network Tool</button>
                 <button class="btn" onclick="toggleNotesOverlay()">
                     Add/Show notes({{ metadata.notes|length }})
                 </button>
@@ -67,7 +67,7 @@
             <div class="filters_container">
                 {% include 'source_filters.html' %}
                 <div id="explore_button">
-                    <button class="btn" onclick="onClickExploreLogs()">Explore Logs <span class="arrow right"></span></button>
+                    <button class="btn open-new-tab" onclick="onClickExploreLogs()">Explore Logs</button>
                 </div>
             </div>
         </div>
