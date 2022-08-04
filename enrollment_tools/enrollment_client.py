@@ -75,6 +75,28 @@ def byte_str_to_int_list(s):
     a.fromstring(s)
     return list(a)
 
+##########################################################################
+#
+# Parsing/Extracting utilities
+#
+#########################################################################
+
+def boot_step_and_version(rdata):
+    # boot step is the single byte at 20
+    # version is the nul terminated string at the end...
+    # starting at byte 36
+    boot_step = rdata[20]
+    version_offset = 36
+    magic = int.from_bytes(rdata[version_offset:version_offset+4],
+                           'little')
+    if magic == 0xADDED001:
+        version_offset += 4 * 4 # 4 extra 32 bit words
+
+    # find null terminator
+    zero_index = rdata[version_offset:].index(0)
+    version = rdata[version_offset:
+                    version_offset+zero_index].tostring().decode('ascii')
+    return boot_step, version
 
 ###########################################################################
 #
@@ -151,6 +173,7 @@ class DBG_Chal(object):
         print('Disconnect failed!')
         return status
 
+
     def get_boot_step_and_version(self):
         ''' check that the chip is in the right boot step
         status returns header (4), tamper_status (4), tamper_timestamp (4)
@@ -159,12 +182,7 @@ class DBG_Chal(object):
                                                      chip_inst=self.chip_inst)
 
         if status is True and cmd_status_ok(rdata) and cmd_reply_length(rdata) > 36:
-            # boot step is the single byte at 20
-            # version is the nul terminated string from byte 36
-            boot_step = rdata[20]
-            version_bytes = rdata[36:].split(b'\x00')[0]
-            version = version_bytes.decode('ascii')
-            return boot_step, version
+            return boot_step_and_version(rdata)
 
         report_error("GetStatus", rdata)
         return None, None
