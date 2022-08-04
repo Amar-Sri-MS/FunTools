@@ -276,6 +276,8 @@ class TraceProcessor:
 
             curr = None
 
+            # TODO (SanyaSriv): HU and CA are both represnted with LID=0,
+            # so find a new way to represent HU.
             if next_event.dest_faddr.lid == LE_LID:
                 current_event = event.TraceEvent(send_time, send_time,
                     "HW-LE: " + next_event.name, next_event.dest_faddr)
