@@ -193,14 +193,20 @@ class TraceProcessor:
              is_timer, flags) = self.find_previous_send(wu_id, arg0,
                                                         arg1, vp)
 
+            # pairing events here
+            # should merge here as well
             next_event_lid = next_event.origin_faddr.lid
             if (next_event_lid in [HU_LID, RGX_LID, LE_LID, ZIP_LID]):
                 start = len(self.unpaired_hw_sends[next_event_lid]) -1
                 for i in range(start, -1, -1):
                     if next_event.origin_faddr == self.unpaired_hw_sends[next_event_lid][i].vp:
                         self.unpaired_hw_sends[next_event_lid][i].end_time = next_event.timestamp
+                        # paired, now merging
+                        self.unpaired_hw_sends[next_event_lid][i].successors.append(current_event)
+                        # TODO (SanyaSriv): Maybe do not put the dependent events in the list
+                        self.start_events.append(current_event)
                         self.unpaired_hw_sends[next_event_lid].pop(i)
-                        break
+                        return
 
             if predecessor and int(flags) & 2:
                     # Hardware WU.
@@ -237,13 +243,6 @@ class TraceProcessor:
 
             else:
                 # New event not initiated by a previous WU.
-                # TODO (SanyaSriv): Remove the merge-all strategy
-                if next_event.origin_faddr.lid in [HU_LID, RGX_LID, LE_LID, ZIP_LID]:
-                    if len(self.start_events) != 0:
-                        previous_start = self.find_previous_start()
-                        previous_start.successors.append(current_event)
-                        self.start_events.append(current_event)
-                        return
                 transaction = event.Transaction(current_event)
                 self.transactions.append(transaction)
                 current_event.transaction = transaction
