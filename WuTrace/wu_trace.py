@@ -45,6 +45,11 @@ verbose = False
 last_time = 0
 saw_time_backwards = False
 
+HU_LID = 0
+RGX_LID = 4
+LE_LID = 5
+ZIP_LID = 6
+
 class TraceProcessor:
     """Converts list of events into transactions.
 
@@ -84,6 +89,13 @@ class TraceProcessor:
 
         # this is a queue representing all the hardware sends
         self.hardware_sends = []
+
+        # this is a dictionary of unpaired hardware sends.
+        # Mapping is done using LID from from faddr.
+        self.unpaired_hw_sends = {HU_LID    : [],   # to store all the HU sends
+                                  RGX_LID   : [],   # to store all the RGX sends
+                                  LE_LID    : [],   # to store all the LE sends
+                                  ZIP_LID   : []}   # to store all the ZIP sends
 
     def remember_send(self, event, wu_id, arg0, arg1, dest, send_time,
                       is_timer, flags):
@@ -161,19 +173,34 @@ class TraceProcessor:
             current_event = event.TraceEvent(timestamp, timestamp,
                                              next_event.name, vp)
             self.vp_to_event[vp] = current_event
+
+            # flushing the buffer
             if len(self.start_events) != 0:
                 while len(self.hardware_sends) > 0:
                     # this is some hardware send that needs an end
                     previous_start = self.find_previous_start()
                     fake_hw_event = self.hardware_sends[-1]
                     fake_hw_event.end_time = timestamp
-
                     previous_start.successors.append(fake_hw_event)
+
+                    lid_value = fake_hw_event.vp.lid
+                    if (lid_value in [HU_LID, RGX_LID, LE_LID, ZIP_LID]):
+                        self.unpaired_hw_sends[lid_value].append(fake_hw_event)
+
                     self.hardware_sends.pop()
 
             (predecessor, send_time,
              is_timer, flags) = self.find_previous_send(wu_id, arg0,
                                                         arg1, vp)
+
+            next_event_lid = next_event.origin_faddr.lid
+            if (next_event_lid in [HU_LID, RGX_LID, LE_LID, ZIP_LID]):
+                start = len(self.unpaired_hw_sends[next_event_lid]) -1
+                for i in range(start, -1, -1):
+                    if next_event.origin_faddr == self.unpaired_hw_sends[next_event_lid][i].vp:
+                        self.unpaired_hw_sends[next_event_lid][i].end_time = next_event.timestamp
+                        self.unpaired_hw_sends[next_event_lid].pop(i)
+                        break
 
             if predecessor and int(flags) & 2:
                     # Hardware WU.
@@ -210,6 +237,7 @@ class TraceProcessor:
 
             else:
                 # New event not initiated by a previous WU.
+                # TODO (SanyaSriv): Remove the merge-all strategy
                 if len(self.start_events) != 0:
                     previous_start = self.find_previous_start()
                     previous_start.successors.append(current_event)
