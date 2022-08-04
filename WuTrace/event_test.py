@@ -11,12 +11,11 @@ import event
 
 class TestParseFabricAddress(unittest.TestCase):
     def testSimple(self):
-        faddr = event.FabricAddress.from_string('FA0:16:00[VP]')
+        faddr = event.FabricAddress.from_string('FA0:16:00[CCV3.2.0]')
         self.assertEqual(0, faddr.gid)
         self.assertEqual(16, faddr.lid)
         self.assertEqual(0, faddr.queue)
         self.assertEqual(16384, faddr.raw_value)
-
         self.assertEqual('VP0.2.0', str(faddr))
 
     def testEquality(self):
