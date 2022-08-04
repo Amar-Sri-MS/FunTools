@@ -117,6 +117,28 @@ class TestParseFabricAddress(unittest.TestCase):
         self.assertTrue(faddr.is_cluster())
         self.assertEqual('RGX3', str(faddr))
 
+    def testZIP(self):
+        faddr = event.FabricAddress.from_string('FA7:6:0[ZIP]')
+        self.assertTrue(faddr.is_accelerator())
+        self.assertTrue(faddr.is_cluster())
+        self.assertEqual('ZIP7', str(faddr))
+
+        faddr = event.FabricAddress.from_string('FA0:6:0[ZIP]')
+        self.assertTrue(faddr.is_accelerator())
+        self.assertTrue(faddr.is_cluster())
+        self.assertEqual('ZIP0', str(faddr))
+
+    def testLE(self):
+        faddr = event.FabricAddress.from_string('FA7:5:0[LE]')
+        self.assertTrue(faddr.is_accelerator())
+        self.assertTrue(faddr.is_cluster())
+        self.assertEqual('LE7', str(faddr))
+
+        faddr = event.FabricAddress.from_string('FA5:5:0[LE]')
+        self.assertTrue(faddr.is_accelerator())
+        self.assertTrue(faddr.is_cluster())
+        self.assertEqual('LE5', str(faddr))
+
 
 if __name__ == '__main__':
   unittest.main()
