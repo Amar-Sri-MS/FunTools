@@ -92,10 +92,10 @@ class TraceProcessor:
 
         # this is a dictionary of unpaired hardware sends.
         # Mapping is done using LID from from faddr.
-        self.unpaired_hw_sends = {0: [],       # to store all the HU sends
-                                  4: [],       # to store all the RGX sends
-                                  5: [],       # to store all the LE sends
-                                  6: []}       # to store all the ZIP sends
+        self.unpaired_hw_sends = {HU_LID    : [],   # to store all the HU sends
+                                  RGX_LID   : [],   # to store all the RGX sends
+                                  LE_LID    : [],   # to store all the LE sends
+                                  ZIP_LID   : []}   # to store all the ZIP sends
 
     def remember_send(self, event, wu_id, arg0, arg1, dest, send_time,
                       is_timer, flags):
@@ -184,7 +184,7 @@ class TraceProcessor:
                     previous_start.successors.append(fake_hw_event)
 
                     lid_value = fake_hw_event.vp.lid
-                    if (lid_value == 0) or (4 <= lid_value <= 6):
+                    if (lid_value in [HU_LID, RGX_LID, LE_LID, ZIP_LID]):
                         self.unpaired_hw_sends[lid_value].append(fake_hw_event)
 
                     self.hardware_sends.pop()
@@ -194,8 +194,7 @@ class TraceProcessor:
                                                         arg1, vp)
 
             next_event_lid = next_event.origin_faddr.lid
-            if (next_event_lid == HU_LID or next_event_lid == RGX_LID or
-                next_event_lid == LE_LID or next_event_lid == ZIP_LID):
+            if (next_event_lid in [HU_LID, RGX_LID, LE_LID, ZIP_LID]):
                 start = len(self.unpaired_hw_sends[next_event_lid]) -1
                 for i in range(start, -1, -1):
                     if next_event.origin_faddr == self.unpaired_hw_sends[next_event_lid][i].vp:
