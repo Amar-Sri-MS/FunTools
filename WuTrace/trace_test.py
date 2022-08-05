@@ -12,6 +12,7 @@ import render
 from io import StringIO
 import read_trace
 import wu_trace
+import os
 
 def first_transaction(transactions):
     """Return first transaction parsed, or None if no transaction was parsed.
@@ -366,6 +367,7 @@ class EndToEndTest(unittest.TestCase):
                       output_file.lines)
         self.assertIn('}\n', output_file.lines)
 
+    # TODO (SanyaSriv): Add more test cases for checking transactions
     def testTransactionMerging(self):
         log = """88.515109248 TRACE WU START faddr FA0:16:0[CCV0.2.0] wuid 0x12ea name hw_le_null origin FA0:16:0[CCV0.2.0] arg0 0xc000000013c76406 arg1 0xc000800125b85f00
 88.515112768 TRACE WU SEND faddr FA0:16:0[CCV0.2.0] wuid 0 name wuh_idle arg0 0x10012ed00000000 arg1 0xc000000013c76478 flags 1 dest FA7:5:0[LE]
