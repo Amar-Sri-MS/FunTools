@@ -366,6 +366,32 @@ class EndToEndTest(unittest.TestCase):
                       output_file.lines)
         self.assertIn('}\n', output_file.lines)
 
+    def testTransactionMerging(self):
+        log = """88.515109248 TRACE WU START faddr FA0:16:0[CCV0.2.0] wuid 0x12ea name hw_le_null origin FA0:16:0[CCV0.2.0] arg0 0xc000000013c76406 arg1 0xc000800125b85f00
+88.515112768 TRACE WU SEND faddr FA0:16:0[CCV0.2.0] wuid 0 name wuh_idle arg0 0x10012ed00000000 arg1 0xc000000013c76478 flags 1 dest FA7:5:0[LE]
+88.515113152 TRACE WU END faddr FA0:16:0[CCV0.2.0]
+88.515113792 TRACE WU START faddr FA0:16:0[CCV0.2.0] wuid 0x140 name group__LE_BASIC_TEST_GROUP0 origin FA7:5:0[LE] arg0 0 arg1 0
+88.515115520 TRACE WU END faddr FA0:16:0[CCV0.2.0]"""
+
+        f1 = open("test_file.txt", 'w') # creating a file for the test
+        f1.write(log)
+        f1.close()
+        with open("test_file.txt", "r") as f1:
+            trace_parser = read_trace.TraceLogParser()
+            events = trace_parser.parse(f1, filename="test_file.txt")
+
+        trace_parser = wu_trace.TraceProcessor("test_file.txt")
+        for idx, e in enumerate(events):
+            trace_parser.handle_log_line(e, idx)
+        transactions = trace_parser.transactions
+        self.assertEqual(len(transactions), 2)
+        self.assertEqual(transactions[1].root_event.label, "hw_le_null")
+        worklist = [transactions[1].root_event]
+        self.assertEqual(len(worklist[0].successors), 1)
+        self.assertEqual(worklist[0].successors[0].label, "HW-LE: wuh_idle")
+        self.assertEqual(len(worklist[0].successors[0].successors), 1)
+        self.assertEqual(worklist[0].successors[0].successors[0].label, "group__LE_BASIC_TEST_GROUP0")
+        os.remove("test_file.txt") # removing the file now
 
 class TestRenderJSON(unittest.TestCase):
     def testIdsAreUnique(self):
