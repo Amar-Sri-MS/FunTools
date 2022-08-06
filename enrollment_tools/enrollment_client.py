@@ -5,24 +5,25 @@
 #
 #  Utility
 #
-#  Copyright (c) 2018-2019. Fungible, inc. All Rights Reserved.
+#  Copyright (c) 2018-2022. Fungible, inc. All Rights Reserved.
 #
 ##############################################################################
 
 import sys
-import array
 import binascii
 import argparse
 import requests
 import json
 import socket
 import logging as logger
-from os import path
 from pathlib import Path
 
-from probeutils.dut import *
-from probeutils.dbgclient import *
-
+# conditional import to allow simple unit testing
+try:
+    from probeutils.dut import *
+    from probeutils.dbgclient import *
+except:
+    pass
 
 ###############################################################
 #
@@ -61,20 +62,26 @@ def report_error(cmd, rdata):
 
 ##########################################################################
 #
-# I2C routines as written return a list of integers: convert to byte string
-#
-# ref: https://www.python.org/doc/essays/list2str/
+# Parsing/Extracting utilities
 #
 #########################################################################
 
-def int_list_to_byte_str(l):
-    return array('B', l).tostring()
+def boot_step_and_version(rdata):
+    # boot step is the single byte at 20
+    # version is the nul terminated string at the end...
+    # starting at byte 36
+    boot_step = rdata[20]
+    version_offset = 36
+    magic = int.from_bytes(rdata[version_offset:version_offset+4],
+                           'little')
+    if magic == 0xADDED001:
+        version_offset += 4 * 4 # 4 extra 32 bit words
 
-def byte_str_to_int_list(s):
-    a = array('B')
-    a.fromstring(s)
-    return list(a)
-
+    # find null terminator
+    zero_index = rdata[version_offset:].index(0)
+    version = bytes(rdata[version_offset:version_offset+zero_index]
+                    ).decode('ascii')
+    return boot_step, version
 
 ###########################################################################
 #
@@ -151,6 +158,7 @@ class DBG_Chal(object):
         print('Disconnect failed!')
         return status
 
+
     def get_boot_step_and_version(self):
         ''' check that the chip is in the right boot step
         status returns header (4), tamper_status (4), tamper_timestamp (4)
@@ -159,12 +167,7 @@ class DBG_Chal(object):
                                                      chip_inst=self.chip_inst)
 
         if status is True and cmd_status_ok(rdata) and cmd_reply_length(rdata) > 36:
-            # boot step is the single byte at 20
-            # version is the nul terminated string from byte 36
-            boot_step = rdata[20]
-            version_bytes = rdata[36:].split(b'\x00')[0]
-            version = version_bytes.decode('ascii')
-            return boot_step, version
+            return boot_step_and_version(rdata)
 
         report_error("GetStatus", rdata)
         return None, None
@@ -174,7 +177,7 @@ class DBG_Chal(object):
         (status, rdata) = self.dbgprobe.dbg_chal_cmd(CMD.GET_SERIAL_NUMBER,
                                                      chip_inst=self.chip_inst)
         if status is True and cmd_status_ok(rdata):
-            return int_list_to_byte_str(rdata[4:])
+            return bytes(rdata[4:])
 
         report_error("GetSerialNumber", rdata)
         return None
@@ -183,7 +186,7 @@ class DBG_Chal(object):
         (status, rdata) = self.dbgprobe.dbg_chal_cmd(CMD.GET_ENROLL_INFO,
                                                      chip_inst=self.chip_inst)
         if status is True and cmd_status_ok(rdata):
-            return int_list_to_byte_str(rdata[4:])
+            return bytes(rdata[4:])
 
         report_error("Enrollment", rdata)
         return None
@@ -191,7 +194,7 @@ class DBG_Chal(object):
     def save_enroll_cert(self, cert):
 
         (status, rdata) = self.dbgprobe.dbg_chal_cmd(CMD.SET_ENROLL_INFO,
-                                                     data=byte_str_to_int_list(cert),
+                                                     data=list(cert),
                                                      chip_inst=self.chip_inst)
         if status is True and cmd_status_ok(rdata):
             return True
@@ -272,7 +275,7 @@ def get_cert_of_serial_number(sn, verbose=False):
 
 def dut_info_get(dut_name, dut_file):
     if not dut_file:
-        dut_file = dut_cfg_file = pkg_resources.resource_filename('probeutils', 'dut.cfg')
+        dut_file = pkg_resources.resource_filename('probeutils', 'dut.cfg')
         #print('Using pre-installed dut config file: {}'.format(dut_file))
     else:
         dut_file = str(Path(dut_file).resolve())
