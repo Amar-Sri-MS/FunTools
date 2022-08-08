@@ -304,8 +304,11 @@ class TraceProcessor:
                 self.hardware_sends.append(current_event)
 
             if next_event.dest_faddr.lid == ZIP_LID:
+                wu_name = "HW-ZIP: " + next_event.name
+                if next_event.wuid in ZIP_WU_IDs:
+                    wu_name = ZIP_WU_IDs[next_event.wuid]
                 current_event = event.TraceEvent(send_time, send_time,
-                    "HW-ZIP: " + next_event.name, next_event.dest_faddr)
+                    wu_name, next_event.dest_faddr)
                 current_event.is_hw_zip = True
                 self.hardware_sends.append(current_event)
 
@@ -316,8 +319,11 @@ class TraceProcessor:
                 self.hardware_sends.append(current_event)
 
             if next_event.dest_faddr.lid == RGX_LID:
+                wu_name = "HW-RGX: " + next_event.name
+                if next_event.wuid in RGX_WU_IDs:
+                    wu_name = RGX_WU_IDs[next_event.wuid]
                 current_event = event.TraceEvent(send_time, send_time,
-                    "HW-RGX: " + next_event.name, next_event.dest_faddr)
+                    wu_name, next_event.dest_faddr)
                 current_event.is_hw_rgx = True
                 self.hardware_sends.append(current_event)
 
