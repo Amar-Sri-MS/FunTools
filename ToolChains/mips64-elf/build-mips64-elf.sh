@@ -13,7 +13,7 @@ else
 fi
 
 binutils_version=binutils-2.35.2
-gcc_version=gcc-11.3.0
+gcc_version=gcc-12.1.0
 gdb_version=gdb-11.2
 
 toolchain=mips64-unknown-elf-${binutils_version}_${gcc_version}_${gdb_version}-$(uname -s)_$(uname -m)
