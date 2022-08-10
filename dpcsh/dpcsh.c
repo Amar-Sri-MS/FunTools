@@ -1664,8 +1664,11 @@ static bool _do_cli(int argc, char *argv[],
 	ok = _decode_jsons_from_buffer(cmd);
 	ok = ok && _write_dequeue(funos, cmd);
 
-	ok = ok && _wait_read(funos);
-	ok = ok && _read_enqueue(funos);
+	do {
+		ok = ok && _wait_read(funos);
+		ok = ok && _read_enqueue(funos);
+	} while (ok && !dpcsh_ptr_queue_size(funos->binary_json_queue));
+
 	ok = ok && _write_dequeue(cmd, funos);
 
 connect_fail:
