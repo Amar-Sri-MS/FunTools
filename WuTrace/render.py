@@ -108,7 +108,8 @@ def calculate_outlier(events_list):
         # not adding events with duration < lower_fence because we do not want
         # events that took too less time as outliers.
         if (event_dictionary[i].duration() > upper_fence and
-                event_dictionary[i].duration() > 1000000):
+                event_dictionary[i].duration() > 1000000 and
+                event_dictionary[i].label != "timer"):
             # Should not add events with duration < 1000 usec
             outliers.append(event_dictionary[i])
     return outliers
