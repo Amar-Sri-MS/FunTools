@@ -39,11 +39,11 @@ class TestDisplay(unittest.TestCase):
         self.assertEqual('23.435678 sec', render.duration_string(23435678000))
 
     def testOutlierString(self):
-        e1 = event.TraceEvent(1220007424, 1220007424, 'WU1', 'FA0:16:00[VP]')
-        e2 = event.TraceEvent(1, 11, 'WU2', 'FA0:16:00[VP]')
-        e3 = event.TraceEvent(1209000, 1209080, 'WU3', 'FA0:16:00[VP]')
-        e4 = event.TraceEvent(28374832, 28374833, 'WU4', 'FA0:16:00[VP]')
-        e5 = event.TraceEvent(0, 0, 'WU5', 'FA0:16:00[VP]')
+        e1 = event.TraceEvent(1220007424, 1220007424, 'WU1', 'FA0:16:00[CCV3.2.0]')
+        e2 = event.TraceEvent(1, 11, 'WU2', 'FA0:16:00[CCV3.2.0]')
+        e3 = event.TraceEvent(1209000, 1209080, 'WU3', 'FA0:16:00[CCV3.2.0]')
+        e4 = event.TraceEvent(28374832, 28374833, 'WU4', 'FA0:16:00[CCV3.2.0]')
+        e5 = event.TraceEvent(0, 0, 'WU5', 'FA0:16:00[CCV3.2.0]')
 
         outlier_lis1 = [e1, e2, e3, e4, e5]
         outlier_lis2 = [e1]
