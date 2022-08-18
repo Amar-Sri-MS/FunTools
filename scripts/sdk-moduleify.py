@@ -24,43 +24,55 @@ comby = Comby(language=".c")
 MOD_BEGIN: str = "MODULE_DEFINITION_BEGIN(:[modname])"
 MOD_END: str = "MODULE_DEFINITION_END()"
 
+REF_MATCH: str = "MODULE_REFERENCE(:[modname])"
+
 NEW_MOD_BEGIN  = "MODULE_DEF_BEGIN("
 NEW_DEP_INDENT = " " * len(NEW_MOD_BEGIN)
 
 DEP_MATCH: str = "MODULE_DECLARE_DEPENDENCY(:[depname])"
 DEP_REWRITE: str = NEW_DEP_INDENT + ", MODULE_DEP(:[depname])"
 
-# list of (MATCH, REWRITE) for other properties
+# list of (MATCH, REWRITE, prototype) for other properties
 PROPS = [
     ("MODULE_DECLARE_COMMANDER_INIT(:[fn])",
-     "MODULE_DEC_COMMANDER_INIT(:[fn])"),
+     "MODULE_DEC_COMMANDER_INIT(:[fn])",
+     "void {}(void);"),
 
     ("MODULE_DECLARE_DIRECT_INIT(:[fn])",
-     "MODULE_DEC_DIRECT_INIT(:[fn])"),
+     "MODULE_DEC_DIRECT_INIT(:[fn])",
+     "void {}(const struct fun_json *config_json);"),
 
     ("MODULE_DECLARE_METAFLOW_RESOURCE_TYPE(:[type])",
-     "MODULE_DEC_METAFLOW_RESOURCE_TYPE(:[type])"),
+     "MODULE_DEC_METAFLOW_RESOURCE_TYPE(:[type])",
+     None),
 
     ("MODULE_DECLARE_PROPS_BRIDGE_INIT(:[fn])",
-     "MODULE_DEC_PROPS_BRIDGE_INIT(:[fn])"),
+     "MODULE_DEC_PROPS_BRIDGE_INIT(:[fn])",
+     "void {}(void);"),
 
     ("MODULE_DECLARE_CONFIG_JSON_UPDATED(:[fn])",
-     "MODULE_DEC_CONFIG_JSON_UPDATED(:[fn])"),
+     "MODULE_DEC_CONFIG_JSON_UPDATED(:[fn])",
+     "void {}(struct module *);"),
 
     ("MODULE_DECLARE_ISSU_DRAIN(:[fn])",
-     "MODULE_DEC_ISSU_DRAIN(:[fn])"),
+     "MODULE_DEC_ISSU_DRAIN(:[fn])",
+     "enum fun_ret {}(void);"),
 
     ("MODULE_DECLARE_ISSU_QUIESCE(:[fn])",
-     "MODULE_DEC_ISSU_QUIESCE(:[fn])"),
+     "MODULE_DEC_ISSU_QUIESCE(:[fn])",
+     "enum fun_ret {}(void);"),
 
     ("MODULE_DECLARE_ISSU_SAVE_STATE(:[fn])",
-     "MODULE_DEC_ISSU_SAVE_STATE(:[fn])"),
+     "MODULE_DEC_ISSU_SAVE_STATE(:[fn])",
+     "void {}(struct fun_json *);"),
 
     ("MODULE_DECLARE_UNLOAD(:[fn])",
-     "MODULE_DEC_UNLOAD(:[fn])"),
+     "MODULE_DEC_UNLOAD(:[fn])",
+     "void {}(void);"),
 
     ("MODULE_DECLARE_TERMINATE(:[fn])",
-     "MODULE_DEC_TERMINATE(:[fn])"),
+     "MODULE_DEC_TERMINATE(:[fn])",
+     "void {}(void);"),
 
 ]
 
@@ -69,6 +81,9 @@ def is_preproc_line(line: str) -> bool:
         return True
 
     return False
+
+def is_ref_line(line: str) -> bool:
+    return len(list(comby.matches(line, REF_MATCH))) > 0
 
 def is_dep_line(line: str) -> bool:
     deps = list(comby.matches(line, DEP_MATCH))
@@ -89,28 +104,34 @@ def rewrite_dep_line(line: str) -> str:
 
 def rewrite_other_line(line: str) -> str:
     
-    for (match, rewrite) in PROPS:
+    for (match, rewrite, pline) in PROPS:
         ms = list(comby.matches(line, match))
         if (len(ms) == 0):
             # no match
             continue
 
+        proto = None
         m = ms[0]
         newline = comby.rewrite(line, match, rewrite)
         print("\t\tRewrite '%s' -> '%s'" % (m.matched, newline.rstrip()))
-        return newline
+        if (pline is not None):
+            funcname = m.environment["fn"].fragment
+            proto = pline.format(funcname) + "\n"
+        return (newline, proto)
 
     # make sure there's no stray module definitions
     assert(len(list(comby.matches(line, "MODULE_"))) == 0)
 
-    return line
+    return (line, None)
 
 
 
 def rewrite_defn(comby, modname:str, defn: str) -> str:
 
+    protos = ""
     deps = ""
-    body = ""
+    body = "\n"
+    foot = ""
 
     # process the definition line-by-line
     lines = defn.split("\n")
@@ -119,21 +140,38 @@ def rewrite_defn(comby, modname:str, defn: str) -> str:
         # restore the \n
         line += "\n"
         if (is_preproc_line(line)):
+            if (deps == ""):
+                deps = "\n"
             deps += line
             body += line
+        elif (is_ref_line(line)):
+            # badly placed module references
+            if (foot == ""):
+                foot = "\n"
+            foot += line
         elif (is_dep_line(line)):
             if (deps == ""):
                 deps = "\n"
             deps += rewrite_dep_line(line)
         else:
-            body += rewrite_other_line(line)
+            (b, p) = rewrite_other_line(line)
+            body += b
+            if (p is not None):
+                protos += p
 
-    #print("deps: '%s'" % deps)
-    #print("body: '%s'" % body)
 
-    new_defn = NEW_MOD_BEGIN + modname + deps + ")\n"
+    if (protos != ""):
+        protos = "/* auto-generated module declaration function prototypes */\n" + protos + "\n\n"
+
+    print("protos: '%s'" % protos)
+    print("deps: '%s'" % deps)
+    print("body: '%s'" % body)
+
+    new_defn = protos
+    new_defn += NEW_MOD_BEGIN + modname + deps + ")"
     new_defn += body.rstrip()
     new_defn += "\nMODULE_DEF_END()"
+    new_defn += foot
 
     return new_defn
 
