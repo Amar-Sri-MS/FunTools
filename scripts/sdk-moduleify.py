@@ -1,0 +1,237 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+generic python command-line boilerplate with mypy annotations
+ 
+static check:
+% mypy myfile.py
+ 
+format:
+% python3 -m black myfile.py
+"""
+
+from typing import List, Optional, Type, Dict, Any, Tuple
+import argparse
+from comby import Comby
+ 
+# global comby object
+comby = Comby(language=".c")
+
+###
+##  processing file contents
+#
+
+MOD_BEGIN: str = "MODULE_DEFINITION_BEGIN(:[modname])"
+MOD_END: str = "MODULE_DEFINITION_END()"
+
+NEW_MOD_BEGIN  = "MODULE_DEF_BEGIN("
+NEW_DEP_INDENT = " " * len(NEW_MOD_BEGIN)
+
+DEP_MATCH: str = "MODULE_DECLARE_DEPENDENCY(:[depname])"
+DEP_REWRITE: str = NEW_DEP_INDENT + ", MODULE_DEP(:[depname])"
+
+# list of (MATCH, REWRITE) for other properties
+PROPS = [
+    ("MODULE_DECLARE_COMMANDER_INIT(:[fn])",
+     "MODULE_DEC_COMMANDER_INIT(:[fn])"),
+
+    ("MODULE_DECLARE_DIRECT_INIT(:[fn])",
+     "MODULE_DEC_DIRECT_INIT(:[fn])"),
+
+    ("MODULE_DECLARE_METAFLOW_RESOURCE_TYPE(:[type])",
+     "MODULE_DEC_METAFLOW_RESOURCE_TYPE(:[type])"),
+
+    ("MODULE_DECLARE_PROPS_BRIDGE_INIT(:[fn])",
+     "MODULE_DEC_PROPS_BRIDGE_INIT(:[fn])"),
+
+    ("MODULE_DECLARE_CONFIG_JSON_UPDATED(:[fn])",
+     "MODULE_DEC_CONFIG_JSON_UPDATED(:[fn])"),
+
+    ("MODULE_DECLARE_ISSU_DRAIN(:[fn])",
+     "MODULE_DEC_ISSU_DRAIN(:[fn])"),
+
+    ("MODULE_DECLARE_ISSU_QUIESCE(:[fn])",
+     "MODULE_DEC_ISSU_QUIESCE(:[fn])"),
+
+    ("MODULE_DECLARE_ISSU_SAVE_STATE(:[fn])",
+     "MODULE_DEC_ISSU_SAVE_STATE(:[fn])"),
+
+    ("MODULE_DECLARE_UNLOAD(:[fn])",
+     "MODULE_DEC_UNLOAD(:[fn])"),
+
+    ("MODULE_DECLARE_TERMINATE(:[fn])",
+     "MODULE_DEC_TERMINATE(:[fn])"),
+
+]
+
+def is_preproc_line(line: str) -> bool:
+    if (line.strip()[:1]  == "#"):
+        return True
+
+    return False
+
+def is_dep_line(line: str) -> bool:
+    deps = list(comby.matches(line, DEP_MATCH))
+
+    # no match
+    if (len(deps) == 0):
+        return False
+
+    assert(len(deps) == 1)
+
+    depname = deps[0].environment["depname"].fragment
+    print("\t\tFound dependency on '%s'" % depname )
+
+    return True
+
+def rewrite_dep_line(line: str) -> str:
+    return comby.rewrite(line, DEP_MATCH, DEP_REWRITE)
+
+def rewrite_other_line(line: str) -> str:
+    
+    for (match, rewrite) in PROPS:
+        ms = list(comby.matches(line, match))
+        if (len(ms) == 0):
+            # no match
+            continue
+
+        m = ms[0]
+        newline = comby.rewrite(line, match, rewrite)
+        print("\t\tRewrite '%s' -> '%s'" % (m.matched, newline.rstrip()))
+        return newline
+
+    # make sure there's no stray module definitions
+    assert(len(list(comby.matches(line, "MODULE_"))) == 0)
+
+    return line
+
+
+
+def rewrite_defn(comby, modname:str, defn: str) -> str:
+
+    deps = ""
+    body = ""
+
+    # process the definition line-by-line
+    lines = defn.split("\n")
+
+    for line in lines:
+        # restore the \n
+        line += "\n"
+        if (is_preproc_line(line)):
+            deps += line
+            body += line
+        elif (is_dep_line(line)):
+            if (deps == ""):
+                deps = "\n"
+            deps += rewrite_dep_line(line)
+        else:
+            body += rewrite_other_line(line)
+
+    #print("deps: '%s'" % deps)
+    #print("body: '%s'" % body)
+
+    new_defn = NEW_MOD_BEGIN + modname + deps + ")\n"
+    new_defn += body.rstrip()
+    new_defn += "\nMODULE_DEF_END()"
+
+    return new_defn
+
+def process_file(source: str) -> Optional[str]:
+
+    # find if there's a module definition
+    begins = list(comby.matches(source, MOD_BEGIN))
+    ends = list(comby.matches(source, MOD_END))
+
+    if ((len(begins) == 0) and (len(ends) == 0)):
+        print("\tFile lacks module definition")
+        return None
+
+    if ((len(begins) != 1) or (len(ends) != 1)):
+        print("\tFile has multiple/corrupt module definitions")
+        return None
+
+    # the span
+    begin = begins[0]
+    end = ends[0]
+
+    # extract the module name
+    #print("env: %s" % begin.environment)
+    modname = begin.environment["modname"].fragment
+    print("\tFound module %s" % modname)
+
+    # split the file into three
+    pre = source[:begin.location.start.offset-1]
+    defn = source[begin.location.stop.offset:end.location.start.offset-1]
+    post = source[end.location.stop.offset:]
+
+    if ("MODULE_WU_DEF_INCLUDE" in defn):
+        print("\tXXX: File has MODULE_WU_DEF_INCLUDE, cannot process")
+        return None
+
+    # print it
+    #print("pre: '%s'" % pre[-100:])
+    #print("defn: '%s'" % defn)
+    #print("post: '%s'" % post[:100])
+
+    # re-write the definition
+    new_defn = rewrite_defn(comby, modname, defn)
+
+    # print("new defn: '%s'" % new_defn)
+
+    # return it
+    return pre + new_defn + post
+
+###
+##  parse_args
+#
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+ 
+    # Files
+    parser.add_argument("files", nargs="+", help="Files to process")
+ 
+    # Whether to update files
+    parser.add_argument("-s", "--sure", action="store_true", default=False)
+ 
+    # Optional verbosity counter (eg. -v, -vv, -vvv, etc.)
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=0,
+        help="Verbosity (-v, -vv, etc)")
+ 
+    args: argparse.Namespace = parser.parse_args()
+    return args
+ 
+###
+##  main
+#
+def main() -> int:
+    args: argparse.Namespace = parse_args()
+
+    for fname in args.files:
+        print("Processing file '%s'" % fname)
+
+        input = open(fname).read()
+        output = process_file(input)
+
+        if (output) is None:
+            print("\tNo legacy module declaration, ignoring")
+            continue
+
+        if (args.sure):
+            print("\tUpdating file...")
+            open(fname, "w").write(output)
+            print("\tDone")
+        else:
+            print("\tSkipping file update")
+
+    return 0
+ 
+###
+##  entrypoint
+#
+if __name__ == "__main__":
+    main()
