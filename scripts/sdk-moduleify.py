@@ -29,48 +29,49 @@ REF_MATCH: str = "MODULE_REFERENCE(:[modname])"
 NEW_MOD_BEGIN  = "MODULE_DEF_BEGIN("
 NEW_DEP_INDENT = " " * len(NEW_MOD_BEGIN)
 
-DEP_MATCH: str = "MODULE_DECLARE_DEPENDENCY(:[depname])"
+# make sure to include a trailing semi
+DEP_MATCH: str = "MODULE_DECLARE_DEPENDENCY(:[depname]):[semi~;?]"
 DEP_REWRITE: str = NEW_DEP_INDENT + ", MODULE_DEP(:[depname])"
 
 # list of (MATCH, REWRITE, prototype) for other properties
 PROPS = [
-    ("MODULE_DECLARE_COMMANDER_INIT(:[fn])",
+    ("MODULE_DECLARE_COMMANDER_INIT(:[fn]):[semi~;?]",
      "MODULE_DEC_COMMANDER_INIT(:[fn])",
      "void {}(void);"),
 
-    ("MODULE_DECLARE_DIRECT_INIT(:[fn])",
+    ("MODULE_DECLARE_DIRECT_INIT(:[fn]):[semi~;?]",
      "MODULE_DEC_DIRECT_INIT(:[fn])",
      "void {}(const struct fun_json *config_json);"),
 
-    ("MODULE_DECLARE_METAFLOW_RESOURCE_TYPE(:[type])",
-     "MODULE_DEC_METAFLOW_RESOURCE_TYPE(:[type])",
-     None),
+    ("MODULE_DECLARE_METAFLOW_RESOURCE_TYPE(:[fn]):[semi~;?]",
+     "MODULE_DEC_METAFLOW_RESOURCE_TYPE(:[fn])",
+     "void {}(const struct hu_fn_params *params, OUT struct metaflow_resource_params *res_params);"),
 
-    ("MODULE_DECLARE_PROPS_BRIDGE_INIT(:[fn])",
+    ("MODULE_DECLARE_PROPS_BRIDGE_INIT(:[fn]):[semi~;?]",
      "MODULE_DEC_PROPS_BRIDGE_INIT(:[fn])",
      "void {}(void);"),
 
-    ("MODULE_DECLARE_CONFIG_JSON_UPDATED(:[fn])",
+    ("MODULE_DECLARE_CONFIG_JSON_UPDATED(:[fn]):[semi~;?]",
      "MODULE_DEC_CONFIG_JSON_UPDATED(:[fn])",
      "void {}(struct module *);"),
 
-    ("MODULE_DECLARE_ISSU_DRAIN(:[fn])",
+    ("MODULE_DECLARE_ISSU_DRAIN(:[fn]):[semi~;?]",
      "MODULE_DEC_ISSU_DRAIN(:[fn])",
      "enum fun_ret {}(void);"),
 
-    ("MODULE_DECLARE_ISSU_QUIESCE(:[fn])",
+    ("MODULE_DECLARE_ISSU_QUIESCE(:[fn]):[semi~;?]",
      "MODULE_DEC_ISSU_QUIESCE(:[fn])",
      "enum fun_ret {}(void);"),
 
-    ("MODULE_DECLARE_ISSU_SAVE_STATE(:[fn])",
+    ("MODULE_DECLARE_ISSU_SAVE_STATE(:[fn]):[semi~;?]",
      "MODULE_DEC_ISSU_SAVE_STATE(:[fn])",
      "void {}(struct fun_json *);"),
 
-    ("MODULE_DECLARE_UNLOAD(:[fn])",
+    ("MODULE_DECLARE_UNLOAD(:[fn]):[semi~;?]",
      "MODULE_DEC_UNLOAD(:[fn])",
      "void {}(void);"),
 
-    ("MODULE_DECLARE_TERMINATE(:[fn])",
+    ("MODULE_DECLARE_TERMINATE(:[fn]):[semi~;?]",
      "MODULE_DEC_TERMINATE(:[fn])",
      "void {}(void);"),
 
@@ -172,6 +173,7 @@ def rewrite_defn(comby, modname:str, defn: str) -> str:
     new_defn += body.rstrip()
     new_defn += "\nMODULE_DEF_END()"
     new_defn += foot
+    new_defn += "\n"
 
     return new_defn
 
