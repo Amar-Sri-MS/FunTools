@@ -49,15 +49,15 @@ def mctp_pcievdm_pkt_tx():
                 log.debug('Waiting for the PLDM/MCTP Over PCIeVDM Packets from MCTP Daemon.....')
                 mctp_pcievdm_pkt_tx_data = pcievdm_tx_fifo.read()
                 if mctp_pcievdm_pkt_tx_data is None or len(mctp_pcievdm_pkt_tx_data) == 0:
-                    time.sleep(1)
+                    #time.sleep(1)
                     continue
 
-                log.info('PLDM/MCTP over PCIeVDM: Read data from FIFO before Bin -> Blob conversion: %s', mctp_pcievdm_pkt_tx_data)
+                log.debug('PLDM/MCTP over PCIeVDM: Read data from FIFO before Bin -> Blob conversion: %s', mctp_pcievdm_pkt_tx_data)
                 data = mctp_tx_dpc_handle.blob_from_string(mctp_pcievdm_pkt_tx_data)
 
-                log.info('PLDM/MCTP over PCIeVDM: Sending Data to MCTP Master using FunOS PCIe Driver')
+                log.debug('PLDM/MCTP over PCIeVDM: Sending Data to MCTP Master using FunOS PCIe Driver')
                 result = mctp_tx_dpc_handle.execute('mctp_transport', ['mctp_pkt_send', 'mctp_over_pcievdm', ['quote', data]])
-                log.info("'mctp_pkt_send' packet DPCSH response: {}".format(result))
+                log.debug("'mctp_pkt_send' packet DPCSH response: {}".format(result))
 
     except Exception as e:
         pcievdm_tx_fifo.close()
@@ -76,15 +76,15 @@ def mctp_smbus_pkt_tx():
                 log.debug('Waiting for the PLDM/MCTP Over SMBus Packets from MCTP Daemon.....')
                 mctp_smbus_pkt_tx_data = smbus_tx_fifo.read()
                 if mctp_smbus_pkt_tx_data is None or len(mctp_smbus_pkt_tx_data) == 0:
-                    time.sleep(1)
+                    #time.sleep(1)
                     continue
 
-                log.info('PLDM/MCTP Over SMBus: Read data from FIFO before Bin -> Blob conversion: %s', mctp_smbus_pkt_tx_data)
+                log.debug('PLDM/MCTP Over SMBus: Read data from FIFO before Bin -> Blob conversion: %s', mctp_smbus_pkt_tx_data)
                 data = mctp_tx_dpc_handle.blob_from_string(mctp_smbus_pkt_tx_data)
 
-                log.info('PLDM/MCTP Over SMBus: Sending data to MCTP Master using FunOS SMBus Driver')
+                log.debug('PLDM/MCTP Over SMBus: Sending data to MCTP Master using FunOS SMBus Driver')
                 result = mctp_tx_dpc_handle.execute('mctp_transport', ['mctp_pkt_send', 'mctp_over_smbus', ['quote', data]])
-                log.info("'mctp_pkt_send' packet DPCSH response: {}".format(result))
+                log.debug("'mctp_pkt_send' packet DPCSH response: {}".format(result))
 
     except Exception as e:
         smbus_tx_fifo.close()
@@ -109,19 +109,19 @@ def mctp_pcievdm_pkt_rx():
             while True:
                 log.debug("Waiting for PLDM/MCTP over PCIeVDM Packet from Host Server ........")
                 result = mctp_rx_dpc_handle.async_recv_wait(tid)
-                log.info("PLDM/MCTP Over PCIeVDM: Recieved MCTP Master Request from FunOS: {}".format(result))
+                log.debug("PLDM/MCTP Over PCIeVDM: Recieved MCTP Master Request from FunOS: {}".format(result))
 
                 if not result['mctp_over_pcievdm']:
                     log.error("pkt != PLDM/MCTP Over PCIeVDM")
                     continue
 
                 mctp_pcievdm_pkt_rx_data = mctp_rx_dpc_handle.blob_to_string(result['data'])
-                log.info('Sending PLDM/MCTP over PCIeVDM Packet to MCTP Daemon for Processing: %s', mctp_pcievdm_pkt_rx_data)
+                log.debug('Sending PLDM/MCTP over PCIeVDM Packet to MCTP Daemon for Processing: %s', mctp_pcievdm_pkt_rx_data)
 
                 pcievdm_rx_fifo.write(mctp_pcievdm_pkt_rx_data)
                 #Flush is mandatory for proper writing data to Daemon FIFO
                 pcievdm_rx_fifo.flush()
-                time.sleep(1)
+                #time.sleep(1)
 
     except Exception as e:
         pcievdm_rx_fifo.close()
@@ -145,19 +145,19 @@ def mctp_smbus_pkt_rx():
             while True:
                 log.debug("PLDM/MCTP Over SMBus: Waiting for PLDM/MCTP Packet from MCTP Master ........")
                 result = mctp_rx_dpc_handle.async_recv_wait(tid)
-                log.info("PLDM/MCTP Over SMBus: Recieved MCTP Master Request from FunOS: {}".format(result))
+                log.debug("PLDM/MCTP Over SMBus: Recieved MCTP Master Request from FunOS: {}".format(result))
 
                 if not result['mctp_over_smbus']:
                     log.error("pkt != PLDM/MCTP Over SMBus")
                     continue
 
                 mctp_smbus_pkt_rx_data = mctp_rx_dpc_handle.blob_to_string(result['data'])
-                log.info('Sending PLDM/MCTP over SMBus Packet to MCTP Daemon for Processing: %s', mctp_smbus_pkt_rx_data)
+                log.debug('Sending PLDM/MCTP over SMBus Packet to MCTP Daemon for Processing: %s', mctp_smbus_pkt_rx_data)
 
                 smbus_rx_fifo.write(mctp_smbus_pkt_rx_data)
                 #Flush is mandatory for proper writing data to Daemon FIFO
                 smbus_rx_fifo.flush()
-                time.sleep(1)
+                #time.sleep(1)
 
     except Exception as e:
         smbus_rx_fifo.close()
