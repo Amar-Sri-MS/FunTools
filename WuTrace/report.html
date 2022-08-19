@@ -208,59 +208,26 @@ Outliers:
 
 {% for event in tr.events %}
 <div class="row">
-  {% if event['is_timer'] %}
+  {% if event['is_timer'] or event['is_hw_dma'] or event['is_hw_le'] or event['is_hw_zip'] or event['is_hw_hu'] or event['is_hw_rgx'] %}
   <div class="label">&nbsp;&nbsp;{{event['label']}} </div>
   <div class="time" title="{{event['start_time']|as_ns}}-{{event['end_time']|as_ns}}">{{ event['start_time'] | as_time }}-{{ event['end_time'] | as_time }}</div>
   <div class="duration">{{event['duration'] | as_duration}}</div>
   <div class="vp">{{event['vp']}}</div>
   <div class="timeline">
     <div style="width: {{event['offset_pct']}}%;" class="space"></div>
-    <div style="width: {{event['duration_pct']}}%;" class="bar timer"></div>
-  </div>
-  {% elif event['is_hw_dma'] %}
-  <div class="label">{{ event['label'] }} </div>
-  <div class="time" title="{{event['start_time']|as_ns}}-{{event['end_time']|as_ns}}">{{ event['start_time'] | as_time }}-{{ event['end_time'] | as_time }}</div>
-  <div class="duration">{{event['duration'] | as_duration}}</div>
-  <div class="vp">{{event['vp']}}</div>
-  <div class="timeline">
-    <div style="width: {{event['offset_pct']}}%;" class="space"></div>
-    <div style="width: {{event['duration_pct']}}%;" class="bar is_hw_dma"></div>
-  </div>
-  {% elif event['is_hw_le'] %}
-  <div class="label">{{ event['label'] }} </div>
-  <div class="time" title="{{event['start_time']|as_ns}}-{{event['end_time']|as_ns}}">{{ event['start_time'] | as_time }}-{{ event['end_time'] | as_time }}</div>
-  <div class="duration">{{event['duration'] | as_duration}}</div>
-  <div class="vp">{{event['vp']}}</div>
-  <div class="timeline">
-    <div style="width: {{event['offset_pct']}}%;" class="space"></div>
-    <div style="width: {{event['duration_pct']}}%;" class="bar is_hw_le"></div>
-  </div>
-  {% elif event['is_hw_zip'] %}
-  <div class="label">{{ event['label'] }} </div>
-  <div class="time" title="{{event['start_time']|as_ns}}-{{event['end_time']|as_ns}}">{{ event['start_time'] | as_time }}-{{ event['end_time'] | as_time }}</div>
-  <div class="duration">{{event['duration'] | as_duration}}</div>
-  <div class="vp">{{event['vp']}}</div>
-  <div class="timeline">
-    <div style="width: {{event['offset_pct']}}%;" class="space"></div>
-    <div style="width: {{event['duration_pct']}}%;" class="bar is_hw_zip"></div>
-  </div>
-  {% elif event['is_hw_hu'] %}
-  <div class="label">{{ event['label'] }} </div>
-  <div class="time" title="{{event['start_time']|as_ns}}-{{event['end_time']|as_ns}}">{{ event['start_time'] | as_time }}-{{ event['end_time'] | as_time }}</div>
-  <div class="duration">{{event['duration'] | as_duration}}</div>
-  <div class="vp">{{event['vp']}}</div>
-  <div class="timeline">
-    <div style="width: {{event['offset_pct']}}%;" class="space"></div>
-    <div style="width: {{event['duration_pct']}}%;" class="bar is_hw_hu"></div>
-  </div>
-  {% elif event['is_hw_rgx'] %}
-  <div class="label">{{ event['label'] }} </div>
-  <div class="time" title="{{event['start_time']|as_ns}}-{{event['end_time']|as_ns}}">{{ event['start_time'] | as_time }}-{{ event['end_time'] | as_time }}</div>
-  <div class="duration">{{event['duration'] | as_duration}}</div>
-  <div class="vp">{{event['vp']}}</div>
-  <div class="timeline">
-    <div style="width: {{event['offset_pct']}}%;" class="space"></div>
-    <div style="width: {{event['duration_pct']}}%;" class="bar is_hw_rgx"></div>
+    {% if event['is_timer'] %}
+      <div style="width: {{event['duration_pct']}}%;" class="bar timer"></div>
+    {% elif event['is_hw_dma'] %}
+      <div style="width: {{event['duration_pct']}}%;" class="bar is_hw_dma"></div>
+    {% elif event['is_hw_le'] %}
+      <div style="width: {{event['duration_pct']}}%;" class="bar is_hw_le"></div>
+    {% elif event['is_hw_zip'] %}
+      <div style="width: {{event['duration_pct']}}%;" class="bar is_hw_zip"></div>
+    {% elif event['is_hw_hu'] %}
+      <div style="width: {{event['duration_pct']}}%;" class="bar is_hw_hu"></div>
+    {% else %}
+      <div style="width: {{event['duration_pct']}}%;" class="bar is_hw_rgx"></div>
+    {% endif %}
   </div>
   {% elif event['is_annotation'] %}
   <div class="label"></div>
