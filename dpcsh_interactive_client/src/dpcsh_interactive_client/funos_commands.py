@@ -24,7 +24,7 @@ TOTAL_CLUSTERS = 8
 TOTAL_CORES_PER_CLUSTER = 6
 TOTAL_VPS_PER_CORE = 4
 START_VP_NUMBER = 8
-
+TOTAL_CORES = (TOTAL_CLUSTERS + 1) * (TOTAL_CORES_PER_CLUSTER)
 
 """MCACHE_RULES """
 SZ_ST1 = 4  # 8  # state1
@@ -186,6 +186,19 @@ class FunOSCommands(object):
 
         return {"FunSDK": result["FunSDK"], "branch": result["branch"]}
 
+    def _get_total_limit_mcache_size(
+        self, size_per_core, total_num: int = TOTAL_CORES
+    ) -> int:
+        """Get the limit mcache size for total chip
+        Parameters
+        ----------
+
+        Returns
+        -------
+        """
+
+        return size_per_core * total_num
+
     def _get_max_mcache(self, non_coh):
         """get configured max value for mcache
         > peek config/fun_malloc/cache_max/coherent
@@ -328,6 +341,8 @@ class FunOSCommands(object):
                 table_obj = None
                 if "Desc" in result:
                     del result["Desc"]  # remove description row
+
+                total_mcache_limit_per_core = 0
                 if result:
                     if prev_result:
                         table_obj = PrettyTable(col_diff)
@@ -403,6 +418,10 @@ class FunOSCommands(object):
                         for idx, key in enumerate(sorted(result)):
                             if key in ["Desc", "total"]:
                                 continue
+
+                            total_mcache_limit_per_core += 2 ** int(key) * int(
+                                slot_max[idx]
+                            )
 
                             fill_percentage = int(
                                 result[key]["avail_avg_per_mcache"]
@@ -485,6 +504,18 @@ class FunOSCommands(object):
                 if not size_cached_by_cores_max:
                     size_cached_by_cores_max = -1
 
+                limit_mcache_size = self._get_total_limit_mcache_size(
+                    total_mcache_limit_per_core
+                )
+
+                self.logger.info(
+                    "Max limit of mcache: {} B, ({} B * {}(num. cores))".format(
+                        format(limit_mcache_size, ",d"),
+                        format(total_mcache_limit_per_core, ",d"),
+                        TOTAL_CORES,
+                    )
+                )
+
                 self.logger.info("")
                 self.logger.info("size_in_use: {} B".format(format(size_in_use, ",d")))
                 self.logger.info(
@@ -499,6 +530,17 @@ class FunOSCommands(object):
                     )
                 )
 
+                max_mcache_usage_percent = int(
+                    size_cached_by_cores_max / limit_mcache_size * 100
+                )
+                self.logger.info(
+                    "Max reached mcache usage percentage: {} % ({} B/{} B)".format(
+                        max_mcache_usage_percent,
+                        format(size_cached_by_cores_max, ",d"),
+                        format(limit_mcache_size, ",d"),
+                    )
+                )
+
                 size_in_use_minus_cached = size_in_use - size_cached_by_cores
                 self.logger.info(
                     "size_in_use_minus_cached: {} B".format(
@@ -507,7 +549,7 @@ class FunOSCommands(object):
                 )
                 size_in_use_percent = int(size_in_use_minus_cached / size_in_use * 100)
                 self.logger.info(
-                    "* Percentage of data in use (size_in_use_minus_cached/size_in_use) : {}%".format(
+                    "* Percentage of data in use (size_in_use_minus_cached / size_in_use) : {}%".format(
                         format(size_in_use_percent, ",d")
                     )
                 )
