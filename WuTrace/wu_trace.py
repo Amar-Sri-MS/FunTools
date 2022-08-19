@@ -234,7 +234,7 @@ class TraceProcessor:
                                                 current_event.start_time,
                                                 'DMA',
                                                 predecessor.vp)
-                    hw_event.is_timer = True
+                    hw_event.is_hw_dma = True
                     predecessor.successors.append(hw_event)
                     predecessor = hw_event
                     self.start_events.append(predecessor)

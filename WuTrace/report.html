@@ -47,6 +47,14 @@
 
 /* How to draw span representing a timer. */
 .timer {
+  background-color: #f7e0ff;
+  height: 3px;
+  margin-top: 5px;margin-bottom: 5px;
+  border: 1px solid #a910de;
+}
+
+/* For DMA events */
+.is_hw_dma {
   background-color: #e0e0ff;
   height: 3px;
   margin-top: 5px;margin-bottom: 5px;
@@ -208,6 +216,15 @@ Outliers:
   <div class="timeline">
     <div style="width: {{event['offset_pct']}}%;" class="space"></div>
     <div style="width: {{event['duration_pct']}}%;" class="bar timer"></div>
+  </div>
+  {% elif event['is_hw_dma'] %}
+  <div class="label">{{ event['label'] }} </div>
+  <div class="time" title="{{event['start_time']|as_ns}}-{{event['end_time']|as_ns}}">{{ event['start_time'] | as_time }}-{{ event['end_time'] | as_time }}</div>
+  <div class="duration">{{event['duration'] | as_duration}}</div>
+  <div class="vp">{{event['vp']}}</div>
+  <div class="timeline">
+    <div style="width: {{event['offset_pct']}}%;" class="space"></div>
+    <div style="width: {{event['duration_pct']}}%;" class="bar is_hw_dma"></div>
   </div>
   {% elif event['is_hw_le'] %}
   <div class="label">{{ event['label'] }} </div>
