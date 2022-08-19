@@ -679,9 +679,6 @@ class FunOSCommands(object):
                             total_avail_byte += int(2**slot * int(vp["avail"]))
                             total_hit += int(vp["hit"])
                             total_miss += int(vp["miss"])
-
-                            # import pdb;pdb.set_trace()
-                            # print(val_func_np)
                     # total
                     self._add_hline(table_obj, col)
 
@@ -727,9 +724,6 @@ class FunOSCommands(object):
                         str(self.gets_timestamp())
                     )
                 )
-
-                # import pdb;pdb.set_trace()
-                # TODO plot function
 
                 if save_df:
                     df.to_pickle(df_filename)
