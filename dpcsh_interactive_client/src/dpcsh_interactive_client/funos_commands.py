@@ -27,8 +27,8 @@ START_VP_NUMBER = 8
 
 
 """MCACHE_RULES """
-SZ_ST1 = 4#8  # state1
-SZ_ST2 = 4#8  # state2
+SZ_ST1 = 4  # 8  # state1
+SZ_ST2 = 4  # 8  # state2
 SZ_A = 3  # action
 
 
@@ -478,6 +478,13 @@ class FunOSCommands(object):
                     verb="peek", arg_list=[cmd]
                 )
 
+                cmd = "stats/fun_malloc/%s/%s" % (nc_str, "size_cached_by_cores_max")
+                size_cached_by_cores_max = self.dpc_client.execute(
+                    verb="peek", arg_list=[cmd]
+                )
+                if not size_cached_by_cores_max:
+                    size_cached_by_cores_max = -1
+
                 self.logger.info("")
                 self.logger.info("size_in_use: {} B".format(format(size_in_use, ",d")))
                 self.logger.info(
@@ -485,6 +492,13 @@ class FunOSCommands(object):
                         format(size_cached_by_cores, ",d")
                     )
                 )
+
+                self.logger.info(
+                    "max(size_cached_by_cores): {} B".format(
+                        format(size_cached_by_cores_max, ",d")
+                    )
+                )
+
                 size_in_use_minus_cached = size_in_use - size_cached_by_cores
                 self.logger.info(
                     "size_in_use_minus_cached: {} B".format(
