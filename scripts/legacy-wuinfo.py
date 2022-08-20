@@ -16,6 +16,7 @@ from comby import Comby # type: ignore
 # global comby object
 comby = Comby(language=".c")
 
+LEGACY_MATCH: str = "#include <generated/wu_ids.h>"
 
 ###
 ##  A WU declaration
@@ -99,7 +100,7 @@ class FunFile():
         self.noref: Set[str] = set()
         self.upref: Set[str] = set()
         self.downref: Set[str] = set()
-        self.crossref: Set[str] = set()
+        self.crossref: Dict[str, str] = {}
 
     def add_ref(self, ref: WURef) -> None:
         self.refs.append(ref)
@@ -112,12 +113,58 @@ class FunFile():
             if (wudecls is None):
                 self.noref.add(ref.wuname)
             elif (wudecls.get_filename() != self.name):
-                self.crossref.add(ref.wuname)
+                self.crossref[ref.wuname] = wudecls.get_filename()
             elif (wudecls.first_lineno() < ref.lineno):
                 self.upref.add(ref.wuname)
             else:
                 self.downref.add(ref.wuname)
 
+
+    def only_include(self) -> bool:
+        if (len(self.wus) > 0):
+            return False
+
+        if (len(self.refs) > 0):
+            return False
+
+        return True
+
+    def only_up(self) -> bool:
+        if (self.only_include()):
+            return False
+
+        if (len(self.downref) > 0):
+            return False
+
+        if (len(self.noref) > 0):
+            return False
+
+        if (len(self.crossref) > 0):
+            return False
+
+        return True
+    
+    def only_internal(self) -> bool:
+        if (self.only_up()):
+            return False
+
+        if (len(self.downref) == 0):
+            return False
+
+        return True
+
+    def unknown_or_cross(self) -> bool:
+        if (len(self.noref) > 0):
+            return True
+
+        if (len(self.crossref) > 0):
+            return True
+
+        return False
+
+    def print_summary(self, prefix="") -> None:
+        print("%sFile '%s' has %d decls, %d refs, %d up, %d down, %d cross and %d unknown" % (prefix, self.name, len(
+            self.wus), len(self.refs), len(self.upref), len(self.downref), len(self.crossref), len(self.noref)))
 
     def print_info(self, prefix: str="") -> None:
         print("%sFile %s" % (prefix, self.name))
@@ -141,8 +188,8 @@ class FunFile():
                 print("\t\t%sWU '%s' referenced out of order" % (prefix, wuname))
         if (len(self.crossref) > 0):
             print("\t%sCross References:" % prefix)
-            for wuname in self.crossref:
-                print("\t\t%sWU '%s' references other file" % (prefix, wuname))
+            for (wuname, fname) in self.crossref.items():
+                print("\t\t%sWU '%s' references other file (%s)" % (prefix, wuname, fname))
 
 ###
 ##  Global WUInfo object
@@ -181,6 +228,41 @@ class WUInfo():
         print("WUInfo: %d files, %d WUs" % (len(self.files), len(self.wus)))
         for ffile in self.files.values():
             ffile.print_info("\t" + prefix)
+
+    def print_file_stats(self, prefix=""):
+        trivial: List[str] = []
+        print("Files by category...")
+        print("\tFiles with no WU decls or refs...")
+        for ffile in self.files.values():
+            if (ffile.only_include()):
+                ffile.print_summary("\t\t" + prefix)
+                trivial.append(ffile.name)
+        print("\tFiles with only up references...")
+        for ffile in self.files.values():
+            if (ffile.only_up()):
+                ffile.print_summary("\t\t" + prefix)
+                trivial.append(ffile.name)
+        print("\tFiles with up and/or down references...")
+        for ffile in self.files.values():
+            if (ffile.only_internal()):
+                ffile.print_summary("\t\t" + prefix)
+        print("\tFiles with unknown or cross references...")
+        for ffile in self.files.values():
+            if (ffile.unknown_or_cross()):
+                ffile.print_summary("\t\t" + prefix)
+
+
+        print("Trivial conversions:")
+        print(("\t\\\n").join(trivial))
+
+###
+##  helpers
+#
+
+def scan_for_legacy(input:str) -> bool:
+    nmatches = len(list(comby.matches(input, LEGACY_MATCH)))
+
+    return (nmatches > 0)
 
 ###
 ##  WU definition scanning
@@ -274,6 +356,11 @@ def main() -> int:
 
         input = open(fname).read()
 
+        # see if this is even a match
+        if (not scan_for_legacy(input)):
+            print("File '%s' has no legacy headers" % fname)
+            continue
+
         declist = scan_file_for_decls(fname, input)
         reflist = scan_file_for_refs(input)
         
@@ -287,6 +374,9 @@ def main() -> int:
 
     # Dump our info
     wuinfo.print_info()
+
+    # print file stats
+    wuinfo.print_file_stats()
 
     return 0
  
