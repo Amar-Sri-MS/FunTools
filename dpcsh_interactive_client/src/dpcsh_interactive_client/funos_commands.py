@@ -508,13 +508,13 @@ class FunOSCommands(object):
                     total_mcache_limit_per_core
                 )
 
-                self.logger.info(
-                    "Max limit of mcache: {} B, ({} B * {}(num. cores))".format(
-                        format(limit_mcache_size, ",d"),
-                        format(total_mcache_limit_per_core, ",d"),
-                        TOTAL_CORES,
-                    )
-                )
+                # self.logger.info(
+                #     "Max limit of mcache: {} B, ({} B * {}(num. cores))".format(
+                #         format(limit_mcache_size, ",d"),
+                #         format(total_mcache_limit_per_core, ",d"),
+                #         TOTAL_CORES,
+                #     )
+                # )
 
                 self.logger.info("")
                 self.logger.info("size_in_use: {} B".format(format(size_in_use, ",d")))
@@ -530,16 +530,16 @@ class FunOSCommands(object):
                     )
                 )
 
-                max_mcache_usage_percent = int(
-                    size_cached_by_cores_max / limit_mcache_size * 100
-                )
-                self.logger.info(
-                    "Max reached mcache usage percentage: {} % ({} B/{} B)".format(
-                        max_mcache_usage_percent,
-                        format(size_cached_by_cores_max, ",d"),
-                        format(limit_mcache_size, ",d"),
-                    )
-                )
+                # max_mcache_usage_percent = int(
+                #     size_cached_by_cores_max / limit_mcache_size * 100
+                # )
+                # self.logger.info(
+                #     "Max reached mcache usage percentage: {} % ({} B/{} B)".format(
+                #         max_mcache_usage_percent,
+                #         format(size_cached_by_cores_max, ",d"),
+                #         format(limit_mcache_size, ",d"),
+                #     )
+                # )
 
                 size_in_use_minus_cached = size_in_use - size_cached_by_cores
                 self.logger.info(
