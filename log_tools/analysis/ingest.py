@@ -55,9 +55,11 @@ BLACKLISTED_PATHS = [
     '.*/kubedump/.*',
 
     # Ignore checking logs from BMC till Log Analyzer supports it.
-    '.*/.*_chassis_log/.*',
+    '.*/.*_chassis_log(/.*|)',
     # Systemstate files are not log files.
-    '.*/systemstate.*/.*',
+    '.*/systemstate.*(/.*|)',
+    # DPU logs from CC
+    '.*/dpu_logs_.*/.*'
 ]
 BLACKLISTED_PATHS_REGEX = '(%s)' % '|'.join(BLACKLISTED_PATHS)
 
@@ -292,10 +294,9 @@ def parse_manifest(path, parent_frn={}, filters={}):
                 continue
 
             # Ignore if the path is blacklisted
-            if frn_path and frn_path != '':
-                if not _should_ingest_path(frn_path):
-                    logging.info(f'Skipping blacklisted path: {frn_path}.')
-                    continue
+            if not _should_ingest_path(content_path):
+                logging.info(f'Skipping blacklisted path: {content_path}.')
+                continue
 
             # Extract archive and check for manifest file
             if frn_info['resource_type'] in ['archive', 'compressed', 'bundle']:
@@ -407,11 +408,11 @@ def build_input_pipeline(path, frn_info, filters={}):
     elif source in ['dataplacement', 'discovery', 'metrics_manager', 'scmscv', 'expansion_rebalance']:
         file_pattern = f'{path}/info*' if resource_type == 'folder' else path
         blocks.extend(
-            controller_input_pipeline(frn_info, source, file_pattern,
-                # [logger.go:158] 2022-01-10T04:04:31.707689851Z info log level:debug and backupcount:8 in /var/log/dataplacement/info.log
-                multiline_settings={
-                    'pattern': r'(\[.*\])\s+(\d{4}(?:-|/)\d{2}(?:-|/)\d{2})+(?:T|\s)([:0-9]+).([0-9]+)(?:Z|)'
-                })
+            controller_input_pipeline(frn_info, source, file_pattern)
+                # 2022-07-26 20:19:17.105 [main.go:116] info Started dataplacement service
+                # multiline_settings={
+                #     'pattern': r'(\d{4}(?:-|/)\d{2}(?:-|/)\d{2})+(?:T|\s)([:0-9]+).([0-9]+)(?:Z|)'
+                # })
         )
 
     elif source in ['apigateway', 'storage_consumer', 'lrm_consumer', 'setup_db', 'metrics_server']:
