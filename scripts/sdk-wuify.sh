@@ -24,25 +24,34 @@ for fname in "$@"; do
         comby ${args} 'CHANNEL() void :[name](:[params])' 'CHANNEL_HANDLER(:[name], WU_ATTR_NONE, :[params])' ${fname}
 
         # CHANNEL(WU_ATTR...) with attributes
-        comby ${args} 'CHANNEL(:[[attrs]]) void :[name](:[params])' 'CHANNEL_HANDLER(:[name], :[attrs], :[params])' ${fname}
+        comby ${args} 'CHANNEL(:[attrs]) void :[name](:[params])' 'CHANNEL_HANDLER(:[name], :[attrs], :[params])' ${fname}
+
+        # CHANNEL_THREAD() with no attributes, void type
+        comby ${args} 'CHANNEL_THREAD() void :[name](void)' 'CHANNEL_THREAD(:[name], WU_ATTR_NONE)' ${fname}
 
         # CHANNEL_THREAD() with no attributes
         comby ${args} 'CHANNEL_THREAD() void :[name](:[params])' 'CHANNEL_THREAD(:[name], WU_ATTR_NONE, :[params])' ${fname}
 
+        # CHANNEL_THREAD(WU_ATTR...) with attributes, void type
+        comby ${args} 'CHANNEL_THREAD(:[attrs]) void :[name](void)' 'CHANNEL_THREAD(:[name], :[attrs])' ${fname}
+
         # CHANNEL_THREAD(WU_ATTR...) with attributes
-        comby ${args} 'CHANNEL_THREAD(:[[attrs]]) void :[name](:[params])' 'CHANNEL_THREAD(:[name], :[attrs], :[params])' ${fname}
+        comby ${args} 'CHANNEL_THREAD(:[attrs]) void :[name](:[params])' 'CHANNEL_THREAD(:[name], :[attrs], :[params])' ${fname}
 
         # WU_HANDLER() with no attributes
         comby ${args} 'WU_HANDLER() void :[name](:[params])' 'WU_HANDLER(:[name], WU_ATTR_NONE, :[params])' ${fname}
 
         # WU_HANDLER(WU_ATTR...) with attributes
-        comby ${args} 'WU_HANDLER(:[[attrs]]) void :[name](:[params])' 'WU_HANDLER(:[name], :[attrs], :[params])' ${fname}
+        comby ${args} 'WU_HANDLER(:[attrs]) void :[name](:[params])' 'WU_HANDLER(:[name], :[attrs], :[params])' ${fname}
 
         # WU_HANDLER64() with no attributes
         comby ${args} 'WU64_HANDLER() void :[name](:[params])' 'WU64_HANDLER(:[name], WU_ATTR_NONE, :[params])' ${fname}
 
         # WU_HANDLER64(WU_ATTR...) with attributes
         comby ${args} 'WU64_HANDLER(:[[attrs]]) void :[name](:[params])' 'WU64_HANDLER(:[name], :[attrs], :[params])' ${fname}
+
+        # WU_HANDLER_REGISTER_GROUP(...)
+        #comby ${args} 'WU_HANDLER_REGISTER_GROUP(:[mod], :[basename], '
 
 done
 
