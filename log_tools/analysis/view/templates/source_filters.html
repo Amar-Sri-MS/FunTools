@@ -89,6 +89,10 @@
                 if (Array.isArray(existingFilters)) {
                     systemIDElements.forEach(element => {
                         if (existingFilters.includes(element.value)) {
+                            if (!selectedFilters[systemType][systemID]) {
+                                selectedFilters[systemType][systemID] = [];
+                            }
+                            selectedFilters[systemType][systemID].push(element.value);
                             element.checked = true;
                         }
                     });
