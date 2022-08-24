@@ -28,6 +28,7 @@ VOLUME_TYPES = {
     'LSV': 'VOL_TYPE_BLK_LSV',
     'JVOL': 'VOL_TYPE_BLK_REPLICA',
     'RDS': 'VOL_TYPE_BLK_RDS',
+    'REPLICA': 'VOL_TYPE_BLK_REPLICA',
     'EC': 'VOL_TYPE_BLK_EC'
 }
 
@@ -97,12 +98,55 @@ def _format_document_hit(hit):
     }
 
 class Volume(object):
-    def __init__(self, log_id, pvol_id):
+    def __init__(self, log_id, uuid=None, type='PV'):
         self.index = log_id
-        # Part volume ID
-        self.pvol_id = pvol_id
 
+        self.pvol = None
+        self.dvol = None
+        self.jvol = None
+        self.pvg = None
+        self.lsv = None
+        self.ecvol_id = None
+
+        # Sometimes we will not have volume 'CREATE' info so define the history based on that
+        self.first_opcode_logs = None
+
+        self.lsv_info = {}
+        self.pvol_info = {}
+        self.pvg_type = None
+        self.pvg_info = {}
+        self.snapshot_info = None
+        self.clone_info = None
+        self.dpu_info = {}
+
+        self.trace_operations = ['CREATE', 'MOUNT']
+
+        self.supported_pvg_types = [VOLUME_TYPES['EC'], VOLUME_TYPES['REPLICA']]
         self.dp_transitions = ['rebuild_start', 'rebuild_done', 'rebuild_failed', 'rdsvol_close', 'degraded', 'online']
+        self.cp_transitions = ['fail_plex_ack', 'fail_plex', 'rebuild', 'spare_uuid']
+
+        if type == 'PVG':
+            self.pvg = uuid
+        elif type == 'DURABLE':
+            self.dvol = uuid
+        elif type == 'JVOL':
+            self.jvol = uuid
+        elif type == 'LSV':
+            self.lsv = uuid
+        elif type == 'SNAPSHOT':
+            self.pvol = uuid
+        elif type == 'CLONE':
+            self.pvol = uuid
+        else:
+            # Defaults to PV
+            self.pvol = uuid
+
+        # Volume Type
+        self.volume_type = type
+
+        self.show_funos_logs = True
+        self.only_alert_logs = True
+        self.ignore_dpu_info = False
         # Time of the current operation
         self.op_time = None
         # Time of the previous operation
@@ -170,14 +214,6 @@ class Volume(object):
             queries.append(f'"uuid: {uuid}"')
         return queries
 
-    def get_create_info(self):
-        """ Returns info of CREATE operation """
-        return self.get_info('CREATE')
-
-    def get_mount_info(self):
-        """ Returns info of MOUNT operation """
-        return self.get_info('MOUNT')
-
     def _get_dpu_dataplane_ip(self, text):
         m = re.search('"ip":\s*"(\S+?)"', str(text))
         if m:
@@ -224,13 +260,62 @@ class Volume(object):
                     print(f'Could not find crash keyword for : {line}')
 
         return dpu_info
+
+    def find_lsv_and_pvg_from_dvol(self):
+        """ Searching for LSV and PVG info using Durable volume UUID """
+        if self.lsv is not None:
+            uuid = self.lsv
+        elif self.jvol is not None:
+            uuid = self.jvol
+        else:
+            uuid = self.dvol
+
+        lsv_info_query = [uuid, f'"{VOLUME_TYPES["LSV"]}"',
+                          f'("{OPERATIONS["MOUNT"]}" OR "{OPERATIONS["CREATE"]}")']
+        results = self._perform_es_search(lsv_info_query)
+        if not results or len(results) == 0:
+            raise Exception(f'Could not find LSV info for the UUID: {uuid}')
+
+        lsv_info = results[0]
+        self.lsv = get_value_from_params(lsv_info, 'nguid')
+        self.uuids.add(self.lsv)
+
+        pvg_info_query = [self.lsv, f'"{VOLUME_TYPES["PVG"]}"',
+                          f'("{OPERATIONS["MOUNT"]}" OR "{OPERATIONS["CREATE"]}")']
+        results = self._perform_es_search(pvg_info_query)
+        if not results or len(results) == 0:
+            raise Exception(f'Could not find PVG info for LSV: {self.lsv}')
+
+        pvg_info = results[0]
+        self.pvg = get_value_from_params(pvg_info, 'uuid')
+        self.uuids.add(self.pvg)
+        self.first_opcode_logs = pvg_info['msg']['opcode']
+
+    def find_pvol(self):
+        """ Searching for PV info using PVOL UUID """
+        pvol_info_query = [self.pvol, f'"{VOLUME_TYPES["PV"]}"',
+                           f'("{OPERATIONS["MOUNT"]}" OR "{OPERATIONS["CREATE"]}")']
+        results = self._perform_es_search(pvol_info_query)
+        if not results or len(results) == 0:
+            raise Exception(f'Could not find PV info for UUID: {self.pvol}')
+
+        pvol_info = results[0]
+        self.first_opcode_logs = pvol_info['msg']['opcode']
+
+        for pv_info in results:
+            is_clone = get_value_from_params(pv_info, 'clone')
+            if is_clone:
+                # Check for base volume info
+                base_uuid = get_value_from_params(pv_info, 'base_uuid')
+                self.clone_info = self.get_clone_info(base_uuid, self.first_opcode_logs)
+
+    def get_hosting_dpu_ip(self, dpu_mac=None, filepath=None):
+        if dpu_mac in self.dpu_info and 'ipcfg' in self.dpu_info[dpu_mac]:
+            return self.dpu_info[dpu_mac]['ipcfg']
+        return 'N/A'
+
     def get_snapshot_info(self, uuid, operation='CREATE'):
         queries = self._build_query(operation, VOLUME_TYPES.get('SNAPSHOT'), uuid)
-        if operation == 'CREATE':
-            pass
-            # CHECK: Do we need this?
-            # queries.append('"user_created: true"')
-
         results = self._perform_es_search(queries)
         return results
 
@@ -242,15 +327,17 @@ class Volume(object):
         rds_info = self.get_plex_info(uuid, operation=operation)
         return rds_info
 
-    def get_pv_info(self, pv_id, operation='CREATE'):
+    def get_pvol_info(self, pv_id, operation='CREATE'):
         """ Returns results for Part Volume creation/mount """
         queries = self._build_query(operation, VOLUME_TYPES.get('PV'), pv_id)
-        if operation == 'CREATE':
-            # CHECK: Do we need this?
-            queries.append('"user_created: true"')
 
-        results = self._perform_es_search(queries)
-        return results
+        self.pvol_info[operation] = self._perform_es_search(queries)
+        if 'CREATE' in self.trace_operations:
+            opcode = 'CREATE'
+        else:
+            opcode = 'MOUNT'
+        self.pvg = get_value_from_params(self.pvol_info[opcode][0], 'partvg_uuid')
+        return self.pvol_info[operation]
 
     def get_pvg_info(self, pvg_id, start_time=None, end_time=None, operation='CREATE'):
         """ Returns result for Part Volume Group creation/mount """
@@ -260,6 +347,17 @@ class Volume(object):
         results = self._perform_es_search(queries, time_filters)
         if len(results) == 0:
             raise Exception(f'Could not find PVG Info for UUID: {pvg_id} from time: {start_time} till time: {end_time}')
+
+        self.pvg_type = get_value_from_params(results[0], 'pvg_type')
+        self.lsv = get_value_from_params(results[0], 'svol_uuid', [])
+        self.pvg_info[operation] = {
+            'timestamp': results[0]['@timestamp'],
+            'pvg_info': results[0],
+            'lsv_uuids': self.lsv,
+            'uuid': pvg_id,
+            'type': self.pvg_type
+        }
+
         # CHECK: Only 1 entry everytime?
         return results[0]
 
@@ -272,7 +370,7 @@ class Volume(object):
         if len(results) == 0:
             raise Exception(f'Could not find LSV Info for UUID: {svol_id} from time: {start_time} till time: {end_time}')
         # CHECK: Only 1 entry everytime?
-        return results[0]
+        return results
 
     def get_journal_volume_info(self, jvol_id, start_time=None, end_time=None, operation='CREATE'):
         """ Returns result for Journal Volume creation/mount """
@@ -319,7 +417,7 @@ class Volume(object):
         """ Returns result of the plex found by pvol_id """
         # Plexes can be created during the CREATE or MOUNT operation.
         queries = [
-            f'("opcode: VOL_ADMIN_OPCODE_CREATE" OR "opcode: VOL_ADMIN_OPCODE_MOUNT")',
+            f'("opcode: {OPERATIONS["CREATE"]}" OR "opcode: {OPERATIONS["MOUNT"]}")',
             f'"uuid: {pvol_id}"'
         ]
         time_filters = (start_time, end_time)
@@ -416,7 +514,7 @@ class Volume(object):
         return rebuild_info
 
     def get_dp_transitions_info(self, uuid, start_time=None, end_time=None):
-        """ """
+        """ Fetches Datapath transitions for a given plex """
         queries = [
             '(src:funos OR src:funos_0 OR src:funos_1 OR src:dpu)',
             '("rdsvol_close" OR "degraded: True" OR "online")',
@@ -436,6 +534,24 @@ class Volume(object):
                 })
         return transitions_info
 
+    def get_dp_transitions(self, info_list, plex_list):
+        """ """
+        info_dict = {}
+        for info in info_list:
+            line = str(info['msg'])
+            if line != '':
+                search_transition = re.search("({0})".format('|'.join(self.dp_transitions)), line)
+                search_plex = re.search("({0})".format('|'.join(plex_list)), line)
+                if search_transition and search_plex:
+                    plex = search_plex.group(1)
+                    transition = search_transition.group(1)
+                    if plex not in info_dict:
+                        info_dict[plex] = {}
+                    if transition not in info_dict[plex]:
+                        info_dict[plex][transition] = []
+                    info_dict[plex][transition].append(info['@timestamp'])
+        return info_dict
+
     def get_lifecycle(self):
         """
         Returns the lifecycle of the PV.
@@ -446,23 +562,41 @@ class Volume(object):
             ec_plex_status_history: Plex status history of EC plexes
             jvol_failed_plex_ack_history: Failed Plex ACK of JVOL plexes
             ec_failed_plex_ack_history: Failed Plex ACK of EC plexes
+            dpu_info: info about the DPUs
         """
         lifecycle = dict()
-        lifecycle['create'] = self.get_create_info()
-        lifecycle['mount'] = self.get_mount_info()
-        lifecycle['jvol_plex_status_history'] = {uuid: self._get_plex_status_logs(uuid, vol_type='JVOL')
-                                                    for uuid in self.jvol_uuids}
-        lifecycle['ec_plex_status_history'] = {uuid: self._get_plex_status_logs(uuid, vol_type='EC')
-                                                    for uuid in self.ec_uuids}
+        try:
+            if self.trace_operations is None or self.only_create_operation:
+                self.trace_operations = ['CREATE']
 
-        lifecycle['jvol_failed_plex_ack_history'] = {uuid: self._get_failed_plex_ack_info_logs(uuid)
-                                                    for uuid in self.jvol_uuids}
-        lifecycle['ec_failed_plex_ack_history'] = {uuid: self._get_failed_plex_ack_info_logs(uuid)
-                                                    for uuid in self.ec_uuids}
+            if self.jvol is not None or self.dvol is not None or self.lsv is not None:
+                self.find_lsv_and_pvg_from_dvol()
+            else:
+                self.find_pvol()
 
-        lifecycle['dpu_info'] = self.get_all_dpu_info()
+            # Sometimes we will not have volume 'CREATE' info so define the history based on that
+            if 'CREATE' not in self.first_opcode_logs:
+                self.trace_operations = ['MOUNT']
 
-        return lifecycle
+            for operation in self.trace_operations:
+                lifecycle[operation] = self.get_info(operation)
+
+            lifecycle['jvol_plex_status_history'] = {uuid: self._get_plex_status_logs(uuid, vol_type='JVOL')
+                                                        for uuid in self.jvol_uuids}
+            lifecycle['ec_plex_status_history'] = {uuid: self._get_plex_status_logs(uuid, vol_type='EC')
+                                                        for uuid in self.ec_uuids}
+
+            lifecycle['jvol_failed_plex_ack_history'] = {uuid: self._get_failed_plex_ack_info_logs(uuid)
+                                                        for uuid in self.jvol_uuids}
+            lifecycle['ec_failed_plex_ack_history'] = {uuid: self._get_failed_plex_ack_info_logs(uuid)
+                                                        for uuid in self.ec_uuids}
+
+            if not self.ignore_dpu_info:
+                lifecycle['dpu_info'] = self.get_all_dpu_info()
+
+            return lifecycle
+        except Exception as e:
+            raise Exception(e)
 
     def get_complete_plex_info(self, vol_id, vol_time, vol_type='EC'):
         """ Returns complete information of plexes for the given JVOL/EC uuid """
@@ -486,121 +620,131 @@ class Volume(object):
         ec_uuid = None
         jvol_uuid = None
         result_data = None
+        snapshot_info = None
+        pv_result_data = None
 
-        snapshot_info = self.get_snapshot_info(self.pvol_id, operation)
-        if snapshot_info:
-            # Snapshot have PV as their base_uuid
-            self.pvol_id = get_value_from_params(snapshot_info[0], 'base_uuid')
+        if self.pvol:
+            snapshot_info = self.get_snapshot_info(self.pvol, operation)
+            if snapshot_info:
+                self.snapshot_info[operation] = snapshot_info
+                # Snapshot have PV as their base_uuid
+                self.pvol = get_value_from_params(snapshot_info[0], 'base_uuid')
 
-        pv_info_list = self.get_pv_info(self.pvol_id, operation)
-        for pv_info in pv_info_list:
-            is_clone = get_value_from_params(pv_info, 'clone')
-            clone_info = None
-            if is_clone:
-                # Check for base volume info
-                base_uuid = get_value_from_params(pv_info, 'base_uuid')
-                clone_info = self.get_clone_info(base_uuid, operation)
-            pvg_uuid = get_value_from_params(pv_info, 'partvg_uuid')
-            self.op_time = convert_datetime_str(pv_info['@timestamp'])
-            primary_dpu = get_value_from_params(pv_info, 'Dpu')
-            # Primary DPU information is either in key Dpu or dpu
-            if not primary_dpu:
-                primary_dpu = get_value_from_params(pv_info, 'dpu')
-            secondary_dpu = get_value_from_params(pv_info, 'secondary')
+        if self.pvol:
+            pv_info_list = self.get_pvol_info(self.pvol, operation)
+            for pv_info in pv_info_list:
+                is_clone = get_value_from_params(pv_info, 'clone')
+                if is_clone:
+                    # Check for base volume info
+                    base_uuid = get_value_from_params(pv_info, 'base_uuid')
+                    self.clone_info[operation] = self.get_clone_info(base_uuid, operation)
+                pvg_uuid = get_value_from_params(pv_info, 'partvg_uuid')
+                self.pvg = get_value_from_params(pv_info, 'partvg_uuid')
+                self.op_time = convert_datetime_str(pv_info['@timestamp'])
+                primary_dpu = get_value_from_params(pv_info, 'Dpu')
+                # Primary DPU information is either in key Dpu or dpu
+                if not primary_dpu:
+                    primary_dpu = get_value_from_params(pv_info, 'dpu')
+                secondary_dpu = get_value_from_params(pv_info, 'secondary')
 
-            pv_result_data = {
-                'timestamp': pv_info['@timestamp'],
-                'pv_info': pv_info,
-                'pvg_uuid': pvg_uuid,
-                'primary_dpu': primary_dpu,
-                'secondary_dpu': secondary_dpu
-            }
-
-            # Checking for status between two CREATE/MOUNT operations
-            if self.prev_op_time:
-                if jvol_uuid:
-                    complete_plex_info = self.get_complete_plex_info(jvol_uuid, jvol_time, vol_type='JOURNAL')
-                    result_data['lsv_info'][lsv_uuid]['jvol_info'].update(complete_plex_info)
-
-                if ec_uuid:
-                    complete_plex_info = self.get_complete_plex_info(ec_uuid, ecvol_time, vol_type='EC')
-                    result_data['lsv_info'][lsv_uuid]['ec_info'].update(complete_plex_info)
-
-                if result_data:
-                    result.append(result_data)
-
-            pvg_info = self.get_pvg_info(pvg_uuid, end_time=self.op_time, operation=operation)
-            lsv_uuids = get_value_from_params(pvg_info, 'svol_uuid', [])
-
-            pvg_result_data = {
-                'timestamp': pvg_info['@timestamp'],
-                'pvg_info': pvg_info,
-                'lsv_uuids': lsv_uuids
-            }
-
-            lsv_result_data = dict()
-            # Each PVG can be in multiple LSV
-            for lsv_uuid in lsv_uuids:
-                lsv_info = self.get_lsv_info(lsv_uuid, end_time=self.op_time, operation=operation)
-                jvol_uuid = get_value_from_params(lsv_info, 'jvol_uuid')
-                # CHECK: Why is this a list?
-                ec_uuids = get_value_from_params(lsv_info, 'pvol_id')
-                durability_scheme = get_value_from_params(lsv_info, 'durability_scheme')
-                if len(ec_uuids) == 0:
-                    raise Exception(f'Could not find EC UUIDs from LSV UUID: {lsv_uuid}')
-
-                ec_uuid = ec_uuids[0]
-
-                self.jvol_uuids.add(jvol_uuid)
-                self.ec_uuids.add(ec_uuid)
-
-                lsv_result_data[lsv_uuid] = {
-                    'timestamp': lsv_info['@timestamp'],
-                    'lsv_uuid': lsv_uuid,
-                    'lsv_info': lsv_info,
-                    'jvol_uuid': jvol_uuid,
-                    'ec_uuid': ec_uuid,
-                    'durability_scheme': durability_scheme
+                pv_result_data = {
+                    'timestamp': pv_info['@timestamp'],
+                    'pv_info': pv_info,
+                    'pvg_uuid': pvg_uuid,
+                    'primary_dpu': primary_dpu,
+                    'secondary_dpu': secondary_dpu
                 }
 
-                jvol_info = self.get_journal_volume_info(jvol_uuid, end_time=self.op_time, operation=operation)
-                ec_volume_info = self.get_ec_volume_info(ec_uuid, end_time=self.op_time, operation=operation)
+        # Checking for status between two CREATE/MOUNT operations
+        if self.prev_op_time:
+            if jvol_uuid:
+                complete_plex_info = self.get_complete_plex_info(jvol_uuid, jvol_time, vol_type='JOURNAL')
+                result_data['lsv_info'][lsv_uuid]['jvol_info'].update(complete_plex_info)
 
-                jvol_pvol_uuids = get_value_from_params(jvol_info, 'pvol_id')
-                ec_pvol_uuids = get_value_from_params(ec_volume_info, 'pvol_id')
+            if ec_uuid:
+                complete_plex_info = self.get_complete_plex_info(ec_uuid, ecvol_time, vol_type='EC')
+                result_data['lsv_info'][lsv_uuid]['ec_info'].update(complete_plex_info)
 
-                jvol_plexes_info = self.get_plexes_info(jvol_pvol_uuids)
-                ec_plexes_info = self.get_plexes_info(ec_pvol_uuids)
+            if result_data:
+                result.append(result_data)
 
-                jvol_time = convert_datetime_str(jvol_info['@timestamp'])
-                ecvol_time = convert_datetime_str(ec_volume_info['@timestamp'])
+        pvg_info = self.get_pvg_info(self.pvg, end_time=self.op_time, operation=operation)
+        lsv_uuids = get_value_from_params(pvg_info, 'svol_uuid', [])
 
-                jvol_result_data = {
-                    'timestamp': convert_datetime_str(jvol_info['@timestamp']),
-                    'pvol_uuids': jvol_pvol_uuids,
-                    'plex_info': jvol_plexes_info
-                }
-                ec_result_data = {
-                    'timestamp': convert_datetime_str(ec_volume_info['@timestamp']),
-                    'pvol_uuids': ec_pvol_uuids,
-                    'plex_info': ec_plexes_info
-                }
+        pvg_result_data = {
+            'timestamp': pvg_info['@timestamp'],
+            'pvg_info': pvg_info,
+            'lsv_uuids': lsv_uuids
+        }
 
-                lsv_result_data[lsv_uuid].update({
-                    'jvol_info': jvol_result_data,
-                    'ec_info': ec_result_data
-                })
+        if self.pvg_type not in self.supported_pvg_types:
+            print(f'ERR - Unsupported pvg type: {self.pvg_type}')
+            raise Exception(f'Unsupported pvg type: {self.pvg_type}')
 
-                # Keeping track of previous operation's time
-                self.prev_op_time = self.op_time
+        self.lsv_info[operation] = {'lsv_uuids': lsv_uuids}
+        lsv_result_data = dict()
+        # Each PVG can be in multiple LSV
+        for lsv_uuid in lsv_uuids:
+            lsv_info = self.get_lsv_info(lsv_uuid, end_time=self.op_time, operation=operation)[0]
+            jvol_uuid = get_value_from_params(lsv_info, 'jvol_uuid')
+            # CHECK: Why is this a list?
+            ec_uuids = get_value_from_params(lsv_info, 'pvol_id')
+            durability_scheme = get_value_from_params(lsv_info, 'durability_scheme')
+            if len(ec_uuids) == 0:
+                raise Exception(f'Could not find EC UUIDs from LSV UUID: {lsv_uuid}')
 
-            result_data = {
-                'snapshot_info': snapshot_info,
-                'clone_info': clone_info,
-                'pv_info': pv_result_data,
-                'pvg_info': pvg_result_data,
-                'lsv_info': lsv_result_data
+            ec_uuid = ec_uuids[0]
+
+            self.jvol_uuids.add(jvol_uuid)
+            self.ec_uuids.add(ec_uuid)
+
+            lsv_result_data[lsv_uuid] = {
+                'timestamp': lsv_info['@timestamp'],
+                'lsv_uuid': lsv_uuid,
+                'lsv_info': lsv_info,
+                'jvol_uuid': jvol_uuid,
+                'ec_uuid': ec_uuid,
+                'durability_scheme': durability_scheme
             }
+
+            jvol_info = self.get_journal_volume_info(jvol_uuid, end_time=self.op_time, operation=operation)
+            ec_volume_info = self.get_ec_volume_info(ec_uuid, end_time=self.op_time, operation=operation)
+
+            jvol_pvol_uuids = get_value_from_params(jvol_info, 'pvol_id')
+            ec_pvol_uuids = get_value_from_params(ec_volume_info, 'pvol_id')
+
+            jvol_plexes_info = self.get_plexes_info(jvol_pvol_uuids)
+            ec_plexes_info = self.get_plexes_info(ec_pvol_uuids)
+
+            jvol_time = convert_datetime_str(jvol_info['@timestamp'])
+            ecvol_time = convert_datetime_str(ec_volume_info['@timestamp'])
+
+            jvol_result_data = {
+                'timestamp': convert_datetime_str(jvol_info['@timestamp']),
+                'pvol_uuids': jvol_pvol_uuids,
+                'plex_info': jvol_plexes_info
+            }
+            ec_result_data = {
+                'timestamp': convert_datetime_str(ec_volume_info['@timestamp']),
+                'pvol_uuids': ec_pvol_uuids,
+                'plex_info': ec_plexes_info
+            }
+
+            lsv_result_data[lsv_uuid].update({
+                'jvol_info': jvol_result_data,
+                'ec_info': ec_result_data
+            })
+
+            # Keeping track of previous operation's time
+            self.prev_op_time = self.op_time
+
+        result_data = {
+            'snapshot_info':  self.snapshot_info[operation] if self.snapshot_info and operation in self.snapshot_info else {},
+            'clone_info': self.clone_info[operation] if self.clone_info and operation in self.clone_info else {},
+            'pv_info': pv_result_data,
+            'pvg_info': pvg_result_data,
+            'lsv_info': lsv_result_data
+        }
 
         self.op_time = None
         if jvol_uuid:

@@ -34,14 +34,27 @@ def render_volume_lifecycle_tool(log_id):
 def get_volume_lifecycle(log_id):
     """ Returns the lifecycle of the given volume """
     request_data = request.get_json(force=True)
-    vol_id = request_data.get('volume_id')
+    uuid = request_data.get('uuid')
+    type = request_data.get('type', 'PV')
+    show_funos_logs = request_data.get('show_funos_logs', True)
+    only_create_operation = request_data.get('only_create_operation', False)
+    only_alert_logs = request_data.get('only_alert_logs', True)
+    show_brief = request_data.get('show_brief', False)
+    ignore_dpu_info = request_data.get('ignore_dpu_info', False)
 
-    if not vol_id:
+    if not uuid:
         logging.error('Volume ID missing')
         return jsonify({'error': 'Volume ID missing'}), 400
 
     try:
-        volume = Volume(log_id, vol_id)
+        volume = Volume(log_id, uuid, type)
+        if only_create_operation:
+            volume.trace_operations = ['CREATE']
+
+        volume.show_funos_logs = show_funos_logs or only_alert_logs
+        volume.only_alert_logs = only_alert_logs
+        volume.ignore_dpu_info = ignore_dpu_info
+
         lifecycle = volume.get_lifecycle()
     except Exception as e:
         logging.exception('Error in storage tool')

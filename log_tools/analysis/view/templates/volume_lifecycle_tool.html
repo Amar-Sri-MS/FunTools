@@ -16,8 +16,118 @@
             </div>
             <h2 class="center-align">Lifecycle of a Volume</h2>
             <div class="form-group">
-                <label for="volume_id">Volume UUID (PV, Snapshot or Clone)</label>
+                <label>Volume Type:</label>
+                <label>
+                    <input
+                        type="radio"
+                        name="volume_type"
+                        value="PV"
+                        checked
+                        onchange="onChangeVolumeType(this)"
+                    />
+                    PV
+                </label>
+                <label>
+                    <input
+                        type="radio"
+                        name="volume_type"
+                        value="DURABLE"
+                        onchange="onChangeVolumeType(this)"
+                    />
+                    Durable Volume
+                </label>
+                <label>
+                    <input
+                        type="radio"
+                        name="volume_type"
+                        value="JVOL"
+                        onchange="onChangeVolumeType(this)"
+                    />
+                    JVOL
+                </label>
+                <label>
+                    <input
+                        type="radio"
+                        name="volume_type"
+                        value="LSV"
+                        onchange="onChangeVolumeType(this)"
+                    />
+                    LSV
+                </label>
+                <label>
+                    <input
+                        type="radio"
+                        name="volume_type"
+                        value="SNAPSHOT"
+                        onchange="onChangeVolumeType(this)"
+                    />
+                    Snapshot
+                </label>
+                <label>
+                    <input
+                        type="radio"
+                        name="volume_type"
+                        value="CLONE"
+                        onchange="onChangeVolumeType(this)"
+                    />
+                    Clone
+                </label>
+            </div>
+            <div class="form-group">
+                <label for="volume_id">Volume UUID</label>
                 <input type="search" id="volume_id" placeholder="Enter volume UUID" />
+            </div>
+            <div class="form-group">
+                <label>
+                    <input
+                        type="checkbox"
+                        id="show_funos_logs"
+                        checked
+                        onclick="onClickShowFunosLogs(this)"
+                    />
+                    Show all funos logs for the uuid
+                </label>
+            </div>
+            <div class="form-group">
+                <label>
+                    <input
+                        type="checkbox"
+                        id="only_create_operation"
+                        onclick="onClickOnlyCreateOperation(this)"
+                    />
+                    Display lifecycle of volume creation only
+                </label>
+            </div>
+            <div class="form-group">
+                <label>
+                    <input
+                        type="checkbox"
+                        id="only_alert_logs"
+                        checked
+                        onclick="onClickOnlyAlertLogs(this)"
+                    />
+                    Show ALERT|ERR|CRIT|degraded|online logs only?
+                </label>
+            </div>
+            <div class="form-group">
+                <label>
+                    <input
+                        type="checkbox"
+                        id="show_brief"
+                        onclick="onClickShowBrief(this)"
+                    />
+                    Do not show plex transitions and failed uuids?
+                </label>
+            </div>
+            <div class="form-group">
+                <label>
+                    <input
+                        type="checkbox"
+                        id="ignore_dpu_info"
+                        onclick="onClickIgnoreDPUInfo(this)"
+                    />
+                    Do not show DPU transition table?
+                </label>
             </div>
             <div class="form-group">
                 <button type="submit" class="btn btn-primary" onclick="onSubmit()">Submit</button>
@@ -66,11 +176,21 @@
         // Maintains a set of all UUIDs seen in the lifecycle.
         let uuids = new Set();
 
+        let selectedVolumeType = "PV", showFunosLogs = true, onlyCreateOperation = false;
+        let onlyAlertLogs = true, showBrief = false, ignoreDPUInfo = false;
+
         // Self invocation function
         (function() {
             trackWebEvent("STORAGE_TOOL");
             const params = new URLSearchParams(location.search);
             const uuid = params.get("uuid");
+            selectedVolumeType = params.has("type") ? params.get("type") : selectedVolumeType;
+            showFunosLogs = params.has("show_funos_logs") ? params.get("show_funos_logs") == 'true' : showFunosLogs;
+            onlyCreateOperation = params.has("only_create_operation") ? params.get("only_create_operation") == 'true' : onlyCreateOperation;
+            onlyAlertLogs = params.has("only_alert_logs") ? params.get("only_alert_logs") == 'true' : onlyAlertLogs;
+            showBrief = params.has("show_brief") ? params.get("show_brief") == 'true' : showBrief;
+            ignoreDPUInfo = params.has("ignore_dpu_info") ? params.get("ignore_dpu_info") == 'true' : ignoreDPUInfo;
+            setUIDefaults();
             if (uuid) {
                 document.getElementById("volume_id").value = uuid;
                 getVolumeLifecycle(uuid);
@@ -95,10 +215,36 @@
             window.open(url, "_blank");
         }
 
+        // onclick handlers for the checkbox options
+        function onChangeVolumeType(event) {
+            selectedVolumeType = event.value;
+        }
+        function onClickShowFunosLogs(element) {
+            showFunosLogs = element.checked;
+        }
+        function onClickOnlyCreateOperation(element) {
+            onlyCreateOperation = element.checked;
+        }
+        function onClickOnlyAlertLogs(element) {
+            onlyAlertLogs = element.checked;
+        }
+        function onClickShowBrief(element) {
+            showBrief = element.checked;
+        }
+        function onClickIgnoreDPUInfo(element) {
+            ignoreDPUInfo = element.checked;
+        }
+
         function onSubmit() {
             const volume_id = document.getElementById("volume_id").value;
             const params = new URLSearchParams(location.search);
             params.set("uuid", volume_id);
+            params.set("type", selectedVolumeType);
+            params.set("show_funos_logs", showFunosLogs);
+            params.set("only_create_operation", onlyCreateOperation);
+            params.has("only_alert_logs", onlyAlertLogs);
+            params.has("show_brief", showBrief);
+            params.has("ignore_dpu_info", ignoreDPUInfo);
             window.history.pushState(null, null, `?${params.toString()}`);
 
             getVolumeLifecycle(volume_id);
@@ -116,7 +262,13 @@
 
             const uri = `${window.location.origin}${window.location.pathname}`;
             const requestData = {
-                "volume_id": uuid
+                "uuid": uuid,
+                "type": selectedVolumeType,
+                "show_funos_logs": showFunosLogs,
+                "only_create_operation": onlyCreateOperation,
+                "only_alert_logs": onlyAlertLogs,
+                "show_brief": showBrief,
+                "ignore_dpu_info": ignoreDPUInfo
             };
             fetchWrapper.post(uri, requestData)
                 .then(data => {
@@ -130,6 +282,15 @@
                     console.log(error.stack);
                     alert(`${error.stack ? 'UI' : 'Backend'} Error: ${error}`);
                 });
+        }
+
+        function setUIDefaults() {
+            document.querySelector(`input[name="volume_type"][value="${selectedVolumeType}"`).checked = true;
+            document.getElementById("show_funos_logs").checked = showFunosLogs;
+            document.getElementById("only_create_operation").checked = onlyCreateOperation;
+            document.getElementById("only_alert_logs").checked = onlyAlertLogs;
+            document.getElementById("show_brief").checked = showBrief;
+            document.getElementById("ignore_dpu_info").checked = ignoreDPUInfo;
         }
 
         function clearTables() {
@@ -152,26 +313,32 @@
             }
         }
 
+        function getValueByKey(obj, key, default_value=null) {
+            if (!obj)
+                return default_value
+            return key in obj ? obj[key] : default_value;
+        }
+
         function showLifecycle(lifecycle) {
             toggleElementDisplay(lifecycle_element, true);
             console.log(lifecycle);
 
             // DPU Info table
-            const dpuInfo = "dpu_info" in lifecycle ? lifecycle["dpu_info"] : null;
+            const dpuInfo = getValueByKey(lifecycle, "dpu_info");
             if (dpuInfo) {
                 renderDPUInfo(dpuInfo);
             }
 
             // Create phase
-            const createPhase = "create" in lifecycle ? lifecycle["create"] : null;
+            const createPhase = "CREATE" in lifecycle ? lifecycle["CREATE"] : null;
             if (createPhase) {
-                renderPhases("CREATE", create_phase_element, createPhase)
+                renderPhases("CREATE", create_phase_element, createPhase);
             }
 
             // Mount phase
-            const mountPhases = "mount" in lifecycle ? lifecycle["mount"] : null;
+            const mountPhases = "MOUNT" in lifecycle ? lifecycle["MOUNT"] : null;
             if (mountPhases) {
-                renderPhases("MOUNT", mount_phase_element, mountPhases)
+                renderPhases("MOUNT", mount_phase_element, mountPhases);
             }
 
             // Plex Status History
@@ -252,8 +419,15 @@
                     const cloneInfoTable = getCloneInfoTable(phase["clone_info"]);
                     addTableToElement(element, cloneInfoTable);
                 }
-                const pvInfoTable = getPVInfoTable(phase["pv_info"]);
-                addTableToElement(element, pvInfoTable);
+                if (phase["pv_info"]) {
+                    const pvInfoTable = getPVInfoTable(phase["pv_info"]);
+                    addTableToElement(element, pvInfoTable);
+                }
+                const pvgInfo = getValueByKey(phase, "pvg_info");
+                if (pvgInfo) {
+                    const pvgInfoTable = getPVGInfoTable(pvgInfo);
+                    addTableToElement(element, pvgInfoTable);
+                }
                 const lsvInfo = phase["lsv_info"];
                 for (const [ec_uuid, info] of Object.entries(lsvInfo)) {
                     const lsvInfoTable = getLSVInfoTable(info);
@@ -351,6 +525,26 @@
             return table;
         }
 
+        function getPVGInfoTable(pvgInfo) {
+            const timestamp = pvgInfo["pvg_info"]["@timestamp"];
+            const uuid = getValueFromParams(pvgInfo["pvg_info"], "uuid");
+            const type = getValueFromParams(pvgInfo["pvg_info"], "type");
+            const URL = formLogURL(timestamp, pvgInfo["pvg_info"]["_id"]);
+            const title = `PVG Info: ${uuid} (${type})`;
+
+            let table = new window.AsciiTable(title);
+            table.setHeading("Timestamp", "PVG UUID", "Primary DPU", "Secondary DPU");
+            table.addRow(
+                formAnchorTag(URL, timestamp),
+                uuid,
+                getValueFromParams(pvgInfo["pvg_info"], "dpu"),
+                getValueFromParams(pvgInfo["pvg_info"], "secondary")
+            );
+            // Adding the PVG UUID.
+            uuids.add(uuid);
+            return table;
+        }
+
         function getLSVInfoTable(lsvInfo) {
             const timestamp = lsvInfo["lsv_info"]["@timestamp"];
             const URL = formLogURL(timestamp, lsvInfo["lsv_info"]["_id"]);
@@ -396,8 +590,8 @@
 
         function getPlexInfoTable(info, operation="CREATE", title="Plex Info") {
             let table = new window.AsciiTable(title);
-            table.setHeading(["Operation", "Number", "Location", "Local UUID", "Remote UUID",
-                              "Status", "Hosting DPU", "Remote IP", "Failed Plex ACK",
+            table.setHeading(["Operation", "Timestamp", "Plex Number", "Location", "Local UUID",
+                              "Remote UUID", "Status", "Hosting DPU", "Remote IP", "Failed Plex ACK",
                               "Rebuild", "Spare UUID", "Datapath Transitions"]);
 
             const pvol_uuids = info["pvol_uuids"];
@@ -485,6 +679,7 @@
 
                 table.addRow(
                     operation,
+                    formAnchorTag(URL, timestamp),
                     plex_number,
                     location,
                     formAnchorTag(URL, plex_uuid),
