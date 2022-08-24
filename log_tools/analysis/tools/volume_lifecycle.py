@@ -40,10 +40,8 @@ OPERATIONS = {
     'REBUILD': 'VOL_ADMIN_OPCODE_REBUILD'
 }
 
-CRASH_KEYWORDS = ['"app=no_hbmdump_crash"',
-                  'bug_check',
-                  '"opcode: IPCFG"',
-                  '"Listening on LPF/eth0/"']
+CRASH_KEYWORDS = ['"fast restart bug_check"',
+                  '"bug_check handler"']
 
 def convert_to_json(log_line):
     """
@@ -70,7 +68,7 @@ def convert_to_json(log_line):
                 if line != '}"':
                     json_list.append(line)
         if len(json_list) == 0:
-            raise Exception
+            return log_line
         json_str = ' '.join(json_list)
 
         ret_json = json.loads('{' + json_str + '}')
@@ -86,7 +84,7 @@ def get_value_from_params(info, key, default=None):
         return info['msg']['params'][key]
     return default
 
-def convert_datetime_str(datetime_str, format= '%Y-%m-%dT%H:%M:%S.%f'):
+def convert_datetime_str(datetime_str, format='%Y-%m-%dT%H:%M:%S.%f'):
     if not datetime_str:
         return None
     return datetime.datetime.strptime(datetime_str, format)
@@ -186,9 +184,14 @@ class Volume(object):
             return m.group(1)
 
     def get_all_dpu_info(self):
-        """ Searches for crash logs on funos logs """
+        """ Searches for crash logs and interesting logs on funos logs """
+        INTERESTING_KEYWORDS = [
+            '"opcode: IPCFG"',
+            '"Listening on LPF/eth0/"'
+        ]
+        keywords = CRASH_KEYWORDS + INTERESTING_KEYWORDS
         dpu_info = dict()
-        results = self._perform_es_search(CRASH_KEYWORDS, format_hit_fn=None, match_all=False)
+        results = self._perform_es_search(keywords, format_hit_fn=None, match_all=False)
         for result in results:
             system_id = result['system_id']
             line = result['msg']
@@ -210,12 +213,15 @@ class Volume(object):
                 if 'crash' not in dpu_info[system_id]:
                     dpu_info[system_id]['crash'] = []
                 m = re.search(('|'.join(CRASH_KEYWORDS)), line)
-                reason = m.group(0)
-                dpu_info[system_id]['crash'].append({
-                    'time': result['@timestamp'],
-                    'reason': reason,
-                    'document': result
-                })
+                if m:
+                    reason = m.group(0)
+                    dpu_info[system_id]['crash'].append({
+                        'time': result['@timestamp'],
+                        'reason': reason,
+                        'document': result
+                    })
+                else:
+                    print(f'Could not find crash keyword for : {line}')
 
         return dpu_info
     def get_snapshot_info(self, uuid, operation='CREATE'):
