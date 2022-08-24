@@ -81,32 +81,10 @@
                 <label>
                     <input
                         type="checkbox"
-                        id="show_funos_logs"
-                        checked
-                        onclick="onClickShowFunosLogs(this)"
-                    />
-                    Show all funos logs for the uuid
-                </label>
-            </div>
-            <div class="form-group">
-                <label>
-                    <input
-                        type="checkbox"
                         id="only_create_operation"
                         onclick="onClickOnlyCreateOperation(this)"
                     />
                     Display lifecycle of volume creation only
-                </label>
-            </div>
-            <div class="form-group">
-                <label>
-                    <input
-                        type="checkbox"
-                        id="only_alert_logs"
-                        checked
-                        onclick="onClickOnlyAlertLogs(this)"
-                    />
-                    Show ALERT|ERR|CRIT|degraded|online logs only?
                 </label>
             </div>
             <div class="form-group">
@@ -136,6 +114,9 @@
         <div class="content" id="lifecycle" style="display: none;">
             <div id="show_plex_logs" class="center-align" style="display: none;">
                 <button class="btn btn-primary open-new-tab" onclick="showAllUUIDLogs()">Show logs of all UUIDs</button>
+            </div>
+            <div id="show_cs_logs" class="center-align" style="display: none;">
+                <button class="btn btn-primary open-new-tab" onclick="showAllCSLogs()">Show CS logs</button>
             </div>
             <div class="container">
                 <h3>DPU Info</h3>
@@ -176,7 +157,7 @@
         // Maintains a set of all UUIDs seen in the lifecycle.
         let uuids = new Set();
 
-        let selectedVolumeType = "PV", showFunosLogs = true, onlyCreateOperation = false;
+        let selectedVolumeType = "PV", onlyCreateOperation = false;
         let onlyAlertLogs = true, showBrief = false, ignoreDPUInfo = false;
 
         // Self invocation function
@@ -185,9 +166,7 @@
             const params = new URLSearchParams(location.search);
             const uuid = params.get("uuid");
             selectedVolumeType = params.has("type") ? params.get("type") : selectedVolumeType;
-            showFunosLogs = params.has("show_funos_logs") ? params.get("show_funos_logs") == 'true' : showFunosLogs;
             onlyCreateOperation = params.has("only_create_operation") ? params.get("only_create_operation") == 'true' : onlyCreateOperation;
-            onlyAlertLogs = params.has("only_alert_logs") ? params.get("only_alert_logs") == 'true' : onlyAlertLogs;
             showBrief = params.has("show_brief") ? params.get("show_brief") == 'true' : showBrief;
             ignoreDPUInfo = params.has("ignore_dpu_info") ? params.get("ignore_dpu_info") == 'true' : ignoreDPUInfo;
             setUIDefaults();
@@ -215,18 +194,45 @@
             window.open(url, "_blank");
         }
 
+        // Opens LOG page in a new tab with CS keywords as search string.
+        function showAllCSLogs() {
+            if (uuids.size === 0) {
+                alert("Could not find UUIDs.");
+                return;
+            }
+
+            const cs_src_list = ["lrm_consumer", "scmscv"];
+            const cs_keywords = [
+                "restmq.go", "storagesvc.go", "asyncLocks.go", "fun.kafka_watcher_storage", "Found PV",
+                "InternalUUID", "getVolumeByUUID", "getVolumeTopology", "retryMountsUnmountedKmip"];
+            const cs_alerts_list = [
+                "exiting run_sc", "dataplacement server exited", "SIGSEGV: segmentation violation",
+                "runtime.sigpanic", "Traceback (most recent call last)", "runtime error",
+                "Failed to dispatch hints file"
+            ];
+
+            const query = [...Array.from(uuids), ...cs_keywords, ...cs_alerts_list].reduce((q, uuid) => {
+                return q ? `${q} OR "${uuid}"` : `"${uuid}"`;
+            }, null);
+            const searchPayload = JSON.stringify({
+                "query": query
+            });
+            const filterPayload = JSON.stringify({
+                "sources": cs_src_list
+            });
+            let params = new URLSearchParams();
+            params.set("search", searchPayload);
+            params.set("filter", filterPayload);
+            const url = `${LOG_PAGE_URL}?${params.toString()}`;
+            window.open(url, "_blank");
+        }
+
         // onclick handlers for the checkbox options
         function onChangeVolumeType(event) {
             selectedVolumeType = event.value;
         }
-        function onClickShowFunosLogs(element) {
-            showFunosLogs = element.checked;
-        }
         function onClickOnlyCreateOperation(element) {
             onlyCreateOperation = element.checked;
-        }
-        function onClickOnlyAlertLogs(element) {
-            onlyAlertLogs = element.checked;
         }
         function onClickShowBrief(element) {
             showBrief = element.checked;
@@ -240,9 +246,7 @@
             const params = new URLSearchParams(location.search);
             params.set("uuid", volume_id);
             params.set("type", selectedVolumeType);
-            params.set("show_funos_logs", showFunosLogs);
             params.set("only_create_operation", onlyCreateOperation);
-            params.has("only_alert_logs", onlyAlertLogs);
             params.has("show_brief", showBrief);
             params.has("ignore_dpu_info", ignoreDPUInfo);
             window.history.pushState(null, null, `?${params.toString()}`);
@@ -264,9 +268,7 @@
             const requestData = {
                 "uuid": uuid,
                 "type": selectedVolumeType,
-                "show_funos_logs": showFunosLogs,
                 "only_create_operation": onlyCreateOperation,
-                "only_alert_logs": onlyAlertLogs,
                 "show_brief": showBrief,
                 "ignore_dpu_info": ignoreDPUInfo
             };
@@ -286,9 +288,7 @@
 
         function setUIDefaults() {
             document.querySelector(`input[name="volume_type"][value="${selectedVolumeType}"`).checked = true;
-            document.getElementById("show_funos_logs").checked = showFunosLogs;
             document.getElementById("only_create_operation").checked = onlyCreateOperation;
-            document.getElementById("only_alert_logs").checked = onlyAlertLogs;
             document.getElementById("show_brief").checked = showBrief;
             document.getElementById("ignore_dpu_info").checked = ignoreDPUInfo;
         }
@@ -352,6 +352,7 @@
             // Show the all plex logs button
             if (uuids.size > 0) {
                 toggleElementDisplay(document.getElementById("show_plex_logs"), true);
+                toggleElementDisplay(document.getElementById("show_cs_logs"), true);
             }
         }
 

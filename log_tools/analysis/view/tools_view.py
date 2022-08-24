@@ -36,9 +36,7 @@ def get_volume_lifecycle(log_id):
     request_data = request.get_json(force=True)
     uuid = request_data.get('uuid')
     type = request_data.get('type', 'PV')
-    show_funos_logs = request_data.get('show_funos_logs', True)
     only_create_operation = request_data.get('only_create_operation', False)
-    only_alert_logs = request_data.get('only_alert_logs', True)
     show_brief = request_data.get('show_brief', False)
     ignore_dpu_info = request_data.get('ignore_dpu_info', False)
 
@@ -51,8 +49,6 @@ def get_volume_lifecycle(log_id):
         if only_create_operation:
             volume.trace_operations = ['CREATE']
 
-        volume.show_funos_logs = show_funos_logs or only_alert_logs
-        volume.only_alert_logs = only_alert_logs
         volume.ignore_dpu_info = ignore_dpu_info
 
         lifecycle = volume.get_lifecycle()

@@ -144,9 +144,9 @@ class Volume(object):
         # Volume Type
         self.volume_type = type
 
-        self.show_funos_logs = True
-        self.only_alert_logs = True
+        self.only_create_operation = False
         self.ignore_dpu_info = False
+
         # Time of the current operation
         self.op_time = None
         # Time of the previous operation
@@ -278,7 +278,6 @@ class Volume(object):
 
         lsv_info = results[0]
         self.lsv = get_value_from_params(lsv_info, 'nguid')
-        self.uuids.add(self.lsv)
 
         pvg_info_query = [self.lsv, f'"{VOLUME_TYPES["PVG"]}"',
                           f'("{OPERATIONS["MOUNT"]}" OR "{OPERATIONS["CREATE"]}")']
@@ -288,7 +287,6 @@ class Volume(object):
 
         pvg_info = results[0]
         self.pvg = get_value_from_params(pvg_info, 'uuid')
-        self.uuids.add(self.pvg)
         self.first_opcode_logs = pvg_info['msg']['opcode']
 
     def find_pvol(self):
@@ -533,24 +531,6 @@ class Volume(object):
                     'state': transition_state.group(1)
                 })
         return transitions_info
-
-    def get_dp_transitions(self, info_list, plex_list):
-        """ """
-        info_dict = {}
-        for info in info_list:
-            line = str(info['msg'])
-            if line != '':
-                search_transition = re.search("({0})".format('|'.join(self.dp_transitions)), line)
-                search_plex = re.search("({0})".format('|'.join(plex_list)), line)
-                if search_transition and search_plex:
-                    plex = search_plex.group(1)
-                    transition = search_transition.group(1)
-                    if plex not in info_dict:
-                        info_dict[plex] = {}
-                    if transition not in info_dict[plex]:
-                        info_dict[plex][transition] = []
-                    info_dict[plex][transition].append(info['@timestamp'])
-        return info_dict
 
     def get_lifecycle(self):
         """
