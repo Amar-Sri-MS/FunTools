@@ -696,8 +696,13 @@ static void apply_command_locally(const struct fun_json *json,
 
 	if (!strcmp(verb, "encoding_text")) {
 		*complete = true;
-		cmd->encoding = PARSE_TEXT;
-		log_debug(_debug_log, "changing encoding to text\n");
+		if (cmd->socket->server) {
+			// because macro commands are security risk SWTOOLS-2851
+			log_error("switching to text encoding in proxy mode is forbidden\n");
+		} else {
+			cmd->encoding = PARSE_TEXT;
+			log_debug(_debug_log, "changing encoding to text\n");
+		}
 		return;
 	}
 
@@ -917,7 +922,7 @@ void _configure_device(struct dpcsock *sock)
 	 */
 	char *cmdfmt  = "stty -F %s %s sane -echo -onlcr -icrnl crtscts "
 			"-brkint -echoctl -echoe -echok -echoke -icanon -iexten "
-			"-imaxbel -isig -opost ignbrk min 1 cs8 hupcl -clocal";
+			"-imaxbel -isig -opost ignbrk time 5 cs8 hupcl -clocal";
 	char cmd[strlen(cmdfmt) + FMT_PAD];
 	int r;
 
@@ -1659,8 +1664,11 @@ static bool _do_cli(int argc, char *argv[],
 	ok = _decode_jsons_from_buffer(cmd);
 	ok = ok && _write_dequeue(funos, cmd);
 
-	ok = ok && _wait_read(funos);
-	ok = ok && _read_enqueue(funos);
+	do {
+		ok = ok && _wait_read(funos);
+		ok = ok && _read_enqueue(funos);
+	} while (ok && !dpcsh_ptr_queue_size(funos->binary_json_queue));
+
 	ok = ok && _write_dequeue(cmd, funos);
 
 connect_fail:

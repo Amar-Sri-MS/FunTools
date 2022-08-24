@@ -24,4 +24,5 @@ install-scripts:
 	install exprom-hdrgen.py $(SDK_INSTALL_DIR)/bin/scripts
 	install issu $(SDK_INSTALL_DIR)/bin/scripts
 	install deploy-funtools.scripts.sh $(SDK_INSTALL_DIR)/bin/scripts
+	install decode_action $(SDK_INSTALL_DIR)/bin/scripts
 

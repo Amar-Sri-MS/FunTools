@@ -67,6 +67,35 @@ class BoardLayer():
                 return perst['perst']
         return {}
 
+    def get_perst_bl(self, hu, hu_ctl, ctl, bl_json):
+        """get the perst parameters for the given controller specified
+        by its hu, hu_ctl from bl_json
+        """
+        mode = ctl['mode']
+        width = ctl['pcie_width']
+
+        # DNSW means the controller is in RC mode.
+        # UPSW means the controller is in EP mode.
+        if (mode == 'DNSW'):
+            mode = 'RC'
+        elif (mode == 'UPSW'):
+            mode = 'EP'
+
+        # The connector is optional (only needed for PCIe controller
+        # attached to a target via cabling. Can be removed after getting its
+        # value
+        connector = ctl.get('connector', '')
+        if connector:
+            del ctl['connector']
+
+        perst =  self.get_perst(hu, hu_ctl, mode, width, connector,
+                                        bl_json)
+
+        # If perst is not found for the controller, stop!
+        if not perst:
+            raise Exception("Perst not found for hu=%d ctl=%d board=%s"
+                            % (hu, hu_ctl, self.board_name))
+        return perst
 
     def apply_perst(self, sku_json, bl_json, cl_json):
         """Assign the PERST parameters to each PCIe controller
@@ -79,40 +108,34 @@ class BoardLayer():
         controllers = sku_json['skus'][self.board_name]['HuInterface']['HostUnitController']
 
         # Assign the PERST to each controller
-        for ctl in controllers:
-            hu = ctl['_args'][0];
-            hu_ctl = ctl['_args'][1];
-            mode = ctl['mode']
-            width = ctl['pcie_width']
+        for hostunit in controllers:
+            if '_args' in hostunit:
+                ctl = hostunit
+                hu = ctl['_args'][0];
+                hu_ctl = ctl['_args'][1];
 
-            # Only physical HUs can have PERST signals
-            if (hu >= cl_json['chip_params']['hsu_max']):
-                continue
+                # Only physical HUs can have PERST signals
+                if (hu >= cl_json['chip_params']['hsu_max']):
+                    continue
 
-            # DNSW means the controller is in RC mode.
-            # UPSW means the controller is in EP mode.
-            if (mode == 'DNSW'):
-                mode = 'RC'
-            elif (mode == 'UPSW'):
-                mode = 'EP'
+                # Add the perst configuration to the PCIe controller
+                ctl['perst'] = self.get_perst_bl(hu, hu_ctl, ctl, bl_json)
+            else:
+                hu_number = hostunit.split("_")
+                hu = int(hu_number[1])
+                value = controllers[hostunit]
+                for controller in value:
+                    ctl_number = controller.split('_')
+                    hu_ctl = int(ctl_number[1])
+                    ctl = value[controller]
 
-            # The connector is optional (only needed for PCIe controller
-            # attached to a target via cabling. Can be removed after getting its
-            # value
-            connector = ctl.get('connector', '')
-            if connector:
-                del ctl['connector']
+                    # Only physical HUs can have PERST signals
+                    if (hu >= cl_json['chip_params']['hsu_max']):
+                        continue
 
-            perst =  self.get_perst(hu, hu_ctl, mode, width, connector,
-                                    bl_json)
+                    # Add the perst configuration to the PCIe controller
+                    ctl['perst'] = self.get_perst_bl(hu, hu_ctl, ctl, bl_json)
 
-            # If perst is not found for the controller, stop!
-            if not perst:
-                raise Exception("Perst not found for hu=%d ctl=%d board=%s"
-                                % (hu, hu_ctl, self.board_name))
-
-            # Add the perst configuration to the PCIe controller
-            ctl['perst'] = perst
         return sku_json
 
 

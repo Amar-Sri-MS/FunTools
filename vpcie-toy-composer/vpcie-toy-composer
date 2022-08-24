@@ -201,24 +201,24 @@ def vportspec_to_json(vportspec, cs_dpus):
 #     Command Line "args" parameter.  We'll be getting rid of that soon.
 #
 
-def curl_api_gateway(args, options, cmd_url):
+def exec_curl_cmd(args, curl_cmd, streaming=False):
 	'''
-	Construct and execute (unless dry_run is true) a curl command to
-	the API Gateway, given a possibly empty options string, and an
-	API Gateway Command URL.  If verbose, dry_run, or debug are true,
-	we print the curl command.  If dry_run is specified, we return {}
-	without executing the curl command.  Otherwise we execute the curl
-	command and return the result (printing the result first if debug
-	is true).
-	'''
+	Execute indicated curl command.
 
-	api_gateway = f'http://{args.cs_host}:{args.cs_port}/FunCC/v1/'
-	curl_cmd = f'curl --silent --user {args.cs_user} {options} {api_gateway}{cmd_url}'
+	If verbose, dry_run, or debug are true, we print the curl command.
+	If dry_run is specified, we return {} without executing the curl
+	command.  Otherwise we execute the curl command and return the
+	result (printing the result first if debug is true).
+	'''
 
 	if args.verbose or args.dry_run or args.debug:
 		print(curl_cmd)
 		if args.dry_run:
 			return {}
+
+	if streaming:
+		subprocess.run(curl_cmd, shell=True)
+		return {}
 
 	curl_out = subprocess.getoutput(curl_cmd)
 	if curl_out == '':
@@ -228,9 +228,36 @@ def curl_api_gateway(args, options, cmd_url):
 		print('Command =', curl_cmd)
 		print('Result  =', result)
 
-	if not result['status']:
-		raise RuntimeError(f'"{curl_cmd}" returns "{result}"')
+	return result
 
+def curl_api_gateway(args, options, cmd_url, streaming=False):
+	'''
+	Construct and execute (unless dry_run is true) a curl command to
+	the API Gateway, given a possibly empty options string, and an
+	API Gateway Command URL.
+	'''
+
+	api_gateway = f'http://{args.cs_host}:{args.cs_port}/FunCC/v1/'
+	curl_cmd = f'curl --silent --user {args.cs_user} {options} {api_gateway}{cmd_url}'
+
+	result = exec_curl_cmd(args, curl_cmd, streaming)
+	if not args.dry_run and not result['status']:
+		raise RuntimeError(f'"{curl_cmd}" returns "{result}"')
+	return result
+
+def curl_platform_agent(args, options, cclinux, cmd_url, streaming=False):
+	'''
+	Construct and execute (unless dry_run is true) a curl command to a
+	DPU's ccLinux Platform Agent, given a possibly empty options string,
+	and a Command URL.
+	'''
+
+	platform_agent = f'http://{cclinux}:{args.pa_port}/'
+	curl_cmd = f'curl --silent {options} {platform_agent}{cmd_url}'
+
+	result = exec_curl_cmd(args, curl_cmd, streaming)
+	if args.dry_run or streaming or result == '0: Success':
+		return {}
 	return result
 
 def ssh_cs_host(args, cmd):
@@ -321,12 +348,19 @@ def cli_docker_stop(args):
 
 	ssh_cs_host(args, 'sudo /opt/fungible/fc/etc/fun_containers.sh clean')
 
-def cli_ztp(args):
+def cli_dpu_ztp(args):
 	'''
 	Implement DPU Zero Touch Provisioning command:
 
-	    ztp <DPU ccLinux> ...
+	    dpu ztp [--ztp-cs-host <host>] <DPU ccLinux> ...
 	'''
+
+	# XXX This should really be implemented via a Platform Agent Command!
+	# XXX
+	# XXX There's a '/platform/services/ztp_boot/url/set' Platform Agent
+	# XXX RESTful API but it uses 'boot_script_url' instead of
+	# XXX 'controllers' in /persist/config/ztp/startup_cfg.json and I
+	# XXX can't get anyone to tell me how to use that form ... (sigh)
 
 	# Determine the Fungible Cluster Services Host for the Zero Touch
 	# Provisioning.  If an explicit ZTP CS Host has been provided, use
@@ -364,6 +398,50 @@ def cli_ztp(args):
 		    ztp_file.name, '/persist/config/ztp/startup_cfg.json')
 
 	ztp_file.close()
+
+def cli_dpu_ssh_key(args):
+	'''
+	Implement deploying ssh public key to DPUs command:
+
+	    dpu ssh-key [--ssh-key-file <file>] <DPU ccLinux> ...
+	'''
+
+	# Get the public ssh key, minus any newlines.
+	#
+	ssh_key_file = open(args.ssh_key_file)
+	ssh_key = ssh_key_file.read().strip()
+	ssh_key_file.close()
+
+	# Nest quoting when going to the shell sucks ...
+	#
+	json_ssh_key = '{' + f'"sshkey" : "add {ssh_key}"' + '}'
+	options = f'--request POST --data \'{json_ssh_key}\''
+
+	# Install our publuc ssh key on all of the specified DPUs.
+	#
+	for dpu in args.dpus:
+		curl_platform_agent(args, options, dpu, 'platform/services/sshkey')
+
+def cli_dpu_funos_log(args):
+	'''
+	Implement DPU stream FunOS Log command:
+
+	    dpu funos-log <DPU ccLinux>
+	'''
+
+	curl_platform_agent(args, '', args.dpu,
+	    'platform/logs/funos/stream/', True)
+
+def cli_dpu_reset_vport(args):
+	'''
+	Implement DPU Reset Port command:
+
+	    dpu reset-vport <DPU ccLinux> <Portname> ...
+	'''
+
+	for portname in args.portnames:
+		curl_platform_agent(args, '--request POST', args.dpu,
+		    'v1/fm-agent/reset-vport/' + portname)
 
 def cli_vfm_create(args):
 	'''
@@ -421,7 +499,7 @@ def cli_vfm_hot_plug(args):
 	hot_plug['virtual_fabric'] = args.vfabric
 	hot_plug['ports'] = ports
 
-	options = f'-X PATCH --header \'Content-Type: application/json\' --data \'{json.dumps(hot_plug)}\''
+	options = f'--request PATCH --header \'Content-Type: application/json\' --data \'{json.dumps(hot_plug)}\''
 	curl_api_gateway(args, options, 'virtual-fabrics/add')
 
 def cli_vfm_hot_unplug(args):
@@ -439,7 +517,7 @@ def cli_vfm_hot_unplug(args):
 	hot_unplug['virtual_fabric'] = args.vfabric
 	hot_unplug['ports'] = ports
 
-	options = f'-X PATCH --header \'Content-Type: application/json\' --data \'{json.dumps(hot_unplug)}\''
+	options = f'--request PATCH --header \'Content-Type: application/json\' --data \'{json.dumps(hot_unplug)}\''
 	curl_api_gateway(args, options, 'virtual-fabrics/remove')
 
 def cli_vfm_delete(args):
@@ -450,7 +528,7 @@ def cli_vfm_delete(args):
 	'''
 
 	for vfabric in args.vfabrics:
-		curl_api_gateway(args, '-X DELETE',
+		curl_api_gateway(args, '--request DELETE',
 		    'virtual-fabrics/' + vfabric)
 
 def cli_vfm_dpus(args):
@@ -758,6 +836,12 @@ def main():
 	    help='JSON File mapping DPU Names to MAC Addresses '
 		'[default: $CS_DPUS]')
 
+	cmd_parser.add_argument('-a', '--pa-port',
+	    type=int,
+	    default=os.environ.get('PA_PORT', 9332),
+	    help='TCP Port for Fungible Cluster Services '
+		'[default: $PA_PORT]')
+
 	cmd_parser.add_argument('-I', '--indent',
 	    type=argparse_type_int_none, default=4,
 	    help='Pretty printing indentation, default 4, 0 means none')
@@ -794,22 +878,62 @@ def main():
 	    description='Stop Fungible Cluster Services Docker Container')
 	cli_docker_stop_parser.set_defaults(func=cli_docker_stop)
 
-	# Zero Touch Provisioning commands.
+	# DPU Control Plane commands.
 	#
-	#     tc ztp <DPU ccLinux> ...
+	cli_dpu_parser = cli_parsers.add_parser('dpu',
+	    description='DPU Control Plane commands')
+	cli_dpu_parsers = cli_dpu_parser.add_subparsers()
+
+	# tc dpu ztp [--ztp-cs-host <host>] <DPU ccLinux> ...
 	#
-	cli_ztp_parser = cli_parsers.add_parser('ztp',
+	cli_dpu_ztp_parser = cli_dpu_parsers.add_parser('ztp',
 	    description='Zero Touch Provisioning for specified DPUs')
-	cli_ztp_parser.add_argument(
+	cli_dpu_ztp_parser.add_argument(
 	    '-z', '--ztp-cs-host',
 	    type=str,
 	    help='Private "South" Virtual IP for Fungible Cluster Services '
 		'[default: --cs-host/$CS_HOST, which only works when using '
 		'Docker Container deployment]')
-	cli_ztp_parser.add_argument(
+	cli_dpu_ztp_parser.add_argument(
 	    'dpus', nargs='+',
 	    help='One or more DPUs (ccLinux hostnames/IP Addresses) to Provision')
-	cli_ztp_parser.set_defaults(func=cli_ztp)
+	cli_dpu_ztp_parser.set_defaults(func=cli_dpu_ztp)
+
+	# tc dpu ssh-key [--ssh-key-file <file>] <DPU ccLinux> ...
+	#
+	cli_dpu_ssh_key_parser = cli_dpu_parsers.add_parser('ssh-key',
+	    description='Deploy an ssh public key to one or more DPUs')
+	cli_dpu_ssh_key_parser.add_argument(
+	    '-f', '--ssh-key-file',
+	    type=str,
+	    default=os.environ.get('HOME') + '/.ssh/id_rsa.pub',
+	    help='Filename containing public ssh key '
+		'[default: ~/.ssh/id_rsa.pub]')
+	cli_dpu_ssh_key_parser.add_argument(
+	    'dpus', nargs='+',
+	    help='One or more DPUs (ccLinux hostnames/IP Addresses) to Provision')
+	cli_dpu_ssh_key_parser.set_defaults(func=cli_dpu_ssh_key)
+
+	# tc dpu funos-log <DPU ccLinux>
+	#
+	cli_dpu_funos_log_parser = cli_dpu_parsers.add_parser('funos-log',
+	    description='Stream FunOS Log from specified DPU')
+	cli_dpu_funos_log_parser.add_argument(
+	    'dpu',
+	    help='DPU from which Stream FunOS Log')
+	cli_dpu_funos_log_parser.set_defaults(func=cli_dpu_funos_log)
+
+	# tc dpu reset-vport <DPU ccLinux> <Portname> ...
+	#
+	cli_dpu_reset_vport_parser = cli_dpu_parsers.add_parser('reset-vport',
+	    description='Reset DPU Virtual PCIe Switch Ports')
+	cli_dpu_reset_vport_parser.add_argument(
+	    'dpu',
+	    help='DPU on which to Reset vSwitch Ports')
+	cli_dpu_reset_vport_parser.add_argument(
+	    'portnames', nargs='+',
+	    help='DPU PCIe vSwitch Portnames')
+	cli_dpu_reset_vport_parser.set_defaults(func=cli_dpu_reset_vport)
 
 	# Virtual PCIe Fabric Manager commands.  Allow alias "vsw".
 	#
@@ -977,8 +1101,8 @@ def main():
 	#
 	try:
 		args = cmd_parser.parse_args()
-	except RuntimeError as err:
-		logger.error('Argument Parse: {err.args[0]}')
+	except Exception as err:
+		logger.error('Argument Parse: {err.__str__()}')
 		exit(1)
 
 	if args.debug:
@@ -996,8 +1120,8 @@ def main():
 	#
 	try:
 		args.func(args)
-	except RuntimeError as err:
-		logger.error(f'Execution: {err.args[0]}')
+	except Exception as err:
+		logger.error(f'Execution: {err.__str__()}')
 		exit(1)
 
 if __name__ == "__main__":

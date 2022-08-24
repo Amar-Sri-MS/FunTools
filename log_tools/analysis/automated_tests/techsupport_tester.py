@@ -18,6 +18,7 @@ import config_loader
 import logger
 
 from automated_tests.tester import Tester
+from utils import is_file_readable
 from utils.archive_extractor import is_archive
 from utils.cleanup import clean
 from view.ingester import _get_log_id
@@ -50,7 +51,8 @@ def main():
                 file_path = join(folder, file)
                 if (isfile(file_path) and
                     is_techsupport(file) and
-                    is_archive(file_path)):
+                    is_archive(file_path) and
+                    is_file_readable(file_path)):
                     logging.info(f'Found techsupport {file}')
                     techsupport_archives.append(file_path)
                     break

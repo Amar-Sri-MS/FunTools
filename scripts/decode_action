@@ -28,7 +28,6 @@ benturrubiates at vodex (venv) :: echo "0x822fcbf000c40fbe\n0x820ecd1010e60fc4" 
 """
 
 
-from future_builtins import hex
 import argparse
 import sys
 
