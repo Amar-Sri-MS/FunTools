@@ -133,6 +133,7 @@
       strlen = str.innerText.length;
       str = str.outerHTML;
     }
+    else if (Array.isArray(str)) str = str.join(',')
     else if (typeof str !== 'string') str = str.toString()
     else if (str.startsWith('<a') && str.endsWith('</a>')) {
       strlen = str.length
@@ -180,6 +181,7 @@
       strlen = str.innerText.length;
       str = str.outerHTML;
     }
+    else if (Array.isArray(str)) str = str.join(',')
     else if (typeof str !== 'string') str = str.toString()
     else if (str.startsWith('<a') && str.endsWith('</a>')) {
       strlen = str.length
@@ -221,6 +223,7 @@
     // If we want to display an HTML element then we want to
     // consider the length of the innerText.
     if (str instanceof Element) strlen = str.innerText.length
+    else if (Array.isArray(str)) str = str.join(',')
     else if (typeof str !== 'string') str = str.toString()
     else if (str.startsWith('<a') && str.endsWith('</a>')) {
       strlen = str.length
