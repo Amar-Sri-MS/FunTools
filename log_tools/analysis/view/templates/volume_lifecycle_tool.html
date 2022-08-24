@@ -113,10 +113,10 @@
         </div>
         <div class="content" id="lifecycle" style="display: none;">
             <div id="show_plex_logs" class="center-align" style="display: none;">
-                <button class="btn btn-primary open-new-tab" onclick="showAllUUIDLogs()">Show logs of all UUIDs</button>
+                <button class="btn btn-primary open-new-tab" onclick="showAllFunosLogs()">Show FunOS logs of all UUIDs</button>
             </div>
-            <div id="show_cs_logs" class="center-align" style="display: none;">
-                <button class="btn btn-primary open-new-tab" onclick="showAllCSLogs()">Show CS logs</button>
+            <div id="show_cs_logs" class="center-align" style="display: none; margin-top: 10px;">
+                <button class="btn btn-primary open-new-tab" onclick="showAllCSLogs()">Show CS logs of all UUIDs</button>
             </div>
             <div class="container">
                 <h3>DPU Info</h3>
@@ -177,7 +177,7 @@
         })();
 
         // Opens LOG page in a new tab with all UUIDs as search string.
-        function showAllUUIDLogs() {
+        function showAllFunosLogs() {
             if (uuids.size === 0) {
                 alert("Could not find UUIDs.");
                 return;
@@ -188,8 +188,13 @@
             const searchPayload = JSON.stringify({
                 "query": query
             });
+            const filterPayload = JSON.stringify({
+                "sources": ["funos", "funos_0", "funos_1", "dpu"]
+            });
+
             let params = new URLSearchParams();
             params.set("search", searchPayload);
+            params.set("filter", filterPayload);
             const url = `${LOG_PAGE_URL}?${params.toString()}`;
             window.open(url, "_blank");
         }
@@ -306,10 +311,10 @@
         // Generic function to toggle any HTML element's display property
         function toggleElementDisplay(element, flag) {
             if (flag) {
-                element.style = "display: block";
+                element.style.display = "block";
             }
             else {
-                element.style = "display: none";
+                element.style.display = "none";
             }
         }
 
