@@ -70,6 +70,26 @@
     if (dir === AsciiTable.CENTER) return AsciiTable.alignCenter(str, len, pad)
     return AsciiTable.alignAuto(str, len, pad)
   }
+
+  /*
+    Updates the str and strlen in case the text contains an <a> tag
+  */
+  AsciiTable.getFormattedStrWithLen = function(str) {
+      let strlen = str.length;
+      let startIndex = str.indexOf('<a');
+      let new_str = str.substring(0, startIndex);
+      while (startIndex != -1) {
+        const endIndex = str.indexOf('>', startIndex+1);
+        strlen -= (endIndex-startIndex+5);
+        startIndex = str.indexOf('<a', endIndex+1);
+        new_str += str.substring(endIndex+1, startIndex);
+      }
+
+      new_str += str.substring(startIndex+1)
+      str = new_str
+      // str = str.substring(innerIndex+1, outerIndex)
+      return { str, strlen }
+  }
   
   /**
    * Left align a string by padding it at a given length
@@ -93,19 +113,9 @@
     }
     else if (typeof str !== 'string') str = str.toString()
     else if (str.startsWith('<a') && str.endsWith('</a>')) {
-      strlen = str.length
-      let startIndex = str.indexOf('<a');
-      new_str = str.substring(0, startIndex);
-      while (startIndex != -1) {
-        const endIndex = str.indexOf('>', startIndex+1);
-        strlen -= (endIndex-startIndex+5);
-        startIndex = str.indexOf('<a', endIndex+1);
-        new_str += str.substring(endIndex+1, startIndex);
-      }
-
-      new_str += str.substring(startIndex+1)
-      str = new_str
-      // str = str.substring(innerIndex+1, outerIndex)
+      let formattedStrWithLen = AsciiTable.getFormattedStrWithLen(str);
+      str = formattedStrWithLen['str'];
+      strlen = formattedStrWithLen['strlen'];
     }
     if (!strlen) strlen = str.length;
     var alen = len + 1 - strlen
@@ -136,19 +146,9 @@
     else if (Array.isArray(str)) str = str.join(',')
     else if (typeof str !== 'string') str = str.toString()
     else if (str.startsWith('<a') && str.endsWith('</a>')) {
-      strlen = str.length
-      let startIndex = str.indexOf('<a');
-      new_str = str.substring(0, startIndex);
-      while (startIndex != -1) {
-        const endIndex = str.indexOf('>', startIndex+1);
-        strlen -= (endIndex-startIndex+5);
-        startIndex = str.indexOf('<a', endIndex+1);
-        new_str += str.substring(endIndex+1, startIndex);
-      }
-
-      new_str += str.substring(startIndex+1)
-      str = new_str
-      // str = str.substring(innerIndex+1, outerIndex)
+      let formattedStrWithLen = AsciiTable.getFormattedStrWithLen(str);
+      str = formattedStrWithLen['str'];
+      strlen = formattedStrWithLen['strlen'];
     }
     if (!strlen) strlen = str.length;
     var nLen = strlen
@@ -184,19 +184,9 @@
     else if (Array.isArray(str)) str = str.join(',')
     else if (typeof str !== 'string') str = str.toString()
     else if (str.startsWith('<a') && str.endsWith('</a>')) {
-      strlen = str.length
-      let startIndex = str.indexOf('<a');
-      new_str = str.substring(0, startIndex);
-      while (startIndex != -1) {
-        const endIndex = str.indexOf('>', startIndex+1);
-        strlen -= (endIndex-startIndex+5);
-        startIndex = str.indexOf('<a', endIndex+1);
-        new_str += str.substring(endIndex+1, startIndex);
-      }
-
-      new_str += str.substring(startIndex+1)
-      str = new_str
-      // str = str.substring(innerIndex+1, outerIndex)
+      let formattedStrWithLen = AsciiTable.getFormattedStrWithLen(str);
+      str = formattedStrWithLen['str'];
+      strlen = formattedStrWithLen['strlen'];
     }
     if (!strlen) strlen = str.length;
     var alen = len + 1 - strlen
@@ -226,19 +216,9 @@
     else if (Array.isArray(str)) str = str.join(',')
     else if (typeof str !== 'string') str = str.toString()
     else if (str.startsWith('<a') && str.endsWith('</a>')) {
-      strlen = str.length
-      let startIndex = str.indexOf('<a');
-      new_str = str.substring(0, startIndex);
-      while (startIndex != -1) {
-        const endIndex = str.indexOf('>', startIndex+1);
-        strlen -= (endIndex-startIndex+5);
-        startIndex = str.indexOf('<a', endIndex+1);
-        new_str += str.substring(endIndex+1, startIndex);
-      }
-
-      new_str += str.substring(startIndex+1)
-      str = new_str
-      // str = str.substring(innerIndex+1, outerIndex)
+      let formattedStrWithLen = AsciiTable.getFormattedStrWithLen(str);
+      str = formattedStrWithLen['str'];
+      strlen = formattedStrWithLen['strlen'];
     }
     if (!strlen) strlen = str.length;
     if (strlen < len) {
