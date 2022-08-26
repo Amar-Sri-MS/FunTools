@@ -72,7 +72,7 @@ RGX_WU_IDs = {
 }
 
 # value = parent transaction, key = child transaction
-HARDCODED_LINKING = {"nss_read_chunk_done": "epsq_dispatch"}
+HARDCODED_LINKING = {"nss_write_dma_done": "nss_write_nprps"}
 
 class TraceProcessor:
     """Converts list of events into transactions.
