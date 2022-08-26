@@ -21,7 +21,6 @@ import os
 # global comby object
 comby = Comby(language=".c")
 
-LEGACY_MATCH: str = "#include <generated/wu_ids.h>"
 
 ###
 ##  A WU declaration
@@ -351,7 +350,7 @@ class WUInfo():
 #
 
 def scan_for_legacy(input:str) -> bool:
-    nmatches = len(list(comby.matches(input, LEGACY_MATCH)))
+    nmatches = len(HEADER_MATCH.matches(input))
 
     return (nmatches > 0)
 
@@ -360,25 +359,139 @@ def scan_for_legacy(input:str) -> bool:
 #
 
 class Pattern():
-    def __init__(self, id: str, match: str) -> None:
+    def __init__(self, id: str, match: str,
+                 rewrite: Optional[str] = None) -> None:
         self.match: str = match
+        self._rewrite: Optional[str] = rewrite
         self.id:str = id
 
     def matches(self, input: str):
         l = list(comby.matches(input, self.match))
         return l   
 
+    def rewrite(self, input: str):
+        assert(self._rewrite is not None)
+
+        return comby.rewrite(input, self.match, self._rewrite)
+
+class NoRewritePattern(Pattern):
+    def rewrite(self, input: str):
+        # do nothing
+        return input
+
+class MultipassPattern(Pattern):
+    def __init__(self, id: str, match: str,
+                 rewrites: List[Tuple[Optional[str], str]]):
+        self.match: str = match
+        self.rewrites = rewrites
+        self.id: str = id
+
+    def rewrite(self, input: str):
+        for (match, rewrite) in self.rewrites:
+            if (match is None):
+                match = self.match
+
+            input = comby.rewrite(input, match, rewrite)
+            
+        return input
+
+
+GROUP_CUSTOM_MATCH: str = "WU_HANDLER_REGISTER_GROUP(:[module], {wuname}, (:[fnlist]), :[attrs], :[align])"
+GROUP_CUSTOM_REWRITE: str = "WU_HANDLER_ALIGNED_GROUP({wuname}, :[attrs], {fnlist})"
+
+def pad_fnlist(fnlist: str):
+    fns = fnlist.split(",")
+    fns = [fn.strip() for fn in fns]
+    while (len(fns) < 16):
+        fns.append("padding_wuh")
+    return ",\n                          ".join(fns)
+
+class GroupPattern(Pattern):
+    def __init__(self, id: str, match: str) -> None:
+        self.match: str = match
+        self.id:str = id
+
+    def rewrite(self, input: str):
+
+        # find all the matches
+        ms = list(comby.matches(input, self.match))
+
+        # nothing to do
+        if (len(ms) == 0):
+            return input
+
+        # make a pair of patterns for each match
+        rewrites: List[Tuple[Optional[str], str]] = []
+        for m in ms:
+            d = {}
+            print(m)
+            d["wuname"] = m.environment["wuname"].fragment
+            d["fnlist"] = pad_fnlist(m.environment["fnlist"].fragment)
+
+            match = GROUP_CUSTOM_MATCH.format(**d)
+            rewrite = GROUP_CUSTOM_REWRITE.format(**d)
+            rewrites.append((match, rewrite))
+
+
+        # run all the replacements via a multipass
+        mp = MultipassPattern("group", "", rewrites)
+        return mp.rewrite(input)
+
+
+HEADER_MATCH: Pattern = Pattern("header", "#include <generated/wu_ids.h>",
+                                rewrite="#include <nucleus/wu_register.h>")
+
 ###
 ##  WU definition scanning
 #
 
 DECLS : List[Pattern] = [
-    Pattern("WU_HANDLER", "WU_HANDLER(:[attrs]) void :[wuname](:[params])"),
-    Pattern("WU64_HANDLER", "WU64_HANDLER(:[attrs]) void :[wuname](:[params])"),
-    Pattern("CHANNEL_THREAD", "CHANNEL_THREAD(:[attrs]) void :[wuname](:[params])"),
-    Pattern("CHANNEL", "CHANNEL(:[attrs]) void :[wuname](:[params])"),
-    Pattern("WU_HANDLER_REGISTER_GROUP", "WU_HANDLER_REGISTER_GROUP(:[module], :[wuname], (:[fnlist]), :[attrs], :[align])"),
-    Pattern("WU_HANDLER_REGISTER_DMA_ERR_GROUP", "WU_HANDLER_REGISTER_DMA_ERR_GROUP(:[module], :[wuname], :[fn], :[wu_attrs])"),
+    # first rewrite to add attributes if they're missing, then just rewrite
+    MultipassPattern("WU_HANDLER",
+                     "WU_HANDLER(:[attrs]) void :[wuname](:[params])",
+                     [ ("WU_HANDLER() void :[wuname](:[params])",
+                        "WU_HANDLER(WU_ATTR_NONE) void :[wuname](:[params])"),
+                       (None, "WU_HANDLER(:[wuname], :[attrs], :[params])")
+                     ]),
+
+    MultipassPattern("WU64_HANDLER",
+                     "WU64_HANDLER(:[attrs]) void :[wuname](:[params])",
+                     [ ("WU64_HANDLER() void :[wuname](:[params])",
+                        "WU64_HANDLER(WU_ATTR_NONE) void :[wuname](:[params])"),
+                       (None, 'WU64_HANDLER(:[wuname], :[attrs], :[params])'),
+                     ]),
+
+    # rewrite all the attrs, rewrite void/empty and not void separately
+    MultipassPattern("CHANNEL_THREAD",
+                     "CHANNEL_THREAD(:[attrs]) void :[[wuname]](:[params])",
+                     [ 
+                        ("CHANNEL_THREAD() void :[[wuname]](:[params])",
+                        "CHANNEL_THREAD(WU_ATTR_NONE) void :[wuname](:[params])"),
+
+                        ("CHANNEL_THREAD(:[attrs]) void :[[wuname]](:[~(void)?])",
+                        "CHANNEL_THREAD(:[wuname], :[attrs])"),
+
+                        (None,
+                        "CHANNEL_THREAD(:[wuname], :[attrs], :[params])"),
+                     ]
+                     ),
+
+    # first rewrite to add attributes if they're missing, then just rewrite
+    MultipassPattern("CHANNEL",
+                     "CHANNEL(:[attrs]) void :[[wuname]](:[params])",
+                     [ ("CHANNEL() void :[[wuname]](:[params])",
+                        "CHANNEL(WU_ATTR_NONE) void :[wuname](:[params])"),
+                        (None,
+                        "CHANNEL_HANDLER(:[wuname], :[attrs], :[params])")
+                     ]),
+
+    GroupPattern("WU_HANDLER_REGISTER_GROUP",
+                 "WU_HANDLER_REGISTER_GROUP(:[module], :[wuname], (:[fnlist]), :[attrs], :[align])"),
+
+    # we want to track these for references, but this macro is just what
+    # we need for SDK WUs
+    NoRewritePattern("WU_HANDLER_REGISTER_DMA_ERR_GROUP",
+                     "WU_HANDLER_REGISTER_DMA_ERR_GROUP(:[module], :[wuname], :[fn], :[wu_attrs])"),
 ]
 
 def scan_file_for_decls(fl: FunFile, input: str) -> List[WUDecl]:
@@ -401,6 +514,10 @@ REFS : List[Pattern] = [
     ## WU API
     Pattern("WUID",
             ":[~\\bWUID](:[wuname])"),
+    Pattern("WUATTR",
+            ":[~\\bWUATTR](:[wuname])"),
+    Pattern("WUGID",
+            ":[~\\bWUGID](:[wuname])"),
     Pattern("wu_send",
             ":[~\\bwu_send](:[wuname], " + DEST_AND_ARGS + ")"),
     Pattern("wu_send_priority",
@@ -412,9 +529,16 @@ REFS : List[Pattern] = [
     Pattern("wu_send_ungated_nobarrier_unsafe",
             ":[~\\bwu_send_ungated_nobarrier_unsafe](:[wuname], " + DEST_AND_ARGS + ")"),
 
-    ## Timers?
+    ## Timers
     Pattern("wu_timer_start",
             ":[~\\bwu_timer_start](:[id], :[wuname], :[dest], :[arg], :[delay])"),
+
+    ## Flow
+    Pattern("flow_push_continuation",
+            ":[~\\bflow_push_continuation](:[callerf], :[wuname], :[frame], :[calleef], :[arg2])"),
+
+    Pattern("flow_push_continuation64",
+            ":[~\\bflow_push_continuation64](:[callerf], :[wuname], :[frame], :[calleef], :[args])"),
 
     ## channel  API
 
@@ -442,6 +566,71 @@ def scan_file_for_refs(fl: FunFile, input: str) -> List[WURef]:
 
 
 ###
+##  header fixups
+#
+
+def fixup_match(fixup: str, fname: str) -> bool:
+
+    if (fixup == '*'):
+        return True
+
+    if (fname.startswith("./")):
+        fname = fname[2:]
+
+    if (fname.startswith(fixup)):
+        return True
+
+    return False
+
+def do_fixup_headers(wuinfo: WUInfo, fileinfo: Dict[str, FunFile], fixup: str):
+
+    # make the list of files that would be fixed up
+    flist = list(filter(FunFile.only_include, wuinfo.files.values()))
+
+    count = 0
+    for fl in flist:
+        if (not fixup_match(fixup, fl.name)):
+            print(f'Skipping header fix for file {fl.name}')
+            continue
+
+        print(f'Fixing headers for file {fl.name}')
+        
+        input = open(fl.name, "r").read()
+        input = HEADER_MATCH.rewrite(input)
+        open(fl.name, "w").write(input)
+        count += 1
+
+    print(f"Fixed up headers for {count} files")
+
+def do_fixup_ups(wuinfo: WUInfo, fileinfo: Dict[str, FunFile], fixup: str):
+
+    # firstly we need to fixup all the headers
+    # make the list of files that would be fixed up
+    flist = list(filter(FunFile.only_up, wuinfo.files.values()))
+
+    count = 0
+    for fl in flist:
+        if (not fixup_match(fixup, fl.name)):
+            print(f'Skipping ups fix for file {fl.name}')
+            continue
+
+        print(f'Fixing ups for file {fl.name}')
+        input = open(fl.name, "r").read()
+    
+        # rewrite the header
+        input = HEADER_MATCH.rewrite(input)
+
+        # rewrite all the decls
+        for decl in DECLS:
+            input = decl.rewrite(input)
+
+        open(fl.name, "w").write(input)
+        count += 1
+
+    print(f"Fixed up headers for {count} files")
+        
+
+###
 ##  parse_args
 #
 def parse_args() -> argparse.Namespace:
@@ -460,12 +649,23 @@ def parse_args() -> argparse.Namespace:
      # Optional argument flag which defaults to False
     parser.add_argument("-n", "--nprocs", action="store", type=int, 
                         help="Number of processes for file parsing",
-                        default=32)
+                        default=4)
 
      # Optional argument flag which defaults to False
     parser.add_argument("-T", "--tmpdir", action="store", type=str, 
                         help="Temporary path for parsing info",
                         default="build-legacy")
+
+     # Optional argument flag which defaults to False
+    parser.add_argument("-F", "--fixup", action="store", type=str, 
+                        help="Path to fixup as much as possible",
+                        default=None)
+
+    parser.add_argument("--fixup-headers", action="store_true",
+                       help="Fixup headers")
+
+    parser.add_argument("--fixup-ups", action="store_true",
+                       help="Fixup up-only files")
 
     # Optional verbosity counter (eg. -v, -vv, -vvv, etc.)
     parser.add_argument(
@@ -602,6 +802,15 @@ def main() -> int:
 
     for (id, count) in matchcounts.items():
         print("\tPattern %s matched %d" % (id, count))
+
+    if (args.fixup is not None):
+        print(f"Attempting fixups on {args.fixup}")
+
+        if (args.fixup_headers):
+            do_fixup_headers(wuinfo, fileinfo, args.fixup)
+
+        if (args.fixup_ups):
+            do_fixup_ups(wuinfo, fileinfo, args.fixup)
 
     return 0
  
