@@ -81,7 +81,7 @@ class FunOSCommands(object):
             shutil.rmtree(self.temp_dir)
 
     def gets_version(self):
-        return "DUT version version version version version version version version: {}, {}".format(
+        return "DUT version: {}, {}".format(
             self.version_info["FunSDK"], self.version_info["branch"]
         )
 
@@ -637,12 +637,17 @@ class FunOSCommands(object):
         else:
             nc_str = ""
 
+        version_info_filename = "funos_version.txt"
         df_filename = "malloc_caches_slot_stats_slot{}_{}.pkl".format(nc_str, slot)
         if save_df_dir:
             assert isinstance(save_df_dir, str), "Invalid type for {}: {}".format(
                 save_df_dir, type(save_df_dir)
             )
             df_filename = os.path.join(save_df_dir, df_filename)
+            version_info_filename = os.path.join(save_df_dir, version_info_filename)
+        
+        with open(version_info_filename, 'w') as f:
+            f.write("{}".format(self.gets_version()))
 
         while True:
             rows = []
