@@ -14,16 +14,26 @@ import tempfile
 import stat, os
 import argparse
 import logging as log
+import select
 
 parser = argparse.ArgumentParser()
 parser.add_argument( '-log',
                      '--loglevel',
                      default='info',
                      help='Provide logging level. Example --loglevel debug, default=info' )
+
+parser.add_argument( '-timeout_sec',
+                     '--timeout_sec',
+                     default=300,
+                     help='Provide TimeOut Interval for Read MCTP PCIeVDM/SMBus FIFOs. Example --timeout_sec 300, default=300' )
+
 args = parser.parse_args()
 log.basicConfig(filename='/persist/logs/mctp_transport.py.log',
                 level=args.loglevel.upper(),
                 format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+
+if (args.timeout_sec):
+   TIMEOUT_SEC=float(args.timeout_sec)
 
 dpcsh_dir = '/usr/bin/'
 sys.path.append(dpcsh_dir)
@@ -47,17 +57,20 @@ def mctp_pcievdm_pkt_tx():
             log.info("PCIEVDM_TX_FIFO opened")
             while True:
                 log.debug('Waiting for the PLDM/MCTP Over PCIeVDM Packets from MCTP Daemon.....')
-                mctp_pcievdm_pkt_tx_data = pcievdm_tx_fifo.read()
-                if mctp_pcievdm_pkt_tx_data is None or len(mctp_pcievdm_pkt_tx_data) == 0:
-                    #time.sleep(1)
-                    continue
+                read_ready, write_ready, rready_error = select.select([pcievdm_tx_fifo], [], [pcievdm_tx_fifo], TIMEOUT_SEC)
+                if read_ready:
+                    mctp_pcievdm_pkt_tx_data = pcievdm_tx_fifo.read()
+                    log.debug('PLDM/MCTP over PCIeVDM: Read data from FIFO before Bin -> Blob conversion: %s', mctp_pcievdm_pkt_tx_data)
+                    data = mctp_tx_dpc_handle.blob_from_string(mctp_pcievdm_pkt_tx_data)
 
-                log.debug('PLDM/MCTP over PCIeVDM: Read data from FIFO before Bin -> Blob conversion: %s', mctp_pcievdm_pkt_tx_data)
-                data = mctp_tx_dpc_handle.blob_from_string(mctp_pcievdm_pkt_tx_data)
-
-                log.debug('PLDM/MCTP over PCIeVDM: Sending Data to MCTP Master using FunOS PCIe Driver')
-                result = mctp_tx_dpc_handle.execute('mctp_transport', ['mctp_pkt_send', 'mctp_over_pcievdm', ['quote', data]])
-                log.debug("'mctp_pkt_send' packet DPCSH response: {}".format(result))
+                    log.debug('PLDM/MCTP over PCIeVDM: Sending Data to MCTP Master using FunOS PCIe Driver')
+                    result = mctp_tx_dpc_handle.execute('mctp_transport', ['mctp_pkt_send', 'mctp_over_pcievdm', ['quote', data]])
+                    log.debug("'mctp_pkt_send' packet DPCSH response: {}".format(result))
+                if rready_error:
+                    pcievdm_tx_fifo.close()
+                    result = mctp_tx_dpc_handle.execute("mctp_transport", ['mctp_pkt_recv_unsub', 0])
+                    log.exception("mctp_pcievdm_pkt_tx() failed, error:{}".format(e))
+                    sys.exit(1)
 
     except Exception as e:
         pcievdm_tx_fifo.close()
@@ -74,17 +87,20 @@ def mctp_smbus_pkt_tx():
             log.info("SMBUS_TX_FIFO opened")
             while True:
                 log.debug('Waiting for the PLDM/MCTP Over SMBus Packets from MCTP Daemon.....')
-                mctp_smbus_pkt_tx_data = smbus_tx_fifo.read()
-                if mctp_smbus_pkt_tx_data is None or len(mctp_smbus_pkt_tx_data) == 0:
-                    #time.sleep(1)
-                    continue
+                read_ready, write_ready, rready_error = select.select([smbus_tx_fifo], [], [smbus_tx_fifo], TIMEOUT_SEC)
+                if read_ready:
+                    mctp_smbus_pkt_tx_data = smbus_tx_fifo.read()
+                    log.debug('PLDM/MCTP Over SMBus: Read data from FIFO before Bin -> Blob conversion: %s', mctp_smbus_pkt_tx_data)
+                    data = mctp_tx_dpc_handle.blob_from_string(mctp_smbus_pkt_tx_data)
 
-                log.debug('PLDM/MCTP Over SMBus: Read data from FIFO before Bin -> Blob conversion: %s', mctp_smbus_pkt_tx_data)
-                data = mctp_tx_dpc_handle.blob_from_string(mctp_smbus_pkt_tx_data)
-
-                log.debug('PLDM/MCTP Over SMBus: Sending data to MCTP Master using FunOS SMBus Driver')
-                result = mctp_tx_dpc_handle.execute('mctp_transport', ['mctp_pkt_send', 'mctp_over_smbus', ['quote', data]])
-                log.debug("'mctp_pkt_send' packet DPCSH response: {}".format(result))
+                    log.debug('PLDM/MCTP Over SMBus: Sending data to MCTP Master using FunOS SMBus Driver')
+                    result = mctp_tx_dpc_handle.execute('mctp_transport', ['mctp_pkt_send', 'mctp_over_smbus', ['quote', data]])
+                    log.debug("'mctp_pkt_send' packet DPCSH response: {}".format(result))
+                if rready_error:
+                    smbus_tx_fifo.close()
+                    result = mctp_tx_dpc_handle.execute("mctp_transport", ['mctp_pkt_recv_unsub', 1])
+                    log.exception("mctp_smbus_pkt_tx() failed, error:{}".format(e))
+                    sys.exit(1)
 
     except Exception as e:
         smbus_tx_fifo.close()
@@ -121,8 +137,6 @@ def mctp_pcievdm_pkt_rx():
                 pcievdm_rx_fifo.write(mctp_pcievdm_pkt_rx_data)
                 #Flush is mandatory for proper writing data to Daemon FIFO
                 pcievdm_rx_fifo.flush()
-                #time.sleep(1)
-
     except Exception as e:
         pcievdm_rx_fifo.close()
         result = mctp_rx_dpc_handle.execute("mctp_transport", ['mctp_pkt_recv_unsub', 0])
@@ -157,7 +171,6 @@ def mctp_smbus_pkt_rx():
                 smbus_rx_fifo.write(mctp_smbus_pkt_rx_data)
                 #Flush is mandatory for proper writing data to Daemon FIFO
                 smbus_rx_fifo.flush()
-                #time.sleep(1)
 
     except Exception as e:
         smbus_rx_fifo.close()
