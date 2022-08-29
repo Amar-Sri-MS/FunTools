@@ -40,6 +40,15 @@
                         />
                         Count
                     </label>
+                    <label>
+                        <input
+                            type="radio"
+                            name="limit_by"
+                            value="tags"
+                            onchange="onChangeLimitBy(this)"
+                        />
+                        Tags (comma separated)
+                    </label>
                 </div>
                 <div class="form-group" style="justify-content: flex-start;">
                     <label for="limit_value">Limit value:</label>
@@ -152,9 +161,10 @@
     function onChangeLimitBy(event) {
         const value = event.value;
         if (value) {
+            const limitValue = parseInt(limitValueInput.value);
             limit = {
                 "by": value,
-                "value": parseInt(limitValueInput.value)
+                "value": isNaN(limitValue) ? limitValueInput.value : limitValue
             }
             debouncedFetchIngestedLogs();
         }
