@@ -27,7 +27,6 @@
 							name="limit_by"
 							value="days"
 							onchange="onChangeLimitBy(this)"
-							checked
 						/>
 						Days
 					</label>
@@ -37,13 +36,14 @@
                             name="limit_by"
                             value="count"
                             onchange="onChangeLimitBy(this)"
+                            checked
                         />
                         Count
                     </label>
                 </div>
                 <div class="form-group" style="justify-content: flex-start;">
                     <label for="limit_value">Limit value:</label>
-                    <input type="number" id="limit_value" value=7 onkeyup="onChangeLimitValue(this)" />
+                    <input type="number" id="limit_value" value=50 onkeyup="onChangeLimitValue(this)" />
                 </div>
                 <div class="info" id="show_ingested_logs" onclick="toggleIngestedLogsOverlay()"></div>
             </div>
@@ -109,6 +109,7 @@
 	const results_container = document.getElementById("results_container");
 
 	const LOG_VIEW_BASE_URL = location.origin;
+    const MAX_SEARCHABLE_INDEX_LEN = 90;
 
     let prefix = "log_*", limit = {
 		"by": "days",
@@ -229,6 +230,11 @@
 		if (tableRows.length > 0) {
 			logsContainer.innerHTML = tableRows.join("\n");
 		}
+        if (ingestedLogs.length > MAX_SEARCHABLE_INDEX_LEN) {
+            alert(`WARNING: Lower the selected limit value.\n
+                   Total ingested logs as per limit: ${ingestedLogs.length}\n
+                   Max searchable logs: ${MAX_SEARCHABLE_INDEX_LEN}`);
+        }
     }
 
     function toggleIngestedLogsOverlay() {
@@ -271,6 +277,13 @@
 			alert("Selected ingested archives are empty");
 			return;
 		}
+
+        if (selectedLogs.length > MAX_SEARCHABLE_INDEX_LEN) {
+            alert(`Reduce the selected logs.\n
+                   Total selected logs: ${selectedLogs.length}\n
+                   Max searchable logs: ${MAX_SEARCHABLE_INDEX_LEN}`);
+            return;
+        }
 
         toggleLoader(true);
 
