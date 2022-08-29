@@ -63,7 +63,7 @@ class ElasticsearchMetadata(object):
 
         return self._format_results(results['docs'])
 
-    def get_by_tags(self, tags, match_all=False, size=-1):
+    def get_by_tags(self, tags, size=-1):
         """
         Fetches all the metadata if the given tags exist in it
         """
@@ -71,12 +71,11 @@ class ElasticsearchMetadata(object):
         for tag in tags:
             sub_query.append({'term': {'tags': tag}})
 
-        bool_query_keyword = 'must' if match_all else 'should'
-        bool_query = {bool_query_keyword: sub_query}
         body = {
             'query': {
                 'bool': {
-                    'must': bool_query
+                    'should': sub_query,
+                    'minimum_should_match': len(tags)
                 }
             }
         }

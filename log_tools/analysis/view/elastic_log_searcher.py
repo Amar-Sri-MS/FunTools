@@ -31,7 +31,7 @@ def get_logs(prefix, limit_by=None, limit_value=None):
         tags_list = [tag.strip() for tag in tags.split(',')]
         metadata = es_metadata.get_by_tags(
                         tags_list,
-                        size=len(indices))
+                        size=10000)
         indices = [index for index in indices if index['index'] in metadata]
     else:
         log_ids = [index['index'] for index in indices]
