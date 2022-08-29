@@ -112,8 +112,8 @@
     const MAX_SEARCHABLE_INDEX_LEN = 90;
 
     let prefix = "log_*", limit = {
-		"by": "days",
-		"value": 7
+		"by": "count",
+		"value": 50
 	};
     let ingestedLogs = [], selectedLogs = new Set();
 	let searchPayload = {};
