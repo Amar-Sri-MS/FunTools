@@ -80,6 +80,12 @@ static char *_read_line_from_file(int fd)
 		ssize_t n = read(fd, &ch, 1);
 		if (n != 1) break;
 		result = realloc(result, ++length);
+
+		if (result == NULL) {
+			fprintf(stderr, "out of memory\n");
+			return NULL;
+		}
+
 		result[length - 1] = ch;
 	} while (ch != '\n' && ch != '\r' && ch != '\0');
 
@@ -140,6 +146,10 @@ static struct fun_json *_read_json(int fd)
 
 static struct fun_json *_line_to_command(char *buf)
 {
+	if (buf == NULL) {
+		return NULL;
+	}
+
 	const char *error = NULL;
 	static uint64_t tid = 0;
 	struct fun_json *input = fun_commander_line_to_command(buf, &tid, &error);
