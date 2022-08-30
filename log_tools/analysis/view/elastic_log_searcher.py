@@ -142,8 +142,8 @@ def _generate_should_query(should_list):
         }
     }
 
-def build_query_body(query_term, source_filters,
-                     time_filters, match_all=False):
+def build_query_body(query_term, source_filters=None,
+                     time_filters=None, match_all=False):
     """
     Constructs a query body from the specified query term
     (which is treated as an elasticsearch query string) and

@@ -85,6 +85,19 @@
 
             // If there are already selected filters
             if (Object.keys(existingFilters).length > 0) {
+                // exisitingFilters can be an array of sources
+                if (Array.isArray(existingFilters)) {
+                    systemIDElements.forEach(element => {
+                        if (existingFilters.includes(element.value)) {
+                            if (!selectedFilters[systemType][systemID]) {
+                                selectedFilters[systemType][systemID] = [];
+                            }
+                            selectedFilters[systemType][systemID].push(element.value);
+                            element.checked = true;
+                        }
+                    });
+                    return;
+                }
                 if (systemType in existingFilters && systemID in existingFilters[systemType]) {
                     selectedFilters[systemType][systemID] = existingFilters[systemType][systemID];
                     // Source selection

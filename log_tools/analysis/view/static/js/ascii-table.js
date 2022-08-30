@@ -70,6 +70,26 @@
     if (dir === AsciiTable.CENTER) return AsciiTable.alignCenter(str, len, pad)
     return AsciiTable.alignAuto(str, len, pad)
   }
+
+  /*
+    Updates the str and strlen in case the text contains an <a> tag
+  */
+  AsciiTable.getFormattedStrWithLen = function(str) {
+      let strlen = str.length;
+      let startIndex = str.indexOf('<a');
+      let new_str = str.substring(0, startIndex);
+      while (startIndex != -1) {
+        const endIndex = str.indexOf('>', startIndex+1);
+        strlen -= (endIndex-startIndex+5);
+        startIndex = str.indexOf('<a', endIndex+1);
+        new_str += str.substring(endIndex+1, startIndex);
+      }
+
+      new_str += str.substring(startIndex+1)
+      str = new_str
+      // str = str.substring(innerIndex+1, outerIndex)
+      return { str, strlen }
+  }
   
   /**
    * Left align a string by padding it at a given length
@@ -92,6 +112,11 @@
       str = str.outerHTML;
     }
     else if (typeof str !== 'string') str = str.toString()
+    else if (str.startsWith('<a') && str.endsWith('</a>')) {
+      let formattedStrWithLen = AsciiTable.getFormattedStrWithLen(str);
+      str = formattedStrWithLen['str'];
+      strlen = formattedStrWithLen['strlen'];
+    }
     if (!strlen) strlen = str.length;
     var alen = len + 1 - strlen
     if (alen <= 0) return str
@@ -118,7 +143,13 @@
       strlen = str.innerText.length;
       str = str.outerHTML;
     }
+    else if (Array.isArray(str)) str = str.join(',')
     else if (typeof str !== 'string') str = str.toString()
+    else if (str.startsWith('<a') && str.endsWith('</a>')) {
+      let formattedStrWithLen = AsciiTable.getFormattedStrWithLen(str);
+      str = formattedStrWithLen['str'];
+      strlen = formattedStrWithLen['strlen'];
+    }
     if (!strlen) strlen = str.length;
     var nLen = strlen
       , half = Math.floor(len / 2 - nLen / 2)
@@ -150,7 +181,13 @@
       strlen = str.innerText.length;
       str = str.outerHTML;
     }
+    else if (Array.isArray(str)) str = str.join(',')
     else if (typeof str !== 'string') str = str.toString()
+    else if (str.startsWith('<a') && str.endsWith('</a>')) {
+      let formattedStrWithLen = AsciiTable.getFormattedStrWithLen(str);
+      str = formattedStrWithLen['str'];
+      strlen = formattedStrWithLen['strlen'];
+    }
     if (!strlen) strlen = str.length;
     var alen = len + 1 - strlen
 
@@ -176,7 +213,13 @@
     // If we want to display an HTML element then we want to
     // consider the length of the innerText.
     if (str instanceof Element) strlen = str.innerText.length
+    else if (Array.isArray(str)) str = str.join(',')
     else if (typeof str !== 'string') str = str.toString()
+    else if (str.startsWith('<a') && str.endsWith('</a>')) {
+      let formattedStrWithLen = AsciiTable.getFormattedStrWithLen(str);
+      str = formattedStrWithLen['str'];
+      strlen = formattedStrWithLen['strlen'];
+    }
     if (!strlen) strlen = str.length;
     if (strlen < len) {
       switch(type) {
@@ -541,6 +584,16 @@
         // If we want to display an HTML element then we want to
         // consider the length of the innerText.
         if (cell instanceof Element) strlen = cell.innerText.length;
+        else if (cell && cell.toString().includes('<a') && cell.toString().includes('</a>')) {
+          const str = cell.toString()
+          strlen = str.length
+          let startIndex = str.indexOf('<a');
+          while (startIndex != -1) {
+            const endIndex = str.indexOf('>', startIndex+1);
+            strlen -= (endIndex-startIndex+5);
+            startIndex = str.indexOf('<a', endIndex+1);
+          }
+        }
         max[k] = Math.max(max[k], cell ? strlen : 0)
       }
     }

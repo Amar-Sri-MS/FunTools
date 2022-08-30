@@ -59,7 +59,11 @@ BLACKLISTED_PATHS = [
     # Systemstate files are not log files.
     '.*/systemstate.*(/.*|)',
     # DPU logs from CC
-    '.*/dpu_logs_.*/.*'
+    '.*/dpu_logs_.*/.*',
+    # Logs from telemetry service are not relevant for usual debug.
+    '.*/tms/.*',
+    # Logs from node service are not relevant for usual debug.
+    '.*/nms/.*'
 ]
 BLACKLISTED_PATHS_REGEX = '(%s)' % '|'.join(BLACKLISTED_PATHS)
 
