@@ -58,6 +58,17 @@ def hex_str(data):
     ws = textwrap_wrap(s,48)
     return "\n".join(ws)
 
+def le2int(byte_seq):
+    ''' interpret seq of bytes of any length  as little endian integer
+    since there is no int.from_bytes in Python2 '''
+    ret = 0
+    shift = 0
+    for b in byte_seq:
+        ret |= (b << shift)
+        shift += 8
+    return ret
+
+
 def get_fs1600_rev():
     ''' return the FS1600 system revision (1 or 2) '''
     result_txt = subprocess_check_output(['devmem', '0x1e780000'])
@@ -645,7 +656,7 @@ class DBG_Chal(DBG_FlashOp):
         start = end = 0
         for instr in EXTRA_DATA_PARSE:
             end = start + instr[1]
-            ret.append( (instr[0], hex_str(extra_bytes[start:end][::-1])) )
+            ret.append( (instr[0], le2int(extra_bytes[start:end])) )
             start = end
         return ret, extra_bytes[end:]
 
@@ -685,7 +696,7 @@ class DBG_Chal(DBG_FlashOp):
             print("\t%s:" % EXTRA_DATA_KEY)
             extra_data = status_dict[EXTRA_DATA_KEY]
             for pair in extra_data:
-                print('\t\t%s: %s' % pair)
+                print('\t\t%s: 0x%x' % pair)
 
         extra_bytes = status_dict[EXTRA_BYTES_KEY]
         print('\t%s: %s\n\t\traw: %s' %
