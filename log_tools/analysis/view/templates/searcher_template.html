@@ -118,7 +118,6 @@
 	const results_container = document.getElementById("results_container");
 
 	const LOG_VIEW_BASE_URL = location.origin;
-    const MAX_SEARCHABLE_INDEX_LEN = 90;
 
     let prefix = "log_*", limit = {
 		"by": "count",
@@ -240,11 +239,6 @@
 		if (tableRows.length > 0) {
 			logsContainer.innerHTML = tableRows.join("\n");
 		}
-        if (ingestedLogs.length > MAX_SEARCHABLE_INDEX_LEN) {
-            alert(`WARNING: Lower the selected limit value.\n
-                   Total ingested logs as per limit: ${ingestedLogs.length}\n
-                   Max searchable logs: ${MAX_SEARCHABLE_INDEX_LEN}`);
-        }
     }
 
     function toggleIngestedLogsOverlay() {
@@ -288,13 +282,6 @@
 			return;
 		}
 
-        if (selectedLogs.length > MAX_SEARCHABLE_INDEX_LEN) {
-            alert(`Reduce the selected logs.\n
-                   Total selected logs: ${selectedLogs.length}\n
-                   Max searchable logs: ${MAX_SEARCHABLE_INDEX_LEN}`);
-            return;
-        }
-
         toggleLoader(true);
 
 		searchPayload["query"] = searchText;
@@ -318,14 +305,17 @@
 	function updateSearchResults(data) {
 		let resultsPerIngestion = {};
 		let rows = [];
-		for (const result of data["results"]) {
-			const ingestionId = result["_index"];
-			if (!(ingestionId in resultsPerIngestion)) {
-				resultsPerIngestion[ingestionId] = [];
-			}
-			resultsPerIngestion[ingestionId].push(getLogRow(result));
-			rows.push(getLogRow(result));
-		}
+        // Looping through the search data received in partitions.
+        data.forEach(d => {
+            for (const result of d["results"]) {
+                const ingestionId = result["_index"];
+                if (!(ingestionId in resultsPerIngestion)) {
+                    resultsPerIngestion[ingestionId] = [];
+                }
+                resultsPerIngestion[ingestionId].push(getLogRow(result));
+                rows.push(getLogRow(result));
+            }
+        })
 
 		results_container.innerHTML = "";
 		for (const [ingestionId, results] of Object.entries(resultsPerIngestion)) {

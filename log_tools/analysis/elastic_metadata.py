@@ -67,6 +67,8 @@ class ElasticsearchMetadata(object):
         """
         Fetches all the metadata if the given tags exist in it
         """
+        # TODO(Sourabh): Figure out a way to search only for whose
+        # logs are present on Log Analyzer.
         sub_query = list()
         for tag in tags:
             sub_query.append({'term': {'tags': tag}})
