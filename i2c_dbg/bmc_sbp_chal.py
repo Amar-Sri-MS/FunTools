@@ -545,6 +545,17 @@ SBP_STATUS_STR = [
     "Host Firmware Version",
     "Debug Grants"]
 
+EXTRA_DATA_PARSE = (
+    ("Version",      1),
+    ("Magic",        3),
+    ("Flash Size",   4),
+    ("Flags",        4),
+    ("Init",         1),
+    ("RD Cmd",       1),
+    ("Dummy Cycles", 1),
+    ("Mode Bits",    1))
+
+EXTRA_DATA_KEY = "Extra Data"
 EXTRA_BYTES_KEY = "Extra Bytes"
 
 class DBG_FlashOp(object):
@@ -629,6 +640,16 @@ class DBG_Chal(DBG_FlashOp):
     def read_flash(self, offset, num_bytes):
         return self.i2c_dbg.read_flash(self.chip_inst, offset, num_bytes)
 
+    def decode_extra_data(self, extra_bytes):
+        ret = []
+        start = end = 0
+        for instr in EXTRA_DATA_PARSE:
+            end = start + instr[1]
+            ret.append( (instr[0], hex_str(extra_bytes[start:end][::-1])) )
+            start = end
+        return ret, extra_bytes[end:]
+
+
     def decode_status_bytes(self, data):
         logger.info('STATUS:\traw_bytes:\n%s', hex_str(data))
         status_size = len(data)
@@ -642,8 +663,10 @@ class DBG_Chal(DBG_FlashOp):
                 i+=4
             else:
                 extra_bytes = data[i:status_size]
+                if extra_bytes[0:4] == bytearray('\x01\xd0\xde\xad'):
+                    status_decoded[EXTRA_DATA_KEY], extra_bytes = self.decode_extra_data(extra_bytes)
                 status_decoded[EXTRA_BYTES_KEY] = extra_bytes
-                i = status_size
+                i = status_size # all done
         return status_decoded
 
     def print_decoded_status(self, status_dict):
@@ -657,8 +680,15 @@ class DBG_Chal(DBG_FlashOp):
                 print('\t\t%s: 0x%x' % ('HostUpgradeFlag', (value >> 12) & 0x1))
                 print('\t\t%s: 0x%x' % ('eSecureImage',(value >> 14) & 0x1))
                 print('\t\t%s: 0x%x' % ('HostImage',(value >> 20) & 0x1))
+
+        if EXTRA_DATA_KEY in status_dict:
+            print("\t%s:" % EXTRA_DATA_KEY)
+            extra_data = status_dict[EXTRA_DATA_KEY]
+            for pair in extra_data:
+                print('\t\t%s: %s' % pair)
+
         extra_bytes = status_dict[EXTRA_BYTES_KEY]
-        print('\t%s: %s raw: %s' %
+        print('\t%s: %s\n\t\traw: %s' %
               (EXTRA_BYTES_KEY,
                ''.join([chr(x) for x in extra_bytes]),
                ":".join(["%02x" % x for x in extra_bytes])))
