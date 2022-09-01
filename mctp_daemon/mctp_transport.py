@@ -46,6 +46,32 @@ PCIEVDM_RX_FIFO = '/tmp/mctp_pcie_rx'
 SMBUS_TX_FIFO = '/tmp/mctp_smbus_tx'
 SMBUS_RX_FIFO = '/tmp/mctp_smbus_rx'
 
+MCTP_OVER_PCIEVDM_SUB_NUM = 0
+MCTP_OVER_SMBUS_SUB_NUM = 1
+
+def mctp_wait_read_fifo(mctp_tx_dpc_handle, tx_fifo, mctp_pkt_type, sub_num, print_val):
+   try:
+       read_ready, write_ready, rready_error = select.select([tx_fifo], [], [tx_fifo], TIMEOUT_SEC)
+       if read_ready:
+           mctp_pkt_tx_data = tx_fifo.read()
+           log.debug('%s: Read data from FIFO before Bin -> Blob conversion: %s', print_val, mctp_pkt_tx_data)
+           data = mctp_tx_dpc_handle.blob_from_string(mctp_pkt_tx_data)
+
+           log.debug('%s: Sending Data to MCTP Master using FunOS PCIe Driver', print_val)
+           result = mctp_tx_dpc_handle.execute('mctp_transport', ['mctp_pkt_send', mctp_pkt_type, ['quote', data]])
+           log.debug("'mctp_pkt_send' packet DPCSH response: {}".format(result))
+       elif rready_error:
+           tx_fifo.close()
+           result = mctp_tx_dpc_handle.execute("mctp_transport", ['mctp_pkt_recv_unsub', sub_num])
+           log.exception("mctp_wait_read_fifo failed, error:{}".format(e))
+           sys.exit(1)
+
+   except Exception as e:
+       tx_fifo.close()
+       result = mctp_tx_dpc_handle.execute("mctp_transport", ['mctp_pkt_recv_unsub', sub_num])
+       log.exception("mctp_wait_read_fifo failed, error:{}".format(e))
+       sys.exit(1)
+
 #PLDM/MCTP Packet Egress Path
 def mctp_pcievdm_pkt_tx():
     log.info("Started a thread to send PLDM/MCTP over PCIeVDM Pkts to HostServer ...")
@@ -57,25 +83,12 @@ def mctp_pcievdm_pkt_tx():
             log.info("PCIEVDM_TX_FIFO opened")
             while True:
                 log.debug('Waiting for the PLDM/MCTP Over PCIeVDM Packets from MCTP Daemon.....')
-                read_ready, write_ready, rready_error = select.select([pcievdm_tx_fifo], [], [pcievdm_tx_fifo], TIMEOUT_SEC)
-                if read_ready:
-                    mctp_pcievdm_pkt_tx_data = pcievdm_tx_fifo.read()
-                    log.debug('PLDM/MCTP over PCIeVDM: Read data from FIFO before Bin -> Blob conversion: %s', mctp_pcievdm_pkt_tx_data)
-                    data = mctp_tx_dpc_handle.blob_from_string(mctp_pcievdm_pkt_tx_data)
-
-                    log.debug('PLDM/MCTP over PCIeVDM: Sending Data to MCTP Master using FunOS PCIe Driver')
-                    result = mctp_tx_dpc_handle.execute('mctp_transport', ['mctp_pkt_send', 'mctp_over_pcievdm', ['quote', data]])
-                    log.debug("'mctp_pkt_send' packet DPCSH response: {}".format(result))
-                if rready_error:
-                    pcievdm_tx_fifo.close()
-                    result = mctp_tx_dpc_handle.execute("mctp_transport", ['mctp_pkt_recv_unsub', 0])
-                    log.exception("mctp_pcievdm_pkt_tx() failed, error:{}".format(e))
-                    sys.exit(1)
-
+                mctp_wait_read_fifo(mctp_tx_dpc_handle, pcievdm_tx_fifo, 'mctp_over_pcievdm', MCTP_OVER_PCIEVDM_SUB_NUM, "PLDM/MCTP over PCIeVDM")
     except Exception as e:
         pcievdm_tx_fifo.close()
-        result = mctp_tx_dpc_handle.execute("mctp_transport", ['mctp_pkt_recv_unsub', 0])
+        result = mctp_tx_dpc_handle.execute("mctp_transport", ['mctp_pkt_recv_unsub', MCTP_OVER_PCIEVDM_SUB_NUM])
         log.exception(" mctp_pcievdm_pkt_tx() failed, error:{}".format(e))
+        sys.exit(1)
   
 def mctp_smbus_pkt_tx():
     log.info("Started a thread to send PLDM/MCTP Over SMBus Pkts to HostServer ...")
@@ -87,25 +100,13 @@ def mctp_smbus_pkt_tx():
             log.info("SMBUS_TX_FIFO opened")
             while True:
                 log.debug('Waiting for the PLDM/MCTP Over SMBus Packets from MCTP Daemon.....')
-                read_ready, write_ready, rready_error = select.select([smbus_tx_fifo], [], [smbus_tx_fifo], TIMEOUT_SEC)
-                if read_ready:
-                    mctp_smbus_pkt_tx_data = smbus_tx_fifo.read()
-                    log.debug('PLDM/MCTP Over SMBus: Read data from FIFO before Bin -> Blob conversion: %s', mctp_smbus_pkt_tx_data)
-                    data = mctp_tx_dpc_handle.blob_from_string(mctp_smbus_pkt_tx_data)
-
-                    log.debug('PLDM/MCTP Over SMBus: Sending data to MCTP Master using FunOS SMBus Driver')
-                    result = mctp_tx_dpc_handle.execute('mctp_transport', ['mctp_pkt_send', 'mctp_over_smbus', ['quote', data]])
-                    log.debug("'mctp_pkt_send' packet DPCSH response: {}".format(result))
-                if rready_error:
-                    smbus_tx_fifo.close()
-                    result = mctp_tx_dpc_handle.execute("mctp_transport", ['mctp_pkt_recv_unsub', 1])
-                    log.exception("mctp_smbus_pkt_tx() failed, error:{}".format(e))
-                    sys.exit(1)
+                mctp_wait_read_fifo(mctp_tx_dpc_handle, smbus_tx_fifo, 'mctp_over_smbus', MCTP_OVER_SMBUS_SUB_NUM, "PLDM/MCTP over SMBus")
 
     except Exception as e:
         smbus_tx_fifo.close()
-        result = mctp_tx_dpc_handle.execute("mctp_transport", ['mctp_pkt_recv_unsub', 1])
+        result = mctp_tx_dpc_handle.execute("mctp_transport", ['mctp_pkt_recv_unsub', MCTP_OVER_SMBUS_SUB_NUM])
         log.exception(" mctp_smbus_pkt_tx() failed, error:{}".format(e))
+        sys.exit(1)
 
 #PLDM/MCTP Packet Ingress Path
 def mctp_pcievdm_pkt_rx():
@@ -137,10 +138,12 @@ def mctp_pcievdm_pkt_rx():
                 pcievdm_rx_fifo.write(mctp_pcievdm_pkt_rx_data)
                 #Flush is mandatory for proper writing data to Daemon FIFO
                 pcievdm_rx_fifo.flush()
+
     except Exception as e:
         pcievdm_rx_fifo.close()
         result = mctp_rx_dpc_handle.execute("mctp_transport", ['mctp_pkt_recv_unsub', 0])
         log.exception("mctp_pcievdm_pkt_rx() failed, error:{}".format(e))
+        sys.exit(1)
 
 def mctp_smbus_pkt_rx():
     log.info("Started a thread to receive PLDM/MCTP over SMBus Pkts to HostServer ...")
@@ -176,6 +179,7 @@ def mctp_smbus_pkt_rx():
         smbus_rx_fifo.close()
         result = mctp_rx_dpc_handle.execute("mctp_transport", ['mctp_pkt_recv_unsub', 1])
         log.exception("mctp_smbus_pkt_rx() failed, error:{}".format(e))
+        sys.exit(1)
 
 # Main Function of MCTP Transport CCLinux GlueLayer
 def main():
