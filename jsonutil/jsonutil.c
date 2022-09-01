@@ -321,7 +321,7 @@ Filename \"-\" can be used ot output single or multi-line text to stdout.\n", fn
 int
 main(int argc, char *argv[])
 {
-	int r;
+	int r = 0;
 	int c;
 	
 	int inmode = NOMODE;
@@ -449,14 +449,16 @@ main(int argc, char *argv[])
 			break;
 		}
 
-		productive = true;
-
 		if (fun_json_is_error_message(input)) {
+			if (productive)
+				break;
 			const char *message;
 			fun_json_fill_error_message(input, &message);
 			fprintf(stderr, "%s\n", message);
 			exit(1);
 		}
+
+		productive = true;
 
 		/* write out some json */
 		if (outmode == BINARY)
