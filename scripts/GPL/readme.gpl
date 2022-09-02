@@ -1,0 +1,7 @@
+Files in this folder are under GPL license and they may be used by other SDK components.
+Note that scripts under GPL license may be freely used during the build process, but
+they must be released in the GPL source package.
+It would have been OK from licensing perspective to keep the scripts directly in the
+folders where they are used (eg. FunOS), but they are kept separate to make the license
+difference clearly visible.
+
