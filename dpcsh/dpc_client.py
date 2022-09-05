@@ -64,6 +64,13 @@ class DpcEncoder():
         """
         pass
 
+    def dpc_blob_from_string(self, data):
+        """
+        return a blob suitable for passing as FunOS dpc command argument
+        """
+        return ['quote', self.blob_from_string(data)]
+
+
     @abstractmethod
     def blob_to_string(data):
         # type: (Any) -> bytes()
@@ -204,6 +211,7 @@ class DpcClient(object):
         self.__sock = DpcSocket(unix_sock, server_address, encoder)
         self.blob_from_string = encoder.blob_from_string
         self.blob_to_string = encoder.blob_to_string
+        self.dpc_blob_from_string = encoder.dpc_blob_from_string
 
     def close(self):
         self.__sock.close()
@@ -322,10 +330,17 @@ class DpcClient(object):
 
     def blob_from_file(self, filename):
         """
-        makes blob suitable to use with FunOS blob services from a given string
+        makes blob suitable to use with FunOS blob services from a given file
         """
         with open(filename, 'rb') as f:
             return self.blob_from_string(f.read())
+
+    def dpc_blob_from_file(self, filename):
+        """
+        makes blob suitable to use with FunOS as dpc command argument from a given file
+        """
+        with open(filename, 'rb') as f:
+            return self.dpc_blob_from_string(f.read())
 
     @staticmethod
     def __handle_response(r):
