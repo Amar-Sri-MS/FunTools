@@ -669,10 +669,10 @@ class SplitPattern():
     def __init__(self, start:str, ):
         self.start = Pattern("split_start", start)
 
-    def match(self, input: str) -> Optional[Tuple[str, str]]:
+    def match(self, orig_input: str) -> Optional[Tuple[str, str]]:
 
         # wrap input in something balanced so comby will do the right thing
-        input = f"{{{input}}}"
+        input = f"{{{orig_input}}}"
 
         starts = self.start.matches(input)
         if (len(starts) == 0):
@@ -683,8 +683,15 @@ class SplitPattern():
         rest = starts[0].environment["rest"].fragment
         start = starts[0].matched[:-len(rest)]
 
-        # return, trimming the curly braces
-        return (start[1:], rest[:-1])
+        # trim the curly braces we added
+        start = start[1:]
+        rest = rest[:-1]
+
+        # fixup for las line diff annoyance
+        if ((orig_input[-1] == "\n") and (rest[-1] != "\n")):
+            rest += '\n'
+
+        return (start, rest)
 
 
 # Find the end of the module part / declaration so we can split around
@@ -719,7 +726,7 @@ def scrape_structs(decl: str) -> Set[str]:
     matches = STRUCT_PAT.matches(decl)
 
     for match in matches:
-        print(match.environment["structname"].fragment)
+        # print(match.environment["structname"].fragment)
         ret.add(match.environment["structname"].fragment)
 
     return ret - KNOWN_STRUCTS
