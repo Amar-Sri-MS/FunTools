@@ -200,12 +200,11 @@ static struct fun_json *_read_base64(int fd)
 static struct fun_json *_read_bjson(int fd)
 {
 	struct fun_json *input = NULL;
-	uint8_t *buf;
-	size_t size;
+	uint8_t *buf = NULL;
+	size_t size = 0;
 
 	fun_json_read_enough_bytes_for_json_from_fd(fd, &buf, &size);
 	assert(buf);
-	
 	input = fun_json_create_from_binary(buf, size);
 
 	free(buf);
