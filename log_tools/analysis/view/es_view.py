@@ -207,7 +207,13 @@ def perform_search():
                     'error': 'Could not find the log_ids'
                 }), 400
 
-        search_results = get_search_results(log_ids)
+        # Searching in partions to avoid hitting the HTTP request size
+        # limit of 4096 bytes
+        WINDOW_SIZE = 75
+        search_results = list()
+        for i in range(0, len(log_ids), WINDOW_SIZE):
+            ids = log_ids[i:i+WINDOW_SIZE]
+            search_results.append(get_search_results(ids))
         return jsonify(search_results)
     except Exception as e:
         app.logger.exception('Error while performing search across indices.')

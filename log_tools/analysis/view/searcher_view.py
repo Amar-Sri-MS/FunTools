@@ -29,7 +29,7 @@ def get_logs():
         limit_by = request.args.get('limit_by', None)
         limit_value = request.args.get('limit_value', None)
 
-        if limit_value:
+        if limit_by != 'tags' and limit_value and limit_value.isdigit():
             limit_value = int(limit_value)
 
         indices = elastic_log_searcher.get_logs(prefix, limit_by, limit_value)

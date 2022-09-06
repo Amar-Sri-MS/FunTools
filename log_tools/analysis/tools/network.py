@@ -9,7 +9,6 @@
 import datetime
 import json
 import logging
-from os import execv
 import re
 
 
@@ -52,6 +51,11 @@ SEARCH_QUERIES = {
     },
     'NETWORK_ROUTE_ADDED': {
         'query': '"NOTICE network_unit Forwarding: Route Add:"'
+    },
+
+    # ipmonitor events
+    'NETLINK_STATUS': {
+        'query': '"state" AND ("UP" OR "DORMANT" OR "DOWN") AND "group default link"'
     }
 }
 
@@ -138,8 +142,10 @@ class Network(object):
 
     def _check_cc_netlink_events(self):
         """
+        Searches in ipmonitor logs for netlink statuses.
         """
-        pass
+        search_query = SEARCH_QUERIES['NETLINK_STATUS']['query']
+        return self._perform_es_search([search_query])
 
     def _check_funos_events(self):
         """
@@ -185,11 +191,13 @@ class Network(object):
         registration_info = self._check_dpu_registration_info()
         health_info = self._check_health()
         funos_events = self._check_funos_events()
+        netlink_events = self._check_cc_netlink_events()
 
         return {
             'registration_info': registration_info,
             'health_info': health_info,
-            'funos_events': funos_events
+            'funos_events': funos_events,
+            'netlink_events': netlink_events
         }
 
 
