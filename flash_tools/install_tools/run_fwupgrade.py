@@ -13,7 +13,7 @@ import sys
 import subprocess
 from io import StringIO
 import tempfile
-
+import traceback
 from contextlib import closing
 
 BASE_URL = 'http://dochub.fungible.local/doc/jenkins'
@@ -622,7 +622,8 @@ def main():
     except DowngradeAttemptException:
         sys.exit(EXIT_CODE_DOWNGRADE_ATTEMPT)
     except Exception as e:
-        print(e)
+        print("Upgrade error ... {}".format(e))
+        traceback.print_exc()
         sys.exit(EXIT_CODE_ERROR)
     finally:
         if tmpws:
