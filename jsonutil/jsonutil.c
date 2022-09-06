@@ -96,6 +96,7 @@ static char *_read_line_from_file(int fd)
 	}
 
 	result[length - 1] = 0;
+
 	return result;
 }
 
@@ -171,6 +172,9 @@ static struct fun_json *_read_funjson(int fd)
 static struct fun_json *_read_base64(int fd)
 {
 	char *buf = _read_line_from_file(fd);
+	if (!buf)
+		return NULL;
+
 	size_t len = strlen(buf);
 	char *decode_buf = malloc(len);
 	int r = base64_decode((void *)decode_buf, len, buf);
