@@ -19,7 +19,7 @@ import pickle
 import os
 
 # global comby object
-comby = Comby(language=".c")
+comby = Comby(language=".c", timeout=300)
 
 
 ###
@@ -36,6 +36,9 @@ class WUDecl():
 
     def add_to_dict(self, d):
         d.setdefault(self.wuname, WUDeclList()).add_decl(self)
+
+    def decl_str(self) -> str:
+        return self.match.matched
 
     def print_info(self, prefix: str="") -> None:
         print("%sDecl '%s' on line %d" % (prefix, self.wuname, self.lineno))
@@ -57,6 +60,11 @@ class WUDeclList():
         else:
             return list(fnames)[0]
 
+    def decl_str(self) -> str:
+        if (len(self.decls) != 1):
+            raise RuntimeError("Mutliple-declared down reference. Cannot fix")
+        return self.decls[0].decl_str()
+            
     def first_lineno(self):
         lineno = 99999999999
         for decl in self.decls:
@@ -360,10 +368,12 @@ def scan_for_legacy(input:str) -> bool:
 
 class Pattern():
     def __init__(self, id: str, match: str,
-                 rewrite: Optional[str] = None) -> None:
+                 rewrite: Optional[str] = None,
+                 _fwdrewrite: Optional[str] = None) -> None:
         self.match: str = match
         self._rewrite: Optional[str] = rewrite
         self.id:str = id
+        self._fwdrewrite = _fwdrewrite
 
     def matches(self, input: str):
         l = list(comby.matches(input, self.match))
@@ -374,6 +384,17 @@ class Pattern():
 
         return comby.rewrite(input, self.match, self._rewrite)
 
+    def fwdrewrite(self, input: str):
+        # just pass through if we don't know
+        if (self._fwdrewrite is None):
+            return input
+
+        # print(f"rewrite '{input}' with '{self._fwdrewrite}'")
+        input = comby.rewrite(input, self.match, self._fwdrewrite)
+        # print(f"\tnew: '{input}'")
+            
+        return input
+
 class NoRewritePattern(Pattern):
     def rewrite(self, input: str):
         # do nothing
@@ -381,10 +402,12 @@ class NoRewritePattern(Pattern):
 
 class MultipassPattern(Pattern):
     def __init__(self, id: str, match: str,
-                 rewrites: List[Tuple[Optional[str], str]]):
+                 rewrites: List[Tuple[Optional[str], str]],
+                 _fwdrewrite: Optional[str] = None):
         self.match: str = match
         self.rewrites = rewrites
         self.id: str = id
+        self._fwdrewrite = _fwdrewrite
 
     def rewrite(self, input: str):
         for (match, rewrite) in self.rewrites:
@@ -410,6 +433,7 @@ class GroupPattern(Pattern):
     def __init__(self, id: str, match: str) -> None:
         self.match: str = match
         self.id:str = id
+        self._fwdrewrite = None
 
     def rewrite(self, input: str):
 
@@ -452,14 +476,18 @@ DECLS : List[Pattern] = [
                      [ ("WU_HANDLER() void :[wuname](:[params])",
                         "WU_HANDLER(WU_ATTR_NONE) void :[wuname](:[params])"),
                        (None, "WU_HANDLER(:[wuname], :[attrs], :[params])")
-                     ]),
+                     ],
+                     "DECLARE_WU_HANDLER(:[wuname], :[params])"
+                     ),
 
     MultipassPattern("WU64_HANDLER",
                      "WU64_HANDLER(:[attrs]) void :[wuname](:[params])",
                      [ ("WU64_HANDLER() void :[wuname](:[params])",
                         "WU64_HANDLER(WU_ATTR_NONE) void :[wuname](:[params])"),
                        (None, 'WU64_HANDLER(:[wuname], :[attrs], :[params])'),
-                     ]),
+                     ],
+                     "DECLARE_WU64_HANDLER(:[wuname], :[params])"
+                     ),
 
     # rewrite all the attrs, rewrite void/empty and not void separately
     MultipassPattern("CHANNEL_THREAD",
@@ -473,7 +501,8 @@ DECLS : List[Pattern] = [
 
                         (None,
                         "CHANNEL_THREAD(:[wuname], :[attrs], :[params])"),
-                     ]
+                     ],
+                     "DECLARE_CHANNEL_THREAD_HANDLER(:[wuname], :[params])"
                      ),
 
     # first rewrite to add attributes if they're missing, then just rewrite
@@ -483,7 +512,9 @@ DECLS : List[Pattern] = [
                         "CHANNEL(WU_ATTR_NONE) void :[wuname](:[params])"),
                         (None,
                         "CHANNEL_HANDLER(:[wuname], :[attrs], :[params])")
-                     ]),
+                     ],
+                     "DECLARE_CHANNEL_HANDLER(:[wuname], :[params])"
+                     ),
 
     GroupPattern("WU_HANDLER_REGISTER_GROUP",
                  "WU_HANDLER_REGISTER_GROUP(:[module], :[wuname], (:[fnlist]), :[attrs], :[align])"),
@@ -534,6 +565,9 @@ REFS : List[Pattern] = [
             ":[~\\bwu_timer_start](:[id], :[wuname], :[dest], :[arg], :[delay])"),
 
     ## Flow
+    Pattern("flow_push_resume_wu",
+            ":[~\\bflow_push_resume_wu](:[callerf], :[wuname], :[rest])"),
+
     Pattern("flow_push_continuation",
             ":[~\\bflow_push_continuation](:[callerf], :[wuname], :[frame], :[calleef], :[arg2])"),
 
@@ -630,6 +664,129 @@ def do_fixup_ups(wuinfo: WUInfo, fileinfo: Dict[str, FunFile], fixup: str):
     print(f"Fixed up headers for {count} files")
         
 
+
+class SplitPattern():
+    def __init__(self, start:str, ):
+        self.start = Pattern("split_start", start)
+
+    def match(self, input: str) -> Optional[Tuple[str, str]]:
+
+        # wrap input in something balanced so comby will do the right thing
+        input = f"{{{input}}}"
+
+        starts = self.start.matches(input)
+        if (len(starts) == 0):
+            return None
+
+        assert(len(starts) == 1)
+
+        rest = starts[0].environment["rest"].fragment
+        start = starts[0].matched[:-len(rest)]
+
+        # return, trimming the curly braces
+        return (start[1:], rest[:-1])
+
+
+# Find the end of the module part / declaration so we can split around
+# that. comby won't match "everything" for start/rest unless we wrap the
+# whole input in something balanced, so we wrap the whole file in {}
+SPLIT_PATTERNS: List[SplitPattern] = [
+            SplitPattern("{:[start]MODULE_PART(...):[~;?]:[rest]}"),
+            SplitPattern("{:[start]MODULE_DEF_END():[~;?]:[rest]}"),
+            SplitPattern("{:[start]MODULE_END_SDK():[~;?]:[rest]}")
+]
+
+def split_input_for_fwd(input: str) -> Tuple[str, str]:
+
+    # apply patterns until we find a match
+    for sp in SPLIT_PATTERNS:
+        tup = sp.match(input)
+        if (tup is None):
+            continue
+
+        return tup
+
+    raise RuntimeError("Could not split file!")
+
+# generate-wutab.py python regex
+# m = re.match(r"^(const )?struct (?P<struct_name>[a-zA-Z0-9_]+)", arg)
+
+STRUCT_PAT = Pattern("structs", "struct :[[structname]]")
+KNOWN_STRUCTS = set(["frame", "channel", "flow"])
+def scrape_structs(decl: str) -> Set[str]:
+
+    ret = set()
+    matches = STRUCT_PAT.matches(decl)
+
+    for match in matches:
+        print(match.environment["structname"].fragment)
+        ret.add(match.environment["structname"].fragment)
+
+    return ret - KNOWN_STRUCTS
+
+def do_fixup_internal(wuinfo: WUInfo, fileinfo: Dict[str, FunFile], fixup: str):
+
+    # firstly we need to fixup all the headers
+    # make the list of files that would be fixed up
+    flist = list(filter(FunFile.only_internal, wuinfo.files.values()))
+
+    count = 0
+    for fl in flist:
+        if (not fixup_match(fixup, fl.name)):
+            print(f'Skipping ups fix for file {fl.name}')
+            continue
+
+        print(f'Fixing internals for file {fl.name}')
+        input = open(fl.name, "r").read()
+    
+        # rewrite the header
+        input = HEADER_MATCH.rewrite(input)
+
+        # walk the list of down references
+        all_fwd = "\n"
+        all_fwd += "/* automagically generated forward declarations for WU handlers */\n"
+        wu_fwd = ""
+        struct_fwd = set();
+        for wuname in fl.downref:
+            print(f"\tReference to {wuname} found")
+
+            # generate the declarations for it
+            decl_str = wuinfo.wus[wuname].decl_str()
+
+            # just run all the rewrites over it
+            wu_str = decl_str
+            for decl in DECLS:
+                wu_str = decl.fwdrewrite(wu_str)
+            
+            if (wu_str == decl_str):
+                raise RuntimeError(f"WU {wuname} did not get rewritten for forward declaration")
+
+            # scrape any struct types. This is ugly, but no way to change old code without it
+            struct_fwd.update(scrape_structs(wu_str))
+
+            # append the declaration
+            wu_fwd += f'{wu_str};\n'
+
+        # make the struct forward declarations
+        for sname in struct_fwd:
+            all_fwd += f"struct {sname};\n"
+
+        # add the wu declarations
+        all_fwd += wu_fwd
+
+        # patch them into the file
+        (first, last) = split_input_for_fwd(input)
+        input = first + all_fwd + last
+
+        # now rewrite all the decls
+        for decl in DECLS:
+            input = decl.rewrite(input)
+
+        open(fl.name, "w").write(input)
+        count += 1
+
+    print(f"Fixed up headers for {count} files")
+
 ###
 ##  parse_args
 #
@@ -666,6 +823,9 @@ def parse_args() -> argparse.Namespace:
 
     parser.add_argument("--fixup-ups", action="store_true",
                        help="Fixup up-only files")
+
+    parser.add_argument("--fixup-internal", action="store_true",
+                       help="Fixup up-and-down (internal-only) files")
 
     # Optional verbosity counter (eg. -v, -vv, -vvv, etc.)
     parser.add_argument(
@@ -811,6 +971,9 @@ def main() -> int:
 
         if (args.fixup_ups):
             do_fixup_ups(wuinfo, fileinfo, args.fixup)
+
+        if (args.fixup_internal):
+            do_fixup_internal(wuinfo, fileinfo, args.fixup)
 
     return 0
  
