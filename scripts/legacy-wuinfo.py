@@ -719,7 +719,7 @@ def split_input_for_fwd(input: str) -> Tuple[str, str]:
 # m = re.match(r"^(const )?struct (?P<struct_name>[a-zA-Z0-9_]+)", arg)
 
 STRUCT_PAT = Pattern("structs", "struct :[[structname]]")
-KNOWN_STRUCTS = set(["frame", "channel", "flow"])
+KNOWN_STRUCTS = set(["frame", "channel", "flow", "ws_exception"])
 def scrape_structs(decl: str) -> Set[str]:
 
     ret = set()
