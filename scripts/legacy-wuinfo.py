@@ -368,12 +368,10 @@ def scan_for_legacy(input:str) -> bool:
 
 class Pattern():
     def __init__(self, id: str, match: str,
-                 rewrite: Optional[str] = None,
-                 _fwdrewrite: Optional[str] = None) -> None:
+                 rewrite: Optional[str] = None) -> None:
         self.match: str = match
         self._rewrite: Optional[str] = rewrite
         self.id:str = id
-        self._fwdrewrite = _fwdrewrite
 
     def matches(self, input: str):
         l = list(comby.matches(input, self.match))
@@ -384,15 +382,8 @@ class Pattern():
 
         return comby.rewrite(input, self.match, self._rewrite)
 
-    def fwdrewrite(self, input: str):
-        # just pass through if we don't know
-        if (self._fwdrewrite is None):
-            return input
-
-        # print(f"rewrite '{input}' with '{self._fwdrewrite}'")
-        input = comby.rewrite(input, self.match, self._fwdrewrite)
-        # print(f"\tnew: '{input}'")
-            
+    def fwdrewrite(self, input: str) -> str:
+        # just pass through since we don't know
         return input
 
 class NoRewritePattern(Pattern):
@@ -403,20 +394,30 @@ class NoRewritePattern(Pattern):
 class MultipassPattern(Pattern):
     def __init__(self, id: str, match: str,
                  rewrites: List[Tuple[Optional[str], str]],
-                 _fwdrewrite: Optional[str] = None):
+                 fwdrewrites: Optional[List[Tuple[Optional[str], str]]] = None):
         self.match: str = match
         self.rewrites = rewrites
         self.id: str = id
-        self._fwdrewrite = _fwdrewrite
+        self.fwdrewrites = fwdrewrites
 
-    def rewrite(self, input: str):
-        for (match, rewrite) in self.rewrites:
+    def _do_rewrite_list(self, rewrites: List[Tuple[Optional[str], str]], input: str) -> str:
+        for (match, rewrite) in rewrites:
             if (match is None):
                 match = self.match
 
             input = comby.rewrite(input, match, rewrite)
             
         return input
+
+    def rewrite(self, input: str):
+        return self._do_rewrite_list(self.rewrites, input)
+
+    def fwdrewrite(self, input: str) -> str:
+        # just pass through if we don't know
+        if (self.fwdrewrites is None):
+            return input
+
+        return self._do_rewrite_list(self.fwdrewrites, input)
 
 
 GROUP_CUSTOM_MATCH: str = "WU_HANDLER_REGISTER_GROUP(:[module], {wuname}, (:[fnlist]), :[attrs], :[align])"
@@ -430,10 +431,10 @@ def pad_fnlist(fnlist: str):
     return ",\n                          ".join(fns)
 
 class GroupPattern(Pattern):
-    def __init__(self, id: str, match: str) -> None:
+    def __init__(self, id: str, match: str, fwdrewrite: Optional[str]) -> None:
         self.match: str = match
         self.id:str = id
-        self._fwdrewrite = None
+        self._fwdrewrite = fwdrewrite
 
     def rewrite(self, input: str):
 
@@ -461,6 +462,11 @@ class GroupPattern(Pattern):
         mp = MultipassPattern("group", "", rewrites)
         return mp.rewrite(input)
 
+    def fwdrewrite(self, input: str) -> str:
+        if (self._fwdrewrite is None):
+            return input
+
+        return comby.rewrite(input, self.match, self._fwdrewrite)
 
 HEADER_MATCH: Pattern = Pattern("header", "#include <generated/wu_ids.h>",
                                 rewrite="#include <nucleus/wu_register.h>")
@@ -475,9 +481,15 @@ DECLS : List[Pattern] = [
                      "WU_HANDLER(:[attrs]) void :[wuname](:[params])",
                      [ ("WU_HANDLER() void :[wuname](:[params])",
                         "WU_HANDLER(WU_ATTR_NONE) void :[wuname](:[params])"),
-                       (None, "WU_HANDLER(:[wuname], :[attrs], :[params])")
+
+                        ("WU_HANDLER(:[attrs]) void :[[wuname]](:[~(void)?])",
+                        "WU_HANDLER(:[wuname], :[attrs])"),
+
+                        (None, "WU_HANDLER(:[wuname], :[attrs], :[params])")
                      ],
-                     "DECLARE_WU_HANDLER(:[wuname], :[params])"
+                     [
+                       (None, "DECLARE_WU_HANDLER(:[wuname], :[params])")
+                     ]
                      ),
 
     MultipassPattern("WU64_HANDLER",
@@ -486,7 +498,9 @@ DECLS : List[Pattern] = [
                         "WU64_HANDLER(WU_ATTR_NONE) void :[wuname](:[params])"),
                        (None, 'WU64_HANDLER(:[wuname], :[attrs], :[params])'),
                      ],
-                     "DECLARE_WU64_HANDLER(:[wuname], :[params])"
+                     [
+                        (None, "DECLARE_WU64_HANDLER(:[wuname], :[params])")
+                     ]
                      ),
 
     # rewrite all the attrs, rewrite void/empty and not void separately
@@ -502,7 +516,11 @@ DECLS : List[Pattern] = [
                         (None,
                         "CHANNEL_THREAD(:[wuname], :[attrs], :[params])"),
                      ],
-                     "DECLARE_CHANNEL_THREAD_HANDLER(:[wuname], :[params])"
+                     [
+                         ("CHANNEL_THREAD(:[attrs]) void :[[wuname]](void)",
+                          "DECLARE_CHANNEL_THREAD_HANDLER(:[wuname])"),
+                         (None, "DECLARE_CHANNEL_THREAD_HANDLER(:[wuname], :[params])")
+                     ]
                      ),
 
     # first rewrite to add attributes if they're missing, then just rewrite
@@ -513,11 +531,14 @@ DECLS : List[Pattern] = [
                         (None,
                         "CHANNEL_HANDLER(:[wuname], :[attrs], :[params])")
                      ],
-                     "DECLARE_CHANNEL_HANDLER(:[wuname], :[params])"
+                     [
+                         (None, "DECLARE_CHANNEL_HANDLER(:[wuname], :[params])")
+                     ]
                      ),
 
     GroupPattern("WU_HANDLER_REGISTER_GROUP",
-                 "WU_HANDLER_REGISTER_GROUP(:[module], :[wuname], (:[fnlist]), :[attrs], :[align])"),
+                 "WU_HANDLER_REGISTER_GROUP(:[module], :[wuname], (:[fnlist]), :[attrs], :[align])",
+                 "DECLARE_WU_GROUP(:[wuname])"),
 
     # we want to track these for references, but this macro is just what
     # we need for SDK WUs
@@ -719,7 +740,7 @@ def split_input_for_fwd(input: str) -> Tuple[str, str]:
 # m = re.match(r"^(const )?struct (?P<struct_name>[a-zA-Z0-9_]+)", arg)
 
 STRUCT_PAT = Pattern("structs", "struct :[[structname]]")
-KNOWN_STRUCTS = set(["frame", "channel", "flow", "ws_exception"])
+KNOWN_STRUCTS = set(["frame", "channel", "flow", "ws_exception", "timer_arg"])
 def scrape_structs(decl: str) -> Set[str]:
 
     ret = set()
@@ -766,7 +787,8 @@ def do_fixup_internal(wuinfo: WUInfo, fileinfo: Dict[str, FunFile], fixup: str):
                 wu_str = decl.fwdrewrite(wu_str)
             
             if (wu_str == decl_str):
-                raise RuntimeError(f"WU {wuname} did not get rewritten for forward declaration")
+                print(f"WU {wuname} did not get rewritten for forward declaration. Assuming group")
+                continue
 
             # scrape any struct types. This is ugly, but no way to change old code without it
             struct_fwd.update(scrape_structs(wu_str))
