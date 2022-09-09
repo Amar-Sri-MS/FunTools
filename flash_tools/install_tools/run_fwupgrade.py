@@ -425,66 +425,6 @@ def run_upgrade(args, release_images):
                 res |= e.returncode
                 pass
 
-        # GET ALL FIRMWARE VERSIONS - STORE TO FILE AND UPDATE FW DB
-        if not args.no_server_update:
-          with tempfile.NamedTemporaryFile() as f:
-            run(sudo + ldpath + \
-                    [os.path.join(binpath, 'fwupgrade'),
-                    '-a', '-d', dev], stdout=f)
-            os.fsync(f)
-            # strip garbage from output file ... workaround until FunCP is rebuilt
-            # and we get a fixed
-            run(['sed', '-i', '/^devname/d', f.name])
-
-            try:
-                # somewhat hacky way to get our machine name,
-                # but hostname is not reliable as multiple
-                # COMes have the same ...
-                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                try:
-                    s.connect(('fun-on-demand-01',9501))
-                    machine = socket.gethostbyaddr((s.getsockname()[0]))[0]
-                    s.close()
-                    machine = machine.replace('.fungible.local','')
-                except:
-                    pass
-
-                # if there was no name found or the name doesn't contain any numbers
-                # it's most likely a generic name like Fun or FunServer, so ignore it
-                if not filter(str.isdigit, machine):
-                    machine=''
-
-                if not machine:
-                    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                    try:
-                        s.connect(('fun-on-demand-01',9501))
-                        ip = s.getsockname()[0]
-                        iface = ''
-                        # get the device MAC address ... check for the interface
-                        # we used for connecting to the server and then get its mac
-                        with closing(StringIO(subprocess.check_output(
-                                    ['ip', '-f', 'inet', '-o', 'addr']).decode())) as ifaces:
-                            for i in ifaces:
-                                if ip+'/' in i:
-                                    iface = i.split()[1]
-                                    break
-
-                        if iface:
-                            with open('/sys/class/net/{}/address'.format(iface),'r') as f_mac:
-                                machine = f_mac.read().strip()
-
-                        s.close()
-                    except Exception as e:
-                        print(e)
-
-                print("using {} as machine id".format(machine))
-                if machine:
-                    run(['curl', '-X', 'POST', '--data', '@{}'.format(f.name),
-                        'http://fun-on-demand-01:9501/store?machine={}:{}&key=firmware'.format(machine,dev)])
-            except Exception as err:
-                print(err)
-                pass
-
     for dev in pcidevs:
         pcidev_unbind(dev)
 
@@ -527,11 +467,13 @@ def main():
     arg_parser.add_argument('--downgrade', action='store_true',
             help='Attempt to perform a firmware downgrade')
 
+    # no-server-update option doesn't do anything, currently kept for compatibility
+    # with other scripts. to be removed.
     arg_parser.add_argument('--no-server-update',
-            action='store_true', help='Do not send firmware information to db server')
+            action='store_true', help='[ignored]')
 
     arg_parser.add_argument('--dry-run', action='store_true',
-            help='Do all the checks, but do not perform upgrade. Implies --no-server-update')
+            help='Do all the checks, but do not perform upgrade.')
 
     arg_parser.add_argument('--offline', action='store_true',
             help='Do not download any images, assume everything is available locally')
@@ -603,9 +545,6 @@ def main():
         except OSError as e:
             if e.errno == errno.EEXIST:
                 pass
-
-    if args.dry_run or args.offline:
-        args.no_server_update = True
 
     os.chdir(args.ws)
     os.putenv('WORKSPACE', args.ws)
