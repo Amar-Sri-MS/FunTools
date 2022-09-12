@@ -19,8 +19,8 @@ from enrollment_client import boot_step_and_version
 
 
 BOOT_STEP_VERSION_TESTS = (
-    ("status_reply_v0.bin", 0x22, "bld_17833-602e803b3"),
-    ("status_reply_v1.bin", 0xE4, "bld_113635-e63927add"))
+    ("status_reply_v0.bin", 0x22, b"bld_17833-602e803b3"),
+    ("status_reply_v1.bin", 0xE4, b"bld_113635-e63927add"))
 
 
 def boot_step_and_version_test():
@@ -31,10 +31,7 @@ def boot_step_and_version_test():
         with open(input_path, 'rb') as f:
             b_str = f.read()
 
-        # convert byte string to list of integers since
-        # this is what the I2C layer returns and what
-        # boot_step_and_version expect
-        c_step, c_ver = boot_step_and_version(list(b_str))
+        c_step, c_ver = boot_step_and_version(b_str)
         if c_step != bsv_test[1]:
             print("Error reading boot step: expected %d got %d" %
                   (c_step, bsv_test[1]), file=sys.stderr)
