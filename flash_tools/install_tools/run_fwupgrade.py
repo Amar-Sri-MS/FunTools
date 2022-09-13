@@ -222,10 +222,12 @@ def run_upgrade(args, release_images):
         if not os.path.isfile(release_images[arg]):
             raise(Exception("Upgrade image for '{}' not found in upgrade bundle".format(arg)))
 
-    if not pcidevs_string:
+    if dpc:
+        pcidevs = ['dpc']
+    elif not pcidevs_string:
         raise(Exception("No Fungible devices detected on PCI"))
-
-    pcidevs = [dev.split()[0].decode('ascii') for dev in pcidevs_string.splitlines()]
+    else:
+        pcidevs = [dev.split()[0].decode('ascii') for dev in pcidevs_string.splitlines()]
 
     def pcidev_unbind(dev):
         if args.bind:
@@ -272,9 +274,10 @@ def run_upgrade(args, release_images):
     else:
         v = int(v)
 
-    # exit code 64 indicates unrecognized arg
-    with open(os.devnull, 'w') as devnull:
-        have_async_fwupgrade = subprocess.call(sudo + ldpath + \
+    if not dpc:
+        # exit code 64 indicates unrecognized arg
+        with open(os.devnull, 'w') as devnull:
+            have_async_fwupgrade = subprocess.call(sudo + ldpath + \
                 [os.path.join(binpath, 'fwupgrade'), '--async'],
                 stdout=devnull, stderr=devnull) != 64
 
@@ -291,7 +294,7 @@ def run_upgrade(args, release_images):
         if args.upgrade_auto:
             release_images_fourccs = set(release_images.keys()) & KNOWN_IMAGES
 
-            if not have_async_fwupgrade and not dpc:
+            if not dpc and not have_async_fwupgrade:
                 release_images_fourccs = release_images_fourccs - ASYNC_ONLY_IMAGES
 
             if len(fwinfo) == 0:
@@ -628,6 +631,11 @@ def main():
     os.putenv('WORKSPACE', args.ws)
 
     print('Using {} as workspace'.format(args.ws))
+    print('Using {} interface'.format('DPC' if dpc else 'HCI'))
+
+    if dpc:
+        args.bind = False
+        args.pci_devid = []
 
     try:
         release_images = prepare(args)
