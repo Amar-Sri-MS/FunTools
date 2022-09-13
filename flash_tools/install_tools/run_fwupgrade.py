@@ -16,6 +16,29 @@ import tempfile
 import traceback
 from contextlib import closing
 
+try:
+    # This is all under a try clause, as depending on FunOS version,
+    # any or all of these modules could be missing ...
+    sys.path.append('/usr/bin')
+    import dpc_client
+    import dpc_binary
+
+    dpc = dpc_client.DpcClient(legacy_ok=False,
+            unix_sock=True,
+            encoder=dpc_binary.BinaryJSONEncoder())
+
+    # Try to execute fw_upgrade version query. If it's implemented
+    # and reports upgrade interface version 1 or higher, then the
+    # upgrade can be performed using DPC. Otherwise the fwupgrade
+    # script needs to use HCI-based fallback.
+    res = dpc.execute('fw_upgrade', ['version'])
+
+    if not res >= 1:
+        raise RuntimeError("DPC upgrade not supported")
+except:
+    dpc = None
+    pass
+
 BASE_URL = 'http://dochub.fungible.local/doc/jenkins'
 
 # release image json contains a few fourcc code for images
@@ -42,6 +65,11 @@ UPGRADE_IF_PRESENT_IMAGES = {'nvdm', 'scap'}
 # report the whole upgrade as failing. A failure can be later
 # noticed during upgrade success verification
 IGNORE_ERRORS_IMAGES = {'nvdm', 'scap'}
+# images to split into smaller chunks during upgrade
+# (supported only in DPC mode)
+SPLITTABLE_IMAGES = {'mmc1'}
+SPLIT_SIZE = 2*1024*1024
+
 
 EXIT_CODE_OK = 0
 EXIT_CODE_ERROR = 1
@@ -251,7 +279,10 @@ def run_upgrade(args, release_images):
                 stdout=devnull, stderr=devnull) != 64
 
     for dev in pcidevs:
-        fwinfo = json.loads(subprocess.check_output(sudo + ldpath + \
+        if dpc:
+            fwinfo = dpc.execute("fw_upgrade", ['get_versions'])
+        else:
+            fwinfo = json.loads(subprocess.check_output(sudo + ldpath + \
                 [os.path.join(binpath, 'fwupgrade'),
                 '-a', '-d', dev]))
         dev_downgrade_fourccs = set()
@@ -260,7 +291,7 @@ def run_upgrade(args, release_images):
         if args.upgrade_auto:
             release_images_fourccs = set(release_images.keys()) & KNOWN_IMAGES
 
-            if not have_async_fwupgrade:
+            if not have_async_fwupgrade and not dpc:
                 release_images_fourccs = release_images_fourccs - ASYNC_ONLY_IMAGES
 
             if len(fwinfo) == 0:
@@ -378,52 +409,99 @@ def run_upgrade(args, release_images):
 
     for dev in pcidevs:
         for fourcc in upgrade_fourccs[dev]:
-          cmd = sudo + ldpath + \
-                  [os.path.join(binpath, 'fwupgrade'),
-                  '--image', release_images[fourcc], '-f', fourcc, '-d', dev]
-          if args.active:
-              cmd.append('--active')
-          if args.downgrade:
-              cmd.append('--downgrade')
-          if fourcc in ASYNC_PREF_IMAGES and have_async_fwupgrade:
-              cmd.append('--async')
-          elif fourcc in ASYNC_ONLY_IMAGES:
-              cmd.append('--async')
+            if dpc:
+                error = 0
+                try:
+                    file_size = os.path.getsize(release_images[fourcc])
+                    split_size = SPLIT_SIZE if fourcc in SPLITTABLE_IMAGES else file_size
+                    offset = 0
 
-          if not args.dry_run:
-            # CHECK CURRENT VERSION AND UPGRADE
-            print('Upgrading {} with {}'.format(fourcc, release_images[fourcc]))
-            try:
-                subprocess.check_output(cmd, stderr=subprocess.STDOUT)
-            except subprocess.CalledProcessError as e:
-                # depending on the fw version, pufr/frmw/sbpf upgrades may fail
-                # need to parse error log - if error reported by sbp is '2', then
-                # this is the expected error and no need to panic
-                print(e.output.decode())
-                if e.returncode == errno.EIO and \
-                   fourcc in ('pufr', 'frmw', 'sbpf') and \
-                   (('Error in upgrade handling: 2' in e.output.decode()) or \
-                        ('Error in upgrade handling: 33554432' in e.output.decode())):
-                    print('If you see this error message, do not report it, it is expected')
-                elif fourcc in IGNORE_ERRORS_IMAGES:
-                    print('Upgrade of {} failed, ignoring this error'.format(fourcc))
+                    while offset < file_size:
+                        dpc_params = {
+                            'active' : bool(args.active),
+                            'downgrade' : bool(args.downgrade),
+                            'fourcc' : fourcc,
+                            'offset' : offset
+                        }
+
+                        if not args.dry_run:
+                            with open(release_images[fourcc], 'rb') as f:
+                                f.seek(offset, os.SEEK_SET)
+                                blob = dpc.dpc_blob_from_string(f.read(split_size))
+                        else:
+                            blob = f"blob for {release_images[fourcc]} offset {offset} size {split_size}"
+
+                        command = [ 'upgrade', dpc_params, blob ]
+
+                        if not args.dry_run:
+                            resp = dpc.execute('fw_upgrade', command)
+                            if resp['result'] != 0:
+                                print(f"Upgrade of {fourcc}@{offset} failed: {resp['description']}")
+                                raise RuntimeError(f"{fourcc}@{offset} failed: {resp['description']}")
+                        else:
+                            print(f"Would execute {command}")
+
+                        offset += split_size
+
+                except:
+                    error = 1
+                    if fourcc in IGNORE_ERRORS_IMAGES:
+                        print(f"Upgrade of {fourcc} failed, ignoring this error")
+                        error = 0
+                    pass
+
+                res |= error
+
+            else: # !dpc
+                cmd = sudo + ldpath + \
+                        [os.path.join(binpath, 'fwupgrade'),
+                        '--image', release_images[fourcc], '-f', fourcc, '-d', dev]
+                if args.active:
+                    cmd.append('--active')
+                if args.downgrade:
+                    cmd.append('--downgrade')
+                if fourcc in ASYNC_PREF_IMAGES and have_async_fwupgrade:
+                    cmd.append('--async')
+                elif fourcc in ASYNC_ONLY_IMAGES:
+                    cmd.append('--async')
+
+                if not args.dry_run:
+                    # CHECK CURRENT VERSION AND UPGRADE
+                    print('Upgrading {} with {}'.format(fourcc, release_images[fourcc]))
+                    try:
+                        subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+                    except subprocess.CalledProcessError as e:
+                        # depending on the fw version, pufr/frmw/sbpf upgrades may fail
+                        # need to parse error log - if error reported by sbp is '2', then
+                        # this is the expected error and no need to panic
+                        print(e.output.decode())
+                        if e.returncode == errno.EIO and \
+                        fourcc in ('pufr', 'frmw', 'sbpf') and \
+                        (('Error in upgrade handling: 2' in e.output.decode()) or \
+                                ('Error in upgrade handling: 33554432' in e.output.decode())):
+                            print('If you see this error message, do not report it, it is expected')
+                        elif fourcc in IGNORE_ERRORS_IMAGES:
+                            print('Upgrade of {} failed, ignoring this error'.format(fourcc))
+                        else:
+                            res |= e.returncode
                 else:
-                    res |= e.returncode
-          else:
-            print("Would execute {}".format(cmd))
+                    print("Would execute {}".format(cmd))
 
 
         # GET ALL FIRMWARE VERSIONS
         if args.version_check:
-            cmd = sudo + ldpath + \
-                [os.path.join(binpath, 'fwupgrade'),
-                '-a', '-d', dev]
-            try:
-                run_check(cmd, stderr=subprocess.STDOUT)
-            except subprocess.CalledProcessError as e:
-                print(e.output.decode())
-                res |= e.returncode
-                pass
+            if dpc:
+                print(dpc.execute("fw_upgrade", ['get_versions']))
+            else:
+                cmd = sudo + ldpath + \
+                    [os.path.join(binpath, 'fwupgrade'),
+                    '-a', '-d', dev]
+                try:
+                    run_check(cmd, stderr=subprocess.STDOUT)
+                except subprocess.CalledProcessError as e:
+                    print(e.output.decode())
+                    res |= e.returncode
+                    pass
 
     for dev in pcidevs:
         pcidev_unbind(dev)
