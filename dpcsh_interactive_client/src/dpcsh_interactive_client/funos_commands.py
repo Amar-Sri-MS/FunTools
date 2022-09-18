@@ -645,6 +645,11 @@ class FunOSCommands(object):
             )
             df_filename = os.path.join(save_df_dir, df_filename)
             version_info_filename = os.path.join(save_df_dir, version_info_filename)
+            self.logger.info("")
+            self.logger.info("DF save option is enabled:")
+            self.logger.info("- DF filename: {}".format(df_filename))
+            self.logger.info("- Version info filename: {}".format(version_info_filename))
+            self.logger.info("")
 
             # version file is saved to augment version numbers for saved dataframe
             with open(version_info_filename, "w") as f:
