@@ -130,10 +130,6 @@ def prepare_offline(args, path='', select=None):
 
     return images
 
-def using_custom_funcp(args):
-    return args.image_url == BASE_URL and args.arch == 'posix'
-
-
 def prepare(args):
     """
         Prepare workspace
@@ -143,9 +139,6 @@ def prepare(args):
 
     if args.offline:
         return prepare_offline(args)
-
-    funcp_file = 'funcp.{}.tgz'.format(args.arch)
-    libfunq_file = 'libfunq.{}{}.tgz'.format(args.arch, '_palladium' if args.arch == 'posix' else '')
 
     SDK_FLASH_PATH = '/{}/funsdk/{}/Linux'.format(args.sdk_devline, args.version)
     release_file = '{}_dev_signed.tgz'.format(args.chip)
@@ -158,10 +151,6 @@ def prepare(args):
     files = {
         release_file : url,
     }
-
-    if using_custom_funcp(args):
-        files[funcp_file] = url
-        files[libfunq_file] = url
 
     for f, url in files.items():
         wget(url + '/' + f)
@@ -187,32 +176,6 @@ def run_upgrade(args, release_images):
     else:
         pcidevs_string = subprocess.check_output(['lspci', '-d', args.pci_devid, '-mmn'])
 
-    sudo = [] if platform.machine() == 'mips64' else ['sudo']
-    if args.offline or not using_custom_funcp(args):
-        if platform.machine() == 'mips64':
-            # defaults for CCLinux
-            binpath = '/usr/bin'
-            ldpath = []
-            funqpath = '/usr/bin'
-        else:
-            # defaults for COMe
-            binpath = os.path.join(args.offline_root, 'FunControlPlane', 'bin')
-            ldpath = ['LD_LIBRARY_PATH=${{LD_LIBRARY_PATH}}:{}'.format(
-                    os.path.join(args.offline_root, 'FunControlPlane', 'lib'))]
-            funqpath = binpath
-    else:
-        newroot = os.path.join(args.ws, 'FunSDK/host-drivers/x86_64/user/{}_palladium'.format(args.arch))
-        binpath = os.path.join(args.ws, 'FunCP', 'build', args.arch, 'bin')
-        ldpath = ['LD_LIBRARY_PATH=${{LD_LIBRARY_PATH}}:{}:{}'.format(
-                    os.path.join(args.ws, 'build', args.arch, 'lib'),
-                    os.path.join(newroot, 'lib'))]
-        for p in (binpath,
-                  os.path.join(newroot, 'bin')):
-            if os.path.isfile(os.path.join(p, 'funq-setup')):
-                funqpath = p
-                break
-        else: # this is for ... else statement
-            raise Exception("funq-setup not found!")
     res = 0
 
     if args.upgrade_file:
@@ -228,11 +191,12 @@ def run_upgrade(args, release_images):
         raise Exception("No Fungible devices detected on PCI")
     else:
         pcidevs = [dev.split()[0].decode('ascii') for dev in pcidevs_string.splitlines()]
+        binpath = '/usr/bin'
+        funqpath = '/usr/bin'
 
     def pcidev_unbind(dev):
         if args.bind:
-            run(sudo + ldpath + \
-                [os.path.join(funqpath, 'funq-setup'),
+            run([os.path.join(funqpath, 'funq-setup'),
                 'unbind', '"vfio"', dev])
 
     def fourcc_eq(dpu_fourcc, host_fourcc):
@@ -248,8 +212,7 @@ def run_upgrade(args, release_images):
         # found, as when executed on FS1600's COMe, there are 2 F1s connected.
         # When run on CCLinux, there should be only one interface found.
         if args.bind:
-            cmd = sudo + ldpath + \
-                [os.path.join(funqpath, 'funq-setup'),
+            cmd = [os.path.join(funqpath, 'funq-setup'),
                 'bind', 'vfio', dev]
             try:
                 run_check(cmd, stderr=subprocess.STDOUT)
@@ -277,7 +240,7 @@ def run_upgrade(args, release_images):
     if not dpc:
         # exit code 64 indicates unrecognized arg
         with open(os.devnull, 'w') as devnull:
-            have_async_fwupgrade = subprocess.call(sudo + ldpath + \
+            have_async_fwupgrade = subprocess.call(
                 [os.path.join(binpath, 'fwupgrade'), '--async'],
                 stdout=devnull, stderr=devnull) != 64
 
@@ -285,7 +248,7 @@ def run_upgrade(args, release_images):
         if dpc:
             fwinfo = dpc.execute("fw_upgrade", ['get_versions'])
         else:
-            fwinfo = json.loads(subprocess.check_output(sudo + ldpath + \
+            fwinfo = json.loads(subprocess.check_output(
                 [os.path.join(binpath, 'fwupgrade'),
                 '-a', '-d', dev]))
         dev_downgrade_fourccs = set()
@@ -456,8 +419,7 @@ def run_upgrade(args, release_images):
                 res |= error
 
             else: # !dpc
-                cmd = sudo + ldpath + \
-                        [os.path.join(binpath, 'fwupgrade'),
+                cmd = [os.path.join(binpath, 'fwupgrade'),
                         '--image', release_images[fourcc], '-f', fourcc, '-d', dev]
                 if args.active:
                     cmd.append('--active')
@@ -496,8 +458,7 @@ def run_upgrade(args, release_images):
             if dpc:
                 print(dpc.execute("fw_upgrade", ['get_versions']))
             else:
-                cmd = sudo + ldpath + \
-                    [os.path.join(binpath, 'fwupgrade'),
+                cmd = [os.path.join(binpath, 'fwupgrade'),
                     '-a', '-d', dev]
                 try:
                     run_check(cmd, stderr=subprocess.STDOUT)
@@ -524,9 +485,6 @@ def main():
     arg_parser.add_argument('--ws', action='store', metavar='path',
             help='workspace path, temp location will be used if not specified or'
                  '<offline-root>/funos if offline is set')
-    arg_parser.add_argument('--arch', action='store', choices=['mips64', 'posix'],
-            default='mips64' if platform.machine() == 'mips64' else 'posix',
-            help='ControlPlane architecture')
 
     upgrade_group = arg_parser.add_mutually_exclusive_group()
     upgrade_group.add_argument('-u', '--upgrade', action='append', metavar='FOURCC',
