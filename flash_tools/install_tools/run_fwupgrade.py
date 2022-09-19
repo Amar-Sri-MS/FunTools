@@ -212,7 +212,7 @@ def run_upgrade(args, release_images):
                 funqpath = p
                 break
         else: # this is for ... else statement
-            raise(Exception("funq-setup not found!"))
+            raise Exception("funq-setup not found!")
     res = 0
 
     if args.upgrade_file:
@@ -220,12 +220,12 @@ def run_upgrade(args, release_images):
 
     for arg in args.upgrade:
         if not os.path.isfile(release_images[arg]):
-            raise(Exception("Upgrade image for '{}' not found in upgrade bundle".format(arg)))
+            raise Exception(f"Upgrade image for '{arg}' not found in upgrade bundle")
 
     if dpc:
         pcidevs = ['dpc']
     elif not pcidevs_string:
-        raise(Exception("No Fungible devices detected on PCI"))
+        raise Exception("No Fungible devices detected on PCI")
     else:
         pcidevs = [dev.split()[0].decode('ascii') for dev in pcidevs_string.splitlines()]
 
@@ -261,7 +261,7 @@ def run_upgrade(args, release_images):
     if res:
         for dev in pcidevs:
             pcidev_unbind(dev)
-        raise(Exception("Failed to bind PCI VFIO"))
+        raise Exception("Failed to bind PCI VFIO")
 
     upgrade_fourccs = {}
     downgrade_fourccs = {}
@@ -402,8 +402,8 @@ def run_upgrade(args, release_images):
         upgrade_fourccs[dev] = dev_upgrade_fourccs
         downgrade_fourccs[dev] = dev_downgrade_fourccs
 
-        print("Final list of images to upgrade for {}: {}".format(dev, upgrade_fourccs[dev]))
-        print("List of images to maybe downgrade for {}: {}".format(dev, downgrade_fourccs[dev]))
+        print(f"Final list of images to upgrade for {dev}: {upgrade_fourccs[dev]}")
+        print(f"List of images to maybe downgrade for {dev}: {downgrade_fourccs[dev]}")
 
     if any(downgrade_fourccs.values()) and not args.downgrade and not args.dry_run:
         for dev in pcidevs:
@@ -470,7 +470,7 @@ def run_upgrade(args, release_images):
 
                 if not args.dry_run:
                     # CHECK CURRENT VERSION AND UPGRADE
-                    print('Upgrading {} with {}'.format(fourcc, release_images[fourcc]))
+                    print(f"Upgrading {fourcc} with {release_images[fourcc]}")
                     try:
                         subprocess.check_output(cmd, stderr=subprocess.STDOUT)
                     except subprocess.CalledProcessError as e:
@@ -488,7 +488,7 @@ def run_upgrade(args, release_images):
                         else:
                             res |= e.returncode
                 else:
-                    print("Would execute {}".format(cmd))
+                    print(f"Would execute {cmd}")
 
 
         # GET ALL FIRMWARE VERSIONS
@@ -510,7 +510,7 @@ def run_upgrade(args, release_images):
         pcidev_unbind(dev)
 
     if res:
-        raise(Exception("Errors occured during upgrade"))
+        raise Exception("Errors occured during upgrade")
 
 # return all valid upgrade images available in 'path'
 def get_current_upgrade_images(path, select):
@@ -594,7 +594,7 @@ def main():
         # to be passed, this is especially useful if new arguments are added
         # and generic scripts cannot use those args until support for them
         # is added
-        print("WARNING: Unhandled arguments found: {}".format(unknown))
+        print(f"WARNING: Unhandled arguments found: {unknown}")
 
     if args.downgrade and not args.force:
         try:
@@ -630,8 +630,8 @@ def main():
     os.chdir(args.ws)
     os.putenv('WORKSPACE', args.ws)
 
-    print('Using {} as workspace'.format(args.ws))
-    print('Using {} interface'.format('DPC' if dpc else 'HCI'))
+    print(f"Using {args.ws} as workspace")
+    print(f"Using {'DPC' if dpc else 'HCI'} interface")
 
     if dpc:
         args.bind = False
@@ -647,12 +647,12 @@ def main():
     except DowngradeAttemptException:
         sys.exit(EXIT_CODE_DOWNGRADE_ATTEMPT)
     except Exception as e:
-        print("Upgrade error ... {}".format(e))
+        print(f"Upgrade error ... {e}")
         traceback.print_exc()
         sys.exit(EXIT_CODE_ERROR)
     finally:
         if tmpws:
-            print('Workspace cleanup, remove temp directory')
+            print("Workspace cleanup, remove temp directory")
             shutil.rmtree(tmpws)
 
 
