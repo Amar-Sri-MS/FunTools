@@ -524,17 +524,11 @@ def main():
     arg_parser.add_argument('--offline-root', default="/opt/fungible",
             help='Location of the ControlPlane firmware')
 
-    arg_parser.add_argument('--no-bind', dest='bind', action='store_false',
-            help='Do not bind/unbind PCIe vfio interface')
-
     arg_parser.add_argument('--active', action='store_true',
             help='Attempt to upgrade active image')
 
     arg_parser.add_argument('--chip', choices=['f1', 's1', 'f1d1'],
             default=discover_dpu(), help='Target chip')
-
-    arg_parser.add_argument('--pci-devid', default=['1dad:0105:', '1dad:0005:', '1dad::1000'],
-            help='PCI device ID to use for upgrades')
 
     arg_parser.add_argument('--force', action='store_true',
             help='Force upgrade, do not ask any questions')
@@ -548,6 +542,12 @@ def main():
 
     arg_parser.add_argument('--check-image-only', action='store_true',
             help='Do not perform upgrade, only check if a given image type is present in package')
+
+    if not dpc:
+        arg_parser.add_argument('--no-bind', dest='bind', action='store_false',
+            help='Do not bind/unbind PCIe vfio interface')
+        arg_parser.add_argument('--pci-devid', default=['1dad:0105:', '1dad:0005:', '1dad::1000'],
+            help='PCI device ID to use for upgrades')
 
     args, unknown = arg_parser.parse_known_args()
 
