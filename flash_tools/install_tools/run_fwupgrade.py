@@ -478,6 +478,10 @@ def get_current_upgrade_images(path, select):
     images = prepare_offline(None, path, select)
     return { key: images[key] for key in KNOWN_IMAGES if key in images }
 
+def discover_dpu():
+    with open("/proc/device-tree/fungible,dpu") as f:
+        return f.readline().rstrip('\0').lower()
+
 def main():
     tmpws = None
     arg_parser = argparse.ArgumentParser(
@@ -527,7 +531,7 @@ def main():
             help='Attempt to upgrade active image')
 
     arg_parser.add_argument('--chip', choices=['f1', 's1', 'f1d1'],
-            default='f1', help='Target chip')
+            default=discover_dpu(), help='Target chip')
 
     arg_parser.add_argument('--pci-devid', default=['1dad:0105:', '1dad:0005:', '1dad::1000'],
             help='PCI device ID to use for upgrades')
