@@ -568,7 +568,7 @@ def main():
     arg_parser.add_argument('--active', action='store_true',
             help='Attempt to upgrade active image')
 
-    arg_parser.add_argument('--chip', choices=['f1', 's1'],
+    arg_parser.add_argument('--chip', choices=['f1', 's1', 'f1d1'],
             default='f1', help='Target chip')
 
     arg_parser.add_argument('--pci-devid', default=['1dad:0105:', '1dad:0005:', '1dad::1000'],
