@@ -130,10 +130,6 @@ def prepare_offline(args, path='', select=None):
 
     return images
 
-def using_custom_funcp(args):
-    return args.image_url == BASE_URL and args.arch == 'posix'
-
-
 def prepare(args):
     """
         Prepare workspace
@@ -143,9 +139,6 @@ def prepare(args):
 
     if args.offline:
         return prepare_offline(args)
-
-    funcp_file = 'funcp.{}.tgz'.format(args.arch)
-    libfunq_file = 'libfunq.{}{}.tgz'.format(args.arch, '_palladium' if args.arch == 'posix' else '')
 
     SDK_FLASH_PATH = '/{}/funsdk/{}/Linux'.format(args.sdk_devline, args.version)
     release_file = '{}_dev_signed.tgz'.format(args.chip)
@@ -158,10 +151,6 @@ def prepare(args):
     files = {
         release_file : url,
     }
-
-    if using_custom_funcp(args):
-        files[funcp_file] = url
-        files[libfunq_file] = url
 
     for f, url in files.items():
         wget(url + '/' + f)
@@ -187,32 +176,6 @@ def run_upgrade(args, release_images):
     else:
         pcidevs_string = subprocess.check_output(['lspci', '-d', args.pci_devid, '-mmn'])
 
-    sudo = [] if platform.machine() == 'mips64' else ['sudo']
-    if args.offline or not using_custom_funcp(args):
-        if platform.machine() == 'mips64':
-            # defaults for CCLinux
-            binpath = '/usr/bin'
-            ldpath = []
-            funqpath = '/usr/bin'
-        else:
-            # defaults for COMe
-            binpath = os.path.join(args.offline_root, 'FunControlPlane', 'bin')
-            ldpath = ['LD_LIBRARY_PATH=${{LD_LIBRARY_PATH}}:{}'.format(
-                    os.path.join(args.offline_root, 'FunControlPlane', 'lib'))]
-            funqpath = binpath
-    else:
-        newroot = os.path.join(args.ws, 'FunSDK/host-drivers/x86_64/user/{}_palladium'.format(args.arch))
-        binpath = os.path.join(args.ws, 'FunCP', 'build', args.arch, 'bin')
-        ldpath = ['LD_LIBRARY_PATH=${{LD_LIBRARY_PATH}}:{}:{}'.format(
-                    os.path.join(args.ws, 'build', args.arch, 'lib'),
-                    os.path.join(newroot, 'lib'))]
-        for p in (binpath,
-                  os.path.join(newroot, 'bin')):
-            if os.path.isfile(os.path.join(p, 'funq-setup')):
-                funqpath = p
-                break
-        else: # this is for ... else statement
-            raise(Exception("funq-setup not found!"))
     res = 0
 
     if args.upgrade_file:
@@ -220,19 +183,20 @@ def run_upgrade(args, release_images):
 
     for arg in args.upgrade:
         if not os.path.isfile(release_images[arg]):
-            raise(Exception("Upgrade image for '{}' not found in upgrade bundle".format(arg)))
+            raise Exception(f"Upgrade image for '{arg}' not found in upgrade bundle")
 
     if dpc:
         pcidevs = ['dpc']
     elif not pcidevs_string:
-        raise(Exception("No Fungible devices detected on PCI"))
+        raise Exception("No Fungible devices detected on PCI")
     else:
         pcidevs = [dev.split()[0].decode('ascii') for dev in pcidevs_string.splitlines()]
+        binpath = '/usr/bin'
+        funqpath = '/usr/bin'
 
     def pcidev_unbind(dev):
         if args.bind:
-            run(sudo + ldpath + \
-                [os.path.join(funqpath, 'funq-setup'),
+            run([os.path.join(funqpath, 'funq-setup'),
                 'unbind', '"vfio"', dev])
 
     def fourcc_eq(dpu_fourcc, host_fourcc):
@@ -248,8 +212,7 @@ def run_upgrade(args, release_images):
         # found, as when executed on FS1600's COMe, there are 2 F1s connected.
         # When run on CCLinux, there should be only one interface found.
         if args.bind:
-            cmd = sudo + ldpath + \
-                [os.path.join(funqpath, 'funq-setup'),
+            cmd = [os.path.join(funqpath, 'funq-setup'),
                 'bind', 'vfio', dev]
             try:
                 run_check(cmd, stderr=subprocess.STDOUT)
@@ -261,7 +224,7 @@ def run_upgrade(args, release_images):
     if res:
         for dev in pcidevs:
             pcidev_unbind(dev)
-        raise(Exception("Failed to bind PCI VFIO"))
+        raise Exception("Failed to bind PCI VFIO")
 
     upgrade_fourccs = {}
     downgrade_fourccs = {}
@@ -277,7 +240,7 @@ def run_upgrade(args, release_images):
     if not dpc:
         # exit code 64 indicates unrecognized arg
         with open(os.devnull, 'w') as devnull:
-            have_async_fwupgrade = subprocess.call(sudo + ldpath + \
+            have_async_fwupgrade = subprocess.call(
                 [os.path.join(binpath, 'fwupgrade'), '--async'],
                 stdout=devnull, stderr=devnull) != 64
 
@@ -285,7 +248,7 @@ def run_upgrade(args, release_images):
         if dpc:
             fwinfo = dpc.execute("fw_upgrade", ['get_versions'])
         else:
-            fwinfo = json.loads(subprocess.check_output(sudo + ldpath + \
+            fwinfo = json.loads(subprocess.check_output(
                 [os.path.join(binpath, 'fwupgrade'),
                 '-a', '-d', dev]))
         dev_downgrade_fourccs = set()
@@ -402,8 +365,8 @@ def run_upgrade(args, release_images):
         upgrade_fourccs[dev] = dev_upgrade_fourccs
         downgrade_fourccs[dev] = dev_downgrade_fourccs
 
-        print("Final list of images to upgrade for {}: {}".format(dev, upgrade_fourccs[dev]))
-        print("List of images to maybe downgrade for {}: {}".format(dev, downgrade_fourccs[dev]))
+        print(f"Final list of images to upgrade for {dev}: {upgrade_fourccs[dev]}")
+        print(f"List of images to maybe downgrade for {dev}: {downgrade_fourccs[dev]}")
 
     if any(downgrade_fourccs.values()) and not args.downgrade and not args.dry_run:
         for dev in pcidevs:
@@ -456,8 +419,7 @@ def run_upgrade(args, release_images):
                 res |= error
 
             else: # !dpc
-                cmd = sudo + ldpath + \
-                        [os.path.join(binpath, 'fwupgrade'),
+                cmd = [os.path.join(binpath, 'fwupgrade'),
                         '--image', release_images[fourcc], '-f', fourcc, '-d', dev]
                 if args.active:
                     cmd.append('--active')
@@ -470,7 +432,7 @@ def run_upgrade(args, release_images):
 
                 if not args.dry_run:
                     # CHECK CURRENT VERSION AND UPGRADE
-                    print('Upgrading {} with {}'.format(fourcc, release_images[fourcc]))
+                    print(f"Upgrading {fourcc} with {release_images[fourcc]}")
                     try:
                         subprocess.check_output(cmd, stderr=subprocess.STDOUT)
                     except subprocess.CalledProcessError as e:
@@ -488,7 +450,7 @@ def run_upgrade(args, release_images):
                         else:
                             res |= e.returncode
                 else:
-                    print("Would execute {}".format(cmd))
+                    print(f"Would execute {cmd}")
 
 
         # GET ALL FIRMWARE VERSIONS
@@ -496,8 +458,7 @@ def run_upgrade(args, release_images):
             if dpc:
                 print(dpc.execute("fw_upgrade", ['get_versions']))
             else:
-                cmd = sudo + ldpath + \
-                    [os.path.join(binpath, 'fwupgrade'),
+                cmd = [os.path.join(binpath, 'fwupgrade'),
                     '-a', '-d', dev]
                 try:
                     run_check(cmd, stderr=subprocess.STDOUT)
@@ -510,12 +471,16 @@ def run_upgrade(args, release_images):
         pcidev_unbind(dev)
 
     if res:
-        raise(Exception("Errors occured during upgrade"))
+        raise Exception("Errors occured during upgrade")
 
 # return all valid upgrade images available in 'path'
 def get_current_upgrade_images(path, select):
     images = prepare_offline(None, path, select)
     return { key: images[key] for key in KNOWN_IMAGES if key in images }
+
+def discover_dpu():
+    with open("/proc/device-tree/fungible,dpu") as f:
+        return f.readline().rstrip('\0').lower()
 
 def main():
     tmpws = None
@@ -524,9 +489,6 @@ def main():
     arg_parser.add_argument('--ws', action='store', metavar='path',
             help='workspace path, temp location will be used if not specified or'
                  '<offline-root>/funos if offline is set')
-    arg_parser.add_argument('--arch', action='store', choices=['mips64', 'posix'],
-            default='mips64' if platform.machine() == 'mips64' else 'posix',
-            help='ControlPlane architecture')
 
     upgrade_group = arg_parser.add_mutually_exclusive_group()
     upgrade_group.add_argument('-u', '--upgrade', action='append', metavar='FOURCC',
@@ -562,17 +524,11 @@ def main():
     arg_parser.add_argument('--offline-root', default="/opt/fungible",
             help='Location of the ControlPlane firmware')
 
-    arg_parser.add_argument('--no-bind', dest='bind', action='store_false',
-            help='Do not bind/unbind PCIe vfio interface')
-
     arg_parser.add_argument('--active', action='store_true',
             help='Attempt to upgrade active image')
 
-    arg_parser.add_argument('--chip', choices=['f1', 's1'],
-            default='f1', help='Target chip')
-
-    arg_parser.add_argument('--pci-devid', default=['1dad:0105:', '1dad:0005:', '1dad::1000'],
-            help='PCI device ID to use for upgrades')
+    arg_parser.add_argument('--chip', choices=['f1', 's1', 'f1d1'],
+            default=discover_dpu(), help='Target chip')
 
     arg_parser.add_argument('--force', action='store_true',
             help='Force upgrade, do not ask any questions')
@@ -587,6 +543,12 @@ def main():
     arg_parser.add_argument('--check-image-only', action='store_true',
             help='Do not perform upgrade, only check if a given image type is present in package')
 
+    if not dpc:
+        arg_parser.add_argument('--no-bind', dest='bind', action='store_false',
+            help='Do not bind/unbind PCIe vfio interface')
+        arg_parser.add_argument('--pci-devid', default=['1dad:0105:', '1dad:0005:', '1dad::1000'],
+            help='PCI device ID to use for upgrades')
+
     args, unknown = arg_parser.parse_known_args()
 
     if unknown:
@@ -594,7 +556,7 @@ def main():
         # to be passed, this is especially useful if new arguments are added
         # and generic scripts cannot use those args until support for them
         # is added
-        print("WARNING: Unhandled arguments found: {}".format(unknown))
+        print(f"WARNING: Unhandled arguments found: {unknown}")
 
     if args.downgrade and not args.force:
         try:
@@ -630,8 +592,8 @@ def main():
     os.chdir(args.ws)
     os.putenv('WORKSPACE', args.ws)
 
-    print('Using {} as workspace'.format(args.ws))
-    print('Using {} interface'.format('DPC' if dpc else 'HCI'))
+    print(f"Using {args.ws} as workspace")
+    print(f"Using {'DPC' if dpc else 'HCI'} interface")
 
     if dpc:
         args.bind = False
@@ -647,12 +609,12 @@ def main():
     except DowngradeAttemptException:
         sys.exit(EXIT_CODE_DOWNGRADE_ATTEMPT)
     except Exception as e:
-        print("Upgrade error ... {}".format(e))
+        print(f"Upgrade error ... {e}")
         traceback.print_exc()
         sys.exit(EXIT_CODE_ERROR)
     finally:
         if tmpws:
-            print('Workspace cleanup, remove temp directory')
+            print("Workspace cleanup, remove temp directory")
             shutil.rmtree(tmpws)
 
 
