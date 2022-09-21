@@ -5,7 +5,7 @@
 #
 #  Utility -- Used for production enrollment -- BMC
 #
-#  Stand alone script using SSH connection on the BMC
+#  Stand alone script using i2c CLI tools on the BMC
 #
 #  Copyright (c) 2018-2022. Fungible, inc. All Rights Reserved.
 #
@@ -17,15 +17,41 @@
  A general rule is that all binary data is manipulated using python bytearray
 '''
 
+
 import sys
 import time
 import binascii
 import struct
+import subprocess
 import argparse
 import logging
 import traceback
-import requests
-import paramiko
+
+#conditional imports to allow running on simple local BMC python installations
+REQUESTS_WARN = r'''
+Python module "requests" could not be imported.
+This module is necessary to contact the enrollment server.
+You can still use this script for simple tests.
+'''
+
+PARAMIKO_WARN = r'''
+Python module "paramiko" could not be imported.
+This module is necessary to connect via SSH to the BMC.
+'''
+
+
+try:
+    import requests
+except:
+    print(REQUESTS_WARN)
+
+
+try:
+    import paramiko
+except:
+    print(PARAMIKO_WARN)
+
+
 
 ###############################################################
 #
@@ -56,14 +82,46 @@ An enrollment certificate was found for this chip on the registration server.
 It was successfully installed on chip %d on %s.
 The machine is now enrolled.'''
 
+
 ########################################################################
 #
-# I2CSSHCli: I2C command line interface via SSH
+# I2C command line interface executer
 #
 ########################################################################
 
-class I2CSSHCli:
-    ''' base class format all ssh command line interface '''
+class I2CCliCmdr:
+
+    def close(self):
+        pass
+
+    def get_cmd_output(self, cmd):
+        return None
+
+
+class I2CCliLocalCmdr(I2CCliCmdr):
+
+    def get_cmd_output(self, cmd):
+        try:
+            logging.info("Executing cmd locally: %s", cmd)
+            p = subprocess.Popen(cmd, shell=False,
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE)
+
+            err = p.stderr.read()
+            if len(err):
+                logging.error("Error: %s\n%s",
+                             err, traceback.format_exc())
+                return None
+
+            return p.stdout.read()
+
+        except Exception:
+            status_msg = traceback.format_exc()
+            logging.error(status_msg)
+            return None
+
+
+class I2CCliSSHCmdr(I2CCliCmdr):
 
     def __init__(self, ssh_client):
         self.ssh_client = ssh_client
@@ -72,24 +130,9 @@ class I2CSSHCli:
         self.ssh_client.close()
         self.ssh_client = None
 
-    def prepare_cmd(self, chip_inst, read_len=0, write_bytes=None):
-        # num_read or write_bytes must be specified ...
-        assert(read_len > 0 or write_bytes is not None)
-        # but not both at once ...
-        assert(read_len == 0 or write_bytes is None)
-        assert 0 <= chip_inst <=1
-        return ""
-
-
-    def process_read_output(self, cmd, read_cmd_output):
-        return read_cmd_output
-
-    def process_write_output(self, cmd, write_cmd_output, write_data_length):
-        return False
-
-
     def get_cmd_output(self, cmd):
         assert self.ssh_client
+        logging.info("Executing cmd via SSH: %s", cmd)
 
         _, stdout, stderr = self.ssh_client.exec_command(cmd)
 
@@ -101,53 +144,44 @@ class I2CSSHCli:
 
         return stdout.read()
 
+########################################################################
+#
+# I2C command line interface command
+#
+########################################################################
 
-    def read(self, chip_inst, len_data):
-        assert self.ssh_client
-        cmd = self.prepare_cmd(chip_inst, len_data)
-        logging.debug('i2c_read cmd: %s', cmd)
+class I2CCliCmd():
 
-        cmd_output = self.get_cmd_output(cmd)
+    def prepare_cmd(self, bus_num, read_len=0, write_bytes=None):
+        # num_read or write_bytes must be specified ...
+        assert(read_len > 0 or write_bytes is not None)
+        # but not both at once ...
+        assert(read_len == 0 or write_bytes is None)
+        return ""
 
-        logging.debug(cmd_output)
-        if len(cmd_output) == 0:
-            logging.error('No output for the cmd: %s\n%s',
-                          cmd, traceback.format_exc())
-            return None
+    def process_read_output(self, _cmd, read_cmd_output):
+        return read_cmd_output
 
-        bytes_read = self.process_read_output(cmd, cmd_output)
-        logging.debug('i2c_read read_data: %s', bytes_read)
+    def process_write_output(self, _cmd, _write_cmd_output, _write_data_length):
+        return False
 
-        if len(bytes_read) == 0:
-            logging.error('No output for the cmd: %s\n%s',
-                          cmd, traceback.format_exc())
-            return None
+SLAVE_ADDR = 0x70
 
-        return bytes_read
+class I2CTransferCli(I2CCliCmd):
+    ''' CLI with i2ctransfer '''
 
+    def __init__(self, i2ct_path):
+        self.i2ct_path = i2ct_path
 
-    def write(self, chip_inst, write_data):
-        ''' return True if Successful, False otherwise '''
-        assert self.ssh_client
-        cmd = self.prepare_cmd(chip_inst, 0, write_bytes=write_data)
-        logging.debug('i2c_write cmd: %s', cmd)
-        cmd_output = self.get_cmd_output(cmd)
-        return self.process_write_output(cmd, cmd_output, len(write_data))
+    def prepare_cmd(self, bus_num, read_len=0, write_bytes=None):
+        super().prepare_cmd(bus_num, read_len, write_bytes)
 
-
-class I2CTransferCli(I2CSSHCli):
-    ''' ssh CLI with i2ctransfer '''
-
-    def prepare_cmd(self, chip_inst, read_len=0, write_bytes=None):
-        super().prepare_cmd(chip_inst, read_len, write_bytes)
-
-        slave_addr = 0x70
-        bus_num = 3 if chip_inst == 0 else 5
-        cmd = 'i2ctransfer -fy %d %s%d@0x%02x ' % (
-                bus_num,
-                'r' if read_len else 'w',
-                read_len if read_len else len(write_bytes),
-                slave_addr)
+        cmd = '%s -y -f %d %s%d@0x%02x ' % (
+            self.i2ct_path,
+            bus_num,
+            'r' if read_len else 'w',
+            read_len if read_len else len(write_bytes),
+            SLAVE_ADDR)
 
         if write_bytes:
             for b in write_bytes:
@@ -169,16 +203,13 @@ class I2CTransferCli(I2CSSHCli):
         return True
 
 
-class I2CTestCli(I2CSSHCli):
-    ''' ssh CLI with i2cclient-test '''
+class I2CTestCli(I2CCliCmd):
+    ''' CLI with i2cclient-test '''
 
-    def prepare_cmd(self, chip_inst, read_len=0, write_bytes=None):
-        super().prepare_cmd(chip_inst, read_len, write_bytes)
+    def prepare_cmd(self, bus_num, read_len=0, write_bytes=None):
+        super().prepare_cmd(bus_num, read_len, write_bytes)
 
-        slave_addr = 0x70
-        bus_num = 3 if chip_inst == 0 else 5
-
-        cmd = 'i2c-test -b %02d -s 0x%02x ' % (bus_num, slave_addr)
+        cmd = 'i2c-test -b %02d -s 0x%02x ' % (bus_num, SLAVE_ADDR)
         if read_len:
             cmd += ' -rc %d -r' % read_len
         else:
@@ -240,19 +271,84 @@ class I2CInterface:
     def disconnect(self):
         pass
 
-    def read(self, chip_inst, len_data):
+    def read(self, bus_num, len_data):
         ''' return bytes read as a bytearray() '''
         return bytearray()
 
-    def write(self, chip_inst, write_data):
+    def write(self, bus_num, write_data):
         ''' return bool for success '''
         return False
 
+
+########################################################################
+#
+# I2CCli: I2C command line interface
+#
+########################################################################
+
+class I2CCli(I2CInterface):
+    ''' Implements I2C interface using helper CLI objects '''
+
+    def __init__(self, cmd_prep, cmd_exec):
+        self.cmd_prep = cmd_prep
+        self.cmd_exec = cmd_exec
+
+    def disconnect(self):
+        self.cmd_exec.close()
+        self.cmd_exec = None
+
+    def read(self, bus_num, len_data):
+        assert self.cmd_prep
+        assert self.cmd_exec
+
+        cmd = self.cmd_prep.prepare_cmd(bus_num, len_data)
+        logging.debug('i2c_read cmd: %s', cmd)
+
+        cmd_output = self.cmd_exec.get_cmd_output(cmd)
+
+        logging.debug(cmd_output)
+        if len(cmd_output) == 0:
+            logging.error('No output for the cmd: %s\n%s',
+                          cmd, traceback.format_exc())
+            return None
+
+        bytes_read = self.cmd_prep.process_read_output(cmd, cmd_output)
+        logging.debug('i2c_read read_data: %s', bytes_read)
+
+        if len(bytes_read) == 0:
+            logging.error('No output for the cmd: %s\n%s',
+                          cmd, traceback.format_exc())
+            return None
+
+        return bytes_read
+
+
+    def write(self, bus_num, write_data):
+        ''' return True if Successful, False otherwise '''
+        assert self.cmd_prep
+        assert self.cmd_exec
+
+        cmd = self.cmd_prep.prepare_cmd(bus_num, 0, write_bytes=write_data)
+        logging.debug('i2c_write cmd: %s', cmd)
+
+        cmd_output = self.cmd_exec.get_cmd_output(cmd)
+
+        return self.cmd_prep.process_write_output(cmd,
+                                                  cmd_output,
+                                                  len(write_data))
+
+
 ############################################################################
 #
-# BMC: implementation of the I2CInterface using an I2CSSHCli
+# BMC: implementation of the I2CInterface using an I2CCli
 #
 ############################################################################
+
+SSH_CREDENTIALS = (
+    ("root", "root"),
+    ("sysadmin", "superuser"),
+    ("localadmin", None)       # must use ssh-copy-id for this case
+)
 
 class BMC(I2CInterface):
     ''' implement the i2c interface: connect, disconnect, read, write '''
@@ -280,41 +376,55 @@ class BMC(I2CInterface):
 
         return client
 
-    def _check_i2cget_exists(self, ssh_client):
+    def _get_i2ctransfer_path(self, cmdr):
         try:
-            cmd = "command -v i2ctransfer"
-            logging.debug('checking i2ctransfer exists! cmd: %s', cmd)
-            _, stdout, stderr = ssh_client.exec_command(cmd)
-            err = stderr.read()
-            if len(err):
-                logging.error(err)
-                return False
-
-            cmd_output = stdout.read()
+            # some distros (Debian 11)  do not add /usr/sbin to the path
+            cmd = "PATH=/usr/sbin:$PATH command -v i2ctransfer"
+            cmd_output = cmdr.get_cmd_output(cmd)
             logging.debug(cmd_output)
-            return len(cmd_output)
+            return cmd_output.rstrip().decode('ascii')
+
         except Exception:
             status_msg = traceback.format_exc()
             logging.error(status_msg)
-        return False
+        return ""
 
 
     # Check i2c device presence and open the device.
     # Returns Connected
+
     def connect(self):
         logging.info('bmc connect')
-        ssh_client = self._try_bmc_connect("root", "root")
 
-        if not ssh_client:
-            ssh_client = self._try_bmc_connect("sysadmin", "superuser")
+        cmdr = None
 
-        if not ssh_client:
-            return False
-
-        if self._check_i2cget_exists(ssh_client):
-            self.i2c_cli = I2CTransferCli(ssh_client)
+        if self.bmc_ip_address is None or \
+           self.bmc_ip_address == 'localhost' or \
+           self.bmc_ip_address == '127.0.0.1' :
+            cmdr = I2CCliLocalCmdr()
+            logging.info("Executing command locally")
         else:
-            self.i2c_cli = I2CTestCli(ssh_client)
+
+            for ssh_credential in SSH_CREDENTIALS:
+                ssh_client = self._try_bmc_connect(*ssh_credential)
+                if ssh_client:
+                    cmdr = I2CCliSSHCmdr(ssh_client)
+                    logging.info("Executing command via SSH")
+                    break
+            if cmdr is None:
+                print("Unable to connect to %s with known credentials" %
+                      self.bmc_ip_address)
+                return False
+
+
+        i2ctransfer_path = self._get_i2ctransfer_path(cmdr)
+        if len(i2ctransfer_path):
+            logging.info("Using i2ctransfer %s", i2ctransfer_path)
+            self.i2c_cli = I2CCli(I2CTransferCli(i2ctransfer_path),
+                                 cmdr)
+        else:
+            logging.info("Using i2c-test")
+            self.i2c_cli = I2CCli(I2CTestCli(), cmdr)
 
         return True
 
@@ -322,22 +432,22 @@ class BMC(I2CInterface):
     # Free the i2c bus and close the device handle
     def disconnect(self):
         if self.i2c_cli:
-            self.i2c_cli.close()
+            self.i2c_cli.disconnect()
         logging.info('Disconnected!')
 
 
     # i2c read
-    def read(self, chip_inst, len_data):
+    def read(self, bus_num, len_data):
         ''' return bytes read as a bytearray() '''
         assert self.i2c_cli
-        return self.i2c_cli.read(chip_inst, len_data)
+        return self.i2c_cli.read(bus_num, len_data)
 
 
     # i2c write
-    def write(self, chip_inst, write_data):
+    def write(self, bus_num, write_data):
         ''' return True if Successful, False otherwise '''
         assert self.i2c_cli
-        return self.i2c_cli.write(chip_inst, write_data)
+        return self.i2c_cli.write(bus_num, write_data)
 
 
 ###############################################################################
@@ -347,9 +457,9 @@ class BMC(I2CInterface):
 ###############################################################################
 class I2CDbgChallenge:
     ''' Implement the DBG Fungible protocol on top of an I2C interface '''
-    def __init__(self, i2c_intf, chip_instance):
+    def __init__(self, i2c_intf, bus_num):
         self.i2c = i2c_intf
-        self.chip_inst = chip_instance
+        self.bus_num = bus_num
 
     def _i2c_dbg_chal_read_flit_aux(self, num_read):
         ''' read a single flit of data '''
@@ -358,9 +468,9 @@ class I2CDbgChallenge:
 
         cmd_byte = bytearray([0x40 | num_read])
 
-        self.i2c.write(self.chip_inst, cmd_byte)
+        self.i2c.write(self.bus_num, cmd_byte)
 
-        flit_data = self.i2c.read(self.chip_inst, num_read)
+        flit_data = self.i2c.read(self.bus_num, num_read)
 
         status_byte = flit_data[0]
         if status_byte >> 7 :
@@ -460,7 +570,7 @@ class I2CDbgChallenge:
         cmd_buffer = bytearray(1 + 4 * 2) # dbg byte + command + size
         cmd_buffer[0] = 0xC8
         struct.pack_into('<2I', cmd_buffer, 1, size, cmd_no)
-        self.i2c.write(self.chip_inst, cmd_buffer)
+        self.i2c.write(self.bus_num, cmd_buffer)
 
         # send command data
         sent = 0
@@ -471,7 +581,7 @@ class I2CDbgChallenge:
             flit_data = bytearray([0x80 + (flit_size & 0x3F)])
 
             flit_data += cmd_data[sent: sent + flit_size]
-            self.i2c.write(self.chip_inst, flit_data)
+            self.i2c.write(self.bus_num, flit_data)
             sent += flit_size
 
 
@@ -557,10 +667,10 @@ def boot_step_and_version(rdata):
 
 class Challenge:
     ''' high level challenge command interface for enrollment '''
-    def __init__(self, bmc_ip_addr, chip_inst=0):
+    def __init__(self, bmc_ip_addr, bus_num):
         self.connected = False
         self.bmc = BMC(bmc_ip_addr)
-        self.dbg_chal = I2CDbgChallenge(self.bmc, chip_inst)
+        self.dbg_chal = I2CDbgChallenge(self.bmc, bus_num)
 
     def __del__(self):
         logging.info('Destroying the connection!')
@@ -703,9 +813,13 @@ def main():
                           default="ERROR",
                           help="set log level")
 
-    parser.add_argument("-m", "--bmc", required=True,
-                        help="BMC IP Address or DNS name")
+    parser.add_argument("-m", "--bmc",
+                        help="BMC IP Address or DNS name; "\
+                        "do not use for local exectution")
 
+    parser.add_argument("-b", "--bus",
+                        help="i2c bus on the BMC to use (for non Fungible BMC. "\
+                        "If specified, chip argument is ignored")
 
     args = parser.parse_args()
 
@@ -713,9 +827,16 @@ def main():
     logger = logging.getLogger() # root level logger
     logger.setLevel(args.log)
 
+
+    if args.bus is None:
+        args.bus = 3 if args.chip == 0 else 5
+    else:
+        args.bus = int(args.bus, 0)
+
     # get enrollment info
     # check for connection
-    challenge = Challenge(args.bmc, args.chip)
+
+    challenge = Challenge(args.bmc, args.bus)
     status = challenge.connect()
     if status is False:
         logging.error('Connection failed!')
