@@ -67,7 +67,7 @@ UPGRADE_IF_PRESENT_IMAGES = {'nvdm', 'scap'}
 IGNORE_ERRORS_IMAGES = {'nvdm', 'scap'}
 # images to split into smaller chunks during upgrade
 # (supported only in DPC mode)
-SPLITTABLE_IMAGES = {'mmc1'}
+SPLITTABLE_IMAGES = {'emmc', 'mmc1', 'mmcx'}
 SPLIT_SIZE = 2*1024*1024
 
 
