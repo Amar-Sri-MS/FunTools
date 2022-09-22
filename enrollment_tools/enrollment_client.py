@@ -739,8 +739,10 @@ def get_expected_boot_step(version):
     response = requests.get(url, timeout=10)
 
     if response.status_code != requests.codes.ok:
-        logging.error("Server response: %d %s" ,
-                      response.status_code, response.reason)
+        logging.warning("Server response for boot step of version %s: %d %s" ,
+                        version.decode('ascii'),
+                        response.status_code,
+                        response.reason)
         return None
 
     boot_step_val = int(response.text,0)
@@ -847,13 +849,17 @@ def main():
     boot_step, version = challenge.get_boot_step_and_version()
     expected_boot_step = get_expected_boot_step(version)
 
-    if boot_step > expected_boot_step:
-        logging.error("Enrollment not needed: chip is past the boot stage")
-        return False
+    if expected_boot_step is None:
+        logging.warning("Unable to check for boot step (experimental version)\n"\
+                        "Trying anyway")
+    else:
+        if boot_step > expected_boot_step:
+            logging.error("Enrollment not needed: chip is past the boot stage")
+            return False
 
-    if boot_step < expected_boot_step:
-        logging.error("Enrollment not possible: chip is stuck at an earlier boot stage")
-        return False
+        if boot_step < expected_boot_step:
+            logging.error("Enrollment not possible: chip is stuck at an earlier boot stage")
+            return False
 
 
     logging.info("Chip at the correct boot step; retrieving serial number")
