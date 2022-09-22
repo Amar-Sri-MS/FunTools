@@ -51,7 +51,8 @@ def process_query():
 
     r = requests.get(URL_FMT % commit_val, auth=(github_user, github_token))
     if r.status_code != 200:
-        raise ValueError("Git hub response: %d" % r.status_code)
+        raise ValueError("Git hub response for commit %s: %d" %
+                         (commit_val, r.status_code))
 
     m = None
     for l in r.text.splitlines():
