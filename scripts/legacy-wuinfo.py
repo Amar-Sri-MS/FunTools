@@ -478,11 +478,11 @@ HEADER_MATCH: Pattern = Pattern("header", "#include <generated/wu_ids.h>",
 DECLS : List[Pattern] = [
     # first rewrite to add attributes if they're missing, then just rewrite
     MultipassPattern("WU_HANDLER",
-                     "WU_HANDLER(:[attrs]) void :[wuname](:[params])",
-                     [ ("WU_HANDLER() void :[wuname](:[params])",
+                     "WU_HANDLER(:[attrs]) void :[wuname]:[~[ \t]*](:[params])",
+                     [ ("WU_HANDLER() void :[wuname:[~[ \t]*]](:[params])",
                         "WU_HANDLER(WU_ATTR_NONE) void :[wuname](:[params])"),
 
-                        ("WU_HANDLER(:[attrs]) void :[[wuname]](:[~(void)?])",
+                        ("WU_HANDLER(:[attrs]) void :[[wuname]]:[~[ \t]*](:[~(void)?])",
                         "WU_HANDLER(:[wuname], :[attrs])"),
 
                         (None, "WU_HANDLER(:[wuname], :[attrs], :[params])")
@@ -493,8 +493,8 @@ DECLS : List[Pattern] = [
                      ),
 
     MultipassPattern("WU64_HANDLER",
-                     "WU64_HANDLER(:[attrs]) void :[wuname](:[params])",
-                     [ ("WU64_HANDLER() void :[wuname](:[params])",
+                     "WU64_HANDLER(:[attrs]) void :[wuname]:[~[ \t]*](:[params])",
+                     [ ("WU64_HANDLER() void :[wuname]:[~[ \t]*](:[params])",
                         "WU64_HANDLER(WU_ATTR_NONE) void :[wuname](:[params])"),
                        (None, 'WU64_HANDLER(:[wuname], :[attrs], :[params])'),
                      ],
@@ -505,12 +505,12 @@ DECLS : List[Pattern] = [
 
     # rewrite all the attrs, rewrite void/empty and not void separately
     MultipassPattern("CHANNEL_THREAD",
-                     "CHANNEL_THREAD(:[attrs]) void :[[wuname]](:[params])",
+                     "CHANNEL_THREAD(:[attrs]) void :[[wuname]]:[~[ \t]*](:[params])",
                      [ 
-                        ("CHANNEL_THREAD() void :[[wuname]](:[params])",
+                        ("CHANNEL_THREAD() void :[[wuname]]:[~[ \t]*](:[params])",
                         "CHANNEL_THREAD(WU_ATTR_NONE) void :[wuname](:[params])"),
 
-                        ("CHANNEL_THREAD(:[attrs]) void :[[wuname]](:[~(void)?])",
+                        ("CHANNEL_THREAD(:[attrs]) void :[[wuname]]:[~[ \t]*](:[~(void)?])",
                         "CHANNEL_THREAD(:[wuname], :[attrs])"),
 
                         (None,
@@ -525,8 +525,8 @@ DECLS : List[Pattern] = [
 
     # first rewrite to add attributes if they're missing, then just rewrite
     MultipassPattern("CHANNEL",
-                     "CHANNEL(:[attrs]) void :[[wuname]](:[params])",
-                     [ ("CHANNEL() void :[[wuname]](:[params])",
+                     "CHANNEL(:[attrs]) void :[[wuname]]:[~[ \t]*](:[params])",
+                     [ ("CHANNEL() void :[[wuname]]:[~[ \t]*](:[params])",
                         "CHANNEL(WU_ATTR_NONE) void :[wuname](:[params])"),
                         (None,
                         "CHANNEL_HANDLER(:[wuname], :[attrs], :[params])")
