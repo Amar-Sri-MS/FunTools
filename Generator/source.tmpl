@@ -54,6 +54,9 @@ bool {{struct.name}}_json_init(struct fun_json *j,
 	if ({{field.name}}_j) {
 		size_t count = fun_json_array_count({{field.name}}_j);
 		assert(count <= {{field.type.ArraySize()}});
+		if (count > {{field.type.ArraySize()}}) {
+		   return false;
+		}
 		for (size_t i = 0; i < count; i++) {
 			s->{{field.name}}[i] = fun_json_to_int64(fun_json_array_at({{field.name}}_j, i), 0);
 		}

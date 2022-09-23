@@ -52,9 +52,9 @@
                 <a data-web_event="DUPLICATES_LINK" href="#duplicates">Duplicate Logs</a>
             </div>
             <div>
-                <button class="btn" data-web_event="VSWITCH_TOOL_BUTTON" onclick="window.open('/tools/{{log_id}}/vswitch')">vSwitch Tool</button>
-                <button class="btn" data-web_event="STORAGE_TOOL_BUTTON" onclick="window.open('/tools/{{log_id}}/volume')">Storage Tools</button>
-                <button class="btn" data-web_event="NETWORK_TOOL_BUTTON" onclick="window.open('/tools/{{log_id}}/network')">Network Tool</button>
+                <button class="btn open-new-tab" data-web_event="VSWITCH_TOOL_BUTTON" onclick="window.open('/tools/{{log_id}}/vswitch')">vSwitch Tool</button>
+                <button class="btn open-new-tab" data-web_event="STORAGE_TOOL_BUTTON" onclick="window.open('/tools/{{log_id}}/volume')">Storage Tools</button>
+                <button class="btn open-new-tab" data-web_event="NETWORK_TOOL_BUTTON" onclick="window.open('/tools/{{log_id}}/network')">Network Tool</button>
                 <button class="btn" onclick="toggleNotesOverlay()">
                     Add/Show notes({{ metadata.notes|length }})
                 </button>
@@ -62,12 +62,12 @@
         </div>
         <div class="container">
             <h3>Explore logs by source</h3>
-            {% set total_entries = sources.values()|sum() %}
+            {% set total_entries = sources.values()|sum() if sources is defined else 0 %}
             <div>Total log entries: <b>{{total_entries}}</b></div>
             <div class="filters_container">
                 {% include 'source_filters.html' %}
                 <div id="explore_button">
-                    <button class="btn" onclick="onClickExploreLogs()">Explore Logs <span class="arrow right"></span></button>
+                    <button class="btn open-new-tab" onclick="onClickExploreLogs()">Explore Logs</button>
                 </div>
             </div>
         </div>
@@ -84,6 +84,7 @@
                     </select>
                 </div>
                 <h4 class="center-align">Levels</h4>
+                {% if log_level_stats is defined %}
                 <div class="content">
                     <div id="log_level_stats">
                         <div class="level_stat">
@@ -101,7 +102,9 @@
                         {% endfor %}
                     </div>
                 </div>
+                {% endif %}
                 <h4 class="center-align">Events</h4>
+                {% if log_level_stats is defined %}
                 <div class="content" id="log_events_stats">
                     {% for event, stat in log_event_stats.items() %}
                         {% set log_distribution = calculatePercentage(stat.count, total_entries) %}
@@ -112,6 +115,7 @@
                         </div>
                     {% endfor %}
                 </div>
+                {% endif %}
             </div>
             <div class="separator"></div>
             <div id="anchors_container">
@@ -164,6 +168,7 @@
         <div class="container">
             <h3 id="recent">Recent
                 <select name="level" id="level" onchange="onSelectLevelForRecentLogs(this)">
+                    {% if log_level_stats is defined %}
                     {% for level, stat in log_level_stats.items() %}
                         {% if level == log_level_for_recent_logs %}
                             <option value="{{level}}" selected>{{level}}</option>
@@ -171,6 +176,7 @@
                             <option value="{{level}}">{{level}}</option>
                         {% endif %}
                     {% endfor %}
+                    {% endif %}
                 </select>
                 logs for
                 <select name="sources" id="recent_source" onchange="onSelectSourceForRecentLogs(this)">
@@ -209,6 +215,12 @@
     {% include 'notes_overlay.html' %}
 </body>
 <script type="text/javascript">
+    // Alert in case there's an error.
+    const errorMsg = "{{error}}";
+    if (errorMsg) {
+        alert(errorMsg);
+    }
+
     // LOG VIEW URL for redirecting to the view with given query.
     const LOG_VIEW_BASE_URL = "{{log_view_base_url}}";
     const logLevelStatsElement = document.getElementById('log_level_stats');
@@ -216,16 +228,16 @@
     const recentLogsElement = document.getElementById('recent_logs');
 
     const logId = "{{log_id}}";
-    const sources = {{sources}};
+    const sources = {{sources if sources is defined else {}}};
 
     // Total log entries indexed in ES
     const totalEntries = Object.keys(sources).reduce((total, source) => (total + sources[source]), 0);
-    let logLevelStats = {{log_level_stats}};
+    let logLevelStats = {{log_level_stats if log_level_stats is defined else {}}};
     const sortedLogLevel = Object.keys(logLevelStats).sort((level1, level2) => logLevelStats[level1]['order'] - logLevelStats[level2]['order']);
     let selectedSourceForLogLevelStats = "all";
     let selectedSourceForRecentLogs = "all", selectedLevelForRecentLogs = "{{log_level_for_recent_logs}}";
 
-    let analyticsData = {{analytics_data}};
+    let analyticsData = {{analytics_data if analyticsData is defined else {}}};
     let selectedSourceForAnchors = "all", showOnlyFailedAnchors = false, searchQueryForAnchor = "";
     const anchorTableBodyElement = document.getElementById("anchors");
     const searchBoxForAnchors = document.getElementById("search");
@@ -241,9 +253,11 @@
 
     // Self invocation function
     (function () {
-        // Update anchors when the DOM is available
-        updateAnchors();
-        updateDuplicates();
+        if (!errorMsg) {
+            // Update anchors when the DOM is available
+            updateAnchors();
+            updateDuplicates();
+        }
 
         trackWebEvent("PAGE_VIEWED");
     })();

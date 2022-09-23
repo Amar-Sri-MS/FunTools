@@ -7,6 +7,7 @@ import re
 import os
 import tempfile
 import shutil
+import numpy as np
 
 try:
     import pandas as pd
@@ -23,6 +24,12 @@ TOTAL_CLUSTERS = 8
 TOTAL_CORES_PER_CLUSTER = 6
 TOTAL_VPS_PER_CORE = 4
 START_VP_NUMBER = 8
+TOTAL_CORES = (TOTAL_CLUSTERS + 1) * (TOTAL_CORES_PER_CLUSTER)
+
+"""MCACHE_RULES """
+SZ_ST1 = 4  # 8  # state1
+SZ_ST2 = 4  # 8  # state2
+SZ_A = 3  # action
 
 
 def do_sleep_for_interval():
@@ -74,7 +81,7 @@ class FunOSCommands(object):
             shutil.rmtree(self.temp_dir)
 
     def gets_version(self):
-        return "DUT version version version version version version version version: {}, {}".format(
+        return "DUT version: {}, {}".format(
             self.version_info["FunSDK"], self.version_info["branch"]
         )
 
@@ -178,6 +185,19 @@ class FunOSCommands(object):
         result = self.dpc_client.execute(verb="peek", arg_list=[cmd])
 
         return {"FunSDK": result["FunSDK"], "branch": result["branch"]}
+
+    def _get_total_limit_mcache_size(
+        self, size_per_core, total_num: int = TOTAL_CORES
+    ) -> int:
+        """Get the limit mcache size for total chip
+        Parameters
+        ----------
+
+        Returns
+        -------
+        """
+
+        return size_per_core * total_num
 
     def _get_max_mcache(self, non_coh):
         """get configured max value for mcache
@@ -321,6 +341,8 @@ class FunOSCommands(object):
                 table_obj = None
                 if "Desc" in result:
                     del result["Desc"]  # remove description row
+
+                total_mcache_limit_per_core = 0
                 if result:
                     if prev_result:
                         table_obj = PrettyTable(col_diff)
@@ -397,6 +419,10 @@ class FunOSCommands(object):
                             if key in ["Desc", "total"]:
                                 continue
 
+                            total_mcache_limit_per_core += 2 ** int(key) * int(
+                                slot_max[idx]
+                            )
+
                             fill_percentage = int(
                                 result[key]["avail_avg_per_mcache"]
                                 / slot_max[idx]
@@ -471,6 +497,25 @@ class FunOSCommands(object):
                     verb="peek", arg_list=[cmd]
                 )
 
+                cmd = "stats/fun_malloc/%s/%s" % (nc_str, "size_cached_by_cores_max")
+                size_cached_by_cores_max = self.dpc_client.execute(
+                    verb="peek", arg_list=[cmd]
+                )
+                if not size_cached_by_cores_max:
+                    size_cached_by_cores_max = -1
+
+                limit_mcache_size = self._get_total_limit_mcache_size(
+                    total_mcache_limit_per_core
+                )
+
+                # self.logger.info(
+                #     "Max limit of mcache: {} B, ({} B * {}(num. cores))".format(
+                #         format(limit_mcache_size, ",d"),
+                #         format(total_mcache_limit_per_core, ",d"),
+                #         TOTAL_CORES,
+                #     )
+                # )
+
                 self.logger.info("")
                 self.logger.info("size_in_use: {} B".format(format(size_in_use, ",d")))
                 self.logger.info(
@@ -478,6 +523,24 @@ class FunOSCommands(object):
                         format(size_cached_by_cores, ",d")
                     )
                 )
+
+                self.logger.info(
+                    "max(size_cached_by_cores): {} B".format(
+                        format(size_cached_by_cores_max, ",d")
+                    )
+                )
+
+                # max_mcache_usage_percent = int(
+                #     size_cached_by_cores_max / limit_mcache_size * 100
+                # )
+                # self.logger.info(
+                #     "Max reached mcache usage percentage: {} % ({} B/{} B)".format(
+                #         max_mcache_usage_percent,
+                #         format(size_cached_by_cores_max, ",d"),
+                #         format(limit_mcache_size, ",d"),
+                #     )
+                # )
+
                 size_in_use_minus_cached = size_in_use - size_cached_by_cores
                 self.logger.info(
                     "size_in_use_minus_cached: {} B".format(
@@ -486,7 +549,7 @@ class FunOSCommands(object):
                 )
                 size_in_use_percent = int(size_in_use_minus_cached / size_in_use * 100)
                 self.logger.info(
-                    "* Percentage of data in use (size_in_use_minus_cached/size_in_use) : {}%".format(
+                    "* Percentage of data in use (size_in_use_minus_cached / size_in_use) : {}%".format(
                         format(size_in_use_percent, ",d")
                     )
                 )
@@ -561,6 +624,7 @@ class FunOSCommands(object):
             "Miss",
             "Max",
             "Repl_th_val",
+            "Avg_rewards",
         ]
         # TODO
         # handle wild card slot
@@ -573,12 +637,23 @@ class FunOSCommands(object):
         else:
             nc_str = ""
 
+        version_info_filename = "funos_version.txt"
         df_filename = "malloc_caches_slot_stats_slot{}_{}.pkl".format(nc_str, slot)
         if save_df_dir:
             assert isinstance(save_df_dir, str), "Invalid type for {}: {}".format(
                 save_df_dir, type(save_df_dir)
             )
             df_filename = os.path.join(save_df_dir, df_filename)
+            version_info_filename = os.path.join(save_df_dir, version_info_filename)
+            self.logger.info("")
+            self.logger.info("DF save option is enabled:")
+            self.logger.info("- DF filename: {}".format(df_filename))
+            self.logger.info("- Version info filename: {}".format(version_info_filename))
+            self.logger.info("")
+
+            # version file is saved to augment version numbers for saved dataframe
+            with open(version_info_filename, "w") as f:
+                f.write("{}".format(self.gets_version()))
 
         while True:
             rows = []
@@ -620,7 +695,16 @@ class FunOSCommands(object):
                                 if "replenish_th_idx" in vp
                                 else 0
                             )
+
+                            val_func = vp["val_func"] if "val_func" in vp else []
+                            val_func_np = (
+                                np.reshape(val_func, (SZ_ST1, SZ_ST2, SZ_A))
+                                if "val_func" in vp
+                                else np.zeros((SZ_ST1, SZ_ST2, SZ_A))
+                            )
+
                             repl_th_val = (int)((vp["max"] / 8) * (repl_th_idx + 1))
+                            avg_reward = vp["avg_reward"] if "avg_reward" in vp else 0.0
                             val = [
                                 key,
                                 self._fmt(vp["avail"], sh_d),
@@ -633,6 +717,7 @@ class FunOSCommands(object):
                                 self._fmt(vp["miss"], sh_d),
                                 self._fmt(vp["max"], sh_d),
                                 self._fmt(repl_th_val, sh_d),
+                                "{:7.4f}".format(avg_reward),
                             ]
 
                             row = [
@@ -647,6 +732,8 @@ class FunOSCommands(object):
                                 vp["miss"],
                                 vp["max"],
                                 repl_th_val,
+                                avg_reward,
+                                val_func_np,
                             ]
                             rows.append(row)
 
@@ -681,6 +768,7 @@ class FunOSCommands(object):
                             ),
                             "-",
                             "-",
+                            "-",
                         ]
                     )
 
@@ -688,6 +776,7 @@ class FunOSCommands(object):
                 # print max, and threhold...
                 self.logger.info("\n{}".format(table_obj))
                 # summary stat
+                col.append("val_func")
                 df = pd.DataFrame(rows, columns=col)
                 df.set_index("VP", inplace=True)
                 # df_str = df[['Avail', 'Avail Bytes', 'Avail(max)', 'Avail(min)', 'Hit', 'Miss']].describe().to_string()

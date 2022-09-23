@@ -231,11 +231,11 @@ def generate_update_tar_file(args, built_images_dir):
 
         scp_file(ssh_client, repo_dir, tar_file_name)
     else:
-        # copy to /var/www/sbp_images directory (must be writable by current user)
+        # move to /var/www/sbp_images directory (must be writable by current user)
         local_dir = LOCAL_DIR_FMT.format(args.version)
         os.makedirs(local_dir, exist_ok=True)
         dest = os.path.join(local_dir, os.path.basename(tar_file_name))
-        os.replace(tar_file_name, dest)
+        shutil.move(tar_file_name, dest)
         print("File ready for upgrade: %s" % dest)
 
 def generate_tar_file(args, built_images_dir):

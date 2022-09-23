@@ -31,7 +31,7 @@ def get_logs(prefix, limit_by=None, limit_value=None):
         tags_list = [tag.strip() for tag in tags.split(',')]
         metadata = es_metadata.get_by_tags(
                         tags_list,
-                        size=len(indices))
+                        size=10000)
         indices = [index for index in indices if index['index'] in metadata]
     else:
         log_ids = [index['index'] for index in indices]
@@ -142,8 +142,8 @@ def _generate_should_query(should_list):
         }
     }
 
-def build_query_body(query_term, source_filters,
-                     time_filters, match_all=False):
+def build_query_body(query_term, source_filters=None,
+                     time_filters=None, match_all=False):
     """
     Constructs a query body from the specified query term
     (which is treated as an elasticsearch query string) and

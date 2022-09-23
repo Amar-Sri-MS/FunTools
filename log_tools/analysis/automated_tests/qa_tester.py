@@ -6,10 +6,13 @@
 # Owner: Sourabh Jain (sourabh.jain@fungible.com)
 # Copyright (c) 2021 Fungible Inc.  All rights reserved.
 
+import json
 import logging
 import os
 import requests
 import subprocess
+
+from dotenv import load_dotenv
 
 import logger
 
@@ -20,6 +23,37 @@ from view.ingester import _get_log_id
 
 FILE_PATH = os.path.abspath(os.path.dirname(__file__))
 SCRIPT_BASE_PATH = os.path.dirname(FILE_PATH)
+QA_BASE_ENDPOINT = 'https://integration.fungible.local'
+QA_BASE_URL = f'{QA_BASE_ENDPOINT}/api/v1/regression'
+
+load_dotenv(override=True)
+
+
+def get_qa_session():
+    """
+    Authenicates with QA infra using the login REST API and
+    creates a session object which contains the cookies with
+    csrftoken and sessionid.
+
+    Returns requests.Session object or raises Exception if
+    auth fails.
+    """
+    username = os.getenv('LDAP_USER')
+    password = os.getenv('LDAP_PASSWORD')
+    uri = "/api/v1/login"
+    url = f'{QA_BASE_ENDPOINT}{uri}'
+    headers = {'Content-Type': 'application/json'}
+    data = {"username": username, "password": password}
+    session = requests.Session()
+    response = session.post(url, verify=False, headers=headers, data=json.dumps(data))
+    if response.status_code == 200 and 'csrftoken' in session.cookies:
+        return session
+    else:
+        logging.error(
+            'Could not login to QA infra.'
+            'Status: {} Response: {}'.format(response.status_code, response.text))
+    raise Exception('Could not login to QA Infra.')
+
 
 def main():
     # Setting up the logger.
@@ -27,10 +61,17 @@ def main():
 
     # These are the initial focus points for testing log ingestion.
     NEEDED_TESTS = ['FS1600 Bundle Sanity', 'FS1600 HA sanity', 'FS800 Bundle Sanity', 'FS800 HA Sanity', 'VFabric Bundle Sanity']
-    QA_BASE_URL = 'http://integration.fungible.local/api/v1/regression'
+
+    # Logging into QA infra
+    session = get_qa_session()
+    headers = {"X-CSRFToken": session.cookies['csrftoken']}
 
     # Get all the unarchived releases
-    releases_response = requests.get(f'{QA_BASE_URL}/release_properties')
+    releases_response = requests.get(
+        f'{QA_BASE_URL}/release_properties',
+        verify=False,
+        headers=headers,
+        cookies=session.cookies)
     releases_json = releases_response.json()
     releases = releases_json['data']
     unarchived_releases = [release for release in releases if release['archived'] == False]
@@ -39,7 +80,11 @@ def main():
     for release in unarchived_releases:
         release_id = release['id']
         release_name = release['release_train']
-        tests_response = requests.get(f'{QA_BASE_URL}/catalog_execution_specification?primary_release_train={release_name}')
+        tests_response = requests.get(
+            f'{QA_BASE_URL}/catalog_execution_specification?primary_release_train={release_name}',
+            verify=False,
+            headers=headers,
+            cookies=session.cookies)
         tests_json = tests_response.json()
         tests = tests_json['data']
 
@@ -50,7 +95,11 @@ def main():
         for test in needed_tests:
             test_id = test['id']
             test_name = test['name']
-            test_response = requests.get(f'{QA_BASE_URL}/release_catalog_executions?specification_id={test_id}&count=5')
+            test_response = requests.get(
+                f'{QA_BASE_URL}/release_catalog_executions?specification_id={test_id}&count=5',
+                verify=False,
+                headers=headers,
+                cookies=session.cookies)
             test_json = test_response.json()
             test_data = test_json['data']
 

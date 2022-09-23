@@ -37,6 +37,7 @@ from flask import Blueprint, jsonify, request, render_template
 from flask import current_app, g
 
 from view.common import login_required
+from utils import is_file_readable
 from utils import archive_extractor, manifest_parser
 from utils import mail
 from utils import timeline
@@ -147,6 +148,8 @@ def main():
                 # Check if the mount path exists
                 if not os.path.exists(log_path):
                     raise FileNotFoundError('Could not find the mount path')
+                if not is_file_readable(log_path):
+                    raise PermissionError('The user (localadmin) does not have read permission for the file.')
                 # Check if the archive is beyond the resricted size
                 if (not metadata['ignore_size_restrictions'] and
                     os.stat(log_path).st_size > RESTRICTED_ARCHIVE_SIZE):
@@ -209,6 +212,7 @@ def main():
         EmptyPipelineException,
         NotFoundException,
         FileNotFoundError,
+        PermissionError,
         TypeError,
         NotSupportedException
     ) as e:
