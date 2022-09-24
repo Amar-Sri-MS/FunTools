@@ -2,6 +2,12 @@ general:
   debug: False
   debug_log: False
 
+extra:
+  notif_suffix: "**"
+chart:
+  notification: red
+  module: blue
+
 file_names:
   input_modules_init: modules.json
   input_notifications_init: notifications.json
@@ -9,3 +15,4 @@ file_names:
   output_full_chart: fun_module_init_chart
   output_full_module_notif_chart: fun_module_notif_init_chart
   output_collapsed_chart: fun_module_init_df_collapsed
+  output_collapsed_module_notif_chart: fun_module_notif_init_df_collapsed
