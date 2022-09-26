@@ -1,9 +1,10 @@
 // i2c_chal.cpp
-// 
+//
 //  Copyright (c) 2021 Fungible,Inc.
 // All Rights Reserved
 
 #include "i2c_chal.hpp"
+#include "shared_defs.hpp"
 
 #include <cassert>
 #include <cstring>
@@ -11,132 +12,48 @@
 #include <ctime>
 #include <cstdio>
 #include <cstdarg>
-
-#include <stdexcept>
-#include <string>
-#include <memory>
-#include <vector>
-
-typedef std::vector<unsigned char> byte_vector;
-
-using std::min;
-
-
-#ifdef __APPLE__
-#include <libkern/OSByteOrder.h>
-
-#define htobe16(x) OSSwapHostToBigInt16(x)
-#define htole16(x) OSSwapHostToLittleInt16(x)
-#define be16toh(x) OSSwapBigToHostInt16(x)
-#define le16toh(x) OSSwapLittleToHostInt16(x)
-
-#define htobe32(x) OSSwapHostToBigInt32(x)
-#define htole32(x) OSSwapHostToLittleInt32(x)
-#define be32toh(x) OSSwapBigToHostInt32(x)
-#define le32toh(x) OSSwapLittleToHostInt32(x)
-
-#define htobe64(x) OSSwapHostToBigInt64(x)
-#define htole64(x) OSSwapHostToLittleInt64(x)
-#define be64toh(x) OSSwapBigToHostInt64(x)
-#define le64toh(x) OSSwapLittleToHostInt64(x)
-
-#else
+#include <cerrno>
 #include <endian.h>
+
+/*
+  cross compiling on Ubuntu 20.04 should work.
+   However, Ubunut 22.04 uses a later GLIBC and cross-compiling
+   will not work on the default build system
+*/
+
+#if __GLIBC_MINOR__ > MAX_GLIBC_MINOR
+#error Compiler using too new a version of GLIBC: will not run on target
+#error Please build on another host
 #endif
 
-#include "errno.h"
+#if RASPBERRY
+#define CHIP_DEVICE_0 "/dev/i2c-1"
+#define CHIP_DEVICE_1 "/dev/i2c-1"
+#else
+#define CHIP_DEVICE_0 "/dev/i2c3"
+#define CHIP_DEVICE_1 "/dev/i2c5"
+#endif
+
+using std::min;
 
 #define  CHAL_HEADER_SIZE (4)
 #define  MAX_FLIT_SIZE  (64)
 
-template<typename ... Args>
-std::string string_format( const std::string& format, Args ... args)
+
+std::string m_devices_for_chip[2] = { CHIP_DEVICE_0, CHIP_DEVICE_1};
+
+void set_device(int chip_instance, const char *device)
 {
-	int size_s = std::snprintf( nullptr, 0, format.c_str(), args ...) + 1; // Extra space for '\0'
-	if( size_s <= 0 ){ throw std::runtime_error( "Error during formatting." ); }
-	auto size = static_cast<size_t>( size_s );
-	auto buf = std::make_unique<char[]>( size );
-	std::snprintf( buf.get(), size, format.c_str(), args ... );
-	return std::string( buf.get(), buf.get() + size - 1 ); // We don't want the '\0' inside
-}
-
-
-static int debug_on;
-std::string m_devices_for_chip[2] = { "/dev/i2c3", "/dev/i2c5"};
-
-static inline const char *i2c_dev(int chip_instance)
-{
-	return m_devices_for_chip[chip_instance?1:0].c_str();
-}
-
-
-void debugging_on(int on)
-{
-	debug_on = on;
-}
-
-void set_device(int chip_instance, const char *new_value)
-{
-	m_devices_for_chip[chip_instance?1:0] = new_value;
+	m_devices_for_chip[chip_instance? 1:0] = device;
 }
 
 const char *get_device(int chip_instance)
 {
-	return i2c_dev(chip_instance);
+	return m_devices_for_chip[chip_instance? 1 : 0].c_str();
 }
 
 
-void hex_dumpv(const unsigned char *bv, size_t len, const char* fmt, va_list args)
-{
-	fflush(stdout);
-	vprintf(fmt, args);
-	if (len && bv)
-	{
-		printf(": ");
-		for (int i = 0; i < len; ++i)
-		{
-			printf("%02x:", bv[i]);
-		}
-	}
-	printf("\n");
-	fflush(stdout);
-}
-void hex_dump(const unsigned char *bv, size_t len, const char* fmt, ...)
-{
-	if (debug_on)
-	{
-		va_list args;
-		va_start(args, fmt);
-		hex_dumpv(bv, len, fmt, args);
-		va_end(args);
-	}
-}
-
-void hex_dump(const byte_vector& bv, const char *fmt, ...)
-{
-	if (debug_on)
-	{
-		va_list args;
-		va_start(args, fmt);
-		hex_dumpv(bv.data(), bv.size(), fmt, args);
-		va_end(args);
-	}
-}
-
-void log(const char *fmt, ...)
-{
-	if (debug_on)
-	{
-		va_list args;
-		va_start(args, fmt);
-		hex_dumpv(NULL, 0, fmt, args);
-		va_end(args);
-	}
-}
-
-
-
-// ***** i2c functions -- implemented in libi2c.so
+// ***** i2c functions -- implemented in libi2c.so for FS1600
 extern "C" {
 int i2c_master_read(const char *device, int port,
 		    unsigned char* buff, int buff_len);
@@ -144,35 +61,12 @@ int i2c_master_write(const char *device, int port,
 		     unsigned char* buff, int buff_len);
 }
 
-#if __amd64__
-
-int i2c_master_read(const char *device, int port,
-		    unsigned char *buff, int buff_len)
-{
-	memcpy(buff, "\x05\x01\x02\x03\x04\0x05", 6);
-	return 6;
-}
-int i2c_master_write(const char *device, int port,
-		     unsigned char *buff, int buff_len)
-{
-	return buff_len;
-}
-
-#endif
-
-
-// *********** i2c communication and protocol
-class i2c_error : public std::runtime_error {
-
-public:
-	i2c_error(const std::string& err): runtime_error(err) {}
-};
 
 static int i2c_read(int chip_instance, unsigned char* flit_buffer, int len)
 {
 	log("Reading %d bytes\n", len);
 
-	int read_bytes = i2c_master_read(i2c_dev(chip_instance),
+	int read_bytes = i2c_master_read(get_device(chip_instance),
 					 0x70, flit_buffer, len);
 	if (read_bytes <= 0) {
 		throw i2c_error(string_format("Error %d (reading %d bytes)",
@@ -186,7 +80,7 @@ static void i2c_write(int chip_instance, unsigned char *buff, int len)
 {
 	hex_dump(buff, len, "Writing %d bytes", len);
 
-	int wrote_bytes = i2c_master_write(i2c_dev(chip_instance),
+	int wrote_bytes = i2c_master_write(get_device(chip_instance),
 					   0x70, buff, len);
 	if (wrote_bytes < 0) {
 		throw i2c_error(string_format("Error %d (writing %d bytes)",
@@ -314,7 +208,7 @@ byte_vector i2c_dbg_chal_cmd(uint32_t command, int chip_instance,
 	i2c_dbg_chal_fifo_flush(chip_instance);
 
 	log("challenge cmd: 0x%08x\n", command);
-
+	hex_dump((const unsigned char *) data, data_len, "challenge data:");
 	/* Send command */
 	uint32_t cmd_buffer[3];
 	uint8_t *to_send = ((uint8_t *) cmd_buffer) + 3;
@@ -423,10 +317,16 @@ enum
 
 class challenge_error : public std::runtime_error {
 public:
-	challenge_error(const std::string& err): runtime_error(err) {}
+	challenge_error(const std::string& err, int err_code):
+		runtime_error(err), _err_code(err_code) {}
+
+	int err_code(void) { return _err_code; }
+private:
+	int _err_code;
 };
 
-void check_challenge_error(const byte_vector &challenge_response)
+void check_challenge_error(const byte_vector &challenge_response,
+			   uint32_t command)
 {
 	static std::string err_code_str[] =
 	{
@@ -443,13 +343,17 @@ void check_challenge_error(const byte_vector &challenge_response)
 	unsigned char err_code = challenge_response[2];
 	if (err_code > 0)
 	{
+		std::string prefix = string_format("Command 0x%08x:", command);
+
 		if (err_code < sizeof(err_code_str)/sizeof(err_code_str[0]))
 		{
-			throw challenge_error(err_code_str[err_code]);
+			throw challenge_error(prefix + err_code_str[err_code],
+					      err_code);
 		}
 
-		throw challenge_error(string_format("Error code: %d\n",
-						    err_code));
+		throw challenge_error(prefix + string_format("Error code: %d\n",
+							     err_code),
+				      err_code);
 	}
 }
 
@@ -462,7 +366,7 @@ byte_vector i2c_dbg_chal_cmd_int(uint32_t command,
 	byte_vector reply = i2c_dbg_chal_cmd(command, chip_instance,
 						    data, data_len,
 						    reply_delay_usec);
-	check_challenge_error(reply);
+	check_challenge_error(reply, command);
 
 	return reply;
 }
@@ -552,6 +456,7 @@ int i2c_dbg_write_flash(int chip_instance, int offset,
 	}
 	catch (challenge_error& cex)
 	{
+		ret = cex.err_code();
 		printf("Challenge error: %s\n", cex.what());
 	}
 	catch (std::runtime_error& rex)
@@ -589,20 +494,24 @@ void i2c_dbg_read_flash_aux(int chip_instance, uint32_t addr,
 }
 
 
-const unsigned char *i2c_dbg_read_flash(int chip_instance, int offset,
-					int data_len)
+
+const unsigned char *i2c_dbg_read_flash_ex(int chip_instance, int offset,
+					   int data_len, int *err_code)
 {
 	static byte_vector reply;
 	unsigned char *read_bytes = 0;
+	*err_code = EIO;
 	try
 	{
 		reply.resize(data_len);
 		i2c_dbg_read_flash_aux(chip_instance, offset,
 				       reply.data(), data_len);
 		read_bytes = reply.data();
+		*err_code = 0;
 	}
 	catch (challenge_error& cex)
 	{
+		*err_code = cex.err_code();
 		printf("Challenge error: %s\n", cex.what());
 	}
 	catch (std::runtime_error& rex)
@@ -614,4 +523,14 @@ const unsigned char *i2c_dbg_read_flash(int chip_instance, int offset,
 		printf("Unknown exception\n");
 	}
 	return read_bytes;
+}
+
+const unsigned char *i2c_dbg_read_flash(int chip_instance, int offset,
+					int data_len)
+{
+	int err_code;
+	return i2c_dbg_read_flash_ex(chip_instance,
+				     offset,
+				     data_len,
+				     &err_code);
 }
