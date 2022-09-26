@@ -50,11 +50,15 @@ class WUDeclList():
     def add_decl(self, decl: WUDecl):
         self.decls.append(decl)
 
-    def get_filename(self):
+    def get_filenames(self) -> List[str]:
         fnames = set()
         for decl in self.decls:
             fnames.add(decl.fname)
         assert(len(fnames) > 0)
+        return fnames
+
+    def get_filename(self) -> str:
+        fnames = self.get_filenames()
         if (len(fnames) > 1):
             return "<multiple>"
         else:
@@ -116,6 +120,7 @@ class FunFile():
         self.inref: Set[str] = set()
         self.downref: Set[str] = set()
         self.crossref: Dict[str, str] = {}
+        self.crossreffl: Dict[str, List[str]] = {}
 
         # match counts
         self.decl_counts: Dict[str, int] = {}
@@ -140,8 +145,8 @@ class FunFile():
             if (wudecls is None):
                 self.noref.add(ref.wuname)
             elif (wudecls.get_filename() != self.name):
-                other_fname = wudecls.get_filename()
                 self.crossref[ref.wuname] = wudecls.get_filename()
+                self.crossreffl[ref.wuname] = wudecls.get_filenames()
                 for decl in wudecls.decls:
                     wuinfo.files[decl.fname].add_inref(self.name)
             elif (wudecls.first_lineno() < ref.lineno):
@@ -291,10 +296,20 @@ class FunFile():
 ##  Global WUInfo object
 #
 
+# given a list of sets, find the set in the list
+# containing "needle"
+def set_for_file(haystacks: List[Set[str]], needle: str) -> Set[str]:
+    for haystack in haystacks:
+        if (needle in haystack):
+            return haystack
+
+    raise RuntimeError("File not found in any xref set: %s" % needle)
+
 class WUInfo():
     def __init__(self) -> None:
         self.files: Dict[str, FunFile] = {}
         self.wus: Dict[str, WUDeclList] = {}
+        self.xrefsets: List[Set[str]] = []
 
     def add_file(self, fname: str, fl: FunFile) -> None:
         assert(fname not in self.files)
@@ -351,6 +366,58 @@ class WUInfo():
                              FunFile.cross, subprefix)
         self.print_file_list("Files unknown references...",
                              FunFile.unknown, subprefix, unknowns=True)
+
+
+    def process_xref_info(self, prefix=""):
+        print("Cross reference groups...")
+
+        # clean out the list in case
+        self.xrefsets = []
+
+        # make a list of all the only_in and cross files
+        flist = list(filter(FunFile.only_in, self.files.values()))
+        flist += list(filter(FunFile.cross, self.files.values()))
+
+        # add them to the set
+        for ff in flist:
+            self.xrefsets.append(set([ff.name]))
+
+        # for each file, make sure cross referenced files are in
+        # the same set
+        for ff in flist:
+            # list of filenames, then flatten it
+            xrefsls = list(ff.crossreffl.values())          
+            xrefs = [fname for sublist in xrefsls for fname in sublist]
+
+            print("Processing xrefs for %s" % ff.name)
+            print(xrefs)
+
+            # find the set for the current file
+            # (updates in place)
+            cset = set_for_file(self.xrefsets, ff.name)
+
+            # process all the references
+            while (len(xrefs) > 0):
+
+                # get the reference
+                fname = xrefs.pop()
+
+                refset = set_for_file(self.xrefsets, fname)
+
+                # already in the same set, skip
+                if (cset == refset):
+                    continue
+
+                # combine the set
+                cset.update(refset)
+
+                # remove the stale set from the list
+                self.xrefsets.remove(refset)
+
+        print(f"Crossrefs reduced to {len(self.xrefsets)} ref sets")
+        for xset in self.xrefsets:
+            print(f"{len(xset)}: {xset}")
+
 
 
 ###
@@ -637,6 +704,13 @@ def fixup_match(fixup: str, fname: str) -> bool:
 
     return False
 
+def set_fixup_match(fixup:str, xset: Set[str]) -> bool:
+    for x in xset:
+        if (fixup_match(fixup, x)):
+            return True
+
+    return False
+
 def do_fixup_headers(wuinfo: WUInfo, fileinfo: Dict[str, FunFile], fixup: str):
 
     # make the list of files that would be fixed up
@@ -814,7 +888,28 @@ def do_fixup_internal(wuinfo: WUInfo, fileinfo: Dict[str, FunFile], fixup: str):
         open(fl.name, "w").write(input)
         count += 1
 
-    print(f"Fixed up headers for {count} files")
+    print(f"Fixed up internals for {count} files")
+
+
+def do_fixup_xrefs(wuinfo: WUInfo, fileinfo: Dict[str, FunFile], fixup: str):
+        
+        # get the list of sets from the wuinfo
+        xrefsets = wuinfo.xrefsets
+
+        # loop over it, check for fixups
+        for xset in xrefsets:
+            if (not set_fixup_match(fixup, xset)):
+                # print(f'Skipping fix ups for set {xset}')
+                continue
+
+            print(f'Processing fix ups for set {xset}')
+
+            # for each file
+                # convert the internals of the file
+                # publish in-refs to extenal
+                # if we reference any externals
+                    # include headers for externals
+
 
 ###
 ##  parse_args
@@ -855,6 +950,9 @@ def parse_args() -> argparse.Namespace:
 
     parser.add_argument("--fixup-internal", action="store_true",
                        help="Fixup up-and-down (internal-only) files")
+
+    parser.add_argument("--fixup-xrefs", action="store_true",
+                       help="Fixup cross-referenced files")
 
     # Optional verbosity counter (eg. -v, -vv, -vvv, etc.)
     parser.add_argument(
@@ -975,6 +1073,9 @@ def main() -> int:
     # print file stats
     wuinfo.print_file_stats()
 
+    # print xref info
+    wuinfo.process_xref_info()
+
     # dump the decl/ref stats
     print("Pattern Matching:")
     matchcounts = {}
@@ -1003,6 +1104,9 @@ def main() -> int:
 
         if (args.fixup_internal):
             do_fixup_internal(wuinfo, fileinfo, args.fixup)
+
+        if (args.fixup_xrefs):
+            do_fixup_xrefs(wuinfo, fileinfo, args.fixup)
 
     return 0
  
