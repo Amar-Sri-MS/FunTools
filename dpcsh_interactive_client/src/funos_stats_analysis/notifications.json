@@ -1,13 +1,13 @@
 {
-    "all_backend_devices_online_notification": 27.801969523,
-    "all_devices_online_notification": 27.364808602,
-    "device_notification": 26.628543462,
-    "fpg_link_up": 21.224696278,
-    "module_init_notif": 6.018132307,
-    "nu_dp_if_update": 67.596697864,
-    "pci_func_initial_plug_done": 24.813207158,
-    "pci_func_plug": 21.807372182,
-    "system_event_boot_complete": 76.174574107,
-    "system_event_commands_ready": 27.822110966,
-    "system_event_ready_to_start": 27.822355259
+    "all_devices_online_notif": 27.633976879,
+    "backend_devices_online_notif": 28.072636161,
+    "device_notif": 26.565893031,
+    "fpg_link_up": 21.156484929,
+    "module_init_notif": 6.027732782,
+    "nu_dp_if_update": 67.430605371,
+    "pci_func_initial_plug_done": 24.762860951,
+    "pci_func_plug": 21.738750245,
+    "system_boot_complete": 76.129390555,
+    "system_commands_ready": 28.091793482,
+    "system_ready_to_start": 28.092294223
 }
