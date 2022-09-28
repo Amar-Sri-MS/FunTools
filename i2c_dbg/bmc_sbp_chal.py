@@ -1482,7 +1482,7 @@ def do_recovery(nor_image, args, local_dir=None):
     # steps:
     # get revision to select the proper eeproms
     fs1600_rev = get_fs1600_rev()
-    eeprom_file = 'eeprom_fs1600_rev%d_%d.bin' % (fs1600_rev, args.chip)
+    eeprom_file = 'eeprom_f1_fs1600_rev%d_%d.bin' % (fs1600_rev, args.chip)
 
     # get full path to the 2 sources files: Nor Image and eeprom
     if local_dir:
