@@ -824,7 +824,7 @@ class DBG_Chal(DBG_FlashOp):
         input_data.extend(struct.pack('<I', len(signature)))
         input_data.extend(signature)
 
-        self.challenge_cmd(GRANT_DBG_ACCESS, input_data)
+        self.challenge_cmd(GRANT_DBG_ACCESS, input_data, 0.1)
 
         # return the obtained dbg_grants in natural order
         current_dbg_grants = self.get_status()[SBP_STATUS_STR[-1]]
