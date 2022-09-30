@@ -10,6 +10,12 @@ from typing import Tuple
 import yaml
 import json
 import os
+import errno
+
+import logging
+
+# A logger for this file
+logger = logging.getLogger(__name__)
 
 # %matplotlib inline
 
@@ -17,8 +23,7 @@ import matplotlib.pyplot as plt
 plt.rcParams.update({'font.size': 22})
 
 #https://stackoverflow.com/questions/36288670/how-to-programmatically-generate-markdown-output-in-jupyter-notebooks
-from IPython.display import display, Markdown, Latex
-
+# from IPython.display import display, Markdown, Latex
 
 def _fmt(s, show_d=True):
     """show decimal number with comma"""
@@ -560,7 +565,6 @@ def process_module_notif_init_data(file_name_url: str=None, modules_init_file_na
 
 
 def main():
-    pass
 
     # load config file
     current_path = os.getcwd()
