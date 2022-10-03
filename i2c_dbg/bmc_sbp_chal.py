@@ -1137,42 +1137,6 @@ def unlock_chip(challenge_interface, req_dbg_grants):
     print("Chip unlocked: Debug Grants: 0x%08x" % dbg_grants)
 
 
-def enroll_chip(challenge_interface, port_no):
-    ''' perform the enrollment of the chip '''
-
-    # check boot step
-    parsed_status = challenge_interface.get_status()
-    boot_status = parsed_status['Boot Status']
-    boot_step = boot_status & 0xFF
-    if boot_step != BOOT_STEP_PUF_INIT:
-        print("Chip is not at expected boot step: 0x%02x" % boot_step)
-        return
-
-    # get serial number
-    sn = challenge_interface.get_serial_number()
-    if sn is None:
-        print("Error getting the serial number")
-        return
-
-    sn_64 = binascii.b2a_base64(sn)
-    # contact the f1 enrollment server -- https protocol not supported
-    # on their BMC so use the proxy implemented on port_no
-    enroll_cert_64 = get_request(port_no, 'enroll_cert', sn_64)
-    if enroll_cert_64:
-        enroll_cert = binascii.a2b_base64(enroll_cert_64)
-        print("Found certificate for the serial number")
-        challenge_interface.save_enroll_cert(enroll_cert)
-        print("Enrollment certificate installed")
-        return
-
-    # if the cert was not found, enroll
-    enroll_tbs = challenge_interface.get_enroll_tbs()
-    enroll_tbs_64 = binascii.b2a_base64(enroll_tbs)
-    enroll_cert_64 = get_request(port_no, 'enroll_tbs', enroll_tbs_64)
-    print("Enrollment certificate generated. Power cycle the chip to completed enrollment")
-
-
-
 def get_addr_of_image(directory, image_type, b_image):
     addrs = directory.get(image_type, None)
     if addrs is None:
@@ -1566,14 +1530,6 @@ def execute_challenge_command(challenge_interface, args):
         unlock_chip(challenge_interface, int(args.unlock,0))
         return
 
-    if args.enroll:
-        if args.port is None:
-            print("remote port must be specified for enrollment")
-            return
-
-        enroll_chip(challenge_interface, args.port)
-        return
-
     # Next options are manipulating the Image on Flash:
     nor_image = NOR_IMAGE(challenge_interface)
 
@@ -1724,11 +1680,6 @@ def main():
                           help="Display the Fungible public key")
     diag_grp.add_argument("--customer-key", action="store_true",
                           help="Display the customer public key if present")
-
-    # Enrollment
-    enroll_grp = parser.add_argument_group("Enrollment", "Enrollment commands")
-    enroll_grp.add_argument("--enroll", action="store_true",
-                            help="Perform enrollment (--port must be specified)")
 
     # Debug grants
     unlock_grp = parser.add_argument_group("Unlock Chip", "Unlock the chip for modifications")
