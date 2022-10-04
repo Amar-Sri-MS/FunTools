@@ -25,6 +25,7 @@ except ImportError:
     from convert_nb import generate_report, get_module_info
     from funos_module_init_time import *
 
+
 class _default_logger:
     def __init__(self):
         pass
@@ -39,11 +40,7 @@ class _default_logger:
         print("Error: {}".format(str))
 
 
-def test_generate_html(logger):
-    in_dir = f"{Path.home()}/Projects/Fng/FunTools/dpcsh_interactive_client/src/dpcsh_interactive_client"
-    working_dir = f"{Path.home()}/Projects/Fng/FunTools/dpcsh_interactive_client/src"
-    out_dir = f"{Path.home()}/tmp/test_gen"
-    # temp_dir = f"{Path.home()}/tmp/test_gen"
+def generate_html(in_dir, working_dir, out_dir, logger):
 
     html_filename = generate_report(
         "funos_module_init_analysis.ipynb",
@@ -52,24 +49,51 @@ def test_generate_html(logger):
         execute=True,
         working_dir=in_dir,
         logger=logger,
-        report_filename="funos_module_init_analysis.html"
+        report_filename="funos_module_init_analysis.html",
     )
 
-def main(logger):
+    return html_filename
 
-    # INPUT_FILE_URL = "uartout0.0.txt"
-    INPUT_FILE_URL = "http://palladium-jobs.fungible.local:8080/job/4297914/raw_file/odp/uartout0.0.txt"
 
-    process_module_notif_init_data(
+def gen_module_init_data(logger):
+
+    # load config file, for testing
+    current_path = os.getcwd()
+    print("current directory is: " + current_path)
+
+    # raw log file is passed through env
+    INPUT_FILE_URL = os.environ["INPUT_FILE_URL"]
+
+    print("INPUT_FILE_URL: {}".format(INPUT_FILE_URL))
+    df, result = process_module_notif_init_data(
         INPUT_FILE_URL, logger=logger, working_dir=current_path
     )
 
-    test_generate_html(logger)
-    # load config file
-    current_path = os.getcwd()
-    print("current directory is: " + current_path)
+    """
+    result contains the metric for the chart
+
+    > `Perf stat result: {'longest_duration_ns': 2823587999.999998, 'longest_duration_id': 'rcnvme-init', 'total_duration_ns': 12637173858.0}`
+    """
+
+    logger.info("Perf stat result: {}".format(result))
+
+    """Generate html report"""
+    in_dir = f"{Path.home()}/Projects/Fng/FunTools/dpcsh_interactive_client/src/dpcsh_interactive_client"
+    working_dir = f"{Path.home()}/Projects/Fng/FunTools/dpcsh_interactive_client/src"
+    out_dir = f"{Path.home()}/tmp/test_gen"
+
+    html_filename = generate_html(in_dir, working_dir, out_dir, logger)
+
+    logger.info("html_filename: {}".format(html_filename))
+
 
 if __name__ == "__main__":
     # logger.setLevel(logging.DEBUG)
     logger = _default_logger()
-    main(logger)
+
+    # prepare url from the FoD tag and set it to env variable
+    os.environ[
+        "INPUT_FILE_URL"
+    ] = "http://palladium-jobs.fungible.local:8080/job/4297914/raw_file/odp/uartout0.0.txt"
+
+    gen_module_init_data(logger)

@@ -27,7 +27,7 @@ from convert_nb import generate_report, get_module_info
 
 
 # A logger for this file
-# logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 # %matplotlib inline
 
@@ -52,13 +52,13 @@ class _default_logger:
         pass
 
     def info(self, str):
-        print(str)
+        logger.info(str)
 
     def debug(self, str):
-        print(str)
+        logger.info(str)
 
     def error(self, str):
-        print("Error: {}".format(str))
+        logger.info("Error: {}".format(str))
 
 
 # ============================================================
@@ -82,7 +82,7 @@ def _remove_timestamps_from_log(lines: str) -> str:
     return lines
 
 
-def _filter_log_with_marker(lines: str, marker: str, logger=None) -> str:
+def _filter_log_with_marker(lines: str, marker: str, logger=_default_logger()) -> str:
     """Filter based on marker and form json format by adding the ending "}"
 
     Parameters
@@ -123,10 +123,10 @@ def _filter_log_with_marker(lines: str, marker: str, logger=None) -> str:
 
 def _extract_module_init_data(
     file_name_url: str,
-    logger=None,
     working_dir: str = "./",
     module_init_file: str = "modules.json",
     notif_init_file: str = "notifications.json",
+    logger=_default_logger(),
 ):
 
     """load module init data
@@ -229,7 +229,10 @@ def _extract_module_init_data(
 # init data handling
 # ============================================================
 def _convert_to_list_of_dicts(
-    raw_data: dict, convert_time_to_ns: bool, debug: bool
+    raw_data: dict,
+    convert_time_to_ns: bool,
+    logger=_default_logger(),
+    debug: bool = False,
 ) -> list:
     """convert the raw data (dict based format) to list of dicts
 
@@ -264,9 +267,9 @@ def _convert_to_list_of_dicts(
         fun_module_init_list.append(temp_dict)
 
     if debug:
-        print("List created")
-        print(fun_module_init_list[:2])
-        print("Time conversion unit: {}".format(time_unit))
+        logger.info("List created")
+        logger.info(fun_module_init_list[:2])
+        logger.info("Time conversion unit: {}".format(time_unit))
         # convert list of dicts to pandas dataframe
         # fun_module_init_df = pd.DataFrame(fun_module_init_list)
         # fun_module_init_df.head()
@@ -275,7 +278,10 @@ def _convert_to_list_of_dicts(
 
 
 def _load_module_init_data(
-    input_file: str, convert_time_to_ns: bool = True, debug: bool = False
+    input_file: str,
+    convert_time_to_ns: bool = True,
+    logger=_default_logger(),
+    debug: bool = False,
 ) -> pd.DataFrame:
     """load module init data from json file and convert to pandas dataframe
 
@@ -296,9 +302,9 @@ def _load_module_init_data(
         fun_module_init = json.load(f)
 
     if debug:
-        print("Number of modules: {}".format(len(fun_module_init)))
-        print("fun_module_init.keys: {}".format(fun_module_init.keys()))
-        # print("fun_module_init['accel_telem-init']: {}".format(fun_module_init['accel_telem-init']))
+        logger.info("Number of modules: {}".format(len(fun_module_init)))
+        logger.info("fun_module_init.keys: {}".format(fun_module_init.keys()))
+        # logger.info("fun_module_init['accel_telem-init']: {}".format(fun_module_init['accel_telem-init']))
 
     # convert to list of dicts
     fun_module_init_list = _convert_to_list_of_dicts(
@@ -319,6 +325,7 @@ def _load_notification_init_data(
     debug: bool = False,
     notif_suffix: str = "**",
     notificaiotns_init_file_name: str = "notifications.json",
+    logger=_default_logger(),
 ) -> pd.DataFrame:
     """load notificaiton init data from json file and convert to pandas dataframe
 
@@ -343,7 +350,7 @@ def _load_notification_init_data(
         fun_notification_init = json.load(f)
 
     if debug:
-        print(fun_notification_init)
+        logger.info(fun_notification_init)
 
     new_dict = {}
     for k, v in fun_notification_init.items():
@@ -352,7 +359,7 @@ def _load_notification_init_data(
         new_dict[k] = [v, v + dummy_duration]
 
     if debug:
-        print(new_dict)
+        logger.info(new_dict)
 
     # save to temp json file
     temp_file_name = notificaiotns_init_file_name + "_temp.json"
@@ -369,10 +376,9 @@ def _load_notification_init_data(
     return fun_notification_init_df
 
 
-
-
-
-def _get_start_finish_times(df: pd.DataFrame, debug: bool = False) -> pd.DataFrame:
+def _get_start_finish_times(
+    df: pd.DataFrame, logger=_default_logger(), debug: bool = False
+) -> pd.DataFrame:
     """Utility to get start and finish times from df"""
 
     start_min = df["start_time"].min()  # first module start time
@@ -382,18 +388,20 @@ def _get_start_finish_times(df: pd.DataFrame, debug: bool = False) -> pd.DataFra
     )  # time between the first module start time and last module finish time
 
     if debug:
-        print("start_min (start time of the first module): {}".format(start_min))
-        print("finish_max: (finish time of the last module) {}".format(finish_max))
-        # print("duration: (finish_max - start_min) {}".format(finish_max - start_min))
+        logger.info("start_min (start time of the first module): {}".format(start_min))
+        logger.info(
+            "finish_max: (finish time of the last module) {}".format(finish_max)
+        )
+        # logger.info("duration: (finish_max - start_min) {}".format(finish_max - start_min))
         # summary
         total_module_time = df["module_init_duration"].sum()
-        print("Total module init time: {} ns".format(total_module_time))
-        print(
+        logger.info("Total module init time: {} ns".format(total_module_time))
+        logger.info(
             "duration (time between the first module start time and last module finish time): {} ns".format(
                 finish_max - start_min
             )
         )
-        print(
+        logger.info(
             "'Total module init time' / 'duration' (greater than 1 is better, which means more concurrent modules init): {} ".format(
                 ((total_module_time / duration)).round(4)
             )
@@ -402,7 +410,12 @@ def _get_start_finish_times(df: pd.DataFrame, debug: bool = False) -> pd.DataFra
     return start_min, finish_max, duration
 
 
-def _get_color_list(df: pd.DataFrame, notification_color: str="red", default_color: str="blue", notif_suffix: str="**") -> list:
+def _get_color_list(
+    df: pd.DataFrame,
+    notification_color: str = "red",
+    default_color: str = "blue",
+    notif_suffix: str = "**",
+) -> list:
     """Utility to get color list for plotly"""
     color_list = []
     for i in range(len(df)):
@@ -411,9 +424,6 @@ def _get_color_list(df: pd.DataFrame, notification_color: str="red", default_col
         else:
             color_list.append(default_color)
     return color_list
-
-
-
 
 
 def _dump_file(df: pd.DataFrame, file_name: str, sorted_key: str = None):
@@ -452,13 +462,25 @@ def _dump_file(df: pd.DataFrame, file_name: str, sorted_key: str = None):
         )
 
 
-
-
 #########################################
 # APIs
 #########################################
 
-def plot_module_time_chart(df: pd.DataFrame, small_set: int=-1, use_plt: bool=True, sort_by: str="start_time", title: str='FunOS Module Init Duration', group_table: dict=None, simple_group_name: bool=True, cutoff_group_names: int=10, save_file_name: str="fun_module_notif_init_chart.png", disp_granualarity_ms: int=10, debug: bool=False) -> None:
+
+def plot_module_time_chart(
+    df: pd.DataFrame,
+    small_set: int = -1,
+    use_plt: bool = True,
+    sort_by: str = "start_time",
+    title: str = "FunOS Module Init Duration",
+    group_table: dict = None,
+    simple_group_name: bool = True,
+    cutoff_group_names: int = 10,
+    save_file_name: str = "fun_module_notif_init_chart.png",
+    disp_granualarity_ms: int = 10,
+    logger=_default_logger(),
+    debug: bool = False,
+) -> None:
     """Plot the module init time chart
     Parameters
     ----------
@@ -500,38 +522,44 @@ def plot_module_time_chart(df: pd.DataFrame, small_set: int=-1, use_plt: bool=Tr
     if small_set > 0:
         df_use = df_use[:small_set]
 
-    if save_file_name[-4:] != ".png":
+    if save_file_name != "" and save_file_name[-4:] != ".png":
         save_file_name = save_file_name + ".png"
 
     start_min, finish_max, duration = _get_start_finish_times(df_use, debug=debug)
 
     x_ticks = np.arange(0, duration, X_disp_granualarity * X_granualarity)
-    x_tick_labels = ["{} {}".format(str(int(x)), x_tick_str) for x in x_ticks/X_granualarity]
+    x_tick_labels = [
+        "{} {}".format(str(int(x)), x_tick_str) for x in x_ticks / X_granualarity
+    ]
 
-    figsize=(40, len(df_use))
-
-    if debug:
-        print("x_ticks: {}".format(x_ticks[:10]))
-        print("x_tick_labels: {}".format(x_tick_labels[:10]))
-        print("figsize: {}".format(figsize))
-
+    figsize = (40, len(df_use))
 
     if debug:
-        print(df_use.head())
-        print(df_use.describe())
+        logger.info("x_ticks: {}".format(x_ticks[:10]))
+        logger.info("x_tick_labels: {}".format(x_tick_labels[:10]))
+        logger.info("figsize: {}".format(figsize))
+
+    if debug:
+        logger.info(df_use.head())
+        logger.info(df_use.describe())
 
     if use_plt:
         color_list = _get_color_list(df_use)
         # fig, ax = plt.subplots(1, figsize=(40, 50))
         fig, ax = plt.subplots(1, figsize=figsize)
-        p1 = ax.barh(df_use.index, width=df_use['module_init_duration'], left=df_use['start_time'], color=color_list)
+        p1 = ax.barh(
+            df_use.index,
+            width=df_use["module_init_duration"],
+            left=df_use["start_time"],
+            color=color_list,
+        )
 
-        ax.set(xlabel='ms', ylabel='Modules')
+        ax.set(xlabel="ms", ylabel="Modules")
 
-        #Invert y axis
+        # Invert y axis
         plt.gca().invert_yaxis()
 
-        #customize x-ticks
+        # customize x-ticks
         plt.xticks(ticks=x_ticks, labels=x_tick_labels)
 
         # title
@@ -539,33 +567,39 @@ def plot_module_time_chart(df: pd.DataFrame, small_set: int=-1, use_plt: bool=Tr
             title = "{}: collapsed".format(title)
         plt.title(title, fontsize=20)
 
-        #rotate x-ticks
+        # rotate x-ticks
         plt.xticks(rotation=60)
-        #add grid lines
-        plt.grid(axis='x', alpha=0.5)
-        plt.grid(axis='y', alpha=0.5)
+        # add grid lines
+        plt.grid(axis="x", alpha=0.5)
+        plt.grid(axis="y", alpha=0.5)
 
         if group_table:
             if simple_group_name:
                 # testing simpler way
                 y_pos = np.arange(len(group_table))
-                y_label = ["{} & {} modules".format(v[0], len(v)) if len(v) > 1 else v[0] for k, v in group_table.items()]
-                # ax.set_yticks(y_pos, labels=y_label)
+                y_label = [
+                    "{} & {} modules".format(v[0], len(v)) if len(v) > 1 else v[0]
+                    for k, v in group_table.items()
+                ]
+                ax.set_yticks(y_pos, labels=y_label)
                 pass
             else:
                 x_base = 6000000
                 for i, (k, v) in enumerate(group_table.items()):
-                    # print("i: {}, k: {} ({}), v: {}".format(i, k, len(v), v))
+                    # logger.info("i: {}, k: {} ({}), v: {}".format(i, k, len(v), v))
                     if len(v) > cutoff_group_names:
-                        v_str = "{}...(total: {})".format(v[:cutoff_group_names], len(v))
+                        v_str = "{}...(total: {})".format(
+                            v[:cutoff_group_names], len(v)
+                        )
                     else:
                         v_str = "{}".format(v)
-                    ax.text(x_base*(i+1), i, v_str, fontsize=21, color='red')
+                    ax.text(x_base * (i + 1), i, v_str, fontsize=21, color="red")
                     # ax.text(20000000, 1, 'Unicode: Institut für Festkörperphysik')
 
-        #save fig
-        plt.savefig(save_file_name)
-        plt.show()
+        if save_file_name != "":
+            # save fig
+            plt.savefig(save_file_name)
+            plt.show()
     else:
         # use plotly
         # plotly doesn't support 'left' argument, so need to create manualy bars
@@ -575,81 +609,49 @@ def plot_module_time_chart(df: pd.DataFrame, small_set: int=-1, use_plt: bool=Tr
         df_use.sort_values(by=[sort_by], inplace=True, ascending=False)
 
         fig = go.Figure()
-        fig.add_trace(go.Bar(
-            y=df_use.index,
-            x=df_use["start_time"],
-            name='start',
-            orientation='h',
-            # width=20,
-            marker=dict(
-                color='rgba(256, 256, 256, 0.0)',
-                line=dict(color='rgba(256, 256, 256, 0.0)', width=1)
+        fig.add_trace(
+            go.Bar(
+                y=df_use.index,
+                x=df_use["start_time"],
+                name="start",
+                orientation="h",
+                # width=20,
+                marker=dict(
+                    color="rgba(256, 256, 256, 0.0)",
+                    line=dict(color="rgba(256, 256, 256, 0.0)", width=1),
+                ),
             )
-        ))
+        )
 
-        fig.add_trace(go.Bar(
-            y=df_use.index,
-            x=df_use["module_init_duration"],
-            name='module init duration',
-            orientation='h',
-            # width=20,
-            marker=dict(
-                color='rgba(58, 71, 80, 0.6)',
-                line=dict(color='rgba(58, 71, 80, 1.0)', width=1)
+        fig.add_trace(
+            go.Bar(
+                y=df_use.index,
+                x=df_use["module_init_duration"],
+                name="module init duration",
+                orientation="h",
+                # width=20,
+                marker=dict(
+                    color="rgba(58, 71, 80, 0.6)",
+                    line=dict(color="rgba(58, 71, 80, 1.0)", width=1),
+                ),
             )
-        ))
+        )
 
-        fig.update_layout(barmode='stack')
+        fig.update_layout(barmode="stack")
 
         # https://github.com/jupyter/nbconvert/issues/944
         fig.show(renderer="notebook")
 
-
     del df_use
 
-def process_module_notif_init_data_BAK(
-    file_name_url: str, logger=None, working_dir: str = "./"
+
+def print_group_table(
+    group_table: dict,
+    threshold: float,
+    save_file_name: str = None,
+    logger=_default_logger(),
 ):
-    pass
-    """Load init data from file or url"""
-
-    module_init, notif_init = _extract_module_init_data(
-        file_name_url, logger=logger, working_dir=working_dir
-    )
-
-    """Process module init data"""
-    """
-    config_file = "fun_module_init_analysis_config.yml"
-    path_to_yaml = os.path.join(current_path, config_file)
-    print("path_to_config_file "+path_to_yaml)
-    try:
-        with open (path_to_yaml, 'r') as c_file:
-            config = yaml.safe_load(c_file)
-    except Exception as e:
-        print('Error reading the config file at {} : {}'.format(path_to_yaml, e))
-
-    # setup config variables
-
-    DEBUG = config['general']['debug']
-    debug_log = config['general']['debug_log']
-
-    modules_init_file_name = config['file_names']['input_modules_init']
-    notificaiotns_init_file_name = config['file_names']['input_notifications_init']
-
-    full_chart_file_name = config['file_names']['output_full_chart']
-    full_module_notif_chart = config['file_names']['output_full_module_notif_chart']
-    collapsed_chart_file_name = config['file_names']['output_collapsed_chart']
-    collapsed_chart_module_notif_file_name = config['file_names']['output_collapsed_module_notif_chart']
-    sorted_df_file_name = config['file_names']['output_sorted_df']
-
-    module_color = config['chart']['module']
-    notification_color = config['chart']['notification']
-
-    notif_suffix = config["extra"]["notif_suffix"]
-    """
-
-def print_group_table(group_table: dict, threshold: float, save_file_name: str = None):
-    """Print the group table
+    """logger.info the group table
 
     Parameters
     ----------
@@ -666,9 +668,9 @@ def print_group_table(group_table: dict, threshold: float, save_file_name: str =
     output += "========================\n"
     for key, value in group_table.items():
         output += "{}({}): {}\n".format(key, len(value), value)
-        # print("{}({}): {}".format(key, len(value), value))
+        # logger.info("{}({}): {}".format(key, len(value), value))
 
-    print(output)
+    logger.info(output)
 
     if save_file_name:
         if save_file_name[:-4] != ".txt":
@@ -677,12 +679,17 @@ def print_group_table(group_table: dict, threshold: float, save_file_name: str =
             f.write(output)
 
     # for k, v in group_table.items():
-    #     print("{}:".format(k))
+    #     logger.info("{}:".format(k))
     #     for m in v:
-    #         print("  {}".format(m))
+    #         logger.info("  {}".format(m))
+
 
 def get_collapsed_df(
-    df_in: pd.DataFrame, threshold: float, notif_suffix:str="**", debug: bool = False
+    df_in: pd.DataFrame,
+    threshold: float,
+    notif_suffix: str = "**",
+    logger=_default_logger(),
+    debug: bool = False,
 ) -> Tuple[pd.DataFrame, dict]:
     """Collpased df using the threshold
 
@@ -732,7 +739,7 @@ def get_collapsed_df(
             df.iloc[i].module_init_duration,
         )
         if debug:
-            print(name, start, finish, duration)
+            logger.info(name, start, finish, duration)
 
         if cur_duration == 0:
             num_included = 0
@@ -743,7 +750,7 @@ def get_collapsed_df(
 
         cur_finish = max(cur_finish, finish)
         cur_duration = cur_finish - cur_start
-        # print("cur_start, cur_finish, cur_duration: {}, {}".format(cur_start, cur_finish, cur_duration))
+        # logger.info("cur_start, cur_finish, cur_duration: {}, {}".format(cur_start, cur_finish, cur_duration))
 
         # peek the next check if next module passes the thresholds
         next_module_pass_threshold = False
@@ -755,7 +762,7 @@ def get_collapsed_df(
                 df.iloc[i + 1].module_init_duration,
             )
             next_finish = max(cur_finish, next_finish)
-            # print("next_finish {}, next_finish - cur_start {}".format(next_finish, next_finish - cur_start))
+            # logger.info("next_finish {}, next_finish - cur_start {}".format(next_finish, next_finish - cur_start))
             # if next duration is more than threshold and there is more than one collapsed, then stop collapsing the current modules
             # if next_finish - cur_start > threshold and num_included > 0:
             if next_finish - cur_start > threshold:
@@ -780,7 +787,7 @@ def get_collapsed_df(
                 "module_init_duration": cur_duration,
             }
             if debug:
-                print("includes {}, added: {}".format(num_included, new_d))
+                logger.info("includes {}, added: {}".format(num_included, new_d))
             new_events.append(new_d)
             cur_duration = 0
             n_event += 1
@@ -800,7 +807,7 @@ def get_collapsed_df(
             "module_init_duration": cur_duration,
         }
         if debug:
-            print("added: {}".format(new_d))
+            logger.info("added: {}".format(new_d))
         new_events.append(new_d)
         group_table[group_name] = group_modules
 
@@ -809,6 +816,7 @@ def get_collapsed_df(
     df_collapsed.head()
 
     return df_collapsed, group_table
+
 
 def get_duration_threshold(df: pd.DataFrame, threshold: float = 0.10) -> float:
     """Get the threshold value from the dataframe
@@ -827,15 +835,36 @@ def get_duration_threshold(df: pd.DataFrame, threshold: float = 0.10) -> float:
 
     return float(int(max_duration * threshold))
 
+
 def process_module_notif_init_data(
     file_name_url: str = None,
     modules_init_file_name: str = None,
     notificaiotns_init_file_name: str = None,
-    logger=None,
     working_dir: str = "./",
+    logger=_default_logger(),
 ):
     """Process module init data
     generate a report
+
+    Parameters
+    ----------
+    file_name_url : str, optional
+        file name or url, by default None
+    modules_init_file_name : str, optional
+        modules init file name, by default None
+    notificaiotns_init_file_name : str, optional
+        notifications init file name, by default None
+    working_dir : str, optional
+        working directory, by default "./"
+    logger : logging.Logger, optional
+        logger, by default _default_logger()
+
+    Returns
+    -------
+    pd.DataFrame
+        dataframe with module init data
+    result: dict
+        result dictionary
     """
 
     if file_name_url is not None:
@@ -857,7 +886,7 @@ def process_module_notif_init_data(
     )
 
     threshold_collapse = get_duration_threshold(fun_module_init_df, threshold=0.01)
-    print("Threshold collapse: {}".format(threshold_collapse))
+    logger.info("Threshold collapse: {}".format(threshold_collapse))
 
     # process notif init data
 
@@ -871,42 +900,37 @@ def process_module_notif_init_data(
     # combine module and notif init data
 
     fun_module_notif_init_df = pd.concat([fun_module_init_df, fun_notification_init_df])
-    print(fun_module_notif_init_df)
+    # logger.info(fun_module_notif_init_df)
 
-    # XXX TODO here
+    def _get_perf_stat(df):
+        # get the longest module duration
+        # total duration
+        longest_duraiton_id = df["module_init_duration"].idxmax()
+        longest_duraiton = df["module_init_duration"].loc[longest_duraiton_id]
 
-    # generate report
+        start_min = df["start_time"].min()
+        finish_max = df["finish_time"].max()
 
-    # return data and file name
-    # returning result dict and file names
-    pass
-    return fun_module_notif_init_df 
+        result = {
+            "longest_duration_ns": longest_duraiton,
+            "longest_duration_id": longest_duraiton_id,
+            "total_duration_ns": finish_max - start_min,
+        }
+        return result
 
-# move to test_ fil
-# def test_gen(logger):
-#     in_dir = f"{Path.home()}/Projects/Fng/FunTools/dpcsh_interactive_client/src/dpcsh_interactive_client"
-#     working_dir = f"{Path.home()}/Projects/Fng/FunTools/dpcsh_interactive_client/src"
-#     out_dir = f"{Path.home()}/tmp/test_gen"
-#     # temp_dir = f"{Path.home()}/tmp/test_gen"
+    result = _get_perf_stat(fun_module_notif_init_df)
 
-#     html_filename = generate_report(
-#         "funos_module_init_analysis.ipynb",
-#         in_dir=in_dir,
-#         out_dir=out_dir,
-#         execute=True,
-#         working_dir=in_dir,
-#         logger=logger,
-#         report_filename="funos_module_init_analysis"
-#     )
+    return fun_module_notif_init_df, result
+
 
 def main(logger):
 
     # load config file
     current_path = os.getcwd()
-    print("current directory is: " + current_path)
+    logger.info("current directory is: " + current_path)
 
     # INPUT_FILE_URL = "uartout0.0.txt"
-    INPUT_FILE_URL = "http://palladium-jobs.fungible.local:8080/job/4297914/raw_file/odp/uartout0.0.txt"
+    INPUT_FILE_URL = os.environ["INPUT_FILE_URL"]
 
     process_module_notif_init_data(
         INPUT_FILE_URL, logger=logger, working_dir=current_path
@@ -916,4 +940,7 @@ def main(logger):
 if __name__ == "__main__":
     # logger.setLevel(logging.DEBUG)
     logger = _default_logger()
+    os.environ[
+        "INPUT_FILE_URL"
+    ] = "http://palladium-jobs.fungible.local:8080/job/4297914/raw_file/odp/uartout0.0.txt"
     main(logger)
