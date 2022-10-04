@@ -29,7 +29,7 @@ import matplotlib.pyplot as plt
 plt.rcParams.update({"font.size": 22})
 
 # TODO
-# - x-axis labels, currently not showing the full range
+# - x-axis labels, currently not showing the full range, seems to be a bug in adding xticks
 # - expose plotly options, currently working, but y-axis is not showing simple group names
 
 
