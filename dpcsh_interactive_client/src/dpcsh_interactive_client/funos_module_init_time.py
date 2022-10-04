@@ -28,6 +28,10 @@ import matplotlib.pyplot as plt
 
 plt.rcParams.update({"font.size": 22})
 
+# TODO
+# - x-axis labels, currently not showing the full range
+# - expose plotly options, currently working, but y-axis is not showing simple group names
+
 
 def _fmt(s, show_d=True):
     """show decimal number with comma"""
@@ -637,6 +641,12 @@ def print_group_table(
         threshold (nsec) value to collapse, fraction to the largest duration
     save_file_name : str, optional
         file to save the group table, by default None
+
+
+    Returns
+    -------
+    out: str
+        report string
     """
     output = "Collapsed module group report (threshold time of {} ns):\n".format(
         threshold
@@ -653,6 +663,7 @@ def print_group_table(
             save_file_name += ".txt"
         with open(save_file_name, "w") as f:
             f.write(output)
+    return output
 
 
 def get_collapsed_df(

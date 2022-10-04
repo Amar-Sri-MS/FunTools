@@ -92,8 +92,10 @@ if __name__ == "__main__":
     logger = _default_logger()
 
     # prepare url from the FoD tag and set it to env variable
-    os.environ[
-        "INPUT_FILE_URL"
-    ] = "http://palladium-jobs.fungible.local:8080/job/4297914/raw_file/odp/uartout0.0.txt"
+    default_test_url = "http://palladium-jobs.fungible.local:8080/job/4297914/raw_file/odp/uartout0.0.txt"
+
+    # set os env INPUT_FILE_URL if not set
+    if "INPUT_FILE_URL" not in os.environ:
+        os.environ["INPUT_FILE_URL"] = default_test_url
 
     gen_module_init_data(logger)
