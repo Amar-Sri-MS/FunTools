@@ -13,8 +13,12 @@ import os
 import requests
 import errno
 import re
+from pathlib import Path
 
 import logging
+
+# from dpcsh_interactive_client.convert_nb import generate_report, get_module_info
+from convert_nb import generate_report, get_module_info
 
 # TODO
 # - review config, notif_suffix,  notificaiotns_init_file_name
@@ -243,9 +247,11 @@ def _convert_to_list_of_dicts(
         list of dicts, each dict is a module, with keys: module_name, start_time, finish_time
     """
     time_unit = 0
+
     if convert_time_to_ns:
         time_unit = 1000000000
     fun_module_init_list = []
+
     for module_name, module_data in raw_data.items():
         temp_dict = {}
         temp_dict["module_name"] = module_name
@@ -285,6 +291,7 @@ def _load_module_init_data(
         pandas dataframe with module_name, start_time, finish_time, module_init_duration
 
     """
+
     with open(input_file, "r") as f:
         fun_module_init = json.load(f)
 
@@ -334,6 +341,7 @@ def _load_notification_init_data(
 
     with open(input_file, "r") as f:
         fun_notification_init = json.load(f)
+
     if debug:
         print(fun_notification_init)
 
@@ -342,6 +350,7 @@ def _load_notification_init_data(
         ## TEMP, to easily identify
         k = "{}-{}".format(k, notif_suffix)
         new_dict[k] = [v, v + dummy_duration]
+
     if debug:
         print(new_dict)
 
@@ -353,27 +362,14 @@ def _load_notification_init_data(
     fun_notification_init_df = _load_module_init_data(
         temp_file_name, convert_time_to_ns=True, debug=debug
     )
+
     if debug:
         fun_notification_init_df.head()
+
     return fun_notification_init_df
 
 
-def _get_duration_threshold(df: pd.DataFrame, threshold: float = 0.10) -> float:
-    """Get the threshold value from the dataframe
-    Parameters
-    ----------
-    df : pd.DataFrame
-        dataframe with module init data
-    threshold : float, optional
-        threshold value, by default 0.10
-    Returns
-    -------
-    float
-        threshold value
-    """
-    max_duration = df["module_init_duration"].max()
 
-    return float(int(max_duration * threshold))
 
 
 def _get_start_finish_times(df: pd.DataFrame, debug: bool = False) -> pd.DataFrame:
@@ -406,180 +402,18 @@ def _get_start_finish_times(df: pd.DataFrame, debug: bool = False) -> pd.DataFra
     return start_min, finish_max, duration
 
 
-# def _get_color_list(df: pd.DataFrame, notification_color: str = notification_color, default_color: str=module_color) -> list:
-#     """Utility to get color list for plotly"""
-#     color_list = []
-#     for i in range(len(df)):
-#         if df.index[i].endswith(notif_suffix):
-#             color_list.append(notification_color)
-#         else:
-#             color_list.append(default_color)
-#     return color_list
+def _get_color_list(df: pd.DataFrame, notification_color: str="red", default_color: str="blue", notif_suffix: str="**") -> list:
+    """Utility to get color list for plotly"""
+    color_list = []
+    for i in range(len(df)):
+        if df.index[i].endswith(notif_suffix):
+            color_list.append(notification_color)
+        else:
+            color_list.append(default_color)
+    return color_list
 
 
-# def _plot_module_time_chart(df: pd.DataFrame, small_set: int=-1, use_plt: bool=True, sort_by: str="start_time", title: str='FunOS Module Init Duration', group_table: dict=None, simple_group_name: bool=True, cutoff_group_names: int=10, save_file_name: str =full_chart_file_name, disp_granualarity_ms: int=10, debug: bool=False) -> None:
-#     """Plot the module init time chart
-#     Parameters
-#     ----------
-#     df : pd.DataFrame
-#         dataframe with module init data
-#     small_set : int, optional
-#         number of rows to plot, by default -1 (plot all)
-#     sort_by : str, optional
-#         sort by column, by default "start_time"
-#     title : str, optional
-#         title of the chart, by default 'FunOS Module Init Duration'
-#     group_table : dict, optional
-#         group table, by default None, if not None, group the modules based on the group_table
-#     simple_group_name : bool, optional
-#         use simple group name, by default True
-#     cutoff_group_names : int, optional
-#         cutoff group names, by default 12, cut off text display for group names
-#     disp_granualarity_ms: int, optional
-#         X axis display granualarity, in ms time unit, by default 10
 
-#     Returns
-#     -------
-#     None
-#     """
-#     # add max min for creating tick
-
-#     df_use = df.copy()
-
-#     X_disp_granualarity = disp_granualarity_ms
-#     X_granualarity = 1000000
-#     x_tick_str = "ms"
-#     # if X_granualarity == 1000000:
-#     #     x_tick_str = "ms"
-#     # elif X_granualarity == 1000000000:
-#     #     x_tick_str = "s"
-
-#     df_use.sort_values(by=[sort_by], inplace=True, ascending=True)
-
-#     if small_set > 0:
-#         df_use = df_use[:small_set]
-
-#     if save_file_name[-4:] != ".png":
-#         save_file_name = save_file_name + ".png"
-
-#     start_min, finish_max, duration = get_start_finish_times(df_use, debug=debug)
-
-#     x_ticks = np.arange(0, duration, X_disp_granualarity * X_granualarity)
-#     x_tick_labels = ["{} {}".format(str(int(x)), x_tick_str) for x in x_ticks/X_granualarity]
-
-#     figsize=(40, len(df_use))
-
-#     if debug:
-#         print("x_ticks: {}".format(x_ticks[:10]))
-#         print("x_tick_labels: {}".format(x_tick_labels[:10]))
-#         print("figsize: {}".format(figsize))
-
-
-#     if debug:
-#         display(df_use.head())
-#         display(df_use.describe())
-
-#     if use_plt:
-#         color_list = get_color_list(df_use)
-#         # fig, ax = plt.subplots(1, figsize=(40, 50))
-#         fig, ax = plt.subplots(1, figsize=figsize)
-#         p1 = ax.barh(df_use.index, width=df_use['module_init_duration'], left=df_use['start_time'], color=color_list)
-
-#         ax.set(xlabel='ms', ylabel='Modules')
-
-#         #Invert y axis
-#         plt.gca().invert_yaxis()
-
-#         #customize x-ticks
-#         plt.xticks(ticks=x_ticks, labels=x_tick_labels)
-
-#         # title
-#         if group_table:
-#             title = "{}: collapsed".format(title)
-#         plt.title(title, fontsize=20)
-
-#         #rotate x-ticks
-#         plt.xticks(rotation=60)
-#         #add grid lines
-#         plt.grid(axis='x', alpha=0.5)
-#         plt.grid(axis='y', alpha=0.5)
-
-#         if group_table:
-#             if simple_group_name:
-#                 # testing simpler way
-#                 y_pos = np.arange(len(group_table))
-#                 y_label = ["{} & {} modules".format(v[0], len(v)) if len(v) > 1 else v[0] for k, v in group_table.items()]
-#                 ax.set_yticks(y_pos, labels=y_label)
-#                 pass
-#             else:
-#                 x_base = 6000000
-#                 for i, (k, v) in enumerate(group_table.items()):
-#                     # print("i: {}, k: {} ({}), v: {}".format(i, k, len(v), v))
-#                     if len(v) > cutoff_group_names:
-#                         v_str = "{}...(total: {})".format(v[:cutoff_group_names], len(v))
-#                     else:
-#                         v_str = "{}".format(v)
-#                     ax.text(x_base*(i+1), i, v_str, fontsize=21, color='red')
-#                     # ax.text(20000000, 1, 'Unicode: Institut für Festkörperphysik')
-
-#         #save fig
-#         plt.savefig(save_file_name)
-#         plt.show()
-#     else:
-#         # use plotly
-#         # plotly doesn't support 'left' argument, so need to create manualy bars
-#         # https://community.plotly.com/t/broken-barh-plot/36496
-#         # assert False, "Ploty not supported yet"
-
-#         df_use.sort_values(by=[sort_by], inplace=True, ascending=False)
-
-#         # fig = px.bar(df, x="module_init_duration", y=df.index, orientation='h', height=1000)
-
-
-#         # fig = go.Figure(go.Bar(
-#         #     x=df["module_init_duration"],
-#         #     y=df.index,
-#         #     orientation='h'))
-
-#         fig = go.Figure()
-#         fig.add_trace(go.Bar(
-#             y=df_use.index,
-#             x=df_use["start_time"],
-#             name='start',
-#             orientation='h',
-#             # width=20,
-#             marker=dict(
-#                 color='rgba(256, 256, 256, 0.0)',
-#                 line=dict(color='rgba(256, 256, 256, 0.0)', width=1)
-#             )
-#         ))
-
-#         fig.add_trace(go.Bar(
-#             y=df_use.index,
-#             x=df_use["module_init_duration"],
-#             name='module init duration',
-#             orientation='h',
-#             # width=20,
-#             marker=dict(
-#                 color='rgba(58, 71, 80, 0.6)',
-#                 line=dict(color='rgba(58, 71, 80, 1.0)', width=1)
-#             )
-#         ))
-
-#         fig.update_layout(barmode='stack')
-
-#         # https://github.com/jupyter/nbconvert/issues/944
-#         fig.show(renderer="notebook")
-
-#         # for static image to reduce the embedded image size
-#         # from IPython.display import Image
-#         # Image(fig.to_image())
-
-#         # fig = px.timeline(df, x_start="start_time", x_end="finish_time", y=df_use.index, title=title)
-#         # fig.update_yaxes(autorange="reversed") # otherwise tasks are listed from the bottom up
-#         # fig.show()
-
-#     del df_use
 
 
 def _dump_file(df: pd.DataFrame, file_name: str, sorted_key: str = None):
@@ -618,8 +452,237 @@ def _dump_file(df: pd.DataFrame, file_name: str, sorted_key: str = None):
         )
 
 
-def _get_collapsed_df(
-    df_in: pd.DataFrame, threshold: float, debug: bool = False
+
+
+#########################################
+# APIs
+#########################################
+
+def plot_module_time_chart(df: pd.DataFrame, small_set: int=-1, use_plt: bool=True, sort_by: str="start_time", title: str='FunOS Module Init Duration', group_table: dict=None, simple_group_name: bool=True, cutoff_group_names: int=10, save_file_name: str="fun_module_notif_init_chart.png", disp_granualarity_ms: int=10, debug: bool=False) -> None:
+    """Plot the module init time chart
+    Parameters
+    ----------
+    df : pd.DataFrame
+        dataframe with module init data
+    small_set : int, optional
+        number of rows to plot, by default -1 (plot all)
+    sort_by : str, optional
+        sort by column, by default "start_time"
+    title : str, optional
+        title of the chart, by default 'FunOS Module Init Duration'
+    group_table : dict, optional
+        group table, by default None, if not None, group the modules based on the group_table
+    simple_group_name : bool, optional
+        use simple group name, by default True
+    cutoff_group_names : int, optional
+        cutoff group names, by default 12, cut off text display for group names
+    disp_granualarity_ms: int, optional
+        X axis display granualarity, in ms time unit, by default 10
+
+    Returns
+    -------
+    None
+    """
+    # add max min for creating tick
+
+    df_use = df.copy()
+
+    X_disp_granualarity = disp_granualarity_ms
+    X_granualarity = 1000000
+    x_tick_str = "ms"
+    # if X_granualarity == 1000000:
+    #     x_tick_str = "ms"
+    # elif X_granualarity == 1000000000:
+    #     x_tick_str = "s"
+
+    df_use.sort_values(by=[sort_by], inplace=True, ascending=True)
+
+    if small_set > 0:
+        df_use = df_use[:small_set]
+
+    if save_file_name[-4:] != ".png":
+        save_file_name = save_file_name + ".png"
+
+    start_min, finish_max, duration = _get_start_finish_times(df_use, debug=debug)
+
+    x_ticks = np.arange(0, duration, X_disp_granualarity * X_granualarity)
+    x_tick_labels = ["{} {}".format(str(int(x)), x_tick_str) for x in x_ticks/X_granualarity]
+
+    figsize=(40, len(df_use))
+
+    if debug:
+        print("x_ticks: {}".format(x_ticks[:10]))
+        print("x_tick_labels: {}".format(x_tick_labels[:10]))
+        print("figsize: {}".format(figsize))
+
+
+    if debug:
+        print(df_use.head())
+        print(df_use.describe())
+
+    if use_plt:
+        color_list = _get_color_list(df_use)
+        # fig, ax = plt.subplots(1, figsize=(40, 50))
+        fig, ax = plt.subplots(1, figsize=figsize)
+        p1 = ax.barh(df_use.index, width=df_use['module_init_duration'], left=df_use['start_time'], color=color_list)
+
+        ax.set(xlabel='ms', ylabel='Modules')
+
+        #Invert y axis
+        plt.gca().invert_yaxis()
+
+        #customize x-ticks
+        plt.xticks(ticks=x_ticks, labels=x_tick_labels)
+
+        # title
+        if group_table:
+            title = "{}: collapsed".format(title)
+        plt.title(title, fontsize=20)
+
+        #rotate x-ticks
+        plt.xticks(rotation=60)
+        #add grid lines
+        plt.grid(axis='x', alpha=0.5)
+        plt.grid(axis='y', alpha=0.5)
+
+        if group_table:
+            if simple_group_name:
+                # testing simpler way
+                y_pos = np.arange(len(group_table))
+                y_label = ["{} & {} modules".format(v[0], len(v)) if len(v) > 1 else v[0] for k, v in group_table.items()]
+                # ax.set_yticks(y_pos, labels=y_label)
+                pass
+            else:
+                x_base = 6000000
+                for i, (k, v) in enumerate(group_table.items()):
+                    # print("i: {}, k: {} ({}), v: {}".format(i, k, len(v), v))
+                    if len(v) > cutoff_group_names:
+                        v_str = "{}...(total: {})".format(v[:cutoff_group_names], len(v))
+                    else:
+                        v_str = "{}".format(v)
+                    ax.text(x_base*(i+1), i, v_str, fontsize=21, color='red')
+                    # ax.text(20000000, 1, 'Unicode: Institut für Festkörperphysik')
+
+        #save fig
+        plt.savefig(save_file_name)
+        plt.show()
+    else:
+        # use plotly
+        # plotly doesn't support 'left' argument, so need to create manualy bars
+        # https://community.plotly.com/t/broken-barh-plot/36496
+        # assert False, "Ploty not supported yet"
+
+        df_use.sort_values(by=[sort_by], inplace=True, ascending=False)
+
+        fig = go.Figure()
+        fig.add_trace(go.Bar(
+            y=df_use.index,
+            x=df_use["start_time"],
+            name='start',
+            orientation='h',
+            # width=20,
+            marker=dict(
+                color='rgba(256, 256, 256, 0.0)',
+                line=dict(color='rgba(256, 256, 256, 0.0)', width=1)
+            )
+        ))
+
+        fig.add_trace(go.Bar(
+            y=df_use.index,
+            x=df_use["module_init_duration"],
+            name='module init duration',
+            orientation='h',
+            # width=20,
+            marker=dict(
+                color='rgba(58, 71, 80, 0.6)',
+                line=dict(color='rgba(58, 71, 80, 1.0)', width=1)
+            )
+        ))
+
+        fig.update_layout(barmode='stack')
+
+        # https://github.com/jupyter/nbconvert/issues/944
+        fig.show(renderer="notebook")
+
+
+    del df_use
+
+def process_module_notif_init_data_BAK(
+    file_name_url: str, logger=None, working_dir: str = "./"
+):
+    pass
+    """Load init data from file or url"""
+
+    module_init, notif_init = _extract_module_init_data(
+        file_name_url, logger=logger, working_dir=working_dir
+    )
+
+    """Process module init data"""
+    """
+    config_file = "fun_module_init_analysis_config.yml"
+    path_to_yaml = os.path.join(current_path, config_file)
+    print("path_to_config_file "+path_to_yaml)
+    try:
+        with open (path_to_yaml, 'r') as c_file:
+            config = yaml.safe_load(c_file)
+    except Exception as e:
+        print('Error reading the config file at {} : {}'.format(path_to_yaml, e))
+
+    # setup config variables
+
+    DEBUG = config['general']['debug']
+    debug_log = config['general']['debug_log']
+
+    modules_init_file_name = config['file_names']['input_modules_init']
+    notificaiotns_init_file_name = config['file_names']['input_notifications_init']
+
+    full_chart_file_name = config['file_names']['output_full_chart']
+    full_module_notif_chart = config['file_names']['output_full_module_notif_chart']
+    collapsed_chart_file_name = config['file_names']['output_collapsed_chart']
+    collapsed_chart_module_notif_file_name = config['file_names']['output_collapsed_module_notif_chart']
+    sorted_df_file_name = config['file_names']['output_sorted_df']
+
+    module_color = config['chart']['module']
+    notification_color = config['chart']['notification']
+
+    notif_suffix = config["extra"]["notif_suffix"]
+    """
+
+def print_group_table(group_table: dict, threshold: float, save_file_name: str = None):
+    """Print the group table
+
+    Parameters
+    ----------
+    group_table : dict
+        group table, key is the group name, value is the list of modules in the group
+    threshold : float
+        threshold (nsec) value to collapse, fraction to the largest duration
+    save_file_name : str, optional
+        file to save the group table, by default None
+    """
+    output = "Collapsed module group report (threshold time of {} ns):\n".format(
+        threshold
+    )
+    output += "========================\n"
+    for key, value in group_table.items():
+        output += "{}({}): {}\n".format(key, len(value), value)
+        # print("{}({}): {}".format(key, len(value), value))
+
+    print(output)
+
+    if save_file_name:
+        if save_file_name[:-4] != ".txt":
+            save_file_name += ".txt"
+        with open(save_file_name, "w") as f:
+            f.write(output)
+
+    # for k, v in group_table.items():
+    #     print("{}:".format(k))
+    #     for m in v:
+    #         print("  {}".format(m))
+
+def get_collapsed_df(
+    df_in: pd.DataFrame, threshold: float, notif_suffix:str="**", debug: bool = False
 ) -> Tuple[pd.DataFrame, dict]:
     """Collpased df using the threshold
 
@@ -747,87 +810,22 @@ def _get_collapsed_df(
 
     return df_collapsed, group_table
 
-
-def _print_group_table(group_table: dict, threshold: float, save_file_name: str = None):
-    """Print the group table
-
+def get_duration_threshold(df: pd.DataFrame, threshold: float = 0.10) -> float:
+    """Get the threshold value from the dataframe
     Parameters
     ----------
-    group_table : dict
-        group table, key is the group name, value is the list of modules in the group
-    threshold : float
-        threshold (nsec) value to collapse, fraction to the largest duration
-    save_file_name : str, optional
-        file to save the group table, by default None
+    df : pd.DataFrame
+        dataframe with module init data
+    threshold : float, optional
+        threshold value, by default 0.10
+    Returns
+    -------
+    float
+        threshold value
     """
-    output = "Collapsed module group report (threshold time of {} ns):\n".format(
-        threshold
-    )
-    output += "========================\n"
-    for key, value in group_table.items():
-        output += "{}({}): {}\n".format(key, len(value), value)
-        # print("{}({}): {}".format(key, len(value), value))
+    max_duration = df["module_init_duration"].max()
 
-    print(output)
-
-    if save_file_name:
-        if save_file_name[:-4] != ".txt":
-            save_file_name += ".txt"
-        with open(save_file_name, "w") as f:
-            f.write(output)
-
-    # for k, v in group_table.items():
-    #     print("{}:".format(k))
-    #     for m in v:
-    #         print("  {}".format(m))
-
-
-#########################################
-# APIs
-#########################################
-
-
-def process_module_notif_init_data_BAK(
-    file_name_url: str, logger=None, working_dir: str = "./"
-):
-    pass
-    """Load init data from file or url"""
-
-    module_init, notif_init = _extract_module_init_data(
-        file_name_url, logger=logger, working_dir=working_dir
-    )
-
-    """Process module init data"""
-    """
-    config_file = "fun_module_init_analysis_config.yml"
-    path_to_yaml = os.path.join(current_path, config_file)
-    print("path_to_config_file "+path_to_yaml)
-    try:
-        with open (path_to_yaml, 'r') as c_file:
-            config = yaml.safe_load(c_file)
-    except Exception as e:
-        print('Error reading the config file at {} : {}'.format(path_to_yaml, e))
-
-    # setup config variables
-
-    DEBUG = config['general']['debug']
-    debug_log = config['general']['debug_log']
-
-    modules_init_file_name = config['file_names']['input_modules_init']
-    notificaiotns_init_file_name = config['file_names']['input_notifications_init']
-
-    full_chart_file_name = config['file_names']['output_full_chart']
-    full_module_notif_chart = config['file_names']['output_full_module_notif_chart']
-    collapsed_chart_file_name = config['file_names']['output_collapsed_chart']
-    collapsed_chart_module_notif_file_name = config['file_names']['output_collapsed_module_notif_chart']
-    sorted_df_file_name = config['file_names']['output_sorted_df']
-
-    module_color = config['chart']['module']
-    notification_color = config['chart']['notification']
-
-    notif_suffix = config["extra"]["notif_suffix"]
-    """
-
+    return float(int(max_duration * threshold))
 
 def process_module_notif_init_data(
     file_name_url: str = None,
@@ -858,7 +856,7 @@ def process_module_notif_init_data(
         modules_init_file_name, convert_time_to_ns=True, debug=False
     )
 
-    threshold_collapse = _get_duration_threshold(fun_module_init_df, threshold=0.01)
+    threshold_collapse = get_duration_threshold(fun_module_init_df, threshold=0.01)
     print("Threshold collapse: {}".format(threshold_collapse))
 
     # process notif init data
@@ -873,6 +871,7 @@ def process_module_notif_init_data(
     # combine module and notif init data
 
     fun_module_notif_init_df = pd.concat([fun_module_init_df, fun_notification_init_df])
+    print(fun_module_notif_init_df)
 
     # XXX TODO here
 
@@ -881,7 +880,24 @@ def process_module_notif_init_data(
     # return data and file name
     # returning result dict and file names
     pass
+    return fun_module_notif_init_df 
 
+# move to test_ fil
+# def test_gen(logger):
+#     in_dir = f"{Path.home()}/Projects/Fng/FunTools/dpcsh_interactive_client/src/dpcsh_interactive_client"
+#     working_dir = f"{Path.home()}/Projects/Fng/FunTools/dpcsh_interactive_client/src"
+#     out_dir = f"{Path.home()}/tmp/test_gen"
+#     # temp_dir = f"{Path.home()}/tmp/test_gen"
+
+#     html_filename = generate_report(
+#         "funos_module_init_analysis.ipynb",
+#         in_dir=in_dir,
+#         out_dir=out_dir,
+#         execute=True,
+#         working_dir=in_dir,
+#         logger=logger,
+#         report_filename="funos_module_init_analysis"
+#     )
 
 def main(logger):
 
