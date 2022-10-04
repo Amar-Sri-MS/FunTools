@@ -17,14 +17,7 @@ from pathlib import Path
 
 import logging
 
-# from dpcsh_interactive_client.convert_nb import generate_report, get_module_info
 from convert_nb import generate_report, get_module_info
-
-# TODO
-# - review config, notif_suffix,  notificaiotns_init_file_name
-# - check the result
-# - move plot functions to separate file
-
 
 # A logger for this file
 logger = logging.getLogger(__name__)
@@ -34,9 +27,6 @@ logger = logging.getLogger(__name__)
 import matplotlib.pyplot as plt
 
 plt.rcParams.update({"font.size": 22})
-
-# https://stackoverflow.com/questions/36288670/how-to-programmatically-generate-markdown-output-in-jupyter-notebooks
-# from IPython.display import display, Markdown, Latex
 
 
 def _fmt(s, show_d=True):
@@ -104,15 +94,10 @@ def _filter_log_with_marker(lines: str, marker: str, logger=_default_logger()) -
         if regex does not match
     """
 
-    # MODULE_MARKERS = r'Time-chart data for module init = (.*?)}'
-    # NOTIF_MARKERS = r'Time-chart data for notifications = (.*?)}'
-
     try:
         filtered_lines = re.search(marker, lines, re.DOTALL).group(1)
         filtered_lines += "}"  # add back the end marker
 
-        # notif_init = re.search(NOTIF_MARKERS, lines, re.DOTALL).group(1)
-        # notif_init += "}" # add back the end marker
     except AttributeError as ex:
         logger.error("Read result : {}".format(lines))
         logger.error("Error parsing log file: {}".format(ex))
@@ -270,9 +255,6 @@ def _convert_to_list_of_dicts(
         logger.info("List created")
         logger.info(fun_module_init_list[:2])
         logger.info("Time conversion unit: {}".format(time_unit))
-        # convert list of dicts to pandas dataframe
-        # fun_module_init_df = pd.DataFrame(fun_module_init_list)
-        # fun_module_init_df.head()
 
     return fun_module_init_list
 
@@ -304,7 +286,6 @@ def _load_module_init_data(
     if debug:
         logger.info("Number of modules: {}".format(len(fun_module_init)))
         logger.info("fun_module_init.keys: {}".format(fun_module_init.keys()))
-        # logger.info("fun_module_init['accel_telem-init']: {}".format(fun_module_init['accel_telem-init']))
 
     # convert to list of dicts
     fun_module_init_list = _convert_to_list_of_dicts(
@@ -392,7 +373,6 @@ def _get_start_finish_times(
         logger.info(
             "finish_max: (finish time of the last module) {}".format(finish_max)
         )
-        # logger.info("duration: (finish_max - start_min) {}".format(finish_max - start_min))
         # summary
         total_module_time = df["module_init_duration"].sum()
         logger.info("Total module init time: {} ns".format(total_module_time))
@@ -512,10 +492,6 @@ def plot_module_time_chart(
     X_disp_granualarity = disp_granualarity_ms
     X_granualarity = 1000000
     x_tick_str = "ms"
-    # if X_granualarity == 1000000:
-    #     x_tick_str = "ms"
-    # elif X_granualarity == 1000000000:
-    #     x_tick_str = "s"
 
     df_use.sort_values(by=[sort_by], inplace=True, ascending=True)
 
@@ -678,11 +654,6 @@ def print_group_table(
         with open(save_file_name, "w") as f:
             f.write(output)
 
-    # for k, v in group_table.items():
-    #     logger.info("{}:".format(k))
-    #     for m in v:
-    #         logger.info("  {}".format(m))
-
 
 def get_collapsed_df(
     df_in: pd.DataFrame,
@@ -721,8 +692,6 @@ def get_collapsed_df(
     df = df_in.copy()
     df.sort_values(by=["start_time"], inplace=True, ascending=True)
 
-    # df_collapsed['module_init_duration'] = df_collapsed['module_init_duration'].apply(lambda x: x if x > threshold else 0)
-    # df_collapsed = df_collapsed[df_collapsed['module_init_duration'] > 0]
     new_events = []
     n_event = 0
     num_included = 0
@@ -750,7 +719,6 @@ def get_collapsed_df(
 
         cur_finish = max(cur_finish, finish)
         cur_duration = cur_finish - cur_start
-        # logger.info("cur_start, cur_finish, cur_duration: {}, {}".format(cur_start, cur_finish, cur_duration))
 
         # peek the next check if next module passes the thresholds
         next_module_pass_threshold = False
@@ -762,22 +730,14 @@ def get_collapsed_df(
                 df.iloc[i + 1].module_init_duration,
             )
             next_finish = max(cur_finish, next_finish)
-            # logger.info("next_finish {}, next_finish - cur_start {}".format(next_finish, next_finish - cur_start))
-            # if next duration is more than threshold and there is more than one collapsed, then stop collapsing the current modules
-            # if next_finish - cur_start > threshold and num_included > 0:
             if next_finish - cur_start > threshold:
                 next_module_pass_threshold = True
                 group_modules.append(name)
 
-        # if cur_duration + duration > threshold:
         if cur_duration > threshold or next_module_pass_threshold:
             # peek the next one and keep adding until the threshold is reached
             # create a new one
 
-            # if name.endswith(notif_suffix):
-            #     group_name = "group_{}{}".format(n_event, notif_suffix)
-            # else:
-            #     group_name = "group_{}".format(n_event)
             group_name = _get_group_name(name)
 
             new_d = {
@@ -938,7 +898,7 @@ def main(logger):
 
 
 if __name__ == "__main__":
-    # logger.setLevel(logging.DEBUG)
+
     logger = _default_logger()
     os.environ[
         "INPUT_FILE_URL"
