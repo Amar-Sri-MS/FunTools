@@ -1,29 +1,32 @@
 #!/usr/bin/env python3
 """Utility code to process funos module init time data"""
 
-
-import json
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-from typing import Tuple
-import yaml
-import json
+# import json
 import os
-import requests
-import errno
-import re
 from pathlib import Path
 
-import logging
+# import json
+# import matplotlib.pyplot as plt
+# import numpy as np
+# import pandas as pd
+# from typing import Tuple
+# import yaml
+# import requests
+# import errno
+# import re
 
-try:
-    from dpcsh_interactive_client.funos_module_init_time import *
-    from dpcsh_interactive_client.convert_nb import generate_report, get_module_info
+# import logging
 
-except ImportError:
-    from convert_nb import generate_report, get_module_info
-    from funos_module_init_time import *
+from funos_module_init_time import process_module_notif_init_data
+from convert_nb import generate_report
+
+# try:
+#     from dpcsh_interactive_client.funos_module_init_time import *
+#     from dpcsh_interactive_client.convert_nb import generate_report, get_module_info
+
+# except ImportError:
+#     from convert_nb import generate_report, get_module_info
+#     from funos_module_init_time import *
 
 
 class _default_logger:
@@ -62,29 +65,27 @@ def gen_module_init_data(logger):
     print("current directory is: " + current_path)
 
     # raw log file is passed through env
-    INPUT_FILE_URL = os.environ["INPUT_FILE_URL"]
+    input_file_url = os.environ["INPUT_FILE_URL"]
 
-    print("INPUT_FILE_URL: {}".format(INPUT_FILE_URL))
+    print(f"INPUT_FILE_URL: {input_file_url}")
     df, result = process_module_notif_init_data(
-        INPUT_FILE_URL, logger=logger, working_dir=current_path
+        input_file_url, logger=logger, working_dir=current_path
     )
 
-    """
-    result contains the metric for the chart
+    # result contains the metric for the chart
 
-    > `Perf stat result: {'longest_duration_ns': 2823587999.999998, 'longest_duration_id': 'rcnvme-init', 'total_duration_ns': 12637173858.0}`
-    """
+    # > `Perf stat result: {'longest_duration_ns': 2823587999.999998, 'longest_duration_id': 'rcnvme-init', 'total_duration_ns': 12637173858.0}`
 
-    logger.info("Perf stat result: {}".format(result))
+    logger.info(f"Perf stat result: {result}")
 
-    """Generate html report"""
-    in_dir = f"{Path.home()}/Projects/Fng/FunTools/dpcsh_interactive_client/src/dpcsh_interactive_client"
+    # Generate html report
+    in_dir = f"{Path.home()}/Projects/Fng/FunTools/data_analysis/"
     working_dir = f"{Path.home()}/Projects/Fng/FunTools/dpcsh_interactive_client/src"
     out_dir = f"{Path.home()}/tmp/test_gen"
 
     html_filename = generate_html(in_dir, working_dir, out_dir, logger)
 
-    logger.info("html_filename: {}".format(html_filename))
+    logger.info(f"html_filename: {html_filename}")
 
 
 if __name__ == "__main__":
@@ -92,10 +93,10 @@ if __name__ == "__main__":
     logger = _default_logger()
 
     # prepare url from the FoD tag and set it to env variable
-    default_test_url = "http://palladium-jobs.fungible.local:8080/job/4297914/raw_file/odp/uartout0.0.txt"
+    DEFAULT_TEST_URL = "http://palladium-jobs.fungible.local:8080/job/4297914/raw_file/odp/uartout0.0.txt"
 
     # set os env INPUT_FILE_URL if not set
     if "INPUT_FILE_URL" not in os.environ:
-        os.environ["INPUT_FILE_URL"] = default_test_url
+        os.environ["INPUT_FILE_URL"] = DEFAULT_TEST_URL
 
     gen_module_init_data(logger)
