@@ -41,26 +41,6 @@ import pandas as pd
 
 from utils import DefaultLogger
 
-# my_logger = logging.getLogger(__name__)
-
-# class DefaultLogger:
-#     """Default logger class."""
-
-#     def __init__(self, log_level=logging.INFO):
-#         my_logger.setLevel(log_level)
-
-#     def info(self, log_txt):
-#         """Info"""
-#         my_logger.info(log_txt)
-
-#     def debug(self, log_txt):
-#         """Debug"""
-#         my_logger.info(log_txt)
-
-#     def error(self, log_txt):
-#         """Error"""
-#         my_logger.info("Error: %s", log_txt)
-
 
 def _remove_timestamps_from_log(lines: str) -> str:
     """Remove timestamps from log

@@ -34,27 +34,6 @@ from utils import DefaultLogger
 
 plt.rcParams.update({"font.size": 22})
 
-# my_logger = logging.getLogger(__name__)
-
-
-# class DefaultLogger:
-#     """Default logger class."""
-
-#     def __init__(self, log_level=logging.INFO):
-#         my_logger.setLevel(log_level)
-
-#     def info(self, log_txt):
-#         """Info"""
-#         my_logger.info(log_txt)
-
-#     def debug(self, log_txt):
-#         """Debug"""
-#         my_logger.info(log_txt)
-
-#     def error(self, log_txt):
-#         """Error"""
-#         my_logger.info("Error: %s", log_txt)
-
 
 def _get_color_list(
     df: pd.DataFrame,

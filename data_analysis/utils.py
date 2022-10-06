@@ -33,4 +33,3 @@ class DefaultLogger:
     def error(self, log_txt):
         """Error"""
         self.my_logger.info("Error: %s", log_txt)
-
