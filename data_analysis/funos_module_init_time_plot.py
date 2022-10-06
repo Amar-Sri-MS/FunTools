@@ -59,7 +59,7 @@ def _get_color_list(
 
 
 def plot_module_time_chart(
-    df: pd.DataFrame,
+    df_in: pd.DataFrame,
     small_set: int = -1,
     use_plt: bool = True,
     sort_by: str = "start_time",
@@ -69,6 +69,8 @@ def plot_module_time_chart(
     cutoff_group_names: int = 10,
     save_file_name: str = "fun_module_notif_init_chart.png",
     disp_granualarity_ms: int = 10,
+    min_duration: int = 0,
+    shift_left: bool = True,
     logger=DefaultLogger(),
     debug: bool = False,
 ) -> None:
@@ -91,20 +93,37 @@ def plot_module_time_chart(
         cutoff group names, by default 12, cut off text display for group names
     disp_granualarity_ms: int, optional
         X axis display granualarity, in ms time unit, by default 10
-
+    min_duration: int, optional
+        minimum duration to plot, by default 0
+        if this is non zero, then any duration smaller than this will be used this value as duration
+    shift_left: bool, optional
+        shift the start time to the left, by default True
+        so that the first module starts at 0, so that time chart is more readable
     Returns
     -------
     None
     """
     # add max min for creating tick
 
-    df_use = df.copy()
+    df_use = df_in.copy()
 
     x_disp_granualarity = disp_granualarity_ms
     x_granualarity = 1000000
     x_tick_str = "ms"
 
     df_use.sort_values(by=[sort_by], inplace=True, ascending=True)
+
+    # if this is non zero, then any duration smaller than this will be used this value as duration
+
+    logger.info("df_use: %s", df_use.head(20))
+    if min_duration > 0:
+        df_use["module_init_duration"].clip(lower=min_duration, inplace=True)
+        logger.info("df_use updated : %s", df_use.head(20))
+
+    if shift_left:
+        time_shift = df_use["start_time"].min()
+        df_use["start_time"] = df_use["start_time"] - time_shift
+        df_use["finish_time"] = df_use["finish_time"] - time_shift
 
     if small_set > 0:
         df_use = df_use[:small_set]
