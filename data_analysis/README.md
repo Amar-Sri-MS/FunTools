@@ -15,14 +15,14 @@ It also contains utility functions to plot the data.
 To run `PYTHONPATH` needs to be set to point where `dpcsh_interactive_client` modules are located.
 
 ```bash
-export PYTHONPATH=$WORKSPACE/FunTools/dpcsh_interactive_client/src/dpcsh_interactive_client:$PYTHONPATH
+export PYTHONPATH=$WORKSPACE/FunTools/data_analysis:$WORKSPACE/FunTools/dpcsh_interactive_client/src/dpcsh_interactive_client:$PYTHONPATH
 ```
 
 - Example:
-The following example runs the module init time analysis on the log file and plots the data:
+The following test example runs the module init time analysis on the log file and plots the data:
 
 ```bash
-python3 funos_module_init_time.py
+python3 funos_module_init_time_test.py
 
 ```
 

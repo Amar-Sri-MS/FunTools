@@ -5,7 +5,9 @@
 This is a test script for `funos_module_init_time.py`.
 To run `PYTHONPATH` needs to be set to point where `dpcsh_interactive_client` modules are
 
-`export PYTHONPATH=$WORKSPACE/FunTools/dpcsh_interactive_client/src/dpcsh_interactive_client:.`
+```
+export PYTHONPATH=$WORKSPACE/FunTools/data_analysis:$WORKSPACE/FunTools/dpcsh_interactive_client/src/dpcsh_interactive_client:$PYTHONPATH
+```
 
 
 Example:

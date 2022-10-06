@@ -6,7 +6,9 @@
 This module contains plot utility functions for funos module init time analysis.
 To run `PYTHONPATH` needs to be set to point where `dpcsh_interactive_client` modules are
 
-`export PYTHONPATH=$WORKSPACE/FunTools/dpcsh_interactive_client/src/dpcsh_interactive_client:.`
+```
+export PYTHONPATH=$WORKSPACE/FunTools/data_analysis:$WORKSPACE/FunTools/dpcsh_interactive_client/src/dpcsh_interactive_client:$PYTHONPATH
+```
 
 
 Example:
@@ -124,13 +126,11 @@ def plot_module_time_chart(
         logger.info("x_tick_labels: {}".format(x_tick_labels[:10]))
         logger.info("figsize: {}".format(figsize))
 
-    if debug:
         logger.info(df_use.head())
         logger.info(df_use.describe())
 
     if use_plt:
         color_list = _get_color_list(df_use)
-        # fig, ax = plt.subplots(1, figsize=(40, 50))
         fig, ax = plt.subplots(1, figsize=figsize)
         p1 = ax.barh(
             df_use.index,
@@ -178,7 +178,6 @@ def plot_module_time_chart(
                     else:
                         v_str = "{}".format(v)
                     ax.text(x_base * (i + 1), i, v_str, fontsize=21, color="red")
-                    # ax.text(20000000, 1, 'Unicode: Institut für Festkörperphysik')
 
         if save_file_name != "":
             # save fig
