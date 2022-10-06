@@ -7,7 +7,7 @@ This module contains plot utility functions for funos module init time analysis.
 To run `PYTHONPATH` needs to be set to point where `dpcsh_interactive_client` modules are
 
 ```
-export PYTHONPATH=$WORKSPACE/FunTools/data_analysis:$WORKSPACE/FunTools/dpcsh_interactive_client/src/dpcsh_interactive_client:$PYTHONPATH
+export PYTHONPATH=$WORKSPACE/FunTools/data_analysis:$PYTHONPATH
 ```
 
 

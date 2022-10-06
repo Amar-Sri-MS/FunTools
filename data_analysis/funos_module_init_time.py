@@ -11,7 +11,7 @@ It also contains utility functions to plot the data.
 To run `PYTHONPATH` needs to be set to point where `dpcsh_interactive_client` modules are located.
 
 ```
-export PYTHONPATH=$WORKSPACE/FunTools/data_analysis:$WORKSPACE/FunTools/dpcsh_interactive_client/src/dpcsh_interactive_client:$PYTHONPATH
+export PYTHONPATH=$WORKSPACE/FunTools/data_analysis:$PYTHONPATH
 ```
 
 
