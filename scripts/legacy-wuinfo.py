@@ -117,7 +117,7 @@ class FunFile():
         # reference buckets
         self.noref: Set[str] = set()
         self.upref: Set[str] = set()
-        self.inref: Set[str] = set()
+        self.inref: Dict[str, Set[str]] = {}
         self.downref: Set[str] = set()
         self.crossref: Dict[str, str] = {}
         self.crossreffl: Dict[str, List[str]] = {}
@@ -129,13 +129,12 @@ class FunFile():
     def add_ref(self, ref: WURef) -> None:
         self.refs.append(ref)
 
-    def add_inref(self, inref: str) -> None:
-        if (self.__dict__.get(inref) is None):
-            self.inref = set()
-        self.inref.add(inref)
+    def add_inref(self, inwu: str, infile: str) -> None:
+        flist: Set[str] = self.inref.setdefault(inwu, set())
+        flist.add(infile)
 
     def get_inref(self):
-        return self.__dict__.get("inref", [])
+        return self.inref
 
     def process_refs(self, wuinfo: "WUInfo") -> None:
         # for each ref
@@ -148,7 +147,7 @@ class FunFile():
                 self.crossref[ref.wuname] = wudecls.get_filename()
                 self.crossreffl[ref.wuname] = wudecls.get_filenames()
                 for decl in wudecls.decls:
-                    wuinfo.files[decl.fname].add_inref(self.name)
+                    wuinfo.files[decl.fname].add_inref(ref.wuname, self.name)
             elif (wudecls.first_lineno() < ref.lineno):
                 self.upref.add(ref.wuname)
             else:
@@ -826,6 +825,58 @@ def scrape_structs(decl: str) -> Set[str]:
 
     return ret - KNOWN_STRUCTS
 
+
+def fixup_file_internal(wuinfo: WUInfo, fl: FunFile):
+    print(f'Fixing internals for file {fl.name}')
+    input = open(fl.name, "r").read()
+
+    # rewrite the header
+    input = HEADER_MATCH.rewrite(input)
+
+    # walk the list of down references
+    all_fwd = "\n"
+    all_fwd += "/* automagically generated forward declarations for WU handlers */\n"
+    wu_fwd = ""
+    struct_fwd = set();
+    for wuname in fl.downref:
+        print(f"\tReference to {wuname} found")
+
+        # generate the declarations for it
+        decl_str = wuinfo.wus[wuname].decl_str()
+
+        # just run all the rewrites over it
+        wu_str = decl_str
+        for decl in DECLS:
+            wu_str = decl.fwdrewrite(wu_str)
+        
+        if (wu_str == decl_str):
+            print(f"WU {wuname} did not get rewritten for forward declaration. Assuming group")
+            continue
+
+        # scrape any struct types. This is ugly, but no way to change old code without it
+        struct_fwd.update(scrape_structs(wu_str))
+
+        # append the declaration
+        wu_fwd += f'{wu_str};\n'
+
+    # make the struct forward declarations
+    for sname in struct_fwd:
+        all_fwd += f"struct {sname};\n"
+
+    # add the wu declarations
+    all_fwd += wu_fwd
+
+    # patch them into the file
+    (first, last) = split_input_for_fwd(input)
+    input = first + all_fwd + last
+
+    # now rewrite all the decls
+    for decl in DECLS:
+        input = decl.rewrite(input)
+
+    open(fl.name, "w").write(input)
+    count += 1
+
 def do_fixup_internal(wuinfo: WUInfo, fileinfo: Dict[str, FunFile], fixup: str):
 
     # firstly we need to fixup all the headers
@@ -837,78 +888,45 @@ def do_fixup_internal(wuinfo: WUInfo, fileinfo: Dict[str, FunFile], fixup: str):
         if (not fixup_match(fixup, fl.name)):
             print(f'Skipping ups fix for file {fl.name}')
             continue
+        
+        fixup_file_internal(wuinfo, fl)
 
-        print(f'Fixing internals for file {fl.name}')
-        input = open(fl.name, "r").read()
-    
-        # rewrite the header
-        input = HEADER_MATCH.rewrite(input)
-
-        # walk the list of down references
-        all_fwd = "\n"
-        all_fwd += "/* automagically generated forward declarations for WU handlers */\n"
-        wu_fwd = ""
-        struct_fwd = set();
-        for wuname in fl.downref:
-            print(f"\tReference to {wuname} found")
-
-            # generate the declarations for it
-            decl_str = wuinfo.wus[wuname].decl_str()
-
-            # just run all the rewrites over it
-            wu_str = decl_str
-            for decl in DECLS:
-                wu_str = decl.fwdrewrite(wu_str)
-            
-            if (wu_str == decl_str):
-                print(f"WU {wuname} did not get rewritten for forward declaration. Assuming group")
-                continue
-
-            # scrape any struct types. This is ugly, but no way to change old code without it
-            struct_fwd.update(scrape_structs(wu_str))
-
-            # append the declaration
-            wu_fwd += f'{wu_str};\n'
-
-        # make the struct forward declarations
-        for sname in struct_fwd:
-            all_fwd += f"struct {sname};\n"
-
-        # add the wu declarations
-        all_fwd += wu_fwd
-
-        # patch them into the file
-        (first, last) = split_input_for_fwd(input)
-        input = first + all_fwd + last
-
-        # now rewrite all the decls
-        for decl in DECLS:
-            input = decl.rewrite(input)
-
-        open(fl.name, "w").write(input)
-        count += 1
 
     print(f"Fixed up internals for {count} files")
 
+def fixup_file_xrefs(wuinfo: WUInfo, fileinfo: Dict[str, FunFile], fname: str):
+
+    print(f"\tfixing xrefs for file {fname}")
+
+    # lookup the file for the name
+    fl = fileinfo[fname]
+
+    print(f"\t\tdownrefs: {fl.downref}")
+    print(f"\t\tinrefs: {fl.inref}")
+    print(f"\t\txrefs: {fl.crossreffl}")
+
+    # convert the internals of the file
+    # publish in-refs to extenal
+    # if we reference any externals
+        # include headers for externals
 
 def do_fixup_xrefs(wuinfo: WUInfo, fileinfo: Dict[str, FunFile], fixup: str):
         
-        # get the list of sets from the wuinfo
-        xrefsets = wuinfo.xrefsets
+    # get the list of sets from the wuinfo
+    xrefsets = wuinfo.xrefsets
 
-        # loop over it, check for fixups
-        for xset in xrefsets:
-            if (not set_fixup_match(fixup, xset)):
-                # print(f'Skipping fix ups for set {xset}')
-                continue
+    # loop over it, check for fixups
+    for xset in xrefsets:
+        if (not set_fixup_match(fixup, xset)):
+            # print(f'Skipping fix ups for set {xset}')
+            continue
 
-            print(f'Processing fix ups for set {xset}')
+        print(f'\tProcessing fix ups for set {xset}')
 
-            # for each file
-                # convert the internals of the file
-                # publish in-refs to extenal
-                # if we reference any externals
-                    # include headers for externals
+        # for each file
+        for fname in xset:
+            # fixup the file
+            fixup_file_xrefs(wuinfo, fileinfo, fname)
 
 
 ###
