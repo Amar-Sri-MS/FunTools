@@ -597,6 +597,8 @@ CHALLENGE_LENGTH = 16
 
 FLASH_ERASE_SECTION = 0xFC000000
 
+PREPARE_QSPI = 0xFE080000
+
 QSPI_PAGE_SIZE = 0x100
 QSPI_SECTOR_SIZE = 0x10000
 FLASH_SIZE = 0x1000000     # 16 MB
@@ -833,6 +835,9 @@ class DBG_Chal(DBG_FlashOp):
 
         key_index = bytearray(struct.pack('<I', index))
         return self.challenge_cmd(cmd, key_index)
+
+    def prepare_qspi(self):
+        return self.challenge_cmd(PREPARE_QSPI)
 
     def save_enroll_cert(self, cert):
         try:
@@ -1679,6 +1684,10 @@ def execute_challenge_command(challenge_interface, args):
         unlock_chip(challenge_interface, int(args.unlock,0))
         return
 
+    if args.prepare_qspi:
+        challenge_interface.prepare_qspi()
+        return
+
     # Next options are manipulating the Image on Flash:
 
     nor_image = NOR_IMAGE(challenge_interface)
@@ -1826,6 +1835,7 @@ def main():
     diag_grp.add_argument("--customer-key", action="store_true",
                           help="Display the customer public key if present")
 
+
     # Debug grants
     unlock_grp = parser.add_argument_group("Unlock Chip",
                                            "Unlock the chip for modifications")
@@ -1851,6 +1861,8 @@ def main():
     # Flash manipulation
     flash_grp = parser.add_argument_group("Flash Read/Write",
                                           "Read/Write the flash")
+    flash_grp.add_argument("--prepare-qspi", action="store_true",
+                           help="configure flash for QSPI")
     flash_grp.add_argument("--read-directory", action="store_true",
                            help="read and print the directory on the Flash")
     flash_grp.add_argument("--images", action="store_true",
