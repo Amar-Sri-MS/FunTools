@@ -5,7 +5,7 @@
 """Utility functions for funos module init time analysis.
 
 This module contains utility functions for funos module init time analysis.
-It parses the log files or dpchsh output json file and extract the module init time data.
+It parses the log files or dpcsh output json file and extract the module init time data.
 It also contains utility functions to plot the data.
 
 To run `PYTHONPATH` needs to be set to point where `dpcsh_interactive_client` modules are located.
