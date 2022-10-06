@@ -21,6 +21,7 @@ Todo:
 
 import os
 from pathlib import Path
+from typing import Any, Tuple, Union
 
 from funos_module_init_time import process_module_notif_init_data, dump_df_to_files
 from convert_nb import generate_report
@@ -28,7 +29,7 @@ from convert_nb import generate_report
 from utils import DefaultLogger
 
 
-def generate_html(in_dir, working_dir, out_dir, logger) -> str:
+def _generate_html(in_dir, working_dir, out_dir, logger) -> str:
     """Generate html by running jupyter notebook"""
 
     html_filename = generate_report(
@@ -44,11 +45,33 @@ def generate_html(in_dir, working_dir, out_dir, logger) -> str:
     return html_filename
 
 
-def gen_module_init_data(logger) -> None:
+def gen_module_init_data(in_dir, working_dir, out_dir, logger) -> Tuple[str, dict]:
+    """Generate module init data
+
+    Parameters
+    ----------
+    logger: logger
+        logger
+    in_dir: str
+        notebook directory
+    out_dir: str
+        directory for generate file
+    execute: bool
+        to run notebook or not
+    working_dir: str
+        directory to run notebook, so that we can pick up the data files
+
+    Returns
+    -------
+    html_filename: str
+        generate html filename
+    result: dict
+        result dict
+    """
 
     # load config file, for testing
     current_path = os.getcwd()
-    print("current directory is: " + current_path)
+    logger.info("current directory is: " + current_path)
 
     # raw log file is passed through env
     input_file_url = os.environ["INPUT_FILE_URL"]
@@ -63,16 +86,30 @@ def gen_module_init_data(logger) -> None:
 
     logger.info(f"Perf stat result: {result}")
 
-    # Generate html report
-    in_dir = f"{Path.home()}/Projects/Fng/FunTools/data_analysis/"
-    working_dir = in_dir
-    out_dir = f"{Path.home()}/tmp/test_gen"
-
-    html_filename = generate_html(in_dir, working_dir, out_dir, logger)
+    html_filename = _generate_html(in_dir, working_dir, out_dir, logger)
 
     logger.info(f"html_filename: {html_filename}")
 
     dump_df_to_files(df)
+
+    return html_filename, result
+
+
+def main(logger) -> None:
+    """Main entry point"""
+
+    # note book directory
+    in_dir = f"{Path.home()}/Projects/Fng/FunTools/data_analysis/"
+
+    # directory to run notebook, so that we can pick up the data files
+    working_dir = in_dir
+
+    # directory for generate file
+    out_dir = f"{Path.home()}/tmp/test_gen"
+
+    html_name, result = gen_module_init_data(in_dir, working_dir, out_dir, logger)
+    logger.info("html_name: " + html_name)
+    logger.info("result: " + str(result))
 
 
 if __name__ == "__main__":
@@ -87,4 +124,4 @@ if __name__ == "__main__":
     if "INPUT_FILE_URL" not in os.environ:
         os.environ["INPUT_FILE_URL"] = DEFAULT_TEST_URL
 
-    gen_module_init_data(logger)
+    main(logger)
