@@ -357,17 +357,26 @@ def _load_notification_init_data(
     return fun_notification_init_df
 
 
-def _dump_df_to_files(df: pd.DataFrame, file_name: str, sorted_key: str = None) -> None:
+#########################################
+# APIs
+#########################################
+
+
+def dump_df_to_files(
+    df: pd.DataFrame,
+    file_name: str = "fun_module_notif_init_chart",
+    sorted_key: str = "start_time",
+) -> None:
     """Dump the dataframe to a file in sorted order in txt, csv, json, yml formats
 
     Parameters
     ----------
     df : pd.DataFrame
         dataframe to dump
-    file_name : str
-        file name to dump to
+    file_name : str, optional
+        file name to dump to, by default "fun_module_notif_init_chart"
     sorted_key : str, optional
-        key to sort the dataframe, by default None
+        key to sort the dataframe, by default "start_time"
     """
 
     # save df to json file
@@ -391,11 +400,6 @@ def _dump_df_to_files(df: pd.DataFrame, file_name: str, sorted_key: str = None) 
             f,
             default_flow_style=False,
         )
-
-
-#########################################
-# APIs
-#########################################
 
 
 def print_group_table(

@@ -22,7 +22,7 @@ Todo:
 import os
 from pathlib import Path
 
-from funos_module_init_time import process_module_notif_init_data
+from funos_module_init_time import process_module_notif_init_data, dump_df_to_files
 from convert_nb import generate_report
 
 from utils import DefaultLogger
@@ -54,7 +54,7 @@ def gen_module_init_data(logger) -> None:
     input_file_url = os.environ["INPUT_FILE_URL"]
 
     logger.info(f"INPUT_FILE_URL: {input_file_url}")
-    _, result = process_module_notif_init_data(
+    df, result = process_module_notif_init_data(
         input_file_url, logger=logger, working_dir=current_path
     )
 
@@ -71,6 +71,8 @@ def gen_module_init_data(logger) -> None:
     html_filename = generate_html(in_dir, working_dir, out_dir, logger)
 
     logger.info(f"html_filename: {html_filename}")
+
+    dump_df_to_files(df)
 
 
 if __name__ == "__main__":
