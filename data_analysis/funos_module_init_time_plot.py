@@ -4,6 +4,9 @@
 """Plot utility functions for funos module init time analysis.
 
 This module contains plot utility functions for funos module init time analysis.
+To run `PYTHONPATH` needs to be set to point where `dpcsh_interactive_client` modules are
+
+`export PYTHONPATH=$WORKSPACE/FunTools/dpcsh_interactive_client/src/dpcsh_interactive_client:.`
 
 
 Example:
@@ -18,44 +21,39 @@ Todo:
 """
 
 import os
-import re
-import json
-import logging
-from typing import Tuple
-from typing import List, Dict
-
-import yaml
-import requests
 
 import matplotlib.pyplot as plt
 
-# import plotly.express as px
 import plotly.graph_objects as go
 import numpy as np
 import pandas as pd
 
 from funos_module_init_time import get_start_finish_times
 
+from utils import DefaultLogger
+
 plt.rcParams.update({"font.size": 22})
 
+# my_logger = logging.getLogger(__name__)
 
-class DefaultLogger:
-    """Default logger class."""
 
-    def __init__(self):
-        pass
+# class DefaultLogger:
+#     """Default logger class."""
 
-    def info(self, log_txt):
-        """Info"""
-        my_logger.info(log_txt)
+#     def __init__(self, log_level=logging.INFO):
+#         my_logger.setLevel(log_level)
 
-    def debug(self, log_txt):
-        """Debug"""
-        my_logger.info(log_txt)
+#     def info(self, log_txt):
+#         """Info"""
+#         my_logger.info(log_txt)
 
-    def error(self, log_txt):
-        """Error"""
-        my_logger.info("Error: %s" % log_txt)
+#     def debug(self, log_txt):
+#         """Debug"""
+#         my_logger.info(log_txt)
+
+#     def error(self, log_txt):
+#         """Error"""
+#         my_logger.info("Error: %s", log_txt)
 
 
 def _get_color_list(
@@ -121,8 +119,8 @@ def plot_module_time_chart(
 
     df_use = df.copy()
 
-    X_disp_granualarity = disp_granualarity_ms
-    X_granualarity = 1000000
+    x_disp_granualarity = disp_granualarity_ms
+    x_granualarity = 1000000
     x_tick_str = "ms"
 
     df_use.sort_values(by=[sort_by], inplace=True, ascending=True)
@@ -133,11 +131,11 @@ def plot_module_time_chart(
     if save_file_name != "" and save_file_name[-4:] != ".png":
         save_file_name = save_file_name + ".png"
 
-    start_min, finish_max, duration = get_start_finish_times(df_use, debug=debug)
+    _, _, duration = get_start_finish_times(df_use, debug=debug)
 
-    x_ticks = np.arange(0, duration, X_disp_granualarity * X_granualarity)
+    x_ticks = np.arange(0, duration, x_disp_granualarity * x_granualarity)
     x_tick_labels = [
-        "{} {}".format(str(int(x)), x_tick_str) for x in x_ticks / X_granualarity
+        "{} {}".format(str(int(x)), x_tick_str) for x in x_ticks / x_granualarity
     ]
 
     figsize = (40, len(df_use))
@@ -190,7 +188,6 @@ def plot_module_time_chart(
                     for k, v in group_table.items()
                 ]
                 ax.set_yticks(y_pos, labels=y_label)
-                pass
             else:
                 x_base = 6000000
                 for i, (k, v) in enumerate(group_table.items()):
@@ -253,20 +250,9 @@ def plot_module_time_chart(
     del df_use
 
 
-def main(logger):
+def main(logger=DefaultLogger()):
     """Main function"""
-    pass
-
-    # # load config file
-    # current_path = os.getcwd()
-    # logger.info("current directory is: " + current_path)
-
-    # # INPUT_FILE_URL = "uartout0.0.txt"
-    # INPUT_FILE_URL = os.environ["INPUT_FILE_URL"]
-
-    # process_module_notif_init_data(
-    #     INPUT_FILE_URL, logger=logger, working_dir=current_path
-    # )
+    # use `funos_module_init_time_test.py` to test plot function
 
 
 if __name__ == "__main__":

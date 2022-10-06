@@ -1,49 +1,33 @@
 #!/usr/bin/env python3
-"""Utility code to process funos module init time data"""
+# -*- coding: utf-8 -*-
+"""Utility code to process funos module init time data
 
-# import json
+This is a test script for `funos_module_init_time.py`.
+To run `PYTHONPATH` needs to be set to point where `dpcsh_interactive_client` modules are
+
+`export PYTHONPATH=$WORKSPACE/FunTools/dpcsh_interactive_client/src/dpcsh_interactive_client:.`
+
+
+Example:
+    The following example runs the module init time analysis on the log file and plots the data:
+
+        $ python3 funos_module_init_time_test.py
+
+Todo:
+
+"""
+
 import os
 from pathlib import Path
-
-# import json
-# import matplotlib.pyplot as plt
-# import numpy as np
-# import pandas as pd
-# from typing import Tuple
-# import yaml
-# import requests
-# import errno
-# import re
-
-# import logging
 
 from funos_module_init_time import process_module_notif_init_data
 from convert_nb import generate_report
 
-# try:
-#     from dpcsh_interactive_client.funos_module_init_time import *
-#     from dpcsh_interactive_client.convert_nb import generate_report, get_module_info
-
-# except ImportError:
-#     from convert_nb import generate_report, get_module_info
-#     from funos_module_init_time import *
+from utils import DefaultLogger
 
 
-class _default_logger:
-    def __init__(self):
-        pass
-
-    def info(self, str):
-        print(str)
-
-    def debug(self, str):
-        print(str)
-
-    def error(self, str):
-        print("Error: {}".format(str))
-
-
-def generate_html(in_dir, working_dir, out_dir, logger):
+def generate_html(in_dir, working_dir, out_dir, logger) -> str:
+    """Generate html by running jupyter notebook"""
 
     html_filename = generate_report(
         "funos_module_init_analysis.ipynb",
@@ -58,7 +42,7 @@ def generate_html(in_dir, working_dir, out_dir, logger):
     return html_filename
 
 
-def gen_module_init_data(logger):
+def gen_module_init_data(logger) -> None:
 
     # load config file, for testing
     current_path = os.getcwd()
@@ -67,13 +51,12 @@ def gen_module_init_data(logger):
     # raw log file is passed through env
     input_file_url = os.environ["INPUT_FILE_URL"]
 
-    print(f"INPUT_FILE_URL: {input_file_url}")
-    df, result = process_module_notif_init_data(
+    logger.info(f"INPUT_FILE_URL: {input_file_url}")
+    _, result = process_module_notif_init_data(
         input_file_url, logger=logger, working_dir=current_path
     )
 
     # result contains the metric for the chart
-
     # > `Perf stat result: {'longest_duration_ns': 2823587999.999998, 'longest_duration_id': 'rcnvme-init', 'total_duration_ns': 12637173858.0}`
 
     logger.info(f"Perf stat result: {result}")
@@ -89,8 +72,9 @@ def gen_module_init_data(logger):
 
 
 if __name__ == "__main__":
-    # logger.setLevel(logging.DEBUG)
-    logger = _default_logger()
+
+    logger = DefaultLogger("module_init")
+    logger.info("Starting module init time analysis")
 
     # prepare url from the FoD tag and set it to env variable
     DEFAULT_TEST_URL = "http://palladium-jobs.fungible.local:8080/job/4297914/raw_file/odp/uartout0.0.txt"

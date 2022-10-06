@@ -1,17 +1,26 @@
 #!/usr/bin/env python3
 
 # -*- coding: utf-8 -*-
+
 """Utility functions for funos module init time analysis.
 
 This module contains utility functions for funos module init time analysis.
 It parses the log files or dpchsh output json file and extract the module init time data.
 It also contains utility functions to plot the data.
 
+To run `PYTHONPATH` needs to be set to point where `dpcsh_interactive_client` modules are located.
+
+```
+$ export PYTHONPATH=$WORKSPACE/FunTools/dpcsh_interactive_client/src/dpcsh_interactive_client:$PYTHONPATH
+```
+
 
 Example:
     The following example runs the module init time analysis on the log file and plots the data:
 
+        ```
         $ python3 funos_module_init_time.py
+        ```
 
 Todo:
     * x-axis labels, currently not showing the full range, seems to be a bug in adding xticks
@@ -22,42 +31,35 @@ Todo:
 import os
 import re
 import json
-import logging
 from typing import Tuple
 from typing import List, Dict
 
 import yaml
 import requests
 
-# import matplotlib.pyplot as plt
-
-# import plotly.express as px
-# import plotly.graph_objects as go
-
-import numpy as np
 import pandas as pd
 
+from utils import DefaultLogger
 
-my_logger = logging.getLogger(__name__)
+# my_logger = logging.getLogger(__name__)
 
+# class DefaultLogger:
+#     """Default logger class."""
 
-class DefaultLogger:
-    """Default logger class."""
+#     def __init__(self, log_level=logging.INFO):
+#         my_logger.setLevel(log_level)
 
-    def __init__(self):
-        pass
+#     def info(self, log_txt):
+#         """Info"""
+#         my_logger.info(log_txt)
 
-    def info(self, log_txt):
-        """Info"""
-        my_logger.info(log_txt)
+#     def debug(self, log_txt):
+#         """Debug"""
+#         my_logger.info(log_txt)
 
-    def debug(self, log_txt):
-        """Debug"""
-        my_logger.info(log_txt)
-
-    def error(self, log_txt):
-        """Error"""
-        my_logger.info("Error: %s" % log_txt)
+#     def error(self, log_txt):
+#         """Error"""
+#         my_logger.info("Error: %s", log_txt)
 
 
 def _remove_timestamps_from_log(lines: str) -> str:
@@ -113,14 +115,6 @@ def _filter_log_with_marker(
     else:
         assert False, f"Marker {marker} not supported"
 
-    # filtered_lines = re.search(marker, lines, re.DOTALL)
-    # if filtered_lines:
-    #     filtered_lines = filtered_lines.group(1)
-    #     filtered_lines += "}"  # add back the end marker
-    # else:
-    #     logger.error(f"Read result : {lines}")
-    #     raise AttributeError(f"Marker {marker} not found")
-
     try:
         filtered_lines = re.search(marker, lines, re.DOTALL).group(1)
         filtered_lines += "}"  # add back the end marker
@@ -133,6 +127,42 @@ def _filter_log_with_marker(
     return json.loads(filtered_lines)
 
 
+def _read_from_file_or_url(
+    working_dir: str, file_name_url: str, logger=DefaultLogger()
+) -> str:
+    """Read from file or url
+    if it is file, `working_dir` is expected to be the directory where the file is located
+
+    """
+    if file_name_url.startswith("http"):
+        logger.info(f"Use file from URL: {file_name_url}")
+        try:
+            response = requests.get(file_name_url, timeout=10)
+            lines = response.text
+        except requests.exceptions.HTTPError as ex:
+            logger.error(f"Http error: {ex}")
+            raise ex
+        except requests.exceptions.ConnectionError as ex:
+            logger.error(f"Error Connecting: {ex}")
+            raise ex
+        except requests.exceptions.Timeout as ex:
+            logger.error(f"Timeout Error: {ex}")
+            raise ex
+        except requests.exceptions.RequestException as ex:
+            logger.error(f"Exception {ex}")
+            raise ex
+    else:
+        file_name = os.path.join(working_dir, file_name_url)
+        logger.info(f"Use file this path {file_name}")
+        try:
+            with open(file_name, encoding="utf-8") as f:
+                lines = f.read()
+        except FileNotFoundError as ex:
+            logger.error(f"File not found: {file_name}")
+            raise ex
+    return lines
+
+
 def _extract_module_init_data(
     file_name_url: str,
     working_dir: str = "./",
@@ -141,13 +171,13 @@ def _extract_module_init_data(
     logger=DefaultLogger(),
 ) -> Tuple[str, str]:
 
-    """Load module init data either from file or raw log from url
-    extract data and save json file to the working_dir
+    """Extract module and notif init data either from file or raw log from url.
+    Create json files for module and notif init data.
 
     Parameters
     ----------
     file_name_url : str
-        file name or url,
+        file name or url for funlos raw log
         if it url, then it is expected to starts with 'http'
         if it is file, then it is expected to be in the working_dir
     logger : logger
@@ -155,9 +185,11 @@ def _extract_module_init_data(
     working_dir : str, optional
         working directory, by default "./"
     module_init_file: str, optional
-        module init file name, by default "modules.json", full path for saved file will be working_dir/module_init_file
+        result module init file name, by default "modules.json",
+        full path for saved file will be working_dir/module_init_file
     notif_init_file: str, optional
-        notification init file name, by default "notifications.json", full path for saved file will be working_dir/notif_init_file
+        result notification init file name, by default "notifications.json",
+        full path for saved file will be working_dir/notif_init_file
 
     Returns
     -------
@@ -181,36 +213,7 @@ def _extract_module_init_data(
         os.makedirs(working_dir)
     logger.info(f"Working dir is {working_dir}")
 
-    def _read_file_or_url(working_dir, file_name_url):
-        if file_name_url.startswith("http"):
-            logger.info(f"Use file from URL: {file_name_url}")
-            try:
-                response = requests.get(file_name_url, timeout=10)
-                lines = response.text
-            except requests.exceptions.HTTPError as ex:
-                logger.error(f"Http error: {ex}")
-                raise ex
-            except requests.exceptions.ConnectionError as ex:
-                logger.error(f"Error Connecting: {ex}")
-                raise ex
-            except requests.exceptions.Timeout as ex:
-                logger.error(f"Timeout Error: {ex}")
-                raise ex
-            except requests.exceptions.RequestException as ex:
-                logger.error(f"Exception {ex}")
-                raise ex
-        else:
-            file_name = os.path.join(working_dir, file_name_url)
-            logger.info(f"Use file this path {file_name}")
-            try:
-                with open(file_name, encoding="utf-8") as f:
-                    lines = f.read()
-            except FileNotFoundError as ex:
-                logger.error(f"File not found: {file_name}")
-                raise ex
-        return lines
-
-    lines = _read_file_or_url(working_dir, file_name_url)
+    lines = _read_from_file_or_url(working_dir, file_name_url, logger=logger)
 
     lines = _remove_timestamps_from_log(lines)
 
@@ -352,17 +355,10 @@ def _load_notification_init_data(
     with open(input_file, "r", encoding="utf-8") as f:
         fun_notification_init = json.load(f)
 
-    if debug:
-        logger.info(fun_notification_init)
-
     new_dict = {}
     for k, v in fun_notification_init.items():
         # add `notif_suffix` to easily identify
-        k = f"{k}-{notif_suffix}"
-        new_dict[k] = [v, v + dummy_duration]
-
-    if debug:
-        logger.info(new_dict)
+        new_dict[f"{k}-{notif_suffix}"] = [v, v + dummy_duration]
 
     temp_file_name = notificaiotns_init_file_name + "_temp.json"
     with open(temp_file_name, "w", encoding="utf-8") as f:
@@ -381,8 +377,8 @@ def _load_notification_init_data(
     return fun_notification_init_df
 
 
-def _dump_file(df: pd.DataFrame, file_name: str, sorted_key: str = None) -> None:
-    """Dump the dataframe to a file
+def _dump_df_to_files(df: pd.DataFrame, file_name: str, sorted_key: str = None) -> None:
+    """Dump the dataframe to a file in sorted order in txt, csv, json, yml formats
 
     Parameters
     ----------
@@ -445,9 +441,7 @@ def print_group_table(
     out: str
         report string
     """
-    output = "Collapsed module group report (threshold time of {} ns):\n".format(
-        threshold
-    )
+    output = f"Collapsed module group report (threshold time of {threshold} ns):\n"
     output += "========================\n"
     for key, value in group_table.items():
         output += "{}({}): {}\n".format(key, len(value), value)
@@ -458,15 +452,32 @@ def print_group_table(
     if save_file_name:
         if save_file_name[:-4] != ".txt":
             save_file_name += ".txt"
-        with open(save_file_name, "w") as f:
+        with open(save_file_name, "w", encoding="utf-8") as f:
             f.write(output)
     return output
 
 
 def get_start_finish_times(
     df: pd.DataFrame, logger=DefaultLogger(), debug: bool = False
-) -> pd.DataFrame:
-    """Utility to get start and finish times from df"""
+) -> Tuple[float, float, float]:
+    """Utility to get start and finish times from df
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        dataframe with module_name, start_time, finish_time, module_init_duration
+    logger : logger, optional
+        logger, by default DefaultLogger()
+    debug : bool, optional
+        debug flag, by default False
+
+    Returns
+    -------
+    start_min, finish_max, duration: Tuple[float, float, float]
+        start_min: minimum start time
+        finish_max: maximum finish time
+        duration: finish_max - start_min
+    """
 
     start_min = df["start_time"].min()  # first module start time
     finish_max = df["finish_time"].max()  # last module finish time
@@ -481,9 +492,7 @@ def get_start_finish_times(
         total_module_time = df["module_init_duration"].sum()
         logger.info(f"Total module init time: {total_module_time} ns")
         logger.info(
-            "duration (time between the first module start time and last module finish time): {} ns".format(
-                finish_max - start_min
-            )
+            f"duration (time between the first module start and last module finish): {duration} ns"
         )
         logger.info(
             "'Total module init time' / 'duration' (greater than 1 is better, which means more concurrent modules init): {} ".format(
@@ -501,7 +510,8 @@ def get_collapsed_df(
     logger=DefaultLogger(),
     debug: bool = False,
 ) -> Tuple[pd.DataFrame, dict]:
-    """Collpased df using the threshold
+    """Collpased df using the threshold.
+    Collapsed modules into groups if the duration is less than the threshold.
 
     Parameters
     ----------
@@ -510,34 +520,32 @@ def get_collapsed_df(
     threshold : float
         threshold value to collapse, fraction to the largest duration
         ex> 0.10 means collapse all the modules with duration less than 10% of the largest duration
+    notif_suffix : str, optional
+        suffix to add to notifications, by default "**"
 
     Returns
     -------
     pd.DataFrame
         collapsed dataframe
-    dict
-        group table, key is the group name, value is the list of modules in the group
+    group_table: dict
+        collapsed group table dict, key is the group name, value is the list of modules in the group
     """
 
     def _get_group_name(name):
         """form group name"""
         if name.endswith(notif_suffix):
             # for notification
-            group_name = "group_{}{}".format(n_event, notif_suffix)
+            group_name = f"group_{n_event}{notif_suffix}"
         else:
-            group_name = "group_{}".format(n_event)
+            group_name = f"group_{n_event}"
         return group_name
 
     df = df_in.copy()
     df.sort_values(by=["start_time"], inplace=True, ascending=True)
 
-    new_events = []
-    n_event = 0
-    num_included = 0
+    new_events, n_event, num_included = [], 0, 0
     cur_duration = 0  # current start to the finish of the last event
-    cur_start = 0
-    cur_finish = 0
-    last = len(df)
+    cur_start, cur_finish, last = 0, 0, len(df)
     group_table = {}
     for i in range(len(df)):
         name, start, finish, duration = (
@@ -552,8 +560,7 @@ def get_collapsed_df(
         if cur_duration == 0:
             num_included = 0
             cur_duration = duration
-            cur_start = start
-            cur_finish = finish
+            cur_start, cur_finish = start, finish
             group_modules = []
 
         cur_finish = max(cur_finish, finish)
@@ -562,12 +569,7 @@ def get_collapsed_df(
         # peek the next check if next module passes the thresholds
         next_module_pass_threshold = False
         if i < last - 1:
-            next_name, next_start, next_finish, next_duration = (
-                df.index[i + 1],
-                df.iloc[i + 1].start_time,
-                df.iloc[i + 1].finish_time,
-                df.iloc[i + 1].module_init_duration,
-            )
+            next_finish = df.iloc[i + 1].finish_time
             next_finish = max(cur_finish, next_finish)
             if next_finish - cur_start > threshold:
                 next_module_pass_threshold = True
@@ -586,18 +588,16 @@ def get_collapsed_df(
                 "module_init_duration": cur_duration,
             }
             if debug:
-                logger.info("includes {}, added: {}".format(num_included, new_d))
+                logger.info(f"includes {num_included}, added: {new_d}")
             new_events.append(new_d)
             cur_duration = 0
             n_event += 1
             group_table[group_name] = group_modules if num_included > 0 else [name]
-            # group_modules = []
         else:
             group_modules.append(name)
             num_included += 1
 
     if cur_duration != 0:
-        # group_name = "group_{}".format(n_event)
         group_name = _get_group_name(name)
         new_d = {
             "module_name": group_name,
@@ -606,7 +606,7 @@ def get_collapsed_df(
             "module_init_duration": cur_duration,
         }
         if debug:
-            logger.info("added: {}".format(new_d))
+            logger.info(f"added: {new_d}")
         new_events.append(new_d)
         group_table[group_name] = group_modules
 
@@ -619,12 +619,15 @@ def get_collapsed_df(
 
 def get_duration_threshold(df: pd.DataFrame, threshold: float = 0.10) -> float:
     """Get the threshold value from the dataframe
+    Use threshold value based on the max duration multiplied by `threshold` argument
+
     Parameters
     ----------
     df : pd.DataFrame
         dataframe with module init data
     threshold : float, optional
         threshold value, by default 0.10
+
     Returns
     -------
     float
@@ -665,6 +668,8 @@ def process_module_notif_init_data(
         result dictionary
     """
 
+    # input data can be raw funos log file or url for the log
+    # or processed module and notif init json files
     if file_name_url is not None:
         (
             modules_init_file_name,
@@ -684,10 +689,9 @@ def process_module_notif_init_data(
     )
 
     threshold_collapse = get_duration_threshold(fun_module_init_df, threshold=0.01)
-    logger.info("Threshold collapse: {}".format(threshold_collapse))
+    logger.info(f"Threshold collapse: {threshold_collapse}")
 
     # process notif init data
-
     fun_notification_init_df = _load_notification_init_data(
         notificaiotns_init_file_name,
         convert_time_to_ns=True,
@@ -697,11 +701,9 @@ def process_module_notif_init_data(
     )
 
     # combine module and notif init data
-
     fun_module_notif_init_df = pd.concat([fun_module_init_df, fun_notification_init_df])
-    # logger.info(fun_module_notif_init_df)
 
-    def _get_perf_stat(df):
+    def _get_perf_stat(df: pd.DataFrame) -> dict:
         # get the longest module duration
         # total duration
         longest_duraiton_id = df["module_init_duration"].idxmax()
@@ -722,7 +724,7 @@ def process_module_notif_init_data(
     return fun_module_notif_init_df, result
 
 
-def main(logger):
+def main(logger=DefaultLogger()):
     """Main function"""
 
     # load config file
