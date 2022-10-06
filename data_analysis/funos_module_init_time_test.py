@@ -36,7 +36,7 @@ def generate_html(in_dir, working_dir, out_dir, logger) -> str:
         in_dir=in_dir,
         out_dir=out_dir,
         execute=True,
-        working_dir=in_dir,
+        working_dir=working_dir,
         logger=logger,
         report_filename="funos_module_init_analysis.html",
     )
@@ -65,7 +65,7 @@ def gen_module_init_data(logger) -> None:
 
     # Generate html report
     in_dir = f"{Path.home()}/Projects/Fng/FunTools/data_analysis/"
-    working_dir = f"{Path.home()}/Projects/Fng/FunTools/dpcsh_interactive_client/src"
+    working_dir = in_dir
     out_dir = f"{Path.home()}/tmp/test_gen"
 
     html_filename = generate_html(in_dir, working_dir, out_dir, logger)
