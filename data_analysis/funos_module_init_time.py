@@ -357,6 +357,122 @@ def _load_notification_init_data(
     return fun_notification_init_df
 
 
+def _get_perf_stat_v1(df_in: pd.DataFrame) -> dict:
+    """Get performance summary stat
+
+
+    Parameter
+    ---------
+    df : pd.DataFrame
+        dataframe with module_name, start_time, finish_time, module_init_duration
+
+    Returns
+    -------
+    result: dict
+        dictionary with performance stat
+    """
+    df = df_in.copy()
+    df.sort_values(by=["start_time"], inplace=True, ascending=True)
+
+    # get the longest module duration
+    # total duration
+    longest_duraiton_id = df["module_init_duration"].idxmax()
+    longest_duraiton = df["module_init_duration"].loc[longest_duraiton_id]
+
+    start_min = df["start_time"].min()
+    finish_max = df["finish_time"].max()
+
+    result = {
+        "longest_duration_ns": longest_duraiton,
+        "longest_duration_id": longest_duraiton_id,
+        "total_duration_ns": finish_max - start_min,
+    }
+
+    del df
+
+    return result
+
+
+def _get_longest_gap(
+    df: pd.DataFrame, logger=DefaultLogger(), debug: bool = False
+) -> Tuple[float, str]:
+    """Get the longest gap between two modules"""
+
+    # get the largest gap
+    d = df.to_dict(orient="split")
+
+    longest_duration_gap = 0
+
+    finish_time_i = 0
+    finish_time = d["data"][finish_time_i][1]
+    for i in range(1, len(d["data"])):
+        start_time = d["data"][i][0]
+        duration = start_time - finish_time
+        # update finish time
+        finish_time_i = i
+        finish_time = d["data"][finish_time_i][1]
+
+        if duration > longest_duration_gap:
+            longest_duration_gap = duration
+            longest_duration_gap_id = i
+
+    longest_gap_between = "{} - {}".format(
+        d["index"][longest_duration_gap_id - 1], d["index"][longest_duration_gap_id]
+    )
+
+    if debug:
+        logger.debug("longest_duration_gap: {}".format(longest_duration_gap))
+        logger.debug(
+            "finish name {}, start name {}".format(
+                d["index"][longest_duration_gap_id - 1],
+                d["index"][longest_duration_gap_id],
+            )
+        )
+
+        logger.debug("longest_gap_between: {}".format(longest_gap_between))
+
+    return longest_duration_gap, longest_gap_between
+
+
+def _get_perf_stat(df_in: pd.DataFrame) -> dict:
+    """Get performance summary stat
+
+
+    Parameter
+    ---------
+    df : pd.DataFrame
+        dataframe with module_name, start_time, finish_time, module_init_duration
+
+    Returns
+    -------
+    result: dict
+        dictionary with performance stat
+    """
+    df = df_in.copy()
+    df.sort_values(by=["start_time"], inplace=True, ascending=True)
+
+    # get the longest module duration
+    longest_duraiton_id = df["module_init_duration"].idxmax()
+    longest_duraiton = df["module_init_duration"].loc[longest_duraiton_id]
+
+    start_min = df["start_time"].min()
+    finish_max = df["finish_time"].max()
+
+    longest_duration_gap, longest_duration_between = _get_longest_gap(df)
+
+    del df
+
+    result = {
+        "longest_duration_ns": longest_duraiton,
+        "longest_duration_id": longest_duraiton_id,
+        "longest_gap_ns": longest_duration_gap,
+        "longest_gap_between": longest_duration_between,
+        "total_duration_ns": finish_max - start_min,
+    }
+
+    return result
+
+
 #########################################
 # APIs
 #########################################
@@ -400,6 +516,8 @@ def dump_df_to_files(
             f,
             default_flow_style=False,
         )
+
+    del sorted_df
 
 
 def print_group_table(
@@ -686,22 +804,6 @@ def process_module_notif_init_data(
 
     # combine module and notif init data
     fun_module_notif_init_df = pd.concat([fun_module_init_df, fun_notification_init_df])
-
-    def _get_perf_stat(df: pd.DataFrame) -> dict:
-        # get the longest module duration
-        # total duration
-        longest_duraiton_id = df["module_init_duration"].idxmax()
-        longest_duraiton = df["module_init_duration"].loc[longest_duraiton_id]
-
-        start_min = df["start_time"].min()
-        finish_max = df["finish_time"].max()
-
-        result = {
-            "longest_duration_ns": longest_duraiton,
-            "longest_duration_id": longest_duraiton_id,
-            "total_duration_ns": finish_max - start_min,
-        }
-        return result
 
     result = _get_perf_stat(fun_module_notif_init_df)
 
