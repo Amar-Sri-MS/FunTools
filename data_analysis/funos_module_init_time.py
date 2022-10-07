@@ -39,7 +39,7 @@ import requests
 
 import pandas as pd
 
-from utils import DefaultLogger
+from utils import DefaultLogger, get_input_file_url
 
 
 def _remove_timestamps_from_log(lines: str) -> str:
@@ -634,11 +634,11 @@ def process_module_notif_init_data(
     Parameters
     ----------
     file_name_url : str, optional
-        file name or url, by default None
+        *raw* log file name or url, by default None
     modules_init_file_name : str, optional
-        modules init file name, by default None
+        modules init *json* file name, by default None
     notificaiotns_init_file_name : str, optional
-        notifications init file name, by default None
+        notifications init *json* file name, by default None
     working_dir : str, optional
         working directory, by default "./"
     logger : logging.Logger, optional
@@ -715,8 +715,7 @@ def main(logger=DefaultLogger()):
     current_path = os.getcwd()
     logger.info("current directory is: " + current_path)
 
-    # INPUT_FILE_URL = "uartout0.0.txt"
-    input_file_url = os.environ["INPUT_FILE_URL"]
+    input_file_url = get_input_file_url()
 
     process_module_notif_init_data(
         input_file_url, logger=logger, working_dir=current_path
@@ -726,9 +725,5 @@ def main(logger=DefaultLogger()):
 if __name__ == "__main__":
 
     logger = DefaultLogger()
-
-    os.environ[
-        "INPUT_FILE_URL"
-    ] = "http://palladium-jobs.fungible.local:8080/job/4297914/raw_file/odp/uartout0.0.txt"
 
     main(logger)
