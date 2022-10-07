@@ -55,9 +55,9 @@ const char *get_device(int chip_instance)
 
 // ***** i2c functions -- implemented in libi2c.so for FS1600
 extern "C" {
-int i2c_master_read(const char *device, int port,
+int i2c_master_read(const char *device, int addr,
 		    unsigned char* buff, int buff_len);
-int i2c_master_write(const char *device, int port,
+int i2c_master_write(const char *device, int addr,
 		     unsigned char* buff, int buff_len);
 }
 

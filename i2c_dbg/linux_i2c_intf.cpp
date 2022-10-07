@@ -44,7 +44,7 @@ static int open_i2c_dev(const char *device_name)
 	return fd;
 }
 
-static int i2c_readwrite(const char *device_name, int port, int read,
+static int i2c_readwrite(const char *device_name, int addr, int read,
 		  unsigned char* flit_buffer, int len)
 {
 	int fd = open_i2c_dev(device_name);
@@ -54,11 +54,9 @@ static int i2c_readwrite(const char *device_name, int port, int read,
 		return -1;
 	}
 
-	uint16_t flags = read ? I2C_M_RD : 0;
-
 	struct i2c_msg msg;
 	msg.flags = read ? I2C_M_RD : 0;
-	msg.addr = port;
+	msg.addr = addr;
 	msg.len = len;
 	msg.buf = flit_buffer;
 
@@ -71,6 +69,7 @@ static int i2c_readwrite(const char *device_name, int port, int read,
 	{
 		log("Error: Sending i2c messages: %s",
 		    strerror(errno));
+		close(fd);
 		return -1;
 	}
         close(fd);
@@ -80,14 +79,14 @@ static int i2c_readwrite(const char *device_name, int port, int read,
 
 }
 
-extern "C" int i2c_master_read(const char *device, int port,
+extern "C" int i2c_master_read(const char *device, int addr,
 		    unsigned char* buff, int buff_len)
 {
-	return i2c_readwrite(device, port, 1, buff, buff_len);
+	return i2c_readwrite(device, addr, 1, buff, buff_len);
 }
 
-extern "C" int i2c_master_write(const char *device, int port,
+extern "C" int i2c_master_write(const char *device, int addr,
 		     unsigned char* buff, int buff_len)
 {
-	return i2c_readwrite(device, port, 0, buff, buff_len);
+	return i2c_readwrite(device, addr, 0, buff, buff_len);
 }
