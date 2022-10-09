@@ -72,8 +72,11 @@ def gen_module_init_data(
     """
 
     # prepare config file for note book
-    config_file = os.path.join(working_dir, "funos_module_init_analysis_config.yml")
+    # save config file to the out_dir, which is a temp directory
+    config_file = os.path.join(out_dir, "funos_module_init_analysis_config.yml")
     save_yml_log_with_input_file_url(config_file, input_file_url)
+    os.environ["FUNOS_MODULE_INIT_ANALYSIS_CONFIG_FILE"] = config_file
+    logger.info("config_file: " + config_file)
 
     # load config file, for testing
     current_path = os.getcwd()
