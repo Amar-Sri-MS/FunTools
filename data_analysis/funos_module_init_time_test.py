@@ -83,8 +83,10 @@ def gen_module_init_data(
     logger.info("current directory is: " + current_path)
 
     logger.info(f"INPUT_FILE_URL: {input_file_url}")
+    # setting working_dir for `process_module_notif_init_data` as `out_dir
+    # so that the data files are generated in the `out_dir`
     df, result = process_module_notif_init_data(
-        input_file_url, logger=logger, working_dir=current_path
+        input_file_url, logger=logger, working_dir=out_dir
     )
 
     # result contains the metric for the chart

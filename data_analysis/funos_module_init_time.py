@@ -203,6 +203,10 @@ def _extract_module_init_data(
     modules_init_file_name = os.path.join(working_dir, module_init_file)
     notificaiotns_init_file_name = os.path.join(working_dir, notif_init_file)
 
+    logger.debug(
+        f"Saved files: {modules_init_file_name} and {notificaiotns_init_file_name}"
+    )
+
     with open(modules_init_file_name, "w", encoding="utf-8") as f:
         json.dump(module_init, f, indent=4)
 
