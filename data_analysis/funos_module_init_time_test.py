@@ -52,16 +52,16 @@ def gen_module_init_data(
 
     Parameters
     ----------
-    logger: logger
-        logger
     in_dir: str
         notebook directory
-    out_dir: str
-        directory for generate file
-    execute: bool
-        to run notebook or not
     working_dir: str
         directory to run notebook, so that we can pick up the data files
+    out_dir: str
+        directory for generate file
+    input_file_url: str
+        url of the input file
+    logger: logger
+        logger
 
     Returns
     -------
@@ -74,7 +74,8 @@ def gen_module_init_data(
     # prepare config file for note book
     # save config file to the out_dir, which is a temp directory
     config_file = os.path.join(out_dir, "funos_module_init_analysis_config.yml")
-    save_yml_log_with_input_file_url(config_file, input_file_url)
+    save_yml_log_with_input_file_url(config_file, input_file_url, out_dir)
+
     os.environ["FUNOS_MODULE_INIT_ANALYSIS_CONFIG_FILE"] = config_file
     logger.info("config_file: " + config_file)
 
@@ -98,7 +99,7 @@ def gen_module_init_data(
 
     logger.info(f"html_filename: {html_filename}")
 
-    dump_df_to_files(df)
+    dump_df_to_files(df, out_dir)
 
     return html_filename, result
 
@@ -109,11 +110,11 @@ def main(logger) -> None:
     # note book directory
     in_dir = f"{Path.home()}/Projects/Fng/FunTools/data_analysis/"
 
-    # directory to run notebook, so that we can pick up the data files
-    working_dir = in_dir
-
     # directory for generate file
     out_dir = f"{Path.home()}/tmp/test_gen"
+
+    # directory to run notebook, so that we can pick up the data files
+    working_dir = out_dir
 
     input_file_url = "http://palladium-jobs.fungible.local:8080/job/4731935/raw_file/odp/uartout0.0.txt"
 

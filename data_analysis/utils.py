@@ -36,7 +36,9 @@ class DefaultLogger:
         self.my_logger.info("Error: %s", log_txt)
 
 
-def save_yml_log_with_input_file_url(file_name: str, input_file_url: str) -> None:
+def save_yml_log_with_input_file_url(
+    file_name: str, input_file_url: str, out_dir: str
+) -> None:
     """Save yml config file with input_file_url entry in.
     This config file is used for passing config to the notebook.
     Note that this function overwrites the current config file if exists.
@@ -47,6 +49,8 @@ def save_yml_log_with_input_file_url(file_name: str, input_file_url: str) -> Non
         file name for config yml file
     input_file_url: str
         config entry
+    out_dir: str
+        output directory
 
     Returns
     -------
@@ -55,6 +59,7 @@ def save_yml_log_with_input_file_url(file_name: str, input_file_url: str) -> Non
 
     config = {}
     config["file_names"] = {"input_file_url": input_file_url}
+    config["out_dir"] = out_dir
 
     # save to yml file
     with open(file_name, "w", encoding="utf-8") as outfile:

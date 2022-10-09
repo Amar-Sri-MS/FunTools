@@ -314,7 +314,6 @@ def _load_notification_init_data(
     dummy_duration: float = 1e-1,
     debug: bool = False,
     notif_suffix: str = "**",
-    notificaiotns_init_file_name: str = "notifications.json",
     logger=DefaultLogger(),
 ) -> pd.DataFrame:
     """load notificaiton init data from json file and convert to pandas dataframe
@@ -344,7 +343,8 @@ def _load_notification_init_data(
         # add `notif_suffix` to easily identify
         new_dict[f"{k}-{notif_suffix}"] = [v, v + dummy_duration]
 
-    temp_file_name = notificaiotns_init_file_name + "_temp.json"
+    temp_file_name = input_file + "_temp.json"
+    logger.debug("notif temp file name: {}".format(temp_file_name))
     with open(temp_file_name, "w", encoding="utf-8") as f:
         json.dump(new_dict, f)
 
@@ -484,6 +484,7 @@ def _get_perf_stat(df_in: pd.DataFrame) -> dict:
 
 def dump_df_to_files(
     df: pd.DataFrame,
+    out_dir: str,
     file_name: str = "fun_module_notif_init_chart",
     sorted_key: str = "start_time",
 ) -> None:
@@ -493,6 +494,8 @@ def dump_df_to_files(
     ----------
     df : pd.DataFrame
         dataframe to dump
+    out_dir: str
+        output directory
     file_name : str, optional
         file name to dump to, by default "fun_module_notif_init_chart"
     sorted_key : str, optional
@@ -504,16 +507,17 @@ def dump_df_to_files(
     if sorted_key:
         sorted_df.sort_values(by=[sorted_key], inplace=True, ascending=True)
 
-    txt_file_name = file_name + ".txt"
+    txt_file_name = os.path.join(out_dir, file_name + ".txt")
     with open(txt_file_name, "w", encoding="utf-8") as f:
         f.write(sorted_df.to_string())
     sorted_df_file_name = file_name
-    json_file_name = sorted_df_file_name + ".json"
+    json_file_name = os.path.join(out_dir, sorted_df_file_name + ".json")
     sorted_df.to_json(json_file_name)
-    csv_file_name = sorted_df_file_name + ".csv"
+
+    csv_file_name = os.path.join(out_dir, sorted_df_file_name + ".csv")
     sorted_df.to_csv(csv_file_name)
 
-    yaml_file_name = sorted_df_file_name + ".yaml"
+    yaml_file_name = os.path.join(out_dir, sorted_df_file_name + ".yml")
     with open(yaml_file_name, "w", encoding="utf-8") as f:
         yaml.dump(
             {"result": json.loads(sorted_df.to_json(orient="records"))},
@@ -527,6 +531,7 @@ def dump_df_to_files(
 def print_group_table(
     group_table: dict,
     threshold: float,
+    out_dir: str,
     save_file_name: str = None,
     logger=DefaultLogger(),
 ):
@@ -762,7 +767,7 @@ def process_module_notif_init_data(
     notificaiotns_init_file_name : str, optional
         notifications init *json* file name, by default None
     working_dir : str, optional
-        working directory, by default "./"
+        working directory for saving generated files, by default "./"
     logger : logging.Logger, optional
         logger, by default DefaultLogger()
 
