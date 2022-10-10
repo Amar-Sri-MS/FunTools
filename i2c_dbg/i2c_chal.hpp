@@ -33,6 +33,11 @@ int i2c_dbg_write_flash(int chip_instance, int offset,
 const unsigned char *i2c_dbg_read_flash(int chip_instance, int offset,
 					int data_length);
 
+const unsigned char *i2c_dbg_read_flash_ex(int chip_instance, int offset,
+					   int data_length, int *err_code);
+
+
+
 #ifdef __cplusplus
 }
 #endif
