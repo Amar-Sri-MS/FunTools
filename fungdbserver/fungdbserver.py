@@ -30,6 +30,7 @@ import logging
 import argparse
 import binascii
 import platform
+import traceback
 import subprocess
 import uuid_extract
 import signal
@@ -583,12 +584,23 @@ class FileCorpse:
         for cl in range(9):
             for co in range(6):
                 for vp in range(4):
+                    tid = cl * 100 + co * 10 + vp
                     if (self.ccv_is_running(cl, co, vp)):
-                        tid = cl * 100 + co * 10 + vp
+                        DEBUG(f"Adding vpnumtab {tid}")
                         self.thread_list.append(tid)
                         self.vpnumtab[tid] = self.ccv_vpnum(cl, co, vp)
+                    else:
+                        DEBUG(f"Thread {cl}.{co}.{vp} ({tid}) is not running")
         self.threadcount = len(self.thread_list)
         LOG("FunOS has %d online threads" % self.threadcount)
+
+        if (self.threadcount == 0):
+            print("WARNING: No online threads!")
+        elif (self.threadid not in self.thread_list):
+            tid = self.thread_list[0]
+            DEBUG(f"Default thread {self.threadid} not running / " +
+                  "does not exist. Setting to thread {tid}")
+            self.SetThreadId(tid)
 
     def GetThreadInfo(self, tid):
         cl = int(tid / 100)
@@ -1701,7 +1713,8 @@ def main():
         server_listen(sock)
     except Exception as e:
         LOG_ALWAYS("Exception while running fungdbserver.py, exiting")
-        print(e)
+        if (opts.verbose >= 1):
+            traceback.print_exc()
         force_exit = True
     finally:
         # clean downloaded excat files and then raise exception.
