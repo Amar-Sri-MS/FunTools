@@ -854,11 +854,15 @@ def main():
                         "Trying anyway")
     else:
         if boot_step > expected_boot_step:
-            logging.error("Enrollment not needed: chip is past the boot stage")
+            logging.error("Enrollment not needed: chip is past the boot stage:"\
+                          "0x%X > 0x%X",
+                          boot_step, expected_boot_step)
             return False
 
         if boot_step < expected_boot_step:
-            logging.error("Enrollment not possible: chip is stuck at an earlier boot stage")
+            logging.error("Enrollment not possible: chip is stuck at an earlier "\
+                          "boot stage: 0x%X < 0x%X",
+                          boot_step, expected_boot_step)
             return False
 
 
