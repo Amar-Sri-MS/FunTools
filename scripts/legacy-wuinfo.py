@@ -13,6 +13,7 @@ from typing import List, Optional, Type, Dict, Any, Tuple, Set
 from comby import Comby # type: ignore 
 import multiprocessing
 import subprocess
+import datetime
 import argparse
 import hashlib
 import pickle
@@ -64,11 +65,16 @@ class WUDeclList():
         else:
             return list(fnames)[0]
 
+    def decl_strs(self) -> str:
+        dsl = [decl.decl_str() for decl in self.decls]
+        return dsl
+
     def decl_str(self) -> str:
         if (len(self.decls) != 1):
+            print(f"ERROR: {self.decls[0].decl_str()}")
             raise RuntimeError("Mutliple-declared down reference. Cannot fix")
-        return self.decls[0].decl_str()
-            
+        return self.decl_strs()[0]
+
     def first_lineno(self):
         lineno = 99999999999
         for decl in self.decls:
@@ -388,8 +394,8 @@ class WUInfo():
             xrefsls = list(ff.crossreffl.values())          
             xrefs = [fname for sublist in xrefsls for fname in sublist]
 
-            print("Processing xrefs for %s" % ff.name)
-            print(xrefs)
+            # print("Processing xrefs for %s" % ff.name)
+            # print(xrefs)
 
             # find the set for the current file
             # (updates in place)
@@ -515,7 +521,7 @@ class GroupPattern(Pattern):
         rewrites: List[Tuple[Optional[str], str]] = []
         for m in ms:
             d = {}
-            print(m)
+            # print(m)
             d["wuname"] = m.environment["wuname"].fragment
             d["fnlist"] = pad_fnlist(m.environment["fnlist"].fragment)
 
@@ -545,7 +551,7 @@ DECLS : List[Pattern] = [
     # first rewrite to add attributes if they're missing, then just rewrite
     MultipassPattern("WU_HANDLER",
                      "WU_HANDLER(:[attrs]) void :[wuname]:[~[ \t]*](:[params])",
-                     [ ("WU_HANDLER() void :[wuname:[~[ \t]*]](:[params])",
+                     [ ("WU_HANDLER() void :[wuname]:[~[ \t]*](:[params])",
                         "WU_HANDLER(WU_ATTR_NONE) void :[wuname](:[params])"),
 
                         ("WU_HANDLER(:[attrs]) void :[[wuname]]:[~[ \t]*](:[~(void)?])",
@@ -809,6 +815,16 @@ def split_input_for_fwd(input: str) -> Tuple[str, str]:
 
     raise RuntimeError("Could not split file!")
 
+SPLIT_INCL = SplitPattern("{:[start]#include <nucleus/wu_register.h>:[rest]}")
+
+# FIXME: do this with comby
+#INC = "#include <nucleus/wu_register.h>"
+
+def split_input_for_includes(input: str) -> Tuple[str, str]:
+        tup = SPLIT_INCL.match(input)
+        return tup
+
+
 # generate-wutab.py python regex
 # m = re.match(r"^(const )?struct (?P<struct_name>[a-zA-Z0-9_]+)", arg)
 
@@ -825,6 +841,37 @@ def scrape_structs(decl: str) -> Set[str]:
 
     return ret - KNOWN_STRUCTS
 
+def fwd_decls_for_wus(wuinfo: WUInfo, refs: Set[str]) -> str:
+
+    wu_fwd = ""
+    struct_fwd = set();
+    for wuname in refs:
+        print(f"\tReference to {wuname} found")
+
+        # generate the declarations for it
+        decl_strs = wuinfo.wus[wuname].decl_strs()
+
+        # just run all the rewrites over them
+        for wu_str in decl_strs:
+            orig = wu_str
+            for decl in DECLS:
+                wu_str = decl.fwdrewrite(wu_str)
+            
+            if (wu_str == orig):
+                print(f"WU {wuname} did not get rewritten for forward declaration. Assuming group")
+                continue
+
+            # scrape any struct types. This is ugly, but no way to change old code without it
+            struct_fwd.update(scrape_structs(wu_str))
+
+            # append the declaration
+            wu_fwd += f'{wu_str};\n'
+
+    # make the struct forward declarations
+    for sname in struct_fwd:
+        wu_fwd = f"struct {sname};\n" + wu_fwd
+
+    return wu_fwd
 
 def fixup_file_internal(wuinfo: WUInfo, fl: FunFile):
     print(f'Fixing internals for file {fl.name}')
@@ -835,47 +882,29 @@ def fixup_file_internal(wuinfo: WUInfo, fl: FunFile):
 
     # walk the list of down references
     all_fwd = "\n"
-    all_fwd += "/* automagically generated forward declarations for WU handlers */\n"
-    wu_fwd = ""
-    struct_fwd = set();
-    for wuname in fl.downref:
-        print(f"\tReference to {wuname} found")
+    all_fwd += "/* these automagically generated forward declarations for legacy WU handlers."
+    all_fwd += " * these declarations are only needed because these WUs are"
+    all_fwd += " * referenced in this file before they are declared."
+    all_fwd += " * forward declarations are not needed for properly ordered code."
+    all_fwd += " */\n"
 
-        # generate the declarations for it
-        decl_str = wuinfo.wus[wuname].decl_str()
-
-        # just run all the rewrites over it
-        wu_str = decl_str
-        for decl in DECLS:
-            wu_str = decl.fwdrewrite(wu_str)
-        
-        if (wu_str == decl_str):
-            print(f"WU {wuname} did not get rewritten for forward declaration. Assuming group")
-            continue
-
-        # scrape any struct types. This is ugly, but no way to change old code without it
-        struct_fwd.update(scrape_structs(wu_str))
-
-        # append the declaration
-        wu_fwd += f'{wu_str};\n'
-
-    # make the struct forward declarations
-    for sname in struct_fwd:
-        all_fwd += f"struct {sname};\n"
+    # generate the actual declarations, but only for things that won't
+    # appear an an xref header
+    wu_fwd = fwd_decls_for_wus(wuinfo, fl.downref - set(fl.inref.keys()))
 
     # add the wu declarations
     all_fwd += wu_fwd
 
     # patch them into the file
-    (first, last) = split_input_for_fwd(input)
-    input = first + all_fwd + last
+    if (len(fl.downref) > 0):
+        (first, last) = split_input_for_fwd(input)
+        input = first + all_fwd + last
 
     # now rewrite all the decls
     for decl in DECLS:
         input = decl.rewrite(input)
 
     open(fl.name, "w").write(input)
-    count += 1
 
 def do_fixup_internal(wuinfo: WUInfo, fileinfo: Dict[str, FunFile], fixup: str):
 
@@ -890,9 +919,124 @@ def do_fixup_internal(wuinfo: WUInfo, fileinfo: Dict[str, FunFile], fixup: str):
             continue
         
         fixup_file_internal(wuinfo, fl)
+        count += 1
 
 
     print(f"Fixed up internals for {count} files")
+
+
+def hfile_for_filename(flname: str) -> str:
+    fname = os.path.splitext(flname)[0] + ".wuids.h"
+    if (fname.startswith("./")):
+        fname = fname[2:]
+    return fname
+
+def hfile_for_file(fl: FunFile) -> str:
+    return hfile_for_filename(fl.name)
+
+def hguard_for_file(fl: FunFile) -> str:
+    fname = os.path.splitext(fl.name)[0]
+    if (fname.startswith("./")):
+        fname = fname[2:]
+    fname = fname.upper()
+    fname.replace(".", "_")
+    fname = fname.replace("/", "_")
+    fname = f"__{fname}_LEGACY_WUIDS_H__"
+    return fname
+
+WU_HEADER_TEMPL = f"""/*
+ *  {{hname}}
+ *
+ *  Machine generated on on {datetime.date.today().isoformat()}.
+ *  Copyright © {datetime.date.today().year} Fungible. All rights reserved.
+ *
+ *
+ * WARNING: This file is machine generated!!!!
+ *
+ * This file contains WU declarations for legacy WUs that were not using
+ * push functions and were referenced from other C files.
+ *
+ * Do not add new declarations or other code to this file, they will be
+ * overwritten and deleted.
+ *
+ * Do not copy the style in this file. All code should be using push functions.
+ *
+ * _Do_ convert the WUs in this file to push functions and update the callers,
+ * then remove this file.
+ *
+ * You have been forewarned.
+ */
+
+#ifndef {{hguard}}
+#define {{hguard}}
+
+{{hcontents}}
+
+#endif /* {{hguard}} */
+"""
+
+INCL_TEMPL = "#include <{hname}> /* XXX: auto-included. should be removed. */"
+
+def include_wuid_headers_in_file(fl: FunFile, hnames: Set[str]):
+
+    incls = ""
+    for hname in hnames:
+        incls += INCL_TEMPL.format(hname=hname)
+
+    print(f"Adding includes to file {fl.name}: \n{incls}")
+
+    # read the file
+    fd = open(fl.name, "r")
+    input = fd.read()
+
+    # do the patching
+    (first, last) = split_input_for_includes(input)
+    output = first + incls + last
+
+    # write it back
+    fd = open(fl.name, "w")
+    fd.write(output)
+
+def publish_inrefs(wuinfo: WUInfo, fl: FunFile) -> None:    
+    hname = hfile_for_file(fl)
+    print(f"\t\t\tpublishing inrefs {fl.inref} for {fl.name} to {hname}")
+
+    # generate declarations for all the in references
+    declstr = fwd_decls_for_wus(wuinfo, set(fl.inref.keys()))
+
+    # prepare the format arguments
+    hargs = {}
+    hargs["hguard"] = hguard_for_file(fl)
+    hargs["hname"] = hname
+    hargs["hcontents"] = declstr
+
+    # generate the file contents
+    s = WU_HEADER_TEMPL.format(**hargs)
+
+    # write out the file
+    fd = open(hname, "w")
+    fd.write(s)
+
+    # add the header to the source file itself
+    include_wuid_headers_in_file(fl, set([hname]))
+
+    # now add it to git
+    subprocess.run(["git", "add", hname])
+
+
+
+def add_xref_headers_to_file(wuinfo: WUInfo, fl: FunFile) -> None:
+    print(f"\t\t\tadding headers to file {fl.name} for xrefs {fl.crossreffl}")
+
+    # make the list of headers we expect
+    hnames = set()
+
+    for fset in fl.crossreffl.values():
+        for fname in fset:
+            hnames.add(hfile_for_filename(fname))
+
+    # add the header to the file
+    include_wuid_headers_in_file(fl, hnames)
 
 def fixup_file_xrefs(wuinfo: WUInfo, fileinfo: Dict[str, FunFile], fname: str):
 
@@ -906,9 +1050,20 @@ def fixup_file_xrefs(wuinfo: WUInfo, fileinfo: Dict[str, FunFile], fname: str):
     print(f"\t\txrefs: {fl.crossreffl}")
 
     # convert the internals of the file
+    fixup_file_internal(wuinfo, fl)
+
     # publish in-refs to extenal
+    if (len(fl.inref) > 0):
+        publish_inrefs(wuinfo, fl)
+    else:
+        print(f"\t\t\tNo inrefs for file {fl.name}")
+
     # if we reference any externals
+    if (len(fl.crossreffl) > 0):
         # include headers for externals
+        add_xref_headers_to_file(wuinfo, fl)
+    else:
+        print(f"\t\t\tNo xrefs for file {fl.name}")
 
 def do_fixup_xrefs(wuinfo: WUInfo, fileinfo: Dict[str, FunFile], fixup: str):
         
