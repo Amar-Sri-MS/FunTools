@@ -3,6 +3,7 @@
 #define _XOPEN_SOURCE
 #define _GNU_SOURCE
 
+#include <ctype.h>	// for isspace()
 #include <stdio.h>	// for fprintf()
 #include <unistd.h>	// for STDOUT_FILENO
 #include <stdlib.h>	// for free()
@@ -166,7 +167,7 @@ static struct fun_json *_line_to_command(char *buf)
 static bool empty_line(char *line)
 {
 	while (*line) {
-		if (*line != '\n' && *line != '\r' && *line != ' ') return false;
+		if (!isspace(*line)) return false;
 		line++;
 	}
 	return true;
@@ -177,6 +178,7 @@ static struct fun_json *_read_funjson(int fd, bool *skip)
 	char *buf = _read_line_from_file(fd);
 	if (buf && empty_line(buf)) {
 		*skip = true;
+		free(buf);
 		return NULL;
 	}
 	return _line_to_command(buf);
@@ -190,6 +192,7 @@ static struct fun_json *_read_base64(int fd, bool *skip)
 
 	if (empty_line(buf)) {
 		*skip = true;
+		free(buf);
 		return NULL;
 	}
 
