@@ -39,7 +39,7 @@ import requests
 
 import pandas as pd
 
-from utils import DefaultLogger
+from utils import DefaultLogger, get_input_file_url
 
 
 def _remove_timestamps_from_log(lines: str) -> str:
@@ -203,6 +203,10 @@ def _extract_module_init_data(
     modules_init_file_name = os.path.join(working_dir, module_init_file)
     notificaiotns_init_file_name = os.path.join(working_dir, notif_init_file)
 
+    logger.debug(
+        f"Saved files: {modules_init_file_name} and {notificaiotns_init_file_name}"
+    )
+
     with open(modules_init_file_name, "w", encoding="utf-8") as f:
         json.dump(module_init, f, indent=4)
 
@@ -310,7 +314,6 @@ def _load_notification_init_data(
     dummy_duration: float = 1e-1,
     debug: bool = False,
     notif_suffix: str = "**",
-    notificaiotns_init_file_name: str = "notifications.json",
     logger=DefaultLogger(),
 ) -> pd.DataFrame:
     """load notificaiton init data from json file and convert to pandas dataframe
@@ -340,7 +343,8 @@ def _load_notification_init_data(
         # add `notif_suffix` to easily identify
         new_dict[f"{k}-{notif_suffix}"] = [v, v + dummy_duration]
 
-    temp_file_name = notificaiotns_init_file_name + "_temp.json"
+    temp_file_name = input_file + "_temp.json"
+    logger.debug("notif temp file name: {}".format(temp_file_name))
     with open(temp_file_name, "w", encoding="utf-8") as f:
         json.dump(new_dict, f)
 
@@ -357,6 +361,122 @@ def _load_notification_init_data(
     return fun_notification_init_df
 
 
+def _get_perf_stat_v1(df_in: pd.DataFrame) -> dict:
+    """Get performance summary stat
+
+
+    Parameter
+    ---------
+    df : pd.DataFrame
+        dataframe with module_name, start_time, finish_time, module_init_duration
+
+    Returns
+    -------
+    result: dict
+        dictionary with performance stat
+    """
+    df = df_in.copy()
+    df.sort_values(by=["start_time"], inplace=True, ascending=True)
+
+    # get the longest module duration
+    # total duration
+    longest_duraiton_id = df["module_init_duration"].idxmax()
+    longest_duraiton = df["module_init_duration"].loc[longest_duraiton_id]
+
+    start_min = df["start_time"].min()
+    finish_max = df["finish_time"].max()
+
+    result = {
+        "longest_duration_ns": longest_duraiton,
+        "longest_duration_id": longest_duraiton_id,
+        "total_duration_ns": finish_max - start_min,
+    }
+
+    del df
+
+    return result
+
+
+def _get_longest_gap(
+    df: pd.DataFrame, logger=DefaultLogger(), debug: bool = False
+) -> Tuple[float, str]:
+    """Get the longest gap between two modules"""
+
+    # get the largest gap
+    d = df.to_dict(orient="split")
+
+    longest_duration_gap = 0
+
+    finish_time_i = 0
+    finish_time = d["data"][finish_time_i][1]
+    for i in range(1, len(d["data"])):
+        start_time = d["data"][i][0]
+        duration = start_time - finish_time
+        # update finish time
+        finish_time_i = i
+        finish_time = d["data"][finish_time_i][1]
+
+        if duration > longest_duration_gap:
+            longest_duration_gap = duration
+            longest_duration_gap_id = i
+
+    longest_gap_between = "{} - {}".format(
+        d["index"][longest_duration_gap_id - 1], d["index"][longest_duration_gap_id]
+    )
+
+    if debug:
+        logger.debug("longest_duration_gap: {}".format(longest_duration_gap))
+        logger.debug(
+            "finish name {}, start name {}".format(
+                d["index"][longest_duration_gap_id - 1],
+                d["index"][longest_duration_gap_id],
+            )
+        )
+
+        logger.debug("longest_gap_between: {}".format(longest_gap_between))
+
+    return longest_duration_gap, longest_gap_between
+
+
+def _get_perf_stat(df_in: pd.DataFrame) -> dict:
+    """Get performance summary stat
+
+
+    Parameter
+    ---------
+    df : pd.DataFrame
+        dataframe with module_name, start_time, finish_time, module_init_duration
+
+    Returns
+    -------
+    result: dict
+        dictionary with performance stat
+    """
+    df = df_in.copy()
+    df.sort_values(by=["start_time"], inplace=True, ascending=True)
+
+    # get the longest module duration
+    longest_duraiton_id = df["module_init_duration"].idxmax()
+    longest_duraiton = df["module_init_duration"].loc[longest_duraiton_id]
+
+    start_min = df["start_time"].min()
+    finish_max = df["finish_time"].max()
+
+    longest_duration_gap, longest_duration_between = _get_longest_gap(df)
+
+    del df
+
+    result = {
+        "longest_duration_ns": longest_duraiton,
+        "longest_duration_id": longest_duraiton_id,
+        "longest_gap_ns": longest_duration_gap,
+        "longest_gap_between": longest_duration_between,
+        "total_duration_ns": finish_max - start_min,
+    }
+
+    return result
+
+
 #########################################
 # APIs
 #########################################
@@ -364,6 +484,7 @@ def _load_notification_init_data(
 
 def dump_df_to_files(
     df: pd.DataFrame,
+    out_dir: str,
     file_name: str = "fun_module_notif_init_chart",
     sorted_key: str = "start_time",
 ) -> None:
@@ -373,6 +494,8 @@ def dump_df_to_files(
     ----------
     df : pd.DataFrame
         dataframe to dump
+    out_dir: str
+        output directory
     file_name : str, optional
         file name to dump to, by default "fun_module_notif_init_chart"
     sorted_key : str, optional
@@ -384,16 +507,17 @@ def dump_df_to_files(
     if sorted_key:
         sorted_df.sort_values(by=[sorted_key], inplace=True, ascending=True)
 
-    txt_file_name = file_name + ".txt"
+    txt_file_name = os.path.join(out_dir, file_name + ".txt")
     with open(txt_file_name, "w", encoding="utf-8") as f:
         f.write(sorted_df.to_string())
     sorted_df_file_name = file_name
-    json_file_name = sorted_df_file_name + ".json"
+    json_file_name = os.path.join(out_dir, sorted_df_file_name + ".json")
     sorted_df.to_json(json_file_name)
-    csv_file_name = sorted_df_file_name + ".csv"
+
+    csv_file_name = os.path.join(out_dir, sorted_df_file_name + ".csv")
     sorted_df.to_csv(csv_file_name)
 
-    yaml_file_name = sorted_df_file_name + ".yaml"
+    yaml_file_name = os.path.join(out_dir, sorted_df_file_name + ".yml")
     with open(yaml_file_name, "w", encoding="utf-8") as f:
         yaml.dump(
             {"result": json.loads(sorted_df.to_json(orient="records"))},
@@ -401,10 +525,13 @@ def dump_df_to_files(
             default_flow_style=False,
         )
 
+    del sorted_df
+
 
 def print_group_table(
     group_table: dict,
     threshold: float,
+    out_dir: str,
     save_file_name: str = None,
     logger=DefaultLogger(),
 ):
@@ -634,13 +761,13 @@ def process_module_notif_init_data(
     Parameters
     ----------
     file_name_url : str, optional
-        file name or url, by default None
+        *raw* log file name or url, by default None
     modules_init_file_name : str, optional
-        modules init file name, by default None
+        modules init *json* file name, by default None
     notificaiotns_init_file_name : str, optional
-        notifications init file name, by default None
+        notifications init *json* file name, by default None
     working_dir : str, optional
-        working directory, by default "./"
+        working directory for saving generated files, by default "./"
     logger : logging.Logger, optional
         logger, by default DefaultLogger()
 
@@ -687,22 +814,6 @@ def process_module_notif_init_data(
     # combine module and notif init data
     fun_module_notif_init_df = pd.concat([fun_module_init_df, fun_notification_init_df])
 
-    def _get_perf_stat(df: pd.DataFrame) -> dict:
-        # get the longest module duration
-        # total duration
-        longest_duraiton_id = df["module_init_duration"].idxmax()
-        longest_duraiton = df["module_init_duration"].loc[longest_duraiton_id]
-
-        start_min = df["start_time"].min()
-        finish_max = df["finish_time"].max()
-
-        result = {
-            "longest_duration_ns": longest_duraiton,
-            "longest_duration_id": longest_duraiton_id,
-            "total_duration_ns": finish_max - start_min,
-        }
-        return result
-
     result = _get_perf_stat(fun_module_notif_init_df)
 
     return fun_module_notif_init_df, result
@@ -715,8 +826,7 @@ def main(logger=DefaultLogger()):
     current_path = os.getcwd()
     logger.info("current directory is: " + current_path)
 
-    # INPUT_FILE_URL = "uartout0.0.txt"
-    input_file_url = os.environ["INPUT_FILE_URL"]
+    input_file_url = get_input_file_url()
 
     process_module_notif_init_data(
         input_file_url, logger=logger, working_dir=current_path
@@ -726,9 +836,5 @@ def main(logger=DefaultLogger()):
 if __name__ == "__main__":
 
     logger = DefaultLogger()
-
-    os.environ[
-        "INPUT_FILE_URL"
-    ] = "http://palladium-jobs.fungible.local:8080/job/4297914/raw_file/odp/uartout0.0.txt"
 
     main(logger)

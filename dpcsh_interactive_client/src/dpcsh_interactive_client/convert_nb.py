@@ -130,14 +130,15 @@ def get_module_info(mod, logger=logger):
 
 
 def generate_report(
-    notebook_filename,
-    in_dir="",
-    out_dir="",
-    execute=False,
-    working_dir=".",
+    notebook_filename: str,
+    in_dir: str = "",
+    out_dir: str = "",
+    execute: bool = False,
+    working_dir: str = ".",
     logger=logger,
-    report_filename=None,
-    backup_notebook=False,
+    report_filename: str = None,
+    backup_notebook: bool = False,
+    create_out_notebook: bool = False,
 ):
     """Generate report based on notebook
 
@@ -159,6 +160,7 @@ def generate_report(
         output filename
     backup_noteook: bool
         if we save backup notebook or not
+    create_out_notebook: bool
 
     Returns
     -------
@@ -170,15 +172,17 @@ def generate_report(
     html_filename = None
     try:
         in_notebook = os.path.join(in_dir, notebook_filename)
-        updated_notebook_dir = os.path.join(in_dir, "notebook_out")
-        if not os.path.isdir(updated_notebook_dir):
-            os.makedirs(updated_notebook_dir)
-
-        # output notebook, but keep the input notebook as is, i.e. not populating cells
-        out_notebook = os.path.join(updated_notebook_dir, notebook_filename)
 
         logger.info("in_notebook: {}".format(in_notebook))
-        logger.info("out_notebook: {}".format(out_notebook))
+
+        if create_out_notebook:
+            updated_notebook_dir = os.path.join(in_dir, "notebook_out")
+            if not os.path.isdir(updated_notebook_dir):
+                os.makedirs(updated_notebook_dir)
+
+            # output notebook, but keep the input notebook as is, i.e. not populating cells
+            out_notebook = os.path.join(updated_notebook_dir, notebook_filename)
+            logger.info("out_notebook: {}".format(out_notebook))
 
         nb = nbformat.read(open(in_notebook), as_version=4)
 
@@ -189,7 +193,8 @@ def generate_report(
             ep = ExecutePreprocessor(timeout=600, kernel_name="python3")
             ep.preprocess(nb, {"metadata": {"path": working_dir}})
             # overwrite
-            nbformat.write(nb, open(out_notebook, mode="wt"))
+            if create_out_notebook:
+                nbformat.write(nb, open(out_notebook, mode="wt"))
 
         report_name = (
             report_filename

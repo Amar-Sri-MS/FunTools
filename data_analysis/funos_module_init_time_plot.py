@@ -249,15 +249,12 @@ def plot_module_time_chart(
 
 def main(logger=DefaultLogger()):
     """Main function"""
-    # use `funos_module_init_time_test.py` to test plot function
+
+    # NOTE: use `funos_module_init_time_test.py` to test plot function
 
 
 if __name__ == "__main__":
 
     logger = DefaultLogger()
-
-    os.environ[
-        "INPUT_FILE_URL"
-    ] = "http://palladium-jobs.fungible.local:8080/job/4297914/raw_file/odp/uartout0.0.txt"
 
     main(logger)
