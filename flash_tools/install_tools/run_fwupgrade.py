@@ -124,9 +124,10 @@ def prepare_offline(args, path='', select=None):
             if not images.get(v['fourcc']) and value:
                 images[v['fourcc']] = value
 
-        images['emmc'] = select('emmc_image.bin', release['signed_images']['boot.img.signed'])
-        images['mmc0'] = select('mmc0_image.bin', release['signed_images']['boot.img.signed'])
-        images['mmc1'] = select('mmc1_image.bin', release['signed_images']['boot.img.signed'])
+        if 'boot.img.signed' in release['signed_images']:
+            images['emmc'] = select('emmc_image.bin', release['signed_images']['boot.img.signed'])
+            images['mmc0'] = select('mmc0_image.bin', release['signed_images']['boot.img.signed'])
+            images['mmc1'] = select('mmc1_image.bin', release['signed_images']['boot.img.signed'])
 
     return images
 
