@@ -13,8 +13,31 @@ import sys
 import subprocess
 from io import StringIO
 import tempfile
-
+import traceback
 from contextlib import closing
+
+try:
+    # This is all under a try clause, as depending on FunOS version,
+    # any or all of these modules could be missing ...
+    sys.path.append('/usr/bin')
+    import dpc_client
+    import dpc_binary
+
+    dpc = dpc_client.DpcClient(legacy_ok=False,
+            unix_sock=True,
+            encoder=dpc_binary.BinaryJSONEncoder())
+
+    # Try to execute fw_upgrade version query. If it's implemented
+    # and reports upgrade interface version 1 or higher, then the
+    # upgrade can be performed using DPC. Otherwise the fwupgrade
+    # script needs to use HCI-based fallback.
+    res = dpc.execute('fw_upgrade', ['version'])
+
+    if not res >= 1:
+        raise RuntimeError("DPC upgrade not supported")
+except:
+    dpc = None
+    pass
 
 BASE_URL = 'http://dochub.fungible.local/doc/jenkins'
 
@@ -42,6 +65,11 @@ UPGRADE_IF_PRESENT_IMAGES = {'nvdm', 'scap'}
 # report the whole upgrade as failing. A failure can be later
 # noticed during upgrade success verification
 IGNORE_ERRORS_IMAGES = {'nvdm', 'scap'}
+# images to split into smaller chunks during upgrade
+# (supported only in DPC mode)
+SPLITTABLE_IMAGES = {'emmc', 'mmc1', 'mmcx'}
+SPLIT_SIZE = 2*1024*1024
+
 
 EXIT_CODE_OK = 0
 EXIT_CODE_ERROR = 1
@@ -102,10 +130,6 @@ def prepare_offline(args, path='', select=None):
 
     return images
 
-def using_custom_funcp(args):
-    return args.image_url == BASE_URL and args.arch == 'posix'
-
-
 def prepare(args):
     """
         Prepare workspace
@@ -115,9 +139,6 @@ def prepare(args):
 
     if args.offline:
         return prepare_offline(args)
-
-    funcp_file = 'funcp.{}.tgz'.format(args.arch)
-    libfunq_file = 'libfunq.{}{}.tgz'.format(args.arch, '_palladium' if args.arch == 'posix' else '')
 
     SDK_FLASH_PATH = '/{}/funsdk/{}/Linux'.format(args.sdk_devline, args.version)
     release_file = '{}_dev_signed.tgz'.format(args.chip)
@@ -130,10 +151,6 @@ def prepare(args):
     files = {
         release_file : url,
     }
-
-    if using_custom_funcp(args):
-        files[funcp_file] = url
-        files[libfunq_file] = url
 
     for f, url in files.items():
         wget(url + '/' + f)
@@ -159,32 +176,6 @@ def run_upgrade(args, release_images):
     else:
         pcidevs_string = subprocess.check_output(['lspci', '-d', args.pci_devid, '-mmn'])
 
-    sudo = [] if platform.machine() == 'mips64' else ['sudo']
-    if args.offline or not using_custom_funcp(args):
-        if platform.machine() == 'mips64':
-            # defaults for CCLinux
-            binpath = '/usr/bin'
-            ldpath = []
-            funqpath = '/usr/bin'
-        else:
-            # defaults for COMe
-            binpath = os.path.join(args.offline_root, 'FunControlPlane', 'bin')
-            ldpath = ['LD_LIBRARY_PATH=${{LD_LIBRARY_PATH}}:{}'.format(
-                    os.path.join(args.offline_root, 'FunControlPlane', 'lib'))]
-            funqpath = binpath
-    else:
-        newroot = os.path.join(args.ws, 'FunSDK/host-drivers/x86_64/user/{}_palladium'.format(args.arch))
-        binpath = os.path.join(args.ws, 'FunCP', 'build', args.arch, 'bin')
-        ldpath = ['LD_LIBRARY_PATH=${{LD_LIBRARY_PATH}}:{}:{}'.format(
-                    os.path.join(args.ws, 'build', args.arch, 'lib'),
-                    os.path.join(newroot, 'lib'))]
-        for p in (binpath,
-                  os.path.join(newroot, 'bin')):
-            if os.path.isfile(os.path.join(p, 'funq-setup')):
-                funqpath = p
-                break
-        else: # this is for ... else statement
-            raise(Exception("funq-setup not found!"))
     res = 0
 
     if args.upgrade_file:
@@ -192,17 +183,20 @@ def run_upgrade(args, release_images):
 
     for arg in args.upgrade:
         if not os.path.isfile(release_images[arg]):
-            raise(Exception("Upgrade image for '{}' not found in upgrade bundle".format(arg)))
+            raise Exception(f"Upgrade image for '{arg}' not found in upgrade bundle")
 
-    if not pcidevs_string:
-        raise(Exception("No Fungible devices detected on PCI"))
-
-    pcidevs = [dev.split()[0].decode('ascii') for dev in pcidevs_string.splitlines()]
+    if dpc:
+        pcidevs = ['dpc']
+    elif not pcidevs_string:
+        raise Exception("No Fungible devices detected on PCI")
+    else:
+        pcidevs = [dev.split()[0].decode('ascii') for dev in pcidevs_string.splitlines()]
+        binpath = '/usr/bin'
+        funqpath = '/usr/bin'
 
     def pcidev_unbind(dev):
         if args.bind:
-            run(sudo + ldpath + \
-                [os.path.join(funqpath, 'funq-setup'),
+            run([os.path.join(funqpath, 'funq-setup'),
                 'unbind', '"vfio"', dev])
 
     def fourcc_eq(dpu_fourcc, host_fourcc):
@@ -218,8 +212,7 @@ def run_upgrade(args, release_images):
         # found, as when executed on FS1600's COMe, there are 2 F1s connected.
         # When run on CCLinux, there should be only one interface found.
         if args.bind:
-            cmd = sudo + ldpath + \
-                [os.path.join(funqpath, 'funq-setup'),
+            cmd = [os.path.join(funqpath, 'funq-setup'),
                 'bind', 'vfio', dev]
             try:
                 run_check(cmd, stderr=subprocess.STDOUT)
@@ -231,7 +224,7 @@ def run_upgrade(args, release_images):
     if res:
         for dev in pcidevs:
             pcidev_unbind(dev)
-        raise(Exception("Failed to bind PCI VFIO"))
+        raise Exception("Failed to bind PCI VFIO")
 
     upgrade_fourccs = {}
     downgrade_fourccs = {}
@@ -244,14 +237,18 @@ def run_upgrade(args, release_images):
     else:
         v = int(v)
 
-    # exit code 64 indicates unrecognized arg
-    with open(os.devnull, 'w') as devnull:
-        have_async_fwupgrade = subprocess.call(sudo + ldpath + \
+    if not dpc:
+        # exit code 64 indicates unrecognized arg
+        with open(os.devnull, 'w') as devnull:
+            have_async_fwupgrade = subprocess.call(
                 [os.path.join(binpath, 'fwupgrade'), '--async'],
                 stdout=devnull, stderr=devnull) != 64
 
     for dev in pcidevs:
-        fwinfo = json.loads(subprocess.check_output(sudo + ldpath + \
+        if dpc:
+            fwinfo = dpc.execute("fw_upgrade", ['get_versions'])
+        else:
+            fwinfo = json.loads(subprocess.check_output(
                 [os.path.join(binpath, 'fwupgrade'),
                 '-a', '-d', dev]))
         dev_downgrade_fourccs = set()
@@ -260,7 +257,7 @@ def run_upgrade(args, release_images):
         if args.upgrade_auto:
             release_images_fourccs = set(release_images.keys()) & KNOWN_IMAGES
 
-            if not have_async_fwupgrade:
+            if not dpc and not have_async_fwupgrade:
                 release_images_fourccs = release_images_fourccs - ASYNC_ONLY_IMAGES
 
             if len(fwinfo) == 0:
@@ -368,8 +365,8 @@ def run_upgrade(args, release_images):
         upgrade_fourccs[dev] = dev_upgrade_fourccs
         downgrade_fourccs[dev] = dev_downgrade_fourccs
 
-        print("Final list of images to upgrade for {}: {}".format(dev, upgrade_fourccs[dev]))
-        print("List of images to maybe downgrade for {}: {}".format(dev, downgrade_fourccs[dev]))
+        print(f"Final list of images to upgrade for {dev}: {upgrade_fourccs[dev]}")
+        print(f"List of images to maybe downgrade for {dev}: {downgrade_fourccs[dev]}")
 
     if any(downgrade_fourccs.values()) and not args.downgrade and not args.dry_run:
         for dev in pcidevs:
@@ -378,123 +375,112 @@ def run_upgrade(args, release_images):
 
     for dev in pcidevs:
         for fourcc in upgrade_fourccs[dev]:
-          cmd = sudo + ldpath + \
-                  [os.path.join(binpath, 'fwupgrade'),
-                  '--image', release_images[fourcc], '-f', fourcc, '-d', dev]
-          if args.active:
-              cmd.append('--active')
-          if args.downgrade:
-              cmd.append('--downgrade')
-          if fourcc in ASYNC_PREF_IMAGES and have_async_fwupgrade:
-              cmd.append('--async')
-          elif fourcc in ASYNC_ONLY_IMAGES:
-              cmd.append('--async')
+            if dpc:
+                error = 0
+                try:
+                    file_size = os.path.getsize(release_images[fourcc])
+                    split_size = SPLIT_SIZE if fourcc in SPLITTABLE_IMAGES else file_size
+                    offset = 0
 
-          if not args.dry_run:
-            # CHECK CURRENT VERSION AND UPGRADE
-            print('Upgrading {} with {}'.format(fourcc, release_images[fourcc]))
-            try:
-                subprocess.check_output(cmd, stderr=subprocess.STDOUT)
-            except subprocess.CalledProcessError as e:
-                # depending on the fw version, pufr/frmw/sbpf upgrades may fail
-                # need to parse error log - if error reported by sbp is '2', then
-                # this is the expected error and no need to panic
-                print(e.output.decode())
-                if e.returncode == errno.EIO and \
-                   fourcc in ('pufr', 'frmw', 'sbpf') and \
-                   (('Error in upgrade handling: 2' in e.output.decode()) or \
-                        ('Error in upgrade handling: 33554432' in e.output.decode())):
-                    print('If you see this error message, do not report it, it is expected')
-                elif fourcc in IGNORE_ERRORS_IMAGES:
-                    print('Upgrade of {} failed, ignoring this error'.format(fourcc))
+                    while offset < file_size:
+                        dpc_params = {
+                            'active' : bool(args.active),
+                            'downgrade' : bool(args.downgrade),
+                            'fourcc' : fourcc,
+                            'offset' : offset
+                        }
+
+                        if not args.dry_run:
+                            with open(release_images[fourcc], 'rb') as f:
+                                f.seek(offset, os.SEEK_SET)
+                                blob = dpc.dpc_blob_from_string(f.read(split_size))
+                        else:
+                            blob = f"blob for {release_images[fourcc]} offset {offset} size {split_size}"
+
+                        command = [ 'upgrade', dpc_params, blob ]
+
+                        if not args.dry_run:
+                            resp = dpc.execute('fw_upgrade', command)
+                            if resp['result'] != 0:
+                                print(f"Upgrade of {fourcc}@{offset} failed: {resp['description']}")
+                                raise RuntimeError(f"{fourcc}@{offset} failed: {resp['description']}")
+                        else:
+                            print(f"Would execute {command}")
+
+                        offset += split_size
+
+                except:
+                    error = 1
+                    if fourcc in IGNORE_ERRORS_IMAGES:
+                        print(f"Upgrade of {fourcc} failed, ignoring this error")
+                        error = 0
+                    pass
+
+                res |= error
+
+            else: # !dpc
+                cmd = [os.path.join(binpath, 'fwupgrade'),
+                        '--image', release_images[fourcc], '-f', fourcc, '-d', dev]
+                if args.active:
+                    cmd.append('--active')
+                if args.downgrade:
+                    cmd.append('--downgrade')
+                if fourcc in ASYNC_PREF_IMAGES and have_async_fwupgrade:
+                    cmd.append('--async')
+                elif fourcc in ASYNC_ONLY_IMAGES:
+                    cmd.append('--async')
+
+                if not args.dry_run:
+                    # CHECK CURRENT VERSION AND UPGRADE
+                    print(f"Upgrading {fourcc} with {release_images[fourcc]}")
+                    try:
+                        subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+                    except subprocess.CalledProcessError as e:
+                        # depending on the fw version, pufr/frmw/sbpf upgrades may fail
+                        # need to parse error log - if error reported by sbp is '2', then
+                        # this is the expected error and no need to panic
+                        print(e.output.decode())
+                        if e.returncode == errno.EIO and \
+                        fourcc in ('pufr', 'frmw', 'sbpf') and \
+                        (('Error in upgrade handling: 2' in e.output.decode()) or \
+                                ('Error in upgrade handling: 33554432' in e.output.decode())):
+                            print('If you see this error message, do not report it, it is expected')
+                        elif fourcc in IGNORE_ERRORS_IMAGES:
+                            print('Upgrade of {} failed, ignoring this error'.format(fourcc))
+                        else:
+                            res |= e.returncode
                 else:
-                    res |= e.returncode
-          else:
-            print("Would execute {}".format(cmd))
+                    print(f"Would execute {cmd}")
 
 
         # GET ALL FIRMWARE VERSIONS
         if args.version_check:
-            cmd = sudo + ldpath + \
-                [os.path.join(binpath, 'fwupgrade'),
-                '-a', '-d', dev]
-            try:
-                run_check(cmd, stderr=subprocess.STDOUT)
-            except subprocess.CalledProcessError as e:
-                print(e.output.decode())
-                res |= e.returncode
-                pass
-
-        # GET ALL FIRMWARE VERSIONS - STORE TO FILE AND UPDATE FW DB
-        if not args.no_server_update:
-          with tempfile.NamedTemporaryFile() as f:
-            run(sudo + ldpath + \
-                    [os.path.join(binpath, 'fwupgrade'),
-                    '-a', '-d', dev], stdout=f)
-            os.fsync(f)
-            # strip garbage from output file ... workaround until FunCP is rebuilt
-            # and we get a fixed
-            run(['sed', '-i', '/^devname/d', f.name])
-
-            try:
-                # somewhat hacky way to get our machine name,
-                # but hostname is not reliable as multiple
-                # COMes have the same ...
-                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            if dpc:
+                print(dpc.execute("fw_upgrade", ['get_versions']))
+            else:
+                cmd = [os.path.join(binpath, 'fwupgrade'),
+                    '-a', '-d', dev]
                 try:
-                    s.connect(('fun-on-demand-01',9501))
-                    machine = socket.gethostbyaddr((s.getsockname()[0]))[0]
-                    s.close()
-                    machine = machine.replace('.fungible.local','')
-                except:
+                    run_check(cmd, stderr=subprocess.STDOUT)
+                except subprocess.CalledProcessError as e:
+                    print(e.output.decode())
+                    res |= e.returncode
                     pass
-
-                # if there was no name found or the name doesn't contain any numbers
-                # it's most likely a generic name like Fun or FunServer, so ignore it
-                if not filter(str.isdigit, machine):
-                    machine=''
-
-                if not machine:
-                    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                    try:
-                        s.connect(('fun-on-demand-01',9501))
-                        ip = s.getsockname()[0]
-                        iface = ''
-                        # get the device MAC address ... check for the interface
-                        # we used for connecting to the server and then get its mac
-                        with closing(StringIO(subprocess.check_output(
-                                    ['ip', '-f', 'inet', '-o', 'addr']).decode())) as ifaces:
-                            for i in ifaces:
-                                if ip+'/' in i:
-                                    iface = i.split()[1]
-                                    break
-
-                        if iface:
-                            with open('/sys/class/net/{}/address'.format(iface),'r') as f_mac:
-                                machine = f_mac.read().strip()
-
-                        s.close()
-                    except Exception as e:
-                        print(e)
-
-                print("using {} as machine id".format(machine))
-                if machine:
-                    run(['curl', '-X', 'POST', '--data', '@{}'.format(f.name),
-                        'http://fun-on-demand-01:9501/store?machine={}:{}&key=firmware'.format(machine,dev)])
-            except Exception as err:
-                print(err)
-                pass
 
     for dev in pcidevs:
         pcidev_unbind(dev)
 
     if res:
-        raise(Exception("Errors occured during upgrade"))
+        raise Exception("Errors occured during upgrade")
 
 # return all valid upgrade images available in 'path'
 def get_current_upgrade_images(path, select):
     images = prepare_offline(None, path, select)
     return { key: images[key] for key in KNOWN_IMAGES if key in images }
+
+def discover_dpu():
+    with open("/proc/device-tree/fungible,dpu") as f:
+        return f.readline().rstrip('\0').lower()
 
 def main():
     tmpws = None
@@ -503,9 +489,6 @@ def main():
     arg_parser.add_argument('--ws', action='store', metavar='path',
             help='workspace path, temp location will be used if not specified or'
                  '<offline-root>/funos if offline is set')
-    arg_parser.add_argument('--arch', action='store', choices=['mips64', 'posix'],
-            default='mips64' if platform.machine() == 'mips64' else 'posix',
-            help='ControlPlane architecture')
 
     upgrade_group = arg_parser.add_mutually_exclusive_group()
     upgrade_group.add_argument('-u', '--upgrade', action='append', metavar='FOURCC',
@@ -527,11 +510,13 @@ def main():
     arg_parser.add_argument('--downgrade', action='store_true',
             help='Attempt to perform a firmware downgrade')
 
+    # no-server-update option doesn't do anything, currently kept for compatibility
+    # with other scripts. to be removed.
     arg_parser.add_argument('--no-server-update',
-            action='store_true', help='Do not send firmware information to db server')
+            action='store_true', help='[ignored]')
 
     arg_parser.add_argument('--dry-run', action='store_true',
-            help='Do all the checks, but do not perform upgrade. Implies --no-server-update')
+            help='Do all the checks, but do not perform upgrade.')
 
     arg_parser.add_argument('--offline', action='store_true',
             help='Do not download any images, assume everything is available locally')
@@ -539,17 +524,11 @@ def main():
     arg_parser.add_argument('--offline-root', default="/opt/fungible",
             help='Location of the ControlPlane firmware')
 
-    arg_parser.add_argument('--no-bind', dest='bind', action='store_false',
-            help='Do not bind/unbind PCIe vfio interface')
-
     arg_parser.add_argument('--active', action='store_true',
             help='Attempt to upgrade active image')
 
-    arg_parser.add_argument('--chip', choices=['f1', 's1'],
-            default='f1', help='Target chip')
-
-    arg_parser.add_argument('--pci-devid', default=['1dad:0105:', '1dad:0005:', '1dad::1000'],
-            help='PCI device ID to use for upgrades')
+    arg_parser.add_argument('--chip', choices=['f1', 's1', 'f1d1'],
+            default=discover_dpu(), help='Target chip')
 
     arg_parser.add_argument('--force', action='store_true',
             help='Force upgrade, do not ask any questions')
@@ -564,6 +543,12 @@ def main():
     arg_parser.add_argument('--check-image-only', action='store_true',
             help='Do not perform upgrade, only check if a given image type is present in package')
 
+    if not dpc:
+        arg_parser.add_argument('--no-bind', dest='bind', action='store_false',
+            help='Do not bind/unbind PCIe vfio interface')
+        arg_parser.add_argument('--pci-devid', default=['1dad:0105:', '1dad:0005:', '1dad::1000'],
+            help='PCI device ID to use for upgrades')
+
     args, unknown = arg_parser.parse_known_args()
 
     if unknown:
@@ -571,7 +556,7 @@ def main():
         # to be passed, this is especially useful if new arguments are added
         # and generic scripts cannot use those args until support for them
         # is added
-        print("WARNING: Unhandled arguments found: {}".format(unknown))
+        print(f"WARNING: Unhandled arguments found: {unknown}")
 
     if args.downgrade and not args.force:
         try:
@@ -604,13 +589,15 @@ def main():
             if e.errno == errno.EEXIST:
                 pass
 
-    if args.dry_run or args.offline:
-        args.no_server_update = True
-
     os.chdir(args.ws)
     os.putenv('WORKSPACE', args.ws)
 
-    print('Using {} as workspace'.format(args.ws))
+    print(f"Using {args.ws} as workspace")
+    print(f"Using {'DPC' if dpc else 'HCI'} interface")
+
+    if dpc:
+        args.bind = False
+        args.pci_devid = []
 
     try:
         release_images = prepare(args)
@@ -622,11 +609,12 @@ def main():
     except DowngradeAttemptException:
         sys.exit(EXIT_CODE_DOWNGRADE_ATTEMPT)
     except Exception as e:
-        print(e)
+        print(f"Upgrade error ... {e}")
+        traceback.print_exc()
         sys.exit(EXIT_CODE_ERROR)
     finally:
         if tmpws:
-            print('Workspace cleanup, remove temp directory')
+            print("Workspace cleanup, remove temp directory")
             shutil.rmtree(tmpws)
 
 

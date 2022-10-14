@@ -37,6 +37,7 @@ from flask import Blueprint, jsonify, request, render_template
 from flask import current_app, g
 
 from view.common import login_required
+from utils import is_file_readable
 from utils import archive_extractor, manifest_parser
 from utils import mail
 from utils import timeline
@@ -59,7 +60,7 @@ QA_REGRESSION_BASE_ENDPOINT = f'{QA_BASE_ENDPOINT}/api/v1/regression'
 QA_JOB_INFO_ENDPOINT = f'{QA_REGRESSION_BASE_ENDPOINT}/suite_executions'
 QA_LOGS_ENDPOINT = f'{QA_REGRESSION_BASE_ENDPOINT}/test_case_time_series'
 QA_SUITE_ENDPOINT = f'{QA_REGRESSION_BASE_ENDPOINT}/suites'
-QA_STATIC_ENDPOINT = f'{QA_BASE_ENDPOINT}/static/logs'
+QA_STATIC_ENDPOINT = f'{QA_BASE_ENDPOINT}/static_logs'
 
 # Users are required to input ingestion filters for log archives greater than 4GB.
 RESTRICTED_ARCHIVE_SIZE = 4 * 1024 * 1024 * 1024
@@ -147,6 +148,8 @@ def main():
                 # Check if the mount path exists
                 if not os.path.exists(log_path):
                     raise FileNotFoundError('Could not find the mount path')
+                if not is_file_readable(log_path):
+                    raise PermissionError('The user (localadmin) does not have read permission for the file.')
                 # Check if the archive is beyond the resricted size
                 if (not metadata['ignore_size_restrictions'] and
                     os.stat(log_path).st_size > RESTRICTED_ARCHIVE_SIZE):
@@ -209,6 +212,7 @@ def main():
         EmptyPipelineException,
         NotFoundException,
         FileNotFoundError,
+        PermissionError,
         TypeError,
         NotSupportedException
     ) as e:
@@ -817,7 +821,6 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
 
     path = f'{DOWNLOAD_DIRECTORY}/{LOG_ID}'
     file_path = os.path.abspath(os.path.dirname(__file__))
-    QA_LOGS_DIRECTORY = '/web/static/logs'
     found_logs = False
 
     manifest_contents = list()
@@ -847,11 +850,8 @@ def ingest_qa_logs(job_id, test_index, metadata, filters):
         _update_metadata(es_metadata, LOG_ID, 'DOWNLOAD_STARTED')
 
         for log_file in log_files:
-            # Ignore files which are not in the logs directory.
-            if QA_LOGS_DIRECTORY not in log_file:
-                continue
-            log_dir = log_file.split(QA_LOGS_DIRECTORY)[1]
-            url = f'{QA_STATIC_ENDPOINT}{log_dir}'
+            filename = log_file.split('/')[-1]
+            url = f'{QA_STATIC_ENDPOINT}/s_{job_id}/{filename}'
             if check_and_download_logs(url, path, session, metadata['ignore_size_restrictions']):
                 found_logs = True
                 # techsupport log archive

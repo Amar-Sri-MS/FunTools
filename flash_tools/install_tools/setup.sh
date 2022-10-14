@@ -268,34 +268,6 @@ else
 	update_uboot_boot_debug_flag 0
 fi
 
-# sku-specific upgrades
-case "${host_sku}" in
-	fc50* | fc100* | fc200* )
-		if [ "$SDK_BUNDLE" -eq 0 ]; then
-			./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file dcc0=composer-boot-services-emmc.img --active
-			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
-
-			current_ver=$(dpcsh -nQ peek config/chip_info/images/mmc1/active/version | jq -Mr .result)
-
-			./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file dcc1=ComposerOptionRom.rom --active
-			RC=$?;
-			if [[ "$current_ver" -ge 16760 ]]; then
-				 # only set EXIT_STATUS to error on first error and only if current build number
-				 # is higher than 15981. 15981 (master) is the first build where support for dcc1 was
-				 # implemented, older master builds would always fail to install the dcc1 image.
-				 # It's still possible for other dev branches with bld>=15981 to raise errors here.
-				 # We have currently no way to query FunOS whether an image type is supported, so
-				 # use a higher version (close to where this check is introduced) as a point for raising
-				 # errors for the whole bundle installation. This means that for most builds older this
-				 # expected failure is silently ignored.
-				[ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC
-			fi
-		fi
-		;;
-
-	*) : ;; # nothing to do
-esac
-
 echo "DPU done" >> $PROGRESS
 
 log_msg "Upgrading CCLinux"

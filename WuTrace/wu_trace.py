@@ -70,6 +70,11 @@ RGX_WU_IDs = {
 	9: "wu_cmd_nfa_load",
    12: "wu_cmd_nfa_search",
 }
+
+# value = parent transaction, key = child transaction
+HARDCODED_LINKING = {"nss_read_chunk_done": "epsq_dispatch",
+                     "nss_write_dma_done": "nss_write_nprps"}
+
 class TraceProcessor:
     """Converts list of events into transactions.
 
@@ -116,6 +121,9 @@ class TraceProcessor:
                                   RGX_LID   : [],   # to store all the RGX sends
                                   LE_LID    : [],   # to store all the LE sends
                                   ZIP_LID   : []}   # to store all the ZIP sends
+
+        # stores parents for hardcoded linking
+        self.hardcoded_link_parent = []
 
     def remember_send(self, event, wu_id, arg0, arg1, dest, send_time,
                       is_timer, flags):
@@ -228,13 +236,26 @@ class TraceProcessor:
                         self.unpaired_hw_sends[next_event_lid].pop(i)
                         return
 
+            # if start event is a parent, then adding to the parent list
+            if next_event.name in HARDCODED_LINKING.values():
+                self.hardcoded_link_parent.append(current_event)
+
+            # if start event is a child, then linking it with the latest parent
+            if next_event.name in HARDCODED_LINKING:
+                for i in range(len(self.hardcoded_link_parent) -1, -1, -1):
+                    if self.hardcoded_link_parent[i].label == HARDCODED_LINKING[next_event.name]:
+                        self.hardcoded_link_parent[i].successors.append(current_event)
+                        self.start_events.append(current_event)
+                        return
+
+
             if predecessor and int(flags) & 2:
                     # Hardware WU.
                     hw_event = event.TraceEvent(send_time,
                                                 current_event.start_time,
                                                 'DMA',
                                                 predecessor.vp)
-                    hw_event.is_timer = True
+                    hw_event.is_hw_dma = True
                     predecessor.successors.append(hw_event)
                     predecessor = hw_event
                     self.start_events.append(predecessor)

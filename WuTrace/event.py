@@ -392,6 +392,9 @@ class TraceEvent(object):
         # Work units or events that were instigated by this event.
         self.successors = []
 
+        # to recognize the WUs processed in DMA
+        self.is_hw_dma = False
+
         #to recognize the WUs processed in LE
         self.is_hw_le = False
 
@@ -412,6 +415,7 @@ class TraceEvent(object):
                 'vp': self.vp,
                 # No transaction because it is an object.
                 'is_timer': self.is_timer,
+                'is_hw_dma': self.is_hw_dma,
                 'is_hw_le': self.is_hw_le,
                 'is_hw_zip': self.is_hw_zip,
                 'is_hw_hu': self.is_hw_hu,

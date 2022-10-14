@@ -27,7 +27,6 @@
 							name="limit_by"
 							value="days"
 							onchange="onChangeLimitBy(this)"
-							checked
 						/>
 						Days
 					</label>
@@ -37,13 +36,23 @@
                             name="limit_by"
                             value="count"
                             onchange="onChangeLimitBy(this)"
+                            checked
                         />
                         Count
+                    </label>
+                    <label>
+                        <input
+                            type="radio"
+                            name="limit_by"
+                            value="tags"
+                            onchange="onChangeLimitBy(this)"
+                        />
+                        Tags (comma separated)
                     </label>
                 </div>
                 <div class="form-group" style="justify-content: flex-start;">
                     <label for="limit_value">Limit value:</label>
-                    <input type="number" id="limit_value" value=7 onkeyup="onChangeLimitValue(this)" />
+                    <input id="limit_value" value=50 onkeyup="onChangeLimitValue(this)" />
                 </div>
                 <div class="info" id="show_ingested_logs" onclick="toggleIngestedLogsOverlay()"></div>
             </div>
@@ -111,8 +120,8 @@
 	const LOG_VIEW_BASE_URL = location.origin;
 
     let prefix = "log_*", limit = {
-		"by": "days",
-		"value": 7
+		"by": "count",
+		"value": 50
 	};
     let ingestedLogs = [], selectedLogs = new Set();
 	let searchPayload = {};
@@ -151,9 +160,10 @@
     function onChangeLimitBy(event) {
         const value = event.value;
         if (value) {
+            const limitValue = parseInt(limitValueInput.value);
             limit = {
                 "by": value,
-                "value": parseInt(limitValueInput.value)
+                "value": isNaN(limitValue) ? limitValueInput.value : limitValue
             }
             debouncedFetchIngestedLogs();
         }
@@ -295,14 +305,17 @@
 	function updateSearchResults(data) {
 		let resultsPerIngestion = {};
 		let rows = [];
-		for (const result of data["results"]) {
-			const ingestionId = result["_index"];
-			if (!(ingestionId in resultsPerIngestion)) {
-				resultsPerIngestion[ingestionId] = [];
-			}
-			resultsPerIngestion[ingestionId].push(getLogRow(result));
-			rows.push(getLogRow(result));
-		}
+        // Looping through the search data received in partitions.
+        data.forEach(d => {
+            for (const result of d["results"]) {
+                const ingestionId = result["_index"];
+                if (!(ingestionId in resultsPerIngestion)) {
+                    resultsPerIngestion[ingestionId] = [];
+                }
+                resultsPerIngestion[ingestionId].push(getLogRow(result));
+                rows.push(getLogRow(result));
+            }
+        })
 
 		results_container.innerHTML = "";
 		for (const [ingestionId, results] of Object.entries(resultsPerIngestion)) {

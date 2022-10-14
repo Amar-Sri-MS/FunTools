@@ -922,7 +922,7 @@ void _configure_device(struct dpcsock *sock)
 	 */
 	char *cmdfmt  = "stty -F %s %s sane -echo -onlcr -icrnl crtscts "
 			"-brkint -echoctl -echoe -echok -echoke -icanon -iexten "
-			"-imaxbel -isig -opost ignbrk min 1 cs8 hupcl -clocal";
+			"-imaxbel -isig -opost ignbrk time 5 cs8 hupcl -clocal";
 	char cmd[strlen(cmdfmt) + FMT_PAD];
 	int r;
 
@@ -1664,8 +1664,11 @@ static bool _do_cli(int argc, char *argv[],
 	ok = _decode_jsons_from_buffer(cmd);
 	ok = ok && _write_dequeue(funos, cmd);
 
-	ok = ok && _wait_read(funos);
-	ok = ok && _read_enqueue(funos);
+	do {
+		ok = ok && _wait_read(funos);
+		ok = ok && _read_enqueue(funos);
+	} while (ok && !dpcsh_ptr_queue_size(funos->binary_json_queue));
+
 	ok = ok && _write_dequeue(cmd, funos);
 
 connect_fail:
