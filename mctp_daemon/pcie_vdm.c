@@ -17,11 +17,14 @@
 #include "mctp.h"
 #include "pcie_vdm.h"
 #include "pldm_pmc.h"
+#include <errno.h> 
 
 #define RX_FIFO         	"/tmp/mctp_pcie_rx"
 #define TX_FIFO         	"/tmp/mctp_pcie_tx"
 
 #define MAX_PCIE_TX_PKT_SIZE	(MAX_MCTP_PKT_SIZE + sizeof(struct pcie_vdm_hdr_stc))
+
+#define SYNC_PCIE_RW_FIFO_FILE "/tmp/.platform/sync_rw_pcie_fifo"
 
 extern uint8_t eid;
 
@@ -77,8 +80,8 @@ static int __init(void)
 
 	reset_ep();
 
-        if ((tx_fifo_fd = open(TX_FIFO, O_RDWR | O_CREAT)) < 0) {
-                log_err("cannot open %s for write\n", TX_FIFO);
+        if ((tx_fifo_fd = open(TX_FIFO, O_RDWR | O_NONBLOCK | O_CREAT)) < 0) {
+                log_err("cannot open %s for write, errno: %d\n", TX_FIFO, errno);
                 return -1;
         }
 
@@ -95,11 +98,13 @@ static int __receive(uint8_t *buf, int len)
 	struct pcie_vdm_hdr_stc *hdr = (struct pcie_vdm_hdr_stc *)buf;
 	struct pcie_vdm_rec_data *hdr_data = (struct pcie_vdm_rec_data *)vdm_ep.retain->ep_priv_data;
 
+	timestamp(" - PCIE Rx\n");
+
 	hdr_data->cookie = ntoh32(hdr->cookie);
 	hdr_data->trgt_id = ntoh16(hdr->req_id);
 	hdr_data->vendor_id = ntoh16(hdr->vendor_id);
 
-	vdm_ep.rx_cnt = len - sizeof(struct pcie_vdm_hdr_stc);
+	vdm_ep.rx_cnt = len - sizeof(struct pcie_vdm_hdr_stc) - (hdr->tag >> 4);
 	vdm_ep.rx_pkt_buf = hdr->data;
 
 	if (cfg.debug & EP_DEBUG) 
@@ -181,6 +186,7 @@ static int __async(uint8_t *buf)
 
 static int __send(int len)
 {
+	timestamp("\n\n\n\n --------------------------------------------------- PCIE Tx Start................\n");
 
 	if (!len) {
 		log_err("PCIE_VDM: Error - payload length = 0\n");
@@ -199,8 +205,20 @@ static int __send(int len)
 #ifdef CONFIG_USE_PCIE_VDM_INTERFACE
 	write(tx_fifo_fd, tx_pkt_buf, len);
 #endif
+ 		
+//	sprintf(syscom,"/bin/touch %s", SYNC_PCIE_RW_FIFO_FILE);
+        system("/bin/touch /tmp/.platform/sync_rw_pcie_fifo");
 
 	while (vdm_ep.tx_cnt != vdm_ep.tx_len) {
+		uint32_t counter = 0;
+		//Give some time to FIFO reader (CCLinux Glue-layer)
+		//as its slower then FIFO writer (mctp_daemon) in
+		//extended Packet case alone
+		while ((access(SYNC_PCIE_RW_FIFO_FILE, F_OK) == 0) && counter < 10) {
+	//		printf("Value of counter: %d\n", counter);	
+			counter++;
+		}
+
 		len = mctp_transmit(&vdm_ep);
 		vdm_ep.tx_cnt += vdm_ep.payload;
 		
@@ -213,7 +231,10 @@ static int __send(int len)
 #endif
 	}
 
+	//clean-up
+        system("/bin/rm -f /tmp/.platform/sync_rw_pcie_fifo");
 	reset_ep();
+	timestamp(" --------------------------------------------------- PCIE Tx Done!!.................\n");
 	return 0;
 }
 

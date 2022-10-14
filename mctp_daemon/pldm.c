@@ -58,7 +58,7 @@ void set_bit(uint32_t n, bit_arr_t *p)
 int pldm_response(pldm_hdr_stct *resp, uint8_t comp_code)
 {
 	resp->drq_inst = 0;
-	resp->type_ver = 0;
+	//resp->type_ver = 0;
 
 	/* set complition code */
 	resp->data[0] = comp_code;
@@ -130,10 +130,12 @@ int pldm_handler(uint8_t *buf, int len, uint8_t *pbuf)
 	memcpy((uint8_t *)resp, (uint8_t *)pldm_hdr, sizeof(pldm_hdr_stct));
 
 	len -= sizeof(pldm_hdr_stct);
-	if (ptr->len != len) {
-		pldm_err("invalid length = %x (%x)\n", len, ptr->len);
-		pldm_response(resp, PLDM_INVALID_LENGTH);
-		goto exit;
+	if (!(flags & FLAGS_NO_PLDM_LEN_CHECK)) {
+		if (ptr->len != len) {
+			pldm_err("invalid length = %x (%x)\n", len, ptr->len);
+			pldm_response(resp, PLDM_INVALID_LENGTH);
+			goto exit;
+		}
 	}
 
 	rc = ptr->hdlr(pldm_hdr, resp);

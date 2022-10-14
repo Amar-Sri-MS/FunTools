@@ -9,7 +9,14 @@
 #include "auto_conf.h"
 
 #define mctp_err(fmt, arg...)          	log("MCTP: ERROR - "fmt, ##arg)
-#define mctp_dbg(fmt, arg...)		if (cfg.debug & MCTP_DEBUG) printf("%s: "fmt,__func__, ##arg)
+#define mctp_dbg(fmt, arg...)		\
+		if (cfg.debug & MCTP_DEBUG) {								\
+			time_t T= time(NULL);                                                           \
+			struct  tm tm = *localtime(&T);                                                 \
+			printf("%02d/%02d/%04d ",tm.tm_mday, tm.tm_mon+1, tm.tm_year+1900);    		\
+			printf("%02d:%02d:%02d ",tm.tm_hour, tm.tm_min, tm.tm_sec);			\
+			printf("%s: "fmt,__func__, ##arg);						\
+		}
 
 #define MAX_MCTP_PKT_SIZE	(64 + 4)
 
