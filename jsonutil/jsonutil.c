@@ -3,6 +3,7 @@
 #define _XOPEN_SOURCE
 #define _GNU_SOURCE
 
+#include <ctype.h>	// for isspace()
 #include <stdio.h>	// for fprintf()
 #include <unistd.h>	// for STDOUT_FILENO
 #include <stdlib.h>	// for free()
@@ -163,17 +164,37 @@ static struct fun_json *_line_to_command(char *buf)
 	return input;
 }
 
-static struct fun_json *_read_funjson(int fd)
+static bool empty_line(char *line)
+{
+	while (*line) {
+		if (!isspace(*line)) return false;
+		line++;
+	}
+	return true;
+}
+
+static struct fun_json *_read_funjson(int fd, bool *skip)
 {
 	char *buf = _read_line_from_file(fd);
+	if (buf && empty_line(buf)) {
+		*skip = true;
+		free(buf);
+		return NULL;
+	}
 	return _line_to_command(buf);
 }
 
-static struct fun_json *_read_base64(int fd)
+static struct fun_json *_read_base64(int fd, bool *skip)
 {
 	char *buf = _read_line_from_file(fd);
 	if (!buf)
 		return NULL;
+
+	if (empty_line(buf)) {
+		*skip = true;
+		free(buf);
+		return NULL;
+	}
 
 	size_t len = strlen(buf);
 	char *decode_buf = malloc(len);
@@ -428,8 +449,9 @@ main(int argc, char *argv[])
 
 	bool productive = false;
 
-	while (true) {
+	do {
 		struct fun_json *input = NULL;
+		bool skip = false;
 
 		switch (inmode) {
 			case TEXT:
@@ -439,22 +461,22 @@ main(int argc, char *argv[])
 				input = _read_bjson(infd);
 				break;
 			case FUN_JSON:
-				input = _read_funjson(infd);
+				input = _read_funjson(infd, &skip);
 				break;
 			case BASE64:
-				input = _read_base64(infd);
+				input = _read_base64(infd, &skip);
 				break;
 			default:
 				abort();
 		}
+
+		if (skip) continue;
 
 		if (!input) {
 			break;
 		}
 
 		if (fun_json_is_error_message(input)) {
-			if (productive)
-				break;
 			const char *message;
 			fun_json_fill_error_message(input, &message);
 			fprintf(stderr, "%s\n", message);
@@ -477,7 +499,7 @@ main(int argc, char *argv[])
 			fprintf(stderr, "error writing json\n");
 			break;
 		}
-	}
+	} while (inmode != BINARY && inmode != TEXT);
 
 	if (!productive) {
 		r = 5;

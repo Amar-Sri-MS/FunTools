@@ -42,5 +42,31 @@ for f in `seq 1 4`; do
   diff -q $TESTFILE.$f $TESTFILE.$((f+1))
 done
 
+TESTFILE=$PWD/test.lines.negative
+
+cat << TESTJSON > $TESTFILE
+echo [1 2 3]
+     [4 5 6]
+TESTJSON
+
+if ./jsonutil -f $TESTFILE; then
+echo negative test not expected to pass
+exit 1
+fi
+
+TESTFILE=$PWD/test.lines.positive
+
+cat << TESTJSON > $TESTFILE
+
+echo [1 2 3]
+
+echo [4 5 6]
+TESTJSON
+
+if ! ./jsonutil -f $TESTFILE; then
+echo positive test expected to pass
+exit 1
+fi
+
 echo All tests PASSED
-rm $TESTFILE*
+rm $PWD/test.json* $PWD/test.lines*
