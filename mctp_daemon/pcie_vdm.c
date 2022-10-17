@@ -98,8 +98,6 @@ static int __receive(uint8_t *buf, int len)
 	struct pcie_vdm_hdr_stc *hdr = (struct pcie_vdm_hdr_stc *)buf;
 	struct pcie_vdm_rec_data *hdr_data = (struct pcie_vdm_rec_data *)vdm_ep.retain->ep_priv_data;
 
-	timestamp(" - PCIE Rx\n");
-
 	hdr_data->cookie = ntoh32(hdr->cookie);
 	hdr_data->trgt_id = ntoh16(hdr->req_id);
 	hdr_data->vendor_id = ntoh16(hdr->vendor_id);
@@ -186,14 +184,12 @@ static int __async(uint8_t *buf)
 
 static int __send(int len)
 {
-	timestamp("\n\n\n\n --------------------------------------------------- PCIE Tx Start................\n");
-
 	if (!len) {
 		log_err("PCIE_VDM: Error - payload length = 0\n");
 		reset_ep();
 		return -1;
 	}
-
+	char syscom[128];
 	vdm_ep.flags |= MCTP_IN_FLIGHT;
 	vdm_ep.tx_cnt += vdm_ep.payload;
 
@@ -205,9 +201,10 @@ static int __send(int len)
 #ifdef CONFIG_USE_PCIE_VDM_INTERFACE
 	write(tx_fifo_fd, tx_pkt_buf, len);
 #endif
- 		
-//	sprintf(syscom,"/bin/touch %s", SYNC_PCIE_RW_FIFO_FILE);
-        system("/bin/touch /tmp/.platform/sync_rw_pcie_fifo");
+	// Producer is faster then consumer so creating a bit of Pause
+	// till consumer consumes
+	snprintf(syscom, sizeof(syscom), "/bin/touch %s", SYNC_PCIE_RW_FIFO_FILE);
+	system(syscom);
 
 	while (vdm_ep.tx_cnt != vdm_ep.tx_len) {
 		uint32_t counter = 0;
@@ -215,7 +212,6 @@ static int __send(int len)
 		//as its slower then FIFO writer (mctp_daemon) in
 		//extended Packet case alone
 		while ((access(SYNC_PCIE_RW_FIFO_FILE, F_OK) == 0) && counter < 10) {
-	//		printf("Value of counter: %d\n", counter);	
 			counter++;
 		}
 
@@ -232,9 +228,9 @@ static int __send(int len)
 	}
 
 	//clean-up
-        system("/bin/rm -f /tmp/.platform/sync_rw_pcie_fifo");
+	snprintf(syscom, sizeof(syscom), "/bin/rm -f %s", SYNC_PCIE_RW_FIFO_FILE);
+	system(syscom);
 	reset_ep();
-	timestamp(" --------------------------------------------------- PCIE Tx Done!!.................\n");
 	return 0;
 }
 

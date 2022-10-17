@@ -154,7 +154,6 @@ int main_loop()
 
 				len += rd_len;
 				if (len >= mctp_ops[i]->get_min_payload()) {
-					timestamp(" - RCV\n");
 					mctp_ops[i]->recv(buf, len);
 					len = 0;
 				}
