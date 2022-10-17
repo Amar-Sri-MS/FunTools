@@ -7,6 +7,7 @@
 
 #include <stdint.h>
 #include "pldm_pmc.h"
+#include "utils.h"
 
 struct numeric_sensor_pdr  thermal_sensor1 = {
         .hdr = {
@@ -14,11 +15,11 @@ struct numeric_sensor_pdr  thermal_sensor1 = {
             .version = 1,
             .type = 0x2,
             .change = 0,
-            .len = sizeof(struct numeric_sensor_pdr) - sizeof(struct pldm_common_pdr_hdr)
+            .len = (hton16(sizeof(struct numeric_sensor_pdr) - sizeof(struct pldm_common_pdr_hdr)) << 8) | 0x00
         },
-        .hdl_id = 0,
-        .sens_id = 0x0001,
-        .type = 0x50,
+        .hdl_id = 0x0000,
+        .sens_id = 0x0100,
+        .type = 0x5000,
         .inst_num = 0,
         .cid = CHIP_CONTAINER_ID,
         .init = 0,
@@ -34,7 +35,7 @@ struct numeric_sensor_pdr  thermal_sensor1 = {
         .aux_hdlr = 0,
         .is_linear = 1,
         .data_size = 1,
-        .res = 0x3f800000,
+        .res = hton32(0x3f800000),
         .offset = 0,
         .accuracy = 0,
         .plus_tol = 0,
@@ -43,8 +44,8 @@ struct numeric_sensor_pdr  thermal_sensor1 = {
         .support_thold = PLDM_UPPER_WARNING_SUPPORT | PLDM_UPPER_CRITICAL_SUPPORT | PLDM_UPPER_FATAL_SUPPORT,
         .thold_hys = 0,
         .trans_interval = 0,
-        .update_interval = 0x3f800000,
-        .max = 110,
+        .update_interval = hton32(0x3f800000),
+        .max = 0x6E,
         .min = 0,
         .range = 1,
         .range_fileds_support = 0xf,
