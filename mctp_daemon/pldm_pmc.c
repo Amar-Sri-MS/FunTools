@@ -147,10 +147,7 @@ static void set_payload(pldm_hdr_stct *resp, struct pldm_get_pdr_rspn *rspn,
 /* actual thermal sensor read */
 int32_t external_thermal_sensor_rd()
 {
-	//Real implementation would be done later.
-	//Currently using hardcoded value to satisfy testing need.
-	//FYI: Currently this feature and product has been frozen
-	return 49;
+	return -1;
 }
 
 /* pldm mcd set event reciver tid handler */
@@ -223,7 +220,6 @@ static int pldm_get_repo_info(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 /* pldm get pdr */
 static int pldm_get_pdr(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 {
-	printf(" pldm_get_pdr called ..................\n");
 	struct pldm_get_pdr_req *pldm = (struct pldm_get_pdr_req *)hdr->data;
 	struct pldm_get_pdr_rspn *rspn = (struct pldm_get_pdr_rspn *)resp->data;
 	struct pldm_common_pdr_hdr *pdrhdr;
@@ -257,7 +253,6 @@ static int pldm_get_pdr(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
         }
 
 	pdr = (struct numeric_sensor_pdr *)sensor[i].pdr;
-	printf("\n%s:%d pdr->cid: 0x%x\n",  __FUNCTION__, __LINE__, pdr->cid & 0xff);
 
 	ptr = (uint8_t *)sensor[i].pdr;
 	pdrhdr = (struct pldm_common_pdr_hdr *)&pdr->hdr;
@@ -282,10 +277,8 @@ static int pldm_get_pdr(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 		/* first and last chunk? */
 		if (sensor[i].len < size) {
 			set_payload(resp, rspn, ptr, rec, 5, sensor[rec].len, 0);
-			printf("\n%s:%d pdr->cid: 0x%x\n",  __FUNCTION__, __LINE__, pdr->cid & 0xff);
 			return PLDM_PAYLOAD_SIZE + sensor[rec].len;
 		} else {
-			printf("\n%s:%d pdr->cid: 0x%x\n",  __FUNCTION__, __LINE__, pdr->cid & 0xff);
 			set_payload(resp, rspn, ptr, rec, 0, size, size);
 			return PLDM_PAYLOAD_SIZE + size;
 		}
@@ -295,30 +288,25 @@ static int pldm_get_pdr(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 	if (seq >= sensor[i].len) {
 		pldm_err("next chunk - bad seq # %x\n", seq);
 		pldm_response(resp, INVALID_DATA_TRANSFER_HANDLE);
-		printf("\n%s:%d pdr->cid: 0x%x\n",  __FUNCTION__, __LINE__, pdr->cid);
 		return 1;
 	}
 
 	if (chg != pdrhdr->change) {
 		pldm_err("next chunk - bad chk # %x\n", chg);
 		pldm_response(resp, INVALID_RECORD_CHANGE_NUMBER);
-		printf("\n%s:%d pdr->cid: 0x%x\n",  __FUNCTION__, __LINE__, pdr->cid);
 		return 1;
 	}
 
 	/* last chunk? */
 	if (sensor[i].len < (size + seq)) {
 		set_payload(resp, rspn, ptr, rec, 4, (sensor[i].len - seq), (sensor[i].len - seq));
-		printf("\n%s:%d pdr->cid: 0x%x\n",  __FUNCTION__, __LINE__, pdr->cid);
 		return PLDM_PAYLOAD_SIZE + (sensor[i].len - seq);
 	} else {
 		/* middle  */
 		set_payload(resp, rspn, ptr, rec, 1, size, (seq + size));
-		printf("\n%s:%d pdr->cid: 0x%x\n",  __FUNCTION__, __LINE__, pdr->cid);
 		return PLDM_PAYLOAD_SIZE + size;
 	}
 
-	printf("\n%s:%d pdr->cid: 0x%x\n",  __FUNCTION__, __LINE__, pdr->cid);
 	return -1;
 }
 
@@ -330,12 +318,8 @@ static int pldm_set_sensor_en(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 	uint16_t id = pldm2host_16(pldm->id);
 
 	VALID_SENSOR(id);
-	printf("\n%s:%d pldm->state: 0x%x\n",  __FUNCTION__, __LINE__, pldm->state);
-	printf("\n%s:%d pldm->event: 0x%x\n",  __FUNCTION__, __LINE__, pldm->event);
 	sensor[id].state = (!pldm->state) ? PLDM_SENSOR_ENABLED : PLDM_SENSOR_DISABLED;
 	sensor[id].event = (pldm->event) ? pldm->event : sensor[id].event;
-	printf("\n%s:%d id: %d, pldm->state: 0x%x\n",  __FUNCTION__, __LINE__, id, pldm->state);
-	printf("\n%s:%d pldm->event: 0x%x\n",  __FUNCTION__, __LINE__, pldm->event);
 
 	pldm_response(resp, PLDM_SUCCESS);
 	return PLDM_PAYLOAD_SIZE;
@@ -351,7 +335,6 @@ static int pldm_get_sensor_rd(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 	uint8_t state;
 	uint16_t id = pldm2host_16(pldm->id);
 
-	printf("\n%s:%d pldm_get_sensor_rd called........................", __FUNCTION__, __LINE__);
 	VALID_SENSOR(id);
 
 	if (pldm->rearm && (sensor[id].rearm == PLDM_REARM_DISABLED)) {
@@ -362,7 +345,9 @@ static int pldm_get_sensor_rd(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 
 	pdr = (struct numeric_sensor_pdr *)sensor[id].pdr;
 	tmp = *((int8_t *)sensor[id].read);
-	printf("\ntemperature val: 0x%x and id: %d \n", tmp, id);
+	//Real implementation would be done later.
+	//Currently using hardcoded value to satisfy testing need.
+	//FYI: Currently this feature and product has been frozen
 	tmp=0x2c;
 
         if (sensor[id].scale == SCALE_ENABLED) 
@@ -373,9 +358,7 @@ static int pldm_get_sensor_rd(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 	rspn->data_size = pdr->data_size;
 
 	/* if no temperature read is available - mark the sensor as disabled */
-	printf("\n%s:%d rspn->state: 0x%x, sensor[%d].state: 0x%x\n",  __FUNCTION__, __LINE__, rspn->state, id, sensor[id].state);
 	rspn->state = (tmp == -1) ? PLDM_SENSOR_UNAVAILABLE : sensor[id].state;
-	printf("\n%s:%d rspn->state: 0x%x\n",  __FUNCTION__, __LINE__, rspn->state);
 	rspn->event_ena = PLDM_EVENTS_STATE_ONLY;
 
 	warn = host2pldm(pdr->warn_high);
@@ -392,12 +375,10 @@ static int pldm_get_sensor_rd(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 			state = PLDM_UNKNOWN_STATE;
 		else state = (tmp < warn) ? PLDM_NORMAL_STATE : (tmp < critic) ? PLDM_WARNING_STATE : (tmp < fatal) ? PLDM_CRITICAL_STATE : PLDM_FATAL_STATE;
 
-		printf("\n%s:%d rspn->c_state: 0x%x\n", __FUNCTION__, __LINE__, rspn->c_state);
 		rspn->p_state = rspn->c_state;
 		rspn->c_state = state;
 		rspn->e_state = state;
 	}
-	printf("\n%s:%d rspn->state: 0x%x, sensor[%d].state: 0x%x\n",  __FUNCTION__, __LINE__, rspn->state, id, sensor[id].state);
 
 	pldm_response(resp, PLDM_SUCCESS);
 	return PLDM_PAYLOAD_SIZE;
