@@ -28,10 +28,6 @@ static int mctp_cmd_eid_set(uint8_t *buf, mctp_ctrl_hdr_t *hdr, mctp_endpoint_st
 	mctp_set_eid_resp_t *rspn = (mctp_set_eid_resp_t *)buf;
 	uint8_t eid = hdr->data[1];
 	struct mctp_ep_retain_stc *retain;
-	struct pcie_vdm_rec_data *hdr_data = (struct pcie_vdm_rec_data *) ep->retain->ep_priv_data;
-	uint8_t pcie_bus_id = FUNGIBLE_PCIE_BUS_ID(hdr_data->cookie);
-	printf("\n%s:%d pcie_bus_id: 0x%x, hdr_data->cookie: 0x%x\n", __FUNCTION__, __LINE__, pcie_bus_id, hdr_data->cookie);
-	printf("\n%s:%d hdr_data->vendor_id: 0x%x and hdr_data->trgt_id: 0x%x\n", __FUNCTION__, __LINE__,hdr_data->vendor_id, hdr_data->trgt_id);
 
 	if (!ep->retain) 
 		return ERR_NO_RETAIN;
@@ -39,6 +35,7 @@ static int mctp_cmd_eid_set(uint8_t *buf, mctp_ctrl_hdr_t *hdr, mctp_endpoint_st
 	retain = ep->retain;
 
 	if ((eid != 0) && (eid != 0xff)) {
+		//TBD with Vendor: IF Condition
 		if (1) {
 			log("eid changed from %u to %u\n", retain->eid, eid);
 			mctp_dbg("eid changed from %u to %u\n", retain->eid, eid);
@@ -68,10 +65,6 @@ static int mctp_cmd_eid_get(uint8_t *buf, mctp_ctrl_hdr_t *hdr, mctp_endpoint_st
 {
 	mctp_get_eid_resp_t *rspn = (mctp_get_eid_resp_t *)buf;
 	struct mctp_ep_retain_stc *retain;
-	struct pcie_vdm_rec_data *hdr_data = (struct pcie_vdm_rec_data *) ep->retain->ep_priv_data;
-	uint8_t pcie_bus_id = FUNGIBLE_PCIE_BUS_ID(hdr_data->cookie);
-	printf("\n%s:%d pcie_bus_id: 0x%x, hdr_data->cookie: 0x%x\n", __FUNCTION__, __LINE__, pcie_bus_id, hdr_data->cookie);
-	printf("\n%s:%d hdr_data->vendor_id: 0x%x and hdr_data->trgt_id: 0x%x\n", __FUNCTION__, __LINE__,hdr_data->vendor_id, hdr_data->trgt_id);
 
 	if (!ep->retain) 
 		return ERR_NO_RETAIN;
