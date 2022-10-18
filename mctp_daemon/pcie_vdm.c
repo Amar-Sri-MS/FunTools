@@ -38,6 +38,7 @@ static struct pcie_vdm_rec_data vdm_data = {
 	.vendor_id = 0,
 	.trgt_id = 0,
 	.cookie = 0,
+	.bus_owner_id = 0,
 };
 
 static struct mctp_ep_retain_stc vdm_retain = {

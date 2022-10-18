@@ -58,7 +58,6 @@ void set_bit(uint32_t n, bit_arr_t *p)
 int pldm_response(pldm_hdr_stct *resp, uint8_t comp_code)
 {
 	resp->drq_inst = 0;
-	//resp->type_ver = 0;
 
 	/* set complition code */
 	resp->data[0] = comp_code;

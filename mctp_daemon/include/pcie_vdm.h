@@ -39,6 +39,7 @@ struct pcie_vdm_rec_data {
 	uint16_t vendor_id;
 	uint16_t trgt_id;
 	uint32_t cookie;
+	uint16_t bus_owner_id;
 };
 
 extern struct mctp_ops_stc pcie_vdm_ops;
