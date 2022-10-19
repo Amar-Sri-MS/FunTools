@@ -35,6 +35,7 @@ struct server_cfg_stc cfg = {
 	.fru_filename = NULL,
 	.uuid = {0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf},
 	.debug = 0,
+	.polling = 100,
 };
 
 static void segfault_handler()
@@ -99,8 +100,10 @@ int main(int argc, char *argv[])
 		{"fru",		1, 0, 'F'},
 		{"nopec",	0, 0, 'I'},
                 {"lock",        1, 0, 'L'},
+                {"polling",     1, 0, 'P'},
                 {"tid",         1, 0, 'T'},
 		{"version",	0, 0, 'V'},
+		{"nolencheck",	0, 0, 'Z'},
                 {0, 0, 0, 0}};
 
         opterr = 0;
@@ -117,7 +120,7 @@ int main(int argc, char *argv[])
         sigaction(SIGSEGV, &sa, NULL);
 
 
-        while ((c = getopt_long(argc, argv, "abhl:np:u:vDE:F:IL:T:V", long_args, &index)) != -1) {
+        while ((c = getopt_long(argc, argv, "abhl:np:u:vDE:F:IL:P:T:VZ", long_args, &index)) != -1) {
 		switch (c) {
 		case 'a':
 			pldm_vars.flags |= MCTP_VDM_ASYNC_ENABLED;
@@ -175,6 +178,10 @@ int main(int argc, char *argv[])
 			flags |= FLAGS_NO_SMBUS_PEC_CHECK;
 			break;
 
+		case 'P':
+			cfg.polling = (uint8_t)strtol(optarg, NULL, 0);
+			break;
+
 		case 'T':
 			pldm_vars.async_tid = (uint8_t)strtol(optarg, NULL, 0);
 			break;
@@ -182,6 +189,10 @@ int main(int argc, char *argv[])
 		case 'V':
 			print_version("MCTP Daemon");
 			exit(EXIT_SUCCESS);
+
+		case 'Z':
+			flags |= FLAGS_NO_PLDM_LEN_CHECK;
+			break;
 
 		default:
 			fprintf(stderr, "Unknown option %c\n", c);

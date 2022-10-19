@@ -105,7 +105,7 @@ start_mctp_daemon()
 		fail
 		exit 1
 	fi
-	$SERVICE -n -b -l /persist/logs/mctp_daemon.log -u "$UUID" >&/dev/null && pass || fail
+	$SERVICE -n -b -Z -l /persist/logs/mctp_daemon.log -u "$UUID" >&/dev/null && pass || fail
 }
 
 stop_mctp_daemon()

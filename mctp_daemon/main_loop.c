@@ -126,8 +126,8 @@ int main_loop()
 		for(int i = 0; i < NUMBER_OF_EPS; i++)
 			FD_SET(mctp_ops[i]->get_rx_fifo(), &fds);
 
-		timeout.tv_sec = 1;
-                timeout.tv_usec = 0; 
+		timeout.tv_sec = cfg.polling / 1000;
+                timeout.tv_usec = cfg.polling % 1000; 
 
 		find_max_fd(&maxfd);
 		select(maxfd + 1, &fds, NULL, NULL, &timeout);

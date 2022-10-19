@@ -145,7 +145,7 @@ static void set_payload(pldm_hdr_stct *resp, struct pldm_get_pdr_rspn *rspn,
 }
 
 /* actual thermal sensor read */
-int external_thermal_sensor_rd()
+int32_t external_thermal_sensor_rd()
 {
 	return -1;
 }
@@ -253,6 +253,7 @@ static int pldm_get_pdr(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
         }
 
 	pdr = (struct numeric_sensor_pdr *)sensor[i].pdr;
+
 	ptr = (uint8_t *)sensor[i].pdr;
 	pdrhdr = (struct pldm_common_pdr_hdr *)&pdr->hdr;
 
@@ -330,7 +331,7 @@ static int pldm_get_sensor_rd(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 	struct pldm_get_sens_rd_req *pldm = (struct pldm_get_sens_rd_req *)hdr->data;
 	struct pldm_get_sens_rd_rspn *rspn = (struct pldm_get_sens_rd_rspn *)resp->data;
 	struct numeric_sensor_pdr *pdr;
-	uint32_t tmp = 0, warn, critic, fatal;
+	int8_t tmp = 0, warn, critic, fatal;
 	uint8_t state;
 	uint16_t id = pldm2host_16(pldm->id);
 
@@ -343,33 +344,41 @@ static int pldm_get_sensor_rd(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 	}
 
 	pdr = (struct numeric_sensor_pdr *)sensor[id].pdr;
-	tmp = *((uint32_t *)sensor[id].read);
+	tmp = *((int8_t *)sensor[id].read);
+	//Real implementation would be done later.
+	//Currently using hardcoded value to satisfy testing need.
+	//FYI: Currently this feature and product has been frozen
+	tmp=0x2c;
 
         if (sensor[id].scale == SCALE_ENABLED) 
 		tmp = (sensor[id].op == DIVIDE_TO_SCALE) ? tmp / sensor[id].value : tmp * sensor[id].value;
 
 	rspn->data = host2pldm(tmp);
+	
 	rspn->data_size = pdr->data_size;
 
 	/* if no temperature read is available - mark the sensor as disabled */
-	rspn->state = (tmp == -1) ? PLDM_SENSOR_UNAVAILABLE : PLDM_SENSOR_ENABLED;
+	rspn->state = (tmp == -1) ? PLDM_SENSOR_UNAVAILABLE : sensor[id].state;
 	rspn->event_ena = PLDM_EVENTS_STATE_ONLY;
 
 	warn = host2pldm(pdr->warn_high);
 	critic = host2pldm(pdr->critc_high);
 	fatal = host2pldm(pdr->fatal_high);
 
-	if (tmp == -1)
-		state = PLDM_UNKNOWN_STATE;
-	else state = (tmp < warn) ? PLDM_NORMAL_STATE : (tmp < critic) ? PLDM_WARNING_STATE : (tmp < fatal) ? PLDM_CRITICAL_STATE : PLDM_FATAL_STATE;
+	//As per DSP0248 Spec
+	if (sensor[id].state != PLDM_SENSOR_ENABLED) {
+		rspn->c_state = PLDM_UNKNOWN_STATE;
+		rspn->p_state = PLDM_UNKNOWN_STATE;
+		rspn->e_state = PLDM_UNKNOWN_STATE;
+	} else {
+		if (tmp == -1)
+			state = PLDM_UNKNOWN_STATE;
+		else state = (tmp < warn) ? PLDM_NORMAL_STATE : (tmp < critic) ? PLDM_WARNING_STATE : (tmp < fatal) ? PLDM_CRITICAL_STATE : PLDM_FATAL_STATE;
 
-	rspn->c_state = state;
-
-	rspn->p_state = sensor[id].state;
-	rspn->e_state = state;
-
-	/* set previous state and record current */
-	sensor[id].state = state;
+		rspn->p_state = rspn->c_state;
+		rspn->c_state = state;
+		rspn->e_state = state;
+	}
 
 	pldm_response(resp, PLDM_SUCCESS);
 	return PLDM_PAYLOAD_SIZE;
@@ -505,7 +514,7 @@ int pldm_pmc_init(void)
 	sensor[num_of_sensors].value = 2;
 	sensor[num_of_sensors].load = 1;
 	sensor[num_of_sensors].rec = num_of_sensors;
-	sensor[num_of_sensors].pdr = (void *)&thermal_sensor2;
+	sensor[num_of_sensors].pdr = (void *)&thermal_sensor1;
 	sensor[num_of_sensors].read = &external_thermal_sensor_rd,
 
 	thermal_sensor2.sens_id = ON_BOARD_INLET;

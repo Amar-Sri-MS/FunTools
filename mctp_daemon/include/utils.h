@@ -18,6 +18,7 @@
 #define FLAGS_NO_SU_CHECK		(1 << 2)
 #define FLAGS_DEBUG			(1 << 3)
 #define FLAGS_NO_SMBUS_PEC_CHECK	(1 << 4)
+#define FLAGS_NO_PLDM_LEN_CHECK		(1 << 5)
 
 // define debug bits
 #define GENERAL_DEBUG			(1 << 0)
@@ -94,6 +95,14 @@
                 write(fifo_fd, fifo_str, strlen(fifo_str)); 	\
         } while (0)
 
+#define timestamp(fmt, arg...)					\
+	do {							\
+		struct timespec t;				\
+		clock_gettime(CLOCK_MONOTONIC, &t);		\
+		fprintf(stderr, "%lu.%lu"fmt, t.tv_sec, t.tv_nsec, ##arg);	\
+	} while(0)
+
+	
 
 #ifdef ARCH_BIG_ENDIAN
 #define pldm2host(n)	n
@@ -116,6 +125,7 @@ struct server_cfg_stc {
 	char *lockfile;
 	char *fru_filename;
 	uint8_t uuid[16];
+	uint32_t polling;
 };
 
 extern struct server_cfg_stc cfg;

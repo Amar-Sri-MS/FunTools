@@ -49,12 +49,21 @@ SMBUS_RX_FIFO = '/tmp/mctp_smbus_rx'
 MCTP_OVER_PCIEVDM_SUB_NUM = 0
 MCTP_OVER_SMBUS_SUB_NUM = 1
 
+PCIEVDM_MULTI_BYTE_FLAG = "/tmp/.platform/sync_rw_pcie_fifo"
+SMBUS_MULTI_BYTE_FLAG = "/tmp/.platform/sync_rw_smbus_fifo"
+
 def mctp_wait_read_fifo(mctp_tx_dpc_handle, tx_fifo, mctp_pkt_type, sub_num, print_val):
    try:
        read_ready, write_ready, rready_error = select.select([tx_fifo], [], [tx_fifo], TIMEOUT_SEC)
        if read_ready:
            mctp_pkt_tx_data = tx_fifo.read()
-           log.debug('%s: Read data from FIFO before Bin -> Blob conversion: %s', print_val, mctp_pkt_tx_data)
+           if sub_num == MCTP_OVER_PCIEVDM_SUB_NUM:
+               if os.path.isfile(PCIEVDM_MULTI_BYTE_FLAG):
+                   os.remove(PCIEVDM_MULTI_BYTE_FLAG)
+           elif sub_num == SMBUS_MULTI_BYTE_FLAG:
+               if os.path.isfile(SMBUS_MULTI_BYTE_FLAG):
+                   os.remove(SMBUS_MULTI_BYTE_FLAG)
+           log.debug('%s: Read data from FIFO before Bin -> Blob conversion: %s, len: %d', print_val, mctp_pkt_tx_data, len(mctp_pkt_tx_data))
            data = mctp_tx_dpc_handle.blob_from_string(mctp_pkt_tx_data)
 
            log.debug('%s: Sending Data to MCTP Master using FunOS PCIe Driver', print_val)

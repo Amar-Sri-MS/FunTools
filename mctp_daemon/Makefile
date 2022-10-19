@@ -26,6 +26,7 @@ else ifeq ($(MACHINE),mips64)
  SDK_INSTALL_PREFIX := mips64
  ARCH_BIG_ENDIAN=y
 ifeq ($(PRIVATE_BUILD),y)
+ ARCH_BIG_ENDIAN=y
  SDKTARGETSYSROOT=/opt/poky/3.0.2/sysroots/mipsisa64r6-poky-linux
  PATH:=$(PATH):/opt/poky/3.0.2/sysroots/x86_64-pokysdk-linux/usr/bin/mipsisa64r6-poky-linux:/opt/poky/3.0.2/sysroots/x86_64-pokysdk-linux/usr/bin/mipsisa64r6-poky-linux-musl
  CC=mipsisa64r6-poky-linux-gcc  -meb -mabi=64 -mhard-float -march=mips64r6 --sysroot=$(SDKTARGETSYSROOT)
