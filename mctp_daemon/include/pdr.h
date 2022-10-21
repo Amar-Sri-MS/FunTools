@@ -18,7 +18,7 @@ struct numeric_sensor_pdr  thermal_sensor1 = {
             .len = (hton16(sizeof(struct numeric_sensor_pdr) - sizeof(struct pldm_common_pdr_hdr)) << 8) | 0x00
         },
         .hdl_id = 0x0000,
-        .sens_id = 0x0100,
+        .sens_id = 1,
         .type = 0x5000,
         .inst_num = 0,
         .cid = CHIP_CONTAINER_ID,
