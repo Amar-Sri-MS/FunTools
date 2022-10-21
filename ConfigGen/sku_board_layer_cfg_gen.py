@@ -219,5 +219,10 @@ class BoardLayer():
             # Apply the perst board values to the SKU config file
             sku_json = self.apply_perst(sku_json, bl_json, cl_json)
 
+        # If we had a per-chip layer selection, then strip the per-chip dict
+        # and only leave the valid values for a given chip
+        if isinstance(sku_json['skus'][self.board_name]['PlatformInfo']['board_layer'], dict):
+            sku_json['skus'][self.board_name]['PlatformInfo']['board_layer'] = \
+                sku_json['skus'][self.board_name]['PlatformInfo']['board_layer'][self.target_chip]
 
         return sku_json
