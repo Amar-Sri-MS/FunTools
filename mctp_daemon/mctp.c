@@ -27,6 +27,7 @@ static int mctp_cmd_eid_set(uint8_t *buf, mctp_ctrl_hdr_t *hdr, mctp_endpoint_st
 {
 	mctp_set_eid_resp_t *rspn = (mctp_set_eid_resp_t *)buf;
 	uint8_t eid = hdr->data[1];
+	uint8_t operation = hdr->data[0];
 	struct mctp_ep_retain_stc *retain;
 	struct pcie_vdm_rec_data *hdr_data = (struct pcie_vdm_rec_data *) ep->retain->ep_priv_data;
 
@@ -35,20 +36,28 @@ static int mctp_cmd_eid_set(uint8_t *buf, mctp_ctrl_hdr_t *hdr, mctp_endpoint_st
 
 	retain = ep->retain;
 
+	mctp_dbg("\noperation: 0x%x, hdr_data->bus_owner_id: 0x%x, hdr_data->trgt_id: 0x%x\n",
+		operation, hdr_data->bus_owner_id, hdr_data->trgt_id);
+
 	if ((eid != 0) && (eid != 0xff)) {
-		if ((!hdr_data->bus_owner_id) ||
-		(hdr_data->trgt_id == hdr_data->bus_owner_id)) {
+		if (!hdr_data->bus_owner_id) {
+			hdr_data->bus_owner_id = hdr_data->trgt_id;
+		} else if (hdr_data->trgt_id == hdr_data->bus_owner_id) {
 			log("eid changed from %u to %u\n", retain->eid, eid);
 			mctp_dbg("eid changed from %u to %u\n", retain->eid, eid);
 			retain->eid = eid;
 			rspn->status = 0;
-			hdr_data->bus_owner_id = hdr_data->trgt_id;
-		}
-		if (hdr_data->trgt_id != hdr_data->bus_owner_id) {
-			// DSP0236:
-			// EID assignment rejected. EID has already been assigned 
-			// by another bus owner and assignment was not forced.
-			rspn->status = 0x10;
+		} else if (hdr_data->trgt_id != hdr_data->bus_owner_id) {
+			if (operation == SET_EID) {
+				// DSP0236:
+				// EID assignment rejected. EID has already been assigned
+				// by another bus owner and assignment was not forced.
+				rspn->status = 0x10;
+			} else if (operation == FORCE_EID) {
+				mctp_dbg("eid changed from %u to %u\n", retain->eid, eid);
+				retain->eid = eid;
+				rspn->status = 0;
+			}
 		}
 		rspn->reason = MCTP_RESP_SUCCESS;
 	}
