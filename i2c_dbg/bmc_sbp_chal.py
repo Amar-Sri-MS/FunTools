@@ -1552,11 +1552,16 @@ def do_full_rewrite(nor_image, src_image, override_files, nor_dir):
     print("Completed in %dmn %ds" % (duration / 60, duration % 60))
 
 
-def secure_debug_access(challenge_interface):
-    ''' make sure current grants allow read/write to flash '''
+def prepare_recovery(challenge_interface):
+    ''' prepare for recovery operation:
+    1.make sure current grants allow read/write to flash
+    2.call prepare_qspi if in ROM that needs it
+    '''
 
-    # current debug grants?
+    # get status
     decoded_status = challenge_interface.get_status()
+
+    # debug grants check
     debug_grants = decoded_status[SBP_STATUS_STR[-1]]
     READ_WRITE_GRANTS = (1 << 16) | (1 << 17)
     need_debug_access = ((debug_grants & READ_WRITE_GRANTS) != READ_WRITE_GRANTS)
@@ -1564,6 +1569,13 @@ def secure_debug_access(challenge_interface):
     if need_debug_access:
         print("Debugging access required")
         unlock_chip(challenge_interface, READ_WRITE_GRANTS)
+
+    # call prepare_qspi if needed -- rom_6843 (prepare_qspi not needed on bld_3098)
+    in_rom = decoded_status[EXTRA_BYTES_KEY].startswith(b'rom_')
+    if in_rom:
+        print("In %s: prepare QSPI" % decoded_status[EXTRA_BYTES_KEY])
+        challenge_interface.prepare_qspi()
+
 
 
 def do_recovery(nor_image, args, local_dir=None):
@@ -1583,8 +1595,6 @@ def do_recovery(nor_image, args, local_dir=None):
     except:
         eeprom_file = None
 
-
-    nor_dir = None
     # get full path to the 2 sources files: Nor Image and eeprom
     if local_dir:
         eeprom_path = os.path.join(local_dir,
@@ -1611,11 +1621,12 @@ def do_recovery(nor_image, args, local_dir=None):
 
     try:
         challenge_interface = nor_image.get_challenge_interface()
-        src_image = NOR_IMAGE(DBG_File(src_image_path))
-        secure_debug_access(challenge_interface)
+        prepare_recovery(challenge_interface)
 
+        src_image = NOR_IMAGE(DBG_File(src_image_path))
         # now just have to do the full rewrite
 
+        nor_dir = None
         # try installing the current one if no replacement eepr
         if eeprom_path is None:
             nor_dir = nor_image.read_dir()
@@ -1879,14 +1890,14 @@ def main():
                            help="specify the number of bytes to raw-read")
     flash_grp.add_argument("--output", metavar="FILE",
                            help="output file for read operations "\
-                           "(default <4cc>[A|B].bin)")
+                           "(default [<4cc>[A|B]|raw_read_<size>@<address>].bin)")
     flash_grp.add_argument("--erase-sector", metavar="ADDRESS",
                            help="erase the sector starting at address")
     flash_grp.add_argument("--update", metavar="IMAGE_FILE",
-                           help="update the image on flash with the file specified")
+                           help="update the image on flash with the file specified.")
     flash_grp.add_argument("--BImage", action="store_true",
                            help="perform the operation on the B copy "\
-                           " (read commands)")
+                           "(read commands, update command)")
     flash_grp.add_argument("--resume", default="0",
                            help="resume writing at the offset specified "\
                            "(update command)")
