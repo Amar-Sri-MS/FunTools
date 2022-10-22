@@ -1182,9 +1182,10 @@ class NOR_IMAGE(object):
     def update_image(self, nor_addr, img, sorted_addresses, resume_at=0):
 
         # some size checks: internal consistency
-        image_size = NOR_IMAGE.size_from_img_header(img)+IMG_HEADER_SIZE
+        logical_size = NOR_IMAGE.size_from_img_header(img)
+        image_size = logical_size + IMG_HEADER_SIZE
 
-        print("New image size: %d" %  image_size)
+        print("Size of image: %d: %d bytes needed" %  (logical_size, image_size))
         # enough room on directory?
         max_size = max_available_size(nor_addr, sorted_addresses)
         if image_size > max_size:
@@ -1273,7 +1274,7 @@ def show_flash_images(nor_image):
                        img_info['description']))
 
 
-def do_image_read(nor_image, img_type, b_image, output_f, nor_dir):
+def get_image_data(nor_image, img_type, b_image, nor_dir):
 
     if nor_dir is None:
         nor_dir = nor_image.read_dir()
@@ -1288,6 +1289,12 @@ def do_image_read(nor_image, img_type, b_image, output_f, nor_dir):
             print("No such image type '%s' on Flash" % bytes2str(img_type))
             return None
         data = nor_image.read_image(nor_addr)
+    return data
+
+
+def do_image_read(nor_image, img_type, b_image, output_f, nor_dir):
+
+    data = get_image_data(nor_image, img_type, b_image, nor_dir)
 
     if not data:
         return None
@@ -1740,7 +1747,15 @@ def execute_challenge_command(challenge_interface, args):
         return
 
     if args.update is not None:
-        new_image = bytearray(open(args.update, 'rb').read())
+        if args.update[4] == ":":
+            # extract the file from this NOR Image file
+            src_image = NOR_IMAGE(DBG_File(args.update[5:]))
+            new_image = get_image_data(src_image,
+                                       str2bytes(args.update[:4]),
+                                       False,
+                                       None)
+        else:
+            new_image = bytearray(open(args.update, 'rb').read())
 
         if args.address:
             # unconditional write
@@ -1893,8 +1908,9 @@ def main():
                            "(default [<4cc>[A|B]|raw_read_<size>@<address>].bin)")
     flash_grp.add_argument("--erase-sector", metavar="ADDRESS",
                            help="erase the sector starting at address")
-    flash_grp.add_argument("--update", metavar="IMAGE_FILE",
-                           help="update the image on flash with the file specified.")
+    flash_grp.add_argument("--update", metavar="IMAGE_FILE|FOUR_CC:NOR_IMAGE_FILE",
+                           help="update the image on flash with the file specified (IMAGE_FILE) "\
+                           "or the subimage from the NOR file image (FOUR_CC:NOR_IMAGE_FILE)")
     flash_grp.add_argument("--BImage", action="store_true",
                            help="perform the operation on the B copy "\
                            "(read commands, update command)")
