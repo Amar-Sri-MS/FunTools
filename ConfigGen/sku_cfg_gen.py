@@ -236,7 +236,7 @@ class SKUCfgGen():
                     continue
                 machine = sku_json['PlatformInfo']['machine']
                 if machine != addition_machine:
-                    continue;
+                    continue
 
                 board_cfg = jsonutils.merge_dicts(board_cfg, sku_json)
 
@@ -402,12 +402,22 @@ class SKUCfgGen():
                 meta_data=meta_data))
 
     # generate the version 1 data, most of which is a PCI config
-    def _get_version1_data(self, pci_cfg_dir, sku_name, flags=0):
+    def _get_version1_data(self, pci_cfg_dir, sku_name, flags=0, find_in_subdirs=False):
         if not pci_cfg_dir:
             return b''
 
         # try reading a file based on sku_name
-        file_name = os.path.join(pci_cfg_dir, 'pcicfg-' + sku_name + '.bin')
+        cfg_base_fname = 'pcicfg-' + sku_name + '.bin'
+
+        if find_in_subdirs:
+            files = glob.glob(os.path.join(pci_cfg_dir, "*", cfg_base_fname))
+            if not files:
+                return b''
+            else:
+                assert len(files) == 1, f"More than one config for {sku_name} found?"
+                file_name = files[0]
+        else:
+            file_name = os.path.join(pci_cfg_dir, cfg_base_fname)
         try:
             with open(file_name, 'rb') as f:
                 pci_config = f.read()
@@ -443,7 +453,13 @@ class SKUCfgGen():
         # filename for the flag variant
         fname = self.eeprom_filename(sku_var, chip)
         # PCI data for the SKU
-        version1_data = self._get_version1_data(pci_cfg_dir, sku_name, flags)
+        if chip:
+            pci_cfg_dir = os.path.join(pci_cfg_dir, chip)
+            version1_data = self._get_version1_data(pci_cfg_dir, sku_name, flags)
+        else:
+            version1_data = self._get_version1_data(pci_cfg_dir, sku_name, flags,
+                find_in_subdirs=True)
+
         abs_eeprom_file_path = os.path.join(self.output_dir, fname)
         with open(abs_eeprom_file_path, "wb") as f:
             byte_array = struct.pack('<I', sku_id) + version1_data
