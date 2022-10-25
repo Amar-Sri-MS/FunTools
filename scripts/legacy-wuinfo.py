@@ -496,11 +496,21 @@ GROUP_CUSTOM_MATCH: str = "WU_HANDLER_REGISTER_GROUP(:[module], {wuname}, (:[fnl
 GROUP_CUSTOM_REWRITE: str = "WU_HANDLER_ALIGNED_GROUP({wuname}, :[attrs], {fnlist})"
 
 def pad_fnlist(fnlist: str):
+    # size the existing list
     fns = fnlist.split(",")
     fns = [fn.strip() for fn in fns]
-    while (len(fns) < 16):
-        fns.append("padding_wuh")
-    return ",\n                          ".join(fns)
+    pads = 16 - len(fns)
+    assert(pads >= 0)
+
+    # if the list is full, just go with it
+    if (pads == 0):
+        return fnlist
+    
+    # append to the fnlist
+    for _ in range(n):
+        fnlist.append(f",\n                          padding_wuh")
+
+    return fnlist
 
 class GroupPattern(Pattern):
     def __init__(self, id: str, match: str, fwdrewrite: Optional[str]) -> None:
@@ -803,7 +813,7 @@ SPLIT_PATTERNS: List[SplitPattern] = [
             SplitPattern("{:[start]MODULE_END_SDK():[~;?]:[rest]}")
 ]
 
-def split_input_for_fwd(input: str) -> Tuple[str, str]:
+def split_input_for_fwd(fname: str, input: str) -> Tuple[str, str]:
 
     # apply patterns until we find a match
     for sp in SPLIT_PATTERNS:
@@ -813,19 +823,18 @@ def split_input_for_fwd(input: str) -> Tuple[str, str]:
 
         return tup
 
-    raise RuntimeError("Could not split file!")
+    raise RuntimeError(f"Could not split file {fname}!")
 
 SPLIT_INCL = SplitPattern("{:[start]#include <nucleus/wu_register.h>:[rest]}")
 
-# FIXME: do this with comby
-#INC = "#include <nucleus/wu_register.h>"
-
 def split_input_for_includes(input: str) -> Tuple[str, str]:
-        tup = SPLIT_INCL.match(input)
-        return tup
+    assert(input.find("wu_register.h") != -1)
+    tup = SPLIT_INCL.match(input)
+    assert(tup is not None)
+    return tup
 
 
-# generate-wutab.py python regex
+# python regex from legacy generate-wutab.py 
 # m = re.match(r"^(const )?struct (?P<struct_name>[a-zA-Z0-9_]+)", arg)
 
 STRUCT_PAT = Pattern("structs", "struct :[[structname]]")
@@ -840,6 +849,16 @@ def scrape_structs(decl: str) -> Set[str]:
         ret.add(match.environment["structname"].fragment)
 
     return ret - KNOWN_STRUCTS
+
+# foward declaration header template
+FWD_TEMPL = """
+/* These are automagically generated forward declarations for legacy WU
+ * handlers. These declarations are only needed because these WUs are
+ * referenced in this file before they are declared. Forward declarations
+ * are not needed for properly ordered code (unless in the case of a 
+ * legitimate circular reference).
+ */
+"""
 
 def fwd_decls_for_wus(wuinfo: WUInfo, refs: Set[str]) -> str:
 
@@ -880,24 +899,16 @@ def fixup_file_internal(wuinfo: WUInfo, fl: FunFile):
     # rewrite the header
     input = HEADER_MATCH.rewrite(input)
 
-    # walk the list of down references
-    all_fwd = "\n"
-    all_fwd += "/* these automagically generated forward declarations for legacy WU handlers."
-    all_fwd += " * these declarations are only needed because these WUs are"
-    all_fwd += " * referenced in this file before they are declared."
-    all_fwd += " * forward declarations are not needed for properly ordered code."
-    all_fwd += " */\n"
-
     # generate the actual declarations, but only for things that won't
     # appear an an xref header
     wu_fwd = fwd_decls_for_wus(wuinfo, fl.downref - set(fl.inref.keys()))
 
     # add the wu declarations
-    all_fwd += wu_fwd
+    all_fwd = FWD_TEMPL + wu_fwd
 
     # patch them into the file
     if (len(fl.downref) > 0):
-        (first, last) = split_input_for_fwd(input)
+        (first, last) = split_input_for_fwd(fl.name, input)
         input = first + all_fwd + last
 
     # now rewrite all the decls
@@ -975,13 +986,15 @@ WU_HEADER_TEMPL = f"""/*
 #endif /* {{hguard}} */
 """
 
-INCL_TEMPL = "#include <{hname}> /* XXX: auto-included. should be removed. */"
+INCL_TEMPL = "#include <{hname}> /* XXX: external WU references should be replaced with push functions / API */"
 
 def include_wuid_headers_in_file(fl: FunFile, hnames: Set[str]):
 
-    incls = ""
+    inclist: List[str] = []
     for hname in hnames:
-        incls += INCL_TEMPL.format(hname=hname)
+        inclist.append(INCL_TEMPL.format(hname=hname))
+
+    incls: str = "\n".join(inclist)
 
     print(f"Adding includes to file {fl.name}: \n{incls}")
 
@@ -1110,7 +1123,7 @@ def parse_args() -> argparse.Namespace:
                         help="Temporary path for parsing info",
                         default="build-legacy")
 
-     # Optional argument flag which defaults to False
+     # Whether to fixup anything 
     parser.add_argument("-F", "--fixup", action="store", type=str, 
                         help="Path to fixup as much as possible",
                         default=None)
