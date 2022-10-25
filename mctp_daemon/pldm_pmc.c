@@ -189,28 +189,32 @@ static int pldm_get_repo_info(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 
 	rspn->repo_state = AVAILABLE_REPO;
 
-	rspn->update_time.utc_offset = host2pldm_16((2 * 60));
-	rspn->update_time.seconds = host2pldm(REPO_BUILD_SEC);
+	rspn->update_time.utc_offset = SWAP16((2 * 60));
+	rspn->update_time.seconds = REPO_BUILD_SEC;
 	rspn->update_time.minute = REPO_BUILD_MIN;
 	rspn->update_time.hour = REPO_BUILD_HOUR;
 	rspn->update_time.day = REPO_BUILD_DAY;
 	rspn->update_time.month = REPO_BUILD_MONTH;
-	rspn->update_time.year = host2pldm_16(REPO_BUILD_YEAR);
+	rspn->update_time.year = SWAP16((REPO_BUILD_YEAR));
 	
 	memcpy((uint8_t *)&rspn->oem_update_time, (uint8_t *)&rspn->update_time,sizeof(struct pldm_timestamp));
-	rspn->count = host2pldm(num_of_sensors);
+	rspn->count = SWAP32((num_of_sensors));
+	mctp_dbg("%s:%d num_of_sensors: 0x%x\n", __FUNCTION__, __LINE__, num_of_sensors);
 
 	for (i = 0; i < num_of_sensors; i++)
 		size += sensor[i].len;
 
-	size &= 0xfffffc00;
-	rspn->repo_size = host2pldm(size);
+	//size &= 0xfffffc00;
+	rspn->repo_size = SWAP32((size));
+	mctp_dbg("%s:%d rspn->repo_size: 0x%x\n", __FUNCTION__, __LINE__,rspn->repo_size);
 
 	/* FIXME: for now, the numeric pdr is the largest.
 	 * if new structure is to be designed, this may need to be changed
 	 */
-	size = (63 + sizeof(struct numeric_sensor_pdr)) & 0xffffffc0;
-	rspn->max_pdr_size = host2pldm(size);
+	size = (63 + sizeof(struct numeric_sensor_pdr));
+	rspn->max_pdr_size = SWAP32((size));
+	mctp_dbg("\n%s:%d rspn->max_pdr_size: 0x%x\n", __FUNCTION__, __LINE__,rspn->max_pdr_size);
+
 	rspn->timeout = 0;
 
 	pldm_response(resp, PLDM_SUCCESS);
