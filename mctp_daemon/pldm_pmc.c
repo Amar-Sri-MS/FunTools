@@ -199,21 +199,17 @@ static int pldm_get_repo_info(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 	
 	memcpy((uint8_t *)&rspn->oem_update_time, (uint8_t *)&rspn->update_time,sizeof(struct pldm_timestamp));
 	rspn->count = SWAP32((num_of_sensors));
-	mctp_dbg("%s:%d num_of_sensors: 0x%x\n", __FUNCTION__, __LINE__, num_of_sensors);
 
 	for (i = 0; i < num_of_sensors; i++)
 		size += sensor[i].len;
 
-	//size &= 0xfffffc00;
 	rspn->repo_size = SWAP32((size));
-	mctp_dbg("%s:%d rspn->repo_size: 0x%x\n", __FUNCTION__, __LINE__,rspn->repo_size);
 
 	/* FIXME: for now, the numeric pdr is the largest.
 	 * if new structure is to be designed, this may need to be changed
 	 */
 	size = (63 + sizeof(struct numeric_sensor_pdr));
 	rspn->max_pdr_size = SWAP32((size));
-	mctp_dbg("\n%s:%d rspn->max_pdr_size: 0x%x\n", __FUNCTION__, __LINE__,rspn->max_pdr_size);
 
 	rspn->timeout = 0;
 
