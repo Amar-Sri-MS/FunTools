@@ -105,10 +105,10 @@
 	
 
 #ifdef ARCH_BIG_ENDIAN
-#define pldm2host(n)	n
-#define pldm2host_16(n)	n
-#define host2pldm(n)	n
-#define host2pldm_16(n)	n
+#define pldm2host(n)    SWAP32((n))
+#define pldm2host_16(n) SWAP16((n))
+#define host2pldm(n)    SWAP32((n))
+#define host2pldm_16(n) SWAP16((n))
 #else
 #define pldm2host(n)	ntohl(n)
 #define pldm2host_16(n)	ntohs(n)
