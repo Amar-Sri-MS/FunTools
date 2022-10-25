@@ -199,6 +199,12 @@ typedef struct __attribute__((__packed__)) {
 #define ERR_NO_RETAIN			-9
 #define ERR_BUFFER_OVERFLOW		-10
 
+// MCTP SetEID Message Request Data (DSP0236)
+#define SET_EID                 0x0
+#define FORCE_EID		0x1
+#define RESET_EID		0x2
+#define SET_DISC_FLAG		0x3
+
 struct mctp_ops_stc {
 	int (*init)(void);
 	int (*recv)(uint8_t *, int);
