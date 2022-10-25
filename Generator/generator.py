@@ -417,8 +417,7 @@ def ReformatCodeWithIndent(source):
   p = subprocess.Popen(args,
                        stdout=subprocess.PIPE,
                        stdin=subprocess.PIPE,
-                       stderr=subprocess.STDOUT,
-                       bufsize=1)
+                       stderr=subprocess.STDOUT)
   # indent requires line feed after last line.
   source = source + '\n'
   out = p.communicate(source.encode('utf-8'))
@@ -454,8 +453,7 @@ def ReformatCodeWithAStyle(source):
   p = subprocess.Popen(args,
                        stdout=subprocess.PIPE,
                        stdin=subprocess.PIPE,
-                       stderr=subprocess.STDOUT,
-                       bufsize=1)
+                       stderr=subprocess.STDOUT)
   # Make sure there's a line feed after last line.
   source = source + '\n'
   out = p.communicate(source.encode('utf-8'))
