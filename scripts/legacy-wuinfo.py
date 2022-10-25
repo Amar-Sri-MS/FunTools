@@ -1096,6 +1096,42 @@ def do_fixup_xrefs(wuinfo: WUInfo, fileinfo: Dict[str, FunFile], fixup: str):
             # fixup the file
             fixup_file_xrefs(wuinfo, fileinfo, fname)
 
+###
+##  Depd
+#
+
+def fixname(fname: str) -> str:
+    if (fname.startswith("./")):
+        fname = fname[2:]
+    return fname
+
+def do_file_deps(wuinfo: WUInfo, fl: FunFile):
+
+    # iterate over all the cross-references and
+    # generate a link per WU file
+    for (wuname, fnames) in fl.crossreffl.items():
+        for fname in fnames:
+            print(f'\t"{fixname(fl.name)}" -> "{fixname(fname)}";')
+
+def do_deps(wuinfo: WUInfo, fileinfo: Dict[str, FunFile], fixup: str):
+
+    # get the list of sets from the wuinfo
+    xrefsets = wuinfo.xrefsets
+
+    # loop over it, check for fixups
+    for xset in xrefsets:
+        if (not set_fixup_match(fixup, xset)):
+            # print(f'Skipping fix ups for set {xset}')
+            continue
+
+        print(f'\tProcessing fix ups for set {xset}')
+
+        # for each file
+        for fname in xset:
+            # fixup the file
+            do_file_deps(wuinfo, fileinfo[fname])
+
+
 
 ###
 ##  parse_args
@@ -1108,22 +1144,26 @@ def parse_args() -> argparse.Namespace:
                         help="Output filename",
                         default="-")
  
-     # Optional argument flag which defaults to False
+    # Optional argument flag which defaults to False
     parser.add_argument("-P", "--path", action="store", type=str, 
                         help="Path to scan",
                         default=".")
 
-     # Optional argument flag which defaults to False
+    # Number of parallel processes
     parser.add_argument("-n", "--nprocs", action="store", type=int, 
                         help="Number of processes for file parsing",
                         default=4)
 
-     # Optional argument flag which defaults to False
+    # Where to stash pre-processed files
     parser.add_argument("-T", "--tmpdir", action="store", type=str, 
                         help="Temporary path for parsing info",
                         default="build-legacy")
 
-     # Whether to fixup anything 
+    # Dump a dependecy graph of xrefs
+    parser.add_argument("-D", "--deps", action="store", type=str, 
+                        help="Dependency graph", default=None)
+
+    # Whether to fixup anything 
     parser.add_argument("-F", "--fixup", action="store", type=str, 
                         help="Path to fixup as much as possible",
                         default=None)
@@ -1278,6 +1318,11 @@ def main() -> int:
 
     for (id, count) in matchcounts.items():
         print("\tPattern %s matched %d" % (id, count))
+
+    if (args.deps is not None):
+        print(f"Attempting deps on {args.deps}")
+        do_deps(wuinfo, fileinfo, args.deps)
+
 
     if (args.fixup is not None):
         print(f"Attempting fixups on {args.fixup}")
