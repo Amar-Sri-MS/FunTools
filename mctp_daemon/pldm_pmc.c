@@ -190,7 +190,7 @@ static int pldm_get_repo_info(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 	rspn->repo_state = AVAILABLE_REPO;
 
 	rspn->update_time.utc_offset = host2pldm_16(2 * 60);
-	rspn->update_time.seconds = host2pldm(REPO_BUILD_SEC);
+	rspn->update_time.seconds = REPO_BUILD_SEC;
 	rspn->update_time.minute = REPO_BUILD_MIN;
 	rspn->update_time.hour = REPO_BUILD_HOUR;
 	rspn->update_time.day = REPO_BUILD_DAY;
