@@ -189,8 +189,8 @@ static int pldm_get_repo_info(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 
 	rspn->repo_state = AVAILABLE_REPO;
 
-	rspn->update_time.utc_offset = host2pldm_16((2 * 60));
-	rspn->update_time.seconds = host2pldm(REPO_BUILD_SEC);
+	rspn->update_time.utc_offset = host2pldm_16(2 * 60);
+	rspn->update_time.seconds = REPO_BUILD_SEC;
 	rspn->update_time.minute = REPO_BUILD_MIN;
 	rspn->update_time.hour = REPO_BUILD_HOUR;
 	rspn->update_time.day = REPO_BUILD_DAY;
@@ -203,14 +203,14 @@ static int pldm_get_repo_info(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 	for (i = 0; i < num_of_sensors; i++)
 		size += sensor[i].len;
 
-	size &= 0xfffffc00;
 	rspn->repo_size = host2pldm(size);
 
 	/* FIXME: for now, the numeric pdr is the largest.
 	 * if new structure is to be designed, this may need to be changed
 	 */
-	size = (63 + sizeof(struct numeric_sensor_pdr)) & 0xffffffc0;
+	size = (63 + sizeof(struct numeric_sensor_pdr));
 	rspn->max_pdr_size = host2pldm(size);
+
 	rspn->timeout = 0;
 
 	pldm_response(resp, PLDM_SUCCESS);
@@ -353,7 +353,7 @@ static int pldm_get_sensor_rd(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
         if (sensor[id].scale == SCALE_ENABLED) 
 		tmp = (sensor[id].op == DIVIDE_TO_SCALE) ? tmp / sensor[id].value : tmp * sensor[id].value;
 
-	rspn->data = host2pldm(tmp);
+	rspn->data = tmp;
 	
 	rspn->data_size = pdr->data_size;
 
@@ -361,9 +361,9 @@ static int pldm_get_sensor_rd(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 	rspn->state = (tmp == -1) ? PLDM_SENSOR_UNAVAILABLE : sensor[id].state;
 	rspn->event_ena = PLDM_EVENTS_STATE_ONLY;
 
-	warn = host2pldm(pdr->warn_high);
-	critic = host2pldm(pdr->critc_high);
-	fatal = host2pldm(pdr->fatal_high);
+	warn = pdr->warn_high;
+	critic = pdr->critc_high;
+	fatal = pdr->fatal_high;
 
 	//As per DSP0248 Spec
 	if (sensor[id].state != PLDM_SENSOR_ENABLED) {
