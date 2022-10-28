@@ -507,8 +507,8 @@ def pad_fnlist(fnlist: str):
         return fnlist
     
     # append to the fnlist
-    for _ in range(n):
-        fnlist.append(f",\n                          padding_wuh")
+    for _ in range(pads):
+        fnlist += f",\n                          padding_wuh"
 
     return fnlist
 
@@ -709,6 +709,9 @@ def scan_file_for_refs(fl: FunFile, input: str) -> List[WURef]:
 def fixup_match(fixup: str, fname: str) -> bool:
 
     if (fixup == '*'):
+        return True
+
+    if (fname == fixup):
         return True
 
     if (fname.startswith("./")):
@@ -917,11 +920,14 @@ def fixup_file_internal(wuinfo: WUInfo, fl: FunFile):
 
     open(fl.name, "w").write(input)
 
-def do_fixup_internal(wuinfo: WUInfo, fileinfo: Dict[str, FunFile], fixup: str):
+def do_fixup_internal(args, wuinfo: WUInfo, fileinfo: Dict[str, FunFile], fixup: str):
 
     # firstly we need to fixup all the headers
     # make the list of files that would be fixed up
     flist = list(filter(FunFile.only_internal, wuinfo.files.values()))
+
+    if (args.force):
+        flist.append(fileinfo[fixup])
 
     count = 0
     for fl in flist:
@@ -1180,6 +1186,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--fixup-xrefs", action="store_true",
                        help="Fixup cross-referenced files")
 
+    parser.add_argument("--force", action="store_true",
+                       help="Force fixing up the specified file")
+
+
     # Optional verbosity counter (eg. -v, -vv, -vvv, etc.)
     parser.add_argument(
         "-v",
@@ -1334,7 +1344,7 @@ def main() -> int:
             do_fixup_ups(wuinfo, fileinfo, args.fixup)
 
         if (args.fixup_internal):
-            do_fixup_internal(wuinfo, fileinfo, args.fixup)
+            do_fixup_internal(args, wuinfo, fileinfo, args.fixup)
 
         if (args.fixup_xrefs):
             do_fixup_xrefs(wuinfo, fileinfo, args.fixup)
