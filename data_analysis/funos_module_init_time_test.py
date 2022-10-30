@@ -86,7 +86,7 @@ def gen_module_init_data(
     logger.info(f"INPUT_FILE_URL: {input_file_url}")
     # setting working_dir for `process_module_notif_init_data` as `out_dir
     # so that the data files are generated in the `out_dir`
-    df, result = process_module_notif_init_data(
+    df_modeule_notif, df_module, result = process_module_notif_init_data(
         input_file_url, logger=logger, working_dir=out_dir
     )
 
@@ -99,7 +99,7 @@ def gen_module_init_data(
 
     logger.info(f"html_filename: {html_filename}")
 
-    dump_df_to_files(df, out_dir)
+    dump_df_to_files(df_module, out_dir)
 
     return html_filename, result
 

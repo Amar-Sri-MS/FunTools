@@ -438,7 +438,7 @@ def _get_longest_gap(
     return longest_duration_gap, longest_gap_between
 
 
-def _get_perf_stat(df_in: pd.DataFrame) -> dict:
+def _get_perf_stat(df_module_notif_in: pd.DataFrame, df_module: pd.DataFrame) -> dict:
     """Get performance summary stat
 
 
@@ -452,7 +452,7 @@ def _get_perf_stat(df_in: pd.DataFrame) -> dict:
     result: dict
         dictionary with performance stat
     """
-    df = df_in.copy()
+    df = df_module_notif_in.copy()
     df.sort_values(by=["start_time"], inplace=True, ascending=True)
 
     # get the longest module duration
@@ -466,11 +466,16 @@ def _get_perf_stat(df_in: pd.DataFrame) -> dict:
 
     del df
 
+    # compute all module duration w/o gaps
+
+    total_module_init_time_only_ns = df_module["module_init_duration"].sum()
+
     result = {
         "longest_duration_ns": longest_duraiton,
         "longest_duration_id": longest_duraiton_id,
         "longest_gap_ns": longest_duration_gap,
         "longest_gap_between": longest_duration_between,
+        "total_module_init_time_only_ns": total_module_init_time_only_ns,
         "total_duration_ns": finish_max - start_min,
     }
 
@@ -774,6 +779,8 @@ def process_module_notif_init_data(
     Returns
     -------
     pd.DataFrame
+        dataframe with module and notif init data
+    pd.DataFrame
         dataframe with module init data
     result: dict
         result dictionary
@@ -814,9 +821,9 @@ def process_module_notif_init_data(
     # combine module and notif init data
     fun_module_notif_init_df = pd.concat([fun_module_init_df, fun_notification_init_df])
 
-    result = _get_perf_stat(fun_module_notif_init_df)
+    result = _get_perf_stat(fun_module_notif_init_df, fun_module_init_df)
 
-    return fun_module_notif_init_df, result
+    return fun_module_notif_init_df, fun_module_init_df, result
 
 
 def main(logger=DefaultLogger()):
