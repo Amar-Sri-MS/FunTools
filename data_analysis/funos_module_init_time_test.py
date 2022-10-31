@@ -116,7 +116,9 @@ def main(logger) -> None:
     # directory to run notebook, so that we can pick up the data files
     working_dir = out_dir
 
-    input_file_url = "http://palladium-jobs.fungible.local:8080/job/5862646/raw_file/odp/uartout0.0.txt"
+    # base
+    # input_file_url = "http://palladium-jobs.fungible.local:8080/job/5577649/raw_file/odp/uartout0.0.txt"
+    input_file_url = "http://palladium-jobs.fungible.local:8080/job/5868445/raw_file/odp/uartout0.0.txt"
 
     html_name, result = gen_module_init_data(
         in_dir, working_dir, out_dir, input_file_url, logger
