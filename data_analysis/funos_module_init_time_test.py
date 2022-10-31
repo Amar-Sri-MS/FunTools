@@ -86,7 +86,7 @@ def gen_module_init_data(
     logger.info(f"INPUT_FILE_URL: {input_file_url}")
     # setting working_dir for `process_module_notif_init_data` as `out_dir
     # so that the data files are generated in the `out_dir`
-    df, result = process_module_notif_init_data(
+    df_modeule_notif, df_module, result = process_module_notif_init_data(
         input_file_url, logger=logger, working_dir=out_dir
     )
 
@@ -99,7 +99,7 @@ def gen_module_init_data(
 
     logger.info(f"html_filename: {html_filename}")
 
-    dump_df_to_files(df, out_dir)
+    dump_df_to_files(df_module, out_dir)
 
     return html_filename, result
 
@@ -116,7 +116,9 @@ def main(logger) -> None:
     # directory to run notebook, so that we can pick up the data files
     working_dir = out_dir
 
-    input_file_url = "http://palladium-jobs.fungible.local:8080/job/4731935/raw_file/odp/uartout0.0.txt"
+    # base
+    # input_file_url = "http://palladium-jobs.fungible.local:8080/job/5577649/raw_file/odp/uartout0.0.txt"
+    input_file_url = "http://palladium-jobs.fungible.local:8080/job/5868445/raw_file/odp/uartout0.0.txt"
 
     html_name, result = gen_module_init_data(
         in_dir, working_dir, out_dir, input_file_url, logger
