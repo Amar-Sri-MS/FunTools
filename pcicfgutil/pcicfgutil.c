@@ -614,13 +614,13 @@ static bool _parse_hostunitcontroller_cfg(struct hw_hsu_api_link_config *cfg,
 		else if (strcmp(str, "DNSW") == 0)
 			porttype = HW_HSU_API_LINK_CONFIG_CID_FLAGS_PORTTYPE_DNSW;
 		else
-			fprintf(stderr, "ERROR: (%u:%u) unknown 'mode'=%s",
+			fprintf(stderr, "ERROR: (%u:%u) unknown 'mode'=%s\n",
 				ring, cid, str);
 		pcid->cid_flags |=
 			htobe64(HW_HSU_API_LINK_CONFIG_CID_FLAGS_PORTTYPE_PUT(porttype));
 	} else {
 		fprintf(stderr,
-			"WARNING: (%u:%u) Controller 'mode' not found!",
+			"WARNING: (%u:%u) Controller 'mode' not found!\n",
 			ring, cid);
 	}
 
