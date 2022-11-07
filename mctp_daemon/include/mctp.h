@@ -72,6 +72,10 @@
 #define MCTP_TAG_POS            0
 #define MCTP_TAG_MASK           3
 
+// TransprtProtocol Binding Type (DSP0245)
+#define TRANSPORT_TYPE_MCTP 0x0
+#define TRANSPORT_TYPE_OEM  0xff
+
 typedef struct __attribute__((packed)) {
 	uint8_t	hdr_ver;
 	uint8_t	dst_eid;
