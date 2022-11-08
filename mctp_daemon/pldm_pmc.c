@@ -156,7 +156,7 @@ static int pldm_set_rcvr_tid(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
         struct pldm_set_event_rcvr_req_stc *pldm = (struct pldm_set_event_rcvr_req_stc *)hdr->data;
         struct pldm_null_rspn_stc *rspn = (struct pldm_null_rspn_stc *)resp->data;
 
-        if (pldm->proto_type != MCTP_MSG_PLDM) {
+        if (pldm->proto_type != TRANSPORT_TYPE_MCTP) {
                 pldm_err("Invalid protocol type %x\n", pldm->proto_type);
                 pldm_response(resp, PLDM_INVALID_DATA);
                 return MIN_PLDM_PAYLOAD;
@@ -173,7 +173,7 @@ static int pldm_get_rcvr_tid(pldm_hdr_stct *hdr, pldm_hdr_stct *resp)
 {
         struct pldm_get_event_rcvr_rspn_stc *rspn = (struct pldm_get_event_rcvr_rspn_stc *)resp->data;
 
-	rspn->proto_type = MCTP_MSG_PLDM;
+	rspn->proto_type = TRANSPORT_TYPE_MCTP;
         rspn->addr = pldm_vars.async_tid;
 
         pldm_response(resp, PLDM_SUCCESS);
