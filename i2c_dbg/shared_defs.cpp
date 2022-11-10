@@ -17,6 +17,24 @@ void debugging_on(int on)
 	debug_on = on;
 }
 
+std::string string_format(const char* format, ...)
+{
+	char *buff = 0;
+	va_list args;
+	int n;
+
+        va_start(args, format);
+	n = vasprintf(&buff, format, args);
+	va_end(args);
+	std::unique_ptr<char> p(buff);
+	if (n < 0)
+	{
+		throw std::runtime_error("vasprintf error");
+	}
+	return std::string(buff);
+}
+
+
 void hex_dumpv(const unsigned char *bv, size_t len, const char* fmt, va_list args)
 {
 	fflush(stdout);
@@ -32,6 +50,7 @@ void hex_dumpv(const unsigned char *bv, size_t len, const char* fmt, va_list arg
 	printf("\n");
 	fflush(stdout);
 }
+
 void hex_dump(const unsigned char *bv, size_t len, const char* fmt, ...)
 {
 	if (debug_on)
