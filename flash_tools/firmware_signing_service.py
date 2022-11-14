@@ -14,7 +14,6 @@ import time
 
 import requests
 
-
 # image file format description
 # https://docs.google.com/document/d/1wb34TuVJmPlikeVjvE0tdCQxP8ZgzLc0RSMbyd1prwM
 
@@ -193,6 +192,39 @@ def get_result(reply):
         raise RuntimeError("No result from the server: %s" % reply)
     return result
 
+#####################################################################
+# Connection TimeOut Exception wrapper
+# the *single* signing server is unfrequently restarted to install
+# security updates so try to connect or reconnect for a while
+
+def connection_retry_handler(func):
+    def inner_function(*args, **kwargs):
+        retries = 0
+        while True:
+            try:
+                ret = func(*args, **kwargs)
+                break
+            except (ConnectionError,
+                    requests.exceptions.ConnectionError,
+                    requests.exceptions.Timeout) as exc:
+                time.sleep(RETRY_CONNECTION_SLEEP_SECS)
+                retries += 1
+                if retries >= MAX_CONNECTION_RETRY:
+                   raise RuntimeError("Unable to connect to server!") from exc
+        return ret
+
+    return inner_function
+
+
+@connection_retry_handler
+def try_get(*args, **kwargs):
+    return requests.get(*args, **kwargs)
+
+@connection_retry_handler
+def try_post(*args, **kwargs):
+    return requests.post(*args, **kwargs)
+
+
 
 #########################################################################
 # server certificate retrieval2
@@ -207,7 +239,7 @@ def retrieve_cert(production, chip_type, cert_key, security_group):
                            chip_type, "/",
                            cert_key, "_certificate.bin"])
 
-    response = requests.get(request, timeout=DEFAULT_HTTP_TIMEOUT)
+    response = try_get(request, timeout=DEFAULT_HTTP_TIMEOUT)
 
     if response.status_code == requests.codes.ok:
         return response.content
@@ -233,7 +265,7 @@ def get_modulus(name):
     if SigningEnv().auth_token:
         params['production'] = '1'
 
-    response = requests.get(SIGNING_SERVICE_URL, params=params,
+    response = try_get(SIGNING_SERVICE_URL, params=params,
                             timeout=DEFAULT_HTTP_TIMEOUT)
     if response.status_code != requests.codes.ok:
         raise RuntimeError("Server responded with [{}]:\n{}\n".format(
@@ -267,20 +299,10 @@ def hash_sign(digest, sign_key=None, modulus=None):
         params['key'] = sign_key
 
 
-    retries = 0
-    while retries < MAX_CONNECTION_RETRY:
-        try:
-            response = requests.post(SIGNING_SERVICE_URL,
-                                     files=multipart_form_data,
-                                     params=params,
-                                     timeout=DEFAULT_HTTP_TIMEOUT)
-            break
-
-        except ConnectionError as ex:
-            # the single signing server is unfrequently restarted to
-            # install security updates
-            time.sleep(RETRY_CONNECTION_SLEEP_SECS)
-            retries += 1
+    response = try_post(SIGNING_SERVICE_URL,
+                        files=multipart_form_data,
+                        params=params,
+                        timeout=DEFAULT_HTTP_TIMEOUT)
 
     if response.status_code != requests.codes.ok:
         raise RuntimeError("Server responded with [{}]:\n{}\n".format(
