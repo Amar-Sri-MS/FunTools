@@ -47,7 +47,7 @@ validate_process_input()
 		OTP_SERIAL_NR=0x1234
 		check_for_fpk1_modulus fpk1_modulus.c
 		;;
-	    s2)
+	    s2|f2)
 		OTP_SERIAL_NR=0x1236
 		check_for_fpk1_modulus fpk1s2_modulus.c
 		;;
@@ -211,9 +211,13 @@ else
 	mkdir -p OTP
 	PWD=`pwd`
 
+
 	if [ $BOOT_SIG_TYPE == customer ]; then
-	    CUSTOMER_OTP_ARGS="--key_hash1 $PWD/key_hash1.bin --key_hash2 $PWD/key_hash2.bin"
-	fi
+	    CUSTOMER_OTP_ARGS="--key_hash $PWD/key_hash1.bin --key_hash $PWD/key_hash2.bin"
+	    if [ $OTP_CHIP == "F2" ]; then
+		CUSTOMER_OTP_ARGS="${CUSTOMER_OTP_ARGS} --key_hash $PWD/key_hash3.bin --key_hash $PWD/key_hash4.bin"
+	    fi
+	 fi
 
 	# Remove the MIF extension - these actually aren't in MIF format, and
 	# Rajesh's scripts for running jobs in emulation will do the needed

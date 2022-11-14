@@ -453,7 +453,7 @@ def image_gen(outfile, infile, ftype, version, description, sign_key,
 
 def get_cert(outfile, chip_type, cert_key, security_group):
     ''' retrieve the desired start certificate and store it in outfile '''
-    if chip_type not in ['f1', 's1', 'f1d1', 's2']:
+    if chip_type not in ['f1', 's1', 'f1d1', 's2', 'f2']:
         raise Exception("Start certificate: Unknown chip type %s" % chip_type)
 
     if SigningEnv().auth_token:
@@ -467,10 +467,17 @@ def get_cert(outfile, chip_type, cert_key, security_group):
     write(outfile, content)
 
 
-def export_pub_key_hash(outfile, label):
+def export_pub_key_hash(outfile, chip_type, label):
     ''' export pub key hash: used for customer keys in OTP '''
+    if chip_type not in ['f1', 's1', 'f1d1', 's2', 'f2']:
+        raise Exception("Export pub key hash: Unknown chip type %s" % chip_type)
+
     modulus = get_modulus(label)
-    new_hash = hashlib.sha256(modulus).digest()
+
+    if chip_type in ['f1', 's1', 'f1d1', 's2']:
+        new_hash = hashlib.sha256(modulus).digest()
+    else:
+        new_hash = hashlib.sha512(modulus).digest()
 
     # export the hash of the modulus of the public key
     old_hash = b''
