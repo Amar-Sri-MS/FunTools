@@ -86,7 +86,7 @@ section "Customer" {
     hex 2 "Number zeroes in key 2 hash"
     hex 2 "Number zeroes in key 3 hash"
     hex 2 "Number zeroes in key 4 hash"
-    hex 16 "Customer firmware root key"
+    hex 48 "Reserved"
     hex 64 "Key 1 Hash"
     hex 64 "Key 2 Hash"
     hex 64 "Key 3 Hash"
