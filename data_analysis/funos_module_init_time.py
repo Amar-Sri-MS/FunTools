@@ -64,6 +64,12 @@ def _remove_timestamps_from_log(lines: str) -> str:
     return lines
 
 
+def _filter_lines_with_pattern(lines: str, marker_type: str, logger=DefaultLogger()):
+    # filter list of lines with pattern
+    filtered_lines = _filter_lines_with_pattern(lines, marker_type, logger=logger)
+    return filtered_lines
+
+
 def _filter_log_with_marker(
     lines: str, marker_type: str, logger=DefaultLogger()
 ) -> str:
@@ -151,7 +157,7 @@ def _extract_module_init_data(
     logger=DefaultLogger(),
 ) -> Tuple[str, str]:
 
-    """Extract module and notif init data either from file or raw log from url.
+    """Extract module and notif init data either from file or log from url.
     Create json files for module and notif init data.
 
     Parameters
@@ -197,21 +203,114 @@ def _extract_module_init_data(
 
     lines = _remove_timestamps_from_log(lines)
 
+    # format for module init
+    # { 'accel_telem-init': [14.028537, 14.028581], 'adi-init': [14.058434, 14.058453], ....
     module_init = _filter_log_with_marker(lines, "module_init", logger)
     notif_init = _filter_log_with_marker(lines, "notif", logger)
 
     modules_init_file_name = os.path.join(working_dir, module_init_file)
     notificaiotns_init_file_name = os.path.join(working_dir, notif_init_file)
 
-    logger.debug(
-        f"Saved files: {modules_init_file_name} and {notificaiotns_init_file_name}"
-    )
-
     with open(modules_init_file_name, "w", encoding="utf-8") as f:
         json.dump(module_init, f, indent=4)
 
     with open(notificaiotns_init_file_name, "w", encoding="utf-8") as f:
         json.dump(notif_init, f, indent=4)
+
+    logger.debug(f"Module init file saved to {modules_init_file_name}")
+    logger.debug(f"Notifications init file saved to {notificaiotns_init_file_name}")
+
+    return modules_init_file_name, notificaiotns_init_file_name
+
+
+def _extract_module_init_data_raw_input(
+    file_name_url: str,
+    working_dir: str = "./",
+    module_init_file: str = "modules.json",
+    notif_init_file: str = "notifications.json",
+    logger=DefaultLogger(),
+    parse_module=True,
+    parse_notif=True,
+) -> Tuple[str, str]:
+
+    """Extract (parse and derive) module and notif init data either from file or raw loggging from url.
+    Create json files for module and notif init data.
+
+    NOTE: this API is different from _extract_module_init_data in derives from raw log through time stamp and log
+
+    Parameters
+    ----------
+    file_name_url : str
+        file name or url for funlos raw log
+        if it is an url, then it is expected to starts with 'http'
+        if it is a file, then it is expected to be in the working_dir
+    logger : logger
+        logger
+    working_dir : str, optional
+        working directory, by default "./"
+    module_init_file: str, optional
+        result module init file name, by default "modules.json",
+        full path for saved file will be working_dir/module_init_file
+    notif_init_file: str, optional
+        result notification init file name, by default "notifications.json",
+        full path for saved file will be working_dir/notif_init_file
+
+    Returns
+    -------
+    module_init_file_name: str
+        full path of the saved module init file
+    notif_init_file_name: str
+        full path of the saved notification init file
+
+    Raises
+    ------
+    FileNotFoundError
+        if file_name_url is not a file or url
+    requests.exceptions*
+        if file_name_url is url and it is not accessible
+    AttributeError
+        log parsing error
+    """
+
+    working_dir = os.path.abspath(working_dir)
+    if not os.path.exists(working_dir):
+        os.makedirs(working_dir)
+    logger.info(f"Working dir is {working_dir}")
+
+    lines = _read_from_file_or_url(working_dir, file_name_url, logger=logger)
+
+    modules_init_file_name = ""
+    notificaiotns_init_file_name = ""
+
+    def parse_raw_lines(lines):
+        """Parsing raw lines
+
+        example lines:
+        ```
+        '[0.175882 0.5.1] INFO nucleus "Module \'fs_retimer_config\' initialized in: 3.0750000msecs"\r',
+        ```
+        """
+        line_d = {}
+        for line in lines:
+            test_str1 = line.split(" ")
+            module_name = test_str1[5][1:-1]
+            finish_time = float(test_str1[0][1:])
+            duration = float(test_str1[-1][:-7]) * 1e-3  # convert to seconds
+            start_time = finish_time - duration
+            line_d[module_name] = [start_time, finish_time]
+
+        return line_d
+
+    if parse_module:
+        found_lines = re.findall("^.*initialized in.*$", lines, re.MULTILINE)
+        module_init = parse_raw_lines(found_lines)
+        modules_init_file_name = os.path.join(working_dir, module_init_file)
+
+        with open(modules_init_file_name, "w", encoding="utf-8") as f:
+            json.dump(module_init, f, indent=4)
+
+    if parse_notif:
+        assert False, "Not implemented"
 
     logger.debug(f"Module init file saved to {modules_init_file_name}")
     logger.debug(f"Notifications init file saved to {notificaiotns_init_file_name}")
@@ -752,6 +851,63 @@ def get_duration_threshold(df: pd.DataFrame, threshold: float = 0.10) -> float:
     max_duration = df["module_init_duration"].max()
 
     return float(int(max_duration * threshold))
+
+
+def process_module_notif_init_raw_data(
+    file_name_url: str = None,
+    modules_init_file_name: str = None,
+    # notificaiotns_init_file_name: str = None,
+    working_dir: str = "./",
+    logger=DefaultLogger(),
+):
+    """Process module init data, generate a report
+
+    Parameters
+    ----------
+    file_name_url : str, optional
+        *raw* log file name or url, by default None
+    modules_init_file_name : str, optional
+        modules init *json* file name, by default None
+    working_dir : str, optional
+        working directory for saving generated files, by default "./"
+    logger : logging.Logger, optional
+        logger, by default DefaultLogger()
+
+    Returns
+    -------
+    pd.DataFrame
+        dataframe with module and notif init data
+    pd.DataFrame
+        dataframe with module init data
+    result: dict
+        result dictionary
+    """
+
+    # input data can be raw funos log file or url for the log
+    # or processed module and notif init json files
+    if file_name_url is not None:
+        (
+            modules_init_file_name,
+            notificaiotns_init_file_name,
+        ) = _extract_module_init_data_raw_input(
+            file_name_url=file_name_url,
+            logger=logger,
+            working_dir=working_dir,
+            parse_module=True,
+            parse_notif=False,
+        )
+    else:
+        assert modules_init_file_name is not None
+
+    # process module init data
+    fun_module_init_df = _load_module_init_data(
+        modules_init_file_name, convert_time_to_ns=True, debug=False, logger=logger
+    )
+
+    # pass the same df, since notif init data is not used
+    result = _get_perf_stat(fun_module_init_df, fun_module_init_df)
+
+    return fun_module_init_df, result
 
 
 def process_module_notif_init_data(
