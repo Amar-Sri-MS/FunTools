@@ -17,21 +17,28 @@ void debugging_on(int on)
 	debug_on = on;
 }
 
+struct auto_free_cstr
+{
+	auto_free_cstr(char *d=0) : p{d} {}
+	~auto_free_cstr() { free(p); }
+	char *p;
+};
+
+
 std::string string_format(const char* format, ...)
 {
-	char *buff = 0;
+	auto_free_cstr buff;
 	va_list args;
 	int n;
 
         va_start(args, format);
-	n = vasprintf(&buff, format, args);
+	n = vasprintf(&buff.p, format, args);
 	va_end(args);
-	std::unique_ptr<char> p(buff);
 	if (n < 0)
 	{
 		throw std::runtime_error("vasprintf error");
 	}
-	return std::string(buff);
+	return std::string(buff.p);
 }
 
 
