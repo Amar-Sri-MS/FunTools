@@ -507,7 +507,7 @@ def main():
     parser.add_argument('--fail-on-error', action='store_true',
                         help='Always fail when encountering errors')
     parser.add_argument('--enroll-cert', metavar = 'FILE', help='Enrollment certificate')
-    parser.add_argument('--chip', choices=['f1', 's1', 'f1d1', 's2'], help='Target chip')
+    parser.add_argument('--chip', choices=['f1', 's1', 'f1d1', 's2', 'f2'], help='Target chip')
 
     args = parser.parse_args()
 
@@ -637,7 +637,7 @@ def run(arg_action, arg_enroll_cert = None, *args, **kwargs):
     # Generate keys (if required)
     if wanted('key_hashes') and 'key_hashes' in config:
         for k,v in config['key_hashes'].items():
-            fsi.export_pub_key_hash(k, v['name'])
+            fsi.export_pub_key_hash(k, chip_type, v['name'])
 
     # Generate certificates (if required)
     if wanted('certificates') and 'certificates' in config:
