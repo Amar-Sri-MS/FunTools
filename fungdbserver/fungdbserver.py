@@ -1712,7 +1712,7 @@ def main():
         # listen
         server_listen(sock)
     except Exception as e:
-        LOG_ALWAYS("Exception while running fungdbserver.py, exiting")
+        LOG_ALWAYS(f"Exception while running fungdbserver.py: \"{e}\", exiting")
         if (opts.verbose >= 1):
             traceback.print_exc()
         force_exit = True
