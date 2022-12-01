@@ -13,6 +13,7 @@ import sys
 import subprocess
 from io import StringIO
 import tempfile
+import time
 import traceback
 from contextlib import closing
 
@@ -23,18 +24,25 @@ try:
     import dpc_client
     import dpc_binary
 
-    dpc = dpc_client.DpcClient(legacy_ok=False,
-            unix_sock=True,
-            encoder=dpc_binary.BinaryJSONEncoder())
+    class DpcFwUpgradeClient(dpc_client.DpcClient):
+        def __init__(self):
+            super().__init__(legacy_ok=False,
+                unix_sock=True,
+                encoder=dpc_binary.BinaryJSONEncoder())
+            # Try to execute fw_upgrade version query. If it's implemented
+            # and reports upgrade interface version 1 or higher, then the
+            # upgrade can be performed using DPC. Otherwise the fwupgrade
+            # script needs to use HCI-based fallback.
+            # Various run-time options may also depend on the interface
+            # version, so save it as a state variable to be used later
+            res = super().execute('fw_upgrade', ['version'])
+            if not res >= 1:
+                raise RuntimeError("DPC upgrade not supported")
 
-    # Try to execute fw_upgrade version query. If it's implemented
-    # and reports upgrade interface version 1 or higher, then the
-    # upgrade can be performed using DPC. Otherwise the fwupgrade
-    # script needs to use HCI-based fallback.
-    res = dpc.execute('fw_upgrade', ['version'])
+            self.version = res
 
-    if not res >= 1:
-        raise RuntimeError("DPC upgrade not supported")
+    dpc = DpcFwUpgradeClient()
+
 except:
     dpc = None
     pass
@@ -391,6 +399,9 @@ def run_upgrade(args, release_images):
                             'offset' : offset
                         }
 
+                        if dpc.version >= 2:
+                            dpc_params['async'] = True
+
                         if not args.dry_run:
                             with open(release_images[fourcc], 'rb') as f:
                                 f.seek(offset, os.SEEK_SET)
@@ -402,6 +413,12 @@ def run_upgrade(args, release_images):
 
                         if not args.dry_run:
                             resp = dpc.execute('fw_upgrade', command)
+                            if resp.get('async') and (resp['result'] == 0):
+                                resp = dpc.execute('fw_upgrade', ['async_status'])
+                                while resp['progress'] != 100:
+                                    time.sleep(1)
+                                    resp = dpc.execute('fw_upgrade', ['async_status'])
+
                             if resp['result'] != 0:
                                 print(f"Upgrade of {fourcc}@{offset} failed: {resp['description']}")
                                 raise RuntimeError(f"{fourcc}@{offset} failed: {resp['description']}")
