@@ -1134,9 +1134,17 @@ fsps = [ "fsr", "fir", "fp" ]
 
 REGS = gprs + sprs + fprs + fsps
 
+modfied_thread_regs = {}
+
 def jtag_GetReg(regno):
     if (regno >= len(REGS)):
         return 0xdeadbeef
+    modified_regs = modfied_thread_regs.get(jtag_GetCpuThreadId())
+    if modified_regs is not None:
+        reg_val = modified_regs.get(regno)
+        if reg_val is not None:
+            DEBUG("Using modified reg value for reg %s" % regno)
+            return reg_val
     r = REGS[regno]
     DEBUG("reading %s" % r)
     return jtag_ReadReg(r)
@@ -1397,6 +1405,15 @@ class GDBClientHandler(object):
                 else:
                     self.send('E 37')
 
+            def handle_P(subcmd):
+                reg, value = subcmd.split('=')
+                reg = int(reg, 16)
+                modified_regs = modfied_thread_regs.setdefault(jtag_GetCpuThreadId(), {})
+                # Must byte-swap the value from gdb to be able to get the same thing back.
+                modified_regs[reg] = struct.unpack("<Q", struct.pack(">Q", int(value, 16)))[0]
+                DEBUG("Setting modified reg value for reg %s to %s" % (reg, modified_regs[reg]))
+                self.send('OK')
+
             dispatchers = {
                 'q' : handle_q,
                 'H' : handle_h,
@@ -1406,7 +1423,8 @@ class GDBClientHandler(object):
                 's' : handle_s,
                 'v' : handle_v,
                 'p' : handle_p,
-                'T' : handle_T
+                'T' : handle_T,
+                'P' : handle_P
             }
 
             cmd, subcmd = pkt[0], pkt[1 :]
