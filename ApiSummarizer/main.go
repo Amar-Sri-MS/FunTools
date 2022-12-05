@@ -564,7 +564,7 @@ func ReadFileToBytes(path string) ([]byte, error) {
 	return ioutil.ReadAll(file)
 }
 
-func StripFileOfComments(path string, output *Output) {
+func StripFileOfComments(path string, output *Output, yaml_output bool) {
 	all, err := ReadFileToBytes(path)
 	if err != nil {
 		log.Fatal(err)
@@ -608,6 +608,11 @@ func StripFileOfComments(path string, output *Output) {
 			}
 			continue
 		}
+
+		if yaml_output && prevIsNewLine == true {
+			output.AppendString("  - ")
+		}
+
 		if specialCase == 0 && t.kind == Symbol && (t.ToStringWithBytes(all) == "enum" || t.ToStringWithBytes(all) == "struct" || t.ToStringWithBytes(all) == "union") {
 			specialCase = 1
 		}
@@ -624,23 +629,32 @@ func StripFileOfComments(path string, output *Output) {
 	}
 }
 
-func printStrippedFile(path string, rel string) {
+func printStrippedFile(path string, rel string, yaml_output bool) {
 	output := Output{}
-	output.AppendString("--------------\n\n")
-	output.AppendString(rel)
-	output.AppendString(": \n\n")
-	StripFileOfComments(path, &output)
+
+	if yaml_output {
+		// yaml key
+		output.AppendString(rel)
+		output.AppendString(":\n")
+	} else {
+		output.AppendString("//--------------\n\n")
+		output.AppendString("//")
+		output.AppendString(rel)
+		output.AppendString(": \n\n")
+	}
+
+	StripFileOfComments(path, &output, yaml_output)
 	fmt.Println(output.ToString())
 }
 
-func walkDir(dir string) {
+func walkDir(dir string, yaml_output bool) {
 	filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			fmt.Println(err)
 			return nil
 		}
 		if !info.IsDir() && filepath.Ext(path) == ".h" {
-			printStrippedFile(path, strings.TrimPrefix(path, dir+"/"))
+			printStrippedFile(path, strings.TrimPrefix(path, dir+"/"), yaml_output)
 		}
 		return nil
 	})
@@ -649,9 +663,18 @@ func walkDir(dir string) {
 // =============== MAIN ===============
 
 func main() {
-	if len(os.Args) != 2 {
-		log.Fatal("API Summarizer: Need to specify directory that has the .h files")
+	yaml_output := false
+	if len(os.Args) <= 1 {
+		fmt.Println("API Summarizer: Need to specify directory that has the .h files")
+		fmt.Println("Usage:")
+		fmt.Println("	go run main.go <path to .h files> [-y]")
+		fmt.Println("	-y (optional): output in yaml format")
+		log.Fatal("")
 	} else {
-		walkDir(os.Args[1])
+		// check the 2nd argument is -y
+		if len(os.Args) > 2 && os.Args[2] == "-y" {
+			yaml_output = true
+		}
+		walkDir(os.Args[1], yaml_output)
 	}
 }

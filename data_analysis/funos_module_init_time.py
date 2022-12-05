@@ -35,11 +35,10 @@ from typing import Tuple
 from typing import List, Dict
 
 import yaml
-import requests
 
 import pandas as pd
 
-from utils import DefaultLogger, get_input_file_url
+from utils import *
 
 
 def _remove_timestamps_from_log(lines: str) -> str:
@@ -113,42 +112,6 @@ def _filter_log_with_marker(
     return json.loads(filtered_lines)
 
 
-def _read_from_file_or_url(
-    working_dir: str, file_name_url: str, logger=DefaultLogger()
-) -> str:
-    """Read from file or url
-    if it is file, `working_dir` is expected to be the directory where the file is located
-
-    """
-    if file_name_url.startswith("http"):
-        logger.info(f"Use file from URL: {file_name_url}")
-        try:
-            response = requests.get(file_name_url, timeout=10)
-            lines = response.text
-        except requests.exceptions.HTTPError as ex:
-            logger.error(f"Http error: {ex}")
-            raise ex
-        except requests.exceptions.ConnectionError as ex:
-            logger.error(f"Error Connecting: {ex}")
-            raise ex
-        except requests.exceptions.Timeout as ex:
-            logger.error(f"Timeout Error: {ex}")
-            raise ex
-        except requests.exceptions.RequestException as ex:
-            logger.error(f"Exception {ex}")
-            raise ex
-    else:
-        file_name = os.path.join(working_dir, file_name_url)
-        logger.info(f"Use file this path {file_name}")
-        try:
-            with open(file_name, encoding="utf-8") as f:
-                lines = f.read()
-        except FileNotFoundError as ex:
-            logger.error(f"File not found: {file_name}")
-            raise ex
-    return lines
-
-
 def _extract_module_init_data(
     file_name_url: str,
     working_dir: str = "./",
@@ -199,7 +162,7 @@ def _extract_module_init_data(
         os.makedirs(working_dir)
     logger.info(f"Working dir is {working_dir}")
 
-    lines = _read_from_file_or_url(working_dir, file_name_url, logger=logger)
+    lines = read_from_file_or_url(working_dir, file_name_url, logger=logger)
 
     lines = _remove_timestamps_from_log(lines)
 
@@ -277,7 +240,7 @@ def _extract_module_init_data_raw_input(
         os.makedirs(working_dir)
     logger.info(f"Working dir is {working_dir}")
 
-    lines = _read_from_file_or_url(working_dir, file_name_url, logger=logger)
+    lines = read_from_file_or_url(working_dir, file_name_url, logger=logger)
 
     modules_init_file_name = ""
     notificaiotns_init_file_name = ""
