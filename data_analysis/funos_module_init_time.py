@@ -40,34 +40,10 @@ import pandas as pd
 
 from utils import *
 
-
-def _remove_timestamps_from_log(lines: str) -> str:
-    """Remove timestamps from log
-
-    remove time stamp from each line
-    > [1664319485.206378 0.0.0] pci_early: performing i2c/MUD initialization
-
-    Parameters
-    ----------
-    lines: str
-        lines to parse
-
-    Returns
-    -------
-    filtered_lines: str
-        lines with timestamp removed
-    """
-
-    lines = re.sub(r"\[.*\] ", "", lines)
-
-    return lines
-
-
-def _filter_lines_with_pattern(lines: str, marker_type: str, logger=DefaultLogger()):
-    # filter list of lines with pattern
-    filtered_lines = _filter_lines_with_pattern(lines, marker_type, logger=logger)
-    return filtered_lines
-
+# def _filter_lines_with_pattern(lines: str, marker_type: str, logger=DefaultLogger()):
+#     # filter list of lines with pattern
+#     filtered_lines = _filter_lines_with_pattern(lines, marker_type, logger=logger)
+#     return filtered_lines
 
 def _filter_log_with_marker(
     lines: str, marker_type: str, logger=DefaultLogger()
@@ -164,7 +140,7 @@ def _extract_module_init_data(
 
     lines = read_from_file_or_url(working_dir, file_name_url, logger=logger)
 
-    lines = _remove_timestamps_from_log(lines)
+    lines = remove_timestamps_from_log(lines)
 
     # format for module init
     # { 'accel_telem-init': [14.028537, 14.028581], 'adi-init': [14.058434, 14.058453], ....

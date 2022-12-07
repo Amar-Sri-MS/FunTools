@@ -2,6 +2,30 @@
 
 This foler includes modules for analyzing data from FunOS.
 
+## Environment setup
+
+Conda (or pipenv, future work) is recommended for managing the environment.
+
+To use the conda environment, run the following commands:
+
+```bash 
+# create conda env
+conda env create -f ./environment.yml
+
+# switch to conda env
+conda activate data_analysis
+```
+
+Required modules are described in `requirements.txt`
+
+To update the environment, run the following command to update `requirements.txt`:
+
+```bash
+
+pipreqs .
+
+```
+
 ## Currently availble analysis
 
 ### FunOS module init time line analysis
@@ -31,3 +55,23 @@ python3 funos_module_init_time_test.py
 ## TODO
 
 - move mcache analysis from dpcsh dir to here
+
+### SDK API test code coverage analysis
+
+
+## Tests
+
+```bash
+
+# run test
+pytest
+
+# show stdout
+pytest -s
+
+# run selected test
+pytest tests/test_gen_func_cov.py -o log_cli=true
+
+# generate coverage report
+pytest --cov=gen_func_cov --cov-report html 
+```

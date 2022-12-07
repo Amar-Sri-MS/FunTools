@@ -10,6 +10,7 @@ import logging
 import yaml
 import requests
 import os
+import re
 
 
 class DefaultLogger:
@@ -124,3 +125,60 @@ def read_from_file_or_url(
             logger.error(f"File not found: {file_name}")
             raise ex
     return lines
+
+def remove_timestamps_from_log(lines: str) -> str:
+    """Remove timestamps from log
+
+    remove time stamp from each line
+    > [1664319485.206378 0.0.0] pci_early: performing i2c/MUD initialization
+
+    Parameters
+    ----------
+    lines: str
+        lines to parse
+
+    Returns
+    -------
+    filtered_lines: str
+        lines with timestamp removed
+    """
+
+    lines = re.sub(r"\[.*\] ", "", lines)
+
+    return lines
+
+def filter_line_with_pattern(
+    lines: str, pattern: str, logger=DefaultLogger()
+) -> str:
+    """Filter based on the marker and create an output with json format by adding the ending "}"
+
+    Parameters
+    ----------
+
+    lines: str
+        lines to parse
+    marker_type: str
+        marker type string, "module_init", "notif"
+
+    Returns
+    -------
+    filtered_lines: str
+        filtered lines in json format
+
+    Raises
+    ------
+    AssertionError
+        if regex does not match
+    """
+
+    try:
+        filtered_lines = re.search(pattern, lines, re.DOTALL).group(1)
+        # filtered_lines += "}"  # add back the end marker
+
+    except AttributeError as ex:
+        logger.error(f"Read result : {lines}")
+        logger.error(f"Error parsing log file: {ex}")
+        raise ex
+
+    return filtered_lines
+    # return json.loads(filtered_lines)

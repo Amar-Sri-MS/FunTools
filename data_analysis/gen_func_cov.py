@@ -1,22 +1,28 @@
 #!/usr/bin/env python3
 
-"""Generate function coverage by reading html file function coverage report
+"""Generate function coverage by reading a function coverage report html file
 
    Copyright (c) 2022 Fungible. All rights reserved.
 
 
     Preconditions
     -------------
-    This script uses generate function coverage html file (--local_file) or build number (--build_no) to generate function coverage csv file (--output_csv).
+    This script uses an input of either a generate function coverage html file (--local_file) or a build number (--build_no) to generate a function coverage csv file (--output_csv).
 
     Examples
     --------
-    >>> python ./gen_func_cov.py --build_no 107 --output_csv func_cov.csv --out_dir .
+    >>> python3 ./gen_func_cov.py --build_no 107 --output_csv func_cov.csv --out_dir .
+    >>> python3 ./gen_func_cov.py --local_file ../../coverage/all/index.functions.html --output_csv func_cov.csv --output_dir .
+
+    Test
+    -----
+    >>> pytest tests/test_gen_func_cov.py -o log_cli=true
 
     Checks
     ------
     static check:
     >>> mypy ./gen_func_cov.py
+    >>> pylint ./gen_func_cov.py
 
     format:
     >>> black ./gen_func_cov.py
@@ -24,11 +30,10 @@
 """
 
 """
-TODO:
-- handling extracting html file as jenkins, likely use file access
-  - this is likely running during the build, so it can reach out based on the path
-- handle multiple modules
-- BUILD_URL update
+TODO
+----
+- try/except
+- handle multiple coverage modules
 
 """
 
@@ -38,8 +43,6 @@ import sys
 from typing import Iterable, Any, List, Optional, Union, Callable, TextIO, Dict, Tuple
 
 try:
-    # for table
-    from tabulate import tabulate
     import pandas as pd
     from requests.auth import HTTPBasicAuth
     import requests
@@ -47,10 +50,9 @@ try:
 except ImportError:
     print("{}: Import failed!".format(__file__))
     print("Install missing modules")
-    print(">>> pip install tabulate pandas requests beautifulsoup4")
+    print(">>> pip install pandas requests beautifulsoup4")
     sys.exit()
 
-# NOTE _20 will be updated to '-'
 BUILD_URL = "http://jenkins-sw-master.fungible.local/ci/job/scheduled/job/coverage/{}/Coverage-Reports/{}/index.functions.html"
 
 
@@ -71,7 +73,7 @@ def _get_args() -> argparse.Namespace:
     return args
 
 
-def _extract_html(html_file: str) -> str:
+def extract_html(html_file: str) -> str:
     """Extract html file either from url or local and return as string
 
     Parameters
@@ -103,7 +105,7 @@ def _extract_html(html_file: str) -> str:
     return html_doc
 
 
-def _extract_table(html_doc: str) -> pd.DataFrame:
+def extract_table(html_doc: str) -> pd.DataFrame:
     """Extract table from html and return as pandas dataframe
 
     Parameters
@@ -126,11 +128,27 @@ def _extract_table(html_doc: str) -> pd.DataFrame:
     return dfs[0]
 
 
-def _get_html_file(args: argparse.Namespace, remote_url: str = BUILD_URL) -> str:
+def get_html_file(build_no, modules, local_file, remote_url: str = BUILD_URL) -> str:
+    """Get html file from either remote url or local file
+
+    Parameters
+    ----------
+    build_no : int
+        build number
+    modules : str
+        modules
+    local_file : str
+        local file
+    remote_url : str, optional
+        remote url, by default BUILD_URL
+
+    Returns
+    -------
+    str : html file
+
+    """
     html_file = (
-        remote_url.format(args.build_no, args.modules)
-        if args.build_no is not None
-        else args.local_file
+        remote_url.format(build_no, modules) if build_no is not None else local_file
     )
 
     return html_file
@@ -147,9 +165,9 @@ def main() -> None:
         print("Please provide either build_no or local_file")
         sys.exit()
 
-    html_file = _get_html_file(args)
-    html_doc = _extract_html(html_file)
-    df = _extract_table(html_doc)
+    html_file = get_html_file(args.build_no, args.modules, args.local_file)
+    html_doc = extract_html(html_file)
+    df = extract_table(html_doc)
     df.to_csv(args.output_csv, index=False)
 
     print(f"Saving table to csv file: {output_csv}")
