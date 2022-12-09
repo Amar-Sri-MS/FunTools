@@ -10,6 +10,7 @@
 #include "mctp.h"
 #include "pldm.h"
 #include "ncsi.h"
+#include "pcie_vdm.h"
 
 /* local variables */
 static mctp_stats_t mctp_sts;
@@ -26,17 +27,38 @@ static int mctp_cmd_eid_set(uint8_t *buf, mctp_ctrl_hdr_t *hdr, mctp_endpoint_st
 {
 	mctp_set_eid_resp_t *rspn = (mctp_set_eid_resp_t *)buf;
 	uint8_t eid = hdr->data[1];
+	uint8_t operation = hdr->data[0];
 	struct mctp_ep_retain_stc *retain;
+	struct pcie_vdm_rec_data *hdr_data = (struct pcie_vdm_rec_data *) ep->retain->ep_priv_data;
 
 	if (!ep->retain) 
 		return ERR_NO_RETAIN;
 
 	retain = ep->retain;
 
+	mctp_dbg("\noperation: 0x%x, hdr_data->bus_owner_id: 0x%x, hdr_data->trgt_id: 0x%x\n",
+		operation, hdr_data->bus_owner_id, hdr_data->trgt_id);
+
 	if ((eid != 0) && (eid != 0xff)) {
-		log("eid changed from %u to %u\n", retain->eid, eid);
-		mctp_dbg("eid changed from %u to %u\n", retain->eid, eid);
-		retain->eid = eid;
+		if (!hdr_data->bus_owner_id) {
+			hdr_data->bus_owner_id = hdr_data->trgt_id;
+		} else if (hdr_data->trgt_id == hdr_data->bus_owner_id) {
+			log("eid changed from %u to %u\n", retain->eid, eid);
+			mctp_dbg("eid changed from %u to %u\n", retain->eid, eid);
+			retain->eid = eid;
+			rspn->status = 0;
+		} else if (hdr_data->trgt_id != hdr_data->bus_owner_id) {
+			if (operation == SET_EID) {
+				// DSP0236:
+				// EID assignment rejected. EID has already been assigned
+				// by another bus owner and assignment was not forced.
+				rspn->status = 0x10;
+			} else if (operation == FORCE_EID) {
+				mctp_dbg("eid changed from %u to %u\n", retain->eid, eid);
+				retain->eid = eid;
+				rspn->status = 0;
+			}
+		}
 		rspn->reason = MCTP_RESP_SUCCESS;
 	}
 	else {
@@ -44,7 +66,6 @@ static int mctp_cmd_eid_set(uint8_t *buf, mctp_ctrl_hdr_t *hdr, mctp_endpoint_st
 		rspn->reason = MCTP_RESP_INVAL_DATA;
 	}
 
-	rspn->status = 0;
 	rspn->eid = retain->eid;
 	rspn->pool_size = 0;
 
@@ -76,7 +97,7 @@ static int mctp_cmd_uuid_get(uint8_t *buf, mctp_ctrl_hdr_t *hdr, mctp_endpoint_s
 	mctp_get_udid_resp_t *rspn = (mctp_get_udid_resp_t *)buf;
 
 	rspn->reason = MCTP_RESP_SUCCESS;
-	memcpy(&rspn->udid, ep->retain->uuid, sizeof(ep->retain->uuid));
+	memcpy(&rspn->udid, cfg.uuid, sizeof(cfg.uuid));
 
 	return sizeof(mctp_get_udid_resp_t);
 }

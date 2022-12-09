@@ -6,5 +6,6 @@ Log_Analyzer.egg-info*
 downloads*
 logs/*
 .env*
+.venv/*
 
 flask_session*

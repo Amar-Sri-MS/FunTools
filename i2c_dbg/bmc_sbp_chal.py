@@ -1,8 +1,8 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python
 #
 # bmc_sbp_chal.py
 #
-# Copyright (c) 2017-2021 Fungible,Inc.
+# Copyright (c) 2017-2022 Fungible,Inc.
 # All Rights Reserved
 #
 ''' This module allows to execute commands, read images and update them
@@ -21,6 +21,10 @@ $ python bmc_sbp_chal.py --chip 0 --read eepr --out eeprom.bin
 Update the B copy of the pufr image with the content of the file signed_pufr_fpk4_v1.bin
 
 $ python bmc_sbp_chal.py  --chip 0 --update signed_pufr_fpk4_v1.bin --BImage
+
+
+***** IMPORTANT: this must be able to run on Python2.7 and Python 3 ********
+
 '''
 
 from __future__ import print_function
@@ -34,7 +38,13 @@ import platform   # Fungible
 import hashlib
 
 from subprocess import check_output as subprocess_check_output
-from urllib import urlopen, urlretrieve
+
+# python2 then python3
+try:
+    from urllib import urlopen, urlretrieve
+except ImportError:
+    from urllib.request import urlopen, urlretrieve
+
 from tempfile import NamedTemporaryFile
 from gzip import open as gzip_open
 from shutil import copyfileobj as shutil_copyfileobj, move as shutil_move
@@ -43,7 +53,9 @@ from textwrap import wrap as textwrap_wrap
 
 import ctypes
 import ctypes.util  # find_library
-from ctypes import c_char_p, c_void_p, c_ubyte, c_uint, c_int, POINTER, byref
+from ctypes import (c_char_p, c_void_p,
+                    c_ubyte, c_uint, c_int, c_ulong,
+                    POINTER, byref)
 
 
 logging.basicConfig()
@@ -53,10 +65,37 @@ def no_output(*_a,**_k):
     ''' alternative to print for print_fn argument '''
     pass
 
-def hex_str(data):
-    s = ":".join(["%02x" % b for b in data])
+def hex_str(b_arr):
+    ''' byte array to hexadecimal codes '''
+    s = ":".join(["%02x" % b for b in b_arr])
     ws = textwrap_wrap(s,48)
     return "\n".join(ws)
+
+def str2bytes(s):
+    return bytes(str(s).encode('ascii'))
+
+def bytes2str(b):
+    return b.decode('ascii', 'backslashreplace')
+
+def printable_str(b_arr):
+    ''' convert a byte array to a printable str
+    Not really needed for Python2 where bytearray will be printed as C strings
+    Python3 will print  "bytearray(b'<all bytes>')
+    '''
+    index_first_non_print = next((i for i,b in enumerate(b_arr)
+                                  if b < 0x20 or b > 0x7E),
+                                 len(b_arr))
+    return bytes2str(b_arr[:index_first_non_print])
+
+def le2int(b_arr):
+    ''' interpret array of bytes of any length  as little endian integer
+    since there is no int.from_bytes in Python2 '''
+    ret = 0
+    shift = 0
+    for b in b_arr:
+        ret |= (b << shift)
+        shift += 8
+    return ret
 
 def get_fs1600_rev():
     ''' return the FS1600 system revision (1 or 2) '''
@@ -87,12 +126,13 @@ def get_remote_file(port, file_name, local_file_name=None):
 
 
 ##############################################################################
-# Structure (from utils.py)
+# Structure
 ##############################################################################
 
-CERT_SIZE = 1096
-
 class Structure(object):
+
+    vocabulary = None
+
     def __init__(self):
         self.content = 0
         self.nextpos = 0
@@ -131,11 +171,11 @@ class Structure(object):
         # Swap bytes
         if bigend:
             assert nbits%8==0
-            value = "{0:0{1}x}".format(value, nbits/4)   # To hexadecimal string
-            value = binascii.unhexlify(value)            # To bytes
-            value = value[::-1]                          # Swap bytes
-            value = binascii.hexlify(value)              # To hexadecimal string
-            value = int(value, 16)                       # To integer
+            value = "{0:0{1}x}".format(value, nbits//4)   # To hexadecimal string
+            value = binascii.unhexlify(value)             # To bytes
+            value = value[::-1]                           # Swap bytes
+            value = binascii.hexlify(value)               # To hexadecimal string
+            value = int(value, 16)                        # To integer
         self.content &= ~mask
         self.content |= value<<shift
 
@@ -144,26 +184,29 @@ class Structure(object):
         nbits, mask, shift, bigend = self.get_pos(key)
         value = (self.content&mask)>>shift
         # Convert to hexadecimal string
-        value = "{0:0{1}x}".format(value, nbits/4)
+        value = "{0:0{1}x}".format(value, nbits//4)
         # Swap bytes
         if bigend:
             assert nbits%8==0
-            value = binascii.unhexlify(value)            # To bytes
-            value = value[::-1]                          # Swap bytes
-            value = binascii.hexlify(value)              # To hexadecimal string
+            value = binascii.unhexlify(value)                 # To bytes
+            value = value[::-1]                               # Swap bytes
+            value = binascii.hexlify(value).decode('ascii')   # To hexadecimal string
         return value
 
     def set_txt(self, txt):
         for l in txt.splitlines():
-            if not l.strip().startswith('#'):
+            l = l.strip()
+            if not l.startswith('#'):
                 try:
-                    key, value = tuple(l.strip().split(None, 1))
+                    key, value = tuple(l.split(None, 1))
+                    if self.vocabulary:
+                        value = self.vocabulary.get(value, value)
                 except:
-                    raise ValueError("invalid format (%s)" % l)
+                    raise ValueError("value with invalid format (%s)" % l)
                 self.set_bits(key, value)
 
     def set_bin(self, abin):
-        self.set_bits("all", "0x"+binascii.hexlify(abin))
+        self.set_bits("all", "0x" + binascii.hexlify(abin).decode('ascii'))
 
     def get_size(self):
         return (self.nextpos+7)/8
@@ -174,8 +217,10 @@ class Structure(object):
             txt += "  %s 0x%s\n" % (key, self.get_bits(key))
         return txt.rstrip()
 
-    def get_bin(self):
-        return binascii.unhexlify(self.get_bits("all"))
+    def get_bin(self, field_name='all'):
+        return binascii.unhexlify(self.get_bits(field_name))
+
+
 
 ##############################################################################
 # OTP
@@ -225,19 +270,16 @@ class OTPSM(Structure):
 ################################################################################
 
 class SigningError(Exception):
-    pass
-
-class I2CError(Exception):
+    ''' Exception raised when error signing '''
     pass
 
 # derive ChallengeError from Environment error to capture error code
 class ChallengeError(EnvironmentError):
+    ''' Exception raised with error with challenge protocol '''
     pass
 
 class NorImageError(Exception):
-    pass
-
-class BMCChalError(Exception):
+    ''' Exception related to content of the Nor Image '''
     pass
 
 ################################################################################
@@ -269,42 +311,74 @@ class CryptoUtils(object):
         self.fclose.argtypes = [c_void_p]
 
         self.PEM_read_RSAPrivateKey = self.libcrypto.PEM_read_RSAPrivateKey
-        self.PEM_read_RSAPrivateKey.argtypes = [c_void_p, POINTER(c_void_p), c_void_p, c_void_p]
+        self.PEM_read_RSAPrivateKey.argtypes = [c_void_p, POINTER(c_void_p),
+                                                c_void_p, c_void_p]
 
         self.RSA_sign = self.libcrypto.RSA_sign
-        self.RSA_sign.argtypes = [c_int, c_char_p, c_uint, c_char_p, POINTER(c_uint), c_void_p]
+        self.RSA_sign.argtypes = [c_int, c_char_p, c_uint, c_char_p,
+                                  POINTER(c_uint), c_void_p]
 
         self.RSA_free = self.libcrypto.RSA_free
         self.RSA_free.argtypes = [c_void_p]
 
+        self.ERR_get_error = self.libcrypto.ERR_get_error
+        self.ERR_get_error.restype = c_ulong
+
+        self.ERR_lib_error_string = self.libcrypto.ERR_lib_error_string
+        self.ERR_lib_error_string.argtypes = [c_ulong]
+        self.ERR_lib_error_string.restype = c_char_p
+
+        self.ERR_func_error_string = self.libcrypto.ERR_func_error_string
+        self.ERR_func_error_string.argtypes = [c_ulong]
+        self.ERR_func_error_string.restype = c_char_p
+
+        self.ERR_reason_error_string = self.libcrypto.ERR_reason_error_string
+        self.ERR_reason_error_string.argtypes = [c_ulong]
+        self.ERR_reason_error_string.restype = c_char_p
+
+    def get_ossl_errs(self):
+        errs = ""
+        ossl_err = self.ERR_get_error()
+        while ossl_err:
+            errs += "OpenSSL error %s:%s:%s\n" % (
+                bytes2str(self.ERR_lib_error_string(ossl_err)),
+                bytes2str(self.ERR_func_error_string(ossl_err)),
+                bytes2str(self.ERR_reason_error_string(ossl_err)))
+            ossl_err = self.ERR_get_error()
+        return errs
 
     def rsa_pkcs_sign(self, key_file_name, hash_name, data):
-
         # read the key from the PEM file
         key = c_void_p()
-        fp = self.fopen(key_file_name, 'rb')
+        fp = self.fopen(str2bytes(key_file_name), b'rb')
         if not fp:
-            raise SigningError("Unable to open key file %s for reading" % key_file_name)
+            raise SigningError("Unable to open key file %s for reading" %
+                               key_file_name)
 
         res = self.PEM_read_RSAPrivateKey(fp, byref(key), None, None)
         self.fclose(fp)
 
         if not res:
-            raise SigningError("Error reading key from %s" % key_file_name)
+            raise SigningError("Error reading key from %s:\n%s" %
+                               (key_file_name, self.get_ossl_errs()))
 
         digest = hashlib.new(hash_name, data).digest()
-        hash_nid = self.libcrypto.OBJ_txt2nid(hash_name)
+        hash_nid = self.libcrypto.OBJ_txt2nid(str2bytes(hash_name))
         signature = ctypes.create_string_buffer(CryptoUtils.MAX_RSA_KEY_SIZE)
         siglen = c_uint()
-        res = self.RSA_sign( hash_nid, digest, len(digest), signature, byref(siglen), key)
+        res = self.RSA_sign(hash_nid, digest, len(digest),
+                            signature, byref(siglen), key)
         # done with the key
         self.RSA_free(key)
 
         if not res:
-            raise SigningError("Error signing with key from %s" % key_file_name)
+            raise SigningError("Error  signing with key from %s: %s" %
+                               (key_file_name, self.get_ossl_errs()))
 
         return signature.raw[:siglen.value]
 
+
+CERT_SIZE = 1096
 
 class DebuggingResources(object):
     ''' abstract base class for debugging resources '''
@@ -331,7 +405,7 @@ class LocalDebuggingResources(DebuggingResources):
         if self.start_cert_file is None:
             raise RuntimeError("Unable to unlock: no start certificate provided")
 
-        with open(self.start_cert_file) as f:
+        with open(self.start_cert_file, 'rb') as f:
             cert = bytearray(f.read())
         # should we check that this cert can unlock the required grants?
         return cert
@@ -340,7 +414,7 @@ class LocalDebuggingResources(DebuggingResources):
         if self.cert_file is None:
             raise RuntimeError("Unable to unlock: no debugging certificate provided")
 
-        with open(self.cert_file) as f:
+        with open(self.cert_file, 'rb') as f:
             cert = bytearray(f.read())
         # should we check that this cert can unlock the required grants?
         return cert
@@ -376,8 +450,9 @@ class RemoteDebuggingResources(DebuggingResources):
         # debugging certificate and then start certificate
         if not response:
             raise RuntimeError("Remote server did not find any suitable certificate")
-        if response[0] != b'\x00':
-            raise RuntimeError("Version mismatch from remote debug server")
+        if response[0:1] != b'\x00':
+            raise RuntimeError("Version mismatch from remote debug server: %s" %
+                               response[0:1])
         self.ctx_id = response[1:1+self.CTX_ID_LEN]
         self.certs = response[1+self.CTX_ID_LEN:]
 
@@ -415,7 +490,7 @@ class RemoteDebuggingResources(DebuggingResources):
         response = get_request(self.http_port, "signature", data=data)
         if not response:
             raise RuntimeError("Empty signature from remote debug server")
-        if response[0] != b'\x00':
+        if response[0:1] != b'\x00':
             raise RuntimeError("Version mismatch from remote debug server")
 
         return response[1:]
@@ -426,7 +501,7 @@ class RemoteDebuggingResources(DebuggingResources):
 ##############################################################################
 
 class i2c_dbg(object):
-
+    ''' class used to call the functions of i2c_dbg.so '''
     def __init__(self):
         this_script_dir = os.path.dirname(os.path.realpath(__file__))
         libi2c_dbg = ctypes.cdll.LoadLibrary(this_script_dir + '/i2c_dbg.so')
@@ -444,9 +519,10 @@ class i2c_dbg(object):
 					     c_char_p, c_int]
 
         # specialized read flash
-        self.i2c_dbg_read_flash = libi2c_dbg.i2c_dbg_read_flash
-        self.i2c_dbg_read_flash.restype = POINTER(c_ubyte)
-        self.i2c_dbg_read_flash.argtypes = [c_int, c_int, c_int]
+        self.i2c_dbg_read_flash_ex = libi2c_dbg.i2c_dbg_read_flash_ex
+        self.i2c_dbg_read_flash_ex.restype = POINTER(c_ubyte)
+        self.i2c_dbg_read_flash_ex.argtypes = [c_int, c_int,
+                                               c_int, POINTER(c_int)]
 
         # config -- debug
         self.i2c_dbg_debugging_on = libi2c_dbg.debugging_on
@@ -460,33 +536,43 @@ class i2c_dbg(object):
         self.i2c_dbg_get_chip_device.restype = c_char_p
         self.i2c_dbg_get_chip_device.argtypes = [c_int]
 
+
     def chal_cmd(self, cmd, chip_inst, data=None,
 		 reply_delay_sec=0):
         reslen = c_int()
         res = self.i2c_dbg_chal_cmd(cmd, chip_inst,
-                                    str(data) if data else None,
+                                    bytes(data) if data else None,
 				    len(data) if data else 0,
 				    int(reply_delay_sec * 1000000),
 				    byref(reslen))
-        return bytearray(ctypes.string_at(res, reslen))
+        return bytearray(ctypes.string_at(res, reslen.value))
 
     def write_flash(self, chip_inst, nor_addr, input_data):
-        return self.i2c_dbg_write_flash(chip_inst, nor_addr,
-					str(input_data), len(input_data))
+        if input_data:
+            err = self.i2c_dbg_write_flash(chip_inst, nor_addr,
+				           bytes(input_data),
+                                           len(input_data))
+            if err:
+                raise ChallengeError(err, "Error writing flash: %d" % err)
+
 
     def read_flash(self, chip_inst, nor_addr, length):
-        res = self.i2c_dbg_read_flash(chip_inst, nor_addr, length)
+        err = c_int()
+        res = self.i2c_dbg_read_flash_ex(chip_inst, nor_addr,
+                                         length, byref(err))
+        if err:
+            raise ChallengeError(err, "Error reading flash: %d" % err.value)
+
         return bytearray(ctypes.string_at(res, length))
 
     def debugging_on(self, turnon):
         self.i2c_dbg_debugging_on(1 if turnon else 0)
 
-
     def get_chip_device(self, chip_inst):
         return self.i2c_dbg_get_chip_device(chip_inst)
 
     def set_chip_device(self, chip_inst, device_str):
-        return self.i2c_dbg_set_chip_device(chip_inst, str(device_str))
+        return self.i2c_dbg_set_chip_device(chip_inst, bytes(device_str))
 
 
 ##############################################################################
@@ -510,6 +596,8 @@ GRANT_DBG_ACCESS = 0xFD010000
 CHALLENGE_LENGTH = 16
 
 FLASH_ERASE_SECTION = 0xFC000000
+
+PREPARE_QSPI = 0xFE080000
 
 QSPI_PAGE_SIZE = 0x100
 QSPI_SECTOR_SIZE = 0x10000
@@ -545,6 +633,17 @@ SBP_STATUS_STR = [
     "Host Firmware Version",
     "Debug Grants"]
 
+EXTRA_DATA_PARSE = (
+    ("Version",      1),
+    ("Magic",        3),
+    ("Flash Size",   4),
+    ("Flags",        4),
+    ("Init",         1),
+    ("RD Cmd",       1),
+    ("Dummy Cycles", 1),
+    ("Mode Bits",    1))
+
+EXTRA_DATA_KEY = "Extra Data"
 EXTRA_BYTES_KEY = "Extra Bytes"
 
 class DBG_FlashOp(object):
@@ -578,8 +677,8 @@ class DBG_File(DBG_FlashOp):
         ''' simulate erase flash sector at offset '''
         print("Erasing flash at offset %d (0x%08x)" % (offset,offset))
         if (offset & (QSPI_SECTOR_SIZE - 1)) != 0:
-            raise ChallengeError("Invalid offset passed as argument: must be a multiple of %d" %
-                                 QSPI_SECTOR_SIZE)
+            raise ValueError("Invalid offset %d: must be a multiple of %d" %
+                             (offset, QSPI_SECTOR_SIZE))
 
         self.f.seek(offset)
         self.f.write(b'\xFF' * QSPI_SECTOR_SIZE)
@@ -604,7 +703,7 @@ class DBG_Chal(DBG_FlashOp):
         if logger.getEffectiveLevel() <= logging.DEBUG:
 
             print('Using device "%s" for chip %d\n' %
-              (self.i2c_dbg.get_chip_device(chip_inst),chip_inst))
+              (bytes2str(self.i2c_dbg.get_chip_device(chip_inst)),chip_inst))
 
             self.i2c_dbg.debugging_on(True)
 
@@ -613,37 +712,72 @@ class DBG_Chal(DBG_FlashOp):
         if port:
             self.dbg_info = RemoteDebuggingResources(port)
         else:
-            self.dbg_info = LocalDebuggingResources(cert_file, key_file, start_cert_file)
+            self.dbg_info = LocalDebuggingResources(cert_file,
+                                                    key_file,
+                                                    start_cert_file)
 
     def challenge_cmd(self, cmd, data=None, reply_delay_sec=0):
-        rdata = self.i2c_dbg.chal_cmd(cmd, self.chip_inst, data, reply_delay_sec)
-        if not self.cmd_status_ok(rdata):
-            err_info = self.cmd_status_code(rdata)
+        logger.info("Executing command 0x%08x", cmd)
+
+        rdata = self.i2c_dbg.chal_cmd(cmd, self.chip_inst, data,
+                                      reply_delay_sec)
+        err_info = self.cmd_status_code(rdata, cmd)
+        if err_info[0] != 0:
             raise ChallengeError(*err_info)
 
         return rdata[4:]  # strip the header
 
+
+    # header in LE format
+    def cmd_status_code(self, header_bytes, cmd):
+        ''' look at header and return (errno, strerror) '''
+        sts = header_bytes[2]
+        sts_str = ""
+        if sts >= 0:
+            if sts < len(CMD_STATUS_CODE_STR):
+                sts_str = "Cmd: 0x%08x: %s" % (cmd, CMD_STATUS_CODE_STR[sts])
+            else:
+                sts_str = "Cmd: 0x%08x: %d" % (cmd, sts)
+        return sts, sts_str
+
+    # header in LE format
+    def cmd_reply_length(self, header_bytes):
+        return header_bytes[0] + 0x0100 * header_bytes[1]
+
     def write_flash(self, nor_addr, input_data):
+
         return self.i2c_dbg.write_flash(self.chip_inst, nor_addr, input_data)
 
     def read_flash(self, offset, num_bytes):
         return self.i2c_dbg.read_flash(self.chip_inst, offset, num_bytes)
 
+    def decode_extra_data(self, extra_bytes):
+        ret = []
+        start = end = 0
+        for instr in EXTRA_DATA_PARSE:
+            end = start + instr[1]
+            ret.append( (instr[0], le2int(extra_bytes[start:end])) )
+            start = end
+        return ret, extra_bytes[end:]
+
+
     def decode_status_bytes(self, data):
         logger.info('STATUS:\traw_bytes:\n%s', hex_str(data))
         status_size = len(data)
-        status_decoded = dict()
+        status_decoded = {}
         i = 0
         while i < status_size:
-            status_str_idx = i/4
+            status_str_idx = i//4
             if status_str_idx < len(SBP_STATUS_STR):
                 status_value = struct.unpack('<I', data[i:i+4])[0]
                 status_decoded[SBP_STATUS_STR[status_str_idx]] = status_value
                 i+=4
             else:
-                extra_bytes = data[i:status_size]
-                status_decoded[EXTRA_BYTES_KEY] = extra_bytes
-                i = status_size
+                extra = data[i:status_size]
+                if bytes(extra[0:4]) == b'\x01\xd0\xde\xad':
+                    status_decoded[EXTRA_DATA_KEY], extra = self.decode_extra_data(extra)
+                status_decoded[EXTRA_BYTES_KEY] = extra
+                i = status_size # all done
         return status_decoded
 
     def print_decoded_status(self, status_dict):
@@ -657,36 +791,25 @@ class DBG_Chal(DBG_FlashOp):
                 print('\t\t%s: 0x%x' % ('HostUpgradeFlag', (value >> 12) & 0x1))
                 print('\t\t%s: 0x%x' % ('eSecureImage',(value >> 14) & 0x1))
                 print('\t\t%s: 0x%x' % ('HostImage',(value >> 20) & 0x1))
+
+        if EXTRA_DATA_KEY in status_dict:
+            print("\t%s:" % EXTRA_DATA_KEY)
+            extra_data = status_dict[EXTRA_DATA_KEY]
+            for pair in extra_data:
+                print('\t\t%s: 0x%x' % pair)
+
         extra_bytes = status_dict[EXTRA_BYTES_KEY]
-        print('\t%s: %s raw: %s' %
+        print('\t%s: %s\n\t\traw: %s' %
               (EXTRA_BYTES_KEY,
-               ''.join([chr(x) for x in extra_bytes]),
-               ":".join(["%02x" % x for x in extra_bytes])))
+               printable_str(extra_bytes),
+               hex_str(extra_bytes)))
 
-
-    # header in LE format
-    def cmd_status_code(self, header_bytes):
-        sts = header_bytes[2]
-        if sts >= 0 and sts < len(CMD_STATUS_CODE_STR):
-            sts_str = CMD_STATUS_CODE_STR[sts]
-        else:
-            sts_str = "reserved"
-        return sts, sts_str
-
-
-    def cmd_status_code_str(self, header_bytes):
-        return self.cmd_status_code(header_bytes)[1]
-
-    # header in LE format
-    def cmd_status_ok(self, header_bytes):
-        return self.cmd_status_code(header_bytes)[0] == 0
-
-    # header in LE format
-    def cmd_reply_length(self, header_bytes):
-        return header_bytes[0] + 0x0100 * header_bytes[1]
 
     def get_serial_number(self):
-        ''' return the serial number. Cached since this is small and often required '''
+        '''
+        return the serial number.
+        Cached since this is small and often required
+        '''
         if self.serial_nr is None:
             self.serial_nr = self.challenge_cmd(GET_SERIAL_NUMBER)
         return self.serial_nr
@@ -713,6 +836,9 @@ class DBG_Chal(DBG_FlashOp):
         key_index = bytearray(struct.pack('<I', index))
         return self.challenge_cmd(cmd, key_index)
 
+    def prepare_qspi(self):
+        return self.challenge_cmd(PREPARE_QSPI)
+
     def save_enroll_cert(self, cert):
         try:
             self.challenge_cmd(SET_ENROLL_INFO, cert,
@@ -733,8 +859,8 @@ class DBG_Chal(DBG_FlashOp):
         ''' erase flash sector at offset '''
         print("Erasing flash at offset 0x%08x" % offset)
         if (offset & (QSPI_SECTOR_SIZE - 1)) != 0:
-            raise ChallengeError("Invalid offset passed as argument: must be a multiple of %d" %
-                                 QSPI_SECTOR_SIZE)
+            raise ValueError("Invalid offset %d: must be a multiple of %d" %
+                             (offset, QSPI_SECTOR_SIZE))
 
         params = bytearray(struct.pack('<I', offset))
         return self.challenge_cmd(FLASH_ERASE_SECTION, params, reply_delay_sec=0.5)
@@ -756,7 +882,7 @@ class DBG_Chal(DBG_FlashOp):
         logger.info("Challenge = %s", ' '.join([hex(x) for x in challenge]))
 
         if len(challenge) != CHALLENGE_LENGTH:
-            raise ChallengeError("Invalid challenge length: %d" % len(challenge))
+            raise ValueError("Invalid challenge length: %d" % len(challenge))
 
         # challenge command: parameter: requested debug grants
         # input data = debugging certificate + signature( command + parameter + challenge)
@@ -783,7 +909,7 @@ class DBG_Chal(DBG_FlashOp):
         input_data.extend(struct.pack('<I', len(signature)))
         input_data.extend(signature)
 
-        self.challenge_cmd(GRANT_DBG_ACCESS, input_data)
+        self.challenge_cmd(GRANT_DBG_ACCESS, input_data, 0.1)
 
         # return the obtained dbg_grants in natural order
         current_dbg_grants = self.get_status()[SBP_STATUS_STR[-1]]
@@ -810,10 +936,12 @@ CERT_SERIAL_NR_OFFSET = 16
 INVALID_DIRECTORY = b'\x00'
 
 # special image types that have no real header
-HEADERLESS_4CC = ['nrol', 'hdat']
+HEADERLESS_4CC = [b'nrol', b'hdat', b'sdat']
 
 class NOR_IMAGE(object):
-    ''' Class to encapsulate Read/Write Flash operation on images and read on image files '''
+    '''
+    Class to encapsulate Read/Write Flash operation on images
+    and read on image files '''
 
 
     @staticmethod
@@ -825,8 +953,8 @@ class NOR_IMAGE(object):
     def parse_auth_header(header):
         ''' parse header '''
         size, version = NOR_IMAGE.size_version_from_auth_header(header)
-        img_type = str(header[2*WORD_SIZE:3*WORD_SIZE])
-        description = str(header[3*WORD_SIZE + 32:])
+        img_type = bytes(header[2*WORD_SIZE:3*WORD_SIZE])
+        description = printable_str(header[3*WORD_SIZE + 32:])
         return { 'size': size,
                  'version': version,
                  '4cc' : img_type,
@@ -865,12 +993,12 @@ class NOR_IMAGE(object):
 
         # first word is CRC, 2 and 3rd word are pufr, ignore 4th
         # and then addrA, addrB, fourcc
-        nor_dir = {'pufr': struct.unpack('<2I', data[4:12])}
+        nor_dir = {b'pufr': struct.unpack('<2I', data[4:12])}
 
         start = 16
         while start + 12 < len(data):
             addrs = struct.unpack('<2I', data[start:start+8])
-            fourcc = str(data[start+8:start+12])
+            fourcc = bytes(data[start+8:start+12])
             if fourcc == b'\xFF\xFF\xFF\xFF':
                 logger.info("End of directory found!")
                 break
@@ -903,7 +1031,7 @@ class NOR_IMAGE(object):
     def get_address_of_highest_version(self, addresses):
         all_raw_versions = { a : self.get_version_of_image_at_addr(a) for a in addresses}
         # filter out all missing images
-        all_versions = { a : v for a, v in all_raw_versions.iteritems() if v != 0 }
+        all_versions = { a : v for a, v in all_raw_versions.items() if v != 0 }
 
         if not all_versions:
             return None, None
@@ -920,11 +1048,10 @@ class NOR_IMAGE(object):
         # extract size
         image_size = NOR_IMAGE.size_from_img_header(img_header)
 
-        print("****** Image size is %d" % image_size)
-
         if image_size == 0xFFFFFFFF:
             return None # "No Image at that location"
 
+        print("****** Image size is %d" % image_size)
         image = self.read_flash(addr + IMG_HEADER_SIZE, image_size)
 
         duration = (datetime.datetime.now() - start_time).total_seconds()
@@ -946,7 +1073,7 @@ class NOR_IMAGE(object):
 
         packed_magic = struct.pack('<I', ENROLLMENT_CERT_MAGIC)
 
-        enroll_cert_addresses = nor_dir['nrol']
+        enroll_cert_addresses = nor_dir[b'nrol']
 
         enroll_cert_addr = enroll_cert_addresses[0]
         magic = self.read_flash(enroll_cert_addr, WORD_SIZE)
@@ -968,7 +1095,7 @@ class NOR_IMAGE(object):
         ''' read the host data, return None if not found '''
         # try directory first
         if 'hdat' in nor_dir:
-            addr = nor_dir['hdat'][0]
+            addr = nor_dir[b'hdat'][0]
         else:
             # use the last sector
             logger.info("No entry for hdat in directory: reading last sector")
@@ -1046,7 +1173,7 @@ class NOR_IMAGE(object):
             img = bytearray(open(src_file, 'rb').read())
         else:
             img = src_image.read_image(src_image_info['addr'])
-        if img_type != 'pufr':
+        if img_type != b'pufr':
             return img
 
         return self.check_img_header(img)
@@ -1055,9 +1182,10 @@ class NOR_IMAGE(object):
     def update_image(self, nor_addr, img, sorted_addresses, resume_at=0):
 
         # some size checks: internal consistency
-        image_size = NOR_IMAGE.size_from_img_header(img)+IMG_HEADER_SIZE
+        logical_size = NOR_IMAGE.size_from_img_header(img)
+        image_size = logical_size + IMG_HEADER_SIZE
 
-        print("New image size: %d" %  image_size)
+        print("Size of image: %d: %d bytes needed" %  (logical_size, image_size))
         # enough room on directory?
         max_size = max_available_size(nor_addr, sorted_addresses)
         if image_size > max_size:
@@ -1090,46 +1218,14 @@ def unlock_chip(challenge_interface, req_dbg_grants):
             raise e
 
     if inject:
-        challenge_interface.inject_cert(req_dbg_grants)
+        try:
+            challenge_interface.inject_cert(req_dbg_grants)
+        except ChallengeError as e:
+            logger.info("Start certificate injection failed: continuing anyway")
+
 
     dbg_grants = challenge_interface.get_dbg_access(req_dbg_grants)
     print("Chip unlocked: Debug Grants: 0x%08x" % dbg_grants)
-
-
-def enroll_chip(challenge_interface, port_no):
-    ''' perform the enrollment of the chip '''
-
-    # check boot step
-    parsed_status = challenge_interface.get_status()
-    boot_status = parsed_status['Boot Status']
-    boot_step = boot_status & 0xFF
-    if boot_step != BOOT_STEP_PUF_INIT:
-        print("Chip is not at expected boot step: 0x%02x" % boot_step)
-        return
-
-    # get serial number
-    sn = challenge_interface.get_serial_number()
-    if sn is None:
-        print("Error getting the serial number")
-        return
-
-    sn_64 = binascii.b2a_base64(sn)
-    # contact the f1 enrollment server -- https protocol not supported
-    # on their BMC so use the proxy implemented on port_no
-    enroll_cert_64 = get_request(port_no, 'enroll_cert', sn_64)
-    if enroll_cert_64:
-        enroll_cert = binascii.a2b_base64(enroll_cert_64)
-        print("Found certificate for the serial number")
-        challenge_interface.save_enroll_cert(enroll_cert)
-        print("Enrollment certificate installed")
-        return
-
-    # if the cert was not found, enroll
-    enroll_tbs = challenge_interface.get_enroll_tbs()
-    enroll_tbs_64 = binascii.b2a_base64(enroll_tbs)
-    enroll_cert_64 = get_request(port_no, 'enroll_tbs', enroll_tbs_64)
-    print("Enrollment certificate generated. Power cycle the chip to completed enrollment")
-
 
 
 def get_addr_of_image(directory, image_type, b_image):
@@ -1151,23 +1247,67 @@ def write_directory_to_flash(nor_image, directory, nor_addr):
 def show_flash_dir(nor_image):
     nor_dir = nor_image.read_dir()
     print("Directory on flash:")
-    for img_type, addresses in sorted(nor_dir.items(), key=max):
+    for img_type, addresses in sorted(nor_dir.items(),
+                                      key=lambda x: min(x[1])):
         print("%s: (%10d (0x%08x), %10d (0x%08x))" %
-              (img_type, addresses[0], addresses[0], addresses[1], addresses[1]))
+              (bytes2str(img_type), addresses[0], addresses[0],
+               addresses[1], addresses[1]))
     return nor_dir
 
 def show_flash_images(nor_image):
     nor_dir = nor_image.read_dir()
-    for img_type, addresses in sorted(nor_dir.items(), key=max):
+
+    for img_type, addresses in sorted(nor_dir.items(),
+                                      key=lambda x: min(x[1])):
         for addr in addresses:
-            logger.info("Retrieving header of image %s at 0x%08x", img_type, addr)
+            logger.info("Retrieving header of image %s at 0x%08x",
+                        img_type, addr)
             img_info = nor_image.get_auth_header_of_image_at_addr(addr)
-            print("%s: %10d (0x%08x)" % (img_type, addr, addr))
+            print("%s: %8d (0x%08x)" % (bytes2str(img_type), addr, addr),
+                  end='')
             if img_info['size'] == 0xFFFFFFFF:
                 print("")
             else:
-                print(" size = %10d version = %10d (%s)" %
-                      (img_info['size'], img_info['version'], img_info['description']))
+                print(" size = %6d version = %6d (%s)" %
+                      (img_info['size'],
+                       img_info['version'],
+                       img_info['description']))
+
+
+def get_image_data(nor_image, img_type, b_image, nor_dir):
+
+    if nor_dir is None:
+        nor_dir = nor_image.read_dir()
+
+    if img_type == b'nrol':
+        data = nor_image.read_enrollment_cert(nor_dir)
+    elif img_type == b'hdat':
+        data = nor_image.read_host_data(nor_dir)
+    else:
+        nor_addr = get_addr_of_image(nor_dir, img_type, b_image)
+        if nor_addr is None:
+            print("No such image type '%s' on Flash" % bytes2str(img_type))
+            return None
+        data = nor_image.read_image(nor_addr)
+    return data
+
+
+def do_image_read(nor_image, img_type, b_image, output_f, nor_dir):
+
+    data = get_image_data(nor_image, img_type, b_image, nor_dir)
+
+    if not data:
+        return None
+
+    if output_f is None:
+        output_f = "".join([bytes2str(img_type),
+                            "B" if b_image else "A",
+                            ".bin"])
+        script_dir = os.path.dirname(os.path.realpath(__file__))
+        output_f = os.path.join(script_dir, output_f)
+
+    open(output_f, 'wb').write(data)
+    return output_f
 
 
 def max_available_size(target_addr, sorted_addresses):
@@ -1187,8 +1327,10 @@ def max_available_size(target_addr, sorted_addresses):
 
 
 def get_src_images(src_image, override_file_names):
-    ''' return a dictionary with the address and version of the image with the highest version.
-        images without version (nrol, hdat) are not in the dictionary
+    '''
+    return a dictionary with the address and version of the image with
+    the highest version. images without version (nrol, hdat) are not in
+    the dictionary
     '''
 
     # images on source NOR_IMAGE
@@ -1202,8 +1344,10 @@ def get_src_images(src_image, override_file_names):
     for img_type, addresses in src_dir.items():
         versions, addr_of_max_version = src_image.get_address_of_highest_version(addresses)
         if addr_of_max_version:
-            versions_str = ''.join(["0x%08x: %d " % (a, v) for a, v in versions.items()])
-            print("%s : 0x%08x  (versions: %s)" % (img_type, addr_of_max_version, versions_str))
+            versions_str = ''.join(["0x%08x: %d " %
+                                    (a, v) for a, v in versions.items()])
+            print("%s : 0x%08x  (versions: %s)" %
+                  (bytes2str(img_type), addr_of_max_version, versions_str))
             src_images[img_type] = { 'addr' : addr_of_max_version,
                                      'version' : versions[addr_of_max_version],
                                      'override': None }
@@ -1213,7 +1357,8 @@ def get_src_images(src_image, override_file_names):
         return src_images
 
     # sort all addresses to figure out the available space for an override
-    sorted_addresses = sorted([addr for addresses in src_dir.values() for addr in addresses])
+    sorted_addresses = sorted([addr for addresses in src_dir.values()
+                               for addr in addresses])
 
     # now the overrides
     for override_file_name in override_file_names:
@@ -1233,7 +1378,7 @@ def get_src_images(src_image, override_file_names):
                 f.seek(0, os.SEEK_END)
                 real_size = f.tell()
                 if real_size != header_info['size'] + IMG_HEADER_SIZE:
-                    raise BMCChalError(
+                    raise NorImageError(
                         "%s: Inconsistent file size %d in header but %d extent" %
                         (override_file_name,
                          header_info['size'] + IMG_HEADER_SIZE,
@@ -1242,7 +1387,7 @@ def get_src_images(src_image, override_file_names):
                 # check it fits on the directory
                 max_size = max_available_size(src_info['addr'], sorted_addresses)
                 if max_size < real_size:
-                    raise  BMCChalError(
+                    raise NorImageError(
                         "%s: image is too big (%d) for the available space (%d)" %
                         (override_file_name, real_size, max_size))
 
@@ -1258,7 +1403,7 @@ def do_image_update(nor_image, src_image, sorted_addresses,
 
     if src_info['version'] <= target_version:
         print("%s : source (%d) is same as or older than target (%d)" %
-              (img_type, src_info['version'], target_version))
+              (bytes2str(img_type), src_info['version'], target_version))
         return
 
     src_file = src_info['override']
@@ -1268,7 +1413,7 @@ def do_image_update(nor_image, src_image, sorted_addresses,
         print_source = "0x%08x" % src_info['addr']
 
     print("%s : Updating at 0x%08x (version = %d) with %s (version = %d)" %
-          (img_type, target_address, target_version,
+          (bytes2str(img_type), target_address, target_version,
            print_source, src_info['version']) )
 
     if not dry_run:
@@ -1277,7 +1422,7 @@ def do_image_update(nor_image, src_image, sorted_addresses,
         nor_image.update_image(target_address, img, sorted_addresses)
 
         print("%s : image at %d was updated to version %d!" %
-              (img_type, target_address, src_info['version']))
+              (bytes2str(img_type), target_address, src_info['version']))
 
 
 
@@ -1290,29 +1435,38 @@ def do_full_update(nor_image, src_image, override_files, dry_run, install_missin
 
     print("Target images:")
     nor_dir = nor_image.read_dir()
-    sorted_addresses = sorted([addr for addresses in nor_dir.values() for addr in addresses])
+    sorted_addresses = sorted([addr for addresses in nor_dir.values()
+                               for addr in addresses])
     for img_type, src_info in src_images.items():
+        img_type_str = bytes2str(img_type)
         dest_addresses = nor_dir.get(img_type)
         if dest_addresses:
             versions, target_address = nor_image.get_address_of_highest_version(dest_addresses)
             if target_address is None:
-                print("%s: no current image found for this type on Flash => no safe update possible")
+                print("%s: no current image found for this type on Flash "\
+                      "=> no safe update possible" %
+                      img_type_str)
             else:
-                versions_str = ''.join(["0x%08x: %s " % (a, str(v) if v else 'None') for a,v in versions.items()])
-                print("%s : 0x%08x  (versions: %s)" % (img_type, target_address, versions_str))
+                versions_str = ''.join(["0x%08x: %s " %
+                                        (a, bytes2str(v) if v else 'None')
+                                        for a,v in versions.items()])
+                print("%s : 0x%08x  (versions: %s)" %
+                      (img_type_str, target_address, versions_str))
                 do_image_update(nor_image, src_image, sorted_addresses,
-                                img_type, target_address, versions[target_address],
+                                img_type, target_address,
+                                versions[target_address],
                                 src_info, dry_run)
             if versions and install_missing:
                 for address, version in versions.items():
                     if version == 0:
-                        print("Install %s missing at location 0x%08x" % (img_type, address))
+                        print("Install %s missing at location 0x%08x" %
+                              (img_type_str, address))
                         do_image_update(nor_image, src_image, sorted_addresses,
                                 img_type, address, version,
                                 src_info, dry_run)
 
         else:
-            print("%s: image not found on Flash => cannot update" % img_type)
+            print("%s: image not found on Flash => cannot update" % img_type_str)
             print("Consider using the full-rewrite option")
 
     duration = (datetime.datetime.now() - st).total_seconds()
@@ -1323,7 +1477,7 @@ def same_image_addresses(img_type, dir1, dir2):
     return dir1.get(img_type, [0,0]) == dir2.get(img_type, [0,0])
 
 
-def do_full_rewrite(nor_image, src_image, override_files):
+def do_full_rewrite(nor_image, src_image, override_files, nor_dir):
     ''' rewrite the nor flash: preserves only the enrollment certificate and host data '''
 
     st = datetime.datetime.now()
@@ -1341,7 +1495,8 @@ def do_full_rewrite(nor_image, src_image, override_files):
     # if their current locations match the new ones do not do anything: safer and faster
     # otherwise save them.
     #
-    nor_dir = nor_image.read_dir()
+    if nor_dir is None:
+        nor_dir = nor_image.read_dir()
 
     need_to_move = {}
     for img_type in HEADERLESS_4CC:
@@ -1350,22 +1505,12 @@ def do_full_rewrite(nor_image, src_image, override_files):
                                                           src_dir)
 
     # read the enrollment certificate from flash
-    if need_to_move['nrol']:
+    if need_to_move[b'nrol']:
         enrollment_cert = nor_image.read_enrollment_cert(nor_dir)
-        # save it to disk just in case --
-        if enrollment_cert:
-            with open('saved_enrollment_cert.bin', 'wb') as f:
-                f.write(enrollment_cert)
-                print("Enrollment certificate backup saved as %s" % f.name)
 
     # read the host data from flash
-    if need_to_move['hdat']:
+    if need_to_move[b'hdat']:
         host_data = nor_image.read_host_data(nor_dir)
-        # save it to disk just in case --
-        if host_data:
-            with open('saved_host_data.bin', 'wb') as f:
-                f.write(host_data)
-                print("Host data backup saved as %s" % f.name)
 
     # identify sources: get_srcs_images() will give a set of good images
     # with their addresses
@@ -1374,7 +1519,7 @@ def do_full_rewrite(nor_image, src_image, override_files):
     for img_type, src_info in src_images.items():
 
         print("writing %s image (version = %d) at 0x%08x" %
-              (img_type, src_info['version'], src_info['addr']))
+              (bytes2str(img_type), src_info['version'], src_info['addr']))
         # read the source image
         img = nor_image.prepare_src_image(img_type, src_image, src_info)
         new_image_size = NOR_IMAGE.size_from_img_header(img)
@@ -1386,15 +1531,15 @@ def do_full_rewrite(nor_image, src_image, override_files):
         nor_image.write_flash(src_info['addr'], img)
 
     # erase/write enrollment certificate
-    if need_to_move['nrol']:
-        for addr in set(src_dir['nrol']):
+    if need_to_move[b'nrol']:
+        for addr in set(src_dir[b'nrol']):
             nor_image.erase_at_addr_for_size(addr, ENROLLMENT_CERT_SIZE)
             if enrollment_cert:
                 nor_image.write_flash(addr, enrollment_cert)
 
     # erase/write host data: hdat should be in recent image but be prepared...
-    if need_to_move['hdat']:
-        addresses = src_dir.get('hdat', [FLASH_SIZE - QSPI_SECTOR_SIZE])
+    if need_to_move[b'hdat']:
+        addresses = src_dir.get(b'hdat', [FLASH_SIZE - QSPI_SECTOR_SIZE])
         addr = addresses[0] # use only one location
         nor_image.erase_at_addr_for_size(addr, 1) # erase only one sector
         if host_data:
@@ -1414,11 +1559,16 @@ def do_full_rewrite(nor_image, src_image, override_files):
     print("Completed in %dmn %ds" % (duration / 60, duration % 60))
 
 
-def secure_debug_access(challenge_interface):
-    ''' make sure current grants allow read/write to flash '''
+def prepare_recovery(challenge_interface):
+    ''' prepare for recovery operation:
+    1.make sure current grants allow read/write to flash
+    2.call prepare_qspi if in ROM that needs it
+    '''
 
-    # current debug grants?
+    # get status
     decoded_status = challenge_interface.get_status()
+
+    # debug grants check
     debug_grants = decoded_status[SBP_STATUS_STR[-1]]
     READ_WRITE_GRANTS = (1 << 16) | (1 << 17)
     need_debug_access = ((debug_grants & READ_WRITE_GRANTS) != READ_WRITE_GRANTS)
@@ -1426,6 +1576,13 @@ def secure_debug_access(challenge_interface):
     if need_debug_access:
         print("Debugging access required")
         unlock_chip(challenge_interface, READ_WRITE_GRANTS)
+
+    # call prepare_qspi if needed -- rom_6843 (prepare_qspi not needed on bld_3098)
+    in_rom = decoded_status[EXTRA_BYTES_KEY].startswith(b'rom_')
+    if in_rom:
+        print("In %s: prepare QSPI" % decoded_status[EXTRA_BYTES_KEY])
+        challenge_interface.prepare_qspi()
+
 
 
 def do_recovery(nor_image, args, local_dir=None):
@@ -1437,19 +1594,24 @@ def do_recovery(nor_image, args, local_dir=None):
     NOR_IMAGE_SRC_GZ = 'qspi_image_hw.bin.gz'
     CACHED_NOR_IMAGE_SRC = 'last_qspi_image_hw.bin'
 
-
-    # steps:
-    # get revision to select the proper eeproms
-    fs1600_rev = get_fs1600_rev()
-    eeprom_file = 'eeprom_fs1600_rev%d_%d.bin' % (fs1600_rev, args.chip)
+    # select the proper eeproms
+    # (FS1600 only for the moment)
+    try:
+        fs1600_rev = get_fs1600_rev()
+        eeprom_file = 'eeprom_f1_fs1600_rev%d_%d.bin' % (fs1600_rev, args.chip)
+    except:
+        eeprom_file = None
 
     # get full path to the 2 sources files: Nor Image and eeprom
     if local_dir:
-        eeprom_path = os.path.join(local_dir, eeprom_file)
+        eeprom_path = os.path.join(local_dir,
+                                   eeprom_file) if eeprom_file else None
         src_image_path = os.path.join(local_dir, NOR_IMAGE_SRC)
     else:
-        eeprom_path = get_remote_file(args.port, eeprom_file)
-        # if we can use the cache, and the file is there, use it instead of downloading
+        eeprom_path = get_remote_file(args.port,
+                                      eeprom_file) if eeprom_file else None
+        # if we can use the cache, and the file is there,
+        # use it instead of downloading
         script_dir = os.path.dirname(os.path.realpath(__file__))
         cached_file = os.path.join(script_dir, CACHED_NOR_IMAGE_SRC)
 
@@ -1459,23 +1621,37 @@ def do_recovery(nor_image, args, local_dir=None):
         else:
             # otherwise just download to canonical_path
             print("Downloading file to %s" % cached_file)
-            src_image_path = get_remote_file(args.port, NOR_IMAGE_SRC_GZ, cached_file)
+            src_image_path = get_remote_file(args.port,
+                                             NOR_IMAGE_SRC_GZ,
+                                             cached_file)
             decompress_file(src_image_path)
 
     try:
         challenge_interface = nor_image.get_challenge_interface()
-        src_image = NOR_IMAGE(DBG_File(src_image_path))
-        secure_debug_access(challenge_interface)
+        prepare_recovery(challenge_interface)
 
+        src_image = NOR_IMAGE(DBG_File(src_image_path))
         # now just have to do the full rewrite
-        override_files = [eeprom_path]
-        do_full_rewrite(nor_image, src_image, override_files)
+
+        nor_dir = None
+        # try installing the current one if no replacement eepr
+        if eeprom_path is None:
+            nor_dir = nor_image.read_dir()
+            eeprom_path = do_image_read(nor_image, b'eepr', False,
+                                        None, nor_dir)
+            if eeprom_path is None:
+                eeprom_path = do_image_read(nor_image, b'eepr', True,
+                                            None, nor_dir)
+
+        override_files = [eeprom_path] if eeprom_path else []
+        do_full_rewrite(nor_image, src_image, override_files, nor_dir)
 
     finally:
 
         # clean up the tmp files if remotely retrieved
-        if local_dir is None:
+        if local_dir is None and eeprom_file and eeprom_path:
             os.remove(eeprom_path)
+
 
 
 def execute_challenge_command(challenge_interface, args):
@@ -1484,6 +1660,7 @@ def execute_challenge_command(challenge_interface, args):
     if args.status:
         status_dict = challenge_interface.get_status()
         challenge_interface.print_decoded_status(status_dict)
+        return
 
     if args.otp:
         data = challenge_interface.read_otp()
@@ -1525,15 +1702,12 @@ def execute_challenge_command(challenge_interface, args):
         unlock_chip(challenge_interface, int(args.unlock,0))
         return
 
-    if args.enroll:
-        if args.port is None:
-            print("remote port must be specified for enrollment")
-            return
-
-        enroll_chip(challenge_interface, args.port)
+    if args.prepare_qspi:
+        challenge_interface.prepare_qspi()
         return
 
     # Next options are manipulating the Image on Flash:
+
     nor_image = NOR_IMAGE(challenge_interface)
 
     if args.recovery is not None:
@@ -1549,17 +1723,19 @@ def execute_challenge_command(challenge_interface, args):
 
     if args.full_rewrite is not None:
         src_image = NOR_IMAGE(DBG_File(args.full_rewrite))
-        do_full_rewrite(nor_image, src_image, args.override)
+        do_full_rewrite(nor_image, src_image, args.override, None)
         return
 
     if args.full_update is not None:
         src_image = NOR_IMAGE(DBG_File(args.full_update))
-        do_full_update( nor_image, src_image, args.override, dry_run=False, install_missing=args.install_missing)
+        do_full_update(nor_image, src_image, args.override, dry_run=False,
+                        install_missing=args.install_missing)
         return
 
     if args.explain_full_update is not None:
         src_image = NOR_IMAGE(DBG_File(args.explain_full_update))
-        do_full_update( nor_image, src_image, args.override, dry_run=True, install_missing=args.install_missing)
+        do_full_update(nor_image, src_image, args.override, dry_run=True,
+                       install_missing=args.install_missing)
         return
 
     if args.images:
@@ -1571,7 +1747,15 @@ def execute_challenge_command(challenge_interface, args):
         return
 
     if args.update is not None:
-        new_image = bytearray(open(args.update, 'rb').read())
+        if args.update[4] == ":":
+            # extract the file from this NOR Image file
+            src_image = NOR_IMAGE(DBG_File(args.update[5:]))
+            new_image = get_image_data(src_image,
+                                       str2bytes(args.update[:4]),
+                                       False,
+                                       None)
+        else:
+            new_image = bytearray(open(args.update, 'rb').read())
 
         if args.address:
             # unconditional write
@@ -1579,12 +1763,13 @@ def execute_challenge_command(challenge_interface, args):
             nor_image.write_flash(nor_addr, new_image)
             return
 
-        fourcc = str(new_image[2 * SIGNING_INFO_SIZE + 8:2 * SIGNING_INFO_SIZE + 12])
-        print("Image type %s" % fourcc)
+        fourcc_offset = 2 * SIGNING_INFO_SIZE + 8
+        fourcc = bytes(new_image[fourcc_offset:fourcc_offset+WORD_SIZE])
+        print("Image type %s" % bytes2str(fourcc))
         nor_dir = show_flash_dir(nor_image)
         nor_addr = get_addr_of_image(nor_dir, fourcc, args.BImage)
         if nor_addr is None:
-            print("No such image type '%s' on Flash" % fourcc)
+            print("No such image type '%s' on Flash" % bytes2str(fourcc))
             return
 
         sorted_addresses = sorted([addr for addresses in nor_dir.values()
@@ -1595,14 +1780,16 @@ def execute_challenge_command(challenge_interface, args):
 
     if args.read_header is not None:
         if args.read_header in HEADERLESS_4CC:
-            print("Images of type %s do not have any header" % args.read_header)
+            print("Images of type %s do not have any header" %
+                  bytes2str(args.read_header))
             return
 
         nor_dir = show_flash_dir(nor_image)
         nor_addr = get_addr_of_image(nor_dir, args.read_header, args.BImage)
         if nor_addr is None:
-            print("No such image type '%s' on Flash" % args.read_header)
-            return False
+            print("No such image type '%s' on Flash" %
+                  bytes2str(args.read_header))
+            return
 
         header_info = nor_image.get_auth_header_of_image_at_addr(nor_addr)
         print("%s version = %d size = %d (%s)" % (
@@ -1614,28 +1801,14 @@ def execute_challenge_command(challenge_interface, args):
         return
 
     if args.read is not None:
-        nor_dir = show_flash_dir(nor_image)
-
-        if args.read == 'nrol':
-            data = nor_image.read_enrollment_cert(nor_dir)
-            print("Enrollment cert:\n%s" % hex_str(data))
-        elif args.read == 'hdat':
-            data = nor_image.read_host_data(nor_dir)
-            print("Host data:\n%s" % hex_str(data))
+        out_file = do_image_read(nor_image, args.read, args.BImage,
+                                 args.output, None)
+        if out_file:
+            print("Image written to %s" % out_file)
         else:
-            nor_addr = get_addr_of_image(nor_dir, args.read, args.BImage)
-            if nor_addr is None:
-                print("No such image type '%s' on Flash" % (args.read))
-                return
-
-            print("Reading image '%s' at address 0x%08x" % (args.read, nor_addr))
-            data = nor_image.read_image(nor_addr)
-            if data:
-                open(args.output, 'wb').write(data)
-            else:
-                print("No image %s at %s location" %
-                      (args.read, "B" if args.BImage else "A"))
-            return
+            print("No image %s at %s location" %
+                 (bytes2str(args.read), "B" if args.BImage else "A"))
+        return
 
     if args.erase_sector is not None:
         nor_image.erase_sector_at_addr(int(args.erase_sector, 0))
@@ -1645,6 +1818,8 @@ def execute_challenge_command(challenge_interface, args):
         nor_addr = int(args.raw_read, 0)
         num_bytes = int(args.read_size, 0)
         bytes_read = 0
+        if args.output is None:
+            args.output = "raw_read_%d@0x%08x.bin" % (num_bytes, nor_addr)
         with open(args.output, 'wb') as f:
             while bytes_read < num_bytes:
                 cnt = min(64*1024, num_bytes - bytes_read)
@@ -1663,7 +1838,8 @@ def main():
     parser = argparse.ArgumentParser(
         description="Execute commands using the Challenge Interface via I2C")
 
-    spec_grp = parser.add_argument_group("General", "Can be used with all the options")
+    spec_grp = parser.add_argument_group("General",
+                                         "Can be used with all the options")
     spec_grp.add_argument("--chip", type=int, default=0, choices=[0,1],
                           help="chip instance number (default = 0)")
 
@@ -1672,7 +1848,8 @@ def main():
                           help="set log level")
 
     # Simple commands
-    diag_grp = parser.add_argument_group("Simple Diagnostics", "Simple diagnostics commands")
+    diag_grp = parser.add_argument_group("Simple Diagnostics",
+                                         "Simple diagnostics commands")
     diag_grp.add_argument("--status", action="store_true",
                           help="Display esecure device status")
     diag_grp.add_argument("--otp", action="store_true",
@@ -1684,73 +1861,90 @@ def main():
     diag_grp.add_argument("--customer-key", action="store_true",
                           help="Display the customer public key if present")
 
-    # Enrollment
-    enroll_grp = parser.add_argument_group("Enrollment", "Enrollment commands")
-    enroll_grp.add_argument("--enroll", action="store_true",
-                            help="Perform enrollment (--port must be specified)")
 
     # Debug grants
-    unlock_grp = parser.add_argument_group("Unlock Chip", "Unlock the chip for modifications")
+    unlock_grp = parser.add_argument_group("Unlock Chip",
+                                           "Unlock the chip for modifications")
     unlock_grp.add_argument("--unlock", nargs='?', const="0x030000",
                             action="store", metavar="OPTIONAL_DEBUG_GRANTS",
                             help="unlock the chip on secure systems")
     unlock_grp.add_argument("--cert",
                             metavar="DEVELOPER_CERTIFICATE",
-                            help="developer certificate (required for unlocking)")
+                            help="developer certificate (required to unlock)")
     unlock_grp.add_argument("--key",
                             metavar="DEVELOPER_KEY_PEM_FILE",
                             help="developer key (required for unlocking)")
     unlock_grp.add_argument("--start-cert",
                             metavar="START_CERTIFICATE",
-                            help="start certificate (required for unlocking when in the ROM) or when serial number of chip does not match the start certificate in the source image")
+                            help="start certificate "\
+                            "(required for unlocking when in the ROM) or "\
+                            "when serial number of chip does not match "\
+                            "the start certificate in the source image")
     unlock_grp.add_argument("--port",
-                            help="HTTP localhost port to use for unlock and remote recovery operations")
+                            help="HTTP localhost port to use for unlock "\
+                            "and remote recovery operations")
 
     # Flash manipulation
-    flash_grp = parser.add_argument_group("Flash Read/Write", "Read/Write the flash")
+    flash_grp = parser.add_argument_group("Flash Read/Write",
+                                          "Read/Write the flash")
+    flash_grp.add_argument("--prepare-qspi", action="store_true",
+                           help="configure flash for QSPI")
     flash_grp.add_argument("--read-directory", action="store_true",
                            help="read and print the directory on the Flash")
     flash_grp.add_argument("--images", action="store_true",
                            help="print information about all images on the Flash")
-    flash_grp.add_argument("--read", metavar="FOUR_CC",
-                           help="read the image with the fourcc type specified from the Flash")
-    flash_grp.add_argument("--read-header", metavar="FOUR_CC",
-                           help="read the header of the image with the fourcc type specified from the Flash")
+    flash_grp.add_argument("--read", metavar="FOUR_CC", type=str2bytes,
+                           help="read the image "\
+                           "with the fourcc type specified from the Flash")
+    flash_grp.add_argument("--read-header", metavar="FOUR_CC", type=str2bytes,
+                           help="read the header of the image "\
+                           "with the fourcc type specified from the Flash")
     flash_grp.add_argument("--raw-read", metavar="ADDRESS",
                            help="read 256 bytes at the adress specified")
     flash_grp.add_argument("--read-size", metavar="NUM_BYTES", default="256",
                            help="specify the number of bytes to raw-read")
-    flash_grp.add_argument("--output", default="read.bin", metavar="FILE",
-                           help="output file for read operations (default read.bin)")
+    flash_grp.add_argument("--output", metavar="FILE",
+                           help="output file for read operations "\
+                           "(default [<4cc>[A|B]|raw_read_<size>@<address>].bin)")
     flash_grp.add_argument("--erase-sector", metavar="ADDRESS",
                            help="erase the sector starting at address")
-    flash_grp.add_argument("--update", metavar="IMAGE_FILE",
-                           help="update the image on flash with the file specified")
+    flash_grp.add_argument("--update", metavar="IMAGE_FILE|FOUR_CC:NOR_IMAGE_FILE",
+                           help="update the image on flash with the file specified (IMAGE_FILE) "\
+                           "or the subimage from the NOR file image (FOUR_CC:NOR_IMAGE_FILE)")
     flash_grp.add_argument("--BImage", action="store_true",
-                           help="perform the operation on the B copy (read commands)")
+                           help="perform the operation on the B copy "\
+                           "(read commands, update command)")
     flash_grp.add_argument("--resume", default="0",
-                           help="resume writing at the offset specified (update command)")
+                           help="resume writing at the offset specified "\
+                           "(update command)")
     flash_grp.add_argument("--address",
                            help="address to use for unconditional update")
     flash_grp.add_argument("--nor-file", metavar="NOR_IMAGE_FILE",
-                           help="do not use the flash, use this file instead for the operation (testing)")
+                           help="do not use the flash, "\
+                           "use this file instead for the operation (testing)")
     flash_grp.add_argument("--explain-full-update", metavar="NOR_IMAGE_FILE",
-                           help="explain how to use specified NOR image to replace "
+                           help="explain how to use specified NOR image to replace "\
                            "most recent/add images on the Flash")
     flash_grp.add_argument("--full-update", metavar="NOR_IMAGE_FILE",
-                           help="use specified NOR image to replace most recent/add images on the Flash")
+                           help="use specified NOR image to replace "\
+                           "most recent/add images on the Flash")
     flash_grp.add_argument("--full-rewrite", metavar="NOR_IMAGE_FILE",
-                           help="use specified NOR image to completely rewrite a set of images on the Flash")
+                           help="use specified NOR image to completely rewrite "\
+                           "a set of images on the Flash")
     flash_grp.add_argument("--override", metavar="IMAGE_FILE", action="append",
                            help="use specified Image Files as source "
-                           "instead of the ones on the NOR IMAGE FILE (full-rewrite,full-update)")
+                           "instead of the ones on the NOR IMAGE FILE "\
+                           "(full-rewrite,full-update)")
     flash_grp.add_argument("--recovery", nargs='?', const=INVALID_DIRECTORY,
                            metavar='LOCAL_DIRECTORY',
                            help="recover the system automatically")
     flash_grp.add_argument("--use-cache", action="store_true",
-                           help="Use the last downloaded NOR Image file for remote recovery")
-    flash_grp.add_argument("--no-install-missing", dest='install_missing', action="store_false",
-                           help="Do not fill in missing firmware locations during full update")
+                           help="Use the last downloaded NOR Image file "\
+                           "for remote recovery")
+    flash_grp.add_argument("--no-install-missing", dest='install_missing',
+                           action="store_false",
+                           help="Do not fill in missing firmware locations"\
+                           " during full update")
 
     args = parser.parse_args()
 

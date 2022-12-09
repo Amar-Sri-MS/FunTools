@@ -45,6 +45,36 @@ verbose = False
 last_time = 0
 saw_time_backwards = False
 
+HU_LID = 0
+RGX_LID = 4
+LE_LID = 5
+ZIP_LID = 6
+
+ZIP_WU_IDs = {
+    0: "wu_cmd_deflate",
+    1: "wu_cmd_lzma_compress",
+    2: "wu_cmd_lzma_compress_with_static",
+	3: "wu_cmd_lzma_compress_phase1",
+    4: "wu_cmd_lzma_compress_phase1_with_static",
+    5: "wu_cmd_lzma_compress_phase2",
+    6: "wu_cmd_lzma_compress_phase2_with_static",
+    8: "wu_cmd_inflate",
+	9: "wu_cmd_lzma_decompress",
+   10: "wu_cmd_lzma_decompress_with_static"
+}
+
+RGX_WU_IDs = {
+    1: "wu_cmd_dfa_load",
+	2: "wu_cmd_dfa_unload",
+    4: "wu_cmd_dfa_search",
+	9: "wu_cmd_nfa_load",
+   12: "wu_cmd_nfa_search",
+}
+
+# value = parent transaction, key = child transaction
+HARDCODED_LINKING = {"nss_read_chunk_done": "epsq_dispatch",
+                     "nss_write_dma_done": "nss_write_nprps"}
+
 class TraceProcessor:
     """Converts list of events into transactions.
 
@@ -84,6 +114,16 @@ class TraceProcessor:
 
         # this is a queue representing all the hardware sends
         self.hardware_sends = []
+
+        # this is a dictionary of unpaired hardware sends.
+        # Mapping is done using LID from from faddr.
+        self.unpaired_hw_sends = {HU_LID    : [],   # to store all the HU sends
+                                  RGX_LID   : [],   # to store all the RGX sends
+                                  LE_LID    : [],   # to store all the LE sends
+                                  ZIP_LID   : []}   # to store all the ZIP sends
+
+        # stores parents for hardcoded linking
+        self.hardcoded_link_parent = []
 
     def remember_send(self, event, wu_id, arg0, arg1, dest, send_time,
                       is_timer, flags):
@@ -161,19 +201,53 @@ class TraceProcessor:
             current_event = event.TraceEvent(timestamp, timestamp,
                                              next_event.name, vp)
             self.vp_to_event[vp] = current_event
+
+            # flushing the buffer
             if len(self.start_events) != 0:
                 while len(self.hardware_sends) > 0:
                     # this is some hardware send that needs an end
                     previous_start = self.find_previous_start()
                     fake_hw_event = self.hardware_sends[-1]
                     fake_hw_event.end_time = timestamp
-
                     previous_start.successors.append(fake_hw_event)
+
+                    lid_value = fake_hw_event.vp.lid
+                    if (lid_value in [RGX_LID, LE_LID, ZIP_LID]) or (next_event.origin_faddr.is_hu()):
+                        self.unpaired_hw_sends[lid_value].append(fake_hw_event)
+
                     self.hardware_sends.pop()
 
             (predecessor, send_time,
              is_timer, flags) = self.find_previous_send(wu_id, arg0,
                                                         arg1, vp)
+
+            # pairing events here
+            # should merge here as well
+            next_event_lid = next_event.origin_faddr.lid
+            if (next_event_lid in [RGX_LID, LE_LID, ZIP_LID]) or (next_event.origin_faddr.is_hu()):
+                start = len(self.unpaired_hw_sends[next_event_lid]) -1
+                for i in range(start, -1, -1):
+                    if next_event.origin_faddr == self.unpaired_hw_sends[next_event_lid][i].vp:
+                        self.unpaired_hw_sends[next_event_lid][i].end_time = next_event.timestamp
+                        # paired, now merging
+                        self.unpaired_hw_sends[next_event_lid][i].successors.append(current_event)
+                        # TODO (SanyaSriv): Maybe do not put the dependent events in the list
+                        self.start_events.append(current_event)
+                        self.unpaired_hw_sends[next_event_lid].pop(i)
+                        return
+
+            # if start event is a parent, then adding to the parent list
+            if next_event.name in HARDCODED_LINKING.values():
+                self.hardcoded_link_parent.append(current_event)
+
+            # if start event is a child, then linking it with the latest parent
+            if next_event.name in HARDCODED_LINKING:
+                for i in range(len(self.hardcoded_link_parent) -1, -1, -1):
+                    if self.hardcoded_link_parent[i].label == HARDCODED_LINKING[next_event.name]:
+                        self.hardcoded_link_parent[i].successors.append(current_event)
+                        self.start_events.append(current_event)
+                        return
+
 
             if predecessor and int(flags) & 2:
                     # Hardware WU.
@@ -181,7 +255,7 @@ class TraceProcessor:
                                                 current_event.start_time,
                                                 'DMA',
                                                 predecessor.vp)
-                    hw_event.is_timer = True
+                    hw_event.is_hw_dma = True
                     predecessor.successors.append(hw_event)
                     predecessor = hw_event
                     self.start_events.append(predecessor)
@@ -210,15 +284,10 @@ class TraceProcessor:
 
             else:
                 # New event not initiated by a previous WU.
-                if len(self.start_events) != 0:
-                    previous_start = self.find_previous_start()
-                    previous_start.successors.append(current_event)
-                    self.start_events.append(current_event)
-                else:
-                    transaction = event.Transaction(current_event)
-                    self.transactions.append(transaction)
-                    current_event.transaction = transaction
-                    self.start_events.append(current_event)
+                transaction = event.Transaction(current_event)
+                self.transactions.append(transaction)
+                current_event.transaction = transaction
+                self.start_events.append(current_event)
 
         elif next_event.event_type == event.WU_END_EVENT:
             # Identify the matching start event, and set the end time.
@@ -248,29 +317,34 @@ class TraceProcessor:
 
             curr = None
 
-            # TODO(SanyaSriv): Identify associated hardware accelerator WU using faddr, not regex.
-            if re.match(".*LE.*", str(next_event.dest_faddr)) != None:
+            if next_event.dest_faddr.lid == LE_LID:
                 current_event = event.TraceEvent(send_time, send_time,
                     "HW-LE: " + next_event.name, next_event.dest_faddr)
                 # will now connect this to the previous event
                 current_event.is_hw_le = True
                 self.hardware_sends.append(current_event)
 
-            if re.match(".*ZIP.*", str(next_event.dest_faddr)) != None:
+            if next_event.dest_faddr.lid == ZIP_LID:
+                wu_name = "HW-ZIP: " + "Unknown_wuid:" + hex(next_event.wuid)
+                if next_event.wuid in ZIP_WU_IDs:
+                    wu_name = ZIP_WU_IDs[next_event.wuid]
                 current_event = event.TraceEvent(send_time, send_time,
-                    "HW-ZIP: " + next_event.name, next_event.dest_faddr)
+                    wu_name, next_event.dest_faddr)
                 current_event.is_hw_zip = True
                 self.hardware_sends.append(current_event)
 
-            if re.match(".*HU.*", str(next_event.dest_faddr)) != None:
+            if next_event.dest_faddr.is_hu():
                 current_event = event.TraceEvent(send_time, send_time,
                     "HW-HU: " + next_event.name, next_event.dest_faddr)
                 current_event.is_hw_hu = True
                 self.hardware_sends.append(current_event)
 
-            if re.match(".*RGX.*", str(next_event.dest_faddr)) != None:
+            if next_event.dest_faddr.lid == RGX_LID:
+                wu_name = "HW-RGX: " + "Unknown_wuid:" + hex(next_event.wuid)
+                if next_event.wuid in RGX_WU_IDs:
+                    wu_name = RGX_WU_IDs[next_event.wuid]
                 current_event = event.TraceEvent(send_time, send_time,
-                    "HW-RGX: " + next_event.name, next_event.dest_faddr)
+                    wu_name, next_event.dest_faddr)
                 current_event.is_hw_rgx = True
                 self.hardware_sends.append(current_event)
 

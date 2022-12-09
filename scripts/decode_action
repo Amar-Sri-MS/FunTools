@@ -1,0 +1,204 @@
+#!/usr/bin/env python3
+
+"""
+This script is for decoding a WU action value. At the moment it only really
+supports decoding the src, dest, and WUID.
+
+The script expects to receive a space separated list of actions as an argument,
+or newline separated via stdin (piped in).
+
+You can also specify F1 vs S1 via the --chip argument. For most cases, they
+will return the same result. The minor difference is that S1 has more GIDs for
+NU.
+
+benturrubiates at vodex (venv) :: $WORKSPACE/FunTools/decode_action 0x822fcbf000c40fbe 0x820ecd1010e60fc4
+* wuid table idx 0xfbe (raw wuid 0xc40fbe)
+  src FA5:31:0
+  dest FA5:31:0
+* wuid table idx 0xfc4 (raw wuid 0xe60fc4)
+  src FA1:27:0
+  dest FA6:17:1
+benturrubiates at vodex (venv) :: echo "0x822fcbf000c40fbe\n0x820ecd1010e60fc4" | $WORKSPACE/FunTools/decode_action
+* wuid table idx 0xfbe (raw wuid 0xc40fbe)
+  src FA5:31:0
+  dest FA5:31:0
+* wuid table idx 0xfc4 (raw wuid 0xe60fc4)
+  src FA1:27:0
+  dest FA6:17:1
+"""
+
+
+import argparse
+import sys
+
+
+class Config(object):
+    FADDR_GID_SHIFT = 15
+    FADDR_GID_MASK = 0x1F
+
+    FADDR_LID_SHIFT = 10
+    FADDR_LID_MASK = 0x1F
+
+    GID_CC = 8
+
+    GID_NU_BASE = 9
+
+    GID_HU_BASE = 16
+    GID_HU_MAX = 19
+
+    GID_HNU_BASE = 20
+    GID_HNU_MAX = 21
+
+    WUACT_ID_SHIFT = 0
+    WUACT_ID_MASK = 0xFFFFFF
+    WUACT_ID_TABLE_IDX_MASK = 0x00FFFF
+
+    WUACT_TRACE_SHIFT = 25
+    WUACT_TRACE_MASK = 0x1
+
+    WUACT_DEST_SHIFT = 26
+    WUACT_DEST_MASK = 0xFFFFF
+
+    WUACT_SRC_SHIFT = 46
+    WUACT_SRC_MASK = 0x3FF
+
+    FADDR_NUQ_SHIFT = 1
+    FADDR_NUQ_MASK = 0x3FFF
+
+    FADDR_TQ_SHIFT = 2
+    FADDR_TQ_MASK = 0xFF
+
+
+class S1Config(Config):
+    GID_NU_MAX = 9
+
+
+class F1Config(Config):
+    GID_NU_MAX = 11
+
+
+class Faddr(object):
+    def __init__(self, config, addr):
+        self.config = config
+        self.addr = addr
+
+    @property
+    def gid(self):
+        return (
+            self.addr >> self.config.FADDR_GID_SHIFT
+        ) & self.config.FADDR_GID_MASK
+
+    @property
+    def is_nu(self):
+        return self.config.GID_NU_BASE <= self.gid <= self.config.GID_NU_MAX
+
+    @property
+    def lid(self):
+        if self.is_nu:
+            return 0
+
+        return (
+            self.addr >> self.config.FADDR_LID_SHIFT
+        ) & self.config.FADDR_LID_MASK
+
+    @property
+    def nu_queue(self):
+        return (
+            self.addr >> self.config.FADDR_NUQ_SHIFT
+        ) & self.config.FADDR_NUQ_MASK
+
+    @property
+    def tag_queue(self):
+        return (
+            self.addr >> self.config.FADDR_TQ_SHIFT
+        ) & self.config.FADDR_TQ_MASK
+
+    @property
+    def queue(self):
+        if self.is_nu:
+            return self.nu_queue
+
+        return self.tag_queue
+
+    def __str__(self):
+        return "FA{gid}:{lid}:{queue}".format(
+            gid=self.gid, lid=self.lid, queue=self.queue
+        )
+
+
+class Action(object):
+    def __init__(self, config, action):
+        self.config = config
+        self.action = action
+
+    @property
+    def src(self):
+        src = (
+            (self.action >> self.config.WUACT_SRC_SHIFT)
+            & self.config.WUACT_SRC_MASK
+        ) << self.config.FADDR_LID_SHIFT
+
+        return Faddr(self.config, src)
+
+    @property
+    def dest(self):
+        dest = (
+            self.action >> self.config.WUACT_DEST_SHIFT
+        ) & self.config.WUACT_DEST_MASK
+
+        return Faddr(self.config, dest)
+
+    @property
+    def wuid(self):
+        return (
+            self.action >> self.config.WUACT_ID_SHIFT
+        ) & self.config.WUACT_ID_MASK
+
+    @property
+    def wuid_table_idx(self):
+        return (
+            self.action >> self.config.WUACT_ID_SHIFT
+        ) & self.config.WUACT_ID_TABLE_IDX_MASK
+
+    def __str__(self):
+        return "* wuid table idx {wuidx} (raw wuid {wuid})\n  src {src}\n  dest {dest}".format(
+            wuidx=hex(self.wuid_table_idx),
+            wuid=hex(self.wuid),
+            src=self.src,
+            dest=self.dest,
+        )
+
+
+def handle_args():
+    description = "Decode WU actions"
+
+    parser = argparse.ArgumentParser(description=description)
+
+    parser.add_argument(
+        "actions",
+        nargs="*",
+        default=[],
+        type=lambda x: int(x, 0),
+        help="List of action values. If not provided, actions are expected on stdin",
+    )
+    parser.add_argument("--chip", default="f1", type=str, choices=["f1", "s1"])
+
+    return parser.parse_args()
+
+
+def main(args):
+    config = F1Config() if args.chip == "f1" else S1Config()
+
+    if args.actions:
+        for action in args.actions:
+            print(Action(config, action))
+    else:
+        for line in sys.stdin:
+            action = int(line.strip(), 0)
+            print(Action(config, action))
+
+
+if __name__ == "__main__":
+    args = handle_args()
+
+    main(args)

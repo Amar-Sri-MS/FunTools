@@ -1,0 +1,4 @@
+file_names:
+  description: "Baseline"
+  input_file_url: http://palladium-jobs.fungible.local:8080/job/6717786/raw_file/odp/uartout0.0.txt
+out_dir: /Users/insop/tmp/WS/tmp

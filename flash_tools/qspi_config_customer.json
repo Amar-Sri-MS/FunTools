@@ -35,7 +35,13 @@
         },
         "key_hash2.bin": {
             "name":"cpk2"
-        }
+        },
+	"key_hash3.bin": {
+	    "name":"cpk3"
+	},
+	"key_hash4.bin": {
+	    "name":"cpk4"
+	}
     },
     "certificates": {
         "customer_certificate.bin": {

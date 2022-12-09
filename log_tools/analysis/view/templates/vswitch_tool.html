@@ -5,6 +5,9 @@
     </head>
     <body>
         {% include "nav_bar.html" ignore missing %}
+        <div class="content">
+            <button class="btn" data-web_event="DASHBOARD_BUTTON" onclick="window.open('/log/{{log_id}}/dashboard', '_self')">Back to Dashboard</button>
+        </div>
         <div class="content" id="lifecycle" style="display: none;">
             <div class="container">
                 <h3>Created vSwitches</h3>

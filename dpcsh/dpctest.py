@@ -138,7 +138,7 @@ class TestDPCCommands(unittest.TestCase):
             original_data = b'b' * 100000
             fp.write(original_data)
             fp.flush()
-            uuid = self.client.execute('blob', ['store', ['quote', self.client.blob_from_file(fp.name)]])
+            uuid = self.client.execute('blob', ['store', self.client.dpc_blob_from_file(fp.name)])
             data = self.client.blob_to_string(self.client.execute('blob', ['retrieve', uuid]))
             self.assertEqual(original_data, data)
 

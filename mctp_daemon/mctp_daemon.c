@@ -33,7 +33,9 @@ struct server_cfg_stc cfg = {
 	.lockfile = "/tmp/mctp_daemon.lock",
 	.logfile = "/tmp/mctp_daemon.log",
 	.fru_filename = NULL,
+	.uuid = {0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf},
 	.debug = 0,
+	.polling = 100,
 };
 
 static void segfault_handler()
@@ -48,6 +50,15 @@ static void segfault_handler()
         exit(0);
 }
 
+#define CHAR2HEX(n)		((n) >='A' && (n) <= 'F') ? ((n) - 0x37) : ((n) >= 'a' && (n) <= 'f') ? ((n) - 0x57) : ((n) >= '0' && ((n) <= '9')) ? ((n) - 0x30) : 0
+static void set_uuid(char *uuid)
+{
+	int len = (strlen(uuid) > 32) ? 32 : strlen(uuid);
+
+	for(int i =0, j = 0; i < len; i+=2, j++) 
+		cfg.uuid[j] = (CHAR2HEX(uuid[i]) << 8) + CHAR2HEX(uuid[i+1]);
+}
+
 static void usage()
 {
 	fprintf(stderr, "usage: mctp_daemon [options]\n");
@@ -56,6 +67,7 @@ static void usage()
 	fprintf(stderr, "\t-h | --help   : Print this help\n");
 	fprintf(stderr, "\t-l | --log    : Specify logfile\n");
 	fprintf(stderr, "\t-n | --nosu   : Run as non-root\n");
+	fprintf(stderr, "\t-u | --uuid   : Set UUID\n");
 	fprintf(stderr, "\t-v | --verbose: Be verbose\n");
 	fprintf(stderr, "\t-D | --debug  : Turn on debug mode\n");
 	fprintf(stderr, "\t-E | --eid    : Set termious EID\n");
@@ -81,14 +93,17 @@ int main(int argc, char *argv[])
                 {"log",         1, 0, 'l'},
 		{"nosu",	0, 0, 'n'},
 		{"pcie_id",	0, 0, 'p'},
+		{"uuid",	1, 0, 'u'},
                 {"verbose",     1, 0, 'v'},
 		{"debug",	0, 0, 'D'},
 		{"eid",		1, 0, 'E'},
 		{"fru",		1, 0, 'F'},
 		{"nopec",	0, 0, 'I'},
                 {"lock",        1, 0, 'L'},
+                {"polling",     1, 0, 'P'},
                 {"tid",         1, 0, 'T'},
 		{"version",	0, 0, 'V'},
+		{"nolencheck",	0, 0, 'Z'},
                 {0, 0, 0, 0}};
 
         opterr = 0;
@@ -105,7 +120,7 @@ int main(int argc, char *argv[])
         sigaction(SIGSEGV, &sa, NULL);
 
 
-        while ((c = getopt_long(argc, argv, "abhl:np:vDE:F:IL:T:V", long_args, &index)) != -1) {
+        while ((c = getopt_long(argc, argv, "abhl:np:u:vDE:F:IL:P:T:VZ", long_args, &index)) != -1) {
 		switch (c) {
 		case 'a':
 			pldm_vars.flags |= MCTP_VDM_ASYNC_ENABLED;
@@ -125,6 +140,10 @@ int main(int argc, char *argv[])
 
 		case 'p':
 			cfg.pcie_req_id = (uint16_t)strtol(optarg, NULL, 0);
+			break;
+
+		case 'u':
+			set_uuid(optarg);
 			break;
 
 		case 'L':
@@ -159,6 +178,10 @@ int main(int argc, char *argv[])
 			flags |= FLAGS_NO_SMBUS_PEC_CHECK;
 			break;
 
+		case 'P':
+			cfg.polling = (uint8_t)strtol(optarg, NULL, 0);
+			break;
+
 		case 'T':
 			pldm_vars.async_tid = (uint8_t)strtol(optarg, NULL, 0);
 			break;
@@ -167,13 +190,15 @@ int main(int argc, char *argv[])
 			print_version("MCTP Daemon");
 			exit(EXIT_SUCCESS);
 
+		case 'Z':
+			flags |= FLAGS_NO_PLDM_LEN_CHECK;
+			break;
+
 		default:
 			fprintf(stderr, "Unknown option %c\n", c);
 			exit(EXIT_FAILURE);
 		}
 	}
-
-	printf("Running debugging daemon\n");
 
 	if ((log_fd = fopen(log_file, "a+")) == NULL) {
 		fprintf(stderr, "Error - cannot open logfile %s\n", log_file);

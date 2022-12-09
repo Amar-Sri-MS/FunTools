@@ -9,7 +9,14 @@
 #include "auto_conf.h"
 
 #define mctp_err(fmt, arg...)          	log("MCTP: ERROR - "fmt, ##arg)
-#define mctp_dbg(fmt, arg...)		if (cfg.debug & MCTP_DEBUG) printf("%s: "fmt,__func__, ##arg)
+#define mctp_dbg(fmt, arg...)		\
+		if (cfg.debug & MCTP_DEBUG) {								\
+			time_t T= time(NULL);                                                           \
+			struct  tm tm = *localtime(&T);                                                 \
+			printf("%02d/%02d/%04d ",tm.tm_mday, tm.tm_mon+1, tm.tm_year+1900);    		\
+			printf("%02d:%02d:%02d ",tm.tm_hour, tm.tm_min, tm.tm_sec);			\
+			printf("%s: "fmt,__func__, ##arg);						\
+		}
 
 #define MAX_MCTP_PKT_SIZE	(64 + 4)
 
@@ -64,6 +71,10 @@
 #define MCTP_TO_MASK            1
 #define MCTP_TAG_POS            0
 #define MCTP_TAG_MASK           3
+
+// TransprtProtocol Binding Type (DSP0245)
+#define TRANSPORT_TYPE_MCTP 0x0
+#define TRANSPORT_TYPE_OEM  0xff
 
 typedef struct __attribute__((packed)) {
 	uint8_t	hdr_ver;
@@ -192,6 +203,12 @@ typedef struct __attribute__((__packed__)) {
 #define ERR_NO_RETAIN			-9
 #define ERR_BUFFER_OVERFLOW		-10
 
+// MCTP SetEID Message Request Data (DSP0236)
+#define SET_EID                 0x0
+#define FORCE_EID		0x1
+#define RESET_EID		0x2
+#define SET_DISC_FLAG		0x3
+
 struct mctp_ops_stc {
 	int (*init)(void);
 	int (*recv)(uint8_t *, int);
@@ -207,7 +224,6 @@ struct mctp_ops_stc {
 #define DEFAULT_MCTP_FRAGMENT_SIZE		68
 struct mctp_ep_retain_stc {
 	uint32_t eid:8, iid:8, fragsize:8, support:8;
-	uint8_t uuid[16];
 	void *ep_priv_data;
 };
 

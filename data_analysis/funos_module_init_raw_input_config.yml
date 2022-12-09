@@ -1,0 +1,8 @@
+file_names:
+  # par_work
+  # description: "Par_work"
+  # input_file_url: http://palladium-jobs.fungible.local:8080/job/6645311/raw_file/rdp/S2_Full/cdn_uartout0.txt
+  # reference
+  description: "Baseline"
+  input_file_url: http://palladium-jobs.fungible.local:8080/job/6576923/raw_file/odp/cdn_uartout0.txt
+out_dir: /Users/insop/tmp/WS/tmp_raw

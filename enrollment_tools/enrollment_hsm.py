@@ -18,9 +18,6 @@ import pkcs11
 import pkcs11.util.rsa
 from asn1crypto import core, pem, keys, x509
 
-# FIXME: this should be a shared constants file
-RSA_KEY_SIZE_IN_BITS = 2048
-
 
 def read(filename, nbytes=None, verbose=False):
     if filename is None:
@@ -132,11 +129,11 @@ def get_modulus(pub):
 def get_exponent(pub):
     return pub[pkcs11.Attribute.PUBLIC_EXPONENT]
 
-def generate_rsa_key_pair(rw_session, label):
+def generate_rsa_key_pair(rw_session, label, key_size_bits):
     ''' Create and returns a new RSA key pair in the store '''
     return rw_session.generate_keypair(key_type=pkcs11.KeyType.RSA,
                                        id=binascii.hexlify(label.encode()),
-                                       key_length=RSA_KEY_SIZE_IN_BITS,
+                                       key_length=key_size_bits,
                                        label=label,
                                        store=True)
 
@@ -163,7 +160,7 @@ def get_private_rsa_with_modulus(ro_session, modulus):
 
     return private
 
-def create_rsa(token_name, label):
+def create_rsa(token_name, label, key_size_bits):
 
     token, password = get_token(token_name)
 
@@ -180,7 +177,7 @@ def create_rsa(token_name, label):
     if public_modulus is None:
         with token.open(user_pin=password, rw=True) as session:
             print("Generating key " + label)
-            public, _ = generate_rsa_key_pair(session, label)
+            public, _ = generate_rsa_key_pair(session, label, key_size_bits)
             public_modulus = get_modulus(public)
             print("Key created: modulus:")
     else:
@@ -477,6 +474,10 @@ def parse_and_execute():
     parser.add_argument("-i", "--input",  dest="in_path",
                         help="input file name", metavar="FILE")
 
+    parser.add_argument("-b", "--bits-size", dest="key_size_bits",
+                        default="2048",
+                        help="created key size in bits (create) (default: 2048)")
+
     parser.add_argument("-o", "--output", dest="out_path",
                         help="location to output to", metavar="FILE")
 
@@ -508,7 +509,8 @@ def parse_and_execute():
         export_pub_key(options.token, options.out_path,
                        options.key_label, options.c_source)
     elif options.command == 'create':
-        create_rsa(options.token, options.key_label)
+        create_rsa(options.token, options.key_label,
+                   int(options.key_size_bits, 0))
     elif options.command == 'import':
         import_key(options.token, options.in_path, options.key_label)
     elif options.command == 'x509':

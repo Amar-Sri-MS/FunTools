@@ -17,11 +17,14 @@
 #include "mctp.h"
 #include "pcie_vdm.h"
 #include "pldm_pmc.h"
+#include <errno.h> 
 
 #define RX_FIFO         	"/tmp/mctp_pcie_rx"
 #define TX_FIFO         	"/tmp/mctp_pcie_tx"
 
 #define MAX_PCIE_TX_PKT_SIZE	(MAX_MCTP_PKT_SIZE + sizeof(struct pcie_vdm_hdr_stc))
+
+#define SYNC_PCIE_RW_FIFO_FILE "/tmp/.platform/sync_rw_pcie_fifo"
 
 extern uint8_t eid;
 
@@ -35,6 +38,7 @@ static struct pcie_vdm_rec_data vdm_data = {
 	.vendor_id = 0,
 	.trgt_id = 0,
 	.cookie = 0,
+	.bus_owner_id = 0,
 };
 
 static struct mctp_ep_retain_stc vdm_retain = {
@@ -42,8 +46,6 @@ static struct mctp_ep_retain_stc vdm_retain = {
 	.iid = 0,
 	.fragsize = DEFAULT_MCTP_FRAGMENT_SIZE,
 	.support = SUPPORT_MCTP_CNTROL_MSG | SUPPORT_PLDM_OVER_MCTP | SUPPORT_VDM_OVER_MCTP | SUPPORT_OEM_OVER_MCTP | SUPPORT_ASYNC_EVENTS,
-	.uuid = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-		 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f},
 	.ep_priv_data = (void *)&vdm_data,
 };
 
@@ -79,8 +81,8 @@ static int __init(void)
 
 	reset_ep();
 
-        if ((tx_fifo_fd = open(TX_FIFO, O_RDWR | O_CREAT)) < 0) {
-                log_err("cannot open %s for write\n", TX_FIFO);
+        if ((tx_fifo_fd = open(TX_FIFO, O_RDWR | O_NONBLOCK | O_CREAT)) < 0) {
+                log_err("cannot open %s for write, errno: %d\n", TX_FIFO, errno);
                 return -1;
         }
 
@@ -101,7 +103,7 @@ static int __receive(uint8_t *buf, int len)
 	hdr_data->trgt_id = ntoh16(hdr->req_id);
 	hdr_data->vendor_id = ntoh16(hdr->vendor_id);
 
-	vdm_ep.rx_cnt = len - sizeof(struct pcie_vdm_hdr_stc);
+	vdm_ep.rx_cnt = len - sizeof(struct pcie_vdm_hdr_stc) - (hdr->tag >> 4);
 	vdm_ep.rx_pkt_buf = hdr->data;
 
 	if (cfg.debug & EP_DEBUG) 
@@ -183,13 +185,12 @@ static int __async(uint8_t *buf)
 
 static int __send(int len)
 {
-
 	if (!len) {
 		log_err("PCIE_VDM: Error - payload length = 0\n");
 		reset_ep();
 		return -1;
 	}
-
+	char syscom[128];
 	vdm_ep.flags |= MCTP_IN_FLIGHT;
 	vdm_ep.tx_cnt += vdm_ep.payload;
 
@@ -201,8 +202,20 @@ static int __send(int len)
 #ifdef CONFIG_USE_PCIE_VDM_INTERFACE
 	write(tx_fifo_fd, tx_pkt_buf, len);
 #endif
+	// Producer is faster then consumer so creating a bit of Pause
+	// till consumer consumes
+	snprintf(syscom, sizeof(syscom), "/bin/touch %s", SYNC_PCIE_RW_FIFO_FILE);
+	system(syscom);
 
 	while (vdm_ep.tx_cnt != vdm_ep.tx_len) {
+		uint32_t counter = 0;
+		//Give some time to FIFO reader (CCLinux Glue-layer)
+		//as its slower then FIFO writer (mctp_daemon) in
+		//extended Packet case alone
+		while ((access(SYNC_PCIE_RW_FIFO_FILE, F_OK) == 0) && counter < 10) {
+			counter++;
+		}
+
 		len = mctp_transmit(&vdm_ep);
 		vdm_ep.tx_cnt += vdm_ep.payload;
 		
@@ -215,6 +228,9 @@ static int __send(int len)
 #endif
 	}
 
+	//clean-up
+	snprintf(syscom, sizeof(syscom), "/bin/rm -f %s", SYNC_PCIE_RW_FIFO_FILE);
+	system(syscom);
 	reset_ep();
 	return 0;
 }

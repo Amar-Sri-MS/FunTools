@@ -53,6 +53,7 @@ endif
 
 
 install: jsonutil
+	./basic_tests.sh
 	mkdir -p $(SDK_INSTALL_DIR)/bin/$(OS)/$(ARCH)
 	cp jsonutil $(SDK_INSTALL_DIR)/bin/$(OS)/$(ARCH)
 	$(DARWIN_ASAN_FIXUP)

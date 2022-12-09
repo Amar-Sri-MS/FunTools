@@ -343,7 +343,6 @@ void _pretty_print_cfg(uint32_t depth, struct hw_hsu_api_link_config *cfg)
 	}
 }
 
-
 /** json -> config conversion **/
 static uint64_t _sku2flags(const struct fun_json *sku)
 {
@@ -437,181 +436,323 @@ static bool _parse_hostunits(struct hw_hsu_api_link_config *cfg,
 	return true;
 }
 
+/**
+ *	get_index_from_key - extract index from key
+ *	@key: key from json structure
+ *
+ *	Key is in the form of key_n, where n is the index.
+ *	For example hu_0, vfn_2 etc.
+ *	Check the index value and re-format
+ *	Extracts index and return status with true if valid index found
+ *	else return false if invalid.
+ */
+static bool get_index_from_key(const char *key, uint32_t *index)
+{
+	char *str = strchr(key, '_');
+	bool valid_flag = true;
+	if (!str) {
+		valid_flag = false;
+	} else if (!strcmp(str, "all") || !strcmp(str, "*")) {
+		*index = 0xffffffff;
+	} else {
+		*index = atoi(str);
+	}
+	return valid_flag;
+}
+
+/**
+ *	_parse_hostunit_cfg - Parse the final level dictionary
+ *	Fill values in cfg structure
+ *	@cfg: hsu api link config to be filled with extracted config
+ *	@ring: host unit id
+ *	@chu: Host unit dictionary, where keys to be searched
+ *
+ *	Returns true/false after extracting configs to cfg
+ */
+static bool _parse_hostunit_cfg(struct hw_hsu_api_link_config *cfg,
+			const struct fun_json *chu, uint32_t ring)
+{
+	uint32_t cid = 0;
+	int64_t ctl_en = 0;
+	uint64_t ring_flags = 0, bif = 0;
+	const char *bif_mode = NULL;
+	/*
+	 * If "acu" is present and is "true", set the ring ARM Cluster
+	 * Unit flag.
+	 */
+	if (fun_json_lookup_bool_default(chu, "acu", false))
+		ring_flags |= htobe64(HW_HSU_API_LINK_CONFIG_RING_FLAGS_ACU);
+
+	/* get the bif and en bits */
+	if (!fun_json_lookup_string(chu, "bif_mode", &bif_mode)) {
+		eprintf("bad bif mode\n");
+		return false;
+	}
+
+	if (!__str2val(_bif_valtab, bif_mode, &bif)) {
+		eprintf("bad bif value\n");
+		return false;
+	}
+
+	if (!fun_json_lookup_int64(chu, "ctl_en", &ctl_en)) {
+		eprintf("bad ctl_en\n");
+		return false;
+	}
+
+	/* now we've extracted something from the json, we can
+	 * patch up the cfg
+	 */
+	cfg->ring_config[ring].bif = htobe32(bif);
+	cfg->ring_config[ring].ring_flags |= ring_flags;
+
+	uint64_t cid_en = htobe64(HW_HSU_API_LINK_CONFIG_CID_FLAGS_CID_ENABLED);
+	for (cid = 0; cid < HW_HSU_API_LINK_CONFIG_V0_MAX_CIDS; cid++) {
+		if ((ctl_en & (1ULL << cid)) == 0)
+			continue;
+		cfg->ring_config[ring].cid_config[cid].cid_flags |= cid_en;
+	}
+	return true;
+}
+
+/**
+ *	_parse_hostunit - Parse the final level dictionary
+ *	Fill values in cfg structure
+ *	@cfg: hsu api link config to be filled with extracted config
+ *	@sku: sku root for HuInterface/HostUnit
+ *
+ *	Returns true/false after extracting configs
+ */
 static bool _parse_hostunit(struct hw_hsu_api_link_config *cfg,
 			    const struct fun_json *sku)
 {
 	const struct fun_json *hu = NULL, *chu = NULL;
 	fun_json_index_t i = 0, count = 0;
-	uint32_t ring = 0, cid = 0;
-	int64_t ctl_en = 0;
-	uint64_t ring_flags = 0, bif = 0;
-	const char *bif_mode = NULL;
-	
-	
+	uint32_t ring = 0;
+
 	assert(fun_json_is_dict(sku));
 	
 	hu = fun_json_lookup(sku, "HuInterface/HostUnit");
-	if (!fun_json_is_array(hu)) {
+	if (fun_json_is_array(hu)) {
+		/* iterate over each item */
+		count = fun_json_array_count(hu);
+		for (i = 0; i < count; i++) {
+			/* lookup the item */
+			chu = fun_json_array_at(hu, i);
+			if (!fun_json_is_dict(chu)) {
+				eprintf("invalid HostUnit array\n");
+				return false;
+			}
+
+			/* extract the ring from _args array */
+			ring = _args_as_ring(chu);
+			if (ring >= HW_HSU_API_LINK_CONFIG_V0_MAX_RINGS) {
+				/* most likely posix */
+				continue;
+			}
+			if(!_parse_hostunit_cfg(cfg, chu, ring))
+				return false;
+		}
+	} else if (fun_json_is_dict(hu)) {
+		uint64_t iterator = fun_json_dict_iterator(hu);
+		const char *key;
+		const struct fun_json *chu;
+		while(fun_json_dict_iterate(hu, &iterator, &key, &chu)) {
+			if(chu && fun_json_is_dict(chu)) {
+				if(!get_index_from_key(key, &ring)) {
+					eprintf("invalid key\n");
+					continue;
+				}
+				if (ring >= HW_HSU_API_LINK_CONFIG_V0_MAX_RINGS) {
+					/* most likely posix */
+					continue;
+				}
+				if(!_parse_hostunit_cfg(cfg, chu, ring))
+					return false;
+			} else {
+				eprintf("invalid HostUnit\n");
+				return false;
+			}
+		}
+	} else {
 		eprintf("failed to find HostUnit table\n");
 		return false;
 	}
-
-	/* iterate over each item */
-	count = fun_json_array_count(hu);
-	for (i = 0; i < count; i++) {
-		/* lookup the item */
-		chu = fun_json_array_at(hu, i);
-		if (!fun_json_is_dict(chu)) {
-			eprintf("invalid HostUnit array\n");
-			return false;
-		}
-
-		/* extract the ring from _args array */
-		ring = _args_as_ring(chu);
-		if (ring >= HW_HSU_API_LINK_CONFIG_V0_MAX_RINGS) {
-			/* most likely posix */
-			continue;			
-		}
-
-		/*
-		 * If "acu" is present and is "true", set the ring ARM Cluster
-		 * Unit flag.
-		 */
-		if (fun_json_lookup_bool_default(chu, "acu", false))
-			ring_flags |= htobe64(HW_HSU_API_LINK_CONFIG_RING_FLAGS_ACU);
-
-		/* get the bif and en bits */
-		if (!fun_json_lookup_string(chu, "bif_mode", &bif_mode)) {
-			eprintf("bad bif mode\n");
-			return false;
-		}
-
-		if (!__str2val(_bif_valtab, bif_mode, &bif)) {
-			eprintf("bad bif value\n");
-			return false;
-		}
-		
-		if (!fun_json_lookup_int64(chu, "ctl_en", &ctl_en)) {
-			eprintf("bad ctl_en\n");
-			return false;
-		}
-
-		/* now we've extracted something from the json, we can 
-		 * patch up the cfg
-		 */
-		cfg->ring_config[ring].bif = htobe32(bif);
-		cfg->ring_config[ring].ring_flags |= ring_flags;
-
-		uint64_t cid_en = htobe64(HW_HSU_API_LINK_CONFIG_CID_FLAGS_CID_ENABLED);
-		for (cid = 0; cid < HW_HSU_API_LINK_CONFIG_V0_MAX_CIDS; cid++) {
-			if ((ctl_en & (1ULL << cid)) == 0)
-				continue;
-			cfg->ring_config[ring].cid_config[cid].cid_flags |= cid_en;
-		}
-	}
-	
 	return true;
 }
 
+/**
+ *	_parse_hostunitcontroller_cfg - Parse the final level dictionary
+ *	Fill values in cfg structure
+ *	@cfg: hsu api link config to be filled with extracted config
+ *	@chu: Host unit dictionary, where keys to be searched
+ *	@ring: host unit id
+ *	@cid: controller id
+ *
+ *	Returns true/false after extracting configs to cfg
+ */
+static bool _parse_hostunitcontroller_cfg(struct hw_hsu_api_link_config *cfg,
+						const struct fun_json *chu,
+						uint32_t ring, uint32_t cid)
+{
+	uint32_t pcie_gen = 0, pcie_width = 0;
+	const char *str = NULL;
+	uint64_t u64 = 0, en = 0;
+	struct hw_hsu_cid_config *pcid = NULL;
+
+	/* take a direct pointer */
+	pcid = &cfg->ring_config[ring].cid_config[cid];
+
+	/* embed Port Type */
+	if (fun_json_lookup_string(chu, "mode", &str)) {
+		unsigned int porttype = 0;
+		if (strcmp(str, "EP") == 0)
+			porttype = HW_HSU_API_LINK_CONFIG_CID_FLAGS_PORTTYPE_EP;
+		else if (strcmp(str, "RC") == 0)
+			porttype = HW_HSU_API_LINK_CONFIG_CID_FLAGS_PORTTYPE_RC;
+		else if (strcmp(str, "UPSW") == 0)
+			porttype = HW_HSU_API_LINK_CONFIG_CID_FLAGS_PORTTYPE_UPSW;
+		else if (strcmp(str, "DNSW") == 0)
+			porttype = HW_HSU_API_LINK_CONFIG_CID_FLAGS_PORTTYPE_DNSW;
+		else
+			fprintf(stderr, "ERROR: (%u:%u) unknown 'mode'=%s\n",
+				ring, cid, str);
+		pcid->cid_flags |=
+			htobe64(HW_HSU_API_LINK_CONFIG_CID_FLAGS_PORTTYPE_PUT(porttype));
+	} else {
+		fprintf(stderr,
+			"WARNING: (%u:%u) Controller 'mode' not found!\n",
+			ring, cid);
+	}
+
+	/* check for link on/off */
+	if (fun_json_lookup_string(chu, "link", &str)) {
+		en = HW_HSU_API_LINK_CONFIG_CID_FLAGS_LINK_ENABLE;
+		en = htobe64(en);
+		if (strcmp(str, "ON") == 0) {
+			pcid->cid_flags |= en;
+		}
+	}
+
+	/* check for sris on/off */
+	if (fun_json_lookup_string(chu, "sris", &str)) {
+		en = HW_HSU_API_LINK_CONFIG_CID_FLAGS_SRIS_ENABLE;
+		en = htobe64(en);
+		if (strcmp(str, "ON") == 0) {
+			pcid->cid_flags |= en;
+		}
+	}
+
+	/* pcie_gen */
+	pcie_gen = HW_HSU_API_LINK_CONFIG_PCIE_GEN_DEFAULT;
+	if (fun_json_lookup_string(chu, "pcie_gen", &str)) {
+		if (!__str2val(_gen_valtab, str, &u64)) {
+			eprintf("bad pcie_gen value\n");
+			return false;
+		}
+		pcie_gen = u64;
+	}
+	pcid->pcie_gen = htobe32(pcie_gen);
+
+	/* pcie_width */
+	pcie_width = HW_HSU_API_LINK_CONFIG_PCIE_WIDTH_DEFAULT;
+	if (fun_json_lookup_string(chu, "pcie_width", &str)) {
+		if (!__str2val(_width_valtab, str, &u64)) {
+			eprintf("bad pcie_width value\n");
+			return false;
+		}
+		pcie_width = u64;
+	}
+	pcid->pcie_width = htobe32(pcie_width);
+
+	return true;
+}
+
+/**
+ *	_parse_hostunitcontroller - Parse the final level dictionary
+ *	Fill values in cfg structure
+ *	@cfg: hsu api link config to be filled with extracted config
+ *	@sku: sku root for HuInterface/HostUnitController
+ *
+ *	Returns true/false after extracting configs to cfg
+ */
 static bool _parse_hostunitcontroller(struct hw_hsu_api_link_config *cfg,
 				      const struct fun_json *sku)
 {
 	const struct fun_json *huc = NULL, *chu = NULL;
 	fun_json_index_t i = 0, count = 0;
-	uint32_t ring = 0, cid = 0, pcie_gen = 0, pcie_width = 0;
+	uint32_t ring = 0, cid = 0;
 	bool r = false;
-	const char *str = NULL;
-	uint64_t u64 = 0, en = 0;
-	struct hw_hsu_cid_config *pcid = NULL;
 	
 	assert(fun_json_is_dict(sku));
 	
 	huc = fun_json_lookup(sku, "HuInterface/HostUnitController");
-	if (!fun_json_is_array(huc)) {
+	if (fun_json_is_array(huc)) {
+		/* iterate over each item */
+		count = fun_json_array_count(huc);
+		for (i = 0; i < count; i++) {
+			/* lookup the item */
+			chu = fun_json_array_at(huc, i);
+			if (!fun_json_is_dict(chu)) {
+				eprintf("invalid HostUnitController array\n");
+				return false;
+			}
+
+			/* extract the ring from _args array */
+			r = _args_as_ring_pair(chu, &ring, &cid);
+			if (!r) {
+				/* most likely posix, ignore it */
+				continue;
+			}
+			if (!_parse_hostunitcontroller_cfg(cfg, chu, ring, cid)) {
+				return false;
+			}
+		}
+	} else if(fun_json_is_dict(huc)) {
+		/* iterate over each item */
+		uint64_t iterator = fun_json_dict_iterator(huc);
+		const char *key;
+		const struct fun_json *chu;
+		while(fun_json_dict_iterate(huc, &iterator, &key, &chu)) {
+			if(chu && fun_json_is_dict(chu)) {
+				if(!get_index_from_key(key, &ring)) {
+					eprintf("invalid key\n");
+					continue;
+				}
+				if (ring >= HW_HSU_API_LINK_CONFIG_V0_MAX_RINGS) {
+					/* most likely posix */
+					continue;
+				}
+
+				uint64_t iterator_c = fun_json_dict_iterator(chu);
+				const char *ckey;
+				const struct fun_json *cnhu;
+
+				while(fun_json_dict_iterate(huc, &iterator_c, &ckey, &cnhu)) {
+					if(cnhu && fun_json_is_dict(cnhu)) {
+						if(!get_index_from_key(key, &cid)) {
+							eprintf("invalid key\n");
+							continue;
+						}
+						if (cid >= HW_HSU_API_LINK_CONFIG_V0_MAX_CIDS) {
+						/* most likely posix */
+							continue;
+						}
+						if (!_parse_hostunitcontroller_cfg(cfg, chu, ring, cid)) {
+							return false;
+						}
+					} else {
+						eprintf("invalid HostUnitController\n");
+						return false;
+					}
+				}
+			} else {
+				eprintf("invalid HostUnitController\n");
+				return false;
+			}
+		}
+	} else {
 		eprintf("failed to find HostUnitController table\n");
 		return false;
-	}
-
-	/* iterate over each item */
-	count = fun_json_array_count(huc);
-	for (i = 0; i < count; i++) {
-		/* lookup the item */
-		chu = fun_json_array_at(huc, i);
-		if (!fun_json_is_dict(chu)) {
-			eprintf("invalid HostUnitController array\n");
-			return false;
-		}
-
-		/* extract the ring from _args array */
-		r = _args_as_ring_pair(chu, &ring, &cid);
-		if (!r) {
-			/* most likely posix, ignore it */
-			continue;		
-		}
-
-		/* take a direct pointer */
-		pcid = &cfg->ring_config[ring].cid_config[cid];
-		
-		/* embed Port Type */
-		if (fun_json_lookup_string(chu, "mode", &str)) {
-			unsigned int porttype = 0;
-			if (strcmp(str, "EP") == 0)
-				porttype = HW_HSU_API_LINK_CONFIG_CID_FLAGS_PORTTYPE_EP;
-			else if (strcmp(str, "RC") == 0)
-				porttype = HW_HSU_API_LINK_CONFIG_CID_FLAGS_PORTTYPE_RC;
-			else if (strcmp(str, "UPSW") == 0)
-				porttype = HW_HSU_API_LINK_CONFIG_CID_FLAGS_PORTTYPE_UPSW;
-			else if (strcmp(str, "DNSW") == 0)
-				porttype = HW_HSU_API_LINK_CONFIG_CID_FLAGS_PORTTYPE_DNSW;
-			else
-				fprintf(stderr, "ERROR: (%u:%u) unknown 'mode'=%s",
-				       ring, cid, str);
-			pcid->cid_flags |=
-				htobe64(HW_HSU_API_LINK_CONFIG_CID_FLAGS_PORTTYPE_PUT(porttype));
-		} else
-			fprintf(stderr,
-				"WARNING: (%u:%u) Controller 'mode' not found!",
-				ring, cid);
-
-		/* check for link on/off */
-		if (fun_json_lookup_string(chu, "link", &str)) {
-			en = HW_HSU_API_LINK_CONFIG_CID_FLAGS_LINK_ENABLE;
-			en = htobe64(en);
-			if (strcmp(str, "ON") == 0) {
-				pcid->cid_flags |= en;
-			}
-		}
-
-		/* check for sris on/off */
-		if (fun_json_lookup_string(chu, "sris", &str)) {
-			en = HW_HSU_API_LINK_CONFIG_CID_FLAGS_SRIS_ENABLE;
-			en = htobe64(en);
-			if (strcmp(str, "ON") == 0) {
-				pcid->cid_flags |= en;
-			}
-		}
-		
-		/* pcie_gen */
-		pcie_gen = HW_HSU_API_LINK_CONFIG_PCIE_GEN_DEFAULT;
-		if (fun_json_lookup_string(chu, "pcie_gen", &str)) {
-			if (!__str2val(_gen_valtab, str, &u64)) {
-				eprintf("bad pcie_gen value\n");
-				return false;
-			}
-			pcie_gen = u64;
-		}
-		pcid->pcie_gen = htobe32(pcie_gen);
-
-		/* pcie_width */
-		pcie_width = HW_HSU_API_LINK_CONFIG_PCIE_WIDTH_DEFAULT;
-		if (fun_json_lookup_string(chu, "pcie_width", &str)) {
-			if (!__str2val(_width_valtab, str, &u64)) {
-				eprintf("bad pcie_width value\n");
-				return false;
-			}
-			pcie_width = u64;
-		}
-		pcid->pcie_width = htobe32(pcie_width);		
 	}
 
 	return true;

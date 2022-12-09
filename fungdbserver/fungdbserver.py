@@ -30,6 +30,7 @@ import logging
 import argparse
 import binascii
 import platform
+import traceback
 import subprocess
 import uuid_extract
 import signal
@@ -583,12 +584,23 @@ class FileCorpse:
         for cl in range(9):
             for co in range(6):
                 for vp in range(4):
+                    tid = cl * 100 + co * 10 + vp
                     if (self.ccv_is_running(cl, co, vp)):
-                        tid = cl * 100 + co * 10 + vp
+                        DEBUG(f"Adding vpnumtab {tid}")
                         self.thread_list.append(tid)
                         self.vpnumtab[tid] = self.ccv_vpnum(cl, co, vp)
+                    else:
+                        DEBUG(f"Thread {cl}.{co}.{vp} ({tid}) is not running")
         self.threadcount = len(self.thread_list)
         LOG("FunOS has %d online threads" % self.threadcount)
+
+        if (self.threadcount == 0):
+            print("WARNING: No online threads!")
+        elif (self.threadid not in self.thread_list):
+            tid = self.thread_list[0]
+            DEBUG(f"Default thread {self.threadid} not running / " +
+                  "does not exist. Setting to thread {tid}")
+            self.SetThreadId(tid)
 
     def GetThreadInfo(self, tid):
         cl = int(tid / 100)
@@ -1122,9 +1134,17 @@ fsps = [ "fsr", "fir", "fp" ]
 
 REGS = gprs + sprs + fprs + fsps
 
+modfied_thread_regs = {}
+
 def jtag_GetReg(regno):
     if (regno >= len(REGS)):
         return 0xdeadbeef
+    modified_regs = modfied_thread_regs.get(jtag_GetCpuThreadId())
+    if modified_regs is not None:
+        reg_val = modified_regs.get(regno)
+        if reg_val is not None:
+            DEBUG("Using modified reg value for reg %s" % regno)
+            return reg_val
     r = REGS[regno]
     DEBUG("reading %s" % r)
     return jtag_ReadReg(r)
@@ -1385,6 +1405,15 @@ class GDBClientHandler(object):
                 else:
                     self.send('E 37')
 
+            def handle_P(subcmd):
+                reg, value = subcmd.split('=')
+                reg = int(reg, 16)
+                modified_regs = modfied_thread_regs.setdefault(jtag_GetCpuThreadId(), {})
+                # Must byte-swap the value from gdb to be able to get the same thing back.
+                modified_regs[reg] = struct.unpack("<Q", struct.pack(">Q", int(value, 16)))[0]
+                DEBUG("Setting modified reg value for reg %s to %s" % (reg, modified_regs[reg]))
+                self.send('OK')
+
             dispatchers = {
                 'q' : handle_q,
                 'H' : handle_h,
@@ -1394,7 +1423,8 @@ class GDBClientHandler(object):
                 's' : handle_s,
                 'v' : handle_v,
                 'p' : handle_p,
-                'T' : handle_T
+                'T' : handle_T,
+                'P' : handle_P
             }
 
             cmd, subcmd = pkt[0], pkt[1 :]
@@ -1700,8 +1730,9 @@ def main():
         # listen
         server_listen(sock)
     except Exception as e:
-        LOG_ALWAYS("Exception while running fungdbserver.py, exiting")
-        print(e)
+        LOG_ALWAYS(f"Exception while running fungdbserver.py: \"{e}\", exiting")
+        if (opts.verbose >= 1):
+            traceback.print_exc()
         force_exit = True
     finally:
         # clean downloaded excat files and then raise exception.

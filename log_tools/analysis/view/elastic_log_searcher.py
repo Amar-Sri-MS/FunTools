@@ -2,6 +2,7 @@
 
 import datetime
 import json
+import logging
 import time
 
 from elasticsearch7 import Elasticsearch
@@ -30,7 +31,7 @@ def get_logs(prefix, limit_by=None, limit_value=None):
         tags_list = [tag.strip() for tag in tags.split(',')]
         metadata = es_metadata.get_by_tags(
                         tags_list,
-                        size=len(indices))
+                        size=10000)
         indices = [index for index in indices if index['index'] in metadata]
     else:
         log_ids = [index['index'] for index in indices]
@@ -111,7 +112,175 @@ def _get_indices(prefix, limit=None):
 
         return indices
     except Exception as e:
+        logging.exception('Exception while fetching indices')
         return []
+
+
+def _generate_match_query(field, value):
+    return {
+        'match': {
+            field: value
+        }
+    }
+
+def _generate_must_query(must_list):
+    if not must_list:
+        return {}
+    return {
+        'bool': {
+            'must': must_list
+        }
+    }
+
+def _generate_should_query(should_list):
+    if not should_list:
+        return {}
+    return {
+        'bool': {
+            'should': should_list,
+            'minimum_should_match': 1
+        }
+    }
+
+def build_query_body(query_term, source_filters=None,
+                     time_filters=None, match_all=False):
+    """
+    Constructs a query body from the specified query term
+    (which is treated as an elasticsearch query string) and
+    the filters.
+    """
+
+    # We treat the text filter as a query string, which is Lucerne
+    # query DSL. The text filter is capable of complex filtering and
+    # search (this will double up as our "advanced" search function)
+    must_queries = []
+    if query_term is not None:
+        must_queries.append({'query_string': {
+            'query': query_term,
+            'default_operator': 'AND' if match_all else 'OR'
+        }})
+
+    """
+    Source filters are either simple (list of src) or
+    hierarchical (system_type -> system_id -> src).
+    In ES, should queries are equivalent to performing OR query and
+    must queries are for performing AND queries.
+
+    The hierarchical source filters is a dict which looks liks this:
+    {
+      system_type: {
+          system_id: {
+              [src]
+          }
+      }
+    }
+
+    The query is: [(system_type) AND [(sytem_id) AND ([src])]]
+    which gets converted into the following filter query:
+    {
+    'bool': {
+      'should': [{
+          'bool': {
+              'must': [{
+                  'match': {'system_type': 'cluster'}
+              },{
+                  'bool': {
+                      'should': [{
+                          'bool': {
+                              'must': [{
+                                  'match': {'system_id': 'node-1-cab18-fc-04'}
+                              },{
+                              'bool': {
+                                  'should': [
+                                      {'match': {'src': 'apigateway'}},
+                                      {'match': {'src': 'dataplacement'}},
+                                      {'match': {'src': 'discovery'}}
+                                  ]
+                              }
+                          }
+                      ]}
+                  },{
+                      'bool': {
+                          'must': [{
+                              'match': {'system_id': 'node-3-cab18-fc-06'}
+                          },{
+                          'bool': {
+                              'should': [{'match': {'src': 'apigateway'}}]
+                          }
+                      }]}
+    }]}}]}}]}}
+
+    A simple source filter is a list of src which looks liks this:
+    ['funos']
+
+    The query is: src:('funos' OR 'storage_agent')
+    which gets converted into the following filter query:
+    {
+     'bool': {
+          'should': [
+              {'match': {'src': 'funos'}},
+              {'match': {'src': 'apigateway'}}
+          ]
+      }
+    }
+    """
+
+    filter_queries = []
+    if source_filters and len(source_filters) > 0:
+        if type(source_filters) == dict:
+            system_type_list = []
+            for system_type, system_ids in source_filters.items():
+                system_id_list = []
+                for system_id, sources in system_ids.items():
+                    source_list = [_generate_match_query('src', source)
+                                for source in sources]
+                    source_query = _generate_should_query(source_list)
+
+                    system_id_query = _generate_must_query([
+                        _generate_match_query('system_id', system_id),
+                        source_query
+                    ])
+                    system_id_list.append(system_id_query)
+
+                system_type_query = _generate_must_query([
+                    _generate_match_query('system_type', system_type),
+                    _generate_should_query(system_id_list)
+                ])
+                system_type_list.append(system_type_query)
+
+            compound_source_queries = _generate_should_query(system_type_list)
+            filter_queries.append(compound_source_queries)
+
+        elif type(source_filters) == list:
+            source_query_list = [_generate_match_query('src', source)
+                                    for source in source_filters]
+            source_query = _generate_should_query(source_query_list)
+            filter_queries.append(source_query)
+
+    # Time filters are range filters
+    if time_filters:
+        start = time_filters[0]
+        end = time_filters[1]
+        time_range = {}
+        if start:
+            time_range['gte'] = start
+        if end:
+            time_range['lte'] = end
+        range = {'range': {
+            '@timestamp': time_range
+        }}
+        filter_queries.append(range)
+
+    compound_query = {}
+    compound_query['must'] = must_queries
+    compound_query['filter'] = filter_queries
+
+    body = {}
+    body['query'] = {}
+    # The "bool" key is essentially an "AND" of all the search and filter
+    # terms. Elasticsearch DSL is weird in that way.
+    body['query']['bool'] = compound_query
+    return body
 
 class ElasticLogState(object):
     """
@@ -233,7 +402,7 @@ class ElasticLogSearcher(object):
 
         TODO (jimmy): hide elastic specific stuff in return value?
         """
-        body = self._build_query_body(query_term, source_filters, time_filters, match_all)
+        body = build_query_body(query_term, source_filters, time_filters, match_all)
         if state.after_sort_val is not None:
             body['search_after'] = [state.after_sort_val]
 
@@ -252,171 +421,6 @@ class ElasticLogSearcher(object):
 
         return {'hits': result, 'state': new_state, 'total_search_hits': total_search_hits}
 
-    def _build_query_body(self, query_term,
-                          source_filters, time_filters, match_all=False):
-        """
-        Constructs a query body from the specified query term
-        (which is treated as an elasticsearch query string) and
-        the filters.
-        """
-
-        def _generate_match_query(field, value):
-            return {
-                'match': {
-                    field: value
-                }
-            }
-
-        def _generate_must_query(must_list):
-            if not must_list:
-                return {}
-            return {
-                'bool': {
-                    'must': must_list
-                }
-            }
-
-        def _generate_should_query(should_list):
-            if not should_list:
-                return {}
-            return {
-                'bool': {
-                    'should': should_list,
-                    'minimum_should_match': 1
-                }
-            }
-
-        # We treat the text filter as a query string, which is Lucerne
-        # query DSL. The text filter is capable of complex filtering and
-        # search (this will double up as our "advanced" search function)
-        must_queries = []
-        if query_term is not None:
-            must_queries.append({'query_string': {
-                'query': query_term,
-                'default_operator': 'AND' if match_all else 'OR'
-            }})
-
-        # Source filters are either simple (list of src) or
-        # hierarchical (system_type -> system_id -> src).
-        # In ES, should queries are equivalent to performing OR query and
-        # must queries are for performing AND queries.
-        #
-        # The hierarchical source filters is a dict which looks liks this:
-        # {
-        #   system_type: {
-        #       system_id: {
-        #           [src]
-        #       }
-        #   }
-        # }
-        #
-        # The query is: [(system_type) AND [(sytem_id) AND ([src])]]
-        # which gets converted into the following filter query:
-        # {
-        # 'bool': {
-        #   'should': [{
-        #       'bool': {
-        #           'must': [{
-        #               'match': {'system_type': 'cluster'}
-        #           },{
-        #               'bool': {
-        #                   'should': [{
-        #                       'bool': {
-        #                           'must': [{
-        #                               'match': {'system_id': 'node-1-cab18-fc-04'}
-        #                           },{
-        #                           'bool': {
-        #                               'should': [
-        #                                   {'match': {'src': 'apigateway'}},
-        #                                   {'match': {'src': 'dataplacement'}},
-        #                                   {'match': {'src': 'discovery'}}
-        #                               ]
-        #                           }
-        #                       }
-        #                   ]}
-        #               },{
-        #                   'bool': {
-        #                       'must': [{
-        #                           'match': {'system_id': 'node-3-cab18-fc-06'}
-        #                       },{
-        #                       'bool': {
-        #                           'should': [{'match': {'src': 'apigateway'}}]
-        #                       }
-        #                   }]}
-        # }]}}]}}]}}
-        #
-        # A simple source filter is a list of src which looks liks this:
-        # ['funos']
-        #
-        # The query is: src:('funos' OR 'storage_agent')
-        # which gets converted into the following filter query:
-        # {
-        #  'bool': {
-        #       'should': [
-        #           {'match': {'src': 'funos'}},
-        #           {'match': {'src': 'apigateway'}}
-        #       ]
-        #   }
-        # }
-
-        filter_queries = []
-        if source_filters and len(source_filters) > 0:
-            if type(source_filters) == dict:
-                system_type_list = []
-                for system_type, system_ids in source_filters.items():
-                    system_id_list = []
-                    for system_id, sources in system_ids.items():
-                        source_list = [_generate_match_query('src', source)
-                                    for source in sources]
-                        source_query = _generate_should_query(source_list)
-
-                        system_id_query = _generate_must_query([
-                            _generate_match_query('system_id', system_id),
-                            source_query
-                        ])
-                        system_id_list.append(system_id_query)
-
-                    system_type_query = _generate_must_query([
-                        _generate_match_query('system_type', system_type),
-                        _generate_should_query(system_id_list)
-                    ])
-                    system_type_list.append(system_type_query)
-
-                compound_source_queries = _generate_should_query(system_type_list)
-                filter_queries.append(compound_source_queries)
-
-            elif type(source_filters) == list:
-                source_query_list = [_generate_match_query('src', source)
-                                     for source in source_filters]
-                source_query = _generate_should_query(source_query_list)
-                print(source_query)
-                filter_queries.append(source_query)
-
-        # Time filters are range filters
-        if time_filters:
-            start = time_filters[0]
-            end = time_filters[1]
-            time_range = {}
-            if start:
-                time_range['gte'] = start
-            if end:
-                time_range['lte'] = end
-            range = {'range': {
-                '@timestamp': time_range
-            }}
-            filter_queries.append(range)
-
-        compound_query = {}
-        compound_query['must'] = must_queries
-        compound_query['filter'] = filter_queries
-
-        body = {}
-        body['query'] = {}
-        # The "bool" key is essentially an "AND" of all the search and filter
-        # terms. Elasticsearch DSL is weird in that way.
-        body['query']['bool'] = compound_query
-        return body
-
     def search_backwards(self, state,
                          query_term=None,
                          source_filters=None, time_filters=None,
@@ -426,7 +430,7 @@ class ElasticLogSearcher(object):
         The same as search, but only considers entries with timestamps that
         have lower values than the "before_sort_val" in the state argument.
         """
-        body = self._build_query_body(query_term, source_filters, time_filters, match_all)
+        body = build_query_body(query_term, source_filters, time_filters, match_all)
         if state.before_sort_val != -1:
             body['search_after'] = [state.before_sort_val]
 
@@ -560,7 +564,7 @@ class ElasticLogSearcher(object):
 
     def get_document_count(self, query_terms=None, source_filters=None, time_filters=None):
         """ Returns count of documents for the given search query and filters """
-        body = self._build_query_body(query_terms, source_filters, time_filters)
+        body = build_query_body(query_terms, source_filters, time_filters)
         result = self.es.count(index=self.index, body=body, ignore_throttled=False)
         count = result['count']
         return count

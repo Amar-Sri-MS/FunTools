@@ -11,32 +11,31 @@ import event
 
 class TestParseFabricAddress(unittest.TestCase):
     def testSimple(self):
-        faddr = event.FabricAddress.from_string('FA0:16:00[VP]')
+        faddr = event.FabricAddress.from_string('FA0:16:00[CCV3.2.0]')
         self.assertEqual(0, faddr.gid)
         self.assertEqual(16, faddr.lid)
         self.assertEqual(0, faddr.queue)
         self.assertEqual(16384, faddr.raw_value)
-
         self.assertEqual('VP0.2.0', str(faddr))
 
     def testEquality(self):
-        self.assertEqual(event.FabricAddress.from_string('FA3:16:0[VP]'),
-                         event.FabricAddress.from_string('FA3:16:0[VP]'))
+        self.assertEqual(event.FabricAddress.from_string('FA3:16:0[CCV3.2.0]'),
+                         event.FabricAddress.from_string('FA3:16:0[CCV3.2.0]'))
 
-        self.assertNotEqual(event.FabricAddress.from_string('FA3:16:0[VP]'),
-                            event.FabricAddress.from_string('FA1:16:0[VP]'))
+        self.assertNotEqual(event.FabricAddress.from_string('FA3:16:0[CCV3.2.0]'),
+                            event.FabricAddress.from_string('FA0:24:0[CCV0.4.0]'))
 
-        self.assertNotEqual(event.FabricAddress.from_string('FA3:16:0[VP]'),
-                            event.FabricAddress.from_string('FA3:17:0[VP]'))
+        self.assertNotEqual(event.FabricAddress.from_string('FA3:16:0[CCV3.2.0]'),
+                            event.FabricAddress.from_string('FA3:17:0[CCV3.2.0]'))
 
     def testHash(self):
         self.assertEqual(
-            hash(event.FabricAddress.from_string('FA3:16:0[VP]')),
-            hash(event.FabricAddress.from_string('FA3:16:0[VP]')))
+            hash(event.FabricAddress.from_string('FA3:16:0[CCV3.2.0]')),
+            hash(event.FabricAddress.from_string('FA3:16:0[CCV3.2.0]')))
 
         self.assertNotEqual(
-            hash(event.FabricAddress.from_string('FA3:16:0[VP]')),
-            hash(event.FabricAddress.from_string('FA1:16:0[VP]')))
+            hash(event.FabricAddress.from_string('FA3:16:0[CCV3.2.0]')),
+            hash(event.FabricAddress.from_string('FA0:24:0[CCV0.4.0]')))
 
     def testOrdinal(self):
         self.assertEqual('VP1.0.0', str(event.FabricAddress.from_ordinal(24)))
@@ -46,24 +45,24 @@ class TestParseFabricAddress(unittest.TestCase):
     def testAddressFromString(self):
 
         self.assertEqual('VP0.0.0',
-                         str(event.FabricAddress.from_string('FA0:8:0[VP]')))
+                         str(event.FabricAddress.from_string('FA0:8:0[CCV0.0.0]')))
 
-        self.assertEqual('VP2.3.0',
-                         str(event.FabricAddress.from_string('FA2:20:0[VP]')))
+        self.assertEqual('VP4.2.0',
+                         str(event.FabricAddress.from_string('FA4:16:1[CCV3.6.1]')))
 
         self.assertEqual('VP2.2.2',
-                         str(event.FabricAddress.from_string('FA2:18:0[VP]')))
+                         str(event.FabricAddress.from_string('FA2:18:0[CCV3.6.1]')))
 
         self.assertEqual('VP6.5.3',
-                         str(event.FabricAddress.from_string('FA6:31:1[VP]')))
+                         str(event.FabricAddress.from_string('FA6:31:0[CCV0.0.1]')))
 
         self.assertEqual('VP8.3.3',
-                         str(event.FabricAddress.from_string('FA8:23:1[VP]')))
+                         str(event.FabricAddress.from_string('FA8:23:1[CCV2.2.2]')))
 
     def testFaddrFromString(self):
-        faddr = event.FabricAddress.from_string('FA5:29:1[VP]')
+        faddr = event.FabricAddress.from_string('FA8:23:1[CCV2.2.2]')
 
-        self.assertEqual('FA5:29:1[VP]', faddr.as_faddr_str())
+        self.assertEqual('FA8:23:1[VP]', faddr.as_faddr_str())
 
     def testFaddrFromInt(self):
         faddr = event.FabricAddress.from_faddr(0x1c800)
@@ -77,7 +76,7 @@ class TestParseFabricAddress(unittest.TestCase):
 
 
     def testVP(self):
-        faddr = event.FabricAddress.from_string('FA2:18:0[VP]')
+        faddr = event.FabricAddress.from_string('FA2:18:0[CCV3.6.1]')
         self.assertTrue(faddr.is_cluster())
         self.assertFalse(faddr.is_accelerator())
         self.assertFalse(faddr.is_hu())
@@ -97,10 +96,10 @@ class TestParseFabricAddress(unittest.TestCase):
                          str(event.FabricAddress.from_string('FA11:0:88[HU]')))
 
     def testHighPriority(self):
-        fa = event.FabricAddress.from_string('FA2:18:0[VP]')
+        fa = event.FabricAddress.from_string('FA2:18:0[CCV3.6.1]')
         self.assertFalse(fa.is_high_priority_queue())
 
-        fa = event.FabricAddress.from_string('FA2:18:1[VP]')
+        fa = event.FabricAddress.from_string('FA2:18:1[CCV3.6.1]')
         self.assertTrue(fa.is_high_priority_queue())
 
         fa = event.FabricAddress.from_string('FA3:3:0[DMA]')
@@ -117,6 +116,28 @@ class TestParseFabricAddress(unittest.TestCase):
         self.assertTrue(faddr.is_accelerator())
         self.assertTrue(faddr.is_cluster())
         self.assertEqual('RGX3', str(faddr))
+
+    def testZIP(self):
+        faddr = event.FabricAddress.from_string('FA7:6:0[ZIP]')
+        self.assertTrue(faddr.is_accelerator())
+        self.assertTrue(faddr.is_cluster())
+        self.assertEqual('ZIP7', str(faddr))
+
+        faddr = event.FabricAddress.from_string('FA0:6:0[ZIP]')
+        self.assertTrue(faddr.is_accelerator())
+        self.assertTrue(faddr.is_cluster())
+        self.assertEqual('ZIP0', str(faddr))
+
+    def testLE(self):
+        faddr = event.FabricAddress.from_string('FA7:5:0[LE]')
+        self.assertTrue(faddr.is_accelerator())
+        self.assertTrue(faddr.is_cluster())
+        self.assertEqual('LE7', str(faddr))
+
+        faddr = event.FabricAddress.from_string('FA5:5:0[LE]')
+        self.assertTrue(faddr.is_accelerator())
+        self.assertTrue(faddr.is_cluster())
+        self.assertEqual('LE5', str(faddr))
 
 
 if __name__ == '__main__':

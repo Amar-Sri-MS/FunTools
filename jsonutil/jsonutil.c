@@ -3,6 +3,7 @@
 #define _XOPEN_SOURCE
 #define _GNU_SOURCE
 
+#include <ctype.h>	// for isspace()
 #include <stdio.h>	// for fprintf()
 #include <unistd.h>	// for STDOUT_FILENO
 #include <stdlib.h>	// for free()
@@ -14,13 +15,14 @@
 #define PLATFORM_POSIX 1
 #include <FunOS/utils/threaded/fun_json.h>
 #include <FunOS/services/commander/fun_commander.h>
+#include <FunOS/utils/common/base64.h>
 
-#define NOMODE      (0)
-#define TEXT        (1)
-#define BINARY      (2)
-#define TEXTONELINE (3)
-#define FUNJSON     (4)
-
+#define NOMODE        (0)
+#define TEXT          (1)
+#define BINARY        (2)
+#define TEXT_ONE_LINE (3)
+#define FUN_JSON      (4)
+#define BASE64        (6)
 
 static void oom(void)
 {
@@ -70,6 +72,35 @@ static char *_read_input_file(int fd, size_t *outsize)
 	return buffer;
 }
 
+static char *_read_line_from_file(int fd)
+{
+	char ch;
+	size_t length = 0;
+	char *result = NULL;
+	do {
+		ssize_t n = read(fd, &ch, 1);
+		if (n != 1) break;
+		result = realloc(result, ++length);
+
+		if (result == NULL) {
+			fprintf(stderr, "out of memory\n");
+			return NULL;
+		}
+
+		result[length - 1] = ch;
+	} while (ch != '\n' && ch != '\r' && ch != '\0');
+
+	if (length == 0) return NULL;
+
+	if (result[length - 1] != '\0' && result[length - 1] != '\n' && result[length - 1] != '\r') {
+		result = realloc(result, ++length);
+	}
+
+	result[length - 1] = 0;
+
+	return result;
+}
+
 static int _write_output_file(int fd, char *buf, ssize_t len)
 {
 	ssize_t delta = 0;
@@ -115,19 +146,15 @@ static struct fun_json *_read_json(int fd)
 	return input;
 }
 
-static struct fun_json *_read_funjson(int fd)
+static struct fun_json *_line_to_command(char *buf)
 {
-	struct fun_json *input = NULL;
-	char *buf;
-	size_t size = 0;
-	bool parsed_all;
+	if (buf == NULL) {
+		return NULL;
+	}
+
 	const char *error = NULL;
-	uint64_t tid = 0;
-
-	buf = _read_input_file(fd, &size);
-	assert(buf);
-
-	input = fun_commander_line_to_command(buf, &tid, &error);
+	static uint64_t tid = 0;
+	struct fun_json *input = fun_commander_line_to_command(buf, &tid, &error);
 
 	if (input == NULL) {
 		input = fun_json_create_error("Error parsing JSON command", fun_json_no_copy_no_own);
@@ -137,16 +164,73 @@ static struct fun_json *_read_funjson(int fd)
 	return input;
 }
 
+static bool empty_line(char *line)
+{
+	while (*line) {
+		if (!isspace(*line)) return false;
+		line++;
+	}
+	return true;
+}
+
+static struct fun_json *_read_funjson(int fd, bool *skip)
+{
+	char *buf = _read_line_from_file(fd);
+	if (buf && empty_line(buf)) {
+		*skip = true;
+		free(buf);
+		return NULL;
+	}
+	return _line_to_command(buf);
+}
+
+static struct fun_json *_read_base64(int fd, bool *skip)
+{
+	char *buf = _read_line_from_file(fd);
+	if (!buf)
+		return NULL;
+
+	if (empty_line(buf)) {
+		*skip = true;
+		free(buf);
+		return NULL;
+	}
+
+	size_t len = strlen(buf);
+	char *decode_buf = malloc(len);
+	int r = base64_decode((void *)decode_buf, len, buf);
+	free(buf);
+
+	if (r <= 0) {
+		fprintf(stderr, "error encoding base64\n");
+		free(decode_buf);
+		return NULL;
+	}
+
+	struct fun_json *input = NULL;
+	size_t actual_size = fun_json_binary_serialization_size((void *)decode_buf, len);
+
+	if (actual_size <= len) {
+		input = fun_json_create_from_binary_with_options((void *)decode_buf, actual_size, false);
+	}
+
+	if (input == NULL) {
+		fprintf(stderr, "error decoding binary json\n");
+	}
+
+	free(decode_buf);
+	return input;
+}
+
 static struct fun_json *_read_bjson(int fd)
 {
 	struct fun_json *input = NULL;
-	char *buf;
-	size_t size;
+	uint8_t *buf = NULL;
+	size_t size = 0;
 
-	buf = _read_input_file(fd, &size);
+	fun_json_read_enough_bytes_for_json_from_fd(fd, &buf, &size);
 	assert(buf);
-	
-	input = fun_json_create_from_binary((uint8_t*)buf, size);
+	input = fun_json_create_from_binary(buf, size);
 
 	free(buf);
 	return input;
@@ -160,7 +244,7 @@ static int _write_json(int fd, struct fun_json *json, int mode)
 
 	if (mode == TEXT)
 		buf = fun_json_to_text(json);
-	else if (mode == TEXTONELINE)
+	else if (mode == TEXT_ONE_LINE)
 		buf = fun_json_pretty_print(json, 0, "    ", 0, 0, &dummy_size);
 		
 	if (!buf)
@@ -186,7 +270,47 @@ static int _write_bjson(int fd, struct fun_json *json)
 	return (r != true);
 }
 
+static int _write_base64(int fd, struct fun_json *json)
+{
+	size_t allocated_size;
+	struct fun_ptr_and_size data = fun_json_serialize(json, &allocated_size);
 
+	if (data.ptr == NULL) {
+		fprintf(stderr, "cannot serialize to json\n");
+		return -1;
+	}
+
+	size_t b64size = data.size * 2 + 1; /* big to avoid rounding issues */
+	char *b64buf = malloc(b64size);
+
+	if (b64buf == NULL) {
+		free(data.ptr);
+		fprintf(stderr, "out of memory allocating output b64 buffer\n");
+		return -1;
+	}
+
+	int r = base64_encode(b64buf, b64size, (void*)data.ptr, data.size);
+
+	free(data.ptr);
+
+	if (r <= 0) {
+		fprintf(stderr, "error encoding base64\n");
+		free(b64buf);
+		return -1;
+	}
+
+	b64size = strlen(b64buf);
+	ssize_t written = write(fd, b64buf, b64size);
+
+	free(b64buf);
+
+	if (b64size != written) {
+		fprintf(stderr, "unable to write base64 data\n");
+		return -1;
+	}
+
+	return 0;
+}
 
 static int
 _setmode(int curmode, int newmode)
@@ -202,25 +326,26 @@ _setmode(int curmode, int newmode)
 static void
 _usage(const char *fname)
 {
-	fprintf(stderr, "usage: %s <input> [<output>]\n", fname);
-	fprintf(stderr, "    options\n");
-	fprintf(stderr, "        -i <file>      input <file> as text json\n");
-	fprintf(stderr, "        -I <file>      input <file> as binary json\n");
-	fprintf(stderr, "        -f <file>      input <file> as a fun json command\n");
-	fprintf(stderr, "        -o <file>      output <file> as text json\n");
-	fprintf(stderr, "        -O <file>      output <file> as binary json\n");
-	fprintf(stderr, "        -l <file>      output <file> as single-line text json\n");
-	fprintf(stderr, "Default output is text to stdout\n");
-	fprintf(stderr, "Filename \"-\" can be used ot output single or");
-	fprintf(stderr, "multi-line text to stdout.\n");
-	
+	fprintf(stderr,
+"usage: %s <input> [<output>]\n\
+    options\n\
+ -i, --in <file>          input  <file> as text json\n\
+ -I, --inb <file>         input  <file> as binary json\n\
+ -f, --inf <file>         input  <file> as a fun json command\n\
+ -e, --in-base64 <file>   input  <file> as base64 encoded binary json\n\
+ -o, --out <file>         output <file> as text json\n\
+ -O, --outb <file>        output <file> as binary json\n\
+ -l, --line <file>        output <file> as single-line text json\n\
+ -E, --out-base64 <file>  output <file> as base64 encoded binary json\n\
+Default output is text to stdout\n\
+Filename \"-\" can be used ot output single or multi-line text to stdout.\n", fname);
 	exit(1);
 }
 
 int
 main(int argc, char *argv[])
 {
-	int r;
+	int r = 0;
 	int c;
 	
 	int inmode = NOMODE;
@@ -232,16 +357,18 @@ main(int argc, char *argv[])
 	while (1) {
 		int option_index = 0;
 		static struct option long_options[] = {
-			{"in",   required_argument, 0,  'i' },
-			{"out",  required_argument, 0,  'o' },
-			{"line", required_argument, 0,  'l' },
-			{"inb",  required_argument, 0,  'I' },
-			{"outb", required_argument, 0,  'O' },
-			{"inf",  required_argument, 0,  'f' },
+			{"in",         required_argument, 0,  'i' },
+			{"out",        required_argument, 0,  'o' },
+			{"line",       required_argument, 0,  'l' },
+			{"inb",        required_argument, 0,  'I' },
+			{"outb",       required_argument, 0,  'O' },
+			{"inf",        required_argument, 0,  'f' },
+			{"in-base64",  required_argument, 0,  'e' },
+			{"out-base64", required_argument, 0,  'E' },
 		};
 
 		
-		c = getopt_long(argc, argv, "i:o:l:I:O:f:",
+		c = getopt_long(argc, argv, "i:o:l:I:O:f:e:E:",
 				long_options, NULL);
 		if (c == -1)
 			break;
@@ -260,7 +387,7 @@ main(int argc, char *argv[])
 			infile = optarg;
 			break;
 		case 'f':
-			inmode = _setmode(inmode, FUNJSON);
+			inmode = _setmode(inmode, FUN_JSON);
 			infile = optarg;
 			break;
 		case 'O':
@@ -268,7 +395,15 @@ main(int argc, char *argv[])
 			outfile = optarg;
 			break;
 		case 'l':
-			outmode = _setmode(outmode, TEXTONELINE);
+			outmode = _setmode(outmode, TEXT_ONE_LINE);
+			outfile = optarg;
+			break;
+		case 'e':
+			inmode = _setmode(inmode, BASE64);
+			infile = optarg;
+			break;
+		case 'E':
+			outmode = _setmode(outmode, BASE64);
 			outfile = optarg;
 			break;
 		case '?':
@@ -312,43 +447,64 @@ main(int argc, char *argv[])
 		}
 	}
 
+	bool productive = false;
 
-	/* read in some json */
-	struct fun_json *input = NULL;
-	if (inmode == TEXT) {
-		input = _read_json(infd);
-	} else if (inmode == BINARY) {
-		input = _read_bjson(infd);
-	} else if (inmode == FUNJSON) {
-		input = _read_funjson(infd);
-	} else {
-		/* bad input */
-		abort();
+	do {
+		struct fun_json *input = NULL;
+		bool skip = false;
+
+		switch (inmode) {
+			case TEXT:
+				input = _read_json(infd);
+				break;
+			case BINARY:
+				input = _read_bjson(infd);
+				break;
+			case FUN_JSON:
+				input = _read_funjson(infd, &skip);
+				break;
+			case BASE64:
+				input = _read_base64(infd, &skip);
+				break;
+			default:
+				abort();
+		}
+
+		if (skip) continue;
+
+		if (!input) {
+			break;
+		}
+
+		if (fun_json_is_error_message(input)) {
+			const char *message;
+			fun_json_fill_error_message(input, &message);
+			fprintf(stderr, "%s\n", message);
+			exit(1);
+		}
+
+		productive = true;
+
+		/* write out some json */
+		if (outmode == BINARY)
+			r = _write_bjson(outfd, input);
+		else if (outmode == BASE64)
+			r = _write_base64(outfd, input);
+		else
+			r = _write_json(outfd, input, outmode);
+
+		fun_json_release(input);
+
+		if (r) {
+			fprintf(stderr, "error writing json\n");
+			break;
+		}
+	} while (inmode != BINARY && inmode != TEXT);
+
+	if (!productive) {
+		r = 5;
+		fprintf(stderr, "no json found in input\n");
 	}
-
-	if (!input) {
-		fprintf(stderr, "failed to read a JSON\n");
-		exit(1);
-	}
-
-	if (fun_json_is_error_message(input)) {
-		const char *message;
-		fun_json_fill_error_message(input, &message);
-		fprintf(stderr, "%s\n", message);
-		exit(1);
-	}
-
-	/* write out some json */
-	if (outmode == BINARY)
-		r = _write_bjson(outfd, input);
-	else
-		r = _write_json(outfd, input, outmode);
-
-	if (r) {
-		fprintf(stderr, "error writing json\n");
-	}
-
-	fun_json_release(input);
 	
 	return r;
 }

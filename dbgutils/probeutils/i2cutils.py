@@ -899,7 +899,7 @@ class i2c(object):
         read_status_data = self.master.i2c_read(read_data = rdata, chip_inst=chip_inst)
         logger.debug('Read data: {0}'.format(rdata))
         logger.debug('rd read_status_data: {0}'.format(read_status_data))
-        if read_status_data < 1:
+        if read_status_data[0] < 1:
             err_msg = 'i2c dbg read failed'
             logger.error(err_msg)
             return (False, err_msg)

@@ -87,7 +87,7 @@
 #define PLDM_LOWER_FATAL_SUPPORT	BIT(5)
 
 /* chip container id */
-#define CHIP_CONTAINER_ID		0x1634
+#define CHIP_CONTAINER_ID		0x3416
 
 /* pldm pmc configuration */
 #define CONFIG_EXPLICIT_REPO_FORMAT
@@ -103,7 +103,7 @@ struct pldm_common_pdr_hdr {
 } __attribute__((packed));
 
 /* pldm pdr structure per DSP0248 28.4 */
-typedef uint32_t sensordata_t;
+typedef uint8_t sensordata_t;
 
 struct numeric_sensor_pdr {
 	struct pldm_common_pdr_hdr hdr;

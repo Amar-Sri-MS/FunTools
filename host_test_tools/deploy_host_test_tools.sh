@@ -14,3 +14,4 @@ install bin/scripts/fungdbserver.py $DEPLOY_ROOT/bin/scripts
 
 # TODO: FunTools/fungdbserver/hbm_unshard,ddr_unshard, etc.
 install bin/Linux/x86_64/jsonutil $DEPLOY_ROOT/bin/Linux/x86_64/jsonutil
+install bin/Linux/ffac $DEPLOY_ROOT/bin/Linux/ffac
