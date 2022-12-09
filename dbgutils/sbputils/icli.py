@@ -23,6 +23,7 @@ class CMD(object):
     GET_SERIAL_NUMBER = 0xFE000000
     GET_OTP = 0xFE0B0000
     GET_STATUS = 0xFE010000
+    GET_PUBKEY = 0xFE020000
     INJECT_CERTIFICATE = 0xFE0A0000
 
     GET_CHALLANGE = 0xFD000000
@@ -198,6 +199,26 @@ class dbgi2c(s1i2c):
             err_msg = "Dbg chal command error! {0}".format(rdata)
             print (err_msg)
             return (False, err_msg)
+
+    def read_keys(self):
+        print ("Getting pub-keys ...!")
+        def get_key(id, index, name):
+            print("get_key: id={}, index={}, name={} ...".format(id, index, name))
+            (status, rdata)= self.challenge_cmd(cmd=CMD.GET_PUBKEY + id, data=[index])
+            if status == True:
+                return (status, rdata)
+            else:
+                err_msg = "Dbg chal command error! {0}".format(rdata)
+                print (err_msg)
+                return (False, err_msg)
+
+        # PUF-ROM keys
+        for (a, b, c) in ((0, 2, "Debugging key"), (0, 3, "Fungible key"), (0, 4, "Fungible Enrollment key"), (1, 0, "Customer key0")):
+            (status, keyv) = get_key(a, b, c)
+            if status:
+                print(keyv)
+
+        return (True, True)
 
     def read_otp(self):
         print ("Getting OTP...!")
@@ -404,6 +425,7 @@ def main():
 
     #parser_cmds = parser.add_mutually_exclusive_group(required=False)
     parser.add_argument("--status", action='store_true', help="Display esecure device status")
+    parser.add_argument("--keys", action='store_true', help="Display all vault esecure device keys")
     parser.add_argument("--otp", action='store_true', help="Display fused otp contents")
     parser.add_argument("--serial", action='store_true', help="Display serial number")
     parser.add_argument("--cm-unlock", action='store_true', help="Attempt to unlock debug interface in native chip mfg environments")
@@ -424,6 +446,7 @@ def main():
     parser.add_argument("--flash-read", default=None, type=auto_int, help="Perform flash read at offset provided")
     parser.add_argument("--flash-erase", default=None, type=auto_int, help="Perform flash erase at offset provided")
     parser.add_argument("--flash-write", default=None, type=auto_int, help="Perform flash write at offset provided")
+    parser.add_argument("--flash-char", default='P', type=ord, help="Perform flash write with hex-byte provided")
     parser.add_argument("--csr", action='store_true', help="CSR peek poke test of a well defined scratch pad register")
     parser.add_argument("--mioval", default=None, type=auto_int, help="CSR poke value to MIO scratch pad register")
     parser.add_argument("--disconnect", action='store_true', help="CSR challenege disconnect")
@@ -504,6 +527,12 @@ def main():
         print('Debug access sm-granted!')
 
 
+    if args.keys:
+        (status, data) = dbgprobe.read_keys()
+        if status is False:
+            print('Failed to get PUBKEYS ! Error: {0}'.format(data))
+            return False
+
     if args.otp:
         (status, data) = dbgprobe.read_otp()
         if status is False:
@@ -529,7 +558,9 @@ def main():
             return False
 
     if args.flash_write is not None:
-        (status, data) = dbgprobe.write_flash([0xA5]*256, args.flash_write)
+        byte = args.flash_char
+        print(hex(byte))
+        (status, data) = dbgprobe.write_flash([byte]*256, args.flash_write)
         if status is False:
             print('Failed to write the flash! Error: {0}'.format(data))
             return False
@@ -540,7 +571,7 @@ def main():
             print('Failed to erase the flash! Error: {0}'.format(data))
             return False
 
-        (status, data) = dbgprobe.write_flash([0xB7]*256, args.flash)
+        (status, data) = dbgprobe.write_flash([0xC7]*256, args.flash)
         if status is False:
             print('Failed to write the flash! Error: {0}'.format(data))
             return False
@@ -601,7 +632,9 @@ def main():
 
     if args.reboot:
         print('\n************POKE RESET REGISTER ***************')
-        print(dbgprobe.local_csr_poke(0x440080e8, [0x0000000000000010]))
+        #print(dbgprobe.local_csr_poke(0x440090d8, [0x0000000000000010]))
+        print( dbgprobe.local_csr_poke(0x44008190, [0x0000000000000020]))
+        #print(dbgprobe.local_csr_poke(0x440080e8, [0x0000000000000010]))
 
     #else:
     #    print('Invalid option: {0}'.format(args))

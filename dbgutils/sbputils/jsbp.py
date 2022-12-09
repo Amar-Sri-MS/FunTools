@@ -26,7 +26,7 @@ logger.setLevel(logging.DEBUG)
 class constants(object):
     CSR_RING_TAP_SELECT = 0x01C1
     CSR_RING_TAP_SELECT_WIDTH = 10
-    SBP_CMD_EXE_TIME_WAIT = 2
+    SBP_CMD_EXE_TIME_WAIT = 4
     SBP_CMD_EXE_ROM_TIME_WAIT = 6
     GLOBAL_EMULATION_ROM_MODE = False
 
@@ -63,19 +63,23 @@ def local_csr_probe(dev_type, ip_addr, in_rom=None, flag=None):
     if (("SysProbe" not in status) or ("Firmware" not in status) or
         ("ECONNREFUSED" in status) or ("InvalidArgError" in status)):
         return (False, status)
-    JTAG_TCKRATE = 5000 if in_rom else 250000
+    JTAG_TCKRATE = 5000 if in_rom else 5000
     status = tckrate(JTAG_TCKRATE)
     logger.info('Set tckrate to {0}! status: {1}'.format(JTAG_TCKRATE, status))
-    status = _ir_shiftin(constants.CSR_RING_TAP_SELECT_WIDTH, constants.CSR_RING_TAP_SELECT)
-    if not status:
-        status_msg = (('Failed select csr tap controller! Error:{}').format(hex(status)))
-        logger.error(status_msg)
-        return (False, status_msg)
+    logger.info('local_csr_probe: calling csr_probe_init ...')
+    return csr_probe_init()
 
-    logger.info('Connected to Codescape Jtag probe! status={0}'.format(status))
-    status_msg = 'jtag is connected and csr tap select is enabled!'
-    logger.info(status_msg)
-    return (True, status_msg)
+    ### changed because it same as csr_probe_init()
+    #status = _ir_shiftin(constants.CSR_RING_TAP_SELECT_WIDTH, constants.CSR_RING_TAP_SELECT)
+    #if not status:
+    #    status_msg = (('Failed select csr tap controller! Error:{}').format(hex(status)))
+    #    logger.error(status_msg)
+    #    return (False, status_msg)
+
+    #logger.info('Connected to Codescape Jtag probe! status={0}'.format(status))
+    #status_msg = 'jtag is connected and csr tap select is enabled!'
+    #logger.info(status_msg)
+    #return (True, status_msg)
 
 @command()
 def disconnect():
@@ -125,13 +129,13 @@ def _jtag_shift_in_csr_acc_bytes(bytes_hex_str):
     logger.debug("tapd status: {}".format(jtag_status))
     logger.debug("tapd ack: {}".format(jtag_ack))
     logger.debug("tapd running: {}".format(jtag_running))
-
+    data = status[0] & 0xFFFFFFFFFFFFFFFF
+    logger.debug('tapd data: 0x{:0x}'.format(data))
     if jtag_status != 0:
         logger.error("jtag shift-in data error!: {}".format(jtag_status))
         return (False, None)
 
-    status = _ir_shiftin(constants.CSR_RING_TAP_SELECT_WIDTH,
-        constants.CSR_RING_TAP_SELECT)
+    status = _ir_shiftin(constants.CSR_RING_TAP_SELECT_WIDTH, constants.CSR_RING_TAP_SELECT)
     if not status:
         logger.error("Failed in shiftin IR\n")
         return (False, None)
@@ -185,6 +189,8 @@ def local_csr_peek(csr_addr, csr_width):
     logger.debug("\nWriting read cmd...........:")
     cmd = _prepare_csr_acc_cmd(True, csr_addr, csr_width)
     ctrl = _prepare_csr_ctrl(True, csr_addr, csr_width)
+    cmd_str = hex(cmd)[2:].zfill(16)
+    dr_byte_str = '0x' + cmd_str + '0'*16
     dr_byte_str = '0x' + '%016x' % cmd + '%016x' % ctrl
     (status, data) = _jtag_shift_in_csr_acc_bytes(dr_byte_str)
     if not status:
@@ -253,6 +259,7 @@ def local_csr_poke( csr_addr, word_array):
 
     logger.debug("\nWriting write command.... done")
     cmd = _prepare_csr_acc_cmd(False, csr_addr, len(word_array))
+    cmd_str = hex(cmd)[2:].zfill(16)
     ctrl = _prepare_csr_ctrl(False, csr_addr, len(word_array))
     dr_byte_str = '0x' + cmd_str + "%016x"%word_array[i]
     logger.debug('dr: {}'.format(dr_byte_str))
@@ -264,13 +271,13 @@ def local_csr_poke( csr_addr, word_array):
 
 # unittest-path keep it for debugging
 def csr_peek_poke_test():
-    print("Connecting to Probe to S1")
-    local_csr_probe('sp55e', '10.1.20.115')
+    print("Connecting to Probe to S1 for csr/avago mode")
+    local_csr_probe('sp55e', '10.1.40.86')
 
     print('\n************POKE MIO SCRATCHPAD ***************')
-    print(local_csr_poke(0x1d00e170, [0xabcd112299885566]))
+    print(local_csr_poke(0x440080a0, [0xabcd112299885566]))
     print('\n************PEEK MIO SCRATCHPAD ***************')
-    word_array = local_csr_peek(0x1d00e170, 1)
+    word_array = local_csr_peek(0x440080a0, 1)
     #word_array = local_csr_peek(0x1d00e160, 1)
     #word_array = local_csr_peek(0x1d00e0a0, 1)
     #word_array = local_csr_peek(0x1d00e2c8, 1)
