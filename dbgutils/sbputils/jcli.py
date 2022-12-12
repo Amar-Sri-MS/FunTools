@@ -277,7 +277,7 @@ def esecure_read():
     mdh_write_(CONTROL,RD_REQ)
     timeout = 0
     while (mdh_read_(CONTROL) & RD_REQ) == 0: #wait for RD_REQ=1
-        #time.sleep(0.5)
+        time.sleep(0.5)
         logger.info("esecure_read: waiting for RD_REQ to go high ...")
         timeout+=1
         if timeout == TIMEOUT:
@@ -286,7 +286,7 @@ def esecure_read():
     mdh_write_(CONTROL,RD_ACK)
     timeout = 0
     while (mdh_read_(CONTROL) & RD_REQ) != 0: #wait for RD_REQ=0
-        #time.sleep(0.5)
+        time.sleep(0.5)
         logger.info("esecure_read: waiting for RD_REQ to go low ...")
         timeout+=1
         if timeout == TIMEOUT:
@@ -302,7 +302,7 @@ def esecure_write(data):
     mdh_write_(CONTROL,WR_REQ)
     timeout = 0
     while (mdh_read_(CONTROL) & WR_ACK) == 0:
-        #time.sleep(0.5)
+        time.sleep(0.5)
         timeout+=1
         logger.info("esecure_write: waiting for WR_ACK to go high ...")
         if timeout == TIMEOUT:
@@ -310,7 +310,7 @@ def esecure_write(data):
     mdh_write_(CONTROL,0)
     timeout = 0
     while (mdh_read_(CONTROL) & WR_ACK) != 0:
-        #time.sleep(0.5)
+        time.sleep(0.5)
         logger.info("esecure_write: waiting for WR_ACK to go low ...")
         timeout+=1
         if timeout == TIMEOUT:
@@ -933,9 +933,9 @@ def main():
     if args.sm_unlock:
         if args.in_rom:
             # in_rom mode provide, so feed the inject_certificate with cert file provided by user.
-            inject_certificate(args.in_rom, customer=True)
+            esecure_inject_certificate(args.in_rom, customer=True)
             time.sleep(5)
-        password = None if 'nopass' in args.quicktest else None if 'nopass' in args.sm_pass else args.sm_pass
+        password = None if 'nopass' in args.quicktest else args.sm_pass
         device_unlock_SM(args.sm_key, args.sm_cert, args.sm_grant, password)
 
     # Once unlocked proceed with dump_status to verify if the grant are enabled as required.
