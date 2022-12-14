@@ -420,7 +420,8 @@ def main():
         epilog="Challenge Interface must be accessible via debug probe prior to running this script,\
         check the device documentation on how to do this")
     parser.add_argument("--dut", required=True, help="Dut name defined in dutdb.cfg")
-    parser.add_argument("--in-rom", default=None, help="Rom Certificate to be injected for unlock")
+    parser.add_argument("--in-rom-cm", default=None, help="CM Rom Certificate to be injected for unlock")
+    parser.add_argument("--in-rom-sm", default=None, help="SM Rom Certificate to be injected for unlock")
     #parser.add_argument("--chip", type=int, default=0, choices=xrange(0, 2), help="chip instance number")
 
     #parser_cmds = parser.add_mutually_exclusive_group(required=False)
@@ -471,7 +472,7 @@ def main():
     if args.sm_unlock and not all([args.sm_key, args.sm_cert, args.sm_grant]):
         parser.error("--unlock requires all SM keys and certificates to be specified")
 
-    constants.GLOBAL_EMULATION_ROM_MODE = True if args.in_rom else False
+    constants.GLOBAL_EMULATION_ROM_MODE = True if args.in_rom_cm else False
 
     print(dut().get_i2c_info(args.dut))
     status, serial, ip, addr = dut().get_i2c_info(args.dut)
@@ -495,9 +496,9 @@ def main():
 
 
     if args.cm_unlock:
-        if args.in_rom:
-            print('cm inject dev certificate! from file: {0}'.format(args.in_rom))
-            (status, data) = dbgprobe.inject_cert(args.in_rom, customer=False)
+        if args.in_rom_cm:
+            print('cm inject dev certificate! from file: {0}'.format(args.in_rom_cm))
+            (status, data) = dbgprobe.inject_cert(args.in_rom_cm, customer=False)
             print('response: cm dev certificate! {0}'.format(status))
             if status is False:
                 print('Failed to cm inject dev certificate! Error: {0}'.format(data))
@@ -511,9 +512,9 @@ def main():
         print('Debug access cm-granted!')
 
     if args.sm_unlock:
-        if args.in_rom:
-            print('sm inject dev certificate! from file: {0}'.format(args.in_rom))
-            (status, data) = dbgprobe.inject_cert(args.in_rom, customer=True)
+        if args.in_rom_sm:
+            print('sm inject dev certificate! from file: {0}'.format(args.in_rom_sm))
+            (status, data) = dbgprobe.inject_cert(args.in_rom_sm, customer=True)
             if status is False:
                 print('Failed to sm inject dev certificate! Error: {0}'.format(data))
                 return False

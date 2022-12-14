@@ -836,7 +836,8 @@ def main():
                  epilog="Challenge Interface must be accessible via debug probe prior to running this script,\
                          check the device documentation on how to do this")
     parser.add_argument("--dut", required=True, help="Dut name")
-    parser.add_argument("--in-rom", default=None, help="Rom Certificate to be injected for unlock")
+    parser.add_argument("--in-rom-cm", default=None, help="CM Rom Certificate to be injected for unlock")
+    parser.add_argument("--in-rom-sm", default=None, help="SM Rom Certificate to be injected for unlock")
     parser.add_argument("--do_ad", dest='do_ad', type=auto_int, default=None, help="perform autodetect n times")
     parser.add_argument("--status", action='store_true', help="Display esecure device status")
     parser.add_argument("--otp", action='store_true', help="Read OTP from esecure device (verify unlock)")
@@ -914,26 +915,26 @@ def main():
             check_for_esecure(do_ad=args.do_ad)
         time.sleep(3)
     else:
-        probe_connect(probe_id, probe_addr, args.in_rom, flag=True)
+        probe_connect(probe_id, probe_addr, args.in_rom_cm, flag=True)
         if (args.csr or args.csr_peek or args.csr_poke or args.csr_verify):
             csr_probe_init()
         if (args.cm_unlock or args.sm_unlock or args.status or args.otp or args.serial or args.flash):
             check_for_esecure(do_ad=args.do_ad)
         t = None
 
-    constants.GLOBAL_EMULATION_ROM_MODE = True if args.in_rom else False
+    constants.GLOBAL_EMULATION_ROM_MODE = True if args.in_rom_cm else False
 
     if args.cm_unlock:
-        if args.in_rom:
+        if args.in_rom_cm:
             # in_rom mode provide, so feed the inject_certificate with cert file provided by user.
-            esecure_inject_certificate(args.in_rom, customer=False)
+            esecure_inject_certificate(args.in_rom_cm, customer=False)
             time.sleep(5)
         device_unlock_CM(args.cm_key, args.cm_cert, args.cm_grant, args.cm_pass)
 
     if args.sm_unlock:
-        if args.in_rom:
+        if args.in_rom_sm:
             # in_rom mode provide, so feed the inject_certificate with cert file provided by user.
-            esecure_inject_certificate(args.in_rom, customer=True)
+            esecure_inject_certificate(args.in_rom_sm, customer=True)
             time.sleep(5)
         password = None if 'nopass' in args.quicktest else args.sm_pass
         device_unlock_SM(args.sm_key, args.sm_cert, args.sm_grant, password)
