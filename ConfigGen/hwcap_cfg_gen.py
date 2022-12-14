@@ -122,14 +122,11 @@ class HWCAPCodeGen():
         hwcap_cfg = dict()
         patterns = list()
 
-        if self.target_chip == 'f1' or all_target_chips:
-            patterns.append('hwcap_config/f1_emu_skus/*.cfg')
-        if self.target_chip == 's1' or all_target_chips:
-            patterns.append('hwcap_config/s1_emu_skus/*.cfg')
-        if self.target_chip == 'f1d1' or all_target_chips:
-            patterns.append('hwcap_config/f1d1_emu_skus/*.cfg')
-        if self.target_chip == 's2' or all_target_chips:
-            patterns.append('hwcap_config/s2_emu_skus/*.cfg')
+        if all_target_chips:
+            for chip in ('f1', 's1', 'f1d1', 's2', 'f2'):
+                patterns.append(f'hwcap_config/{chip}_emu_skus/*.cfg')
+        elif self.target_chip:
+            patterns.append(f'hwcap_config/{self.target_chip}_emu_skus/*.cfg')
 
         if len(patterns) == 0:
             raise argparse.ArgumentTypeError(
