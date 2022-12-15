@@ -264,9 +264,9 @@ class RESP_getStatus(Packet):
         CLEIntField('esecureFirmwareVersion', 0x0),
         CLEIntField('hostFirmwareVersion', 0x0),
         CLEIntEnumField('debugGrants', 0x0, { 0xFFFFFFFF : 'full-access' }),
-        CLEIntField('MagicVersion', 0x0),
-        CLEIntField('qspiFlashSize', 0x0),
-        CLELongField('qspiStatusFlags', 0x0),
+        ConditionalField(CLEIntField('MagicVersion', 0x0), lambda p: p.bootStep > 0x80),
+        ConditionalField(CLEIntField('qspiFlashSize', 0x0), lambda p: p.bootStep > 0x80),
+        ConditionalField(CLELongField('qspiStatusFlags', 0x0), lambda p: p.bootStep > 0x80),
         XStrLenField('firmwareString', '\x00', 20),
     ]
     def extract_padding(self, p):
@@ -344,6 +344,20 @@ C6 00 00 00 A0 01 00 00  00 00 00 00 00 00 00 00
 00 0C 00 00 62 6C 64 5F  33 36 35 30 35 2D 65 36
 36 35 64 62 39 32 00 A5
 """
+O = """
+00 00 00 38 01 01 00 00  0E 00 00 00 00 00 00 00
+00 00 00 00 20 00 00 00  00 00 00 00 00 00 00 00
+00 0C 00 00 62 6C 64 5F  31 39 30 32 39 2D 63 36
+38 64 37 35 65 65 34 00
+"""
+O = """
+00 00 00 4C 01 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 E4 11 00 00  00 00 00 00 00 00 00 00
+FF FF FF FF 01 D0 DE AD  FF FF FF 7F 8E 01 00 00
+01 09 EB 01 62 6C 64 5F  31 32 31 30 37 39 2D 32
+34 62 63 34 63 32 64 33  00 A5 A5 A5
+"""
+
 SN = """
 00 00 00 1C 00 00 00 00  00 00 00 00 00 00 00 00
 00 00 00 00 00 00 00 00  00 00 12 34
@@ -354,8 +368,8 @@ AE = [0, 2, 0, 4]
 GC = [0, 0, 0, 20, 240, 66, 80, 78, 189, 77, 223, 230, 139, 100, 140, 194, 246, 137, 141, 104]
 OTP = [0, 0, 0, 52, 7, 2, 31, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 52, 17, 68, 68, 65, 68, 17, 68, 20, 0, 0, 0, 0, 1, 0, 0, 64]
 
-#cmd = 0xFE000000
-#C = bytepack(SN)
+#cmd = 0xFE010000
+#C = bytepack(O)
 #hexdump(C)
 #print DBG_CMDRESP[cmd](C).show2()
 #C = arraypack(OTP)
