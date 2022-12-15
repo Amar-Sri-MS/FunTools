@@ -30,7 +30,7 @@ def decode_dw0(dw0: int) -> Tuple[str, int, bool, bool]:
     words = 3
     fmt = (dw0 >> 29) & 7
     type = (dw0 >> 24) & 0x1f
-    length = dw0 & 0x3f
+    length = dw0 & 0x3ff
     fmt_str = 'Unknown Format'
     type_str = ', Unknown Type'
     has_data = False
@@ -97,8 +97,6 @@ def decode_dw0(dw0: int) -> Tuple[str, int, bool, bool]:
     if has_data:
         if length == 0:
             length = 1024
-        else:
-            length = length + 1
         length_str = ', len: %d DW' % length
     else:
         length_str = ''
