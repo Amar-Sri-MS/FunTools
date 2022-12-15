@@ -266,7 +266,11 @@ class RESP_getStatus(Packet):
         CLEIntEnumField('debugGrants', 0x0, { 0xFFFFFFFF : 'full-access' }),
         ConditionalField(CLEIntField('MagicVersion', 0x0), lambda p: p.bootStep > 0x80),
         ConditionalField(CLEIntField('qspiFlashSize', 0x0), lambda p: p.bootStep > 0x80),
-        ConditionalField(CLELongField('qspiStatusFlags', 0x0), lambda p: p.bootStep > 0x80),
+        ConditionalField(CLEIntField('qspiStatusFlags', 0x0), lambda p: p.bootStep > 0x80),
+        ConditionalField(CByteField('qspiQioModeBits', 0x0), lambda p: p.bootStep > 0x80),
+        ConditionalField(CByteField('qspiQioDummyCycles', 0x0), lambda p: p.bootStep > 0x80),
+        ConditionalField(CByteField('qspiQioRdCmd', 0x0), lambda p: p.bootStep > 0x80),
+        ConditionalField(CByteField('qspiInitDone', 0x0), lambda p: p.bootStep > 0x80),
         XStrLenField('firmwareString', '\x00', 20),
     ]
     def extract_padding(self, p):
