@@ -364,7 +364,8 @@ def image_gen(outfile, infile, ftype, version, description, sign_key,
         'f1'   : [1, 1, 0, 0],
         's1'   : [2, 1, 0, 0],
         'f1d1' : [1, 1, 1, 0],
-        's2'   : [2, 2, 0, 0]
+        's2'   : [2, 2, 0, 0],
+        'f2'   : [1, 2, 0, 0] # check that this is correct ...
     }
 
     if ((pad == 0) or (pad is None)):
