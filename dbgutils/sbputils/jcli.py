@@ -615,7 +615,7 @@ def esecure_enable_debug(developer_key,developer_certificate,dbg_grant,
     esecure_write_bytes(signed_challenge)
 
     status = esecure_read()
-    print("esecure_enable_debug-Status: " + decode_cmd_status(status))
+    print("esecure_enable_debug-Status (customer=%s): " % customer + decode_cmd_status(status))
     return status
 
 
@@ -903,7 +903,7 @@ def main():
 
     if args.tap:
         t = gpiotap(args.dut, pullups=0xFF)
-        probe_connect(probe_id, probe_addr, args.in_rom, flag=True)
+        probe_connect(probe_id, probe_addr, args.in_rom_cm, flag=True)
         if (args.csr or args.csr_peek or args.csr_poke or args.csr_verify):
             change_to_csr_mode(args.tap, t)
             csr_probe_init()
