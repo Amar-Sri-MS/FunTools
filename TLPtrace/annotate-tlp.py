@@ -100,12 +100,11 @@ def decode_dw0(dw0: int) -> Tuple[str, int, bool, bool]:
         has_data = True
     elif fmt == 4:
         fmt_str = 'TLP Prefix'
-    if has_data:
-        if length == 0:
-            length = 1024
-        length_str = ', len: %d DW' % length
-    else:
-        length_str = ''
+
+    if length == 0:
+        length = 1024
+    length_str = ', len: %d DW' % length
+
     return fmt_str + type_str + length_str, words, is_completion, is_config
 
 def decode_completion_status(status: int) -> str:
