@@ -3,6 +3,12 @@
 """
 Annotate Palladium TLP trace files.
 
+PCIe Transaction Layer Packets (TLPs) are the L2 protocol packets that
+transit a PCIe tree. In Palladium emulation it is possible to capture
+a log file contain the TLPs that move through various parts of the
+system. This program adds annotations to these log files to make it
+easier to understand the contents of the TLPs.
+
 The first three or four DW are decoded, the rest of the text of the
 TLP trace is emitted unchanged.
 
