@@ -16,6 +16,7 @@ TLP trace is emitted unchanged.
 
 import argparse
 import re
+import struct
 from typing import Tuple
 
 ###
@@ -147,11 +148,19 @@ def decode_dw2(dw2: int, is_completion: bool, is_config: bool, header_len: int) 
     else:
         return ' AddrLo: %08x' % dw2
 
+conv_le = struct.Struct('<I')
+conv_be = struct.Struct('>I')
+
+def decode_dwX(dwX: int) -> str:
+    blob = conv_le.pack(dwX);
+    be_val = conv_be.unpack(blob)[0]
+    return ' BE value: %08x' % be_val
+
 def decode_dw3(dw3: int, is_completion: bool, is_config: bool, header_len: int) -> str:
     if not is_completion and not is_config and header_len == 4:
         return ' AddrHi: %08x' % dw3
     else:
-        return ''
+        return decode_dwX(dw3)
 
 ###
 ##  main
@@ -190,6 +199,8 @@ def main() -> int:
                 dwX_desc = decode_dw2(dwX, in_completion, in_config, header_len)
             elif dw_number == 3:
                 dwX_desc = decode_dw3(dwX, in_completion, in_config, header_len)
+            else:
+                dwX_desc = decode_dwX(dwX)
             print(dwX_match.group(2) + ' = ' + dwX_str + dwX_desc)
             continue
         print(line)
