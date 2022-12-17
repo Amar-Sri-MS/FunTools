@@ -66,6 +66,20 @@ DOCHUB_REPO_DIR_USER_FMT = '/project-fe/doc/sbp_images/{0}/{1}'
 
 LOCAL_DIR_FMT = '/var/www/html/sbp_images/{0}'
 
+# default eeprom for (chip, emulation) combination
+DEFAULT_EEPROMS = {
+    ('f1', True)    : 'eeprom_emu_compute2',
+    ('f1', False)   : 'eeprom_f1_fs800',
+
+    ('s1', True)    : 'eeprom_emu_s1_compute',
+    ('s1', False)   : 'eeprom_s1_fc200_1_0GHz_SoC',
+
+    ('f1d1', True)  : 'eeprom_emu_f1d1_compute_ddr',
+    ('f1d1', False) : 'eeprom_f1d1_fs800v2_1_1GHz_SoC_1_7GHz_PC',
+
+    ('s2', True)    : 'eeprom_emu_s2_compute',
+    ('s2', False)   : 'eeprom_s2_qemu',      #FIXME WHEN SILICON
+}
 
 def remove_prefix(a_str, prefix):
     ''' remove a prefix from string if it is there '''
@@ -353,17 +367,9 @@ def sanitize_args(args, eeproms_dir):
     eeprom_files = sorted(os.listdir(eeproms_dir))
 
     if args.eeprom is None:
-        if args.chip == 'f1':
-            if args.emulation:
-                args.eeprom = "eeprom_emu_f1"
-            else:
-                args.eeprom = "eeprom_f1_f1_dev_board"
-        elif args.chip == 's1':
-            if args.emulation:
-                args.eeprom = "eeprom_emu_s1_full"
-            else:
-                args.eeprom = "eeprom_s1_s1_dev_board"
-        else:
+        try:
+            args.eeprom = DEFAULT_EEPROMS[(args.chip,args.emulation)]
+        except KeyError:
             print("*** no default eeprom for that chip: %s\n" % args.chip)
             print("Please specify an eeprom to use with the -e/--eeprom option")
             sys.exit(1)
