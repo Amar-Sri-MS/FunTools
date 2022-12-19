@@ -45,6 +45,7 @@ from utils import *
 #     filtered_lines = _filter_lines_with_pattern(lines, marker_type, logger=logger)
 #     return filtered_lines
 
+
 def _filter_log_with_marker(
     lines: str, marker_type: str, logger=DefaultLogger()
 ) -> str:

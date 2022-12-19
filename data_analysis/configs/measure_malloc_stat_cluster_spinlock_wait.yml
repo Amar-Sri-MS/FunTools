@@ -1,0 +1,50 @@
+description:
+  - "Measure spinlock wait time for benchmark and single cluster wp"
+job_no:
+  - 7987780 # benchmark wp
+  # - 7926795 # benchmark wp
+  # - 7923773 # benchmark wp
+  # - 7774740 # new branch, base, new format,40 vps. search_pattern = "PAR_WORK_PERF_1,sz=410" 
+  # - 7774623 # new branch, base, new format,20 vps. search_pattern = "PAR_WORK_PERF_1,sz=820" 
+  # - 7733080 # base, new format
+  # - 7690202 # base
+  # - 7690203 # base
+
+  - 7987779 # cluster_wp, should be updated
+  # - 7926796 # cluster_wp, should be updated
+  # - 7923416 # cluster_wp, should be updated
+
+  # - 7774755 # newbranch skip unlock, new format, 20 vps. search_pattern = "PAR_WORK_PERF_1,sz=410"
+  # - 7775485 # PR newbranch skip unlock, new format, 20 vps. search_pattern = "PAR_WORK_PERF_1,sz=820"
+  # - 7774621 # newbranch skip unlock, new format, 20 vps. search_pattern = "PAR_WORK_PERF_1,sz=820"
+  # - 7733448 # WATCHDOG skip unlock, new format
+  # - 7733079 # skip unlock, new format
+  # - 7690903 # skip unlock
+  # - 7690266 # skip unlock
+
+col_titles:
+  - benchmark_wp
+  - cluster_wp
+
+npars:
+  - 1
+  - 2
+  - 4
+  - 6
+  - 8
+  - 10
+  - 12
+  - 14
+  - 16
+  - 18
+  - 20
+  - 22
+  - 24
+
+format_patch: False
+
+title: "Histogram of spinlock wait time during alloc_forever with {} parallel vp(s)"
+xlabel: "nsec"
+
+# search_pattern: "MALLOC_FOREVER_PERF_3"
+search_pattern: "MALLOC_FOREVER_PERF_3,nparallel {},"

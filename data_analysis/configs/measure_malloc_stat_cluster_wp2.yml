@@ -1,0 +1,47 @@
+description:
+  - "Measure malloc stat for benchmark and single cluster wp"
+job_no:
+  - 7987780 # benchmark wp
+  # - 7924096 # benchmark wp
+  # - 7923773 # benchmark wp
+  # - 7774740 # new branch, base, new format,40 vps. search_pattern = "PAR_WORK_PERF_1,sz=410" 
+  # - 7774623 # new branch, base, new format,20 vps. search_pattern = "PAR_WORK_PERF_1,sz=820" 
+  # - 7733080 # base, new format
+  # - 7690202 # base
+  # - 7690203 # base
+
+  - 7987779 # cluster_wp, should be updated
+  # - 7924067 # cluster_wp, should be updated
+  # - 7923416 # cluster_wp, should be updated
+
+  # - 7774755 # newbranch skip unlock, new format, 20 vps. search_pattern = "PAR_WORK_PERF_1,sz=410"
+  # - 7775485 # PR newbranch skip unlock, new format, 20 vps. search_pattern = "PAR_WORK_PERF_1,sz=820"
+  # - 7774621 # newbranch skip unlock, new format, 20 vps. search_pattern = "PAR_WORK_PERF_1,sz=820"
+  # - 7733448 # WATCHDOG skip unlock, new format
+  # - 7733079 # skip unlock, new format
+  # - 7690903 # skip unlock
+  # - 7690266 # skip unlock
+
+col_titles:
+  - benchmark_wp
+  - cluster_wp
+
+npars:
+  - 1
+  - 2
+  - 4
+  - 6
+  - 8
+  - 10
+  - 12
+  - 14
+  - 16
+  - 18
+  - 20
+  - 22
+  - 24
+
+# bins: 60
+format_patch: False
+
+search_pattern: "MALLOC_FOREVER_PERF_2,nparallel {},"

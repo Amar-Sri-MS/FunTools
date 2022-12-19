@@ -1,0 +1,29 @@
+job_no:
+  - 7922900 # benchmark wp
+  # - 7774740 # new branch, base, new format,40 vps. search_pattern = "PAR_WORK_PERF_1,sz=410" 
+  # - 7774623 # new branch, base, new format,20 vps. search_pattern = "PAR_WORK_PERF_1,sz=820" 
+  # - 7733080 # base, new format
+  # - 7690202 # base
+  # - 7690203 # base
+
+  - 7922899 # cluster_wp, should be updated
+
+  # - 7774755 # newbranch skip unlock, new format, 20 vps. search_pattern = "PAR_WORK_PERF_1,sz=410"
+  # - 7775485 # PR newbranch skip unlock, new format, 20 vps. search_pattern = "PAR_WORK_PERF_1,sz=820"
+  # - 7774621 # newbranch skip unlock, new format, 20 vps. search_pattern = "PAR_WORK_PERF_1,sz=820"
+  # - 7733448 # WATCHDOG skip unlock, new format
+  # - 7733079 # skip unlock, new format
+  # - 7690903 # skip unlock
+  # - 7690266 # skip unlock
+
+col_titles:
+  - benchmark_wp
+  - cluster_wp
+
+npars:
+  - 1
+  - 18
+
+format_patch: False
+
+search_pattern: "MALLOC_FOREVER_PERF_2,nparallel {},"

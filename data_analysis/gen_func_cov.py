@@ -11,7 +11,7 @@
 
     Examples
     --------
-    >>> python3 ./gen_func_cov.py --build_no 107 --output_csv func_cov.csv --out_dir .
+    >>> python3 ./gen_func_cov.py --build_no 107 --output_csv func_cov.csv --output_dir .
     >>> python3 ./gen_func_cov.py --local_file ../../coverage/all/index.functions.html --output_csv func_cov.csv --output_dir .
 
     Test

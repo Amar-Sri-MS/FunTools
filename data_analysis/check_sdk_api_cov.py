@@ -114,7 +114,10 @@ def update_coverage_for_sdk_api(
 
 
 def gen_summary_html(
-    df_api: pd.DataFrame, cov_percent: float, output_html: str
+    df_api: pd.DataFrame,
+    cov_percent: float,
+    output_html: str,
+    additional_note: List[str] = None,
 ) -> None:
     """Prepare summary html and save to file
 
@@ -126,6 +129,8 @@ def gen_summary_html(
         Coverage percent
     output_html : str
         Output html file
+    additional_note : List[str], optional
+        Additional note, by default None
 
     Returns
     -------
@@ -154,6 +159,13 @@ def gen_summary_html(
     html_header_str = f"<br>  <br> <h1> {summary} </h1> <br>"
     if NOTE_STR_1:
         html_header_str += f"<h4> {NOTE_STR_1} </h4> <br>"
+
+    if additional_note is not None:
+        html_header_str += f"<br"
+
+        for note in additional_note:
+            html_header_str += f"<h4> {note} </h4> <br>"
+
     html_footer_str = """<br> <br>"""
 
     # prepend html_header_stsr to html_str

@@ -22,7 +22,7 @@ To update the environment, run the following command to update `requirements.txt
 
 ```bash
 
-pipreqs .
+pipreqsnb .
 
 ```
 
