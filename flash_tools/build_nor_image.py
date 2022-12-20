@@ -17,8 +17,12 @@ from tempfile import mkstemp
 import shutil
 import requests
 
-import paramiko
-from scp import SCPClient
+# optional imports to copy images to a web server
+try:
+    import paramiko
+    from scp import SCPClient
+except:
+    pass
 
 DESCRIPTION = '''Use this script to build the NOR image from sources, and
 optionally perform more tasks afterwards. The host image is copied from
@@ -190,7 +194,6 @@ def generate_eeprom_signed_images(script_directory, images_directory,
     subprocess.run(run_args, input=extra_config, cwd=images_directory,
                    check=True, stdout=sys.stdout, stderr=sys.stderr)
 
-
 def get_ssh_client(username, servername, password=None):
     ''' get a ssh client instance '''
     ssh_client = paramiko.SSHClient()
@@ -199,7 +202,6 @@ def get_ssh_client(username, servername, password=None):
     return ssh_client
 
 def scp_file(ssh_client, target_dir, file_name):
-
     def progress(filename, size, sent):
         sys.stdout.write("copying file to %s progress: %.2f%%   \r" %
                          (filename.decode('utf-8'), float(sent)/float(size)*100))
@@ -232,7 +234,7 @@ def generate_update_tar_file(args, built_images_dir):
         f.add(built_images_dir, arcname=tar_root, filter=tar_filter)
 
     if args.user:
-        ssh_client = get_ssh_client(args.user, 'server1.fungible.local')
+        ssh_client = get_ssh_client(args.user, args.dochub)
 
         repo_dir = DOCHUB_REPO_DIR_USER_FMT.format(args.user, args.version)
 
@@ -281,10 +283,6 @@ def generate_tar_file(args, built_images_dir):
 
 def extract_tar_to_bmc(ssh_client, tar_file_name):
     ''' copy tar file to bmc: sftp not available on bmc '''
-
-    def progress(filename, size, sent):
-        sys.stdout.write("copying tar file to %s progress: %.2f%%   \r" %
-                         (filename.decode('utf-8'), float(sent)/float(size)*100))
 
     scp_file(ssh_client, BMC_INSTALL_DIR, tar_file_name)
 
@@ -339,23 +337,33 @@ def parse_args():
     arg_parser.add_argument("--tar", action='store_true',
                             default='--bmc' in sys.argv,
                             help="generate tgz file with the image and all eeproms")
+
+    arg_parser.add_argument("-l", "--local", action='store_true',
+                          help='''create a tgz file locally for use with run_fwupgrade.py
+                          as /var/www/sbp_images''')
+
     arg_parser.add_argument("--bmc", action='store',
                             help="BMC on which to store the build (for install/recovery)")
 
-    dest_grp = arg_parser.add_mutually_exclusive_group()
-
-    dest_grp.add_argument("-u", "--user", action='store', metavar='USERNAME',
-                            help='''create a tgz file on dochub for use with run_fwupgrade.py
+    arg_parser.add_argument("-u", "--user", action='store', metavar='USERNAME',
+                                help='''create a tgz file on dochub for use with run_fwupgrade.py
                             as dochub.fungible.local/doc/sbp_images/<username>/<version>/''')
-    dest_grp.add_argument("-l", "--local", action='store_true',
-                          help='''create a tgz file locally for use with run_fwupgrade.py
-                          as /var/www/sbp_images''')
+
+    arg_parser.add_argument("--dochub", action='store', metavar='SERVER',
+                                default='vnc-shared-01.fungible.local',
+                                help='''server to use to copy file on dochub. cf."--user" arg''')
 
     return arg_parser.parse_args()
 
 
 def sanitize_args(args, eeproms_dir):
     ''' sanitize the args and provide meaningful defaults '''
+
+    # can we scp?
+    can_scp = { 'paramiko', 'scp' } <= sys.modules.keys()
+    if not can_scp and (args.bmc or args.user):
+        args.bmc = args.user = 0  # contrast to None
+
     # sbp firmware directory
     if args.sbp is None:
         args.sbp = "{0}/SBPFirmware".format(os.environ['WORKSPACE'])
@@ -469,6 +477,9 @@ def main():
             print("*** Directory with images on {0}: {1} ***".format(
                 args.bmc, os.path.join(BMC_INSTALL_DIR, tar_dir)))
 
+    if args.bmc == 0 or args.user == 0:
+        print('!!!! The "bmc" or "user" option were ignored because '\
+        'the "paramiko" and/or "scp" modules are not currently installed !!!!')
 
 if __name__ == '__main__':
     main()
