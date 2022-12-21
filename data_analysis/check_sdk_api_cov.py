@@ -40,6 +40,7 @@ import os
 import argparse
 import sys
 from pathlib import Path
+import json
 from typing import Iterable, Any, List, Optional, Union, Callable, TextIO, Dict, Tuple
 
 try:
@@ -60,6 +61,9 @@ def _get_args() -> argparse.Namespace:
     parser.add_argument("--output_dir", type=str, default=".", help="Output directory")
     parser.add_argument("--output_html", type=str, help="Output html file")
     parser.add_argument("--output_csv", type=str, help="Output csv file")
+    parser.add_argument(
+        "--output_json", type=str, default="coverage.json", help="Output json file"
+    )
 
     args = parser.parse_args()
 
@@ -113,6 +117,41 @@ def update_coverage_for_sdk_api(
     return df_api, cov_percent
 
 
+def gen_gcovr_json(
+    df_api: pd.DataFrame,
+    cov_percent: float,
+    output_json: str,
+) -> None:
+    """Generate gcovr compatible json file
+
+    Parameters
+    ----------
+    df_api : pd.DataFrame
+        SDK APIs
+    cov_percent : float
+        Coverage percent
+    output_html : str
+        Output html file
+    additional_note : List[str], optional
+        Additional note, by default None
+
+    Returns
+    -------
+    None
+
+    """
+
+    gcovr_dict = {
+        "function_covered": int(df_api["coverage"].sum()),
+        "function_total": len(df_api),
+        "function_percent": cov_percent,
+    }
+
+    # save gcovr_dict to json file
+    with open(output_json, "w") as f:
+        json.dump(gcovr_dict, f, indent=4)
+
+
 def gen_summary_html(
     df_api: pd.DataFrame,
     cov_percent: float,
@@ -140,8 +179,11 @@ def gen_summary_html(
 
     summary = f"SDK APIs coverage: {cov_percent:.2f}%"
 
+    # copy df_api to df_api_summary
+    df_api_summary = df_api.copy()
+
     # use more readable column names
-    df_api.rename(
+    df_api_summary.rename(
         columns={
             "proto_name": "Function",
             "coverage": "Coverage Status",
@@ -150,7 +192,7 @@ def gen_summary_html(
         inplace=True,
     )
 
-    table_str = df_api[["Function", "Coverage Status", "File"]].to_html(
+    table_str = df_api_summary[["Function", "Coverage Status", "File"]].to_html(
         # index=False,
         justify="center",
         float_format="{:.2f}".format,
@@ -175,12 +217,19 @@ def gen_summary_html(
     with open(output_html, "w", encoding="utf-8") as f:
         f.write(html_str)
 
+    del df_api_summary
+
 
 def main() -> None:
     """Main function"""
 
     args = _get_args()
+
+    if not os.path.exists(args.output_dir):
+        os.makedirs(args.output_dir)
+
     output_html = os.path.join(args.output_dir, args.output_html)
+    output_json = os.path.join(args.output_dir, args.output_json)
     output_csv = (
         os.path.join(args.output_dir, args.output_csv)
         if args.output_csv is not None
@@ -199,6 +248,8 @@ def main() -> None:
 
     # save df_api to html
     gen_summary_html(df_api, cov_percent, output_html)
+
+    gen_gcovr_json(df_api, cov_percent, output_json)
 
     print(f"SDK APIs coverage:              {cov_percent:.2f}%")
     print(f"Saving summary to html file:    {output_html}")
