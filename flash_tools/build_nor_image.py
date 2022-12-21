@@ -158,7 +158,7 @@ def generate_nor_image(args, script_directory,
 
 
 def generate_eeprom_signed_images(script_directory, images_directory,
-                                  eeprom_directory, version):
+                                  eeprom_directory, version, eeprom):
     ''' sign all the eeproms and place them in the images_directory '''
     #  fixed arguments
     run_args = ["python3",
@@ -179,7 +179,7 @@ def generate_eeprom_signed_images(script_directory, images_directory,
     {
         "signed_images": {
         "eeprom_list": {
-            "source": "@file:eeprom_list.json",
+            "source": "%s",
             "version": 1,
             "fourcc": "eepr",
             "key": "fpk3",
@@ -189,7 +189,7 @@ def generate_eeprom_signed_images(script_directory, images_directory,
         }
     }
     }
-    '''
+    ''' % eeprom.encode('utf-8') if eeprom else b"@file:eeprom_list.json"
 
     subprocess.run(run_args, input=extra_config, cwd=images_directory,
                    check=True, stdout=sys.stdout, stderr=sys.stderr)
@@ -309,6 +309,8 @@ def parse_args():
                             help="Machine (f1,s1), default = f1")
     arg_parser.add_argument("-e", "--eeprom", action='store',
                             help="eeprom type")
+    arg_parser.add_argument("--sign-all-eeproms", action='store_true',
+                            help="Sign all eeproms -- legacy behavior")
     arg_parser.add_argument("--emulation", action='store_const', const=1, default=0,
                             help="emulation_build")
     arg_parser.add_argument("-n", "--enrollment-certificate", action='store',
@@ -456,9 +458,10 @@ def main():
     built_images_dir = os.path.join(build_dir, "install")
 
     generate_eeprom_signed_images(script_dir, built_images_dir,
-                                  eeproms_dir, args.version)
+                                  eeproms_dir, args.version,
+                                  None if args.sign_all_eeproms else args.eeprom)
 
-    # now generate a NOR image -- fungible signed by default for the moment
+    # now generate a NOR image
     generate_nor_image(args, script_dir, built_images_dir, eeproms_dir)
 
     print("*** Images in {0} ***".format(built_images_dir))
