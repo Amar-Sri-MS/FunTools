@@ -1,4 +1,4 @@
-little_endian
+include SBP_common.tcl
 
 set security1 [hex 1 "Security"]
 section "Security Flags" {
@@ -26,17 +26,7 @@ section "Serial Info" {
 }
 
 section "Serial Number" {
-    section "Part Number" {
-	hex 1 "Family"
-	hex 1 "Device"
-	hex 1 "Revision"
-    }
-    hex 1 "Foundry + Fab"
-    hex 1 "Year"
-    uint8 "Week"
-    hex 2 "Security Group"
-    hex 4 "Reserved (Zero)"
-    hex 4 "S/N"
+    serial_number
 }
 
 section "Tamper levels" {

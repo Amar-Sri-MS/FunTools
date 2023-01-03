@@ -1,124 +1,40 @@
-little_endian
+include SBP_common.tcl
 
 
-section "Dir of Dir 1" {
-    hex 4 "CRC Dir of Dir"
-    set directory_1_1 [uint32  "Directory 1"]
-    set directory_1_2 [uint32  "Directory 2"]
-    goto 0x0200
+
+section "First Root Directory" {
+    set entries_1 [dir_of_dir]
+}
+
+goto 0x0200
+
+section "Second Root Directory" {
+    set entries_2 [dir_of_dir]
 }
 
 
-section "Dir of Dir 2" {
-    hex 4 "CRC Dir of Dir"
-    set directory_2_1 [uint32  "Directory 1"]
-    set directory_2_2 [uint32 "Directory 2"]
-}
-
-goto [expr $directory_1_1]
-
-set images [list]
+goto [lindex $entries_1 0]
 
 section "Directory 1" {
-    hex 4 "CRC Fixed Directory"
-    set puf_rom1 [uint32 "PUF ROM 1"]
-    set puf_rom2 [uint32 "PUF ROM 2"]
-    set image_info [list]
-    lappend image_info "pufr"
-    lappend image_info $puf_rom1
-    lappend image_info $puf_rom2
-    lappend images $image_info
-    hex 4 "CRC Variable Directory"
-
-
-    while 1 {
-	set addr1 [uint32 "Addr1"]
-	set addr2 [uint32 "Addr2"]
-	if {$addr1 == 0xFFFFFFFF} break
-	set image_type [ascii 4 "type"]
-
-	set image_info [list]
-	lappend image_info $image_type
-	lappend image_info $addr1
-	lappend image_info $addr2
-	lappend images $image_info
-    }
+    set images_1 [dir_of_images]
 }
 
-goto [expr $directory_1_2]
+goto [lindex $entries_1 1]
 
 section "Directory 2" {
-    hex 4 "CRC Fixed Directory"
-    set puf_rom1 [uint32 "PUF ROM 1"]
-    set puf_rom2 [uint32 "PUF ROM 2"]
-    hex 4 "CRC Variable Directory"
-
-    while 1 {
-	set addr1 [uint32 "Addr1"]
-	set addr2 [uint32 "Addr2"]
-	if {$addr1 == 0xFFFFFFFF} break
-	set image_type [ascii 4 "type"]
-    }
+    set images_2 [dir_of_images]
 }
 
 
 section "Images" {
-    foreach image_info $images {
+    foreach image_info $images_1 {
 	goto [lindex $image_info 1]
 	section [lindex $image_info 0] {
-	    bytes 1096 "customer certificate"
-	    bytes 428 "padding"
-	    bytes 8   "customer magic"
-	    bytes 516 "customer signature"
-	    bytes 1096 "signing info"
-	    bytes 428 "padding"
-	    bytes 8   "fungible magic"
-	    bytes 516 "signature"
-	    set image_size [uint32 "size"]
-	    uint32 "version"
-	    ascii 4 "type"
-	    section "attributes" {
-		section "Part Number" {
-		    hex 1 "Family"
-		    hex 1 "Device"
-		    hex 1 "Revision"
-		    hex 1 "Alignment"
-		}
-		section AuthLocation {
-		    hex 4 "Location"
-		}
-		hex 24 "padding"
-		ascii 32 "description"
-	    }
-	    entry "payload" bytes  $image_size
+	    single_image
 	}
 	goto [lindex $image_info 2]
 	section [lindex $image_info 0] {
-	    bytes 1096 "customer certificate"
-	    bytes 428 "padding"
-	    bytes 8   "customer magic"
-	    bytes 516 "customer signature"
-	    bytes 1096 "signing info"
-	    bytes 428 "padding"
-	    bytes 8   "fungible magic"
-	    bytes 516 "signature"
-	    set image_size [uint32 "size"]
-	    uint32 "version"
-	    ascii 4 "type"
-	    section "attributes" {
-		section "Part Number" {
-		    hex 1 "Family"
-		    hex 1 "Device"
-		    hex 1 "Revision"
-		    hex 1 "Alignment"
-		}
-		section AuthLocation {
-		    hex 4 "Location"
-		}
-		hex 24 "padding"
-		ascii 32 "description"
-	    }
-	    entry "payload" bytes  $image_size
+	   single_image
 	}
     }
 }
