@@ -18,6 +18,7 @@ import sys
 import argparse
 import requests
 import json
+from urllib.parse import urlparse,urlunparse
 
 # need to generate some RSA keys for RSA sig gen tests
 from cryptography.hazmat.primitives.asymmetric import rsa, dsa, ec
@@ -220,8 +221,7 @@ class CAVPTest:
         # need to generate a private key
         curve_name = test_group["curve"]
 
-        private_key = ec.generate_private_key(self.CURVE_MAPPING[curve_name](),
-                                              backend=default_backend())
+        private_key = ec.generate_private_key(self.CURVE_MAPPING[curve_name]())
 
         # private components -> input
         # public components -> output
@@ -415,7 +415,7 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description="Execute CAVP Test")
 
-    parser.add_argument('inputs', metavar='FILE', nargs='+',
+    parser.add_argument('inputs', metavar='FILE', nargs='*',
                         help='Test file')
     parser.add_argument('-u', '--user',
                         help='user name (remote)')
@@ -427,7 +427,21 @@ def parse_args():
                         help='Suffix added to the testType field in the test spec')
     parser.add_argument('-t', '--tester', default='TestTester',
                         help='tester class')
-    return parser.parse_args()
+    args = parser.parse_args()
+
+    if args.remote and not args.inputs:
+        parsed_url = urlparse(args.remote)
+        if parsed_url.fragment or parsed_url.params or parsed_url.query:
+            raise RuntimeError("Invalid URL parsed")
+
+        path_parts = parsed_url.path.split("/")
+        args.inputs = path_parts[:-2:-1]
+        new_path = "/".join(path_parts[:-1])
+        parsed_url = parsed_url._replace(path=new_path)
+        args.remote = urlunparse(parsed_url)
+
+    return args
+
 
 
 def execute_all_tests(args):
@@ -444,7 +458,6 @@ def execute_all_tests(args):
             curr_cavp.run()
             webclient.upload(curr_cavp.result_path(),
                              response_file_name(arg))
-
     else:
         # local case
         for arg in args.inputs:
