@@ -429,6 +429,11 @@ def parse_args():
                         help='tester class')
     args = parser.parse_args()
 
+    # allow the remote argument to specify the whole input instead of
+    # only the server URL. The URL to the file is used to generate the
+    # the "baseurl" used by the WebDavclient and the single input file.
+    # copy/pasting the whole  URL to the file from the browser is
+    # convenient than editing this URL on the command line.
     if args.remote and not args.inputs:
         parsed_url = urlparse(args.remote)
         if parsed_url.fragment or parsed_url.params or parsed_url.query:
