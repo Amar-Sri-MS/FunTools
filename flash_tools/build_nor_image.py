@@ -305,8 +305,9 @@ def parse_args():
                             help='''root for name of sub directory in which SPB will be built
                             default is "image_build" ''')
     arg_parser.add_argument("-c", "--chip", action='store',
-                            default='f1', choices=['f1', 's1', 'f1d1', 's2'],
-                            help="Machine (f1,s1), default = f1")
+                            default='f1',
+                            choices=['f1', 's1', 'f1d1', 's2', 'f2'],
+                            help="Machine (f1,s1,etc...), default = f1")
     arg_parser.add_argument("-e", "--eeprom", action='store',
                             help="eeprom type")
     arg_parser.add_argument("--sign-all-eeproms", action='store_true',
