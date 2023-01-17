@@ -16,4 +16,8 @@ install bin/scripts/fungdbserver.py $DEPLOY_ROOT/bin/scripts
 install bin/Linux/x86_64/jsonutil $DEPLOY_ROOT/bin/Linux/x86_64/jsonutil
 install bin/Linux/ffac $DEPLOY_ROOT/bin/Linux/ffac
 
-install ../FunSDK/dash_test_tools.tgz $DEPLOY_ROOT
+DASH_TEST_TOOLS_PATH="../FunSDK/dash_test_tools.tgz"
+
+if [ -e $DASH_TEST_TOOLS_PATH ]; then
+    install $DASH_TEST_TOOLS_PATH $DEPLOY_ROOT
+fi
