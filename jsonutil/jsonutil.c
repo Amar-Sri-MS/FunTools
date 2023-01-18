@@ -253,8 +253,8 @@ static int _write_json(int fd, struct fun_json *json, int mode)
 	r = _write_output_file(fd, buf, strlen(buf));
 	free(buf);
 
-	/* be nice and print a newline if it's stdout */
-	if ((r == 0) && (fd == 0))
+	/* be nice and print a newline */
+	if (r == 0)
 		printf("\n");
 	
 	return r;
