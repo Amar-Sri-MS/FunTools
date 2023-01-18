@@ -167,6 +167,16 @@ class CodeCoverageQuery:
             'values': [['2023-01-13T11:45:45.995988Z', 54.19822192953573]]}]} 
         """
 
+        if results is None or results.raw is None:
+            return {}
+        if "series" not in results.raw or len(results.raw["series"]) == 0:
+            return {}
+        if (
+            "values" not in results.raw["series"][0]
+            or len(results.raw["series"][0]["values"][0]) != 2
+        ):
+            return {}
+
         time = results.raw["series"][0]["values"][0][0]
         value = results.raw["series"][0]["values"][0][1]
 
