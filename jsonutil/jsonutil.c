@@ -255,7 +255,7 @@ static int _write_json(int fd, struct fun_json *json, int mode)
 
 	/* be nice and print a newline */
 	if (r == 0)
-		printf("\n");
+		_write_output_file(fd, "\n", 1);
 	
 	return r;
 }
