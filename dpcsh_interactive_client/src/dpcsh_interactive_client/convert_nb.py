@@ -136,7 +136,7 @@ def generate_report(
     execute: bool = False,
     working_dir: str = ".",
     logger=logger,
-    report_filename: str = None,
+    report_filename: str = None,  # type: ignore
     backup_notebook: bool = False,
     create_out_notebook: bool = False,
 ):
