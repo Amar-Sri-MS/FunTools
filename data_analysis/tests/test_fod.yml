@@ -1,0 +1,33 @@
+description:
+  - "config for test_fod"
+console_file:
+  - "tests/fod_8023748_uartout0.0.txt"
+col_titles:
+  - benchmark_wp
+
+npars:
+  - 1
+  - 20
+  - 40
+  - 60
+  - 80
+  - 100
+  - 120
+  - 140
+  - 160 
+
+
+format_patch: False
+
+title: "Histogram of spinlock wait time during alloc_forever with {} parallel vp(s)"
+xlabel: "nsec"
+
+single_plots:
+  - 0 # plot for scale up per vp, only plot 0
+  - 1
+single_plots_ylabel: "spinlock wait time avg (nsec)"
+single_plots_top_title: "Spinlock wait time different number of parallel VPs"
+
+# search_pattern: "MALLOC_FOREVER_PERF_3"
+# search_pattern: "MALLOC_FOREVER_PERF_2,nparallel {},"
+search_pattern: "MALLOC_FOREVER_PERF_3,nparallel {},"

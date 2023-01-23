@@ -28,6 +28,7 @@ Todo:
 
 """
 
+import sys
 import os
 import re
 import json
@@ -40,10 +41,6 @@ import pandas as pd
 
 from utils import *
 
-# def _filter_lines_with_pattern(lines: str, marker_type: str, logger=DefaultLogger()):
-#     # filter list of lines with pattern
-#     filtered_lines = _filter_lines_with_pattern(lines, marker_type, logger=logger)
-#     return filtered_lines
 
 def _filter_log_with_marker(
     lines: str, marker_type: str, logger=DefaultLogger()
@@ -88,13 +85,39 @@ def _filter_log_with_marker(
     return json.loads(filtered_lines)
 
 
+def _get_ts_first_kernel_log(lines: str) -> float:
+    """Get the timestamp of the first kernel log
+
+    Parameters
+    ----------
+    lines : str
+        log lines
+
+    Returns
+    -------
+    ts : float
+        timestamp of the first kernel log
+    """
+
+    first_line = None
+    lines_t = lines.split("\r\n")
+    for line in lines_t:
+        if "[kernel]" in line:
+            print(line)
+            first_line = line
+            break
+    assert first_line is not None, "No kernel log found"
+    return float(first_line.split(" ")[0][1:])
+
+
 def _extract_module_init_data(
     file_name_url: str,
     working_dir: str = "./",
     module_init_file: str = "modules.json",
     notif_init_file: str = "notifications.json",
+    # cc_linux_init_file: str = "cc_linux_init.json",
     logger=DefaultLogger(),
-) -> Tuple[str, str]:
+) -> Tuple[str, str, float]:
 
     """Extract module and notif init data either from file or log from url.
     Create json files for module and notif init data.
@@ -122,6 +145,8 @@ def _extract_module_init_data(
         full path of the saved module init file
     notif_init_file_name: str
         full path of the saved notification init file
+    ts_first_kernel_log: float
+        timestamp of the first kernel log
 
     Raises
     ------
@@ -140,26 +165,35 @@ def _extract_module_init_data(
 
     lines = read_from_file_or_url(working_dir, file_name_url, logger=logger)
 
-    lines = remove_timestamps_from_log(lines)
+    lines_wo_ts = remove_timestamps_from_log(lines)
+
+    ts_first_kernel_log = _get_ts_first_kernel_log(lines)
 
     # format for module init
     # { 'accel_telem-init': [14.028537, 14.028581], 'adi-init': [14.058434, 14.058453], ....
-    module_init = _filter_log_with_marker(lines, "module_init", logger)
-    notif_init = _filter_log_with_marker(lines, "notif", logger)
+    module_init = _filter_log_with_marker(lines_wo_ts, "module_init", logger)
+    notif_init = _filter_log_with_marker(lines_wo_ts, "notif", logger)
 
     modules_init_file_name = os.path.join(working_dir, module_init_file)
     notificaiotns_init_file_name = os.path.join(working_dir, notif_init_file)
 
-    with open(modules_init_file_name, "w", encoding="utf-8") as f:
-        json.dump(module_init, f, indent=4)
+    try:
+        with open(modules_init_file_name, "w", encoding="utf-8") as f:
+            json.dump(module_init, f, indent=4)
 
-    with open(notificaiotns_init_file_name, "w", encoding="utf-8") as f:
-        json.dump(notif_init, f, indent=4)
+        with open(notificaiotns_init_file_name, "w", encoding="utf-8") as f:
+            json.dump(notif_init, f, indent=4)
+
+    except IOError as e:
+        logger.error("I/O error({}): {}".format(e.errno, e.strerror))
+    except:  # handle other exceptions such as attribute errors
+        logger.error("Unexpected error:", sys.exc_info()[0])  # type: ignore
 
     logger.debug(f"Module init file saved to {modules_init_file_name}")
     logger.debug(f"Notifications init file saved to {notificaiotns_init_file_name}")
+    # logger.debug(f"CC_linux init file saved to {cc_linux_init_file_name}")
 
-    return modules_init_file_name, notificaiotns_init_file_name
+    return modules_init_file_name, notificaiotns_init_file_name, ts_first_kernel_log
 
 
 def _extract_module_init_data_raw_input(
@@ -170,7 +204,7 @@ def _extract_module_init_data_raw_input(
     logger=DefaultLogger(),
     parse_module=True,
     parse_notif=True,
-) -> Tuple[str, str]:
+) -> Tuple[str, str, float]:
 
     """Extract (parse and derive) module and notif init data either from file or raw loggging from url.
     Create json files for module and notif init data.
@@ -200,6 +234,8 @@ def _extract_module_init_data_raw_input(
         full path of the saved module init file
     notif_init_file_name: str
         full path of the saved notification init file
+    ts_first_kernel_log: float
+        timestamp of the first kernel log
 
     Raises
     ------
@@ -240,6 +276,8 @@ def _extract_module_init_data_raw_input(
 
         return line_d
 
+    ts_first_kernel_log = _get_ts_first_kernel_log(lines)
+
     if parse_module:
         found_lines = re.findall("^.*initialized in.*$", lines, re.MULTILINE)
         module_init = parse_raw_lines(found_lines)
@@ -254,7 +292,7 @@ def _extract_module_init_data_raw_input(
     logger.debug(f"Module init file saved to {modules_init_file_name}")
     logger.debug(f"Notifications init file saved to {notificaiotns_init_file_name}")
 
-    return modules_init_file_name, notificaiotns_init_file_name
+    return modules_init_file_name, notificaiotns_init_file_name, ts_first_kernel_log
 
 
 def _convert_to_list_of_dicts(
@@ -476,14 +514,22 @@ def _get_longest_gap(
     return longest_duration_gap, longest_gap_between
 
 
-def _get_perf_stat(df_module_notif_in: pd.DataFrame, df_module: pd.DataFrame) -> dict:
+def _get_perf_stat(
+    df_module_notif_in: pd.DataFrame,
+    df_module: pd.DataFrame,
+    ts_first_kernel_log: float,
+) -> dict:
     """Get performance summary stat
 
 
     Parameter
     ---------
-    df : pd.DataFrame
+    df_module_notif_in: pd.DataFrame
+        dataframe with module_name, start_time, finish_time, module_init_duration and notif
+    df_module : pd.DataFrame
         dataframe with module_name, start_time, finish_time, module_init_duration
+    ts_first_kernel_log: float
+        timestamp of the first kernel log
 
     Returns
     -------
@@ -507,6 +553,10 @@ def _get_perf_stat(df_module_notif_in: pd.DataFrame, df_module: pd.DataFrame) ->
     # compute all module duration w/o gaps
 
     total_module_init_time_only_ns = df_module["module_init_duration"].sum()
+    ts_first_kernel_log_ns = ts_first_kernel_log * 10**9
+
+    print("ts_first_kernel_log: {}".format(ts_first_kernel_log))
+    print("ts_first_kernel_log_ns: {}".format(ts_first_kernel_log_ns))
 
     result = {
         "longest_duration_ns": longest_duraiton,
@@ -514,7 +564,8 @@ def _get_perf_stat(df_module_notif_in: pd.DataFrame, df_module: pd.DataFrame) ->
         "longest_gap_ns": longest_duration_gap,
         "longest_gap_between": longest_duration_between,
         "total_module_init_time_only_ns": total_module_init_time_only_ns,
-        "total_duration_ns": finish_max - start_min,
+        "time_at_first_kernel_log_ns": ts_first_kernel_log_ns,
+        "total_duration_ns": (finish_max - start_min) + ts_first_kernel_log_ns,
     }
 
     return result
@@ -828,6 +879,7 @@ def process_module_notif_init_raw_data(
         (
             modules_init_file_name,
             notificaiotns_init_file_name,
+            ts_first_kernel_log,
         ) = _extract_module_init_data_raw_input(
             file_name_url=file_name_url,
             logger=logger,
@@ -844,15 +896,15 @@ def process_module_notif_init_raw_data(
     )
 
     # pass the same df, since notif init data is not used
-    result = _get_perf_stat(fun_module_init_df, fun_module_init_df)
+    result = _get_perf_stat(fun_module_init_df, fun_module_init_df, ts_first_kernel_log)
 
     return fun_module_init_df, result
 
 
 def process_module_notif_init_data(
-    file_name_url: str = None,
-    modules_init_file_name: str = None,
-    notificaiotns_init_file_name: str = None,
+    file_name_url: str = None,  # type: ignore
+    modules_init_file_name: str = None,  # type: ignore
+    notificaiotns_init_file_name: str = None,  # type: ignore
     working_dir: str = "./",
     logger=DefaultLogger(),
 ):
@@ -887,6 +939,7 @@ def process_module_notif_init_data(
         (
             modules_init_file_name,
             notificaiotns_init_file_name,
+            ts_first_kernel_log,
         ) = _extract_module_init_data(
             file_name_url=file_name_url, logger=logger, working_dir=working_dir
         )
@@ -916,7 +969,9 @@ def process_module_notif_init_data(
     # combine module and notif init data
     fun_module_notif_init_df = pd.concat([fun_module_init_df, fun_notification_init_df])
 
-    result = _get_perf_stat(fun_module_notif_init_df, fun_module_init_df)
+    result = _get_perf_stat(
+        fun_module_notif_init_df, fun_module_init_df, ts_first_kernel_log
+    )
 
     return fun_module_notif_init_df, fun_module_init_df, result
 

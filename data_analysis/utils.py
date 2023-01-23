@@ -11,6 +11,12 @@ import yaml
 import requests
 import os
 import re
+from bs4 import BeautifulSoup
+import pandas as pd
+import json
+
+
+from typing import Iterable, Any, List, Optional, Union, Callable, TextIO, Dict, Tuple
 
 
 class DefaultLogger:
@@ -126,6 +132,7 @@ def read_from_file_or_url(
             raise ex
     return lines
 
+
 def remove_timestamps_from_log(lines: str) -> str:
     """Remove timestamps from log
 
@@ -147,9 +154,8 @@ def remove_timestamps_from_log(lines: str) -> str:
 
     return lines
 
-def filter_line_with_pattern(
-    lines: str, pattern: str, logger=DefaultLogger()
-) -> str:
+
+def filter_line_with_pattern(lines: str, pattern: str, logger=DefaultLogger()) -> str:
     """Filter based on the marker and create an output with json format by adding the ending "}"
 
     Parameters
@@ -182,3 +188,29 @@ def filter_line_with_pattern(
 
     return filtered_lines
     # return json.loads(filtered_lines)
+
+
+def read_config(filename: str) -> dict:
+    """Read config file in yaml format
+
+    Parameters
+    ----------
+    file_name: str
+        config file name
+
+    Returns
+    -------
+    config: dict
+        config dict
+
+    """
+    try:
+        with open(filename, "r") as f:
+            config = yaml.safe_load(f)
+    except Exception as ex:
+        print("Exception {}".format(ex))
+        config = None
+
+    assert config
+
+    return config

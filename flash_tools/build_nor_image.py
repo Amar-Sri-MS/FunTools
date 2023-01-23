@@ -17,8 +17,12 @@ from tempfile import mkstemp
 import shutil
 import requests
 
-import paramiko
-from scp import SCPClient
+# optional imports to copy images to a web server
+try:
+    import paramiko
+    from scp import SCPClient
+except:
+    pass
 
 DESCRIPTION = '''Use this script to build the NOR image from sources, and
 optionally perform more tasks afterwards. The host image is copied from
@@ -66,6 +70,20 @@ DOCHUB_REPO_DIR_USER_FMT = '/project-fe/doc/sbp_images/{0}/{1}'
 
 LOCAL_DIR_FMT = '/var/www/html/sbp_images/{0}'
 
+# default eeprom for (chip, emulation) combination
+DEFAULT_EEPROMS = {
+    ('f1', True)    : 'eeprom_emu_compute2',
+    ('f1', False)   : 'eeprom_f1_fs800',
+
+    ('s1', True)    : 'eeprom_emu_s1_compute',
+    ('s1', False)   : 'eeprom_s1_fc200_1_0GHz_SoC',
+
+    ('f1d1', True)  : 'eeprom_emu_f1d1_compute_ddr',
+    ('f1d1', False) : 'eeprom_f1d1_fs800v2_1_1GHz_SoC_1_7GHz_PC',
+
+    ('s2', True)    : 'eeprom_emu_s2_compute',
+    ('s2', False)   : 'eeprom_s2_qemu',      #FIXME WHEN SILICON
+}
 
 def remove_prefix(a_str, prefix):
     ''' remove a prefix from string if it is there '''
@@ -140,7 +158,7 @@ def generate_nor_image(args, script_directory,
 
 
 def generate_eeprom_signed_images(script_directory, images_directory,
-                                  eeprom_directory, version):
+                                  eeprom_directory, version, eeprom):
     ''' sign all the eeproms and place them in the images_directory '''
     #  fixed arguments
     run_args = ["python3",
@@ -161,7 +179,7 @@ def generate_eeprom_signed_images(script_directory, images_directory,
     {
         "signed_images": {
         "eeprom_list": {
-            "source": "@file:eeprom_list.json",
+            "source": "%s",
             "version": 1,
             "fourcc": "eepr",
             "key": "fpk3",
@@ -171,11 +189,10 @@ def generate_eeprom_signed_images(script_directory, images_directory,
         }
     }
     }
-    '''
+    ''' % eeprom.encode('utf-8') if eeprom else b"@file:eeprom_list.json"
 
     subprocess.run(run_args, input=extra_config, cwd=images_directory,
                    check=True, stdout=sys.stdout, stderr=sys.stderr)
-
 
 def get_ssh_client(username, servername, password=None):
     ''' get a ssh client instance '''
@@ -185,7 +202,6 @@ def get_ssh_client(username, servername, password=None):
     return ssh_client
 
 def scp_file(ssh_client, target_dir, file_name):
-
     def progress(filename, size, sent):
         sys.stdout.write("copying file to %s progress: %.2f%%   \r" %
                          (filename.decode('utf-8'), float(sent)/float(size)*100))
@@ -218,7 +234,7 @@ def generate_update_tar_file(args, built_images_dir):
         f.add(built_images_dir, arcname=tar_root, filter=tar_filter)
 
     if args.user:
-        ssh_client = get_ssh_client(args.user, 'server1.fungible.local')
+        ssh_client = get_ssh_client(args.user, args.dochub)
 
         repo_dir = DOCHUB_REPO_DIR_USER_FMT.format(args.user, args.version)
 
@@ -268,10 +284,6 @@ def generate_tar_file(args, built_images_dir):
 def extract_tar_to_bmc(ssh_client, tar_file_name):
     ''' copy tar file to bmc: sftp not available on bmc '''
 
-    def progress(filename, size, sent):
-        sys.stdout.write("copying tar file to %s progress: %.2f%%   \r" %
-                         (filename.decode('utf-8'), float(sent)/float(size)*100))
-
     scp_file(ssh_client, BMC_INSTALL_DIR, tar_file_name)
 
     # now extract it
@@ -293,10 +305,13 @@ def parse_args():
                             help='''root for name of sub directory in which SPB will be built
                             default is "image_build" ''')
     arg_parser.add_argument("-c", "--chip", action='store',
-                            default='f1', choices=['f1', 's1', 'f1d1', 's2'],
-                            help="Machine (f1,s1), default = f1")
+                            default='f1',
+                            choices=['f1', 's1', 'f1d1', 's2', 'f2'],
+                            help="Machine (f1,s1,etc...), default = f1")
     arg_parser.add_argument("-e", "--eeprom", action='store',
                             help="eeprom type")
+    arg_parser.add_argument("--sign-all-eeproms", action='store_true',
+                            help="Sign all eeproms -- legacy behavior")
     arg_parser.add_argument("--emulation", action='store_const', const=1, default=0,
                             help="emulation_build")
     arg_parser.add_argument("-n", "--enrollment-certificate", action='store',
@@ -325,23 +340,33 @@ def parse_args():
     arg_parser.add_argument("--tar", action='store_true',
                             default='--bmc' in sys.argv,
                             help="generate tgz file with the image and all eeproms")
+
+    arg_parser.add_argument("-l", "--local", action='store_true',
+                          help='''create a tgz file locally for use with run_fwupgrade.py
+                          as /var/www/sbp_images''')
+
     arg_parser.add_argument("--bmc", action='store',
                             help="BMC on which to store the build (for install/recovery)")
 
-    dest_grp = arg_parser.add_mutually_exclusive_group()
-
-    dest_grp.add_argument("-u", "--user", action='store', metavar='USERNAME',
-                            help='''create a tgz file on dochub for use with run_fwupgrade.py
+    arg_parser.add_argument("-u", "--user", action='store', metavar='USERNAME',
+                                help='''create a tgz file on dochub for use with run_fwupgrade.py
                             as dochub.fungible.local/doc/sbp_images/<username>/<version>/''')
-    dest_grp.add_argument("-l", "--local", action='store_true',
-                          help='''create a tgz file locally for use with run_fwupgrade.py
-                          as /var/www/sbp_images''')
+
+    arg_parser.add_argument("--dochub", action='store', metavar='SERVER',
+                                default='vnc-shared-01.fungible.local',
+                                help='''server to use to copy file on dochub. cf."--user" arg''')
 
     return arg_parser.parse_args()
 
 
 def sanitize_args(args, eeproms_dir):
     ''' sanitize the args and provide meaningful defaults '''
+
+    # can we scp?
+    can_scp = { 'paramiko', 'scp' } <= sys.modules.keys()
+    if not can_scp and (args.bmc or args.user):
+        args.bmc = args.user = 0  # contrast to None
+
     # sbp firmware directory
     if args.sbp is None:
         args.sbp = "{0}/SBPFirmware".format(os.environ['WORKSPACE'])
@@ -353,17 +378,9 @@ def sanitize_args(args, eeproms_dir):
     eeprom_files = sorted(os.listdir(eeproms_dir))
 
     if args.eeprom is None:
-        if args.chip == 'f1':
-            if args.emulation:
-                args.eeprom = "eeprom_emu_f1"
-            else:
-                args.eeprom = "eeprom_f1_f1_dev_board"
-        elif args.chip == 's1':
-            if args.emulation:
-                args.eeprom = "eeprom_emu_s1_full"
-            else:
-                args.eeprom = "eeprom_s1_s1_dev_board"
-        else:
+        try:
+            args.eeprom = DEFAULT_EEPROMS[(args.chip,args.emulation)]
+        except KeyError:
             print("*** no default eeprom for that chip: %s\n" % args.chip)
             print("Please specify an eeprom to use with the -e/--eeprom option")
             sys.exit(1)
@@ -442,9 +459,10 @@ def main():
     built_images_dir = os.path.join(build_dir, "install")
 
     generate_eeprom_signed_images(script_dir, built_images_dir,
-                                  eeproms_dir, args.version)
+                                  eeproms_dir, args.version,
+                                  None if args.sign_all_eeproms else args.eeprom)
 
-    # now generate a NOR image -- fungible signed by default for the moment
+    # now generate a NOR image
     generate_nor_image(args, script_dir, built_images_dir, eeproms_dir)
 
     print("*** Images in {0} ***".format(built_images_dir))
@@ -463,6 +481,9 @@ def main():
             print("*** Directory with images on {0}: {1} ***".format(
                 args.bmc, os.path.join(BMC_INSTALL_DIR, tar_dir)))
 
+    if args.bmc == 0 or args.user == 0:
+        print('!!!! The "bmc" or "user" option were ignored because '\
+        'the "paramiko" and/or "scp" modules are not currently installed !!!!')
 
 if __name__ == '__main__':
     main()
