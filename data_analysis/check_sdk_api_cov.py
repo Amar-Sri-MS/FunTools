@@ -411,8 +411,24 @@ def apply_exclude_filter(df_api: pd.DataFrame, exclude_file: str) -> pd.DataFram
 
     """
 
-    with open(exclude_file, "r") as f:
-        config = yaml.safe_load(f)
+    def _get_config(exclude_file):
+        """load config and merge with common_config if exists"""
+        with open(exclude_file, "r") as f:
+            config = yaml.safe_load(f)
+        if "common_config" in config:
+            # use the same path as the exclude_file
+            base_dir = os.path.dirname(exclude_file)
+            common_file = os.path.join(base_dir, config["common_config"])
+            with open(common_file, "r") as f:
+                common_config = yaml.safe_load(f)
+
+            config["exclude_filenames"] = (
+                common_config["exclude_filenames"] + config["exclude_filenames"]
+            )
+
+        return config
+
+    config = _get_config(exclude_file)
 
     def _is_excluded(row, exclude_list):
         for exclude in exclude_list:
@@ -457,12 +473,13 @@ def main() -> None:
         if args.output_csv is not None
         else None
     )
-    exclude_list = os.path.join(args.input_dir, args.exclude_list)
 
-    output_exclude_list = "{}.json".format(
+    exclude_list_file = os.path.join(args.input_dir, args.exclude_list)
+
+    output_exclude_list_file = "{}.json".format(
         get_file_base_name_without_ext(args.exclude_list)
     )
-    output_exclude_list = os.path.join(args.output_dir, output_exclude_list)
+    output_exclude_list_file = os.path.join(args.output_dir, output_exclude_list_file)
 
     # read csv
     df_api = pd.read_csv(args.sdk_api)
@@ -471,10 +488,10 @@ def main() -> None:
     df_api, cov_percent = update_coverage_for_sdk_api(df_api, df_cov)
 
     # apply exlude filter
-    exclude_config = apply_exclude_filter(df_api, exclude_list)
+    exclude_config = apply_exclude_filter(df_api, exclude_list_file)
 
     # save exclude config to json
-    with open(output_exclude_list, "w") as f:
+    with open(output_exclude_list_file, "w") as f:
         json.dump(exclude_config, f, indent=4)
 
     # save df_api to csv
@@ -500,7 +517,7 @@ def main() -> None:
     gen_gcovr_json(df_api, cov_percent, output_json)
 
     print(f"SDK APIs coverage:              {cov_percent:.2f}%")
-    print(f"SDK exclusion list:    {output_exclude_list}")
+    print(f"SDK exclusion list:    {output_exclude_list_file}")
     print()
     print(f"Saving summary to html file:    {output_html}")
     print(f"Saving per file (all) summary to html file:    {output_per_file_all_html}")

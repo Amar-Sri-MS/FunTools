@@ -1,6 +1,8 @@
 # f1 sdk config file
 description: "configuration for f1 sdk apis for posix test coverage"
 
+common_config: common_sdk_coverage_exclude_files.yml
+
 # which hardware target image is used for the test
 targets:
   - f1
@@ -12,41 +14,6 @@ platforms:
 # The following files are excluded from the coverage report
 # because they are hw specifics or not run on POSIX environment
 exclude_filenames:
-  # - FunOS/accelerators
-  # - FunOS/hw/common/platform_config.h
-  # - FunOS/hw/csr/csr2_sim.h
-  # - FunOS/hw/dam/dam.h
-  # - FunOS/hw/dmae/hw_dmae_op.h # crypto sim
-  # - FunOS/hw/hsm/hsm.h
-  # - FunOS/hw/le/hw_le.h
-  # - FunOS/hw/le/hw_le_print.h
-  # - FunOS/hw/le/hw_le_sim_csr1.h
-  # - FunOS/hw/le/hw_le_sim_csr2.h
-  # - FunOS/hw/le/hw_le_threaded.h # recheck les, they can be still tested on posix
-  # - FunOS/hw/ocm/ocm.h
-  # - FunOS/hw/rindex/rindex.h # recheck after the first pass
-  - FunOS/hw/sbp/hw_sbp.h
-  - FunOS/networking
-  # - FunOS/nucleus/bam.h
-  # - FunOS/nucleus/channel.h # debug and 64 bit wu
-  - FunOS/nucleus/mem_region.h
-  # - FunOS/nucleus/refbuf.h
-  - FunOS/nucleus/res_alloc_harden.h
-  # - FunOS/nucleus/resource.h
-  # - FunOS/nucleus/time.h # remainings are for 1588
-  - FunOS/platform/include/platform/cpu_cache.h
-  - FunOS/platform/include/platform/fiu_ia.h
-  - FunOS/platform/include/platform/platform.h # recheck after the first pass
-  - FunOS/platform/include/platform/sym.h
-  - FunOS/platform/include/platform/thread.h
-  - FunOS/platform/mips64
-  # - FunOS/platform/posix/fabric.h
-  # - FunOS/platform/posix/include/mm_posix.h
-  # - FunOS/platform/posix/include/vplocal_posix.h # check seems to be not defined
-  - FunOS/platform/posix/mem_region_posix.h
-  # - FunOS/services/commander/fun_commander.h # remove since definition only
-  - FunOS/services/rdma_cm/ib_cm.h # network
-  - FunOS/services/rdma_cm/rdma_cm.h # network
-  - FunOS/utils/common/fw_upgrade.h
-  - FunOS/utils/threaded/csr_utils.h
-  - FunOS/storage/
+  - FunOS/hw/ocm
+  - FunOS/hw/csr/csr2_sim.h
+  - FunOS/hw/le/hw_le_sim_csr2.h
