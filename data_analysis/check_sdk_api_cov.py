@@ -239,13 +239,16 @@ def gen_per_file_summary_html(
 
     summary = f"SDK APIs coverage per file report ({description})"
 
+    total_df_api = len(df_api)  # use the original df_api
     total_files = len(df_api_group)
 
+    df_api_group["untested"] = df_api_group["proto_name"] - df_api_group["coverage"]
     # use more readable column names
     df_api_group.rename(
         columns={
             "proto_name": "No. of all APIs",
-            "coverage": "No. of tested APIs",
+            # "coverage": "No. of tested APIs",
+            "untested": "No. of untested APIs",
             "filename": "Files",
             "cov_percent_per_file": "Per file API test coverage %",
             "exclude": "Exclude for Coverage",
@@ -257,7 +260,8 @@ def gen_per_file_summary_html(
         [
             "Files",
             "No. of all APIs",
-            "No. of tested APIs",
+            "No. of untested APIs",
+            # "No. of tested APIs",
             "Per file API test coverage %",
         ]
     ].to_html(
@@ -268,6 +272,7 @@ def gen_per_file_summary_html(
 
     html_header_str = f"<br>  <br> <h1> {summary} </h1> <br>"
 
+    html_header_str += f"<h4> Total number of APIs: {total_df_api} </h4>"
     html_header_str += f"<h4> Total number files: {total_files} </h4>"
 
     if additional_note is not None:
@@ -331,6 +336,7 @@ def gen_summary_html(
         description = "filtered files"
 
     total_df_api = len(df_api_summary)
+    total_files = len(df_api_summary["filename"].unique())
 
     if untested_api_only:
         df_api_summary = df_api_summary[df_api_summary["coverage"] == False]
@@ -345,13 +351,14 @@ def gen_summary_html(
             "proto_name": "Function",
             "coverage": "Coverage Status",
             "filename": "File",
-            "exclude": "Exclude for Coverage",
+            # "exclude": "Exclude for Coverage",
         },
         inplace=True,
     )
 
     table_str = df_api_summary[
-        ["Function", "Coverage Status", "File", "Exclude for Coverage"]
+        ["Function", "Coverage Status", "File"]
+        # ["Function", "Coverage Status", "File", "Exclude for Coverage"]
     ].to_html(
         index=False,
         justify="center",
@@ -361,6 +368,8 @@ def gen_summary_html(
     html_header_str = f"<br>  <br> <h1> {summary} </h1> <br>"
 
     html_header_str += f"<h4> Total number of APIs: {total_df_api} </h4>"
+
+    html_header_str += f"<h4> Total number files: {total_files} </h4>"
 
     html_header_str += f"<h4> Number of untested APIs: {num_untested_api} </h4> <br>"
 
