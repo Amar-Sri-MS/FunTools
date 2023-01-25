@@ -1,7 +1,6 @@
 description: "common configuration for sdk apis for posix test coverage"
 
 exclude_filenames:
-  - FunOS/hw/sbp/hw_sbp.h
   - FunOS/networking
   - FunOS/nucleus/mem_region.h
   - FunOS/nucleus/res_alloc_harden.h
@@ -12,8 +11,8 @@ exclude_filenames:
   - FunOS/platform/include/platform/thread.h
   - FunOS/platform/mips64
   - FunOS/platform/posix/mem_region_posix.h
+  # - FunOS/platform/posix/include/mm_posix.h # check
   - FunOS/services/rdma_cm/ib_cm.h # network
   - FunOS/services/rdma_cm/rdma_cm.h # network
-  - FunOS/utils/common/fw_upgrade.h
   - FunOS/utils/threaded/csr_utils.h
   - FunOS/storage/
