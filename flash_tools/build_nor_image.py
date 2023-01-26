@@ -310,6 +310,8 @@ def parse_args():
                             help="Machine (f1,s1,etc...), default = f1")
     arg_parser.add_argument("-e", "--eeprom", action='store',
                             help="eeprom type")
+    arg_parser.add_argument("--no-recompile", action='store_true',
+                            help="Do not rebuild, just build image")
     arg_parser.add_argument("--sign-all-eeproms", action='store_true',
                             help="Sign all eeproms -- legacy behavior")
     arg_parser.add_argument("--emulation", action='store_const', const=1, default=0,
@@ -450,10 +452,12 @@ def main():
 
     build_dir = BUILD_DIR_FORMAT.format(**vars(args))
     make_cmd = MAKE_CMD_FORMAT.format(**vars(args))
+    print(args)
 
-    # build the images in the build_dir
-    subprocess.run(make_cmd, shell=True, check=True,
-                   stdout=sys.stdout, stderr=sys.stderr)
+    if not args.no_recompile:
+        # build the images in the build_dir
+        subprocess.run(make_cmd, shell=True, check=True,
+                       stdout=sys.stdout, stderr=sys.stderr)
 
     # images will be in build_dir/install
     built_images_dir = os.path.join(build_dir, "install")
