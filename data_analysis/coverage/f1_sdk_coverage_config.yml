@@ -11,6 +11,12 @@ targets:
 platforms:
   - posix
 
+# exclude APIs for handling 64B Wu
+exclude_api_patterns:
+  - channel64
+  - send64
+  - continuation64
+
 # The following files are excluded from the coverage report
 # because they are hw specifics or not run on POSIX environment
 exclude_filenames:

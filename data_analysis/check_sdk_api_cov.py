@@ -411,7 +411,15 @@ def apply_exclude_filter(df_api: pd.DataFrame, exclude_file: str) -> pd.DataFram
 
     """
 
-    def _get_config(exclude_file):
+    # use the filter_key, which is thek key of the list in the config file, to filter out
+    # APIs and files, wich are in target_column_name columns of the df_api
+    # list of [filter_key, target_column_name]
+    exclude_configs = [
+        ["exclude_filenames", "filename"],
+        ["exclude_api_patterns", "proto_name"],
+    ]
+
+    def _get_config(exclude_file, exclude_keys):
         """load config and merge with common_config if exists"""
         with open(exclude_file, "r") as f:
             config = yaml.safe_load(f)
@@ -422,22 +430,24 @@ def apply_exclude_filter(df_api: pd.DataFrame, exclude_file: str) -> pd.DataFram
             with open(common_file, "r") as f:
                 common_config = yaml.safe_load(f)
 
-            config["exclude_filenames"] = (
-                common_config["exclude_filenames"] + config["exclude_filenames"]
-            )
+            for key, _ in exclude_keys:
+                if key in common_config:
+                    config[key] = common_config[key] + config[key]
 
         return config
 
-    config = _get_config(exclude_file)
+    config = _get_config(exclude_file, exclude_configs)
 
-    def _is_excluded(row, exclude_list):
-        for exclude in exclude_list:
-            if exclude in row["filename"]:
-                return True
+    def _is_excluded(row, exclude_configs):
+        """util function to check if a row should be excluded"""
+        for key, target in exclude_configs:
+            for exclude in config[key]:
+                if exclude in row[target]:
+                    return True
         return False
 
     df_api["exclude"] = df_api.apply(
-        lambda row: _is_excluded(row, config["exclude_filenames"]), axis=1
+        lambda row: _is_excluded(row, exclude_configs), axis=1
     )
 
     return config
