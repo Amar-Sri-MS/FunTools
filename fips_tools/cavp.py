@@ -15,6 +15,7 @@ appended to each individual test
 
 import os
 import sys
+import time
 import argparse
 import requests
 import json
@@ -65,22 +66,30 @@ class TestTester(AbsCAVPTestRunner):
 class DPCCAVP(AbsCAVPTestRunner):
     ''' tester using DPC function '''
 
-    def __init__(self):
-        port = 4223 # fixed port: used to be dpc_host['tcp_port']
-        try:
-            with open('./env.json', 'r') as f:
-                env_dict = json.load(f)
-            if len(env_dict['dpc_hosts']) < 1:
-                raise RuntimeError('No DPC hosts!')
-            # use the name and TCP port of the DPC proxy for 1st chip
-            dpc_host = env_dict['dpc_hosts'][0]
-            host = dpc_host['host']
-        except FileNotFoundError:
-            # no file assume localhost
-            host = 'localhost'
+    def __init__(self, env_file = './env.json'):
+        with open(env_file, 'r') as f:
+            env_dict = json.load(f)
 
-        print('Using dpc host at %s:%s' % (host, port))
-        self.dpc_client = dpc_client.DpcClient(server_address=(host, port))
+        print(json.dumps(env_dict, indent=4))
+
+        dpc_host = env_dict['dpc_hosts'][0]
+        host = dpc_host['host']
+        port = dpc_host['tcp_port']
+
+        dpc = None
+
+        for i in range(0, 10):
+            try:
+                dpc = dpc_client.DpcClient(server_address=(host, port))
+                break
+            except Exception as e:
+                print('Still waiting for DPC proxy')
+                time.sleep(10)
+        if not dpc:
+            print('Problems setting up dpc connection.')
+            raise RuntimeError('Could not connect to DPC proxy')
+
+        self.dpc_client = dpc
 
 
     def test(self, request):
@@ -97,8 +106,6 @@ class DPCCAVP(AbsCAVPTestRunner):
 
         raise RuntimeError("Results returned not understood: %s" %
                            results)
-
-
 
 
 #########################################
@@ -221,7 +228,8 @@ class CAVPTest:
         # need to generate a private key
         curve_name = test_group["curve"]
 
-        private_key = ec.generate_private_key(self.CURVE_MAPPING[curve_name]())
+        private_key = ec.generate_private_key(self.CURVE_MAPPING[curve_name](),
+                                              backend=default_backend())
 
         # private components -> input
         # public components -> output
