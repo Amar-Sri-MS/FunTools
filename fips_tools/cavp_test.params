@@ -14,4 +14,4 @@ TAGS : team_lostsouls, CAVP Test
 NOTE : CAVP Test <description>
 USE_CCLINUX: true
 BOOTARGS : app=load_mods --dpc-server
-CENTRAL_SCRIPT: cavp.py --remote http://ferino-vm1.fungible.local/webdav -t DPCCAVP -u cavp -p ChatsDeSempe
+CENTRAL_SCRIPT: FunSDK/bin/fips_tools/cavp.py --remote http://ferino-vm1.fungible.local/webdav -t DPCCAVP -u cavp -p ChatsDeSempe

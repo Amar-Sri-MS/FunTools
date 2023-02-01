@@ -44,6 +44,17 @@ def response_file_name(req_file_name):
         return rreplace(req_file_name, '.req', '.rsp', 1)
     return req_file_name + '.rsp'
 
+
+def load_env_file(env_file):
+
+    with open(env_file, 'r') as f:
+        env_dict = json.load(f)
+
+    print(json.dumps(env_dict, indent=4))
+
+    dpc_host = env_dict['dpc_hosts'][0]
+    return dpc_host['host'], dpc_host['tcp_port']
+
 ######
 # Tester classes
 #
@@ -51,6 +62,9 @@ def response_file_name(req_file_name):
 
 class AbsCAVPTestRunner:
     ''' abstract tester class '''
+    def __init__(self, _):
+        pass
+
     def test(self, request):
         raise RuntimeError("abstract class called")
 
@@ -66,18 +80,19 @@ class TestTester(AbsCAVPTestRunner):
 class DPCCAVP(AbsCAVPTestRunner):
     ''' tester using DPC function '''
 
-    def __init__(self, env_file = './env.json'):
-        with open(env_file, 'r') as f:
-            env_dict = json.load(f)
+    def __init__(self, arg_dict):
 
-        print(json.dumps(env_dict, indent=4))
-
-        dpc_host = env_dict['dpc_hosts'][0]
-        host = dpc_host['host']
-        port = dpc_host['tcp_port']
+        if arg_dict.get('dpc_port'):
+            host = 'localhost'
+            port = int(arg_dict['dpc_port'],0)
+        elif arg_dict.get('env_file'):
+            host,port = load_env_file(arg_dict['env_file'])
+        else:
+            host,port = load_env_file('./env.json')
 
         dpc = None
 
+        print("Connecting to %s:%s" % (host, port))
         for i in range(0, 10):
             try:
                 dpc = dpc_client.DpcClient(server_address=(host, port))
@@ -435,6 +450,13 @@ def parse_args():
                         help='Suffix added to the testType field in the test spec')
     parser.add_argument('-t', '--tester', default='TestTester',
                         help='tester class')
+    # dpc connection group
+    dpc_conn = parser.add_mutually_exclusive_group()
+    dpc_conn.add_argument('--dpc-port',
+                          help="Port returned by localhost dpcsh -T (POSIX)")
+    dpc_conn.add_argument('--env-file',
+                          help="Alternative env file (default = ./env.json)")
+
     args = parser.parse_args()
 
     # allow the remote argument to specify the whole input instead of
@@ -461,7 +483,7 @@ def execute_all_tests(args):
 
     LOCAL_FILE_NAME = 'curr_test.req.json'
 
-    tester = globals()[args.tester]()
+    tester = globals()[args.tester](vars(args))
     if args.remote:
         # download the file, run the test, upload the file
         webclient = WebDavClient(args.remote, args.user, args.password)

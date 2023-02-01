@@ -37,10 +37,18 @@ Start a dpcsh process (macOS example):
 ./bin/Darwin/dpcsh -T
 ```
 
-And then run the `cavp.py` program.
+The `dpcsh` program will print the port it listens to:
+
+```
+2023-02-01T17:15:22.355722Z INF FunSDK version bld_19335, branch: 725b16e
+2023-02-01T17:15:22.357369Z INF connecting server socket
+Publishing on port 40221
+```
+
+And then run the `cavp.py` program using the `--dpc-port` option to indicate the port:
 
 ```sh
-./cavp.py -t DPCCAVP <test_files>
+./cavp.py --dpc-port 40221 -t DPCCAVP <test_files>
 ```
 
 ## Remote Testing
