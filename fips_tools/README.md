@@ -75,11 +75,10 @@ RUN_TARGET : F1
 FAST_EXIT : false
 MAX_DURATION : 30
 
-# Optional params
 TAGS : CAVP Test
 NOTE : CAVP Test
 BOOTARGS : app=load_mods --dpc-server
-REMOTE_SCRIPT: cavp.py --remote http://ferino-vm1.fungible.local/webdav -t DPCCAVP -u <user> -p <password> responses/sha2/132238/SHA-1.408819_trunc.req.json
+CENTRAL_SCRIPT: cavp.py --remote http://ferino-vm1.fungible.local/webdav -t DPCCAVP -u <user> -p <password> responses/sha2/132238/SHA-1.408819_trunc.req.json
 ```
 
 And then start the job:
@@ -88,10 +87,10 @@ And then start the job:
  ~robotpal/bin/run_f1.py --params ../run_upgrade/cavp_test_short_sha1.params funos-f1.signed
 ```
 
-Note that a `run_f1.py` feature is that it will strip the path to the script if it cannot be found. So the REMOTE_SCRIPT line could use the FunSDK path to cavp.py and will still load the local script. Prefixing with the FunSDK path is useful to run from Jenkins.
+Note that a `run_f1.py` feature is that it will strip the path to the script if it cannot be found. So the CENTRAL_SCRIPT line could use the FunSDK path to cavp.py and will still load the local script which allows local testing for development. Prefixing with the FunSDK path is useful to run from Jenkins. So the sample file `cavp.params` is using the FunSDK prefix.
 
 ```
-REMOTE_SCRIPT: FunSDK/bin/fips_tools/cavp.py --remote http://ferino-vm1.fungible.local/webdav -t DPCCAVP -u <user> -p <password> responses/sha2/132238/SHA-1.408819_trunc.req.json
+CENTRAL_SCRIPT: FunSDK/bin/fips_tools/cavp.py --remote http://ferino-vm1.fungible.local/webdav -t DPCCAVP -u <user> -p <password> responses/sha2/132238/SHA-1.408819_trunc.req.json
 ```
 
 
