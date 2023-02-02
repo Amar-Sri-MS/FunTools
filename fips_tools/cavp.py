@@ -15,6 +15,7 @@ appended to each individual test
 
 import os
 import sys
+import time
 import argparse
 import requests
 import json
@@ -43,6 +44,17 @@ def response_file_name(req_file_name):
         return rreplace(req_file_name, '.req', '.rsp', 1)
     return req_file_name + '.rsp'
 
+
+def load_env_file(env_file):
+
+    with open(env_file, 'r') as f:
+        env_dict = json.load(f)
+
+    print(json.dumps(env_dict, indent=4))
+
+    dpc_host = env_dict['dpc_hosts'][0]
+    return dpc_host['host'], dpc_host['tcp_port']
+
 ######
 # Tester classes
 #
@@ -50,6 +62,9 @@ def response_file_name(req_file_name):
 
 class AbsCAVPTestRunner:
     ''' abstract tester class '''
+    def __init__(self, _):
+        pass
+
     def test(self, request):
         raise RuntimeError("abstract class called")
 
@@ -65,22 +80,31 @@ class TestTester(AbsCAVPTestRunner):
 class DPCCAVP(AbsCAVPTestRunner):
     ''' tester using DPC function '''
 
-    def __init__(self):
-        port = 4223 # fixed port: used to be dpc_host['tcp_port']
-        try:
-            with open('./env.json', 'r') as f:
-                env_dict = json.load(f)
-            if len(env_dict['dpc_hosts']) < 1:
-                raise RuntimeError('No DPC hosts!')
-            # use the name and TCP port of the DPC proxy for 1st chip
-            dpc_host = env_dict['dpc_hosts'][0]
-            host = dpc_host['host']
-        except FileNotFoundError:
-            # no file assume localhost
-            host = 'localhost'
+    def __init__(self, arg_dict):
 
-        print('Using dpc host at %s:%s' % (host, port))
-        self.dpc_client = dpc_client.DpcClient(server_address=(host, port))
+        if arg_dict.get('dpc_port'):
+            host = 'localhost'
+            port = int(arg_dict['dpc_port'],0)
+        elif arg_dict.get('env_file'):
+            host,port = load_env_file(arg_dict['env_file'])
+        else:
+            host,port = load_env_file('./env.json')
+
+        dpc = None
+
+        print("Connecting to %s:%s" % (host, port))
+        for i in range(0, 10):
+            try:
+                dpc = dpc_client.DpcClient(server_address=(host, port))
+                break
+            except Exception as e:
+                print('Still waiting for DPC proxy')
+                time.sleep(10)
+        if not dpc:
+            print('Problems setting up dpc connection.')
+            raise RuntimeError('Could not connect to DPC proxy')
+
+        self.dpc_client = dpc
 
 
     def test(self, request):
@@ -97,8 +121,6 @@ class DPCCAVP(AbsCAVPTestRunner):
 
         raise RuntimeError("Results returned not understood: %s" %
                            results)
-
-
 
 
 #########################################
@@ -221,7 +243,8 @@ class CAVPTest:
         # need to generate a private key
         curve_name = test_group["curve"]
 
-        private_key = ec.generate_private_key(self.CURVE_MAPPING[curve_name]())
+        private_key = ec.generate_private_key(self.CURVE_MAPPING[curve_name](),
+                                              backend=default_backend())
 
         # private components -> input
         # public components -> output
@@ -427,6 +450,13 @@ def parse_args():
                         help='Suffix added to the testType field in the test spec')
     parser.add_argument('-t', '--tester', default='TestTester',
                         help='tester class')
+    # dpc connection group
+    dpc_conn = parser.add_mutually_exclusive_group()
+    dpc_conn.add_argument('--dpc-port',
+                          help="Port returned by localhost dpcsh -T (POSIX)")
+    dpc_conn.add_argument('--env-file',
+                          help="Alternative env file (default = ./env.json)")
+
     args = parser.parse_args()
 
     # allow the remote argument to specify the whole input instead of
@@ -453,7 +483,7 @@ def execute_all_tests(args):
 
     LOCAL_FILE_NAME = 'curr_test.req.json'
 
-    tester = globals()[args.tester]()
+    tester = globals()[args.tester](vars(args))
     if args.remote:
         # download the file, run the test, upload the file
         webclient = WebDavClient(args.remote, args.user, args.password)
