@@ -209,7 +209,8 @@ def gen_per_group_summary_html(
     group_type: str,
     additional_note: List[str] = None,
     use_exclude_col: bool = False,
-) -> None:
+    return_df: bool = False,
+) -> Union[None, pd.DataFrame]:
     """Prepare per "group_type" summary html and save to file
 
     Parameters
@@ -224,10 +225,13 @@ def gen_per_group_summary_html(
         Additional note, by default None
     exclude_files : List[str], optional
         Exclude files, by default None
+    return_df : bool, optional
+        Return df_api_summary, by default False
 
     Returns
     -------
-    None
+    return_df : bool, optional
+        Return df_api_summary, by default False
     """
 
     if group_type == "module":
@@ -236,7 +240,6 @@ def gen_per_group_summary_html(
         group = "filename"
     else:
         raise ValueError(f"Invalid group_type: {group_type}")
-    # group = "dirname" if group_type == "module" else "filename"
 
     # copy df_api to df_api_summary
     _df_api = df_api.copy()
@@ -248,8 +251,12 @@ def gen_per_group_summary_html(
 
     _df_api["dirname"] = _df_api["filename"].apply(lambda x: os.path.dirname(x))
 
-    # only keep the last dir names from FunOS
-    # f_api["dirname"] = _df_api["dirname"].apply(lambda x: "/".join(x.split("/")[6:]))
+    # only include files where 'exclude' columns is False
+    if use_exclude_col:
+        _df_api = _df_api[_df_api["exclude"] == False]
+        description = "filtered files"
+    else:
+        description = "all files"
 
     df_api_group = _df_api.groupby(group, as_index=False).sum()
     df_group_proto_count = _df_api.groupby(group, as_index=False)["proto_name"].count()
@@ -263,19 +270,11 @@ def gen_per_group_summary_html(
     # sort based on cov_percent_per_file column
     df_api_group = df_api_group.sort_values(by="cov_percent_per_file", ascending=True)
 
-    # only include files where 'exclude' columns is False
-    description = "all files"
-    if use_exclude_col:
-        import pdb
-
-        pdb.set_trace()
-        df_api_group = df_api_group[df_api_group["exclude"] == False]
-        description = "filtered files"
-
     summary = f"SDK APIs coverage per {group_type} report ({description})"
 
     total_df_api = len(df_api)  # use the original df_api
-    total_files = len(df_api_group)
+    total_group_elements = len(df_api_group)
+    total_df_api_group = sum(df_api_group["proto_name"])
 
     df_api_group["untested"] = df_api_group["proto_name"] - df_api_group["coverage"]
     # use more readable column names
@@ -320,7 +319,12 @@ def gen_per_group_summary_html(
     html_header_str = f"<br>  <br> <h1> {summary} </h1> <br>"
 
     html_header_str += f"<h4> Total number of APIs: {total_df_api} </h4>"
-    html_header_str += f"<h4> Total number files: {total_files} </h4>"
+    html_header_str += (
+        f"<h4>       Number of APIs in this page: {total_df_api_group} </h4>"
+    )
+    html_header_str += (
+        f"<h4> Total number of {group_type} in this page: {total_group_elements} </h4>"
+    )
 
     if additional_note is not None:
         html_header_str += f"<br>"
@@ -337,7 +341,11 @@ def gen_per_group_summary_html(
     with open(output_html, "w", encoding="utf-8") as f:
         f.write(html_str)
 
+    if return_df:
+        return _df_api
+
     del _df_api
+    return None
 
 
 def gen_summary_html(
@@ -579,20 +587,24 @@ def main() -> None:
     )
 
     # per file summary
-    gen_per_group_summary_html(
-        df_api, output_per_file_all_html, "file", use_exclude_col=False
+    df1 = gen_per_group_summary_html(
+        df_api, output_per_file_all_html, "file", use_exclude_col=False, return_df=True
     )
-    # gen_per_group_summary_html(
-    #     df_api, output_per_file_filtered_html, "file", use_exclude_col=True
-    # )
+    df2 = gen_per_group_summary_html(
+        df_api,
+        output_per_file_filtered_html,
+        "file",
+        use_exclude_col=True,
+        return_df=True,
+    )
 
     # per module summary
     gen_per_group_summary_html(
         df_api, output_per_module_all_html, "module", use_exclude_col=False
     )
-    # gen_per_group_summary_html(
-    #     df_api, output_per_module_filtered_html, "module", use_exclude_col=True
-    # )
+    gen_per_group_summary_html(
+        df_api, output_per_module_filtered_html, "module", use_exclude_col=True
+    )
 
     gen_gcovr_json(df_api, cov_percent, output_json)
 
