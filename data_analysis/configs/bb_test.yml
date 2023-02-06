@@ -1,6 +1,7 @@
 description:
   - "test for bb"
 job_no:
+  # http://palladium-jobs.fungible.local:8080/job/8023748/raw_file/odp/uartout0.0.txt
   - 8023748 # benchmark wp
 
 col_titles:
