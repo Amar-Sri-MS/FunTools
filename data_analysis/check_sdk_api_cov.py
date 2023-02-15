@@ -598,6 +598,9 @@ def main() -> None:
         return_df=True,
     )
 
+    # save df1 to csv
+    df1.to_csv("per_file_all.csv")
+
     # per module summary
     gen_per_group_summary_html(
         df_api, output_per_module_all_html, "module", use_exclude_col=False

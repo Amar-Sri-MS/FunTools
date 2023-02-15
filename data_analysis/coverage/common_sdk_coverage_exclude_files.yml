@@ -16,7 +16,7 @@ exclude_filenames:
   # CHECK!!!
   - FunOS/nucleus/res_alloc_harden.h # check again!!!
   - FunOS/platform/include/platform/cpu_cache.h
-  - FunOS/platform/include/platform/fiu_ia.h
+  # - FunOS/platform/include/platform/fiu_ia.h # comment out
   - FunOS/platform/include/platform/platform.h # recheck after the first pass
   # CHECK!!!
   - FunOS/platform/include/platform/thread.h
