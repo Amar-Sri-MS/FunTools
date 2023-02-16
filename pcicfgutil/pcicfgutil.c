@@ -452,10 +452,13 @@ static bool get_index_from_key(const char *key, uint32_t *index)
 	bool valid_flag = true;
 	if (!str) {
 		valid_flag = false;
-	} else if (!strcmp(str, "all") || !strcmp(str, "*")) {
-		*index = 0xffffffff;
 	} else {
-		*index = atoi(str);
+		str++;
+		if (!strcmp(str, "all") || !strcmp(str, "*")) {
+			*index = 0xffffffff;
+		} else {
+			*index = atoi(str);
+		}
 	}
 	return valid_flag;
 }
@@ -525,19 +528,26 @@ static bool _parse_hostunit_cfg(struct hw_hsu_api_link_config *cfg,
 static bool _parse_hostunit(struct hw_hsu_api_link_config *cfg,
 			    const struct fun_json *sku)
 {
-	const struct fun_json *hu = NULL, *chu = NULL;
-	fun_json_index_t i = 0, count = 0;
-	uint32_t ring = 0;
-
 	assert(fun_json_is_dict(sku));
 	
-	hu = fun_json_lookup(sku, "HuInterface/HostUnit");
+	/*
+	 * HuInterface/HostUnit can either be the old style JSON Array with
+	 * "_args: [ring]" elements or the newer style JSON Dictionary with
+	 * "hu_{ring}: {}" elements.
+	 *
+	 * We're retaining the ability to parse the older style till we get
+	 * all of the existing SKU Configuration Files converted.
+	 */
+	const struct fun_json *hu = fun_json_lookup(sku, "HuInterface/HostUnit");
 	if (fun_json_is_array(hu)) {
+		fun_json_index_t i = 0, count = 0;
+		uint32_t ring = 0;
+
 		/* iterate over each item */
 		count = fun_json_array_count(hu);
 		for (i = 0; i < count; i++) {
 			/* lookup the item */
-			chu = fun_json_array_at(hu, i);
+			const struct fun_json *chu = fun_json_array_at(hu, i);
 			if (!fun_json_is_dict(chu)) {
 				eprintf("invalid HostUnit array\n");
 				return false;
@@ -552,31 +562,57 @@ static bool _parse_hostunit(struct hw_hsu_api_link_config *cfg,
 			if(!_parse_hostunit_cfg(cfg, chu, ring))
 				return false;
 		}
-	} else if (fun_json_is_dict(hu)) {
-		uint64_t iterator = fun_json_dict_iterator(hu);
-		const char *key;
-		const struct fun_json *chu;
-		while(fun_json_dict_iterate(hu, &iterator, &key, &chu)) {
-			if(chu && fun_json_is_dict(chu)) {
-				if(!get_index_from_key(key, &ring)) {
-					eprintf("invalid key\n");
-					continue;
-				}
-				if (ring >= HW_HSU_API_LINK_CONFIG_V0_MAX_RINGS) {
-					/* most likely posix */
-					continue;
-				}
-				if(!_parse_hostunit_cfg(cfg, chu, ring))
-					return false;
-			} else {
-				eprintf("invalid HostUnit\n");
-				return false;
-			}
-		}
-	} else {
-		eprintf("failed to find HostUnit table\n");
+
+		return true;
+	}
+
+	/*
+	 * HuInterface/HostUnit is a JSON Dictionary with the form:
+	 *
+	 *     {
+	 *         hu_{ring}: {
+	 *             ...
+	 *         },
+	 *         ...
+	 *     }
+	 */
+	if (!hu) {
+		eprintf("HostUnit: can't find dictionary\n");
 		return false;
 	}
+	if (!fun_json_is_dict(hu)) {
+		eprintf("HostUnit: not a dictionary\n");
+		return false;
+	}
+
+	uint64_t hu_iterator = fun_json_dict_iterator(hu);
+	const char *hu_key;
+	const struct fun_json *hu_json;
+	while(fun_json_dict_iterate(hu, &hu_iterator, &hu_key, &hu_json)) {
+		if (!hu_json) {
+			eprintf("HostUnit: unable to iterate over");
+			return false;
+		}
+		if (!fun_json_is_dict(hu_json)) {
+			eprintf("HostUnit(%s): not a dictionary\n", hu_key);
+			return false;
+		}
+
+		uint32_t ring;
+		if (!get_index_from_key(hu_key, &ring)) {
+			eprintf("HostUnit(%s): can't find index\n", hu_key);
+			continue;
+		}
+
+		if (ring >= HW_HSU_API_LINK_CONFIG_V0_MAX_RINGS) {
+			/* most likely posix */
+			continue;
+		}
+
+		if(!_parse_hostunit_cfg(cfg, hu_json, ring))
+			return false;
+	}
+
 	return true;
 }
 
@@ -678,20 +714,28 @@ static bool _parse_hostunitcontroller_cfg(struct hw_hsu_api_link_config *cfg,
 static bool _parse_hostunitcontroller(struct hw_hsu_api_link_config *cfg,
 				      const struct fun_json *sku)
 {
-	const struct fun_json *huc = NULL, *chu = NULL;
-	fun_json_index_t i = 0, count = 0;
-	uint32_t ring = 0, cid = 0;
-	bool r = false;
-	
 	assert(fun_json_is_dict(sku));
 	
-	huc = fun_json_lookup(sku, "HuInterface/HostUnitController");
+	/*
+	 * HuInterface/HostUnitController can either be the old style
+	 * JSON Array with "_args: [ring, cid]" embeded elements, or the
+	 * newer style JSON Dictionary with "hu_{ring}: {ctl_{cid}: {}}"
+	 * elements.
+	 *
+	 * We're retaining the ability to parse the older style till we get
+	 * all of the existing SKU Configuration Files converted.
+	 */
+	const struct fun_json *huc = fun_json_lookup(sku, "HuInterface/HostUnitController");
 	if (fun_json_is_array(huc)) {
+		fun_json_index_t i = 0, count = 0;
+		uint32_t ring = 0, cid = 0;
+		bool r = false;
+	
 		/* iterate over each item */
 		count = fun_json_array_count(huc);
 		for (i = 0; i < count; i++) {
 			/* lookup the item */
-			chu = fun_json_array_at(huc, i);
+			const struct fun_json *chu = fun_json_array_at(huc, i);
 			if (!fun_json_is_dict(chu)) {
 				eprintf("invalid HostUnitController array\n");
 				return false;
@@ -703,56 +747,98 @@ static bool _parse_hostunitcontroller(struct hw_hsu_api_link_config *cfg,
 				/* most likely posix, ignore it */
 				continue;
 			}
-			if (!_parse_hostunitcontroller_cfg(cfg, chu, ring, cid)) {
+			if (!_parse_hostunitcontroller_cfg(cfg, chu,
+							   ring, cid)) {
 				return false;
 			}
 		}
-	} else if(fun_json_is_dict(huc)) {
-		/* iterate over each item */
-		uint64_t iterator = fun_json_dict_iterator(huc);
-		const char *key;
-		const struct fun_json *chu;
-		while(fun_json_dict_iterate(huc, &iterator, &key, &chu)) {
-			if(chu && fun_json_is_dict(chu)) {
-				if(!get_index_from_key(key, &ring)) {
-					eprintf("invalid key\n");
-					continue;
-				}
-				if (ring >= HW_HSU_API_LINK_CONFIG_V0_MAX_RINGS) {
-					/* most likely posix */
-					continue;
-				}
+		return true;
+	}
 
-				uint64_t iterator_c = fun_json_dict_iterator(chu);
-				const char *ckey;
-				const struct fun_json *cnhu;
-
-				while(fun_json_dict_iterate(huc, &iterator_c, &ckey, &cnhu)) {
-					if(cnhu && fun_json_is_dict(cnhu)) {
-						if(!get_index_from_key(key, &cid)) {
-							eprintf("invalid key\n");
-							continue;
-						}
-						if (cid >= HW_HSU_API_LINK_CONFIG_V0_MAX_CIDS) {
-						/* most likely posix */
-							continue;
-						}
-						if (!_parse_hostunitcontroller_cfg(cfg, chu, ring, cid)) {
-							return false;
-						}
-					} else {
-						eprintf("invalid HostUnitController\n");
-						return false;
-					}
-				}
-			} else {
-				eprintf("invalid HostUnitController\n");
-				return false;
-			}
-		}
-	} else {
-		eprintf("failed to find HostUnitController table\n");
+	/*
+	 * HuInterface/HostUnitController is a JSON Dictionary with the form
+	 *
+	 *     {
+	 *         hu_{ring}: {
+	 *             ctl_{cid}: {
+	 *                 ...
+	 *             },
+	 *             ...
+	 *         },
+	 *         ...
+	 *     }
+	 * "{ hu_{ring}: {ctl_{cid}: { ... }}, ... }"
+	 */
+	if (!huc) {
+		eprintf("HostUnitController: can't find dictionary\n");
 		return false;
+	}
+	if (!fun_json_is_dict(huc)) {
+		eprintf("HostUnitController: not a dictionary\n");
+		return false;
+	}
+
+	uint64_t hu_iterator = fun_json_dict_iterator(huc);
+	const char *hu_key;
+	const struct fun_json *hu_json;
+	while (fun_json_dict_iterate(huc, &hu_iterator,
+				     &hu_key, &hu_json)) {
+		if (!hu_json) {
+			eprintf("HostUnitController: "
+				"unable to iterate over\n");
+			return false;
+		}
+		if (!fun_json_is_dict(hu_json)) {
+			eprintf("HostUnitController(%s): "
+				"not a dictionary\n", hu_key);
+			return false;
+		}
+
+		uint32_t ring;
+		if (!get_index_from_key(hu_key, &ring)) {
+			eprintf("HostUnitController(%s): "
+				"can't find index\n", hu_key);
+			continue;
+		}
+
+		if (ring >= HW_HSU_API_LINK_CONFIG_V0_MAX_RINGS) {
+			/* most likely posix */
+			continue;
+		}
+
+		uint64_t ctl_iterator = fun_json_dict_iterator(hu_json);
+		const char *ctl_key;
+		const struct fun_json *ctl_json;
+		while(fun_json_dict_iterate(hu_json, &ctl_iterator,
+					    &ctl_key, &ctl_json)) {
+			if (!ctl_json) {
+				eprintf("HostUnitController(%s): "
+					"unable to iterate over\n",
+					hu_key);
+				return false;
+			}
+			if (!fun_json_is_dict(ctl_json)) {
+				eprintf("HostUnitController(%s:%s): "
+					"not a dictionary", hu_key, ctl_key);
+				return false;
+			}
+
+			uint32_t cid;
+			if (!get_index_from_key(ctl_key, &cid)) {
+				eprintf("HostUnitController(%s:%s): "
+					"can't find index\n", hu_key, ctl_key);
+				continue;
+			}
+
+			if (cid >= HW_HSU_API_LINK_CONFIG_V0_MAX_CIDS) {
+				/* most likely posix */
+				continue;
+			}
+
+			if (!_parse_hostunitcontroller_cfg(cfg, ctl_json,
+							   ring, cid))
+				return false;
+		}
 	}
 
 	return true;
