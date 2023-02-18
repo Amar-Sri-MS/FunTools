@@ -439,28 +439,57 @@ static bool _parse_hostunits(struct hw_hsu_api_link_config *cfg,
 /**
  *	get_index_from_key - extract index from key
  *	@key: key from json structure
+ *	@prefix: the expected prefix for the key {prefix}_{index},
+ *		NULL allows any prefix
+ *	@index: return value pointer for the extracted index
  *
  *	Key is in the form of key_n, where n is the index.
- *	For example hu_0, vfn_2 etc.
+ *	For example hu_0, vfn_2 etc.  If "n" is "all", then ~0
+ *	will be returned for the @index value.
+ *
  *	Check the index value and re-format
  *	Extracts index and return status with true if valid index found
  *	else return false if invalid.
  */
-static bool get_index_from_key(const char *key, uint32_t *index)
+static bool get_index_from_key(const char *key,
+			       const char *prefix,
+			       uint32_t *index)
 {
-	char *str = strchr(key, '_');
-	bool valid_flag = true;
-	if (!str) {
-		valid_flag = false;
+	/*
+	 * Get to the "_" ...
+	 */
+	const char *indexs;
+	if (prefix) {
+		unsigned int prefix_len = strlen(prefix);
+		const unsigned int min_index_spec = 2; /* "_x" */
+		if (prefix_len + min_index_spec > strlen(key))
+			return false;
+		if (strncmp(key, prefix, prefix_len) != 0)
+			return false;
+		indexs = key + prefix_len;
+		if (*indexs != '_')
+			return false;
 	} else {
-		str++;
-		if (!strcmp(str, "all") || !strcmp(str, "*")) {
-			*index = 0xffffffff;
-		} else {
-			*index = atoi(str);
-		}
+		/* we allow keys with embedded "_" ... */
+		indexs = strrchr(key, '_');
+		if (!indexs)
+			return false;
 	}
-	return valid_flag;
+
+	/*
+	 * Skip past the "_" and do the index extraction.
+	 */
+	indexs++;
+	if (strcmp(indexs, "all") == 0) {
+		*index = ~0;
+		return true;
+	}
+	if (isdigit(*indexs)) {
+		*index = atoi(indexs);
+		return true;
+	}
+
+	return false;
 }
 
 /**
@@ -599,7 +628,7 @@ static bool _parse_hostunit(struct hw_hsu_api_link_config *cfg,
 		}
 
 		uint32_t ring;
-		if (!get_index_from_key(hu_key, &ring)) {
+		if (!get_index_from_key(hu_key, "hu", &ring)) {
 			eprintf("HostUnit(%s): can't find index\n", hu_key);
 			continue;
 		}
@@ -795,7 +824,7 @@ static bool _parse_hostunitcontroller(struct hw_hsu_api_link_config *cfg,
 		}
 
 		uint32_t ring;
-		if (!get_index_from_key(hu_key, &ring)) {
+		if (!get_index_from_key(hu_key, "hu", &ring)) {
 			eprintf("HostUnitController(%s): "
 				"can't find index\n", hu_key);
 			continue;
@@ -824,7 +853,7 @@ static bool _parse_hostunitcontroller(struct hw_hsu_api_link_config *cfg,
 			}
 
 			uint32_t cid;
-			if (!get_index_from_key(ctl_key, &cid)) {
+			if (!get_index_from_key(ctl_key, "ctl", &cid)) {
 				eprintf("HostUnitController(%s:%s): "
 					"can't find index\n", hu_key, ctl_key);
 				continue;
