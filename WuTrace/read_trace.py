@@ -194,7 +194,12 @@ class TraceFileParser(object):
 
     def parse_annotate_event(self, hdr, addl_words):
         (partial_timestamp, faddr, addl_count) = self.parse_header(hdr)
-        clean_msg = clean_string(addl_words)
+        try:
+            annot_string = addl_words.decode('utf-8')
+        except UnicodeDecodeError as e:
+            print('Problems decoding %s' % content)
+            annot_string = ''
+        clean_msg = clean_string(annot_string)
 
         timestamp = self.full_timestamp(faddr, partial_timestamp)
         return event.TransactionAnnotateEvent(timestamp, faddr, clean_msg)
