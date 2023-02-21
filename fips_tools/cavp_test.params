@@ -3,15 +3,15 @@ NAME : F1 CAVP Test
 # At least one email is required in EXTRA_EMAIL for sending failures
 EXTRA_EMAIL : fabrice.ferino@fungible.com
 
-HW_MODEL : F1Endpoint
+HW_MODEL : F1
 PRIORITY : normal_priority
 RUN_TARGET : F1
 FAST_EXIT : false
 MAX_DURATION : 30
 
 # Optional params
-TAGS : team_lostsouls, CAVP Test, F1Endpoint
+TAGS : team_lostsouls, CAVP Test
 NOTE : CAVP Test <description>
 USE_CCLINUX: true
 BOOTARGS : app=load_mods --dpc-server
-REMOTE_SCRIPT: cavp.py --remote http://ferino-vm1.fungible.local/webdav -t DPCCAVP -u cavp -p ChatsDeSempe
+CENTRAL_SCRIPT: FunSDK/bin/fips_tools/cavp.py --remote http://ferino-vm1.fungible.local/webdav -t DPCCAVP -u cavp -p ChatsDeSempe

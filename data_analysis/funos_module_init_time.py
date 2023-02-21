@@ -85,7 +85,7 @@ def _filter_log_with_marker(
     return json.loads(filtered_lines)
 
 
-def _get_ts_first_kernel_log(lines: str) -> float:
+def _get_ts_first_funos_log(lines: str) -> float:
     """Get the timestamp of the first kernel log
 
     Parameters
@@ -145,7 +145,7 @@ def _extract_module_init_data(
         full path of the saved module init file
     notif_init_file_name: str
         full path of the saved notification init file
-    ts_first_kernel_log: float
+    ts_first_funos_log: float
         timestamp of the first kernel log
 
     Raises
@@ -167,7 +167,7 @@ def _extract_module_init_data(
 
     lines_wo_ts = remove_timestamps_from_log(lines)
 
-    ts_first_kernel_log = _get_ts_first_kernel_log(lines)
+    ts_first_funos_log = _get_ts_first_funos_log(lines)
 
     # format for module init
     # { 'accel_telem-init': [14.028537, 14.028581], 'adi-init': [14.058434, 14.058453], ....
@@ -193,7 +193,7 @@ def _extract_module_init_data(
     logger.debug(f"Notifications init file saved to {notificaiotns_init_file_name}")
     # logger.debug(f"CC_linux init file saved to {cc_linux_init_file_name}")
 
-    return modules_init_file_name, notificaiotns_init_file_name, ts_first_kernel_log
+    return modules_init_file_name, notificaiotns_init_file_name, ts_first_funos_log
 
 
 def _extract_module_init_data_raw_input(
@@ -234,7 +234,7 @@ def _extract_module_init_data_raw_input(
         full path of the saved module init file
     notif_init_file_name: str
         full path of the saved notification init file
-    ts_first_kernel_log: float
+    ts_first_funos_log: float
         timestamp of the first kernel log
 
     Raises
@@ -276,7 +276,7 @@ def _extract_module_init_data_raw_input(
 
         return line_d
 
-    ts_first_kernel_log = _get_ts_first_kernel_log(lines)
+    ts_first_funos_log = _get_ts_first_funos_log(lines)
 
     if parse_module:
         found_lines = re.findall("^.*initialized in.*$", lines, re.MULTILINE)
@@ -292,7 +292,7 @@ def _extract_module_init_data_raw_input(
     logger.debug(f"Module init file saved to {modules_init_file_name}")
     logger.debug(f"Notifications init file saved to {notificaiotns_init_file_name}")
 
-    return modules_init_file_name, notificaiotns_init_file_name, ts_first_kernel_log
+    return modules_init_file_name, notificaiotns_init_file_name, ts_first_funos_log
 
 
 def _convert_to_list_of_dicts(
@@ -517,7 +517,7 @@ def _get_longest_gap(
 def _get_perf_stat(
     df_module_notif_in: pd.DataFrame,
     df_module: pd.DataFrame,
-    ts_first_kernel_log: float,
+    ts_first_funos_log: float,
 ) -> dict:
     """Get performance summary stat
 
@@ -528,7 +528,7 @@ def _get_perf_stat(
         dataframe with module_name, start_time, finish_time, module_init_duration and notif
     df_module : pd.DataFrame
         dataframe with module_name, start_time, finish_time, module_init_duration
-    ts_first_kernel_log: float
+    ts_first_funos_log: float
         timestamp of the first kernel log
 
     Returns
@@ -553,10 +553,10 @@ def _get_perf_stat(
     # compute all module duration w/o gaps
 
     total_module_init_time_only_ns = df_module["module_init_duration"].sum()
-    ts_first_kernel_log_ns = ts_first_kernel_log * 10**9
+    ts_first_funos_log_ns = ts_first_funos_log * 10**9
 
-    print("ts_first_kernel_log: {}".format(ts_first_kernel_log))
-    print("ts_first_kernel_log_ns: {}".format(ts_first_kernel_log_ns))
+    # print("ts_first_funos_log: {}".format(ts_first_funos_log))
+    # print("ts_first_funos_log_ns: {}".format(ts_first_funos_log_ns))
 
     result = {
         "longest_duration_ns": longest_duraiton,
@@ -564,8 +564,8 @@ def _get_perf_stat(
         "longest_gap_ns": longest_duration_gap,
         "longest_gap_between": longest_duration_between,
         "total_module_init_time_only_ns": total_module_init_time_only_ns,
-        "time_at_first_kernel_log_ns": ts_first_kernel_log_ns,
-        "total_duration_ns": (finish_max - start_min) + ts_first_kernel_log_ns,
+        "time_at_first_kernel_log_ns": ts_first_funos_log_ns,
+        "total_duration_ns": (finish_max - start_min) + ts_first_funos_log_ns,
     }
 
     return result
@@ -879,7 +879,7 @@ def process_module_notif_init_raw_data(
         (
             modules_init_file_name,
             notificaiotns_init_file_name,
-            ts_first_kernel_log,
+            ts_first_funos_log,
         ) = _extract_module_init_data_raw_input(
             file_name_url=file_name_url,
             logger=logger,
@@ -896,7 +896,7 @@ def process_module_notif_init_raw_data(
     )
 
     # pass the same df, since notif init data is not used
-    result = _get_perf_stat(fun_module_init_df, fun_module_init_df, ts_first_kernel_log)
+    result = _get_perf_stat(fun_module_init_df, fun_module_init_df, ts_first_funos_log)
 
     return fun_module_init_df, result
 
@@ -939,7 +939,7 @@ def process_module_notif_init_data(
         (
             modules_init_file_name,
             notificaiotns_init_file_name,
-            ts_first_kernel_log,
+            ts_first_funos_log,
         ) = _extract_module_init_data(
             file_name_url=file_name_url, logger=logger, working_dir=working_dir
         )
@@ -970,7 +970,7 @@ def process_module_notif_init_data(
     fun_module_notif_init_df = pd.concat([fun_module_init_df, fun_notification_init_df])
 
     result = _get_perf_stat(
-        fun_module_notif_init_df, fun_module_init_df, ts_first_kernel_log
+        fun_module_notif_init_df, fun_module_init_df, ts_first_funos_log
     )
 
     return fun_module_notif_init_df, fun_module_init_df, result

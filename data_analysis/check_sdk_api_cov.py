@@ -93,6 +93,19 @@ def _get_args() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--output_per_module_all_html",
+        type=str,
+        default="sdk_per_module_coverage_report_all.html",
+        help="Per module coverage html file",
+    )
+    parser.add_argument(
+        "--output_per_module_filtered_html",
+        type=str,
+        default="sdk_per_module_coverage_report_filtered.html",
+        help="Per module coverage html file",
+    )
+
+    parser.add_argument(
         "--exclude_list",
         type=str,
         default="coverage/f1_sdk_coverage_config.yml",
@@ -190,13 +203,15 @@ def gen_gcovr_json(
         json.dump(gcovr_dict, f, indent=4)
 
 
-def gen_per_file_summary_html(
+def gen_per_group_summary_html(
     df_api: pd.DataFrame,
     output_html: str,
+    group_type: str,
     additional_note: List[str] = None,
     use_exclude_col: bool = False,
-) -> None:
-    """Prepare per file summary html and save to file
+    return_df: bool = False,
+) -> Union[None, pd.DataFrame]:
+    """Prepare per "group_type" summary html and save to file
 
     Parameters
     ----------
@@ -204,25 +219,49 @@ def gen_per_file_summary_html(
         SDK APIs
     output_html : str
         Output html file
+    group_type : str
+        Group type, "module" or "file"
     additional_note : List[str], optional
         Additional note, by default None
     exclude_files : List[str], optional
         Exclude files, by default None
+    return_df : bool, optional
+        Return df_api_summary, by default False
 
     Returns
     -------
-    None
+    return_df : bool, optional
+        Return df_api_summary, by default False
     """
+
+    if group_type == "module":
+        group = "dirname"
+    elif group_type == "file":
+        group = "filename"
+    else:
+        raise ValueError(f"Invalid group_type: {group_type}")
 
     # copy df_api to df_api_summary
     _df_api = df_api.copy()
 
-    df_api_group = _df_api.groupby("filename", as_index=False).sum()
-    df_group_proto_count = _df_api.groupby("filename", as_index=False)[
-        "proto_name"
-    ].count()
+    # only keep the last dir names from FunOS
+    _df_api["filename"] = _df_api["filename"].apply(
+        lambda x: "/".join(x.split("/")[6:])
+    )
+
+    _df_api["dirname"] = _df_api["filename"].apply(lambda x: os.path.dirname(x))
+
+    # only include files where 'exclude' columns is False
+    if use_exclude_col:
+        _df_api = _df_api[_df_api["exclude"] == False]
+        description = "filtered files"
+    else:
+        description = "all files"
+
+    df_api_group = _df_api.groupby(group, as_index=False).sum()
+    df_group_proto_count = _df_api.groupby(group, as_index=False)["proto_name"].count()
     # merge proto_name from df_group_proto_count to df_api_group
-    df_api_group = pd.merge(df_api_group, df_group_proto_count, on="filename")
+    df_api_group = pd.merge(df_api_group, df_group_proto_count, on=group)
 
     df_api_group["cov_percent_per_file"] = (
         df_api_group["coverage"] / df_api_group["proto_name"] * 100
@@ -231,21 +270,20 @@ def gen_per_file_summary_html(
     # sort based on cov_percent_per_file column
     df_api_group = df_api_group.sort_values(by="cov_percent_per_file", ascending=True)
 
-    # only include files where 'exclude' columns is False
-    description = "all files"
-    if use_exclude_col:
-        df_api_group = df_api_group[df_api_group["exclude"] == False]
-        description = "filtered files"
+    summary = f"SDK APIs coverage per {group_type} report ({description})"
 
-    summary = f"SDK APIs coverage per file report ({description})"
+    total_df_api = len(df_api)  # use the original df_api
+    total_group_elements = len(df_api_group)
+    total_df_api_group = sum(df_api_group["proto_name"])
 
-    total_files = len(df_api_group)
-
+    df_api_group["untested"] = df_api_group["proto_name"] - df_api_group["coverage"]
     # use more readable column names
     df_api_group.rename(
         columns={
             "proto_name": "No. of all APIs",
-            "coverage": "No. of tested APIs",
+            # "coverage": "No. of tested APIs",
+            "untested": "No. of untested APIs",
+            "dirname": "Modules",
             "filename": "Files",
             "cov_percent_per_file": "Per file API test coverage %",
             "exclude": "Exclude for Coverage",
@@ -253,14 +291,26 @@ def gen_per_file_summary_html(
         inplace=True,
     )
 
-    table_str = df_api_group[
-        [
-            "Files",
+    if group_type == "module":
+        col_list = [
+            "Modules",
             "No. of all APIs",
-            "No. of tested APIs",
+            "No. of untested APIs",
+            # "No. of tested APIs",
             "Per file API test coverage %",
         ]
-    ].to_html(
+    elif group_type == "file":
+        col_list = [
+            "Files",
+            "No. of all APIs",
+            "No. of untested APIs",
+            # "No. of tested APIs",
+            "Per file API test coverage %",
+        ]
+    else:
+        raise ValueError(f"Invalid group_type: {group_type}")
+
+    table_str = df_api_group[col_list].to_html(
         index=False,
         justify="center",
         float_format="{:.2f}".format,
@@ -268,7 +318,13 @@ def gen_per_file_summary_html(
 
     html_header_str = f"<br>  <br> <h1> {summary} </h1> <br>"
 
-    html_header_str += f"<h4> Total number files: {total_files} </h4>"
+    html_header_str += f"<h4> Total number of APIs: {total_df_api} </h4>"
+    html_header_str += (
+        f"<h4>       Number of APIs in this page: {total_df_api_group} </h4>"
+    )
+    html_header_str += (
+        f"<h4> Total number of {group_type} in this page: {total_group_elements} </h4>"
+    )
 
     if additional_note is not None:
         html_header_str += f"<br>"
@@ -285,7 +341,11 @@ def gen_per_file_summary_html(
     with open(output_html, "w", encoding="utf-8") as f:
         f.write(html_str)
 
+    if return_df:
+        return _df_api
+
     del _df_api
+    return None
 
 
 def gen_summary_html(
@@ -319,6 +379,11 @@ def gen_summary_html(
     # copy df_api to df_api_summary
     df_api_summary = df_api.copy()
 
+    # only keep the last dir names from FunOS
+    df_api_summary["filename"] = df_api_summary["filename"].apply(
+        lambda x: "/".join(x.split("/")[6:])
+    )
+
     # coverage percentage
     cov_percent = df_api_summary["coverage"].sum() / len(df_api_summary) * 100
 
@@ -331,6 +396,7 @@ def gen_summary_html(
         description = "filtered files"
 
     total_df_api = len(df_api_summary)
+    total_files = len(df_api_summary["filename"].unique())
 
     if untested_api_only:
         df_api_summary = df_api_summary[df_api_summary["coverage"] == False]
@@ -345,13 +411,14 @@ def gen_summary_html(
             "proto_name": "Function",
             "coverage": "Coverage Status",
             "filename": "File",
-            "exclude": "Exclude for Coverage",
+            # "exclude": "Exclude for Coverage",
         },
         inplace=True,
     )
 
     table_str = df_api_summary[
-        ["Function", "Coverage Status", "File", "Exclude for Coverage"]
+        ["Function", "Coverage Status", "File"]
+        # ["Function", "Coverage Status", "File", "Exclude for Coverage"]
     ].to_html(
         index=False,
         justify="center",
@@ -361,6 +428,8 @@ def gen_summary_html(
     html_header_str = f"<br>  <br> <h1> {summary} </h1> <br>"
 
     html_header_str += f"<h4> Total number of APIs: {total_df_api} </h4>"
+
+    html_header_str += f"<h4> Total number files: {total_files} </h4>"
 
     html_header_str += f"<h4> Number of untested APIs: {num_untested_api} </h4> <br>"
 
@@ -402,17 +471,43 @@ def apply_exclude_filter(df_api: pd.DataFrame, exclude_file: str) -> pd.DataFram
 
     """
 
-    with open(exclude_file, "r") as f:
-        config = yaml.safe_load(f)
+    # use the filter_key, which is thek key of the list in the config file, to filter out
+    # APIs and files, wich are in target_column_name columns of the df_api
+    # list of [filter_key, target_column_name]
+    exclude_configs = [
+        ["exclude_filenames", "filename"],
+        ["exclude_api_patterns", "proto_name"],
+    ]
 
-    def _is_excluded(row, exclude_list):
-        for exclude in exclude_list:
-            if exclude in row["filename"]:
-                return True
+    def _get_config(exclude_file, exclude_keys):
+        """load config and merge with common_config if exists"""
+        with open(exclude_file, "r") as f:
+            config = yaml.safe_load(f)
+        if "common_config" in config:
+            # use the same path as the exclude_file
+            base_dir = os.path.dirname(exclude_file)
+            common_file = os.path.join(base_dir, config["common_config"])
+            with open(common_file, "r") as f:
+                common_config = yaml.safe_load(f)
+
+            for key, _ in exclude_keys:
+                if key in common_config:
+                    config[key] = common_config[key] + config[key]
+
+        return config
+
+    config = _get_config(exclude_file, exclude_configs)
+
+    def _is_excluded(row, exclude_configs):
+        """util function to check if a row should be excluded"""
+        for key, target in exclude_configs:
+            for exclude in config[key]:
+                if exclude in row[target]:
+                    return True
         return False
 
     df_api["exclude"] = df_api.apply(
-        lambda row: _is_excluded(row, config["exclude_filenames"]), axis=1
+        lambda row: _is_excluded(row, exclude_configs), axis=1
     )
 
     return config
@@ -442,18 +537,27 @@ def main() -> None:
     output_per_file_filtered_html = os.path.join(
         args.output_dir, args.output_per_file_filtered_html
     )
+
+    output_per_module_all_html = os.path.join(
+        args.output_dir, args.output_per_module_all_html
+    )
+    output_per_module_filtered_html = os.path.join(
+        args.output_dir, args.output_per_module_filtered_html
+    )
+
     output_json = os.path.join(args.output_dir, args.output_json)
     output_csv = (
         os.path.join(args.output_dir, args.output_csv)
         if args.output_csv is not None
         else None
     )
-    exclude_list = os.path.join(args.input_dir, args.exclude_list)
 
-    output_exclude_list = "{}.json".format(
+    exclude_list_file = os.path.join(args.input_dir, args.exclude_list)
+
+    output_exclude_list_file = "{}.json".format(
         get_file_base_name_without_ext(args.exclude_list)
     )
-    output_exclude_list = os.path.join(args.output_dir, output_exclude_list)
+    output_exclude_list_file = os.path.join(args.output_dir, output_exclude_list_file)
 
     # read csv
     df_api = pd.read_csv(args.sdk_api)
@@ -462,10 +566,10 @@ def main() -> None:
     df_api, cov_percent = update_coverage_for_sdk_api(df_api, df_cov)
 
     # apply exlude filter
-    exclude_config = apply_exclude_filter(df_api, exclude_list)
+    exclude_config = apply_exclude_filter(df_api, exclude_list_file)
 
     # save exclude config to json
-    with open(output_exclude_list, "w") as f:
+    with open(output_exclude_list_file, "w") as f:
         json.dump(exclude_config, f, indent=4)
 
     # save df_api to csv
@@ -483,15 +587,32 @@ def main() -> None:
     )
 
     # per file summary
-    gen_per_file_summary_html(df_api, output_per_file_all_html, use_exclude_col=False)
-    gen_per_file_summary_html(
-        df_api, output_per_file_filtered_html, use_exclude_col=True
+    df1 = gen_per_group_summary_html(
+        df_api, output_per_file_all_html, "file", use_exclude_col=False, return_df=True
+    )
+    df2 = gen_per_group_summary_html(
+        df_api,
+        output_per_file_filtered_html,
+        "file",
+        use_exclude_col=True,
+        return_df=True,
+    )
+
+    # save df1 to csv
+    df1.to_csv("per_file_all.csv")
+
+    # per module summary
+    gen_per_group_summary_html(
+        df_api, output_per_module_all_html, "module", use_exclude_col=False
+    )
+    gen_per_group_summary_html(
+        df_api, output_per_module_filtered_html, "module", use_exclude_col=True
     )
 
     gen_gcovr_json(df_api, cov_percent, output_json)
 
     print(f"SDK APIs coverage:              {cov_percent:.2f}%")
-    print(f"SDK exclusion list:    {output_exclude_list}")
+    print(f"SDK exclusion list:    {output_exclude_list_file}")
     print()
     print(f"Saving summary to html file:    {output_html}")
     print(f"Saving per file (all) summary to html file:    {output_per_file_all_html}")

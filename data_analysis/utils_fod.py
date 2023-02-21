@@ -77,10 +77,8 @@ def fod_extract_pages(
 
             row = get_response(console_file, job_url, console_url)
             collected_jobs.append(row)
-        pass
     else:
         raise ValueError("job_no or job_file must be specified in config")
-        assert False
 
     return collected_jobs
 

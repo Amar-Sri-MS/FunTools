@@ -1,0 +1,33 @@
+description: "common configuration for sdk apis for posix test coverage"
+
+exclude_api_patterns:
+  - issu  # issu is currently not actively used
+
+  # CHECK AGAIN!!! should check if really need this
+  - time1588
+  # CHECK AGAIN!!! should check if it really aborts
+  - padding_wuh # unexpected to call padding_wuh in posix test
+  # CHECK AGAIN!!! should check if it really SIGTRAP
+  - platform_debug_break # raise SIGTRAP in debug build, so not covered
+
+exclude_filenames:
+  - FunOS/networking
+  - FunOS/nucleus/mem_region.h
+  # CHECK!!!
+  - FunOS/nucleus/res_alloc_harden.h # check again!!!
+  - FunOS/platform/include/platform/cpu_cache.h
+  # - FunOS/platform/include/platform/fiu_ia.h # comment out
+  - FunOS/platform/include/platform/platform.h # recheck after the first pass
+  # CHECK!!!
+  - FunOS/platform/include/platform/thread.h
+
+  # CHECK!!!, use it a a negative test, check should not be called
+  # ex> mips64/mm_mips64.h why called in posix?
+  - FunOS/platform/mips64
+
+  # - FunOS/platform/posix/include/mm_posix.h # check
+  - FunOS/services/rdma_cm/ib_cm.h # network
+  - FunOS/services/rdma_cm/rdma_cm.h # network
+  - FunOS/utils/threaded/csr_utils.h # dpcsh is using APIs
+
+  - FunOS/storage
