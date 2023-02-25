@@ -189,10 +189,19 @@ def main() -> None:
     report["total_sdk_files"] = len(sdk_file_df)
     report["total_sdk_files_api_doc_gen"] = len(sdk_gen_doc_df)
     report["total_sdk_files_undocumented"] = len(undocumented_df)
+
+    # fill zero data as placeholder
+    report["total_sdk_apis"] = 0
+    report["total_sdk_apis_api_doc_gen"] = 0
+    report["total_sdk_apis_undocumented"] = 0
+
     report["undocumented_files"] = undocumented_df["filename"].tolist()
     report["sdk_file_doc_gen_percent"] = "{:.2f}".format(
         (len(sdk_gen_doc_df) / len(sdk_file_df)) * 100
     )
+    # TODO: populate the following fields
+    # fill zero data
+    report["sdk_apis_doc_gen_percent"] = "{:.2f}".format(0.0))
 
     # save report to json file
     with open(output_json, "w") as f:
@@ -214,10 +223,16 @@ def main() -> None:
         )
     )
     print(
+        "Percentage of files SDK API doc generated: {}".format(
+            report["sdk_file_doc_gen_percent"]
+        )
+    )
+    print(
         "Percentage of SDK API doc generated: {}".format(
             report["sdk_file_doc_gen_percent"]
         )
     )
+
 
 if __name__ == "__main__":
     main()
