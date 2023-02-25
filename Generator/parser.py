@@ -772,7 +772,7 @@ class Field(Declaration):
       key_comment = ' ' + utils.AsComment(self.key_comment)
 
     if self.type.IsArray():
-      if self.type.ArraySize() == 0 and linux_type:
+      if self.type.ArraySize() == 0:
         str += '%s %s[];%s\n' % (type_name,
                                  self.name,
                                  key_comment)
