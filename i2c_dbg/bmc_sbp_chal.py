@@ -65,11 +65,14 @@ def no_output(*_a,**_k):
     ''' alternative to print for print_fn argument '''
     pass
 
-def hex_str(b_arr):
+def hex_str(b_arr, indent_str=None):
     ''' byte array to hexadecimal codes '''
     s = ":".join(["%02x" % b for b in b_arr])
     ws = textwrap_wrap(s,48)
-    return "\n".join(ws)
+    if indent_str:
+        return ("\n" + indent_str).join(ws)
+    else:
+        return "\n".join(ws)
 
 def str2bytes(s):
     return bytes(str(s).encode('ascii'))
@@ -802,7 +805,7 @@ class DBG_Chal(DBG_FlashOp):
         print('\t%s: %s\n\t\traw: %s' %
               (EXTRA_BYTES_KEY,
                printable_str(extra_bytes),
-               hex_str(extra_bytes)))
+               hex_str(extra_bytes, indent_str="\t\t     ")))
 
 
     def get_serial_number(self):
