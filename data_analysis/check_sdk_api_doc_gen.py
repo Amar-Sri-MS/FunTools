@@ -201,7 +201,7 @@ def main() -> None:
     )
     # TODO: populate the following fields
     # fill zero data
-    report["sdk_apis_doc_gen_percent"] = "{:.2f}".format(0.0))
+    report["sdk_apis_doc_gen_percent"] = "{:.2f}".format(0.0)
 
     # save report to json file
     with open(output_json, "w") as f:
