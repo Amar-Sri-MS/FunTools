@@ -139,10 +139,21 @@ static byte_vector i2c_dbg_chal_read(int chip_instance, int num_bytes)
 	while (read < num_bytes) {
 		int flit_size = num_bytes - read;
 
+#ifdef USE_POSIX_SOCKET
+		/*
+		 * When using a socket, we must properly indicate number
+		 * of bytes requested in the read cmd byte. If the requested number
+		 * is 64 or 65, then the actual number is lost due to overlapping
+		 * with the command bit. This number is probably ignored by real
+		 * HW, but then data is clocked out on i2c master's clock, but
+		 * with a socket interface we have no simple way of telling the device
+		 * how many bytes to return, so ensure that a valid number is
+		 * always requested
+		 */
 		if (flit_size > MAX_FLIT_SIZE) {
-			flit_size = MAX_FLIT_SIZE;
+			flit_size = MAX_FLIT_SIZE - 4;
 		}
-
+#endif
 		int flit_read = i2c_dbg_chal_read_flit(chip_instance,
 						       flit_data,
 						       flit_size);
