@@ -16,6 +16,9 @@ exclude_api_patterns:
   - channel64
   - send64
   - continuation64
+  - rid_sge_cq # SGE not in F1
+  - resource_check_sge_cq_ok # SGE not in F1
+  - fun_dma64_2_sge_push # SGE not in F1
 
 # The following files are excluded from the coverage report
 # because they are hw specifics or not run on POSIX environment
