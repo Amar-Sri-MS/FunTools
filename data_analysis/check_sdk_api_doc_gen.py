@@ -72,12 +72,21 @@ def _get_args() -> argparse.Namespace:
         help="Generated doc (html) directory",
     )
 
+    parser.add_argument(
+        "--sdk_dir",
+        type=str,
+        default="../../FunSDK",
+        help="SDK directory",
+    )
+
     args = parser.parse_args()
     return args
 
 
-def load_sdk_file_summary(in_per_file_list: str = "per_file_all.csv") -> pd.DataFrame:
-    """load sdk file summary
+def load_sdk_file_summary_using_csv(
+    in_per_file_list: str = "per_file_all.csv",
+) -> pd.DataFrame:
+    """load sdk file summary by using the pre-generated csv file
 
     Returns
     -------
@@ -96,6 +105,48 @@ def load_sdk_file_summary(in_per_file_list: str = "per_file_all.csv") -> pd.Data
     return sdk_file_df
 
 
+def load_sdk_file_summary_counting_sdk_headers(
+    sdk_dir: str, sdk_header_dir: str
+) -> pd.DataFrame:
+    """load sdk file summary by counting the number of headder files in SDK directory
+
+    Returns
+    -------
+    df: pd.DataFrame
+        A dataframe of SDK API per file summary
+    """
+
+    header_search_path = f"{sdk_dir}/{sdk_header_dir}"
+    # check if the path is connect
+    if not os.path.exists(header_search_path):
+        print(f"{header_search_path} does not exist")
+        sys.exit()
+
+    n_path = len(header_search_path.split("/"))
+
+    header_path = f"{header_search_path}/**/*.h"
+
+    header_files = glob.glob(header_path, recursive=True)
+
+    file_names = []
+    for file in header_files:
+        # remove index.html
+        if "index.html" in file:
+            continue
+        # rearrange file path to be relative to FunOS so that it can be eaily compared with the SDK file list
+        file_name = "FunOS/" + "/".join(file.split("/")[n_path:])
+        file_names.append(file_name)
+    return pd.DataFrame(file_names, columns=["filename"])
+
+
+def load_sdk_file_summary(
+    sdk_dir: str = "../../FunSDK", sdk_header_dir: str = "FunSDK/funosrt/include/FunOS"
+) -> pd.DataFrame:
+
+    # by counting the number of headder files in SDK directory
+    return load_sdk_file_summary_counting_sdk_headers(sdk_dir, sdk_header_dir)
+
+
 def load_sdk_api_doc_gen_summary(
     html_search_path: str = "../../FunSDK/FunDoc/html/FunOS/headers",
 ) -> pd.DataFrame:
@@ -112,7 +163,12 @@ def load_sdk_api_doc_gen_summary(
         A dataframe of SDK API doc generation summary
     """
 
+    if not os.path.exists(html_search_path):
+        print(f"{html_search_path} does not exist")
+        sys.exit()
+
     html_path = f"{html_search_path}/**/*.html"
+
     n_path = len(html_search_path.split("/"))
 
     html_files = glob.glob(html_path, recursive=True)
@@ -176,7 +232,7 @@ def main() -> None:
     print()
 
     # load SDK file list
-    sdk_file_df = load_sdk_file_summary()
+    sdk_file_df = load_sdk_file_summary(sdk_dir=args.sdk_dir)
 
     # load SDK API doc generation list
     html_search_path = args.api_doc_gen_dir
