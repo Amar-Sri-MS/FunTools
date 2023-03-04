@@ -38,11 +38,10 @@ TODO
 import os
 import argparse
 import sys
-from pathlib import Path
 import json
 from typing import Iterable, Any, List, Optional, Union, Callable, TextIO, Dict, Tuple
-import yaml
 import glob
+from bs4 import BeautifulSoup
 
 try:
     import pandas as pd
@@ -81,6 +80,152 @@ def _get_args() -> argparse.Namespace:
 
     args = parser.parse_args()
     return args
+
+
+def extract_func_name(proto_str: str) -> str:
+    """extract function name from proto string
+
+    Parameters
+    ----------
+    proto_str : str
+        function prototype string
+
+    Returns
+    -------
+    str: function name
+    """
+    name = proto_str.split("(")[0].split(" ")[-1]
+    # remove leading '*' if exists
+    name = name[1:] if name.startswith("*") else name
+    return name
+
+
+def extract_api_from_html(soup):
+    """extract api from html file
+
+    Parameters
+    ----------
+    soup : BeautifulSoup
+        bs4
+
+    Returns
+    -------
+    List[str]: api list
+
+    """
+    keys = []
+    for dl in soup.findAll("dl", {"class": "c function"}):
+        for dt in dl.findAll("dt"):
+            proto_name = extract_func_name(dt.text.strip())
+            keys.append(proto_name)
+        # skip collection dscription
+        if False:
+            for dd in dl.findAll("dd"):
+                values.append(dd.text.strip())
+    return keys
+
+
+def trim_filename(filename: str, n_path: int) -> str:
+    """trim filename
+
+    Parameters
+    ----------
+    filename : str
+        filename
+
+    n_path: str
+        number of path to trim
+
+    Returns
+    -------
+    str: trimmed filename
+    """
+    filename = "FunOS/" + "/".join(filename.split("/")[n_path:])[:-5]
+    return filename
+
+
+api_table_list = []
+
+
+def extrac_api_info(header_search_path: str):
+    """Extract API information by loading html files from the given path
+
+
+    Parameters
+    ----------
+    header_search_path : str
+        path to search for html files
+
+    Returns
+    -------
+    List[Dict]: list of API information
+
+    """
+
+    html_files = glob.glob(f"{header_search_path}/**/*.html", recursive=True)
+    n_path = len(header_search_path.split("/"))
+
+    for html_file in html_files[1:]:
+        if "index.html" in html_file:
+            continue
+        # read html file
+        with open(html_file, "r") as f:
+            html = f.read()
+            soup = BeautifulSoup(html, features="html.parser")
+            proto_names = extract_api_from_html(soup)
+            filename = trim_filename(html_file, n_path)
+            for proto_name in proto_names:
+                d = {
+                    "proto_name": proto_name,
+                    "filename": filename,
+                    "combined_api": f"{proto_name}:{filename}",
+                }
+                api_table_list.append(d)
+
+    return api_table_list
+
+
+def diff_sdk_api_doc_gen_per_api(
+    in_per_file_list: str = "per_file_all.csv",
+    header_search_path: str = "../../FunSDK/FunDoc/html/FunOS/headers",
+) -> Tuple[float, pd.DataFrame]:
+    """Find out the undocumented APIs
+
+    Parameters
+    ----------
+    in_per_file_list : str, optional
+        input csv file, by default "per_file_all.csv"
+
+    header_search_path : str, optional
+        path to search for html files, by default "../../FunSDK/FunDoc/html/FunOS/headers"
+
+    Returns
+    -------
+    percentage: float
+        percentage of documented APIs
+
+    df_api_extracted: pd.DataFrame
+        dataframe of APIs documentation
+    """
+
+    def check_api_is_documented(df_doc_gen: pd.DataFrame, combined_api: str) -> bool:
+        """Check if api is documented"""
+        return not df_doc_gen[(df_doc_gen["combined_api"] == combined_api)].empty
+
+    df_api_extracted = pd.read_csv(in_per_file_list)
+    df_api_extracted["combined_api"] = (
+        df_api_extracted["proto_name"] + ":" + df_api_extracted["filename"]
+    )
+
+    api_table_list = extrac_api_info(header_search_path)
+    df_api_doc_gen = pd.DataFrame(api_table_list)
+
+    df_api_extracted["is_documented"] = df_api_extracted["combined_api"].apply(
+        lambda x: check_api_is_documented(df_api_doc_gen, x)
+    )
+
+    percentage = df_api_extracted["is_documented"].sum() / len(df_api_extracted) * 100
+    return percentage, df_api_extracted
 
 
 def load_sdk_file_summary_using_csv(
@@ -184,7 +329,7 @@ def load_sdk_api_doc_gen_summary(
     return pd.DataFrame(file_names, columns=["filename"])
 
 
-def diff_sdk_api_doc_gen(
+def diff_sdk_api_doc_gen_per_file(
     sdk_file_df: pd.DataFrame, sdk_gen_doc_df: pd.DataFrame
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Compare SDK API doc generation summary with SDK API per file summary
@@ -210,9 +355,11 @@ def diff_sdk_api_doc_gen(
     common_df = sdk_gen_doc_df[sdk_gen_doc_df["filename"].isin(sdk_file_df["filename"])]
 
     # find filename that is different than common_df filename
-    undocumented_df = sdk_file_df[~sdk_file_df["filename"].isin(common_df["filename"])]
+    undocumented_header_df = sdk_file_df[
+        ~sdk_file_df["filename"].isin(common_df["filename"])
+    ]
 
-    return common_df, undocumented_df
+    return common_df, undocumented_header_df
 
 
 def main() -> None:
@@ -238,26 +385,40 @@ def main() -> None:
     html_search_path = args.api_doc_gen_dir
     sdk_gen_doc_df = load_sdk_api_doc_gen_summary(html_search_path)
 
-    _, undocumented_df = diff_sdk_api_doc_gen(sdk_file_df, sdk_gen_doc_df)
+    _, undocumented_header_df = diff_sdk_api_doc_gen_per_file(
+        sdk_file_df, sdk_gen_doc_df
+    )
+
+    api_percentage, undocumented_header_api_df = diff_sdk_api_doc_gen_per_api(
+        header_search_path=html_search_path
+    )
+
+    # create a list from undocumented_header_api_df for "is_documented" column is false
+    undocumented_header_api_df = undocumented_header_api_df[
+        undocumented_header_api_df["is_documented"] == False
+    ]
 
     # output the result
     report = {}
     report["total_sdk_files"] = len(sdk_file_df)
     report["total_sdk_files_api_doc_gen"] = len(sdk_gen_doc_df)
-    report["total_sdk_files_undocumented"] = len(undocumented_df)
+    report["total_sdk_files_undocumented"] = len(undocumented_header_df)
 
     # fill zero data as placeholder
-    report["total_sdk_apis"] = 0
-    report["total_sdk_apis_api_doc_gen"] = 0
-    report["total_sdk_apis_undocumented"] = 0
+    report["total_sdk_apis"] = len(undocumented_header_api_df)
+    report["total_sdk_apis_api_doc_gen"] = int(
+        undocumented_header_api_df["is_documented"].sum()
+    )
+    report["total_sdk_apis_undocumented"] = (
+        report["total_sdk_apis"] - report["total_sdk_apis_api_doc_gen"]
+    )
 
-    report["undocumented_files"] = undocumented_df["filename"].tolist()
+    report["undocumented_files"] = undocumented_header_df["filename"].tolist()
     report["sdk_file_doc_gen_percent"] = "{:.2f}".format(
         (len(sdk_gen_doc_df) / len(sdk_file_df)) * 100
     )
-    # TODO: populate the following fields
-    # fill zero data
-    report["sdk_apis_doc_gen_percent"] = "{:.2f}".format(0.0)
+
+    report["sdk_apis_doc_gen_percent"] = "{:.2f}".format(api_percentage)
 
     # save report to json file
     with open(output_json, "w") as f:
