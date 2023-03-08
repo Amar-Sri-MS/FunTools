@@ -214,3 +214,285 @@ def read_config(filename: str) -> dict:
     assert config
 
     return config
+
+
+def _check_report_type(report_type: str) -> Tuple[str, str, str]:
+    """A helper function to process 'report_type'
+
+    Parameters
+    ----------
+    report_type : str
+        reporting type, either "coverage" or "document"
+
+    Returns
+    -------
+    report_key, display_column_name, display_not_done_name: Tuple[str, str, str]
+    """
+
+    if report_type == "coverage":
+        report_key = "coverage"
+        display_column_name = "Coverage Status"
+        display_not_done_name = "untested"
+    elif report_type == "document":
+        report_key = "documented"
+        display_column_name = "Documentation Status"
+        display_not_done_name = "undocumented"
+    else:
+        raise ValueError(f"Invalid report_type: {report_type}")
+
+    return report_key, display_column_name, display_not_done_name
+
+
+def _check_group_type(group_type: str, report_type: str, display_not_done_name: str):
+    """A helper function to process 'group_tpye"""
+
+    if group_type == "module":
+        group = "dirname"
+        col_list = [
+            "Modules",
+            "No. of all APIs",
+            f"No. of {display_not_done_name} APIs",
+            f"Per file API test {report_type} %",
+        ]
+    elif group_type == "file":
+        group = "filename"
+        col_list = [
+            "Files",
+            "No. of all APIs",
+            f"No. of {display_not_done_name} APIs",
+            f"Per file API test {report_type} %",
+        ]
+    else:
+        raise ValueError(f"Invalid group_type: {group_type}")
+
+    return group, col_list
+
+
+def gen_per_group_summary_html(
+    df_api: pd.DataFrame,
+    output_html: str,
+    group_type: str,
+    report_type: str = "coverage",
+    additional_note: List[str] = None,
+    use_exclude_col: bool = False,
+    return_df: bool = False,
+) -> Union[None, pd.DataFrame]:
+    """Generate per "group_type" summary html and save to file
+
+    Parameters
+    ----------
+    df_api : pd.DataFrame
+        SDK APIs
+    output_html : str
+        Output html file
+    group_type : str
+        Group type, "module" or "file"
+    additional_note : List[str], optional
+        Additional note, by default None
+    exclude_files : List[str], optional
+        Exclude files, by default None
+    return_df : bool, optional
+        Return df_api_summary, by default False
+
+    Returns
+    -------
+    return_df : bool, optional
+        Return df_api_summary, by default False
+    """
+
+    report_key, display_column_name, display_not_done_name = _check_report_type(
+        report_type
+    )
+
+    group, col_list = _check_group_type(group_type, report_key, display_not_done_name)
+
+    # copy df_api to df_api_summary
+    _df_api = df_api.copy()
+
+    _df_api["dirname"] = _df_api["filename"].apply(lambda x: os.path.dirname(x))
+
+    # only include files where 'exclude' columns is False
+    if use_exclude_col:
+        _df_api = _df_api[_df_api["exclude"] == False]
+        description = "filtered files"
+    else:
+        description = "all files"
+
+    df_api_group = _df_api.groupby(group, as_index=False).sum()
+    df_group_proto_count = _df_api.groupby(group, as_index=False)["proto_name"].count()
+    # merge proto_name from df_group_proto_count to df_api_group
+    df_api_group = pd.merge(df_api_group, df_group_proto_count, on=group)
+
+    df_api_group["percent_per_file"] = (
+        df_api_group[report_key] / df_api_group["proto_name"] * 100
+    )
+
+    # sort based on percent_per_file column
+    df_api_group = df_api_group.sort_values(by="percent_per_file", ascending=True)
+
+    summary = f"SDK APIs {report_key} per {group_type} report ({description})"
+
+    total_df_api = len(df_api)  # use the original df_api
+    total_group_elements = len(df_api_group)
+    total_df_api_group = sum(df_api_group["proto_name"])
+
+    df_api_group[display_not_done_name] = (
+        df_api_group["proto_name"] - df_api_group[report_key]
+    )
+
+    # use more readable column names
+    df_api_group.rename(
+        columns={
+            "proto_name": "No. of all APIs",
+            display_not_done_name: f"No. of {display_not_done_name} APIs",
+            "dirname": "Modules",
+            "filename": "Files",
+            "percent_per_file": f"Per file API test {report_key} %",
+            "exclude": f"Exclude for {report_key}",
+        },
+        inplace=True,
+    )
+
+    table_str = df_api_group[col_list].to_html(
+        index=False,
+        justify="center",
+        float_format="{:.2f}".format,
+    )
+
+    html_header_str = f"<br>  <br> <h1> {summary} </h1> <br>"
+
+    html_header_str += f"<h4> Total number of APIs: {total_df_api} </h4>"
+    html_header_str += (
+        f"<h4>       Number of APIs in this page: {total_df_api_group} </h4>"
+    )
+    html_header_str += (
+        f"<h4> Total number of {group_type} in this page: {total_group_elements} </h4>"
+    )
+
+    if additional_note is not None:
+        html_header_str += f"<br>"
+
+        for note in additional_note:
+            html_header_str += f"<h4> {note} </h4> <br>"
+
+    html_footer_str = """<br> <br>"""
+
+    # prepend html_header_stsr to html_str
+    html_str = html_header_str + table_str + html_footer_str
+
+    # save html_str to file
+    with open(output_html, "w", encoding="utf-8") as f:
+        f.write(html_str)
+
+    if return_df:
+        return _df_api
+
+    del _df_api
+    return None
+
+
+def gen_summary_html(
+    df_api: pd.DataFrame,
+    output_html: str,
+    report_type: str = "coverage",
+    additional_note: List[str] = None,
+    failed_in_report_type_api_only: bool = False,
+    use_exclude_col: bool = False,
+) -> None:
+    """Generate a summary html and save to file for test coverage or API documentation
+
+    Parameters
+    ----------
+    df_api : pd.DataFrame
+        SDK APIs
+    output_html : str
+        Output html file
+    report_type : str, optional
+        Report type either coverage or documentation, by default "coverage"
+    additional_note : List[str], optional
+        Additional note, by default None
+    failed_in_report_type_api_only : bool, optional
+        Only include failed in report type (coverage or documentation) APIs, by default False
+    exclude_files : List[str], optional
+        Exclude files, by default None
+
+    Returns
+    -------
+    None
+
+    """
+
+    report_key, display_column_name, display_not_done_name = _check_report_type(
+        report_type
+    )
+
+    # copy df_api to df_api_summary
+    df_api_summary = df_api.copy()
+
+    # coverage percentage
+    cov_percent = df_api_summary[report_key].sum() / len(df_api_summary) * 100
+
+    description = "all files"
+    # only include files where 'exclude' columns is False
+    if use_exclude_col:
+        df_api_summary = df_api_summary[df_api_summary["exclude"] == False]
+        # update coverage percentage when exclude_files is used
+        cov_percent = df_api_summary[report_key].sum() / len(df_api_summary) * 100
+        description = "filtered files"
+
+    total_df_api = len(df_api_summary)
+    total_files = len(df_api_summary["filename"].unique())
+
+    if failed_in_report_type_api_only:
+        df_api_summary = df_api_summary[df_api_summary[report_key] == False]
+        description += f", {display_not_done_name} APIs only "
+
+    summary = f"SDK APIs {report_type} ({description}): {cov_percent:.2f}%"
+    num_not_done_api = len(df_api_summary[df_api_summary[report_key] == False])
+
+    df_api_summary.rename(
+        {
+            "proto_name": "Function",
+            report_key: display_column_name,
+            "filename": "File",
+            # "exclude": "Exclude for Coverage",
+        },
+        axis=1,
+        inplace=True,
+    )
+
+    table_str = df_api_summary[["Function", display_column_name, "File"]].to_html(
+        index=False,
+        justify="center",
+        float_format="{:.2f}".format,
+    )
+
+    html_header_str = f"<br>  <br> <h1> {summary} </h1> <br>"
+
+    html_header_str += f"<h4> Total number of APIs: {total_df_api} </h4>"
+
+    html_header_str += f"<h4> Total number files: {total_files} </h4>"
+
+    html_header_str += (
+        f"<h4> Number of {display_not_done_name} APIs: {num_not_done_api} </h4> <br>"
+    )
+
+    # if NOTE_STR_1:
+    #     html_header_str += f"<h4> {NOTE_STR_1} </h4> <br>"
+
+    if additional_note is not None:
+        html_header_str += f"<br>"
+
+        for note in additional_note:
+            html_header_str += f"<h4> {note} </h4> <br>"
+
+    html_footer_str = """<br> <br>"""
+
+    # prepend html_header_stsr to html_str
+    html_str = html_header_str + table_str + html_footer_str
+
+    # save html_str to file
+    with open(output_html, "w", encoding="utf-8") as f:
+        f.write(html_str)
+
+    del df_api_summary
