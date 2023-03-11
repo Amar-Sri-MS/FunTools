@@ -44,7 +44,13 @@ except ImportError:
     print(">>> pip install pandas")
     sys.exit()
 
-from utils import *
+import inspect
+
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+sys.path.insert(0, parentdir)
+
+from utils.utils import *
 
 NOTE_STR_1 = "NOTE: gcovr does not generate function coverage summary for some functions that are defined in heaaders (i.e. static functions), around 13 percent of the of the total functions are not reported because of this)."
 
@@ -56,7 +62,7 @@ def _get_args() -> argparse.Namespace:
     parser.add_argument("--cov", type=str, help="Coverage data in csv file")
     parser.add_argument("--input_dir", type=str, default=".", help="Input directory")
 
-    parser.add_argument("--output_dir", type=str, default=".", help="Output directory")
+    parser.add_argument("--output_dir", type=str, help="Output directory")
 
     parser.add_argument("--output_html", type=str, help="Output html file")
     parser.add_argument(
@@ -102,7 +108,7 @@ def _get_args() -> argparse.Namespace:
     parser.add_argument(
         "--exclude_list",
         type=str,
-        default="coverage/f1_sdk_coverage_config.yml",
+        default="configs/f1_sdk_coverage_config.yml",
         help="Exclude file list for coverage",
     )
 
@@ -256,55 +262,53 @@ def apply_exclude_filter(df_api: pd.DataFrame, exclude_file: str) -> pd.DataFram
     return config
 
 
-def get_file_base_name_without_ext(file_name):
-    return os.path.splitext(os.path.basename(file_name))[0]
-
-
 def main() -> None:
     """Main function"""
 
     args = _get_args()
 
-    if not os.path.exists(args.output_dir):
-        os.makedirs(args.output_dir)
+    output_dir = args.output_dir
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
-    output_html = os.path.join(args.output_dir, args.output_html)
-    output_untested_html = os.path.join(args.output_dir, args.output_untested_html)
+    sdk_api = args.sdk_api if args.sdk_api else get_default_sdk_api(sdk_dir)
+    cov = args.cov
+
+    output_html = os.path.join(output_dir, args.output_html)
+    output_untested_html = os.path.join(output_dir, args.output_untested_html)
     output_untested_filtered_html = os.path.join(
-        args.output_dir, args.output_untested_filtered_html
+        output_dir, args.output_untested_filtered_html
     )
 
-    output_per_file_all_html = os.path.join(
-        args.output_dir, args.output_per_file_all_html
-    )
+    output_per_file_all_html = os.path.join(output_dir, args.output_per_file_all_html)
     output_per_file_filtered_html = os.path.join(
-        args.output_dir, args.output_per_file_filtered_html
+        output_dir, args.output_per_file_filtered_html
     )
 
     output_per_module_all_html = os.path.join(
-        args.output_dir, args.output_per_module_all_html
+        output_dir, args.output_per_module_all_html
     )
     output_per_module_filtered_html = os.path.join(
-        args.output_dir, args.output_per_module_filtered_html
+        output_dir, args.output_per_module_filtered_html
     )
 
-    output_json = os.path.join(args.output_dir, args.output_json)
+    output_json = os.path.join(output_dir, args.output_json)
     output_csv = (
-        os.path.join(args.output_dir, args.output_csv)
+        os.path.join(output_dir, args.output_csv)
         if args.output_csv is not None
         else None
     )
 
-    exclude_list_file = os.path.join(args.input_dir, args.exclude_list)
+    exclude_list_file = os.path.join(currentdir, args.exclude_list)
 
     output_exclude_list_file = "{}.json".format(
         get_file_base_name_without_ext(args.exclude_list)
     )
-    output_exclude_list_file = os.path.join(args.output_dir, output_exclude_list_file)
+    output_exclude_list_file = os.path.join(output_dir, output_exclude_list_file)
 
     # read csv
-    df_api = pd.read_csv(args.sdk_api)
-    df_cov = pd.read_csv(args.cov)
+    df_api = pd.read_csv(sdk_api)
+    df_cov = pd.read_csv(cov)
 
     df_api, cov_percent = update_coverage_for_sdk_api(df_api, df_cov)
 

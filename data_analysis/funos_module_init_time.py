@@ -39,7 +39,7 @@ import yaml
 
 import pandas as pd
 
-from utils import *
+from utils.utils import *
 
 
 def _filter_log_with_marker(

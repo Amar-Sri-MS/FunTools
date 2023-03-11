@@ -35,14 +35,19 @@ except ImportError:
     print(">>> pip install pandas")
     sys.exit()
 
+import inspect
 
-from utils import *
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+sys.path.insert(0, parentdir)
+
+from utils.utils import *
 
 
 def _get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--output_dir", type=str, default=".", help="Output directory")
+    parser.add_argument("--output_dir", type=str, help="Output directory")
 
     parser.add_argument(
         "--output_json",
@@ -54,7 +59,6 @@ def _get_args() -> argparse.Namespace:
     parser.add_argument(
         "--api_doc_gen_dir",
         type=str,
-        default="../../FunSDK/FunDoc/html/FunOS/headers",
         help="Generated doc (html) directory",
     )
 
@@ -65,12 +69,7 @@ def _get_args() -> argparse.Namespace:
         help="SDK directory",
     )
 
-    parser.add_argument(
-        "--api_summary",
-        type=str,
-        default="per_file_all.csv",
-        help="API summary csv file",
-    )
+    parser.add_argument("--sdk_api", type=str, help="SDK APIs csv file")
 
     parser.add_argument(
         "--save_summary",
@@ -111,7 +110,7 @@ def _get_args() -> argparse.Namespace:
     return args
 
 
-def extract_func_name(proto_str: str) -> str:
+def _extract_func_name(proto_str: str) -> str:
     """extract function name from proto string
 
     Parameters
@@ -133,7 +132,7 @@ def extract_func_name(proto_str: str) -> str:
     return name
 
 
-def extract_api_from_html(soup, debug=False):
+def _extract_api_from_html(soup, debug=False):
     """extract api from html file
 
     Parameters
@@ -153,20 +152,20 @@ def extract_api_from_html(soup, debug=False):
         for dt in dl.findAll("dt"):
             if debug:
                 print("DT ", dt.text)
-            proto_name = extract_func_name(dt.text.strip())
+            proto_name = _extract_func_name(dt.text.strip())
             if proto_name == "":
                 continue
             if debug:
                 print(proto_name)
             keys.append(proto_name)
-        # skip collection dscription
+        # for debugging, collection dscription
         if False:
             for dd in dl.findAll("dd"):
                 values.append(dd.text.strip())
     return keys
 
 
-def trim_filename(filename: str, n_path: int) -> str:
+def _trim_filename(filename: str, n_path: int) -> str:
     """trim filename
 
     Parameters
@@ -185,8 +184,8 @@ def trim_filename(filename: str, n_path: int) -> str:
     return filename
 
 
-def extract_api_info(header_search_path: str):
-    """Extract API information by loading html files from the given path
+def extract_generated_api_info_from_html(header_search_path: str):
+    """Extract generated API information by loading html files from the given path
 
     Parameters
     ----------
@@ -211,8 +210,8 @@ def extract_api_info(header_search_path: str):
         with open(html_file, "r") as f:
             html = f.read()
             soup = BeautifulSoup(html, features="html.parser")
-            proto_names = extract_api_from_html(soup)
-            filename = trim_filename(html_file, n_path)
+            proto_names = _extract_api_from_html(soup)
+            filename = _trim_filename(html_file, n_path)
             for proto_name in proto_names:
                 d = {
                     "proto_name": proto_name,
@@ -281,7 +280,7 @@ def load_sdk_file_summary_counting_sdk_headers(
 
 
 def load_sdk_file_summary(
-    sdk_dir: str = "../../FunSDK", sdk_header_dir: str = "FunSDK/funosrt/include/FunOS"
+    sdk_dir: str, sdk_header_dir: str = "FunSDK/funosrt/include/FunOS"
 ) -> pd.DataFrame:
 
     # by counting the number of headder files in SDK directory
@@ -289,7 +288,7 @@ def load_sdk_file_summary(
 
 
 def load_sdk_api_doc_gen_summary(
-    html_search_path: str = "../../FunSDK/FunDoc/html/FunOS/headers",
+    html_search_path: str,
 ) -> pd.DataFrame:
     """load sdk API doc generation summary
 
@@ -326,7 +325,7 @@ def load_sdk_api_doc_gen_summary(
 
 
 def generate_api_documentation_summary(
-    sdk_dir: str, html_search_path: str, api_summary_csv: str
+    sdk_dir: str, html_search_path: str, sdk_api: str
 ):
     """Generate API documentation summary
 
@@ -336,8 +335,8 @@ def generate_api_documentation_summary(
         A path to search for SDK header files
     html_search_path: str
         A path to search for generate html files
-    api_summary_csv: str
-        A path to search for total API information
+    sdk_api: str
+        A path to search for "total" API information
 
     Returns
     -------
@@ -358,10 +357,10 @@ def generate_api_documentation_summary(
     # load SDK file list
     sdk_file_df = load_sdk_file_summary(sdk_dir)
 
-    # load generate documentation list
+    # load generated documentation list
     sdk_gen_doc_df = load_sdk_api_doc_gen_summary(html_search_path)
 
-    # find filename of sdk_gen_doc_df that is in sdk_file_df
+    # find filenames of sdk_gen_doc_df that is in sdk_file_df
     common_df = sdk_gen_doc_df[sdk_gen_doc_df["filename"].isin(sdk_file_df["filename"])]
 
     # find filename that is different than common_df filename
@@ -369,34 +368,32 @@ def generate_api_documentation_summary(
         ~sdk_file_df["filename"].isin(common_df["filename"])
     ]
 
-    df_api_extracted = pd.read_csv(api_summary_csv)
+    df_api = pd.read_csv(sdk_api)
+    # only keep the last dir names from FunOS
+    df_api["filename"] = df_api["filename"].apply(lambda x: "/".join(x.split("/")[6:]))
 
     # add 'combined_api' column to create a unique key for each api
-    df_api_extracted["combined_api"] = (
-        df_api_extracted["proto_name"] + ":" + df_api_extracted["filename"]
-    )
+    df_api["combined_api"] = df_api["proto_name"] + ":" + df_api["filename"]
 
-    api_table_list = extract_api_info(html_search_path)
+    api_table_list = extract_generated_api_info_from_html(html_search_path)
     df_api_doc_gen = pd.DataFrame(api_table_list)
 
-    df_api_extracted["documented"] = df_api_extracted["combined_api"].apply(
+    df_api["documented"] = df_api["combined_api"].apply(
         lambda x: check_api_is_documented(df_api_doc_gen, x)
     )
 
-    doc_api_percentage = (
-        df_api_extracted["documented"].sum() / len(df_api_extracted) * 100
-    )
+    doc_api_percentage = df_api["documented"].sum() / len(df_api) * 100
 
     # select df_api_extracted's documented == False
-    undocumented_apis_df = df_api_extracted[df_api_extracted["documented"] == False]
+    undocumented_apis_df = df_api[df_api["documented"] == False]
 
     report["total_sdk_files"] = len(sdk_file_df)
     report["total_sdk_files_api_doc_gen"] = len(sdk_gen_doc_df)
     report["total_sdk_files_undocumented"] = len(undocumented_headers_df)
 
     # fill zero data as placeholder
-    report["total_sdk_apis"] = len(df_api_extracted)
-    report["total_sdk_apis_api_doc_gen"] = int(df_api_extracted["documented"].sum())
+    report["total_sdk_apis"] = len(df_api)
+    report["total_sdk_apis_api_doc_gen"] = int(df_api["documented"].sum())
     report["total_sdk_apis_undocumented"] = (
         report["total_sdk_apis"] - report["total_sdk_apis_api_doc_gen"]
     )
@@ -413,22 +410,40 @@ def generate_api_documentation_summary(
     report_str = json.dumps(report, indent=4)
     print(report_str)
 
-    return report, df_api_extracted, undocumented_headers_df
+    return report, df_api, undocumented_headers_df
 
 
 def main() -> None:
     """Main function"""
 
+    # get args
     args = _get_args()
 
-    if not os.path.exists(args.output_dir):
-        os.makedirs(args.output_dir)
+    # prepare dirs and filenames
+    sdk_dir = args.sdk_dir if args.sdk_dir else get_defatult_sdk_dir()
+    api_doc_gen_dir = (
+        args.api_doc_gen_dir
+        if args.api_doc_gen_dir
+        else get_default_api_doc_gen_dir(sdk_dir)
+    )
+    sdk_api = args.sdk_api if args.sdk_api else get_default_sdk_api(sdk_dir)
 
-    output_json = os.path.join(args.output_dir, args.output_json)
+    output_dir = args.output_dir
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    output_json = os.path.join(output_dir, args.output_json)
+
+    output_html = os.path.join(output_dir, args.output_html)
+    output_undocumented_html = os.path.join(output_dir, args.output_undocumented_html)
+    output_per_file_all_html = os.path.join(output_dir, args.output_per_file_all_html)
+    output_per_module_all_html = os.path.join(
+        output_dir, args.output_per_module_all_html
+    )
 
     print("Inputs")
     print("-------")
-    print("API HTML search path: {}".format(args.api_doc_gen_dir))
+    print("API HTML search path: {}".format(api_doc_gen_dir))
     print("Output json file: {}".format(output_json))
     print()
 
@@ -436,24 +451,13 @@ def main() -> None:
         report,
         df_api_extracted,
         undocumented_headers_df,
-    ) = generate_api_documentation_summary(
-        args.sdk_dir, args.api_doc_gen_dir, args.api_summary
-    )
+    ) = generate_api_documentation_summary(sdk_dir, api_doc_gen_dir, sdk_api)
 
     # save report to json file
     with open(output_json, "w") as f:
         json.dump(report, f, indent=4)
 
-    output_html = os.path.join(args.output_dir, args.output_html)
-    output_undocumented_html = os.path.join(
-        args.output_dir, args.output_undocumented_html
-    )
-    output_per_file_all_html = os.path.join(
-        args.output_dir, args.output_per_file_all_html
-    )
-    output_per_module_all_html = os.path.join(
-        args.output_dir, args.output_per_module_all_html
-    )
+    df_api_extracted.to_csv(os.path.join(output_dir, "sdk_api_summary.csv"), index=False)
 
     gen_summary_html(df_api_extracted, output_html, report_type="document")
 
@@ -484,7 +488,7 @@ def main() -> None:
     )
 
     if args.save_summary:
-        df_api_extracted.to_pickle(os.path.join(args.output_dir, "sdk_api_summary.pkl"))
+        df_api_extracted.to_pickle(os.path.join(output_dir, "sdk_api_summary.pkl"))
 
     print("Summary")
     print("-------")

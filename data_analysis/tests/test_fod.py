@@ -5,9 +5,9 @@ import os
 import pandas as pd
 import math
 
-from utils import *
-from utils_fod import *
-from utils_plot import *
+from utils.utils import *
+from utils.utils_fod import *
+from utils.utils_plot import *
 
 
 def test_extract_pages():

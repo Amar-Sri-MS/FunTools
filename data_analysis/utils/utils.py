@@ -45,6 +45,26 @@ class DefaultLogger:
         self.my_logger.info("Error: %s", log_txt)
 
 
+def get_defatult_sdk_dir() -> str:
+    if "WORKSPACE" not in os.environ:
+        assert False, "Set WORKSPACE environment variable or provide sdk_dir arg"
+    return os.path.join(os.environ.get("WORKSPACE"), "FunSDK")
+
+
+def get_default_api_doc_gen_dir(sdk_dir: str) -> str:
+    assert sdk_dir, "Missing sdk_dir"
+    return os.path.join(sdk_dir, "FunDoc/html/FunOS/headers")
+
+
+def get_default_sdk_api(sdk_dir: str) -> str:
+    assert sdk_dir, "Missing sdk_dir"
+    return os.path.join(sdk_dir, "FunTools/ApiSummarizer/sdk_api.csv")
+
+
+def get_file_base_name_without_ext(file_name):
+    return os.path.splitext(os.path.basename(file_name))[0]
+
+
 def save_yml_log_with_input_file_url(
     file_name: str, input_file_url: str, out_dir: str
 ) -> None:
@@ -102,6 +122,19 @@ def read_from_file_or_url(
 ) -> str:
     """Read from file or url
     if it is file, `working_dir` is expected to be the directory where the file is located
+
+    Parameters
+    ----------
+    working_dir: str
+        working directory
+    file_name_url: str
+        file name or url
+    logger: DefaultLogger
+        logger
+
+    Returns
+    -------
+    str
 
     """
     if file_name_url.startswith("http"):
@@ -455,7 +488,6 @@ def gen_summary_html(
             "proto_name": "Function",
             report_key: display_column_name,
             "filename": "File",
-            # "exclude": "Exclude for Coverage",
         },
         axis=1,
         inplace=True,
