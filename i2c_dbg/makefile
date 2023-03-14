@@ -7,7 +7,7 @@
 #
 #
 
-MACHINE?=FS1600
+MACHINE?=fs-bmc
 
 
 BUILD_DIR:=build/$(MACHINE)
