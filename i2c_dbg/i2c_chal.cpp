@@ -150,7 +150,7 @@ static byte_vector i2c_dbg_chal_read(int chip_instance, int num_bytes)
 		 * how many bytes to return, so ensure that a valid number is
 		 * always requested
 		 */
-		if (flit_size > MAX_FLIT_SIZE) {
+		if (flit_size >= MAX_FLIT_SIZE) {
 			flit_size = MAX_FLIT_SIZE - 4;
 		}
 #endif
