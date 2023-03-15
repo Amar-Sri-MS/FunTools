@@ -166,8 +166,9 @@ class DefaultCfgGen():
                 entry_val_dict = isinstance(entry[entry_key], Mapping)
                 cfg_json_val_dict = isinstance(cfg_json[entry_key], Mapping)
                 if entry_val_dict != cfg_json_val_dict:
-                    logger.error(f'Key {entry_key} being used inconsistently as a Dictionary')
-                    raise
+                    raise RuntimeError(
+                        f'Key {entry_key} being used inconsistently as a '
+                        'Dictionary')
                 if entry_val_dict:
                     self.merge_entry(entry[entry_key], cfg_json[entry_key])
                 else:
