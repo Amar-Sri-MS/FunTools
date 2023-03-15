@@ -7,11 +7,11 @@
 #
 #
 
-MACHINE?=FS1600
+MACHINE?=fs-bmc
 
 
 BUILD_DIR:=build/$(MACHINE)
-INSTALL_TARGET:=$(SDK_INSTALL_DIR)/bin/i2c_dbg
+INSTALL_TARGET:=$(SDK_INSTALL_DIR)/bin/i2c_dbg/$(MACHINE)
 
 
 include $(MACHINE).mk
