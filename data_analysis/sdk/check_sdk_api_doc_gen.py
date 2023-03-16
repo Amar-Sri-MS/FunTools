@@ -457,7 +457,9 @@ def main() -> None:
     with open(output_json, "w") as f:
         json.dump(report, f, indent=4)
 
-    df_api_extracted.to_csv(os.path.join(output_dir, "sdk_api_summary.csv"), index=False)
+    df_api_extracted.to_csv(
+        os.path.join(output_dir, "sdk_api_summary.csv"), index=False
+    )
 
     gen_summary_html(df_api_extracted, output_html, report_type="document")
 
