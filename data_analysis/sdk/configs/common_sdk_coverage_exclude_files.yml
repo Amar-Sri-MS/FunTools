@@ -9,6 +9,7 @@ exclude_api_patterns:
   - padding_wuh # unexpected to call padding_wuh in posix test
   # CHECK AGAIN!!! should check if it really SIGTRAP
   - platform_debug_break # raise SIGTRAP in debug build, so not covered
+  - flow_yield_stats # by default it is disabled by `FLOW_YIELD_STATS 0`
 
 exclude_filenames:
   - FunOS/networking
