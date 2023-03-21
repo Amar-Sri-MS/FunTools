@@ -34,7 +34,8 @@ python3 wrap_tenant_key.py dcp            # FunOnDemand
 
 >>>> verify: recover the key printed in the FunOS log when using the dpc command.
   if the DPU is using a debugging version of SBP that prints its encryption key
-  in its log or the run was on Posix, this can be used to recover the key.
+  in its log, this can be used to recover the key. On POSIX, the encryption key
+  is available and will be used to run the verification.
 
 
 > Example:
@@ -244,10 +245,10 @@ def print_test_vector(args):
 
 ##############################################
 # Verification
-def verify_wrapped_key(args):
+def verify_wrapped_key_aux(wrapped, kek):
 
-    kek_bin = binascii.a2b_hex(args.kek)
-    wrapped_bin = binascii.a2b_hex(args.wrapped[0])
+    kek_bin = binascii.a2b_hex(kek)
+    wrapped_bin = binascii.a2b_hex(wrapped)
 
     aesgcm = AESGCM(kek_bin)
 
@@ -257,7 +258,13 @@ def verify_wrapped_key(args):
         print("Key recovery failed: ", e)
         return
 
+    return recovered_key
+
+
+def verify_wrapped_key(args):
+    recovered_key = verify_wrapped_key_aux(args.wrapped[0], args.kek)
     print_c_bytes(recovered_key, "recovered_key")
+
 
 ##############################################
 # DPC testing -- cf. cavp.py
@@ -311,7 +318,7 @@ class DPCTester:
         args = ['pketest_wrap_sec_key_test',
                 {"package": json_package}]
         import_res = self.dpc_client.execute('execute', args)
-        return import_res['wrapped_key']
+        return import_res['wrapped_key'], import_res.get('kek')
 
     def run_test(self):
         serial_number = self.get_serial_number()
@@ -320,8 +327,16 @@ class DPCTester:
         print_c_bytes(aes_key, "Generated key")
         x,y,wrapped = wrap_key_for_import(aes_key, serial_number)
         package = b''.join([x,y,wrapped])
-        imported_key = self.import_package(package)
+        imported_key, kek = self.import_package(package)
         print("Imported key: %s" % imported_key)
+        # if KEK was provided (POSIX), run the verification
+        if kek:
+            recovered_key = verify_wrapped_key_aux(imported_key, kek)
+            if recovered_key != aes_key:
+                print("Key mismatch!")
+                print_c_bytes(recovered_key, "recovered_key")
+            else:
+                print("Verified!")
 
 
 def test_with_dpc(args):
