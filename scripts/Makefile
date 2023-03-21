@@ -22,8 +22,8 @@ install-scripts:
 	install update-dpu.py $(SDK_INSTALL_DIR)/bin/scripts
 	install dpuctl.py $(SDK_INSTALL_DIR)/bin/scripts
 	install exprom-hdrgen.py $(SDK_INSTALL_DIR)/bin/scripts
+	install wrap_tenant_key.py $(SDK_INSTALL_DIR)/bin/scripts
 	install issu $(SDK_INSTALL_DIR)/bin/scripts
 	install deploy-funtools.scripts.sh $(SDK_INSTALL_DIR)/bin/scripts
 	install decode_action $(SDK_INSTALL_DIR)/bin/scripts
 	install GPL/* $(SDK_INSTALL_DIR)/bin/scripts/GPL/
-
