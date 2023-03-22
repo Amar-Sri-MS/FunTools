@@ -11,6 +11,9 @@ exclude_api_patterns:
   - platform_debug_break # raise SIGTRAP in debug build, so not covered
   - flow_yield_stats # by default it is disabled by `FLOW_YIELD_STATS 0`
 
+  - syslog_format_printf_checker # it only used as an empty function to trick SYSLOG
+  - _assert_pc_faddr_valid # used for a macro
+
 exclude_filenames:
   - FunOS/networking
   - FunOS/nucleus/mem_region.h
