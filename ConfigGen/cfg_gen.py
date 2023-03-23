@@ -26,6 +26,7 @@ from sku_cfg_gen import SKUCfgGen
 from hwcap_cfg_gen import HWCAPCodeGen
 from nu_cfg_gen import NUCfgGen
 from storage_cfg_gen import StorageCfgGen
+from default_cfg_gen import DefaultCfgGen
 
 logger = logging.getLogger("cfg_gen")
 logging.basicConfig(level=logging.INFO)
@@ -351,13 +352,20 @@ def _generate_profiles_config(config_root_dir, target_chip, target_boards):
         profiles[pname] = js
 
 
-    # make the big dict and return that
+    # Make the big dict, process that through the Default Configuration Macros,
+    # and return that to the caller.
+    #
     profiles_config = {"profiles_config":
                        {
                            "profiles": profiles,
                            "subprofiles": subprofiles,
                        }
     }
+
+    def_cfg = dict()
+    default_cfg_gen = DefaultCfgGen(config_root_dir, target_chip)
+    def_cfg = default_cfg_gen.get_defaults()
+    default_cfg_gen.apply_defaults(profiles_config, def_cfg)
 
     return profiles_config
 
