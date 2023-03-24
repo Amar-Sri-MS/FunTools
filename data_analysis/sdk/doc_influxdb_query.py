@@ -49,7 +49,7 @@ def _get_args() -> argparse.Namespace:
         "--doc_type",
         type=str,
         default="file",
-        help="Metric type, file or api",
+        help="Metric type, file, api, total_sdk_apis",
     )
     return parser.parse_args()
 
@@ -142,8 +142,11 @@ class DocumentationQuery:
             query_type = "sdk_file_doc_gen_percent"
         elif doc_type == "api":
             query_type = "sdk_apis_doc_gen_percent"
+        elif doc_type == "total_sdk_apis":
+            query_type = "total_sdk_apis"
         else:
-            assert False, "doc_type unspported: {}".format(doc_type)
+            print("doc_type unspported: {}".format(doc_type))
+            return None
 
         results = self.query(query_type, last=True)
         """Example of results.raw
@@ -187,7 +190,10 @@ def main() -> None:
 
     ret = doc_query.query_doc_percent_last(args.doc_type)
 
-    print("Last documentation percentage of '{}': {}".format(args.doc_type, ret))
+    if ret:
+        print("Last documentation percentage of '{}': {}".format(args.doc_type, ret))
+    else:
+        print("No data for '{}'".format(args.doc_type))
 
 
 if __name__ == "__main__":
