@@ -18,7 +18,7 @@ import cgi
 
 import traceback
 
-from common import log, safe_form_get
+from common import log
 from hsmd_common import hsmd_rpc_call
 
 RESTRICTED_PORT = 4443
@@ -42,7 +42,7 @@ def handle_post():
     request = sys.stdin.read(len)
 
     form = cgi.FieldStorage()
-    hsm_id = int(safe_form_get(form, "hsm_id", 1))
+    hsm_id = int(form.getvalue("hsm_id", 1))
 
     response = hsmd_rpc_call(request, hsm_id)
     send_json(response)

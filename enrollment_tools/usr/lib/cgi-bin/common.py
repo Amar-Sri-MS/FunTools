@@ -64,9 +64,9 @@ def send_response_body(body, filename=None):
     print("%s\n" % body)
 
 
-def send_binary_buffer(bin_buffer, form_values, filename=None):
+def send_binary_buffer(bin_buffer, form, filename=None):
 
-    format = safe_form_get(form_values, "format", "hex")
+    format = form.getvalue("format", "hex")
     if format == "hex":
         bin_str = binascii.b2a_hex(bin_buffer).decode('ascii')
     elif format == "base64":
