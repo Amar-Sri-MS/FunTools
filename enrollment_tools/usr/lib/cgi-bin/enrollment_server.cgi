@@ -24,6 +24,7 @@ import traceback
 
 # db connection
 import psycopg2
+from psycopg2 import sql
 
 
 # certificate generation
@@ -35,7 +36,6 @@ from cryptography.hazmat.primitives.asymmetric import ec
 
 from common import (
     log,
-    safe_form_get,
     send_response_body,
     send_modulus,
     get_ro_session,
@@ -121,8 +121,11 @@ ARGS_LIST = ",".join(["%({0})s".format(fld) for fld in FIELDS])
 
 INSERT_STMT = "INSERT INTO enrollment (" + \
     FIELDS_LIST + ") VALUES (" + ARGS_LIST + ")"
-RETRIEVE_STMT = "SELECT " + FIELDS_CONCAT + """ FROM enrollment WHERE serial_nr = %s
-                                               AND serial_info = %s """
+
+# psycopg2 parameters are always represented by %s
+RETRIEVE_STMT_ROOT = "SELECT " + FIELDS_CONCAT + " FROM enrollment "
+RETRIEVE_STMT = RETRIEVE_STMT_ROOT + "WHERE serial_nr = %s AND serial_info = %s"
+RETRIEVE_STMT_BY_ID = RETRIEVE_STMT_ROOT + "WHERE enroll_id = %s"
 
 def db_store_cert(conn, cert):
     ''' store the full certificate in the database '''
@@ -131,23 +134,46 @@ def db_store_cert(conn, cert):
         cur.execute(INSERT_STMT, values)
     conn.commit()
 
-
-def db_retrieve_cert(conn, values_dict):
-    ''' retrive the certificate based on serial number '''
+def db_retrieve_cert_by_values(conn, values_dict):
     with conn.cursor() as cur:
         cur.execute(RETRIEVE_STMT,
                     (values_dict['serial_nr'],
                      values_dict['serial_info']))
-        if cur.rowcount > 0:
-            return cur.fetchone()[0]
-    return None
+        row = cur.fetchone()
+        if row:
+            return row[0]
+        return None
+
+def db_retrieve_cert_with_sn(conn, sn):
+    ''' retrieve the certificate based on serial number '''
+    if len(sn) != SN_LEN:
+        raise ValueError("SN length = %d" % len(sn))
+    # slice the sn into constituent buffers
+    return db_retrieve_cert_by_values(conn, get_sn_values(sn))
 
 
-def db_print_summary(conn):
+def db_retrieve_cert_with_id(conn, cert_id):
+    ''' retrieve the certificate based on id '''
+    with conn.cursor() as cur:
+        cur.execute(RETRIEVE_STMT_BY_ID, (cert_id,))
+        row = cur.fetchone()
+        if row:
+            return row[0]
+        return None
+
+
+def db_print_summary(conn, fld_list):
+
+    # safely generate the dynamic list of fields
+    fields=sql.SQL(',').join(
+        sql.Identifier(fld_name) for fld_name in fld_list)
+    # safely generate the dynamic query
+    query = sql.SQL('select row_to_json(t) from (select {0} from enrollment) t'
+                    ).format(fields)
+
     print("[")
     with conn.cursor('summary') as cur:
-        cur.execute('''select row_to_json(t) from (
-        select serial_info, serial_nr, puf_key, timestamp from enrollment ) t ''')
+        cur.execute(query)
         first = True
         for row in cur:
             if first:
@@ -156,6 +182,11 @@ def db_print_summary(conn):
                 print(",")
             print(json.dumps(row[0]), end="")
     print("\n]")
+
+
+def db_func(func, arg1):
+    with closing(psycopg2.connect("dbname=enrollment_db")) as db_conn:
+        return func(db_conn, arg1)
 
 
 ###########################################################################
@@ -211,11 +242,11 @@ def int_to_bytes(x):
 
 def x509_serial_number(hash_input):
     # serial number is going to be hash of input with the current time
-    hash = hashlib.sha1(hash_input)
+    hash_op = hashlib.sha1(hash_input)
     ts = datetime.datetime.now(datetime.timezone.utc).timestamp()
-    hash.update(struct.pack('>d', ts))
+    hash_op.update(struct.pack('>d', ts))
     # return digest as integer
-    return int.from_bytes(hash.digest(),byteorder='big')
+    return int.from_bytes(hash_op.digest(), byteorder='big')
 
 def x509_basic_constraints(critical, ca, path_len=None):
 
@@ -422,7 +453,7 @@ def do_enroll():
     values = validate_tbs_cert(tbs_cert)
 
     with closing(psycopg2.connect("dbname=enrollment_db")) as db_conn:
-        cert = db_retrieve_cert(db_conn, values)
+        cert = db_retrieve_cert_by_values(db_conn, values)
         if cert is None:
             # sign the tbs_cert
             cert = hsm_sign(tbs_cert)
@@ -438,8 +469,8 @@ def do_enroll():
 #
 ########################################################################
 
-def get_sn_from_form(form_values):
-    sn = safe_form_get(form_values, "sn", None)
+def get_sn_from_form(form):
+    sn = form.getvalue("sn", None)
     if not sn:
         return sn
     if len(sn) == 48 and all(c in string.hexdigits for c in sn):
@@ -447,25 +478,24 @@ def get_sn_from_form(form_values):
     return binascii.a2b_base64(sn)
 
 
-def send_certificate(form_values, x509_format=False):
+def send_certificate(form, x509_format=False):
 
-    sn = get_sn_from_form(form_values)
-    if not sn:
-        # if there is no serial number, return the X509 root cert
-        if x509_format:
-            send_x509_root_certificate_response(ROOT_CERTIFICATE_PATH_NAME)
-            return
+    cert = None
 
-        raise ValueError("Missing parameter")
+    enroll_id = form.getvalue("id", None)
+    if enroll_id:
+        cert = db_func(db_retrieve_cert_with_id, enroll_id)
+    else:
+        sn = get_sn_from_form(form)
+        if sn:
+            cert = db_func(db_retrieve_cert_with_sn, sn)
+        else:
+            # if there is no serial number, return the X509 root cert
+            if x509_format:
+                send_x509_root_certificate_response(ROOT_CERTIFICATE_PATH_NAME)
+                return
 
-    if len(sn) != SN_LEN:
-        raise ValueError("SN length = %d" % len(sn))
-
-    # slice the sn into constituent buffers
-    values_dict = get_sn_values(sn)
-
-    with closing(psycopg2.connect("dbname=enrollment_db")) as db_conn:
-        cert = db_retrieve_cert(db_conn, values_dict)
+            raise ValueError("Missing parameter")
 
     if cert is None:
         print("Status: 404 Not Found\n")
@@ -476,19 +506,24 @@ def send_certificate(form_values, x509_format=False):
     else:
         send_certificate_response(cert)
 
-def send_summary(form_values):
+
+def send_summary(form):
 
     print("Status: 200 OK")
     print("Content-Type: application/json\n")
-    with closing(psycopg2.connect("dbname=enrollment_db")) as db_conn:
-        db_print_summary(db_conn)
+    fld_list = form.getvalue("fld",
+                             ('serial_info',
+                              'serial_nr',
+                              'puf_key',
+                              'timestamp'))
+    db_func(db_print_summary, fld_list)
     print("\n")
 
 
 def process_query():
 
     form = cgi.FieldStorage()
-    cmd = safe_form_get(form, "cmd", "modulus")
+    cmd = form.getvalue("cmd", "modulus")
     if cmd == "modulus":
         send_modulus(form, "fpk4")
     elif cmd == "cert":
@@ -509,7 +544,7 @@ def main_program():
     try:
         # get the request -- base64 encoded TBS
         method = os.environ["REQUEST_METHOD"]
-        if method != "PUT" and method != "GET":
+        if method not in ("PUT", "GET"):
             raise ValueError("Invalid request method %s" % method)
 
         if method == "GET":
