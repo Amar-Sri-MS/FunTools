@@ -52,12 +52,8 @@ def log(msg):
 ###########################################################################
 
 def safe_form_get(form, key, default):
-    ''' safely get parameter for form '''
-    if key in form:
-        return form[key].value
-    else:
-        return default
-
+    ''' deprecated : use form.getvalue(key, default) instead '''
+    return form.getvalue(key, default)
 
 def send_response_body(body, filename=None):
     print("Status: 200 OK")
