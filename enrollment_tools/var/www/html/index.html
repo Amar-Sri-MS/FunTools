@@ -1,21 +1,57 @@
 <!DOCTYPE HTML>
 <html lang="en">
-<head>
+  <head>
     <style>
-    h1 {text-align:center;}
-    .center {
-        display: block;
-        margin-left: auto;
-        margin-right: auto;
-    }
+      h1 {text-align:center;}
+      h2 {text-align:center;}
+      .center {
+          display: block;
+          margin-left: auto;
+          margin-right: auto;
+      }
     </style>
     <title>F1 Registration</title>
     <link rel="shortcut icon" href="./images/favicons.png">
-</head>
-<body>
+  </head>
+  <body>
     <h1>F1 Registration Server</h1>
     <br>
     <img src="./images/fungible-logo-full.png", class="center">
-
-</body>
+    <br>
+    <form action="/cgi-bin/enrollment_server.cgi" method="get">
+      <div style="text-align:center;">
+	<div style="display: inline-flex; border: 1px solid black; padding: 10px;">
+	  <div style="display: inline-block; text-align: left;">
+	    <b> Select Fields to Retrieve for Enrollment Certificates</b>
+	    <br><br>
+	    <input type="checkbox" id="enroll_id" name="fld" value="enroll_id">
+	    <label for="enroll_id">Id</label>
+	    <br>
+	    <input type="checkbox" id="serial_info" name="fld" value="serial_info">
+	    <label for="serial_info">Serial Info</label>
+	    <br>
+	    <input type="checkbox" id="serial_nr" name="fld" value="serial_nr">
+	    <label for="serial_nr">Serial Number</label>
+	    <br>
+	    <input type="checkbox" id="nonce" name="fld" value="nonce">
+	    <label for="nonce">Nonce</label>
+	    <br>
+	    <input type="checkbox" id="key" name="fld" value="key">
+	    <label for="key">Key</label>
+	    <br>
+	    <input type="checkbox" id="activation_code" name="fld" value="activation_code">
+	    <label for="activation_code">Activation Code</label>
+	    <br>
+	    <input type="checkbox" id="time_stamp" name="fld" value="time_stamp">
+	    <label for="timestamp">Time stamp</label>
+	    <br>
+	    <br>
+	    <div style="text-align:center;">
+	      <button type="submit" name="cmd" value="summary">Certificates Information</button>
+	    </div>
+	  </div>
+	</div>
+      </div>
+    </form>
+  </body>
 </html>
