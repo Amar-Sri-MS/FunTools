@@ -802,7 +802,7 @@ def get_cert_of_serial_number(serial_no):
 def get_cert_with_id(cert_id):
     return get_cert_aux(SERVER_URL_PRE +
                         b"enrollment_server.cgi?cmd=cert&id=" +
-                        cert_id)
+                        cert_id.encode('utf-8'))
 
 
 #########################################################################
