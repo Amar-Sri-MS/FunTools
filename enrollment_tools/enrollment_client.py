@@ -771,7 +771,11 @@ def generate_enrollment_cert(tbs_cert):
     return binascii.a2b_base64(cert_64)
 
 
-def get_cert_aux(url):
+def get_cert_of_serial_number(serial_no):
+
+    sn_64 = binascii.b2a_base64(serial_no).rstrip()
+
+    url = SERVER_URL_PRE + b"enrollment_server.cgi?cmd=cert&sn=" + sn_64
     response = requests.get(url, timeout=10)
 
     if response.status_code == requests.codes.not_found:
@@ -791,27 +795,13 @@ def get_cert_aux(url):
     return binascii.a2b_base64(cert_64)
 
 
-def get_cert_of_serial_number(serial_no):
-
-    sn_64 = binascii.b2a_base64(serial_no).rstrip()
-    return get_cert_aux(SERVER_URL_PRE +
-                        b"enrollment_server.cgi?cmd=cert&sn=" +
-                        sn_64)
-
-
-def get_cert_with_id(cert_id):
-    return get_cert_aux(SERVER_URL_PRE +
-                        b"enrollment_server.cgi?cmd=cert&id=" +
-                        cert_id.encode('utf-8'))
-
-
 #########################################################################
 #
 # Main
 #
 #########################################################################
 
-def parse_args():
+def main():
     parser = argparse.ArgumentParser(
         description="Perform enrollment via I2C on a BMC")
 
@@ -833,16 +823,7 @@ def parse_args():
                         help="i2c bus on the BMC to use (for non Fungible BMC. "\
                         "If specified, chip argument is ignored")
 
-    parser.add_argument("--cert-id",
-                        help="TEST: try to activate the chip with a "\
-                        "different enrollment certificate")
-
-    return parser.parse_args()
-
-
-def main():
-
-    args = parse_args()
+    args = parser.parse_args()
 
     logging.basicConfig()
     logger = logging.getLogger() # root level logger
@@ -892,15 +873,11 @@ def main():
         logging.error("Error getting the chip serial number")
         return False
 
-    if args.cert_id:
-        logging.info("Using id instead of serial number")
-        cert = get_cert_with_id(args.cert_id)
-    else:
-        cert = get_cert_of_serial_number(serial_no)
+    cert = get_cert_of_serial_number(serial_no)
 
     #if the cert is there, write it
     if cert:
-        logging.info("Found certificate")
+        logging.info("Found certificate for this serial number")
         if challenge.save_enroll_cert(cert):
             print(ENROLL_CERT_INSTALLED % (args.chip, args.bmc))
             return True
