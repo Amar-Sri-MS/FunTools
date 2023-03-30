@@ -516,6 +516,9 @@ def send_summary(form):
                               'serial_nr',
                               'puf_key',
                               'timestamp'))
+    if not isinstance(fld_list, list):
+        fld_list = (fld_list,)
+
     db_func(db_print_summary, fld_list)
     print("\n")
 
