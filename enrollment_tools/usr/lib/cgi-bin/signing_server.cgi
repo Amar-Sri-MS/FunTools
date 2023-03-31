@@ -102,15 +102,15 @@ def get_binary_from_form(form, name):
 
 def cmd_modulus(form):
 
-    key_label = safe_form_get(form, "key", "fpk4")
-    hsm_id = int(safe_form_get(form, "production", 0))
+    key_label = form.getvalue("key", "fpk4")
+    hsm_id = int(form.getvalue("production", 0))
 
     if hsm_id and key_label != "fpk4":
         modulus = remote_hsm_get_modulus(key_label, hsm_id)
     else:
         modulus = hsm_get_modulus(key_label)
 
-    out_format = safe_form_get(form, "format", "binary")
+    out_format = form.getvalue("format", "binary")
     if out_format == "binary":
         send_binary(modulus, "%s_%d_modulus.bin" % (key_label, hsm_id))
     elif out_format == "public_key":
@@ -126,7 +126,7 @@ def process_query():
 
     form = cgi.FieldStorage()
 
-    cmd = safe_form_get(form, "cmd", "modulus")
+    cmd = form.getvalue("cmd", "modulus")
 
     if cmd == "modulus":
         cmd_modulus(form)
@@ -139,7 +139,7 @@ def sign():
 
     # is there a hash provided?
     algo_digest = get_binary_from_form(form, "digest")
-    algo_name = safe_form_get(form, "algo", "sha512") # default and back ward compatible
+    algo_name = form.getvalue("algo", "sha512") # default and back ward compatible
 
     if algo_name in hashlib.algorithms_available:
         algo = hashlib.new(algo_name)
@@ -149,15 +149,14 @@ def sign():
 
     digest_info = gen_digest_info(algo_name, algo_digest)
 
-    auth_token = safe_form_get(form, "auth_token", None)
+    auth_token = form.getvalue("auth_token", None)
 
     # hsm_id: default to 0 but to 1 if auth_token
     # (backward compatibility with old clients)
-    hsm_id = int(safe_form_get(form,
-                               "production",
+    hsm_id = int(form.getvalue("production",
                                1 if auth_token else 0))
 
-    key_label = safe_form_get(form, "key", None)
+    key_label = form.getvalue("key", None)
     if key_label:
         if auth_token:
             signature = remote_hsm_sign_hash_with_key(key_label,

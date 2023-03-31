@@ -61,21 +61,14 @@ def log(msg):
 #
 ###########################################################################
 
-def safe_form_get(form, key, default):
-    ''' safely get parameter for form '''
-    if key in form:
-        return form[key].value
-    else:
-        return default
-
 def send_response_body(body):
     print("Status: 200 OK")
     print("Content-length: %d\n" % len(body))
     print("%s\n" % body)
 
 
-def send_binary_buffer(bin_buffer, form_values):
-    format = safe_form_get(form_values, "format", "hex")
+def send_binary_buffer(bin_buffer, form):
+    format = form.getvalue("format", "hex")
     if format == "hex":
         bin_str = binascii.b2a_hex(bin_buffer).decode('ascii')
     elif format == "base64":
@@ -255,11 +248,11 @@ def get_binary_from_form(form, name):
 
 def cmd_modulus(form):
 
-    key_label = safe_form_get(form, "key", "fpk4")
+    key_label = form.getvalue("key", "fpk4")
 
     modulus = get_modulus_of_key(key_label)
 
-    out_format = safe_form_get(form, "format", "binary")
+    out_format = form.getvalue("format", "binary")
     if out_format == "binary":
         send_binary(modulus, "%s_modulus.bin" % (key_label))
     elif out_format == "public_key":
@@ -275,7 +268,7 @@ def process_query():
 
     form = cgi.FieldStorage()
 
-    cmd = safe_form_get(form, "cmd", "modulus")
+    cmd = form.getvalue("cmd", "modulus")
 
     if cmd == "modulus":
         cmd_modulus(form)
@@ -288,7 +281,7 @@ def sign():
 
     # is there a hash provided?
     digest = get_binary_from_form(form, "digest")
-    algo_name = safe_form_get(form, "algo", "sha512") # default and back ward compatible
+    algo_name = form.getvalue("algo", "sha512") # default and back ward compatible
 
     if algo_name in hashlib.algorithms_available:
         algo = hashlib.new(algo_name)
@@ -296,7 +289,7 @@ def sign():
             raise ValueError("Digest is %d bytes, expected %d bytes for %s" %
                              (len(digest), algo.digest_size, algo_name))
 
-    key_label = safe_form_get(form, "key", None)
+    key_label = form.getvalue("key", None)
     if key_label:
         signature = sign_hash_with_label(key_label,
                                          digest,

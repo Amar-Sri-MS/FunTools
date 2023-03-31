@@ -20,7 +20,6 @@ PUF_INIT_BOOT_STEP_RE = re.compile('#\s*define\s+BOOT_STEP_PUF_INIT\s+(.*)$')
 
 from common import (
     log,
-    safe_form_get,
     send_response_body,
 )
 
@@ -34,7 +33,7 @@ def parse_version(version):
 
 def process_query():
     form = cgi.FieldStorage()
-    version = safe_form_get(form, "version", None)
+    version = form.getvalue("version", None)
 
     if not version:
         raise ValueError("Missing version argument")
