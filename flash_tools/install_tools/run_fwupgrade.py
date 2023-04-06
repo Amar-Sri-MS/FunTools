@@ -497,8 +497,14 @@ def get_current_upgrade_images(path, select):
     return { key: images[key] for key in KNOWN_IMAGES if key in images }
 
 def discover_dpu():
-    with open("/proc/device-tree/fungible,dpu") as f:
-        return f.readline().rstrip('\0').lower()
+    try:
+        with open("/proc/device-tree/fungible,dpu") as f:
+            return f.readline().rstrip('\0').lower()
+    except FileNotFoundError:
+        pass
+
+    dpu = dpc.execute("peek", ["config/processor_info/Model"])
+    return dpu.lower()
 
 def main():
     tmpws = None
