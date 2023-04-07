@@ -1,3 +1,4 @@
+
 <!DOCTYPE HTML>
 <html lang="en">
   <head>
@@ -10,14 +11,12 @@
           margin-right: auto;
       }
     </style>
-    <title>F1 Registration</title>
+    <title>DPU Registration</title>
     <link rel="shortcut icon" href="./images/favicons.png">
   </head>
   <body>
-    <h1>F1 Registration Server</h1>
-    <br>
-    <img src="./images/fungible-logo-full.png", class="center">
-    <br>
+    <img src="./images/dpu.png" class="center" alt="DPU logo" height="150">
+    <h1>DPU Registration Server</h1>
     <form action="/cgi-bin/enrollment_server.cgi" method="get">
       <div style="text-align:center;">
 	<div style="display: inline-flex; border: 1px solid black; padding: 10px;">
@@ -48,6 +47,29 @@
 	    <br>
 	    <div style="text-align:center;">
 	      <button type="submit" name="cmd" value="summary">Certificates Information</button>
+	    </div>
+	  </div>
+	</div>
+      </div>
+    </form>
+    <br><br>
+    <form action="/cgi-bin/enrollment_boot_step.cgi" method="get">
+      <div style="text-align:center;">
+	<div style="display: inline-flex; border: 1px solid black; padding: 10px;">
+	  <div style="display: inline-block; text-align: left;">
+	    <b> Secure Boot Processor Boot Step Decoder</b>
+	    <br><br>
+	    <label for="version">Version String: (ex:bld_1234-dc6798g)</label>
+	    <br>
+	    <input type="text" id="version" name="version">
+	    <br>
+	    <label for="bootstep">Boot Step: (ex: 0x5C)</label>
+	    <br>
+	    <input type="text" id="bootstep" name="bootstep">
+	    <br>
+	    <br>
+	    <div style="text-align:center;">
+	      <button type="submit">Decode</button>
 	    </div>
 	  </div>
 	</div>
