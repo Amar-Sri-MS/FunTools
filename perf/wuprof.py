@@ -2,7 +2,7 @@
 import io
 import os
 import re
-import cgi
+import html
 import sys
 import math
 import urllib.request, urllib.error, urllib.parse
@@ -1128,14 +1128,10 @@ def html_uart_log(opts):
         import uart2html
         s = uart2html.str2html(s)
 
-        # deal with potentially corrupt chars
-        s = str(s, errors="replace")
         opts.uart_log = s
     except Exception as e:
         print("Error processing UART to HTML: " + str(e))
-
-        s = str(s, errors="replace")
-        opts.uart_log = "<pre>\n" + cgi.escape(s) + "\n</pre>\n"
+        opts.uart_log = "<pre>\n" + html.escape(s) + "\n</pre>\n"
 
 
 def load_sample_file(opts, fname):
@@ -1143,7 +1139,7 @@ def load_sample_file(opts, fname):
     if (opts.uart is not None):
         print("reading uart file %s" % opts.uart)
 
-        fl = open(opts.uart)
+        fl = open(opts.uart, "r", encoding="utf-8", errors="replace")
         opts.uart_log = "".join(fl.readlines())
 
         # scrape some interesting stuff out of the uart
