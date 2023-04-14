@@ -9,6 +9,7 @@ import argparse
 import subprocess
 import re
 import itertools
+import functools
 
 is_debug = False
 
@@ -56,7 +57,7 @@ def fname_cmp(a, b):
   return -1 if f1 < f2 else 1
 
 def sort_by_fname(data):
-  return sorted(data, cmp=fname_cmp)
+  return sorted(data, key=functools.cmp_to_key(fname_cmp))
 
 def count_fname_cmp(a, b):
   a0 = abs(a[0])
@@ -106,7 +107,7 @@ def group_by_fname(data, is_sort_values=True):
         fl_c_map[v[1]] = v
 
       vlist = []
-      for fl in sorted(fl_c_map, cmp=loc_cmp):
+      for fl in sorted(fl_c_map, key=functools.cmp_to_key(loc_cmp)):
         v = fl_c_map[fl]
         vlist.append(v)
 
@@ -130,7 +131,7 @@ def group_by_loc_fname(data, is_sort_values=True):
         fname_c_map[v[2]] = v
 
       vlist = []
-      for fname in sorted(fname_c_map, cmp=fname_cmp):
+      for fname in sorted(fname_c_map, key=functools.cmp_to_key(fname_cmp)):
         v = fname_c_map[fname]
         vlist.append(v)
 
@@ -170,7 +171,7 @@ def group_data_sort_by_count(g_data, group_by):
     data.append([count, kname, vlist])
 
   cmp_func = count_fname_cmp if group_by == 'func' else count_loc_fname_cmp
-  data = sorted(data, cmp=cmp_func, reverse=True)
+  data = sorted(data, key=functools.cmp_to_key(cmp_func), reverse=True)
   return data
 
 def instr_count_by_group(in_file, out_f, group_by, pattern=None):
@@ -182,6 +183,7 @@ def instr_count_by_group(in_file, out_f, group_by, pattern=None):
     out_f.write('%s\t%s\n' % (count, kname))
     for v in vlist:
       if group_by == 'func':
+        instr_list = v[2]
         v = [v[0], v[1]] + v[3:]
         out_f.write('\t%s\n' % '\t'.join(v))
       else:
