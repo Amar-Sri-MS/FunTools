@@ -64,7 +64,7 @@ def nm_sym_parse(nm, bin_file):
   proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
   for line in proc.stdout:
-    line = line.strip().split()
+    line = line.decode().strip().split()
     if len(line) < 4:
       continue
     addr = '0x' + line[0]
@@ -110,7 +110,7 @@ def objdump_debug_line_parse(objdump, bin_file, is_full_path=False):
   cur_fname = None
   cur_fname_cu = None
   for line in proc.stdout:
-    line = line.strip().split()
+    line = line.decode().strip().split()
 
     if len(line) == 0:
       cur_fname = None
