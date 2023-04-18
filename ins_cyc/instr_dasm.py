@@ -62,7 +62,7 @@ def bin_instr_dasm_annotate(bin_file):
   print('parse objdump output')
   data = []
   for line in output.splitlines():
-    v = line.strip().split('\t', 2)
+    v = line.decode().strip().split('\t', 2)
     if len(v) < 3:
       continue
     addr = v[0].split(':', 1)
@@ -89,7 +89,7 @@ def sam_instr_dasm_annotate(bin_file, sam_dir):
     print('parsing %s' % fname)
     with open(fname, 'r') as f:
       for line in f:
-        v = line.strip().split(' ', 3)
+        v = line.decode().strip().split(' ', 3)
         addr = '0x' + v[2]
         asm = v[3].strip()
         data.append([addr, asm])
