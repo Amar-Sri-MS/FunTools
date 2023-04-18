@@ -1,0 +1,13 @@
+[Unit]
+Description = Start libfunq dpcsh proxy
+After = network.target
+
+[Service]
+ExecStartPre=/bin/bash -c "/bin/systemctl set-environment DPU_LIBFUNQ_DEV=`lspci -d 1dad:0108:ff00 | awk '{print $1}' | head -n1`"
+ExecStartPre=/usr/bin/funq-setup bind funq ${DPU_LIBFUNQ_DEV}
+ExecStart=/usr/bin/dpcsh.libfunq -q${DPU_LIBFUNQ_DEV} --unix_proxy=/tmp/dpc.sock
+
+[Install]
+WantedBy = multi-user.target
+
+
