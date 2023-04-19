@@ -261,6 +261,12 @@ update_uboot_boot_debug_flag() {
 	fi
 }
 
+if [ ! -e /sys/firmware/devicetree/base/fungible,dpu ] ; then
+	# if the installer was run outside of cclinux (eg. COMe) then
+	# simply exit now before attempting cclinux fs upgrade
+	exit $EXIT_STATUS
+fi
+
 if [[ "$DEV_IMAGE" -eq 1 ]]; then
 	if [[ -n "$STATUS_DIR" ]]; then
 		echo "dev-only upgrade" > "$STATUS_DIR"/.no_upgrade_verify
