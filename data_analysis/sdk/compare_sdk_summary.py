@@ -89,8 +89,8 @@ def _get_args() -> argparse.Namespace:
 
     parser.add_argument(
         "--new_sdk",
-        type=int,
-        help="New sdk number",
+        type=str,
+        help="New sdk number in string format, in PR it can be xxx.y format",
     )
 
     parser.add_argument(
