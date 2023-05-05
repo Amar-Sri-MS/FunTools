@@ -5,8 +5,6 @@
 """
 
 import glob, os, sys, datetime
-from jinja2 import Environment
-from jinja2 import FileSystemLoader
 import logging
 from pprint import pprint
 import tempfile
@@ -92,6 +90,7 @@ class HWCAPCodeGen():
 
     #Generate hwcap c header file for the config data catalog
     def _generate_hwcap_cfg_header_file(self, include_files):
+        import jinja2
         hw_block_inst_cnts = self.hwcap_catalog._get_hw_block_inst_cnts()
         hw_block_defs = self.hwcap_catalog._get_hw_block_defs()
         hw_block_status_list = self.hwcap_catalog._get_valid_block_status_list()
@@ -104,7 +103,7 @@ class HWCAPCodeGen():
             'filename_prefix': self.gen_file_prefix
         }
 
-        env = Environment(loader=FileSystemLoader(this_dir))
+        env = jinja2.Environment(loader=jinja2.FileSystemLoader(this_dir))
         tmpl = env.get_template(self.hwcap_h_tmpl)
         header_file = self.gen_file_prefix + '.h'
         output_file = os.path.join(self.output_dir, header_file)
@@ -217,6 +216,7 @@ class HWCAPCodeGen():
 
     #Generate hwcap c file for the config data
     def _generate_hwcap_cfg_c_file(self):
+        import jinja2
         hw_block_inst_cnts = self.hwcap_catalog._get_hw_block_inst_cnts()
         hw_block_defs = self.hwcap_catalog._get_hw_block_defs()
         hw_block_status_list = self.hwcap_catalog._get_valid_block_status_list()
@@ -235,7 +235,7 @@ class HWCAPCodeGen():
             cfg = self._per_sku_cfg_finalise(sku_name, per_sku_cfg)
             finalised_cfg[sku_name] = cfg
 
-        env = Environment(loader=FileSystemLoader(this_dir))
+        env = jinja2.Environment(loader=jinja2.FileSystemLoader(this_dir))
         env.lstrip_blocks = True
         c_file =  self.gen_file_prefix + ".c"
         tmpl = env.get_template(self.hwcap_c_tmpl)
