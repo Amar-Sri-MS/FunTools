@@ -39,12 +39,16 @@ using std::min;
 #define  CHAL_HEADER_SIZE (4)
 #define  MAX_FLIT_SIZE  (64)
 
+void socket_reset(void);
 
 std::string m_devices_for_chip[2] = { CHIP_DEVICE_0, CHIP_DEVICE_1};
 
 void set_device(int chip_instance, const char *device)
 {
 	m_devices_for_chip[chip_instance? 1:0] = device;
+#ifdef USE_POSIX_SOCKET
+	socket_reset();
+#endif
 }
 
 const char *get_device(int chip_instance)
