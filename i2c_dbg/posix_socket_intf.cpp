@@ -14,27 +14,35 @@
 #include <sys/un.h>
 #include <unistd.h>
 
+static int sock = -1;
 
 static int _get_socket(const char *device)
 {
-	static int s = -1;
-	if (s == -1) {
+	if (sock == -1) {
 		struct sockaddr_un addr = {};
 		addr.sun_family = AF_UNIX;
-		s = socket(AF_UNIX, SOCK_STREAM|SOCK_CLOEXEC, 0);
-		if (s < 0)
-			return s;
+		sock = socket(AF_UNIX, SOCK_STREAM|SOCK_CLOEXEC, 0);
+		if (sock < 0)
+			return sock;
 
 		strncpy(addr.sun_path, device, sizeof(addr.sun_path) - 1);
-		int r = connect(s, (const struct sockaddr *) &addr,
+		int r = connect(sock, (const struct sockaddr *) &addr,
 						sizeof(addr));
 		if (r < 0) {
-			close(s);
-			s = -1;
+			close(sock);
+			sock = -1;
 		}
 	}
-	return s;
+	return sock;
 }
+
+void socket_reset(void)
+{
+	if (sock >= 0)
+		close(sock);
+	sock = -1;
+}
+
 
 extern "C" int i2c_master_read(const char *device, int addr,
 		    unsigned char* buff, int buff_len)

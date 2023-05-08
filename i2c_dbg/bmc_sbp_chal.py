@@ -575,7 +575,7 @@ class i2c_dbg(object):
         return self.i2c_dbg_get_chip_device(chip_inst)
 
     def set_chip_device(self, chip_inst, device_str):
-        return self.i2c_dbg_set_chip_device(chip_inst, bytes(device_str))
+        return self.i2c_dbg_set_chip_device(chip_inst, str2bytes(device_str))
 
 
 ##############################################################################
