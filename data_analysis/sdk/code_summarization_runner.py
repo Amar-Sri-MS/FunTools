@@ -22,17 +22,6 @@
     >>> black ./code_summarization_runner.py
 """
 
-# it seems that extracting script seems to grab documented fuction, such as bam.c:56 bam_alloc()
-# bam_alloc() is inside of undocumented_api block in the json file...TO CHECK
-
-# missing json file output by 129 (zero base)
-# this file is used after the line 130, extracted_undoc_split.txt
-# this file is generated upto line 129, extracted_undoc_summary_2023-05-01-18-01.txt
-
-# issues in the splitting filename and code
-# this file is post 129 line, extracted_undoc_split_summary_2023-05-01-18-24.txt
-# extracted_undoc_split_summary_2023-05-01-18-24.json
-
 import argparse
 import os
 import sys
