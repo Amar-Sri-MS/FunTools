@@ -92,27 +92,32 @@ def _get_args() -> argparse.Namespace:
         "--test", type=bool, help="Test run with sample code", default=False
     )
 
-    parser.add_argument(
-        "--debug", type=bool, help="Debug run", default=False
-    )
+    parser.add_argument("--debug", type=bool, help="Debug run", default=False)
 
     parser.add_argument(
         "--input_file", type=str, help="Input file containing function bodies"
     )
 
     parser.add_argument(
-        "--output_file", type=str, default="output_file", help="Output summarization file"
+        "--output_file",
+        type=str,
+        default="output_file",
+        help="Output summarization file",
     )
 
     parser.add_argument(
-        "--model", type=str, help="model_name, ex> text-davinci-003, gpt-3.5-turbo (chatgpt)", default="text-davinci-003"
+        "--model",
+        type=str,
+        help="model_name, ex> text-davinci-003, gpt-3.5-turbo (chatgpt)",
+        default="text-davinci-003",
     )
 
     args = parser.parse_args()
 
     return args
 
-def get_completion(prompt, model='text-davinci-003', temperature=0): 
+
+def get_completion(prompt, model="text-davinci-003", temperature=0):
     messages = [{"role": "user", "content": prompt}]
     response = openai.Completion.create(
         engine=model,
@@ -128,6 +133,7 @@ def get_completion(prompt, model='text-davinci-003', temperature=0):
     # return response.choices[0].message["content"]
     return response["choices"][0]["text"]
 
+
 def get_completion_chatgpt(prompt, model="gpt-3.5-turbo", temperature=0):
     """Get text completion with OpenAI's API, with chatgpt engine."""
     messages = [{"role": "user", "content": prompt}]
@@ -140,7 +146,9 @@ def get_completion_chatgpt(prompt, model="gpt-3.5-turbo", temperature=0):
     return response.choices[0].message["content"]
 
 
-def code_summary_chatgpt(code: str, examples: List[str], model: str, debug: bool = False) -> str:
+def code_summary_chatgpt(
+    code: str, examples: List[str], model: str, debug: bool = False
+) -> str:
     """Generate code summary based on examples using chatgpt
     Parameters
     ----------
@@ -181,7 +189,7 @@ def code_summary_chatgpt(code: str, examples: List[str], model: str, debug: bool
         print(prompt)
         print("-" * 50)
 
-    if model == "gpt-3.5-turbo": # chatgpt
+    if model == "gpt-3.5-turbo":  # chatgpt
         response = get_completion_chatgpt(prompt, model=model)
     elif model == "text-davinci-003":
         response = get_completion(prompt, model=model)
@@ -195,16 +203,19 @@ def setup_api(model):
     load_dotenv()
     openai.api_type = os.getenv("OPENAI_API_TYPE")
     openai.api_base = os.getenv("OPENAI_API_BASE")
-    if model == "gpt-3.5-turbo": # "chatgpt"
+    if model == "gpt-3.5-turbo":  # "chatgpt"
         openai.api_version = os.getenv("OPENAI_API_CHAT_VERSION")  # chatgpt
     elif model == "text-davinci-003":
-        openai.api_version = os.getenv("OPENAI_API_VERSION") # davinci
+        openai.api_version = os.getenv("OPENAI_API_VERSION")  # davinci
     else:
         assert False, "model not supported"
 
     openai.api_key = os.getenv("OPENAI_API_KEY")
 
-def generate_code_summary(filename: str, output_file: str, examples: List[str], model, debug:bool=False):
+
+def generate_code_summary(
+    filename: str, output_file: str, examples: List[str], model, debug: bool = False
+):
     """Generate code summary for a file containing function bodies
     Parameters
     ----------
@@ -259,7 +270,7 @@ def generate_code_summary(filename: str, output_file: str, examples: List[str], 
                 print("func_name:", func_name)
                 print("code:", code)
                 code_summary = "code_summary"
-            
+
             else:
                 code_summary = code_summary_chatgpt(code, examples, model, debug=debug)
 
@@ -310,15 +321,15 @@ def test_code_summary_chatgpt():
     """Test code with fixed code snippet"""
 
     test_code_snippets = [
-    """
+        """
 static inline uint16_t erp_prv_template_set_l3(uint16_t prv_tmpl, uint8_t value)
 {
                 prv_tmpl &= ~(0x3 << 4);
                 return prv_tmpl | ((value & 0x3) << 4);
 }
     """,
-    """ec_operate_push(\n	struct channel *channel,\n	struct ec_operate *params)\n{\n	struct flow *f = erasure_to_flow();\n\n	channel_push(channel, ec_operate, flow_dest(f), f, params);\n	erasure_get_matrix_or_push(channel, f, params);\n}
-    """
+        """ec_operate_push(\n	struct channel *channel,\n	struct ec_operate *params)\n{\n	struct flow *f = erasure_to_flow();\n\n	channel_push(channel, ec_operate, flow_dest(f), f, params);\n	erasure_get_matrix_or_push(channel, f, params);\n}
+    """,
     ]
     for code in test_code_snippets:
         # code_summary = code_summary_chatgpt(code, examples, debug=True)
@@ -333,6 +344,7 @@ static inline uint16_t erp_prv_template_set_l3(uint16_t prv_tmpl, uint8_t value)
         print("-" * 50)
         print(response)
         print()
+
 
 def main() -> None:
     """Main function"""
@@ -351,7 +363,10 @@ def main() -> None:
     dt_string = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
     output_file = args.output_file + "_" + dt_string
 
-    generate_code_summary(args.input_file, output_file, examples, args.model, args.debug)
+    generate_code_summary(
+        args.input_file, output_file, examples, args.model, args.debug
+    )
+
 
 if __name__ == "__main__":
     main()
