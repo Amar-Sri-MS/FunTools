@@ -289,23 +289,6 @@ def generate_code_summary(
         df.to_json(json_file, orient="records")
 
 
-# def test_code_summary_chatgpt():
-#     """Test code"""
-#     code =
-#     """ec_operate_push(\n	struct channel *channel,\n	struct ec_operate *params)\n{\n	struct flow *f = erasure_to_flow();\n\n	channel_push(channel, ec_operate, flow_dest(f), f, params);\n	erasure_get_matrix_or_push(channel, f, params);\n}
-#     """
-
-#     print("Code to generate summary:\n")
-#     print("-" * 50)
-#     print(code)
-#     print("-" * 50)
-#     response = code_summary_chatgpt(code, examples, debug=True)
-
-#     print("Generated summary:\n")
-#     print("-" * 50)
-#     print(response)
-
-
 def test_code_summary_chatgpt():
     """Test code with fixed code snippet"""
 
