@@ -4,9 +4,6 @@
 # NOR FLASH files -- EEPROM Image ("eepr"), etc.
 
 import os, sys, logging, glob
-from jinja2 import Template
-from jinja2 import Environment
-from jinja2 import FileSystemLoader
 import datetime
 import subprocess
 import struct
@@ -353,6 +350,7 @@ class SKUCfgGen():
 
     # Generates sku id files
     def generate_code(self):
+        import jinja2
         date = datetime.datetime.now()
         this_dir = os.path.dirname(os.path.abspath(__file__))
         meta_data = {
@@ -380,7 +378,7 @@ class SKUCfgGen():
         if fun_board_skus is None or all_fungible_board_skus is None:
             raise argparse.ArgumentTypeError('fungible boards list is empty!')
 
-        env = Environment(loader=FileSystemLoader(this_dir))
+        env = jinja2.Environment(loader=jinja2.FileSystemLoader(this_dir))
         tmpl = env.get_template(self.sku_h_tmpl)
         header_file = self.sku_file_prefix + '.h'
         output_file = os.path.join(self.output_dir, header_file)
