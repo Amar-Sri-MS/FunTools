@@ -120,13 +120,16 @@ def main():
     parser.add_argument('--default-config-files', dest='default_cfg', action='store_true')
     parser.add_argument('--dev-image', action='store_true', help='Create a development image installer')
     parser.add_argument('--extra-funos-suffix', action='append', help='Extra funos elf suffix to use')
+    parser.add_argument('--funos-type', help='FunOS build type (storage, core etc.)')
 
     args = parser.parse_args()
 
     if args.default_cfg == False and len(args.config) == 0:
         parser.error("One of '--default-config-files' or a list of config files is required")
 
-    funos_suffixes = ['', args.chip]
+    funos_suffixes = [f'-{args.funos_type}' if args.funos_type else '', args.chip]
+    bundle_funos_type = f'{args.funos_type}-' if args.funos_type else ''
+
     if args.release:
         funos_suffixes.append('release')
 
@@ -430,7 +433,7 @@ def main():
         if os.path.exists('.version'):
             tarfiles.append('.version')
 
-        with tarfile.open('{chip}_sdk_signed_release.tgz'.format(chip=args.chip), mode='w:gz') as tar:
+        with tarfile.open(f'{bundle_funos_type}{args.chip}_sdk_signed_release.tgz', mode='w:gz') as tar:
             for f in tarfiles:
                 tar.add(f)
 
@@ -501,8 +504,8 @@ def main():
                 os_utils.path_fixup('makeself'),
                 '--follow',
                 'bundle_installer',
-                'setup_bundle_{}.sh'.format(bundle_name),
-                'CCLinux/FunOS {} installer'.format(bundle_name),
+                f'setup_bundle_{bundle_funos_type}{bundle_name}.sh',
+                f'CCLinux/FunOS {args.funos_type} {bundle_name} installer',
                 './setup.sh'
             ]
 
@@ -635,7 +638,7 @@ def main():
         if os.path.exists('.version'):
             tarfiles.append('.version')
 
-        with tarfile.open('{chip}_mfg_package.tgz'.format(chip=args.chip), mode='w:gz') as tar:
+        with tarfile.open(f'{bundle_funos_type}{args.chip}_mfg_package.tgz', mode='w:gz') as tar:
             for f in tarfiles:
                 tar.add(f)
 

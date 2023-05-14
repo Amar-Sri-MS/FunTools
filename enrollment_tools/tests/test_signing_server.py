@@ -106,7 +106,7 @@ def test_get_binary_fpk4(server, tls_verify):
 
 def test_get_customer_cert(server, tls_verify):
 
-    customer_cert = get_customer_cert(server, tls_verify, "cpk1")
+    customer_cert = get_customer_cert(server, tls_verify, "development/s2/cpk1")
 
     customer_cert_exp = open('../development_keys_certs/cpk1_certificate.bin', 'rb').read()
 

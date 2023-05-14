@@ -92,22 +92,29 @@ dpcsh: $(BUILD_ROOT)/dpcsh
 $(BUILD_ROOT)/dpcsh: $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-.PHONY: install
-install: dpcsh
-	mkdir -p $(SDK_INSTALL_DIR)/bin/$(SDK_INSTALL_PREFIX)/$(OS)
-# FIXME: remove OS versioning on dpc_client.py when
-# integration tests are fixed
-	cp dpc_client.py dpctest.py dpc_binary.py dpc_utils.py binary_json.py dpc_uboot_env.py auth_firmware.py $(BUILD_ROOT)/dpcsh $(SDK_INSTALL_DIR)/bin/$(SDK_INSTALL_PREFIX)/$(OS)
+DPC_INSTALL_TARGET_DIR := $(SDK_INSTALL_DIR)/bin/$(SDK_INSTALL_PREFIX)/$(OS)
+
+$(DPC_INSTALL_TARGET_DIR):
+	mkdir -p $@
+
+.PHONY: install install-scripts
+
+install-scripts: | $(DPC_INSTALL_TARGET_DIR)
+	cp dpc_client.py dpctest.py dpc_binary.py dpc_utils.py binary_json.py dpc_uboot_env.py auth_firmware.py $(DPC_INSTALL_TARGET_DIR)
+
+
+install: dpcsh install-scripts | $(DPC_INSTALL_TARGET_DIR)
+	install $(BUILD_ROOT)/dpcsh $(DPC_INSTALL_TARGET_DIR)
 ifeq ($(MACHINE),aarch64)
 	mkdir -p ${SDK_INSTALL_DIR}/bin/scripts
 	cp deploy_dpcsh_aarch64.sh ${SDK_INSTALL_DIR}/bin/scripts
 endif
 
+install-libfunq: dpcsh install-scripts | $(DPC_INSTALL_TARGET_DIR)
+	install $(BUILD_ROOT)/dpcsh $(DPC_INSTALL_TARGET_DIR)/dpcsh.libfunq
+
 .PHONY: install-init.d
-install-init.d:
-	mkdir -p $(SDK_INSTALL_DIR)/bin/$(SDK_INSTALL_PREFIX)/$(OS)
-# FIXME: remove OS versioning on dpc_client.py when
-# integration tests are fixed
+install-init.d: | $(DPC_INSTALL_TARGET_DIR)
 	cp -R init.d $(SDK_INSTALL_DIR)/bin/$(SDK_INSTALL_PREFIX)/$(OS)
 
 clean:

@@ -26,17 +26,25 @@ FUNOS_TGZ_FLAVOURS = [
 ]
 
 CHIPS = ["f1", "s1", "f1d1", "s2"]
+PKGS = ["core", "storage", "pkgdemo"]
 
 FUNOS_FLAVOURS = [
-    "funos-%s",
-    "funos-%s-release",
-    "funos-%s-emu",
-    "funos-%s-emu-release",
-    "funos-%s-qemu",
-    "funos-%s-qemu-release",
+    "funos-{pkg}-{chip}",
+    "funos-{pkg}-{chip}-release",
+    "funos-{pkg}-{chip}-emu",
+    "funos-{pkg}-{chip}-emu-release",
+    "funos-{pkg}-{chip}-qemu",
+    "funos-{pkg}-{chip}-qemu-release",
 ]
 
-FUNOS_BINARIES = sum([[flav % chip for chip in CHIPS] for flav in FUNOS_FLAVOURS], [])
+# build the full compliment of possible FunOS binaries to publish
+FUNOS_BINARIES = []
+for chip in CHIPS:
+    d = {"chip": chip}
+    for pkg in PKGS:
+        d["pkg"] = pkg
+        FUNOS_BINARIES += [flav.format(**d) for flav in FUNOS_FLAVOURS]
+
 FUNOS_TGZS = sum([[flav % chip for chip in CHIPS] for flav in FUNOS_TGZ_FLAVOURS], [])
 
 PATHS = [ "./",

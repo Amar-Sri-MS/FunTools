@@ -39,12 +39,16 @@ using std::min;
 #define  CHAL_HEADER_SIZE (4)
 #define  MAX_FLIT_SIZE  (64)
 
+void socket_reset(void);
 
 std::string m_devices_for_chip[2] = { CHIP_DEVICE_0, CHIP_DEVICE_1};
 
 void set_device(int chip_instance, const char *device)
 {
 	m_devices_for_chip[chip_instance? 1:0] = device;
+#ifdef USE_POSIX_SOCKET
+	socket_reset();
+#endif
 }
 
 const char *get_device(int chip_instance)
@@ -139,10 +143,21 @@ static byte_vector i2c_dbg_chal_read(int chip_instance, int num_bytes)
 	while (read < num_bytes) {
 		int flit_size = num_bytes - read;
 
-		if (flit_size > MAX_FLIT_SIZE) {
-			flit_size = MAX_FLIT_SIZE;
+#ifdef USE_POSIX_SOCKET
+		/*
+		 * When using a socket, we must properly indicate number
+		 * of bytes requested in the read cmd byte. If the requested number
+		 * is 64 or 65, then the actual number is lost due to overlapping
+		 * with the command bit. This number is probably ignored by real
+		 * HW, but then data is clocked out on i2c master's clock, but
+		 * with a socket interface we have no simple way of telling the device
+		 * how many bytes to return, so ensure that a valid number is
+		 * always requested
+		 */
+		if (flit_size >= MAX_FLIT_SIZE) {
+			flit_size = MAX_FLIT_SIZE - 4;
 		}
-
+#endif
 		int flit_read = i2c_dbg_chal_read_flit(chip_instance,
 						       flit_data,
 						       flit_size);

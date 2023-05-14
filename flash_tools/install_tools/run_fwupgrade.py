@@ -149,8 +149,9 @@ def prepare(args):
     if args.offline:
         return prepare_offline(args)
 
+    bundle_funos_type = f'{args.funos_type}-' if args.funos_type else ''
     SDK_FLASH_PATH = '/{}/funsdk/{}/Linux'.format(args.sdk_devline, args.version)
-    release_file = '{}_dev_signed.tgz'.format(args.chip)
+    release_file = '{}{}_dev_signed.tgz'.format(bundle_funos_type, args.chip)
 
     if args.image_url == BASE_URL:
         url = args.image_url + SDK_FLASH_PATH
@@ -497,8 +498,14 @@ def get_current_upgrade_images(path, select):
     return { key: images[key] for key in KNOWN_IMAGES if key in images }
 
 def discover_dpu():
-    with open("/proc/device-tree/fungible,dpu") as f:
-        return f.readline().rstrip('\0').lower()
+    try:
+        with open("/proc/device-tree/fungible,dpu") as f:
+            return f.readline().rstrip('\0').lower()
+    except FileNotFoundError:
+        pass
+
+    dpu = dpc.execute("peek", ["config/processor_info/Model"])
+    return dpu.lower()
 
 def main():
     tmpws = None
@@ -560,6 +567,8 @@ def main():
 
     arg_parser.add_argument('--check-image-only', action='store_true',
             help='Do not perform upgrade, only check if a given image type is present in package')
+
+    arg_parser.add_argument('--funos-type', help='FunOS/bundle type (storage, core etc.)')
 
     if not dpc:
         arg_parser.add_argument('--no-bind', dest='bind', action='store_false',

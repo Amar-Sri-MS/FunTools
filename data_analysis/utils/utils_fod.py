@@ -15,7 +15,7 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import json
 
-from utils import read_from_file_or_url
+from utils.utils import read_from_file_or_url
 
 from typing import Iterable, Any, List, Optional, Union, Callable, TextIO, Dict, Tuple
 

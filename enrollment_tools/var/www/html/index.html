@@ -1,21 +1,79 @@
+
 <!DOCTYPE HTML>
 <html lang="en">
-<head>
+  <head>
     <style>
-    h1 {text-align:center;}
-    .center {
-        display: block;
-        margin-left: auto;
-        margin-right: auto;
-    }
+      h1 {text-align:center;}
+      h2 {text-align:center;}
+      .center {
+          display: block;
+          margin-left: auto;
+          margin-right: auto;
+      }
     </style>
-    <title>F1 Registration</title>
+    <title>DPU Registration</title>
     <link rel="shortcut icon" href="./images/favicons.png">
-</head>
-<body>
-    <h1>F1 Registration Server</h1>
-    <br>
-    <img src="./images/fungible-logo-full.png", class="center">
-
-</body>
+  </head>
+  <body>
+    <img src="./images/dpu.png" class="center" alt="DPU logo" height="150">
+    <h1>DPU Registration Server</h1>
+    <form action="/cgi-bin/enrollment_server.cgi" method="get">
+      <div style="text-align:center;">
+	<div style="display: inline-flex; border: 1px solid black; padding: 10px;">
+	  <div style="display: inline-block; text-align: left;">
+	    <b> Select Fields to Retrieve for Enrollment Certificates</b>
+	    <br><br>
+	    <input type="checkbox" id="enroll_id" name="fld" value="enroll_id">
+	    <label for="enroll_id">Id</label>
+	    <br>
+	    <input type="checkbox" id="serial_info" name="fld" value="serial_info">
+	    <label for="serial_info">Serial Info</label>
+	    <br>
+	    <input type="checkbox" id="serial_nr" name="fld" value="serial_nr">
+	    <label for="serial_nr">Serial Number</label>
+	    <br>
+	    <input type="checkbox" id="nonce" name="fld" value="nonce">
+	    <label for="nonce">Nonce</label>
+	    <br>
+	    <input type="checkbox" id="puf_key" name="fld" value="puf_key">
+	    <label for="puf_key">Key</label>
+	    <br>
+	    <input type="checkbox" id="activation_code" name="fld" value="activation_code">
+	    <label for="activation_code">Activation Code</label>
+	    <br>
+	    <input type="checkbox" id="timestamp" name="fld" value="timestamp">
+	    <label for="timestamp">Time stamp</label>
+	    <br>
+	    <br>
+	    <div style="text-align:center;">
+	      <button type="submit" name="cmd" value="summary">Certificates Information</button>
+	    </div>
+	  </div>
+	</div>
+      </div>
+    </form>
+    <br><br>
+    <form action="/cgi-bin/enrollment_boot_step.cgi" method="get">
+      <div style="text-align:center;">
+	<div style="display: inline-flex; border: 1px solid black; padding: 10px;">
+	  <div style="display: inline-block; text-align: left;">
+	    <b> Secure Boot Processor Boot Step Decoder</b>
+	    <br><br>
+	    <label for="version">Version String: (ex:bld_1234-dc6798g)</label>
+	    <br>
+	    <input type="text" id="version" name="version">
+	    <br>
+	    <label for="bootstep">Boot Step: (ex: 0x5C)</label>
+	    <br>
+	    <input type="text" id="bootstep" name="bootstep">
+	    <br>
+	    <br>
+	    <div style="text-align:center;">
+	      <button type="submit">Decode</button>
+	    </div>
+	  </div>
+	</div>
+      </div>
+    </form>
+  </body>
 </html>

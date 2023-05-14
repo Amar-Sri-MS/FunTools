@@ -8,6 +8,7 @@ import sys
 import argparse
 import subprocess
 import itertools
+import functools
 import instr_count_query
 
 is_debug = False
@@ -80,7 +81,7 @@ def instr_count_diff(group_by, in_file1, in_file2, out_f, pattern=None, is_track
       data.append(v)
 
     if group_by == 'func':
-      data = sorted(data, cmp=cmp_func, reverse=True)
+      data = sorted(data, key=functools.cmp_to_key(cmp_func), reverse=True)
       data = constprop_moves_remove(data)
 
   for kname in sorted(d1 & d2):
@@ -95,7 +96,7 @@ def instr_count_diff(group_by, in_file1, in_file2, out_f, pattern=None, is_track
       data.append(v)
 
   dprint('sort by instr_count diff')
-  data = sorted(data, cmp=cmp_func, reverse=True)
+  data = sorted(data, key=functools.cmp_to_key(cmp_func), reverse=True)
 
   # write output
   for v in data:

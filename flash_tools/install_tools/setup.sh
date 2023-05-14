@@ -43,10 +43,14 @@ host_sku=''
 
 if [ -e /sys/firmware/devicetree/base/fungible,dpu ] ; then
     read -d $'\0' host_dpu rest_of_line < /sys/firmware/devicetree/base/fungible,dpu
+else
+    host_dpu=$(dpcsh -Q peek config/processor_info/Model | jq -Mr .result)
 fi
 
 if [ -e /sys/firmware/devicetree/base/fungible,sku ] ; then
     read -d $'\0' host_sku rest_of_line < /sys/firmware/devicetree/base/fungible,sku
+else
+    host_sku=$(dpcsh -Q peek config/version/sku | jq -Mr .result)
 fi
 
 if [ -n "$host_dpu" ] && [ "$host_dpu" != "$CHIP_NAME" ]; then
@@ -256,6 +260,12 @@ update_uboot_boot_debug_flag() {
 		dpc_uboot_env.py set
 	fi
 }
+
+if [ ! -e /sys/firmware/devicetree/base/fungible,dpu ] ; then
+	# if the installer was run outside of cclinux (eg. COMe) then
+	# simply exit now before attempting cclinux fs upgrade
+	exit $EXIT_STATUS
+fi
 
 if [[ "$DEV_IMAGE" -eq 1 ]]; then
 	if [[ -n "$STATUS_DIR" ]]; then

@@ -9,6 +9,11 @@ exclude_api_patterns:
   - padding_wuh # unexpected to call padding_wuh in posix test
   # CHECK AGAIN!!! should check if it really SIGTRAP
   - platform_debug_break # raise SIGTRAP in debug build, so not covered
+  - flow_yield_stats # by default it is disabled by `FLOW_YIELD_STATS 0`
+
+  - syslog_format_printf_checker # it only used as an empty function to trick SYSLOG
+  - _assert_pc_faddr_valid # used for a macro
+  - wu_send_high_by_words # currently disabled
 
 exclude_filenames:
   - FunOS/networking

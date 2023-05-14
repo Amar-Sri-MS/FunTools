@@ -32,10 +32,14 @@ product=''
 
 if [ -e /proc/device-tree/fungible,dpu ] ; then
     read -d $'\0' host_dpu rest_of_line < /proc/device-tree/fungible,dpu
+else
+    host_dpu=$(dpcsh -Q peek config/processor_info/Model | jq -Mr .result)
 fi
 
 if [ -e /proc/device-tree/fungible,product ]; then
     read -d $'\0' product rest_of_line < /proc/device-tree/fungible,product
+else
+    product=$(dpcsh -Q peek config/boot_defaults/PlatformInfo/product | jq -Mr .result)
 fi
 
 if [ -n "$host_dpu" ] && [ "$host_dpu" != "$CHIP_NAME" ]; then

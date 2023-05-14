@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 
-#This module generates merged config of all skus, sku-id definitions and eeprom files.
+# This module generates merged config of all skus, sku-id definitions and
+# NOR FLASH files -- EEPROM Image ("eepr"), etc.
 
 import os, sys, logging, glob
-from jinja2 import Template
-from jinja2 import Environment
-from jinja2 import FileSystemLoader
 import datetime
 import subprocess
 import struct
@@ -24,8 +22,8 @@ logger.setLevel(logging.INFO)
 
 
 # For each EEPR file, emit multiple variants based
-# on "struct puf_rom_eeprom_image_s" flags
-EEPROM_IMAGE_FLAGS_FAST_CLOCK_CHICKEN = 1
+# on "struct puf_rom_eeprom_image_s" [bit] flags
+EEPROM_IMAGE_FLAGS_FAST_CLOCK_CHICKEN = 0x0001
 CHIP_FLAG_EEPR_VARIANTS = {
     "s1": [("", EEPROM_IMAGE_FLAGS_FAST_CLOCK_CHICKEN), ("_1_0GHz_SoC", 0)],
     "f1d1" : [("", 0), ("_1_1GHz_SoC_1_7GHz_PC", EEPROM_IMAGE_FLAGS_FAST_CLOCK_CHICKEN)]
@@ -352,6 +350,7 @@ class SKUCfgGen():
 
     # Generates sku id files
     def generate_code(self):
+        import jinja2
         date = datetime.datetime.now()
         this_dir = os.path.dirname(os.path.abspath(__file__))
         meta_data = {
@@ -379,7 +378,7 @@ class SKUCfgGen():
         if fun_board_skus is None or all_fungible_board_skus is None:
             raise argparse.ArgumentTypeError('fungible boards list is empty!')
 
-        env = Environment(loader=FileSystemLoader(this_dir))
+        env = jinja2.Environment(loader=jinja2.FileSystemLoader(this_dir))
         tmpl = env.get_template(self.sku_h_tmpl)
         header_file = self.sku_file_prefix + '.h'
         output_file = os.path.join(self.output_dir, header_file)
@@ -401,36 +400,56 @@ class SKUCfgGen():
                 fun_board_sku_list=all_fungible_board_skus,
                 meta_data=meta_data))
 
-    # generate the version 1 data, most of which is a PCI config
-    def _get_version1_data(self, pci_cfg_dir, sku_name, flags=0, find_in_subdirs=False):
-        if not pci_cfg_dir:
-            return b''
-
-        # try reading a file based on sku_name
-        cfg_base_fname = 'pcicfg-' + sku_name + '.bin'
-
-        if find_in_subdirs:
-            files = glob.glob(os.path.join(pci_cfg_dir, "*", cfg_base_fname))
-            if not files:
-                return b''
-            else:
-                assert len(files) == 1, f"More than one config for {sku_name} found?"
-                file_name = files[0]
-        else:
-            file_name = os.path.join(pci_cfg_dir, cfg_base_fname)
-        try:
-            with open(file_name, 'rb') as f:
-                pci_config = f.read()
-        except:
-            return b''
-
+    # generate the version 1 data
+    def _get_version1_data(self, sku_name, flags=0, find_in_subdirs=False):
         # generate the version 1 filler data (struct puf_rom_eeprom_image_s)
         bytes = struct.pack("<I", 1)      # uint32_t version = 1
         bytes += b'EEPRMIMG'              # uint64_t magic
         bytes += struct.pack("<Q", flags) # uint64_t flags
         bytes += struct.pack("<I", 0)     # uint32_t hw_rev
         bytes += struct.pack("<I", 0)     # uint32_t board_subtype
-        bytes += pci_config
+
+        # Note[1]:
+        #     We used to write the PCIe Link Configuration structure
+        #     (struct hw_hsu_api_link_config) associated with the SKU into the
+        #     EEPROM Image here in order to support early PCIe Link bringup in
+        #     SBPFirmware.  This was to support the PCIe Specification Link
+        #     Bringup Timing Requirements for PCIe Adapters.
+        #
+        #     We're currently not focused on PCIe Adapters and, more
+        #     importantly, have decided that if we do support this in the
+        #     future, we want the PCIe Link Configuration to be in its own
+        #     separate NOR FLASH "file", not in the EEPROM Image.  This
+        #     separattion will allow for a single SKU to have multiple
+        #     different PCIe Link Configurations based on its usage.  E.g.
+        #     an FC200 being used as an x16 Endpoint device, 2 x8 Root
+        #     Complex, x16 Switch Up Port, etc.
+        #
+        #     All of this means that, for compatibility purposes, we need to
+        #     fill in the reserved 512 bytes of the EEPROM Image for PCIe Link
+        #     Configuration with a bunch of 0s so SBPFirmware doesn't see the
+        #     "Magic" signature of a (struct hw_hsu_api_link_config) and thus
+        #     skips using it.
+        #
+        # Note[2]:
+        #     When SBPFirmware doesn't see a (struct hw_hsu_api_link_config)
+        #     it won't try to call hw_hsu_api_config_links() and also won't
+        #     set the HW_INFO_FLAGS_PCIE_LINKS_ENABLED flag in its Hardware
+        #     Information flags to FunOS.  As a result, FunOS will note this
+        #     and perform PCIe Link Configuration itself.  Diking out the
+        #     EEPROM Image PCIe Link Configuration here thus leaves the
+        #     entire PCIe Link Configuration control path intact for later
+        #     reimplementation ... though potentially with some "bit rot"
+        #     because of disuse ...
+        #
+        # Note[3]:
+        #     When/if we do decide to support writing the PCIe Link
+        #     Configuration into it's own NOR FLASH file, we'll need to read
+        #     the appropriate (struct hw_hsu_api_link_config) from a file
+        #     located under self.sku_dir / 'feature_sets' / 'pcicfg' /
+        #     These files are generated by FunTools / pcicfgutil.
+        #
+        bytes += bytearray(512)
 
         return bytes
 
@@ -449,15 +468,13 @@ class SKUCfgGen():
         return CHIP_FLAG_EEPR_VARIANTS.get(chip, DEFAULT_FLAG_VAR)
 
     def write_eepr_file_data(self, sku_var, sku_name, sku_id,
-                             pci_cfg_dir, flags=0, chip=None):
+                             flags=0, chip=None):
         # filename for the flag variant
         fname = self.eeprom_filename(sku_var, chip)
-        # PCI data for the SKU
         if chip:
-            pci_cfg_dir = os.path.join(pci_cfg_dir, chip)
-            version1_data = self._get_version1_data(pci_cfg_dir, sku_name, flags)
+            version1_data = self._get_version1_data(sku_name, flags)
         else:
-            version1_data = self._get_version1_data(pci_cfg_dir, sku_name, flags,
+            version1_data = self._get_version1_data(sku_name, flags,
                 find_in_subdirs=True)
 
         abs_eeprom_file_path = os.path.join(self.output_dir, fname)
@@ -467,15 +484,14 @@ class SKUCfgGen():
 
         return { 'filename' : fname, 'image_type': sku_var }
 
-    def write_eepr_files(self, sku_name, sku_id, pci_cfg_dir):
+    def write_eepr_files(self, sku_name, sku_id):
         dentries = {}
         chips = self.get_chips_for_sku_id(sku_name)
 
         # When using emulation skuids, there is no board/chip associated
         # with the sku
         if not chips:
-            dent = self.write_eepr_file_data(sku_name, sku_name, sku_id,
-                                                pci_cfg_dir)
+            dent = self.write_eepr_file_data(sku_name, sku_name, sku_id)
             dentries[sku_name] = dent
             return dentries
 
@@ -485,7 +501,7 @@ class SKUCfgGen():
             for (suffix, flags) in flagvars:
                 skuvar = f'{sku_name}{suffix}'
                 dent = self.write_eepr_file_data(skuvar, sku_name, sku_id,
-                                                pci_cfg_dir, flags, chip)
+                                                flags, chip)
                 key = f'{chip}_{sku_name}' if chip else f'{sku_name}'
                 dentries[key] = dent
 
@@ -506,15 +522,8 @@ class SKUCfgGen():
         # empty dict for json list file
         eeprom_dict = {}
 
-        # figure out the path to the pcicfg files generated by FunOS
-        pci_cfg_dir = None
-        if self.sdk_dir:
-            pci_cfg_dir = os.path.join(self.sdk_dir, 'feature_sets', 'pcicfg')
-            if not os.path.isdir(pci_cfg_dir):
-                pci_cfg_dir = None
-
         for sku_name, sku_id in all_skus_with_sbp.items():
-            fnd = self.write_eepr_files(sku_name, sku_id, pci_cfg_dir)
+            fnd = self.write_eepr_files(sku_name, sku_id)
             eeprom_dict.update(fnd)
 
         # write out the list of eeprom files as a dict

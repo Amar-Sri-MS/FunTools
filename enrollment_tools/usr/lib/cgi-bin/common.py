@@ -52,12 +52,8 @@ def log(msg):
 ###########################################################################
 
 def safe_form_get(form, key, default):
-    ''' safely get parameter for form '''
-    if key in form:
-        return form[key].value
-    else:
-        return default
-
+    ''' deprecated : use form.getvalue(key, default) instead '''
+    return form.getvalue(key, default)
 
 def send_response_body(body, filename=None):
     print("Status: 200 OK")
@@ -68,9 +64,9 @@ def send_response_body(body, filename=None):
     print("%s\n" % body)
 
 
-def send_binary_buffer(bin_buffer, form_values, filename=None):
+def send_binary_buffer(bin_buffer, form, filename=None):
 
-    format = safe_form_get(form_values, "format", "hex")
+    format = form.getvalue("format", "hex")
     if format == "hex":
         bin_str = binascii.b2a_hex(bin_buffer).decode('ascii')
     elif format == "base64":

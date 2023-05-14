@@ -73,7 +73,7 @@ class ModInterfaceGen():
                     item_id = item.get('value')
                     if item_id is None:
                         item_id = id
-                    res2[item_id] = item['description']
+                    res2[item_id] = item.get('description', item['key'])
                     id = item_id + 1
                 res1[entry] = res2
 

@@ -8,6 +8,7 @@ import sys
 import argparse
 import subprocess
 import itertools
+import functools
 
 def parse_instr_dasm_unique(in_file):
   # format: addr func_loc file_loc asm_stmt
@@ -19,10 +20,10 @@ def parse_instr_dasm_unique(in_file):
   return list(data.values())
 
 def func_cmp(a, b):
-  v = a.translate(None, '<>').split('+')
+  v = a.translate(str.maketrans('','', '<>')).split('+')
   f1 = v[0]
   l1 = v[1] if len(v) > 1 else 0
-  v = b.translate(None, '<>').split('+')
+  v = b.translate(str.maketrans('','', '<>')).split('+')
   f2 = v[0]
   l2 = v[1] if len(v) > 1 else 0
   if f1 == f2:
@@ -58,11 +59,11 @@ def loc_and_func_cmp(a, b):
 
 def group_key(a):
   loc = a[2]
-  fname = a[1].translate(None, '<>').split('+')[0]
+  fname = a[1].translate(str.maketrans('','', '<>')).split('+')[0]
   return [loc, fname]
 
 def location_sorted_loc_func(data):
-  return sorted(data, cmp=loc_and_func_cmp)
+  return sorted(data, key=functools.cmp_to_key(loc_and_func_cmp))
 
 def group_by_loc_fname(data):
   g_data = []
@@ -81,7 +82,7 @@ def instr_count_cmp(a, b):
   return -1 if c1 < c2 else 1
 
 def instr_count_sorted(data, reverse=False):
-  return sorted(data, cmp=instr_count_cmp, reverse=reverse)
+  return sorted(data, key=functools.cmp_to_key(instr_count_cmp), reverse=reverse)
 
 def instr_data_add_code(data, code_dirs=None):
   f_l_map = {}

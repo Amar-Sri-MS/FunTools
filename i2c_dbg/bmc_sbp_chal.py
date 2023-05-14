@@ -65,11 +65,14 @@ def no_output(*_a,**_k):
     ''' alternative to print for print_fn argument '''
     pass
 
-def hex_str(b_arr):
+def hex_str(b_arr, indent_str=None):
     ''' byte array to hexadecimal codes '''
     s = ":".join(["%02x" % b for b in b_arr])
     ws = textwrap_wrap(s,48)
-    return "\n".join(ws)
+    if indent_str:
+        return ("\n" + indent_str).join(ws)
+    else:
+        return "\n".join(ws)
 
 def str2bytes(s):
     return bytes(str(s).encode('ascii'))
@@ -572,7 +575,7 @@ class i2c_dbg(object):
         return self.i2c_dbg_get_chip_device(chip_inst)
 
     def set_chip_device(self, chip_inst, device_str):
-        return self.i2c_dbg_set_chip_device(chip_inst, bytes(device_str))
+        return self.i2c_dbg_set_chip_device(chip_inst, str2bytes(device_str))
 
 
 ##############################################################################
@@ -697,17 +700,18 @@ class DBG_File(DBG_FlashOp):
 
 class DBG_Chal(DBG_FlashOp):
 
-    def __init__(self, chip_inst, port, cert_file, key_file, start_cert_file):
+    def __init__(self, chip_inst, port, cert_file, key_file, start_cert_file, i2c_dev):
         self.i2c_dbg = i2c_dbg()
         self.chip_inst = chip_inst
+        if i2c_dev:
+            self.i2c_dbg.set_chip_device(chip_inst, i2c_dev)
         if logger.getEffectiveLevel() <= logging.DEBUG:
-
             print('Using device "%s" for chip %d\n' %
               (bytes2str(self.i2c_dbg.get_chip_device(chip_inst)),chip_inst))
-
             self.i2c_dbg.debugging_on(True)
 
         self.serial_nr = None # cache serial number
+
         # prefer remote
         if port:
             self.dbg_info = RemoteDebuggingResources(port)
@@ -802,7 +806,7 @@ class DBG_Chal(DBG_FlashOp):
         print('\t%s: %s\n\t\traw: %s' %
               (EXTRA_BYTES_KEY,
                printable_str(extra_bytes),
-               hex_str(extra_bytes)))
+               hex_str(extra_bytes, indent_str="\t\t     ")))
 
 
     def get_serial_number(self):
@@ -1843,6 +1847,7 @@ def main():
     spec_grp.add_argument("--chip", type=int, default=0, choices=[0,1],
                           help="chip instance number (default = 0)")
 
+    spec_grp.add_argument("--i2c-dev", type=str, help="path to i2c device")
     spec_grp.add_argument("--log", choices=log_levels.keys(),
                           default="ERROR",
                           help="set log level")
@@ -1957,7 +1962,8 @@ def main():
                                        port=args.port,
                                        cert_file=args.cert,
                                        key_file=args.key,
-                                       start_cert_file=args.start_cert)
+                                       start_cert_file=args.start_cert,
+                                       i2c_dev=args.i2c_dev)
 
     # catch the exception here so the custom ones look better
     try:

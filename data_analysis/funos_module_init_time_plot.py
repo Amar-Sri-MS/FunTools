@@ -32,7 +32,7 @@ import pandas as pd
 
 from funos_module_init_time import get_start_finish_times
 
-from utils import *
+from utils.utils import *
 
 plt.rcParams.update({"font.size": 22})
 

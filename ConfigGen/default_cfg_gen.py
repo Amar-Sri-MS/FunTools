@@ -120,10 +120,14 @@ class DefaultCfgGen():
 
         return def_cfg
 
+#
+# Following is the core of the Macro Replacement code.
+#
+
     def merge_entry(self, entry, cfg_json):
-        """Modifies entry in place to contain values from cfg_json. If any value
-        in entry is a dictionary, and the corresponding value in cfg_json is
-        also a dictionary, then merge them in place.
+        """Modifies entry in place to contain values from cfg_json. If any
+        value in entry is a dictionary, and the corresponding value in
+        cfg_json is also a dictionary, then merge them in place recursively.
         """
         for key, val_json in list(cfg_json.items()):
             val_entry = entry.get(key)
@@ -134,16 +138,52 @@ class DefaultCfgGen():
                 entry[key] = val_json
 
     def apply_defaults_to_config_entry(self, key, cfg_json, def_cfg):
-        """Applies the defaults to an entry.
+        """Apply the macro expansion of def_cfg[key] to cfg_json[key].
+        The macro def_cfg[key] is itself scanned for macro expansions, and
+        any found will be recursively processed.
         """
+
+        # Make a deep copy of def_cfg[key] so we can modify it without
+        # damaging the Macro Definition, scan the copy for macro references
+        # and expand them, and merge this macro reference's { body }.
+        #
         entry = copy.deepcopy(def_cfg[key])
+        self.apply_defaults(entry, def_cfg)
         self.merge_entry(entry, cfg_json[key])
+
+        # Scan through the newly minted Macro Expansion.  If there are any
+        # elements which exist in the existing surrounding Configuration
+        # JSON, we need to merge/override the Macro Expansion with the
+        # Configuration JSON.
+        #
+        # Note that there's a very serious bug here in that we should not
+        # expand the current Macro in the Replacement JSON.  Because of
+        # this we can end up with infinite recursion in the Macro Replacement
+        # if someone makes a mistake.  See for instance CPP's rules on this.
+        #
+        for entry_key in entry:
+            if entry_key in cfg_json:
+                entry_val_dict = isinstance(entry[entry_key], Mapping)
+                cfg_json_val_dict = isinstance(cfg_json[entry_key], Mapping)
+                if entry_val_dict != cfg_json_val_dict:
+                    raise RuntimeError(
+                        f'Key {entry_key} being used inconsistently as a '
+                        'Dictionary')
+                if entry_val_dict:
+                    self.merge_entry(entry[entry_key], cfg_json[entry_key])
+                else:
+                    entry[entry_key] = cfg_json[entry_key]
+                del cfg_json[entry_key]
+
+        # Replace the Configuration JSON element with the newly processed
+        # Macro Expansion.
+        #
         del cfg_json[key]
         cfg_json.update(entry)
 
     def apply_defaults(self, cfg_json, def_cfg):
         """Traverse a configuration file recursevely looking for entries to
-        apply default configuration to.
+        which to apply Macro Expansions from the Macro Definitions in def_cfg.
         """
         for key in cfg_json.copy():
             if type(cfg_json[key]) is dict:

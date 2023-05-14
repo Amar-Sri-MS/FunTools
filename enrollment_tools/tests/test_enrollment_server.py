@@ -239,6 +239,8 @@ def main_program():
 
     test_cases = (('./tbs_enrollment_cert.txt',
                    './enrollment_cert.txt', 32),
+                  ('./tbs_enrollment_cert_posix.txt',
+                  './enrollment_cert_posix.txt', 32),
                   ('./tbs_enrollment_cert_384.txt',
                    './enrollment_cert_384.txt', 48))
 

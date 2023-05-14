@@ -18,8 +18,6 @@ jira_convert_id_from_git_dict = {
     "59043152+satishkumarch": "satishkumar.ch",
 }
 
-# TODO, rerun the source and check crc.h is already updated
-
 JIRA_SERVER = "http://jira.fungible.local:80"
 JIRA_INIT = "~/.jira.ini"
 
