@@ -9,7 +9,7 @@ import signal
 from dututils import dut
 from i2cdev import *
 
-logger = logging.getLogger('tap-gpio')
+logger = logging.getLogger('tap3p-gpio')
 logger.setLevel(logging.DEBUG)
 
 def signal_handler(sig, frame):
@@ -19,11 +19,28 @@ def signal_handler(sig, frame):
 
 signal.signal(signal.SIGINT, signal_handler)
 
+### tap-definitions
+######################
+# b'000 - Avago      (mosi/gpio4=0, ss/gpio5=0, miso/gpio2=0) 0x00
+# b'001 - MDH        (mosi/gpio4=0, ss/gpio5=0, miso/gpio2=1) 0x04
+# b'010 - MIPS       (mosi/gpio4=0, ss/gpio5=1, miso/gpio2=0) 0x20
+# b'011 - Tessent    (mosi/gpio4=0, ss/gpio5=1, miso/gpio2=1) 0x24
+# b'100 - CoreSight  (mosi/gpio4=1, ss/gpio5=0, miso/gpio2=0) 0x10
+# b'101 - USB        (mosi/gpio4=1, ss/gpio5=0, miso/gpio2=1) 0x14
+# b'111 - none       (mosi/gpio4=1, ss/gpio5=1, miso/gpio2=1) 0x34
+######################
+
+### TAP values
 TAPs = {
-    'i2c'   : 0x24,
-    'jdbg'  : 0x04,
-    'jcsr'  : 0x00,
+    'avago'      : 0x00, #avago/csr
+    'mdh'        : 0x04, #mdh
+    'mips'       : 0x20, #mips
+    'tessent'    : 0x24, #tessent
+    'coresight'  : 0x10, #coresight
+    'usb'        : 0x14, #usb
+    'none'       : 0x34, #none
 }
+
 class JTAGTAP_Exception(BaseException):
     pass
 
@@ -76,33 +93,25 @@ class aardvark_gpio(object):
         status = aa_configure(self.handle, 0) #AA_CONFIG_GPIO_ONLY
         logger.info("Configure AA_CONFIG_GPIO_ONLY mode! status:" + aa_status_string(status))
 
-    def set_defaults(self, direction=0xFF, dirmsg="all OUTPUT", pullups=0xFF, pullmsg="all HIGH"):
+    def set_defaults(self, direction=0x34, dirmsg="all OUTPUT", pullups=0xFF, pullmsg="all HIGH"):
         """ default is all OUTPUT and pullups is all HIGH """
         sleep(1)
         status = aa_gpio_direction(self.handle, direction)
         logger.info("Configuring direction as {} - {}. status: ".format(hex(direction), dirmsg) + aa_status_string(status))
         sleep(1)
+        #logger.info("skipping any gpio pullup for now .....")
         status = aa_gpio_pullup(self.handle, pullups) ## default TAP to MDH DBG
-        logger.info("default gpio pullup as {} - {}. status: ".format(hex(pullups), pullmsg) + aa_status_string(status))
+        logger.info("default gpio pullup as {} ... status:".format(hex(pullups)) + aa_status_string(status))
+        sleep(1)
 
     def set_gpio(self, setval, setmsg=None):
         sleep(1)
         status = aa_gpio_set(self.handle, setval)
         logger.info( "gpio set {} - {}. status: ".format(hex(setval), setmsg) + aa_status_string(status)) 
+        sleep(1)
 
     def get_gpio(self):
         return aa_gpio_get(self.handle)
-
-    def any_change_in_gpio(self, expected, chgmsg=None):
-        oldval = aa_gpio_get(self.handle);
-        logger.info("Listening gpio change from {} expect_only={} - {}".format(hex(oldval), hex(expected), chgmsg))
-        while True:
-            newval = aa_gpio_change(self.handle, 0xFFFF);
-            if ((newval ^ oldval) == expected):
-                logger.info("gpio changed observed (old={}, new={}) asserted - {}".format(hex(oldval), hex(newval), hex(expected), chgmsg))
-                break
-        logger.info( "captured gpio change.")
-        return True
 
     def close(self):
         aa_close(self.handle)
@@ -112,46 +121,33 @@ class aardvark_gpio(object):
 class tap(aardvark_gpio):
     def __init__(self, name, **kwargs):
         self.name = name
+        thispullups = kwargs.get("pullups", 0xFF)
         super(tap, self).__init__(self.name)
-        self.set_defaults(direction=0x24, dirmsg="pin5 and pin9 as all OUTPUT", pullups=0x04, pullmsg="pad sel b'01(dbg)")
+        self.set_defaults(direction=0x34, dirmsg="(GPIO8_GRAY_MOSI|GPIO9_WHITE_SS|GPIO5_GREEN_MISO) as all OUTPUT", pullups=thispullups, pullmsg="pad sel b'111(none)")
 
-    def seti2c(self):
-        self.set_gpio(0x24, setmsg="pad sel b'11(i2c)")
+    def set_val(self, modename, gpioval):
+        self.set_gpio(gpioval, setmsg="setting mode=%s with pad sel=%s" % (modename, hex(gpioval)))
 
-    def setjdbg(self):
-        self.set_gpio(0x04, setmsg="pad sel b'01(dbg)")
+    def set_avago(self):
+        self.set_gpio(0x00, setmsg="pad sel b'000(avago/csr)")
 
-    def setjcsr(self):
-        self.set_gpio(0x00, setmsg="pad sel b'00(csr)")
+    def set_mdh(self):
+        self.set_gpio(0x04, setmsg="pad sel b'001(dbg/mdh)")
 
-class gpio_set(aardvark_gpio):
-    def __init__(self, name, **kwargs):
-        self.name = name
-        super(gpio_set, self).__init__(self.name)
-        self.set_defaults(direction=0x18, dirmsg="pin7 and pin8 as all OUTPUT", pullups=0x18, pullmsg="ping7/pin8 as HIGH")
-    def gpio_00(self):
-        self.set_gpio(0x00, setmsg="both down. Observe(0xA020)")
-    def gpio_01(self):
-        self.set_gpio(0x08, setmsg="gpio0 up. Observe(0xA021)")
-    def gpio_10(self):
-        self.set_gpio(0x10, setmsg="gpio1 up. Observe(0xA022)")
-    def gpio_11(self):
-        self.set_gpio(0x18, setmsg="both up. Observe(0xA023)")
+    def set_mips(self):
+        self.set_gpio(0x20, setmsg="pad sel b'010(mips)")
 
-class gpio_get(aardvark_gpio):
-    def __init__(self, name, **kwargs): #direction=0xE7, dirmsg="pin7 and pin8 as all INPUT", pullups=0xFF, pullmsg="all HIGH (observe pins LOW in SBP)" ):
-        self.name = name
-        super(gpio_get, self).__init__(self.name)
-        self.set_defaults(**kwargs) #direction=0xE7, dirmsg="pin7 and pin8 as all INPUT", pullups=0xFF, pullmsg="all HIGH (observe pins LOW in SBP)" )
-    def monitor_gpio0(self):
-        return self.any_change_in_gpio(0x08, "Observe gpio0 UP")
-    def monitor_gpio1(self):
-        return self.any_change_in_gpio(0x10, "Observe gpio1 UP")
-    def monitor_gpio_both(self):
-        return self.any_change_in_gpio(0x18, "Observe both gpio flip UP")
-    def monitor_gpio_autfail(self):
-        return self.any_change_in_gpio(0x04, "Observe gpio/pin5 flip UP on AUTHFAIL")
+    def set_tessent(self):
+        self.set_gpio(0x24, setmsg="pad sel b'011(i2c/tessent)")
 
+    def set_coresight(self):
+        self.set_gpio(0x10, setmsg="pad sel b'100(coresight)")
+
+    def set_usb(self):
+        self.set_gpio(0x14, setmsg="pad sel b'101(usb)")
+
+    def set_none(self):
+        self.set_gpio(0x34, setmsg="pad sel b'111(none)")
 
 def setTapMode(name, tapname, keepforever=True):
     try:
@@ -160,13 +156,30 @@ def setTapMode(name, tapname, keepforever=True):
         logger.error("gpio tapname %s undefined..." % tapname)
         sys.exit(1)
 
+#    'avago'      : 0x00, #avago/csr
+#    'mdh'        : 0x04, #mdh
+#    'mips'       : 0x20, #mips
+#    'tessent'    : 0x24, #tessent
+#    'coresight'  : 0x10, #coresight
+#    'usb'        : 0x14, #usb
+#    'none'       : 0x34, #none
+
     t = tap(name)
-    if 'i2c' in tapname:
-        t.seti2c()
-    elif 'jdbg' in tapname:
-        t.setjdbg()
-    elif 'jcsr' in tapname:
-        t.setjcsr()
+
+    if 'tessent' in tapname:
+        t.set_tessent()
+    elif 'mdh' in tapname:
+        t.set_mdh()
+    elif 'avago' in tapname:
+        t.set_avago()
+    elif 'mips' in tapname:
+        t.set_mips()
+    elif 'coresight' in tapname:
+        t.set_coresight()
+    elif 'usb' in tapname:
+        t.set_usb()
+    elif 'none' in tapname:
+        t.set_none()
     else:
         logger.info( "should never reach here")
         sys.exit(1)
@@ -177,30 +190,7 @@ def setTapMode(name, tapname, keepforever=True):
 
     t.close()
 
-def test2(name):
-    t = gpio_set(name)
-    t.gpio_00()
-    t.gpio_01()
-    t.gpio_10()
-    t.gpio_11()
-    t.close()
-
-def test3(name):
-    t = gpio_get(name, direction=0xE7, dirmsg="pin7 and pin8 as all INPUT", pullups=0xFF, pullmsg="all HIGH (observe pins LOW in SBP)" )
-    t.monitor_gpio0()
-    t.monitor_gpio1()
-    t.monitor_gpio_both()
-    t.close()
-
-def test4(name):
-    t = gpio_get(name, direction=0xFB, dirmsg="pin5 as INPUT", pullups=0xFF, pullmsg="all HIGH (observe pin5 pull LOW in SBP)")
-    t.monitor_gpio_autfail()
-    t.close()
-
 if __name__== "__main__":
     name = sys.argv[1]
     tapname = sys.argv[2]
     setTapMode(name, tapname)
-    #test2(name)
-    #test3(name)
-    #test4(name)

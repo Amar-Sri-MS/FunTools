@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# This file defines the user level JTAG call via otpions to initialize, read and 
+# This file defines the user level JTAG call via otpions to initialize, read and
 # write commands over JTAG transport.
 
 # This actively used the code-scape8.6 python libraries.
@@ -17,8 +17,9 @@ sys.path.append('/home/'+os.environ["USER"]+'/.local/opt/imgtec/Codescape-8.6/li
 sys.path.append('/home/'+os.environ["USER"]+'/.local/opt/imgtec/Codescape-8.6/lib/python2.7/site-packages/sitepackages.zip')
 
 # dutdb.cfg + dututils.py has probe-details
-from .dututils import dut
-from .gpioutils import tap as gpiotap
+from dututils import dut
+#from gpioutils import tap as gpiotap
+from gpio3ptaputils import tap as gpiotap
 import time
 
 import sys
@@ -36,15 +37,28 @@ from imgtec.lib.namedbitfield import namedbitfield
 from imgtec.console import *
 from imgtec.console import CoreFamily
 
+from imgtec.console import logging as cslogging
+from imgtec.console import config as csconfig
+
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.asymmetric import padding
 
-from .jsbp import *
+from jsbp import *
 
 logger = logging.getLogger('jcli')
+#import logging
+#from logging.handlers import RotatingFileHandler
+#import time
+#logger = logging.getLogger(__name__)
+#FORMAT = "[%(asctime)s %(filename)s->%(funcName)s():%(lineno)s]%(levelname)s: %(message)s"
+#logging.basicConfig(format=FORMAT, level=logging.INFO)
+#logging_filename = 'jcli_sbp.log'
+#handler = RotatingFileHandler(logging_filename, maxBytes=1000000, backupCount=2) #10 files of 1MB each
+#handler.setFormatter(logging.Formatter(FORMAT))
+#logger.addHandler(handler)
 logger.setLevel(logging.DEBUG)
 
 ##############################################################################
@@ -160,9 +174,15 @@ RD_ACK = 1<<0 #1
 TIMEOUT = 8000
 DEBUG = 0
 
-def prepare_target():
+def prepare_target(do_ad=None):
     if probe().mode not in ('autodetected', 'table'):
-        autodetect()
+        if do_ad:
+            for attempt in range(do_ad):
+                logger.info("attempt: %s ... calling autodetect ... with a reset(probe)" % attempt)
+                mips_debugger_init()
+                autodetect()
+        else:
+            logger.info("skipping autodetect ...")
     check_use_fast_read()
 
 
@@ -170,9 +190,19 @@ def prepare_target():
 def mdh_read_new(byte_address):
     """ the inbuilt mdh read is broken on some console versions """
     try:
+        #logger.info("mdh_read_new: byte_address={} ...".format(hex(byte_address)))
         return probe().tiny.ReadMemory(byte_address)
     except:
-        raise RuntimeError("APB read failed try a lower TCK clock") #TODO retry abit if valid = 0
+        raise RuntimeError("mdh_read_new: APB read failed try a lower TCK clock") #TODO retry abit if valid = 0
+
+#@command()
+def mdh_write_new(byte_address,word):
+    """ the inbuilt mdh read is broken on some console versions """
+    try:
+        #logger.info("mdh_write_new: byte_address={} word={} ...".format(hex(byte_address), hex(word)))
+        probe().tiny.WriteMemory(byte_address, word)
+    except:
+        raise RuntimeError("mdh_write_new: APB read failed try a lower TCK clock") #TODO retry abit if valid = 0
 
 def my_tapscan(ir, dr, verbose=False):
     if verbose:
@@ -192,34 +222,34 @@ def my_tapi(ir, verbose=False):
         ia, ib = list(map(hex, list(map(int, ir.split()))))
         logger.info("ir={} {}".format(ia, ib))
     return tapi(ir)
-    
+
 def mdh_read_old(byte_address):
-    tapscan("5 %d" % IR_DEVICEADDR, "32 %d" % (byte_address & 0xf80) )
-    tapscan("5 %d" % IR_APBACCESS, "39 %d" % ((byte_address & 0x7c) | 0x3) )
+    #logger.info("mdh_read_old - address={}".format(hex(byte_address)))
+    result = tapscan("5 %d" % IR_DEVICEADDR, "32 %d" % (byte_address & 0xf80) )
+    #print("tapscan 5", hex(IR_DEVICEADDR), "32", hex(byte_address & 0xf80), "result=", result )
+    time.sleep(0.1) #sleep during 100ms
+    result = tapscan("5 %d" % IR_APBACCESS, "39 %d" % ((byte_address & 0x7c) | 0x3) )
+    #print("tapscan 5", hex(IR_APBACCESS), "39", hex((byte_address & 0x7c) | 0x3), "result=", result )
+    time.sleep(0.1) #sleep during 100ms
     result = tapd("39 %d" % ((byte_address & 0x7c) | 0x2) )
+    #print ("tapd 39", hex((byte_address & 0x7c) | 0x2), "result=", result)
 
     if (result[0] & 0x3) == 0x3:
         return result[0] >> 7
 
-    raise RuntimeError("APB read failed try a lower TCK clock") #TODO retry abit if valid = 0
-
-
-#@command()
-def mdh_write_new(byte_address,word):
-    """ the inbuilt mdh read is broken on some console versions """
-    try:
-        probe().tiny.WriteMemory(byte_address, word)
-    except:
-        raise RuntimeError("APB read failed try a lower TCK clock") #TODO retry abit if valid = 0
+    raise RuntimeError("mdh_read_old: APB read failed try a lower TCK clock") #TODO retry abit if valid = 0
 
 def mdh_write_old(byte_address,word):
-    tapscan("5 %d" % IR_DEVICEADDR, "32 %d" % (byte_address & 0xf80) )
+    #logger.info("mdh_write_old - address={}, word={}".format(hex(byte_address), hex(word)))
+    result = tapscan("5 %d" % IR_DEVICEADDR, "32 %d" % (byte_address & 0xf80) )
+    #print("tapscan 5", hex(IR_DEVICEADDR), "32", hex(byte_address & 0xf80), "result=", result )
+    time.sleep(0.1)
     result = tapscan("5 %d" % IR_APBACCESS, "39 %d" % (word << 7 | (byte_address & 0x7c) | 0x1) )
-
+    #print("tapscan 5", hex(IR_APBACCESS), "39", hex(word << 7 | (byte_address & 0x7c) | 0x1), "result=", result )
     if (result[0] & 0x3) == 0x3:
         return
 
-    raise RuntimeError("APB read failed try a lower TCK clock") #TODO retry abit if valid = 0
+    raise RuntimeError("mdh_write_old: APB read failed try a lower TCK clock") #TODO retry abit if valid = 0
 
 mdh_read_ = mdh_read_old
 mdh_write_ = mdh_write_old
@@ -229,12 +259,15 @@ def check_use_fast_read():
     global  mdh_write_
     try:
         if listdevices()[0].family == CoreFamily.MIPSecure:
+            logger.info("CoreFamily.MIPSecure ... selecting mdh_new_routines...")
             mdh_read_ = mdh_read_new
             mdh_write_ = mdh_write_new
         else:
+            logger.info("Family not CoreFamily.MIPSecure: selecting mdh_old_routinues ...")
             mdh_read_ = mdh_read_old
             mdh_write_ = mdh_write_old
     except:
+        logger.info("check_use_fast_read_exception: selecting mdh_old_routinues ...")
         mdh_read_ = mdh_read_old
         mdh_write_ = mdh_write_old
 
@@ -244,6 +277,8 @@ def esecure_read():
     mdh_write_(CONTROL,RD_REQ)
     timeout = 0
     while (mdh_read_(CONTROL) & RD_REQ) == 0: #wait for RD_REQ=1
+        time.sleep(0.5)
+        logger.info("esecure_read: waiting for RD_REQ to go high ...")
         timeout+=1
         if timeout == TIMEOUT:
             raise RuntimeError("esecure_read: timeout waiting for RD_REQUEST to go high")
@@ -251,6 +286,8 @@ def esecure_read():
     mdh_write_(CONTROL,RD_ACK)
     timeout = 0
     while (mdh_read_(CONTROL) & RD_REQ) != 0: #wait for RD_REQ=0
+        time.sleep(0.5)
+        logger.info("esecure_read: waiting for RD_REQ to go low ...")
         timeout+=1
         if timeout == TIMEOUT:
             raise RuntimeError("esecure_read: timeout waiting for RD_REQUEST to go low")
@@ -260,16 +297,21 @@ def esecure_read():
 #@command()
 def esecure_write(data):
     """ internal only """
+    #logger.info("esecure_write: data={}".format(hex(data)))
     mdh_write_(WDATA,data)
     mdh_write_(CONTROL,WR_REQ)
     timeout = 0
     while (mdh_read_(CONTROL) & WR_ACK) == 0:
+        time.sleep(0.5)
         timeout+=1
+        logger.info("esecure_write: waiting for WR_ACK to go high ...")
         if timeout == TIMEOUT:
             raise RuntimeError("esecure_write: timeout waiting for WR_ACK to go high")
     mdh_write_(CONTROL,0)
     timeout = 0
     while (mdh_read_(CONTROL) & WR_ACK) != 0:
+        time.sleep(0.5)
+        logger.info("esecure_write: waiting for WR_ACK to go low ...")
         timeout+=1
         if timeout == TIMEOUT:
             raise RuntimeError("esecure_read: timeout waiting for WR_ACK to go low")
@@ -391,6 +433,7 @@ def get_serial():
 
 def dump_status():
     def get_key(id, index, name):
+        print("get_key: id={}, index={}, name={} ...".format(id, index, name))
         esecure_write(0xC)
         esecure_write(CMD_GET_PUBKEY + id)
         esecure_write(index)
@@ -403,11 +446,12 @@ def dump_status():
     get_key(0, 2, "Debugging key")
     get_key(0, 3, "Fungible key")
     get_key(0, 4, "Fungible Enrollment key")
-    get_key(1, 0, "Customer key")
+    get_key(1, 0, "Customer key0")
+    get_key(1, 1, "Customer key1")
 
     esecure_write(0x8)
     esecure_write(CMD_GET_STATUS)
-    print ("\nStatus:")
+    print ("\ndump_status-Status:")
     dump_status_data()
 
     esecure_write(0x8)
@@ -415,10 +459,10 @@ def dump_status():
     print ("\nSerial Number:")
     dump_return_data()
 
-def check_for_esecure():
-    prepare_target()
-    jtagchain()
-
+def check_for_esecure(do_ad=None):
+    prepare_target(do_ad=do_ad)
+    #logger.info ("calling jtagchain ...")
+    #jtagchain()
     cidr1 = mdh_read_(ID_REGS["CIDR1"])
 
     if ((cidr1 >> 4) & 0xf) == 0xe:
@@ -485,7 +529,7 @@ def esecure_inject_certificate(certificate, customer=False):
 
     status = esecure_read()
 
-    print("Status: " + decode_cmd_status(status))
+    print("esecure_inject_certificate-Status: " + decode_cmd_status(status))
 
     return status
 
@@ -571,7 +615,7 @@ def esecure_enable_debug(developer_key,developer_certificate,dbg_grant,
     esecure_write_bytes(signed_challenge)
 
     status = esecure_read()
-    print("Status: " + decode_cmd_status(status))
+    print("esecure_enable_debug-Status (customer=%s): " % customer + decode_cmd_status(status))
     return status
 
 
@@ -604,13 +648,29 @@ def check_boot_step(desired_boot_step):
 
     return True
 
+def mips_debugger_init(myprobe=None):
+    print("Reset the probe state ...")
+    reset(type='probe')
+    print("Enable mips sysprobe logging=on...")
+    #csconfig("Log Debug Instructions", 1)
+    #csconfig("Verbose Logging", 1)
+    #con.logging(type='comms', enable=True)
+    #con.logging(type='jtag', enable=True)
+    #con.logging(type='probe', enable=True)
+    #myprobe.logging(type='console', enable=True)
+
 # Connect to JTAG MIPS probe device using name, ip of CodeScape SysProbe
 # The probe is connected with different CLK speed when execution is in ROM (i.e 5K) and 250K in PUFR/HOST.
 def probe_connect(name, ip, in_rom=None, flag=None):
     try:
         print("connecting to JTAG probe ip=%s force_disconnect=%s ..." % (ip, flag) )
-        con.probe(name, ip, force_disconnect=flag)
-        #JTAG_TCKRATE = 5000 if in_rom else 250000
+        status = con.probe(name, ip, force_disconnect=flag)
+        status = str(status)
+        if (("SysProbe" not in status) or ("Firmware" not in status) or
+            ("ECONNREFUSED" in status) or ("InvalidArgError" in status)):
+            return (False, status)
+        mips_debugger_init(con)
+        #JTAG_TCKRATE = 5000 if in_rom else 100000
         # RTL1008 at different speeds, hence reducing JTAG to 5000
         JTAG_TCKRATE = 5000 if in_rom else 5000
         print("connecting to JTAG probe with TCKRATE(%s)..." % JTAG_TCKRATE )
@@ -744,18 +804,28 @@ class DeviceFlash:
             offset += self.page_size
             start += self.page_size
 
+def change_back_to_default_mode(tapmode=None, T=None):
+    if tapmode:
+        T.set_none()
+        T.close()
+
 def change_back_to_dbg_mode(tapmode=None, T=None):
     if tapmode:
-        T.seti2c()
+        T.set_none()
         T.close()
+
+def change_to_mdh_mode(tapmode=None, T=None):
+    if tapmode:
+        T.set_mdh()
+
 def change_to_csr_mode(tapmode=None, T=None):
     if tapmode:
-        T.setjcsr()
+        T.set_avago()
     else:
         print ("Did you UNLOCK the chip and change the TAP to CSR ??? Now press character to access CSR probe ...")
-        mydata = input('Prompt :')
-        print (mydata)
-    csr_probe_init()
+        #mydata = input('Prompt :')
+        #print (mydata)
+    #csr_probe_init()
 
 def auto_int(x):
     return int(x, 0)
@@ -766,7 +836,9 @@ def main():
                  epilog="Challenge Interface must be accessible via debug probe prior to running this script,\
                          check the device documentation on how to do this")
     parser.add_argument("--dut", required=True, help="Dut name")
-    parser.add_argument("--in-rom", default=None, help="Rom Certificate to be injected for unlock")
+    parser.add_argument("--in-rom-cm", default=None, help="CM Rom Certificate to be injected for unlock")
+    parser.add_argument("--in-rom-sm", default=None, help="SM Rom Certificate to be injected for unlock")
+    parser.add_argument("--do_ad", dest='do_ad', type=auto_int, default=None, help="perform autodetect n times")
     parser.add_argument("--status", action='store_true', help="Display esecure device status")
     parser.add_argument("--otp", action='store_true', help="Read OTP from esecure device (verify unlock)")
     parser.add_argument("--set-upgrade", default=None, choices=['pufr', 'frwm', 'host', 'eepr' ], help="WIP : Toggle Upgrade flags to boot from next image (verify unlock)")
@@ -803,7 +875,7 @@ def main():
     parser.add_argument("--csr-peek", action='store_true', help="CSR peek of a register with nqwords")
     parser.add_argument("--csr-poke", action='store_true', help="CSR poke at register with given array of qwords")
     parser.add_argument("--csr-verify", action='store_true', help="CSR poke and peek at register with given array of qwords")
-    parser.add_argument("--regadr", default=0x1d00e170, type=auto_int, help="CSR address or or flash offset")
+    parser.add_argument("--regadr", default=0x440080a0, type=auto_int, help="CSR address or or flash offset")
     parser.add_argument("--reglen", default=1, type=auto_int, help="CSR qwords to peek/poke or flash words")
     parser.add_argument("--regval", action='store', dest='regval', type=auto_int, nargs='+', default=[0xaabbccdd11223344], help="CSR qwords to poke or flash words")
 
@@ -825,46 +897,64 @@ def main():
 
     # connect to probe configuration provided by user
     try:
-        if args.tap:
-            t = gpiotap(args.dut)
-            t.setjdbg()
-            time.sleep(3)
-        else:
-            t = None
         status, probe_id, probe_addr = dut().get_jtag_info(args.dut)
     except:
         raise RunError("name={} not in database ...".format(args.dut))
 
-    #if args.csr:
-    #    local_csr_probe(probe_id, probe_addr, args.in_rom, flag=args.disconnect)
-    #else:
-    probe_connect(probe_id, probe_addr, args.in_rom)
-    check_for_esecure()
+    if args.tap:
+        t = gpiotap(args.dut, pullups=0xFF)
+        probe_connect(probe_id, probe_addr, args.in_rom_cm, flag=True)
+        if (args.csr or args.csr_peek or args.csr_poke or args.csr_verify):
+            change_to_csr_mode(args.tap, t)
+            csr_probe_init()
+            #probe_connect(probe_id, probe_addr, args.in_rom, flag=args.disconnect)
+            #local_csr_probe(probe_id, probe_addr, args.in_rom, flag=True)
+            #probe_connect(probe_id, probe_addr, args.in_rom, flag=True)
+        if (args.cm_unlock or args.sm_unlock or args.status or args.otp or args.serial or args.flash):
+            change_to_mdh_mode(args.tap, t)
+            check_for_esecure(do_ad=args.do_ad)
+        time.sleep(3)
+    else:
+        probe_connect(probe_id, probe_addr, args.in_rom_cm, flag=True)
+        if (args.csr or args.csr_peek or args.csr_poke or args.csr_verify):
+            csr_probe_init()
+        if (args.cm_unlock or args.sm_unlock or args.status or args.otp or args.serial or args.flash):
+            check_for_esecure(do_ad=args.do_ad)
+        t = None
+
+    constants.GLOBAL_EMULATION_ROM_MODE = True if args.in_rom_cm else False
 
     if args.cm_unlock:
-        if args.in_rom:
+        if args.in_rom_cm:
             # in_rom mode provide, so feed the inject_certificate with cert file provided by user.
-            esecure_inject_certificate(args.in_rom, customer=False)
+            esecure_inject_certificate(args.in_rom_cm, customer=False)
+            time.sleep(5)
         device_unlock_CM(args.cm_key, args.cm_cert, args.cm_grant, args.cm_pass)
 
     if args.sm_unlock:
-        if args.in_rom:
+        if args.in_rom_sm:
             # in_rom mode provide, so feed the inject_certificate with cert file provided by user.
-            inject_certificate(args.in_rom, customer=True)
+            esecure_inject_certificate(args.in_rom_sm, customer=True)
+            time.sleep(5)
         password = None if 'nopass' in args.quicktest else args.sm_pass
         device_unlock_SM(args.sm_key, args.sm_cert, args.sm_grant, password)
 
     # Once unlocked proceed with dump_status to verify if the grant are enabled as required.
     if args.status:
+        print("Reading dump_status...")
         dump_status()
 
-    # Once unlocked proceed with get otp (a secure access command). 
+    #if args.status:
+    #    print("2nd attempt Reading dump_status...")
+    #    dump_status()
+
+    # Once unlocked proceed with get otp (a secure access command).
     # Intentionally didn't handle the unlock failure above
     # to test if read_otp is denied if unlock fails above.
     if args.otp:
         read_otp()
 
-    # Once unlocked proceed with set upgrade flag (a secure access command). 
+    # Once unlocked proceed with set upgrade flag (a secure access command).
     #Intentionally didn't handle the unlock failure above
     # to test if set upgrade flag is denied if unlock fails above.
     if args.set_upgrade:
@@ -874,7 +964,7 @@ def main():
     if args.serial:
         get_serial()
 
-    # Once unlocked proceed with flash API (a secure access) command. 
+    # Once unlocked proceed with flash API (a secure access) command.
     # Intentionally didn't handle the unlock failure above
     # to test if read_otp is denied if unlock fails above.
     if args.flash:
@@ -904,21 +994,21 @@ def main():
         flash_data_new = d.read(0, len(flash_data) * 4)
         print("Flash data verified correctly: %s" % ("True" if flash_data_new == flash_data else "FALSE"))
 
-    # Once unlocked proceed with CSR poke and peek as a !!!! SEPERATE !!!! command. 
+    # Once unlocked proceed with CSR poke and peek as a !!!! SEPERATE !!!! command.
     # Remember to run this command seperately without disconnecting the probe as we need t oconnnect probe to set CSR ring
     if args.csr or args.csr_peek or args.csr_poke or args.csr_verify :
         change_to_csr_mode(args.tap, t)
         if args.csr:
             print('\n************POKE MIO SCRATCHPAD ***************')
-            print(local_csr_poke(0x1d00e170, [0xabcd112299885566]))
+            print(local_csr_poke(0x440080a0, [0xabcd112299885566]))
             print('\n************PEEK MIO SCRATCHPAD ***************')
-            word_array = local_csr_peek(0x1d00e170, 1)
+            word_array = local_csr_peek(0x440080a0, 1)
             print("word_array: {}".format([hex(x) for x in word_array] if word_array else None))
 
         if args.csr_peek:
             print('\n************PEEK CSR2 ***************')
             print('\nregadr={} reglen={}'.format(hex(args.regadr), hex(args.reglen)))
-            status, word_array = local_csr_peek(args.regadr, args.reglen)
+            word_array = local_csr_peek(args.regadr, args.reglen)
             print("word_array: {}".format(list(map(hex, word_array)) if word_array else None))
 
         if args.csr_poke:
@@ -937,21 +1027,20 @@ def main():
                 word_array = local_csr_peek(args.regadr, args.reglen)
                 if (args.regval == word_array):
                     print("Success")
-                    return True
+                    #return True
                 else:
                     print("Fail: word_array={} regval={}".format(list(map(hex, word_array)) if word_array else None, list(map(hex, args.regval))))
-                    return False
+                    #return False
             else:
                 print("poke failed with status: {}".format(pokestatus))
-                return False
-
-        change_back_to_dbg_mode(args.tap, t)
+                #return False
 
     if args.reboot:
         change_to_csr_mode(args.tap, t)
         print('\n************POKE RESET REGISTER ***************')
-        print(local_csr_poke(0x1d00e0a0, [0x0000000000000010]))
-        change_back_to_dbg_mode(args.tap, t)
+        print(local_csr_poke(0x440080e8, [0x0000000000000010]))
+        #change_back_to_default_mode(args.tap, t)
 
+    change_back_to_default_mode(args.tap, t)
 if __name__ == "__main__":
     main()

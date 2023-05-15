@@ -78,7 +78,7 @@ class VPacket(Packet):
         (f, v) = self.getfield_and_val(field)
         comparev = value if type(value) is str else hex(value)
         actualv = f.i2repr(self, v).replace( '\'', '') if type(value) is str else hex(v)
-        print(("    compare ... %s (observed=%s, expected=%s) ..." % (m, actualv, comparev)), end=' ')
+        print("    compare ... %s (observed=%s, expected=%s) ..." % (m, actualv, comparev))
         status = True if actualv == comparev else False
         print("ok" if status else "fail")
         return status
@@ -89,7 +89,7 @@ class VPacket(Packet):
         (f, v) = self.getfield_and_val(field)
         comparev = value
         actualv = str(f.i2repr(self, v).replace( '\'', '') if type(value) is str else hex(v))
-        print(("    find ... %s (observed=%s, comparedto=%s) ..." % (m, actualv, comparev)), end=' ')
+        print("    find ... %s (observed=%s, comparedto=%s) ..." % (m, actualv, comparev))
         status = True if re.search(comparev, actualv) else False
         print("ok" if status else "fail")
         return status
@@ -226,8 +226,8 @@ class BCDVersionField(ByteLenField):
     def i2repr(self, pkt, x):
         s = ""
         for b in x:
-            if b > 99 and b < 243 : s = "[bad-format]" 
-            return '.'.join(b.encode('hex') for b in x) + s 
+            if b > 99 and b < 243 : s = "[bad-format]"
+            return '.'.join(b.encode('hex') for b in x) + s
 
 class VersionField(ByteLenField):
     def i2repr(self, pkt, x):

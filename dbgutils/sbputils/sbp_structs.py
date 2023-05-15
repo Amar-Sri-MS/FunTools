@@ -1,7 +1,7 @@
 import logging
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 from scapy.all import *
-from .sbp_helpers import *
+from sbp_helpers import *
 
 class Remains(Packet):
     fields_desc = [HexDumpStrField("payload", None)]
@@ -102,26 +102,37 @@ bootStep_enum = {
     0x44    : "BOOT_STEP_QSPI_INIT2",
     0x48    : "BOOT_STEP_EEPROM_LOAD_EXEC",
     0x4C    : "BOOT_STEP_HSU_SBM_LOAD_EXEC",
-    0x50    : "BOOT_STEP_HSU_SDS_LOAD_EXEC",
-    0x54    : "BOOT_STEP_ENROLLMENT_VERIFY",
-    0x58    : "BOOT_STEP_PUF_INIT",
-    0x5C    : "BOOT_STEP_FIRMWARE_SELECT_IMAGE",
-    0x60    : "BOOT_STEP_FIRMWARE_CHECK_SIZE",
-    0x64    : "BOOT_STEP_FIRMWARE_FETCH_FW",
-    0x68    : "BOOT_STEP_FIRMWARE_FETCH_CUST_SIG_INFO",
-    0x6C    : "BOOT_STEP_FIRMWARE_HASH",
-    0x70    : "BOOT_STEP_FIRMWARE_VERIFY",
-    0x80    : "BOOT_STEP_FIRMWARE_START",
-    0x84    : "BOOT_STEP_SKUID_VERIFY",
-    0x88    : "BOOT_STEP_HOST_SELECT_IMAGE",
-    0x8C    : "BOOT_STEP_HOST_FETCH_FW",
-    0x90    : "BOOT_STEP_HOST_FETCH_CUST_SIG_INFO",
-    0x94    : "BOOT_STEP_HOST_HASH",
-    0x98    : "BOOT_STEP_HOST_CHECK_EXTDMA",
-    0x9C    : "BOOT_STEP_HOST_VERIFY",
-    0xA0    : "BOOT_STEP_MAIN_LOOP",
-    0xC0    : "BOOT_STEP_ESEC_SUCCESS",
-    0xFF    : "BOOT_STEP_HOST_SUCCESS",
+    0x50    : "BOOT_STEP_PLL_LOCK",
+    0x54    : "BOOT_STEP_MEM_REPAIR_DONE",
+    0x58    : "BOOT_STEP_CPC_RESET",
+    0x5C    : "BOOT_STEP_HSU_PHY_INIT",
+    0x60    : "BOOT_STEP_PCIE_CONFIG_INIT",
+    0x64    : "BOOT_STEP_ENROLLMENT_VERIFY",
+    0x68    : "BOOT_STEP_PUF_INIT",
+    0x6C    : "BOOT_STEP_FIRMWARE_SELECT_IMAGE",
+    0x70    : "BOOT_STEP_FIRMWARE_CHECK_SIZE",
+    0x74    : "BOOT_STEP_FIRMWARE_FETCH_FW",
+    0x78    : "BOOT_STEP_FIRMWARE_FETCH_CUST_SIG_INFO",
+    0x7C    : "BOOT_STEP_FIRMWARE_HASH",
+    0x80    : "BOOT_STEP_FIRMWARE_VERIFY",
+    0x90    : "BOOT_STEP_FIRMWARE_START",
+    0x94    : "BOOT_STEP_HSU_FINISH",
+    0x98    : "BOOT_STEP_HBM_SBUS",
+    0x9C    : "BOOT_STEP_SKUID_VERIFY",
+    0xA0    : "BOOT_STEP_HOST_SELECT_IMAGE",
+    0xA4    : "BOOT_STEP_HOST_FETCH_FW",
+    0xC0    : "BOOT_STEP_HOST_FETCH_CUST_SIG_INFO",
+    0xC4    : "BOOT_STEP_HOST_HASH",
+    0xC8    : "BOOT_STEP_HOST_CHECK_EXTDMA",
+    0xCC    : "BOOT_STEP_HOST_VERIFY",
+    0xD0    : "BOOT_STEP_HOST_LOADED",
+    0xD4    : "BOOT_STEP_SHARE_BOOT_CONFIG",
+    0xD8    : "BOOT_STEP_UNUSED",
+    0xDC    : "BOOT_STEP_RESET_HOST",
+    0xE0    : "BOOT_STEP_HOST_RUNNING",
+    0xE4    : "BOOT_STEP_MAIN_LOOP",
+    0xFC    : "BOOT_STEP_ESEC_SUCCESS",
+    0xFF    : "BOOT_STEP_HOST_SUCCESS"
 }
 
 class S1CSRJTAG(Packet):
@@ -166,8 +177,8 @@ enum_csrsubop = {
 class CSR(Packet):
     fields_desc = [
         CBitEnumField("cmd", 0, 2, { 0: 'csr', 1 : 'dbgRead', 2:'dbgWrite', 3: 'dbgWriteStart'} ),
-        ConditionalField(CBitEnumField("subop", 0, 6, { 0x0: 'read', 0x1: 'write', 0x2: 'dropCount', 0x8: 'disconnect', 0x9: 'ready'} ), lambda p: p.cmd == 0), 
-        ConditionalField(CBitField("length", 0, 6), lambda p: p.cmd != 0), 
+        ConditionalField(CBitEnumField("subop", 0, 6, { 0x0: 'read', 0x1: 'write', 0x2: 'dropCount', 0x8: 'disconnect', 0x9: 'ready'} ), lambda p: p.cmd == 0),
+        ConditionalField(CBitField("length", 0, 6), lambda p: p.cmd != 0),
     ]
     def extract_padding(self, p):
         return "", p
@@ -215,6 +226,8 @@ commandEnum = {
     0xFE020001 : 'Diagnostic/ReadPubKeyBoot/SM',
     0xFE030000 : 'Diagnostic/SetUpgradeFlag/CM',
     0xFE030001 : 'Diagnostic/SetUpgradeFlag/SM',
+    0xFE0A0000 : 'CM Diagnostic/injectCertificate',
+    0xFE0A0001 : 'SM Diagnostic/injectCertificate',
     0xFE0B0000 : 'Diagnostic/fetchOTP',
 
     0xFF000000 : 'Initialization/InitOTP/CM',
@@ -250,7 +263,14 @@ class RESP_getStatus(Packet):
         CBitField('rsvd', 0, 8),
         CLEIntField('esecureFirmwareVersion', 0x0),
         CLEIntField('hostFirmwareVersion', 0x0),
-        CLEIntField('debugGrants', 0x0),
+        CLEIntEnumField('debugGrants', 0x0, { 0xFFFFFFFF : 'full-access' }),
+        ConditionalField(CLEIntField('MagicVersion', 0x0), lambda p: p.bootStep > 0x80),
+        ConditionalField(CLEIntField('qspiFlashSize', 0x0), lambda p: p.bootStep > 0x80),
+        ConditionalField(CLEIntField('qspiStatusFlags', 0x0), lambda p: p.bootStep > 0x80),
+        ConditionalField(CByteField('qspiQioModeBits', 0x0), lambda p: p.bootStep > 0x80),
+        ConditionalField(CByteField('qspiQioDummyCycles', 0x0), lambda p: p.bootStep > 0x80),
+        ConditionalField(CByteField('qspiQioRdCmd', 0x0), lambda p: p.bootStep > 0x80),
+        ConditionalField(CByteField('qspiInitDone', 0x0), lambda p: p.bootStep > 0x80),
         XStrLenField('firmwareString', '\x00', 20),
     ]
     def extract_padding(self, p):
@@ -305,6 +325,7 @@ DBG_CMDRESP = {
     0xFE020001 : RESP_raw,  #'Diagnostic/ReadPubKeyBoot/SM',
     0xFE030000 : RESP_raw,  #'Diagnostic/SetUpgradeFlag/CM',
     0xFE030001 : RESP_raw,  #'Diagnostic/SetUpgradeFlag/SM',
+    0xFE0A0000 : RESP_raw,  #'Diagnostic/InjectCertificate/CM',
     0xFE0B0000 : RESP_fetchOTP,  #'Diagnostic/fetchOTP/CM',
 
     0xFF000000 : RESP_raw,  #'Initialization/InitOTP/CM',
@@ -327,6 +348,20 @@ C6 00 00 00 A0 01 00 00  00 00 00 00 00 00 00 00
 00 0C 00 00 62 6C 64 5F  33 36 35 30 35 2D 65 36
 36 35 64 62 39 32 00 A5
 """
+O = """
+00 00 00 38 01 01 00 00  0E 00 00 00 00 00 00 00
+00 00 00 00 20 00 00 00  00 00 00 00 00 00 00 00
+00 0C 00 00 62 6C 64 5F  31 39 30 32 39 2D 63 36
+38 64 37 35 65 65 34 00
+"""
+O = """
+00 00 00 4C 01 00 00 00  00 00 00 00 00 00 00 00
+00 00 00 00 E4 11 00 00  00 00 00 00 00 00 00 00
+FF FF FF FF 01 D0 DE AD  FF FF FF 7F 8E 01 00 00
+01 09 EB 01 62 6C 64 5F  31 32 31 30 37 39 2D 32
+34 62 63 34 63 32 64 33  00 A5 A5 A5
+"""
+
 SN = """
 00 00 00 1C 00 00 00 00  00 00 00 00 00 00 00 00
 00 00 00 00 00 00 00 00  00 00 12 34
@@ -337,8 +372,8 @@ AE = [0, 2, 0, 4]
 GC = [0, 0, 0, 20, 240, 66, 80, 78, 189, 77, 223, 230, 139, 100, 140, 194, 246, 137, 141, 104]
 OTP = [0, 0, 0, 52, 7, 2, 31, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 52, 17, 68, 68, 65, 68, 17, 68, 20, 0, 0, 0, 0, 1, 0, 0, 64]
 
-#cmd = 0xFE000000
-#C = bytepack(SN)
+#cmd = 0xFE010000
+#C = bytepack(O)
 #hexdump(C)
 #print DBG_CMDRESP[cmd](C).show2()
 #C = arraypack(OTP)

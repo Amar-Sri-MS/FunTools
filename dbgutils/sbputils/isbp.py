@@ -10,8 +10,8 @@ import traceback
 import subprocess
 import paramiko
 
-from .i2cdev import *
-from .dututils import dut
+from i2cdev import *
+from dututils import dut
 
 logger = logging.getLogger('isbp')
 logger.setLevel(logging.DEBUG)
@@ -70,6 +70,8 @@ class constants(object):
     I2C_XFER_BIT_RATE = 1
     F1_I2C_ADDR_MODE = 0
     SBP_CMD_EXE_TIME_WAIT = 2
+    SBP_CMD_EXE_ROM_TIME_WAIT = 30
+    GLOBAL_EMULATION_ROM_MODE = False
     I2C_CSR_SLEEP_SEC    = 0.001
 
 # Converts byte array to big-endian 64-bit words
@@ -559,8 +561,9 @@ class i2c:
         if num_bytes > 0:
             logger.info('Successfully transmitted {0} bytes!'.format(i))
 
-        logger.debug('Sleeping to give time for hw(esp. emulation) to process the command!')
-        time.sleep(constants.SBP_CMD_EXE_TIME_WAIT)
+        sleepfor = constants.SBP_CMD_EXE_ROM_TIME_WAIT if constants.GLOBAL_EMULATION_ROM_MODE else constants.SBP_CMD_EXE_TIME_WAIT
+        logger.debug('Sleeping (%s seconds) to give time for hw(esp. emulation) to process the command!' % sleepfor)
+        time.sleep(sleepfor)
         (status, header) = self.__i2c_dbg_chal_cmd_header_read(chip_inst)
         if status is False:
             err_msg = 'Failed to read the header'
@@ -632,11 +635,13 @@ class i2c:
             logger.error('Get sbp cmd exec status write error! sent_bytes:{0}'.format(sent_bytes))
             return (False, 'i2c_write failed for get cmd status write!')
 
-        time.sleep(constants.SBP_CMD_EXE_TIME_WAIT)
+        sleepfor = constants.SBP_CMD_EXE_ROM_TIME_WAIT if constants.GLOBAL_EMULATION_ROM_MODE else constants.SBP_CMD_EXE_TIME_WAIT
+        logger.debug('Sleeping (%s seconds) to give time for hw(esp. emulation) to process the command!' % sleepfor)
+        time.sleep(sleepfor)
         rdata = array('B', [00])
-        #p#logger.debug('Reading the sbp cmd exec status byte!')
+        #logger.debug('Reading the sbp cmd exec status byte!')
         self.master.i2c_read(read_data = rdata, chip_inst=chip_inst)
-        #logger.debug('Read data: {0} bytes: {1}'.format(rdata, map(hex, rdata)))
+        #logger.debug('paragm: Read data: {0} bytes: {1}'.format(rdata, map(hex, rdata)))
         status_byte = rdata[0]
         status = status_byte >> 0x7
         if status:
@@ -648,7 +653,7 @@ class i2c:
             return (False, err_msg)
 
         length = status_byte & 0x7f
-        #p#logger.debug('data length: {0} hex={1}'.format(length, hex(length)))
+        #logger.debug('paragm: data length: {0} hex={1}'.format(length, hex(length)))
         if length < 4 or length > 64:
             err_msg = ('CMD execution error! Invalid number of bytes({0})!'
                     'Valid num bytes is 4-64').format(length)
@@ -876,7 +881,7 @@ class s1i2c(i2c):
             logger.debug(('poke at_csr_addr={} qword={}').format(hex(at_csr_addr), hex(qword)))
             self.poke_qword(at_csr_addr, qword, chip_inst)
         ######### using self direct poke for wide reg csrctl ##################
-        qword = (((0x3F & len(qwords)) << 36) | ((0xF & 0x3) << 32) | address ) & 0xFFFFFFFFFFFFFFFF 
+        qword = (((0x3F & len(qwords)) << 36) | ((0xF & 0x3) << 32) | address ) & 0xFFFFFFFFFFFFFFFF
         CSRCTL_REGISTER = 0x00002158
         logger.debug(('poke at_csr_addr={} qword={}').format(hex(CSRCTL_REGISTER), hex(qword)))
         self.poke_qword(CSRCTL_REGISTER, qword, chip_inst)

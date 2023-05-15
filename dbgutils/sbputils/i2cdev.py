@@ -64,6 +64,30 @@ def aardvark_i2c_spi_dev_index_from_serial(serial):
         logger.info('Found serial numbers:{0}'.format(serial_nums))
     return None
 
+def aardvark_i2c_find_slaves(dev_id, serial):
+    n_devs, devs = aa_find_devices(10)
+    dev_handle =  devs[dev_id]
+    h = aa_open(dev_handle)
+    features = aa_features(h)
+    if features != 27:
+        logger.error("Invalid device features!: {0}".format(features))
+        sys.exit(1)
+    status = aa_i2c_free_bus(h)
+    logger.info("Free Bus: {0}".format(aa_status_string(status)))
+    status = aa_configure(h,2)
+    logger.info("Configure i2c mode! status:{0}".format(status))
+    logger.info("Pull up status: {0}".format(status))
+    data = array('B', [])
+    for s in [1, 10, 100, 400]:
+        status = aa_i2c_bitrate(h, s)
+        logger.info("Configure bitrate! status:{0}".format(status))
+        for address in range(0x0, 0x7f):
+            for addr_mode in [0x0, 0x1]:
+                (status, sent_bytes) = aa_i2c_write_ext(h, address, addr_mode, data)
+                if status == AA_I2C_STATUS_OK:
+                    logger.info((" ********* FOUND DEVICE AT ADDRESS: {0} ADDR_MODE:{1} SPEED: {2}"
+                        " ********").format(hex(address), addr_mode, s));
+
 if __name__== "__main__":
     dev_list = aardvark_i2c_spi_dev_list()
     if len(dev_list) == 0:
@@ -71,4 +95,5 @@ if __name__== "__main__":
     else:
         logger.info('Found {0} Aardvark i2c spi device(s)!'.format(len(dev_list)))
         for idx, serial in enumerate(dev_list):
-            logger.info('Dev:{0} Serial Number: {1}'.format(idx, serial))
+            logger.info('Dev:{0} Serial Number: {1} ... slaves are ...'.format(idx, serial))
+            aardvark_i2c_find_slaves(idx, serial)
