@@ -103,7 +103,7 @@ class I2CCliLocalCmdr(I2CCliCmdr):
     def get_cmd_output(self, cmd):
         try:
             logging.info("Executing cmd locally: %s", cmd)
-            p = subprocess.Popen(cmd, shell=False,
+            p = subprocess.Popen(cmd, shell=True,
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)
 
