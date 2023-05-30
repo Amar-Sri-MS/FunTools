@@ -227,7 +227,7 @@ def read_file_and_pad(filename, padding, optional, minsize, create):
              'input_size': len(binary) }
 
 
-def get_a_and_b(section, padding, create):
+def get_a_and_b(section, padding, create, versions):
     """return the binaries and type for a section"""
     a_name = section['A']
     b_name = section['B']
@@ -236,12 +236,18 @@ def get_a_and_b(section, padding, create):
     index = int(section.get('index', "0xffff"),0)
 
     if a_name:
-        a = read_file_and_pad(a_name, padding, optional, minsize, create)
+        a_filename = a_name
+        if versions:
+            a_filename = f'{a_name}_{versions[0]}'
+        a = read_file_and_pad(a_filename, padding, optional, minsize, create)
     if b_name:
-        if b_name == a_name:
+        if b_name == a_name and not versions:
             b = a
         else:
-            b = read_file_and_pad(b_name, padding, optional, minsize, create)
+            b_filename = b_name
+            if versions:
+                b_filename = f'{b_name}_{versions[1]}'
+            b = read_file_and_pad(b_filename, padding, optional, minsize, create)
     else:
         b = { 'type': None,
               'data': [],
@@ -502,7 +508,7 @@ def main():
     parser.add_argument('--action', default='all',
                         choices={'all', 'sign', 'flash', 'key_hashes', 'certificates', 'key_injection'},
                         help='Action to be performed on the input files')
-    parser.add_argument('--force-version', type=int, help='Override firmware versions')
+    parser.add_argument('--force-version', action='append', type=int, help='Override firmware versions')
     parser.add_argument('--force-description', help='Override firmware description')
     parser.add_argument('--fail-on-error', action='store_true',
                         help='Always fail when encountering errors')
@@ -543,13 +549,13 @@ def main():
                 with open(config_file, 'r') as f:
                     merge_configs(config, json.load(f))
 
-    if args.force_version:
-        set_versions(args.force_version)
+    if len(args.force_version) == 1:
+        set_versions(args.force_version[0])
 
     if args.force_description:
         set_description(args.force_description)
 
-    run(args.action, args.enroll_cert)
+    run(args.action, args.enroll_cert, force_versions=args.force_version if len(args.force_version) == 2 else None)
 
     if args.out_config:
         with open(args.out_config, "w") as f:
@@ -578,6 +584,7 @@ def run(arg_action, arg_enroll_cert = None, *args, **kwargs):
 
     new_entries = {}
     delete_entries = []
+    versions = kwargs.get('force_versions', None)
 
     for k,v in config['signed_images'].items():
         if v.get('description','').startswith('@file:'):
@@ -611,6 +618,20 @@ def run(arg_action, arg_enroll_cert = None, *args, **kwargs):
         config['signed_images'].pop(k)
 
     config['signed_images'].update(new_entries)
+
+    if versions:
+        assert len(versions) == 2
+        # Create a new replacement dictionary that will contain two copies
+        # of each of the images so that they can be signed with different
+        # firmware versions
+        r = {}
+        for k,v in config['signed_images'].items():
+            for id, ver in enumerate(versions):
+                new_v = copy.deepcopy(v)
+                new_v['version'] = ver
+                r[f'{k}_{ver}'] = new_v
+        config['signed_images'] = r
+
 
     if config.get('output_format'):
         total_size = int(config['output_format']['size'], 0)
@@ -680,7 +701,7 @@ def run(arg_action, arg_enroll_cert = None, *args, **kwargs):
                                 format(len(config.sections()), 1 + MAX_VARIABLE_SECTIONS))
         else:
             for k,v in config['output_sections'].items():
-                bin_info = get_a_and_b(v, padding, arg_action == 'all')
+                bin_info = get_a_and_b(v, padding, arg_action == 'all', versions)
                 # bin_info can be None if optional section and files
                 # are not there -> no entry
                 if bin_info is not None:
@@ -707,6 +728,19 @@ def run(arg_action, arg_enroll_cert = None, *args, **kwargs):
                                                        enroll_cert)
 
         print_flash_map(bin_infos)
+
+        if versions:
+            # Create a new replacement dictionary that will contain two copies
+            # of each of the images so that they can be signed with different
+            # firmware versions
+            r = {}
+            for k,v in config['signed_meta_images'].items():
+                for id, ver in enumerate(versions):
+                    new_v = copy.deepcopy(v)
+                    new_v['version'] = ver
+                    new_v['source'] = [f'{s}_{ver}' for s in v['source']]
+                    r[f'{k}_{ver}'] = new_v
+            config['signed_meta_images'] = r
 
         for file in config.get("signed_meta_images", {}):
             create_file(file, "signed_meta_images")
