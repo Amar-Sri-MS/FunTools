@@ -81,7 +81,7 @@ def bytes2str(b):
     return b.decode('ascii', 'backslashreplace')
 
 def printable_str(b_arr):
-    ''' convert a byte array to a printable str
+    ''' convert an ascii byte array to a printable str
     Not really needed for Python2 where bytearray will be printed as C strings
     Python3 will print  "bytearray(b'<all bytes>')
     '''
@@ -89,6 +89,14 @@ def printable_str(b_arr):
                                   if b < 0x20 or b > 0x7E),
                                  len(b_arr))
     return bytes2str(b_arr[:index_first_non_print])
+
+
+def raw_printable_str(b_arr):
+    ''' convert a complete ascii byte array to a printable str
+    Any non-printable characters are printed as '.'
+    '''
+    return ''.join([chr(c) if c >= 0x20 and c <= 0x7e else '.' for c in b_arr])
+
 
 def le2int(b_arr):
     ''' interpret array of bytes of any length  as little endian integer
@@ -636,7 +644,7 @@ SBP_STATUS_STR = [
     "Host Firmware Version",
     "Debug Grants"]
 
-EXTRA_DATA_PARSE = (
+EXTRA_DATA_PARSE_V1 = (
     ("Version",      1),
     ("Magic",        3),
     ("Flash Size",   4),
@@ -646,8 +654,13 @@ EXTRA_DATA_PARSE = (
     ("Dummy Cycles", 1),
     ("Mode Bits",    1))
 
+EXTRA_DATA_PARSE_V2 = EXTRA_DATA_PARSE_V1 + (
+    ("Puf current version", 4),
+    ("eSecure Firmware Current Version", 4))
+
 EXTRA_DATA_KEY = "Extra Data"
 EXTRA_BYTES_KEY = "Extra Bytes"
+VERSION_BYTES_KEY = "Version string"
 
 class DBG_FlashOp(object):
     ''' base class for flash operations '''
@@ -755,13 +768,21 @@ class DBG_Chal(DBG_FlashOp):
     def read_flash(self, offset, num_bytes):
         return self.i2c_dbg.read_flash(self.chip_inst, offset, num_bytes)
 
-    def decode_extra_data(self, extra_bytes):
+    def decode_extra_data(self, extra_bytes, version):
         ret = []
         start = end = 0
-        for instr in EXTRA_DATA_PARSE:
+        extra_data = {
+            1: EXTRA_DATA_PARSE_V1,
+            2: EXTRA_DATA_PARSE_V2
+        }
+        if version not in extra_data:
+            return [("Unknown", 0)], extra_bytes
+
+        for instr in extra_data[version]:
             end = start + instr[1]
             ret.append( (instr[0], le2int(extra_bytes[start:end])) )
             start = end
+
         return ret, extra_bytes[end:]
 
 
@@ -777,9 +798,17 @@ class DBG_Chal(DBG_FlashOp):
                 status_decoded[SBP_STATUS_STR[status_str_idx]] = status_value
                 i+=4
             else:
+                # extract version string: search for anything that looks like
+                # a stream of printable ascii characters
                 extra = data[i:status_size]
-                if bytes(extra[0:4]) == b'\x01\xd0\xde\xad':
-                    status_decoded[EXTRA_DATA_KEY], extra = self.decode_extra_data(extra)
+                status_decoded[VERSION_BYTES_KEY] = printable_str(extra)
+                # extend by 1 to include a terminating null and
+                # round up to the next 4-byte word
+                version_len = 4 * ((len(status_decoded[VERSION_BYTES_KEY]) + 1 + 3) // 4)
+                extra = extra[version_len:]
+                if bytes(extra[1:4]) == b'\xd0\xde\xad':
+                    version = struct.unpack('B', extra[0:1])[0]
+                    status_decoded[EXTRA_DATA_KEY], extra = self.decode_extra_data(extra, version)
                 status_decoded[EXTRA_BYTES_KEY] = extra
                 i = status_size # all done
         return status_decoded
@@ -796,6 +825,9 @@ class DBG_Chal(DBG_FlashOp):
                 print('\t\t%s: 0x%x' % ('eSecureImage',(value >> 14) & 0x1))
                 print('\t\t%s: 0x%x' % ('HostImage',(value >> 20) & 0x1))
 
+        if VERSION_BYTES_KEY in status_dict:
+            print("\t%s: %s" % (VERSION_BYTES_KEY, status_dict[VERSION_BYTES_KEY]))
+
         if EXTRA_DATA_KEY in status_dict:
             print("\t%s:" % EXTRA_DATA_KEY)
             extra_data = status_dict[EXTRA_DATA_KEY]
@@ -805,7 +837,7 @@ class DBG_Chal(DBG_FlashOp):
         extra_bytes = status_dict[EXTRA_BYTES_KEY]
         print('\t%s: %s\n\t\traw: %s' %
               (EXTRA_BYTES_KEY,
-               printable_str(extra_bytes),
+               raw_printable_str(extra_bytes),
                hex_str(extra_bytes, indent_str="\t\t     ")))
 
 
@@ -1582,9 +1614,9 @@ def prepare_recovery(challenge_interface):
         unlock_chip(challenge_interface, READ_WRITE_GRANTS)
 
     # call prepare_qspi if needed -- rom_6843 (prepare_qspi not needed on bld_3098)
-    in_rom = decoded_status[EXTRA_BYTES_KEY].startswith(b'rom_')
+    in_rom = decoded_status[VERSION_BYTES_KEY].startswith(b'rom_')
     if in_rom:
-        print("In %s: prepare QSPI" % decoded_status[EXTRA_BYTES_KEY])
+        print("In %s: prepare QSPI" % decoded_status[VERSION_BYTES_KEY])
         challenge_interface.prepare_qspi()
 
 
