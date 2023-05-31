@@ -107,6 +107,14 @@ def add_dice_location(args):
         raise Exception("DICE location is not 32 bit aligned")
     args['locations'].append(dice_loc >> 2)
 
+def add_key_location(args, key_id):
+    key_loc = kr.get_key_loc(args['infile'], key_id)
+    if key_loc == 0xFFFF_FFFF:
+        raise Exception("Could not find the key 0x%X" % key_id)
+    if (key_loc & 0x3):
+        raise Exception("Key location is not 32 bit aligned")
+    args['locations'].append(key_loc >> 2)
+
 
 def gen_fw_image(filename, attrs):
     global fail_on_err
@@ -117,6 +125,7 @@ def gen_fw_image(filename, attrs):
         'fourcc':'ftype',
         'key':'sign_key',
         'key_index':'key_index',
+        'keys_in_header' : 'keys_in_header',
         'source':'infile',
         'version':'version',
         'pad':'pad',
@@ -141,7 +150,14 @@ def gen_fw_image(filename, attrs):
 
     if args['infile']:
         try:
-            # look for a DICE location only for single file
+            # add key locations if specified always first ...
+            if args['keys_in_header']:
+                print("keys {}".format(args['keys_in_header']))
+                for key in args['keys_in_header']:
+                    print("Key location {}".format(key))
+                    add_key_location(args, int(key,0))
+
+            # always look for a DICE location only for single file
             if not tmpfile:
                 add_dice_location(args)
 
@@ -155,7 +171,8 @@ def gen_fw_image(filename, attrs):
         return filename
     else:
         if attrs['source']:
-            print("Skipping generation of {}, input {} not found!  parameters: {}".format(filename, attrs['source'], args))
+            print("Skipping generation of {}, input {} not found!  parameters: {}".
+                  format(filename, attrs['source'], args))
 
         else:
             print("Skipping generation of {}, no input specified".format(filename))

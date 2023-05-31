@@ -85,8 +85,8 @@ def read(filename, nbytes=None, verbose=False):
             txt = sys.stdin.buffer.read()
         else:
             txt = open(filename, "rb").read()
-    except:
-        raise Exception("Cannot open file '%s' for read" % filename)
+    except Exception as exc:
+        raise Exception("Cannot open file '%s' for read" % filename) from exc
     if nbytes and len(txt) != nbytes:
         raise Exception("File '%s' has invalid length. Expected %d, got %d"
                         % (filename, nbytes, len(txt)))
@@ -107,8 +107,8 @@ def write(filename, content, overwrite=True, tohex=False, tobyte=False,
             f = sys.stdout.buffer
         else:
             f = open(filename, "wb")
-    except:
-        raise Exception("Cannot open file '%s' for write" % filename)
+    except Exception as exc:
+        raise Exception("Cannot open file '%s' for write" % filename) from exc
     # Write
     if tohex:
         assert len(content)%4 == 0
@@ -210,7 +210,7 @@ def connection_retry_handler(func):
                 time.sleep(RETRY_CONNECTION_SLEEP_SECS)
                 retries += 1
                 if retries >= MAX_CONNECTION_RETRY:
-                   raise RuntimeError("Unable to connect to server!") from exc
+                    raise RuntimeError("Unable to connect to server!") from exc
         return ret
 
     return inner_function
@@ -378,10 +378,10 @@ def image_gen(outfile, infile, ftype, version, description, sign_key,
     else:
         to_be_signed += b'\x00' * (SIGNED_ATTRIBUTES_CHIP_ID_SIZE)
 
-    # optional locations -- restrict to 1 for the moment -- easy to add more
+    # optional locations -- restrict to 2 for the moment -- easy to add more
     num_locs = len(locations)
-    if num_locs > 1:
-        print("****** Warning: more than 1 pointers in authenticated headers")
+    if num_locs > 2:
+        print("****** Warning: more than 2 pointers in authenticated headers")
 
     for loc in locations:
         to_be_signed += struct.pack("<I", loc)
