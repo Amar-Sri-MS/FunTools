@@ -152,9 +152,9 @@ def gen_fw_image(filename, attrs):
         try:
             # add key locations if specified always first ...
             if args['keys_in_header']:
-                print("keys {}".format(args['keys_in_header']))
+                #print("keys {}".format(args['keys_in_header']))
                 for key in args['keys_in_header']:
-                    print("Key location {}".format(key))
+                    #print("Key location {}".format(key))
                     add_key_location(args, int(key,0))
 
             # always look for a DICE location only for single file
