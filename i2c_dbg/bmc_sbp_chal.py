@@ -36,6 +36,8 @@ import struct
 import logging
 import platform   # Fungible
 import hashlib
+import sys
+import collections
 
 from subprocess import check_output as subprocess_check_output
 
@@ -658,7 +660,6 @@ EXTRA_DATA_PARSE_V2 = EXTRA_DATA_PARSE_V1 + (
     ("Puf current version", 4),
     ("eSecure Firmware Current Version", 4))
 
-EXTRA_DATA_KEY = "Extra Data"
 EXTRA_BYTES_KEY = "Extra Bytes"
 VERSION_BYTES_KEY = "Version string"
 
@@ -789,7 +790,7 @@ class DBG_Chal(DBG_FlashOp):
     def decode_status_bytes(self, data):
         logger.info('STATUS:\traw_bytes:\n%s', hex_str(data))
         status_size = len(data)
-        status_decoded = {}
+        status_decoded = collections.OrderedDict()
         i = 0
         while i < status_size:
             status_str_idx = i//4
@@ -808,31 +809,32 @@ class DBG_Chal(DBG_FlashOp):
                 extra = extra[version_len:]
                 if bytes(extra[1:4]) == b'\xd0\xde\xad':
                     version = struct.unpack('B', extra[0:1])[0]
-                    status_decoded[EXTRA_DATA_KEY], extra = self.decode_extra_data(extra, version)
+                    extra_data, extra = self.decode_extra_data(extra, version)
+                    for k,v in extra_data:
+                        assert (k not in status_decoded)
+                        status_decoded[k] = v
+
                 status_decoded[EXTRA_BYTES_KEY] = extra
                 i = status_size # all done
         return status_decoded
 
     def print_decoded_status(self, status_dict):
         print("Status:")
-        for key in SBP_STATUS_STR:
-            value = status_dict[key]
-            print("\t%s: 0x%08x" % (key, value))
+        for key, value in status_dict.items():
+            if key == EXTRA_BYTES_KEY:
+                continue
+
+            if isinstance(value, str if sys.version_info[0] >= 3 else basestring):
+                print("\t%s: %s" % (key, value))
+            else:
+                print("\t%s: 0x%08x" % (key, value))
+
             if key == 'Boot Status':
                 print('\t\t%s: 0x%02x' % ('BootStep', value & 0xFF))
                 print('\t\t%s: 0x%x' % ('eSecureUpgradeFlag', (value >> 8) & 0x1))
                 print('\t\t%s: 0x%x' % ('HostUpgradeFlag', (value >> 12) & 0x1))
                 print('\t\t%s: 0x%x' % ('eSecureImage',(value >> 14) & 0x1))
                 print('\t\t%s: 0x%x' % ('HostImage',(value >> 20) & 0x1))
-
-        if VERSION_BYTES_KEY in status_dict:
-            print("\t%s: %s" % (VERSION_BYTES_KEY, status_dict[VERSION_BYTES_KEY]))
-
-        if EXTRA_DATA_KEY in status_dict:
-            print("\t%s:" % EXTRA_DATA_KEY)
-            extra_data = status_dict[EXTRA_DATA_KEY]
-            for pair in extra_data:
-                print('\t\t%s: 0x%x' % pair)
 
         extra_bytes = status_dict[EXTRA_BYTES_KEY]
         print('\t%s: %s\n\t\traw: %s' %
@@ -1614,7 +1616,7 @@ def prepare_recovery(challenge_interface):
         unlock_chip(challenge_interface, READ_WRITE_GRANTS)
 
     # call prepare_qspi if needed -- rom_6843 (prepare_qspi not needed on bld_3098)
-    in_rom = decoded_status[VERSION_BYTES_KEY].startswith(b'rom_')
+    in_rom = decoded_status[VERSION_BYTES_KEY].startswith('rom_')
     if in_rom:
         print("In %s: prepare QSPI" % decoded_status[VERSION_BYTES_KEY])
         challenge_interface.prepare_qspi()
