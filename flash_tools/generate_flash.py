@@ -525,7 +525,7 @@ def main():
     parser.add_argument('--action', default='all',
                         choices={'all', 'sign', 'flash', 'key_hashes', 'certificates', 'key_injection'},
                         help='Action to be performed on the input files')
-    parser.add_argument('--force-version', action='append', type=int, help='Override firmware versions')
+    parser.add_argument('--force-version', action='append', default=[], type=int, help='Override firmware versions')
     parser.add_argument('--force-description', help='Override firmware description')
     parser.add_argument('--fail-on-error', action='store_true',
                         help='Always fail when encountering errors')
