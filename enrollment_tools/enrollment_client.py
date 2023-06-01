@@ -650,6 +650,14 @@ def boot_step_and_version(rdata):
     version_offset = 36
     magic = int.from_bytes(rdata[version_offset:version_offset+4],
                            'little')
+
+    # some SDK builds contain a magic 0xADDED001 word at offset 36.
+    # This has not been released in any official build and has later
+    # been changed to add the magic word _after_ the version string.
+    # Keep this code in place for compatibility with those intermediate
+    # releases. Since this code does not care about any fields _after_
+    # the version string, it doesn't currently need updating to support
+    # these changes.
     if magic == 0xADDED001:
         version_offset += 4 * 4 # 4 extra 32 bit words
 
