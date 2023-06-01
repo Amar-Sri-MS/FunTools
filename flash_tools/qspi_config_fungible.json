@@ -87,6 +87,7 @@
             "fourcc": "pufr",
             "cert": "start_certificate.bin",
             "customer_cert": "",
+            "keys_in_header": ["0x4", "0xC"],
             "description": ""
         },
         "esecure_firmware_packed.bin": {
