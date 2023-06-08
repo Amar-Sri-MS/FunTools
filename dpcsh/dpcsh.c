@@ -1050,7 +1050,7 @@ struct dpcsock_connection *dpcsocket_new(struct dpcsock *sock)
 
 bool switch_to_binary(int fd)
 {
-	const char *switch_cmd = "{\"verb\":\"encoding_binary_json\", \"args\":[], \"tid\":0}\n";
+	const char *switch_cmd = "{\"verb\":\"encoding_binary_json\", \"arguments\":[], \"tid\":0}\n";
 	return write(fd, switch_cmd, strlen(switch_cmd)) == strlen(switch_cmd);
 }
 
