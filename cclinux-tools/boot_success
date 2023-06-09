@@ -19,7 +19,7 @@ PokeBootSuccess()
 	fi
 
 	if [ $FINAL_STATUS -eq 0 ]; then
-		/usr/bin/dpcsh --pcie_nvme_sock=/dev/nvme0 --nocli uboot boot { "success":true }
+		/usr/bin/dpcsh --nocli uboot boot { "success":true }
 	fi
 }
 
