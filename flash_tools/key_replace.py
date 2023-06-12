@@ -26,24 +26,16 @@ class AppFpk(mmap.mmap):
         return pos1+MARKER_SIZE, pos2 - (pos1+MARKER_SIZE) # point past the m1 marker
 
     def get_key_loc(self, n):
-        # "F" pattern, size=4, modulus=512 except for CDI (code 0xCD)
+        # "F" pattern, size=4, modulus=512
         start,size = self.__find_pattern(n, 0x0F)
-        if n == 0xC:
-            if size != SIZE_OF_CDI:
-                raise Exception("Size of CDI: {} expected 32".
-                                format(size))
-        else:
-            if size != SIZEOF_MODULUS_SIZE+512:
-                raise Exception("Size of key {}: {} expected 516".
-                                format(n, size))
+        if size != SIZEOF_MODULUS_SIZE+512:
+            raise Exception("Size of key {}: {} expected 516".
+                            format(n, size))
         return start
 
     def get_dice_loc(self):
         # "D" pattern, multiple of key=48, cert=640
-        start,size = self.__find_pattern(0x0C, 0x0D)
-        if size % (640+48):
-            raise Exception("Size between markers: {} expected multiple of 688".
-                            format(size))
+        start,_ = self.__find_pattern(0x0C, 0x0D)
         return start
 
     def validate(self, n):
