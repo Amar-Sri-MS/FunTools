@@ -513,11 +513,10 @@ class SKUCfgGen():
                 self.get_fungible_board_sku_ids(all_target_chips=True)
         hwcap_code_gen = HWCAPCodeGen(self.input_dir, self.output_dir,
                                       self.target_chip, self.target_machine)
-        emu_skus_with_sbp = \
-                hwcap_code_gen.get_emu_sku_ids_with_sbp(all_target_chips=True)
+        emu_skus = hwcap_code_gen.get_emu_sku_ids(all_target_chips=True)
 
         all_skus_with_sbp = dict(all_board_skus_with_sbp)
-        all_skus_with_sbp.update(emu_skus_with_sbp)
+        all_skus_with_sbp.update(emu_skus)
 
         # empty dict for json list file
         eeprom_dict = {}
