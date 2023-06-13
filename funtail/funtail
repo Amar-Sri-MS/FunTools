@@ -233,7 +233,10 @@ def main() -> int:
         writefunc = filewrite
 
     # quieten down the epnvme logging
-    conn.execute("modcfg", ["set", "epnvme/loglevel", LOG_DEBUG])
+    try:
+        conn.execute("modcfg", ["set", "epnvme/loglevel", LOG_DEBUG])
+    except:
+        print("funtail: failed to set epnvme loglevel, ignoring")
 
     # write out a json header
     d = conn.execute("peek", ["config/chip_info"])
