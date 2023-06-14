@@ -35,7 +35,8 @@ class AppFpk(mmap.mmap):
 
     def get_dice_loc(self):
         # "D" pattern, multiple of key=48, cert=640
-        start,_ = self.__find_pattern(0x0C, 0x0D)
+        start,size = self.__find_pattern(0x0C, 0x0D)
+        print("DICE marker found: %08x %08x" % (start,size))
         return start
 
     def validate(self, n):
@@ -129,6 +130,7 @@ def get_key_loc(file, number, app):
 @app_fpk_process
 def get_dice_loc(file, number, app):
     try:
+        print("DICE loc for %s" % file)
         return app.get_dice_loc()
     except Exception as e:
         # swallow the exception: just looking and not expecting anything
