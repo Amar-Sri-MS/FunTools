@@ -157,8 +157,8 @@ def gen_fw_image(filename, attrs):
                     #print("Key location {}".format(key))
                     add_key_location(args, int(key,0))
 
-            # always look for a DICE location only for single file
-            if not tmpfile:
+            # look for dice loc only in SBP executable images
+            if args['ftype'] == 'pufr' or args['ftype'] == 'frmw':
                 add_dice_location(args)
 
             fsi.image_gen(outfile=filename, **args)
