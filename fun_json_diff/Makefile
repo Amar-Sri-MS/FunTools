@@ -6,6 +6,9 @@ OS := $(shell uname)
 # The build is where our SDK is rooted
 SDKDIR ?= ../../FunSDK
 
+# install path
+SDK_INSTALL_DIR ?= SDKDIR
+
 # The FunOS dir where config files reside
 FUNOSDIR ?= ../../FunOS
 
@@ -52,7 +55,7 @@ $(BUILD_ROOT)/fun_json_diff: $(OBJS)
 .PHONY: install
 install: fun_json_diff
 	mkdir -p $(SDKDIR)/bin/$(MACHINE)/$(OS)
-	cp $(BUILD_ROOT)/fun_json_diff $(SDKDIR)/bin/$(MACHINE)/$(OS)
+	cp $(BUILD_ROOT)/fun_json_diff $(SDK_INSTALL_DIR)/bin/$(MACHINE)/$(OS)
 
 clean:
 	-rm -rf build_*
