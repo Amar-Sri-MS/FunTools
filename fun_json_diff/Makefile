@@ -54,7 +54,7 @@ $(BUILD_ROOT)/fun_json_diff: $(OBJS)
 
 .PHONY: install
 install: fun_json_diff
-	mkdir -p $(SDKDIR)/bin/$(MACHINE)/$(OS)
+	mkdir -p $(SDK_INSTALL_DIR)/bin/$(MACHINE)/$(OS)
 	cp $(BUILD_ROOT)/fun_json_diff $(SDK_INSTALL_DIR)/bin/$(MACHINE)/$(OS)
 
 clean:
