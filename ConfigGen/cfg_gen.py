@@ -580,9 +580,6 @@ def main():
     parser.add_argument("--skucfg", action='store_true',
                         help="Generate sku id's & hwcap config c code from board & hwcap sku json config files")
 
-    parser.add_argument("--hucfg", action='store_true',
-                        help="Generate hu config c code from hu json config files")
-
     parser.add_argument("--nucsr-replaycfg", action='store_true',
                         help="Generates merged nu csr replay config json")
 
@@ -603,10 +600,6 @@ def main():
                                        args.split_csr_replay)
         _generate_sku_config_code(args.in_dir[0], args.sdk_dir, args.out_dir[0],
                                   args.chip, args.machine[0])
-        _generate_hu_config_code(args.in_dir[0], args.out_dir[0])
-
-    if args.hucfg:
-        _generate_hu_config_code(args.in_dir[0], args.out_dir[0])
 
     if args.skucfg:
         _generate_sku_config_code(args.in_dir[0], args.sdk_dir, args.out_dir[0],
