@@ -577,32 +577,3 @@ class HUCfgGen():
                 hu_cfg = jsonutils.merge_dicts(hu_cfg, cfg_json)
         logger.debug("DONE: Generating HU C code: generate_hu_cfg")
         return hu_cfg
-
-    def generate_code(self):
-        """ Generate c header and source"""
-
-        logger.debug("Generating HU header code: generate_hu_cfg")
-        hu_cfg = dict()
-        file_pattern_list = ['hu_config/*.schema']
-
-        for file_pattern in file_pattern_list:
-            for cfg in glob.glob(os.path.join(self.input_dir, file_pattern)):
-                logger.debug('Processing {}'.format(cfg))
-                cfg_json = jsonutils.load_fungible_json(cfg)
-                hu_cfg = jsonutils.merge_dicts(hu_cfg, cfg_json)
-
-        # get the schema dict
-        self.schema_dict = hu_cfg["Schema"]
-
-        # keys to generate HU CONFIG C code
-        key_to_gen = [
-            'HostUnits',
-            'HostUnit',
-            'HostUnitController',
-            'HostUnitFunction',
-        ]
-
-        # generate C code
-        cfg_name = "hu_cfg"
-        self._generate_header(cfg_name, key_to_gen)
-
