@@ -1,0 +1,135 @@
+Usage
+=====
+
+Usage: dma-decode <option> <value1>,[value2]
+       -a <action>          Decodes the DMA WU action
+       -0 <arg0>            Decodes the DMA WU arg0
+       -1 <arg1>,[arg2]     Decodes the DMA WU arg1
+                            and arg2 if present
+       -c <cmd0>,[cmd1]     Decodes the first DMA command
+                            word and the second one if
+                            present
+
+        Examples:
+                dma-decode -a 0x82f8414000842286
+                dma-decode -0 0x010c000009991340
+                dma-decode -c 0x010c000009991340,0x0000000040e18000
+
+
+Overview
+========
+
+There are diffent types of data to decode. The user selects the data to
+decode via command line options.
+
+The table "data_type_defs[]" contains all the supported data types:
+static const struct data_type_def_s data_type_defs[] = {
+	{'a',	"action",		action},
+	{'0',	"DMA WU arg0",		dma_wu_arg0},
+	{'1',	"DMA WU arg1",		dma_wu_arg1},
+	{'c',	"DMA command",		dma_cmd},
+	{'\0',	"",			NULL}
+};
+
+As of this writing only four data types are supported.
+
+Each data type is defined by the "struct data_type_def_s" structure:
+/**
+ * data_type_def_s - Defines one top level type of data to decode
+ * @option: Command line option that identifies the type of data
+ * @name: Name of the type of data
+ * @fields: Pointer to the field table that make up the data
+ *
+ * Description:
+ * This structure is used to maintain a list of all the data types that can be
+ * decoded.
+ */
+struct data_type_def_s {
+	char				option;
+	char				*name;
+	const struct field_def_s	*fields;
+};
+
+Each data type has a pointer to a "struct field_def_s" table (fields).
+The field table defines the bit fields that make up the data. However, not all
+fields are treated equal. Some fields are used to jump to other tables when the
+value of a field determines how the rest of the fields are to be decoded.
+A field is defined by the structure "struct field_def_s":
+/**
+ * field_def_s - Describes a data field.
+ * @name: Field name.
+ * @shift: Field bit start position.
+ * @width: Width of the fields in bits
+ * @val_2_desc: List of value/description pairs.
+ * @calc: Function to calculate/decode/process the field value.
+ * @sub_fields: If not NULL, field must be further decoded.
+ * @indexed: Jump into another table by index
+ * @jump: Jump into another table
+ */
+struct field_def_s {
+	const char			*name;
+	int				shift;
+	int				width;
+	const struct val_2_desc_s	*val_2_desc;
+	void 				(*calc)(char		*ident,
+						const char	*field_name,
+						uint64_t	field_val);
+	const struct field_def_s	*sub_fields;
+	const struct field_def_s	*indexed;
+	const struct field_def_s	*jump;
+};
+
+
+Decoding
+========
+
+Decoding involves two steps:
+	1. Decoding the current field and printing its description.
+	2. Finding the next field to decode.
+
+1. Printing the field description
+There are three ways to determine the description of a field value:
+	a. Using val_2_desc.
+	   val_2_desc is simply a table of value/description pairs. The field
+	   value is searched and its description printed.
+	b. Using calc.
+	   Some fields need processing to convey meaningful information.
+	   calc can be used to provide custom methods to print useful
+	   information.
+	c. The field name and value are simply printed.
+
+	Note: These three methods are mutually exclusive. Only one of them can
+	be used in a field.
+
+2. Finding the next field to decode
+	a. sub-fields.
+	   sub-fields point to a table of fields to decode before continuing
+	   with the next field in the current table.
+	b. indexed.
+	   The value of some field is used to index into a new table.
+	   The current table is no longer used.
+	c. jump.
+	   Jump to a new table.
+	   The current table is no longer used.
+
+	Note: indexed and jump are mutually exclusive. Only one of them can
+	be used in a field.
+
+
+Files
+=====
+
+Makefile:			To build target (dma-decode).
+main.c:				Code.
+decode.h:			Contains data structures and define
+				declarations.
+data-type-def.h:		Entry point for data to decode. Contains the
+				table of data types to decode.
+data-type-def-action.h:		Tables to decode the DMA WU action.
+data-type-def-arg0.h:		Tables to decode the DMA WU arg0.
+data-type-def-arg1.h:		Tables to decode the DMA WU arg1.
+data-type-def-cmd.h:		Entry point for the DMA commands to decode.
+data-type-def-cmd-gather.h:	Entry point for the DMA gather commands to
+				decode.
+data-type-def-cmd-scatter.h:	Entry point for the DMA scatter commands to
+				decode.
