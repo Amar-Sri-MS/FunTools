@@ -244,6 +244,9 @@ class FileCorpse:
 
         self.fl = self.open_file(use_idzip, use_http)
 
+        # UUID if present in the file corpse, else None
+        self.uuid = None
+
         # ELFFile object or None if this is not elf
         self.elf = None
         if self.is_elf_corpse():
@@ -255,8 +258,12 @@ class FileCorpse:
             actual_size = self.get_file_size(fh, use_idzip)
 
             self.elf = ELFFile(fh)
+            edn = ELFDumpNote(self.elf)
+            note = edn.get_note()
+            if note:
+                self.uuid = note["uuid"]
             if not opts.skip_dump_size_check:
-                self.verify_dump_size(actual_size)
+                self.verify_dump_size(note, actual_size)
 
         # ELF segment headers in memory, faster than reading from file
         self.elf_phdrs = []
@@ -277,11 +284,8 @@ class FileCorpse:
                     magic[2] == 0x4c and magic[3] == 0x46)
         return False
 
-    def verify_dump_size(self, actual_size):
+    def verify_dump_size(self, note, actual_size):
         """ Check actual file size against ELF note and bail out on mismatch """
-        edn = ELFDumpNote(self.elf)
-        note = edn.get_note()
-
         if note:
             expected_size = note.get("dump_size")
             if expected_size != actual_size:
@@ -387,7 +391,7 @@ class FileCorpse:
 
     def elf_load_phdrs(self):
         for seg in self.elf.iter_segments():
-            if seg['p_type'] == 'PT_LOAD':
+            if seg["p_type"] == "PT_LOAD":
                 self.elf_phdrs.append(seg)
 
     def elf_offset(self, addr):
@@ -655,10 +659,10 @@ class ELFDumpNote:
         """
         Returns the note information as a dict.
 
-        Expect { version: 0, num_shards: N, dump_size: Z }
+        Expect { version: 0, num_shards: N, dump_size: Z, uuid: <uuid> }
         """
         for seg in self.elf.iter_segments():
-            if seg['p_type'] != 'PT_NOTE':
+            if seg["p_type"] != "PT_NOTE":
                 continue
 
             note = self._find_note_in_segment(seg)
@@ -669,21 +673,35 @@ class ELFDumpNote:
         """ Returns the fungible note from this segment, or None """
 
         for note in seg.iter_notes():
-            if note['n_name'] == 'Fungible' and note['n_type'] == 0:
-                desc = note['n_desc']
+            if note["n_name"] == "Fungible" and note["n_type"] == 0:
+                desc = note["n_desc"]
                 if float(elftools.__version__) < 0.28 and isinstance(desc, str):
                     # reverse the less-than-helpful string conversion done
                     # by the pyelftools module prior to v0.28. Newer versions
                     # keep the notes as bytes.
-                    desc = desc.encode('latin-1')
-                t = struct.unpack('>LLQ', desc)
+                    desc = desc.encode("latin-1")
+                t = struct.unpack(">L", desc[:4])
+                version = t[0]
 
-                ret = {}
-                ret['version'] = t[0]
-                ret['num_shards'] = t[1]
-                ret['dump_size'] = t[2]
-                return ret
+                return self._unpack_note(version, desc)
         return None
+
+    def _unpack_note(self, version, desc):
+        ret = {}
+        ret["version"] = version
+
+        if version == 0:
+            t = struct.unpack(">LLQ", desc)
+            ret["num_shards"] = t[1]
+            ret["dump_size"] = t[2]
+            ret["uuid"] = None
+        else:
+            print(len(desc))
+            t = struct.unpack(">LLQ16s", desc)
+            ret["num_shards"] = t[1]
+            ret["dump_size"] = t[2]
+            ret["uuid"] = t[3]
+        return ret
 
 
 ###
@@ -787,6 +805,10 @@ def find_corpse_uuid(corpse):
             raise RuntimeError("invalid forced UUID: %s" % opts.force_uuid)
         LOG_ALWAYS("FunOS UUID forced to %s" % str(uu))
         return uu
+
+    if corpse.uuid is not None:
+        LOG_ALWAYS("Found FunOS UUID")
+        return uuid.UUID(bytes=corpse.uuid)
 
     LOG_ALWAYS("Searching for FunOS UUID")
 
