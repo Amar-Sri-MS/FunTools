@@ -362,7 +362,52 @@ class FileCorpse:
         va += vpnum * ss
         va += addr & (ss-1)
 
-        return self.va_clean(va)
+        return va
+
+    def virt2virt(self, addr):
+        """ Undoes TLB mappings and other arcana. Returns a virtual address """
+
+        # check the top bit for TLB VA
+        kseg = addr >> 56
+        if (kseg == 0xc0):
+            ## TLB mapped, can be either C-stack (dispatch) or WU stack
+
+            ## C-stack (dispatch stack)
+            if (((addr >> self.rdsym("PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_TOKEN_SHIFT")) & 0xf) >= 0xe):
+                return self.decode_dispatch_stack_addr(addr)
+
+            ## WU stack
+            addr = self.decode_wustack_addr_to_phys(addr)
+            # turn back into a 64-bit VA with the knowledge that
+            # WU stacks are coherent xkphys
+            addr |= 0xa800000000000000
+
+        elif (kseg == 0xff):
+            ## 32-bit compatibility segment.
+            #
+            # Currently unclear why kseg addresses map to a mix
+            # of xkphys coherent and noncoherent in FunOS regions.
+            # Until I grok this, refuse to handle such cases and
+            # force a fallback to physical address mappings by
+            # returning None.
+            return None
+
+        return addr
+
+    def decode_wustack_addr_to_phys(self, addr):
+        """ Returns a 48b physical address for a wustack address """
+        ## guard page
+        # magic expander section
+        # (bit 47 indicates whether this has a double guard, so remove it)
+        if (addr & (1<<47)):
+            addr &= ~(1<<47);
+
+        offset = addr & 0xfff
+        addr &= 0xfffffffff000
+        addr >>= 1
+        addr |= offset
+
+        return addr
 
     def virt2phys(self, addr):
 
@@ -371,17 +416,11 @@ class FileCorpse:
         if (kseg == 0xc0):
             ## dispatch stack
             if (((addr >> self.rdsym("PLATFORM_DEBUG_CONSTANT_DISPATCH_STACK_TOKEN_SHIFT")) & 0xf) >= 0xe):
-                return self.decode_dispatch_stack_addr(addr)
+                va = self.decode_dispatch_stack_addr(addr)
+                return self.va_clean(va)
 
-            ## guard page
-            # magic expander section
-            if (addr & (1<<47)):
-                addr &= ~(1<<47);
+            addr = self.decode_wustack_addr_to_phys(addr)
 
-            offset = addr & 0xfff
-            addr &= 0xfffffffff000
-            addr >>= 1
-            addr |= offset
         elif (kseg == 0xff):
             addr = addr & 0x1fffffff
 
@@ -395,22 +434,32 @@ class FileCorpse:
                 self.elf_phdrs.append(seg)
 
     def elf_offset(self, addr):
-        phys = self.virt2phys(addr)
-
-        if (phys is None):
-            return None
-
         if not self.elf_phdrs:
             self.elf_load_phdrs()
 
+        virt = self.virt2virt(addr)
+        if virt is not None:
+            offset = self.elf_seg_offset(virt, "p_vaddr")
+            if offset is not None:
+                return offset
+
+        # Fall back to physical addresses if we have an issue
+        # with virtual address mapping.
+        phys = self.virt2phys(addr)
+        if phys is not None:
+            return self.elf_seg_offset(phys, "p_paddr")
+
+        # Houston, we have a problem
+        return None
+
+    def elf_seg_offset(self, addr, addr_type):
         # Look up the file offset in the ELF segments
         # We can do better than this linear search, really
         for seg in self.elf_phdrs:
-            seg_paddr = seg["p_paddr"]
-            if (phys >= seg_paddr and phys < seg_paddr + seg["p_filesz"]):
-                return seg["p_offset"] + phys - seg_paddr
+            seg_addr = seg[addr_type]
+            if (addr >= seg_addr and addr < seg_addr + seg["p_filesz"]):
+                return seg["p_offset"] + addr - seg_addr
 
-        # Houston, we have a problem
         return None
 
     def readbytes(self, addr, n):
