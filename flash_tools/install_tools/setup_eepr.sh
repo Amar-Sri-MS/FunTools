@@ -60,6 +60,11 @@ trap "setup_err" HUP INT QUIT TERM ABRT EXIT
 
 [[ $(id -u) != 0 ]] && log_msg "You need to be root to run the installer" && exit 1
 
+dpc_upgrade_support=$(dpcsh -nQ fw_upgrade version | jq -Mr .result)
+if [ "$dpc_upgrade_support" = "null" ]; then
+	log_msg "FunOS does not support DPC-based upgrade. Cannot continue."
+	exit 1
+fi
 
 boot_status=$(dpcsh -nQ peek "config/chip_info/boot_complete" | jq -Mr .result)
 case $boot_status in
