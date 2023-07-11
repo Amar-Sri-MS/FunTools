@@ -144,7 +144,7 @@ funos_sdk_version=$(sed -ne 's/^funsdk=\(.*\)/\1/p' .version || echo latest)
 
 log_msg "Upgrading DPU firmware to $funos_sdk_version"
 
-FW_UPGRADE_ARGS="--offline --ws `pwd`"
+FW_UPGRADE_ARGS="--offline"
 
 # run once to dump current fw information
 ./run_fwupgrade.py ${FW_UPGRADE_ARGS} --dry-run
