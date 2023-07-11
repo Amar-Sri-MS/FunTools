@@ -16,6 +16,7 @@ import tempfile
 import time
 import traceback
 from contextlib import closing
+from enum import Enum
 
 try:
     # This is all under a try clause, as depending on FunOS version,
@@ -72,7 +73,11 @@ UPGRADE_IF_PRESENT_IMAGES = {'nvdm', 'scap'}
 # success is not critical, so only log the error but do not
 # report the whole upgrade as failing. A failure can be later
 # noticed during upgrade success verification
-IGNORE_ERRORS_IMAGES = {'nvdm', 'scap'}
+# SBPF & FRMW are added for compatibility when transitioning
+# between unified and split images. By default they are treated
+# as failure allowed, but there need to be extra checks to ensure
+# that at least one succeeded if an attempt to upgrade was made
+IGNORE_ERRORS_IMAGES = {'nvdm', 'scap', 'sbpf', 'frmw'}
 # images to split into smaller chunks during upgrade
 # (supported only in DPC mode)
 SPLITTABLE_IMAGES = {'emmc', 'mmc1', 'mmcx'}
@@ -83,12 +88,26 @@ EXIT_CODE_OK = 0
 EXIT_CODE_ERROR = 1
 EXIT_CODE_DOWNGRADE_ATTEMPT = 2
 
+class UpgradeStatus(Enum):
+    STARTED = 0
+    SKIPPED = 1
+    FAILED = 2
+    DONE = 3
+
+
 class UpgradeException(Exception):
     # base class for all custom exceptions
     pass
 
 class DowngradeAttemptException(UpgradeException):
     pass
+
+class UpgradeFailedException(UpgradeException):
+    def __init__(self, fourcc, offset, resp):
+        self.fourcc = fourcc
+        self.offset = offset
+        self.resp = resp
+        super().__init__()
 
 def run(cmdlist, stdout=None):
     print("EXEC: {}".format(" ".join(cmdlist)))
@@ -172,6 +191,18 @@ def prepare(args):
         return prepare_offline(args, release_dir)
     else:
         return prepare_offline(args)
+
+def _sbpfw_fourccs_fixup(fourccs):
+    if 'pufr' in fourccs:
+        fourccs.remove('pufr') # pufr is not upgraded as part of standard flow
+    if 'sbpf' in fourccs and 'frmw' in fourccs:
+        # if both sbpf and frmw are present, then keep both in list but ensure
+        # that they are ordered such that frmw is first in the list of updates
+        fourccs.remove('sbpf')
+        fourccs = list(fourccs) # ensure they are ordered
+        fourccs.append('sbpf')
+
+    return fourccs
 
 
 def run_upgrade(args, release_images):
@@ -342,17 +373,8 @@ def run_upgrade(args, release_images):
                 except ValueError:
                     pass
 
-                # Remove frmw and pufr individual upgrades - there should be no
-                # units with firmware that still accept it. They may have been added
-                # to the list as these fourccs are reported by the DPU, but
-                # they are upgraded via 'sbpf' fourcc
-                try:
-                    dev_upgrade_fourccs.remove('frmw')
-                    dev_upgrade_fourccs.remove('pufr')
-                    dev_downgrade_fourccs.remove('frmw')
-                    dev_downgrade_fourccs.remove('pufr')
-                except:
-                    pass
+            dev_upgrade_fourccs = _sbpfw_fourccs_fixup(dev_upgrade_fourccs)
+            dev_downgrade_fourccs = _sbpfw_fourccs_fixup(dev_downgrade_fourccs)
 
         else:
             for fourcc in set(args.upgrade):
@@ -384,7 +406,14 @@ def run_upgrade(args, release_images):
         raise DowngradeAttemptException()
 
     for dev in pcidevs:
+        upgrade_status = {}
         for fourcc in upgrade_fourccs[dev]:
+            if upgrade_status.get('frmw') == UpgradeStatus.DONE and fourcc == 'sbpf':
+                upgrade_status[fourcc] = UpgradeStatus.SKIPPED
+                continue
+
+            upgrade_status[fourcc] = UpgradeStatus.STARTED
+
             if dpc:
                 error = 0
                 try:
@@ -414,6 +443,7 @@ def run_upgrade(args, release_images):
 
                         if not args.dry_run:
                             resp = dpc.execute('fw_upgrade', command)
+                            print(f"Performing upgrade of {fourcc}@{offset}")
                             if resp.get('async') and (resp['result'] == 0):
                                 resp = dpc.execute('fw_upgrade', ['async_status'])
                                 while resp['progress'] != 100:
@@ -421,19 +451,23 @@ def run_upgrade(args, release_images):
                                     resp = dpc.execute('fw_upgrade', ['async_status'])
 
                             if resp['result'] != 0:
-                                print(f"Upgrade of {fourcc}@{offset} failed: {resp['description']}")
-                                raise RuntimeError(f"{fourcc}@{offset} failed: {resp['description']}")
+                                print(f"Upgrade of {fourcc}@{offset} failed: {resp['result']} -> {resp['description']}")
+                                upgrade_status[fourcc] = UpgradeStatus.FAILED
+                                raise UpgradeFailedException(fourcc, offset, resp)
+
+                            upgrade_status[fourcc] = UpgradeStatus.DONE
                         else:
                             print(f"Would execute {command}")
 
                         offset += split_size
 
-                except:
+                except UpgradeFailedException as e:
                     error = 1
-                    if fourcc in IGNORE_ERRORS_IMAGES:
+                    if e.fourcc in IGNORE_ERRORS_IMAGES:
                         print(f"Upgrade of {fourcc} failed, ignoring this error")
                         error = 0
-                    pass
+                except:
+                    error = 1
 
                 res |= error
 
@@ -454,11 +488,13 @@ def run_upgrade(args, release_images):
                     print(f"Upgrading {fourcc} with {release_images[fourcc]}")
                     try:
                         subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+                        upgrade_status[fourcc] = UpgradeStatus.DONE
                     except subprocess.CalledProcessError as e:
                         # depending on the fw version, pufr/frmw/sbpf upgrades may fail
                         # need to parse error log - if error reported by sbp is '2', then
                         # this is the expected error and no need to panic
                         print(e.output.decode())
+                        upgrade_status[fourcc] = UpgradeStatus.FAILED
                         if e.returncode == errno.EIO and \
                         fourcc in ('pufr', 'frmw', 'sbpf') and \
                         (('Error in upgrade handling: 2' in e.output.decode()) or \
@@ -471,6 +507,12 @@ def run_upgrade(args, release_images):
                 else:
                     print(f"Would execute {cmd}")
 
+        if 'frmw' in upgrade_fourccs[dev] or 'sbpf' in upgrade_fourccs[dev]:
+            # if we attempted to upgrade frmw or sbpf and neither
+            # succeeded, report that as an error.
+            if not (upgrade_status.get('frmw') == UpgradeStatus.DONE or
+                    upgrade_status.get('sbpf') == UpgradeStatus.DONE):
+                res |= 1
 
         # GET ALL FIRMWARE VERSIONS
         if args.version_check:
