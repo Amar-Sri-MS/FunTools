@@ -113,10 +113,6 @@ def run(cmdlist, stdout=None):
     print("EXEC: {}".format(" ".join(cmdlist)))
     return subprocess.call(cmdlist,stdout=stdout)
 
-def run_check(cmdlist, stdout=None, stderr=None):
-    print("EXEC: {}".format(" ".join(cmdlist)))
-    return subprocess.call(cmdlist,stdout=stdout,stderr=stderr)
-
 def wget(url, outfile=None):
     if outfile:
         run(['wget', '-O', outfile, '-q', url])
@@ -209,14 +205,6 @@ def run_upgrade(args, release_images):
     """
         Perform firmware upgrade
     """
-    if isinstance(args.pci_devid, list):
-        for pci_devid in args.pci_devid:
-            pcidevs_string = subprocess.check_output(['lspci', '-d', pci_devid, '-mmn'])
-            if pcidevs_string:
-                break
-    else:
-        pcidevs_string = subprocess.check_output(['lspci', '-d', args.pci_devid, '-mmn'])
-
     res = 0
 
     if args.upgrade_file:
@@ -226,310 +214,203 @@ def run_upgrade(args, release_images):
         if not os.path.isfile(release_images[arg]):
             raise Exception(f"Upgrade image for '{arg}' not found in upgrade bundle")
 
-    if dpc:
-        pcidevs = ['dpc']
-    elif not pcidevs_string:
-        raise Exception("No Fungible devices detected on PCI")
-    else:
-        pcidevs = [dev.split()[0].decode('ascii') for dev in pcidevs_string.splitlines()]
-        binpath = '/usr/bin'
-        funqpath = '/usr/bin'
-
-    def pcidev_unbind(dev):
-        if args.bind:
-            run([os.path.join(funqpath, 'funq-setup'),
-                'unbind', '"vfio"', dev])
-
     def fourcc_eq(dpu_fourcc, host_fourcc):
         return (dpu_fourcc == host_fourcc) or \
                 ((host_fourcc == 'sbpf') and \
                  (dpu_fourcc == 'pufr' or dpu_fourcc == 'frmw')
                 )
 
-    for dev in pcidevs:
-        # BIND
-        # bind the vfio ff00 function of the F1's PCI driver, which corresponds
-        # to the HCI interface that the upgrade code uses. Loop over all of interfaces
-        # found, as when executed on FS1600's COMe, there are 2 F1s connected.
-        # When run on CCLinux, there should be only one interface found.
-        if args.bind:
-            cmd = [os.path.join(funqpath, 'funq-setup'),
-                'bind', 'vfio', dev]
-            try:
-                run_check(cmd, stderr=subprocess.STDOUT)
-            except subprocess.CalledProcessError as e:
-                print(e.output.decode())
-                res |= e.returncode
-                continue
-
-    if res:
-        for dev in pcidevs:
-            pcidev_unbind(dev)
-        raise Exception("Failed to bind PCI VFIO")
-
-    upgrade_fourccs = {}
-    downgrade_fourccs = {}
-
     v = args.version
     if v == 'latest':
         v = 2**32 # force upgrade to whatever latest happens to be
-                    # version is 32-bits, so 2**32 will indicate that
-                    # an upgrade is always required
+                  # version is 32-bits, so 2**32 will indicate that
+                  # an upgrade is always required
     else:
         v = int(v)
 
-    if not dpc:
-        # exit code 64 indicates unrecognized arg
-        with open(os.devnull, 'w') as devnull:
-            have_async_fwupgrade = subprocess.call(
-                [os.path.join(binpath, 'fwupgrade'), '--async'],
-                stdout=devnull, stderr=devnull) != 64
+    fwinfo = dpc.execute("fw_upgrade", ['get_versions'])
 
-    for dev in pcidevs:
-        if dpc:
-            fwinfo = dpc.execute("fw_upgrade", ['get_versions'])
+    dev_downgrade_fourccs = set()
+    dev_upgrade_fourccs = list()
+
+    if args.upgrade_auto:
+        release_images_fourccs = set(release_images.keys()) & KNOWN_IMAGES
+
+        if len(fwinfo) == 0:
+            dev_upgrade_fourccs = list(release_images_fourccs)
         else:
-            fwinfo = json.loads(subprocess.check_output(
-                [os.path.join(binpath, 'fwupgrade'),
-                '-a', '-d', dev]))
-        dev_downgrade_fourccs = set()
-        dev_upgrade_fourccs = list()
+            for fw in fwinfo['firmwares']:
+                # 'status' is not reported before build 8654, so do not assume
+                # it's always there. If frmw version is < 8654 but FunOS is newer,
+                # then 'status' field exists and is set to 'unknown'
 
-        if args.upgrade_auto:
-            release_images_fourccs = set(release_images.keys()) & KNOWN_IMAGES
+                # async upgrade (even if supported by fwupgrade app) may not work
+                # correctly on builds around 11500, all branches have the necessary
+                # fixes in after 11500, so only attempt to upgrade async images for
+                # those systems
+                if fw['fourcc'] == 'mmc1' and fw['version'] < 11500 and \
+                    fw.get('status','active') in ['active', 'unknown']:
+                    release_images_fourccs = release_images_fourccs - ASYNC_ONLY_IMAGES
 
-            if not dpc and not have_async_fwupgrade:
-                release_images_fourccs = release_images_fourccs - ASYNC_ONLY_IMAGES
+                # firmwares older than 9531 do not recognize kbag or husc as
+                # valid identifiers, so do not attempt to program these images, as this
+                # will result in an error.
+                if fw['fourcc'] == 'frmw' and fw['version'] < 9531 and \
+                    fw.get('status','active') in ['active', 'unknown']:
+                    release_images_fourccs = release_images_fourccs - { 'kbag', 'husc' }
 
-            if len(fwinfo) == 0:
-                dev_upgrade_fourccs = list(release_images_fourccs)
+                # FunOS doesn't recognise incompatible devices and currently the
+                # only way we find out that it's a different device type is when
+                # the upgrade fails. The only externally visible method to determine
+                # incompatibility is by checking existing fw version - if it is 24.6C
+                # (9324) then this means it is an incompatible device and we should not
+                # attempt upgrading it
+                if fw['fourcc'] == 'nvdm' and fw['version'] == 9324:
+                    release_images_fourccs = release_images_fourccs - {'nvdm'}
+
+                if fw['fourcc'] in release_images_fourccs:
+                    if fw['version'] < v or fw['fourcc'] in IGNORE_VERSION_IMAGES:
+                        # current version is lower than one found, so add
+                        dev_upgrade_fourccs.append(fw['fourcc'])
+                    elif fw['version'] > v and \
+                            fw.get('status','active') in ['active', 'unknown']:
+                        # current active version is higher, so potential downgrade
+                        dev_downgrade_fourccs.add(fw['fourcc'])
+                    else:
+                        # Versions are equal or inactive image, ignore
+                        pass
+
+            for fw in fwinfo['firmwares']:
+                release_images_fourccs.discard(fw['fourcc'])
+
+            if not 'pufr' in dev_upgrade_fourccs and \
+                not 'frmw' in dev_upgrade_fourccs:
+                    release_images_fourccs.discard('sbpf')
+
+            # emmc and mmc1 images are 'special', ie. they should always exist in flash and
+            # should only be updated if they exist so the rule below for adding any new and
+            # yet unprogrammed image types should not apply. Hence always remove them from
+            # the new set to prevent attempted upgrades.
+            release_images_fourccs.discard('mmc1')
+            release_images_fourccs.discard('emmc')
+
+            for fw in release_images_fourccs:
+                if fw not in dev_upgrade_fourccs:
+                    if fw not in UPGRADE_IF_PRESENT_IMAGES:
+                        dev_upgrade_fourccs.append(fw)
+
+            dev_upgrade_fourccs = list(set(dev_upgrade_fourccs))
+            try:
+                # to work around a bug in sbp upgrade ensure that
+                # kbag is the last in list (fixed in 9589)
+                dev_upgrade_fourccs.remove('kbag')
+                dev_upgrade_fourccs.append('kbag')
+            except ValueError:
+                pass
+
+        dev_upgrade_fourccs = _sbpfw_fourccs_fixup(dev_upgrade_fourccs)
+        dev_downgrade_fourccs = _sbpfw_fourccs_fixup(dev_downgrade_fourccs)
+
+    else:
+        for fourcc in set(args.upgrade):
+            for fw in fwinfo['firmwares']:
+                if fourcc_eq(fw['fourcc'], fourcc):
+                    if fw['version'] < v or fw['fourcc'] in IGNORE_VERSION_IMAGES:
+                        dev_upgrade_fourccs.append(fourcc)
+                    elif fw['version'] > v and \
+                            fw.get('status','active') in ['active', 'unknown']:
+                        # current active version is higher, so potential downgrade
+                        dev_downgrade_fourccs.add(fourcc)
+                    else:
+                        # Versions are equal or inactive image, ignore
+                        pass
+                    break
             else:
-                for fw in fwinfo['firmwares']:
-                    # 'status' is not reported before build 8654, so do not assume
-                    # it's always there. If frmw version is < 8654 but FunOS is newer,
-                    # then 'status' field exists and is set to 'unknown'
+                # also update if fourcc doesn't exist yet
+                dev_upgrade_fourccs.append(fourcc)
 
-                    # async upgrade (even if supported by fwupgrade app) may not work
-                    # correctly on builds around 11500, all branches have the necessary
-                    # fixes in after 11500, so only attempt to upgrade async images for
-                    # those systems
-                    if fw['fourcc'] == 'mmc1' and fw['version'] < 11500 and \
-                        fw.get('status','active') in ['active', 'unknown']:
-                        release_images_fourccs = release_images_fourccs - ASYNC_ONLY_IMAGES
+    print(f"Final list of images to upgrade: {dev_upgrade_fourccs}")
+    print(f"List of images to maybe downgrade: {dev_downgrade_fourccs}")
 
-                    # firmwares older than 9531 do not recognize kbag or husc as
-                    # valid identifiers, so do not attempt to program these images, as this
-                    # will result in an error.
-                    if fw['fourcc'] == 'frmw' and fw['version'] < 9531 and \
-                       fw.get('status','active') in ['active', 'unknown']:
-                        release_images_fourccs = release_images_fourccs - { 'kbag', 'husc' }
-
-                    # FunOS doesn't recognise incompatible devices and currently the
-                    # only way we find out that it's a different device type is when
-                    # the upgrade fails. The only externally visible method to determine
-                    # incompatibility is by checking existing fw version - if it is 24.6C
-                    # (9324) then this means it is an incompatible device and we should not
-                    # attempt upgrading it
-                    if fw['fourcc'] == 'nvdm' and fw['version'] == 9324:
-                        release_images_fourccs = release_images_fourccs - {'nvdm'}
-
-                    if fw['fourcc'] in release_images_fourccs:
-                        if fw['version'] < v or fw['fourcc'] in IGNORE_VERSION_IMAGES:
-                            # current version is lower than one found, so add
-                            dev_upgrade_fourccs.append(fw['fourcc'])
-                        elif fw['version'] > v and \
-                             fw.get('status','active') in ['active', 'unknown']:
-                            # current active version is higher, so potential downgrade
-                            dev_downgrade_fourccs.add(fw['fourcc'])
-                        else:
-                            # Versions are equal or inactive image, ignore
-                            pass
-
-                for fw in fwinfo['firmwares']:
-                    release_images_fourccs.discard(fw['fourcc'])
-
-                if not 'pufr' in dev_upgrade_fourccs and \
-                   not 'frmw' in dev_upgrade_fourccs:
-                       release_images_fourccs.discard('sbpf')
-
-                # emmc and mmc1 images are 'special', ie. they should always exist in flash and
-                # should only be updated if they exist so the rule below for adding any new and
-                # yet unprogrammed image types should not apply. Hence always remove them from
-                # the new set to prevent attempted upgrades.
-                release_images_fourccs.discard('mmc1')
-                release_images_fourccs.discard('emmc')
-
-                for fw in release_images_fourccs:
-                    if fw not in dev_upgrade_fourccs:
-                        if fw not in UPGRADE_IF_PRESENT_IMAGES:
-                            dev_upgrade_fourccs.append(fw)
-
-                dev_upgrade_fourccs = list(set(dev_upgrade_fourccs))
-                try:
-                    # to work around a bug in sbp upgrade ensure that
-                    # kbag is the last in list (fixed in 9589)
-                    dev_upgrade_fourccs.remove('kbag')
-                    dev_upgrade_fourccs.append('kbag')
-                except ValueError:
-                    pass
-
-            dev_upgrade_fourccs = _sbpfw_fourccs_fixup(dev_upgrade_fourccs)
-            dev_downgrade_fourccs = _sbpfw_fourccs_fixup(dev_downgrade_fourccs)
-
-        else:
-            for fourcc in set(args.upgrade):
-                for fw in fwinfo['firmwares']:
-                    if fourcc_eq(fw['fourcc'], fourcc):
-                        if fw['version'] < v or fw['fourcc'] in IGNORE_VERSION_IMAGES:
-                            dev_upgrade_fourccs.append(fourcc)
-                        elif fw['version'] > v and \
-                             fw.get('status','active') in ['active', 'unknown']:
-                            # current active version is higher, so potential downgrade
-                            dev_downgrade_fourccs.add(fourcc)
-                        else:
-                            # Versions are equal or inactive image, ignore
-                            pass
-                        break
-                else:
-                    # also update if fourcc doesn't exist yet
-                    dev_upgrade_fourccs.append(fourcc)
-
-        upgrade_fourccs[dev] = dev_upgrade_fourccs
-        downgrade_fourccs[dev] = dev_downgrade_fourccs
-
-        print(f"Final list of images to upgrade for {dev}: {upgrade_fourccs[dev]}")
-        print(f"List of images to maybe downgrade for {dev}: {downgrade_fourccs[dev]}")
-
-    if any(downgrade_fourccs.values()) and not args.downgrade and not args.dry_run:
-        for dev in pcidevs:
-            pcidev_unbind(dev)
+    if any(dev_downgrade_fourccs) and not args.downgrade and not args.dry_run:
         raise DowngradeAttemptException()
 
-    for dev in pcidevs:
-        upgrade_status = {}
-        for fourcc in upgrade_fourccs[dev]:
-            if upgrade_status.get('frmw') == UpgradeStatus.DONE and fourcc == 'sbpf':
-                upgrade_status[fourcc] = UpgradeStatus.SKIPPED
-                continue
+    upgrade_status = {}
+    for fourcc in dev_upgrade_fourccs:
+        if upgrade_status.get('frmw') == UpgradeStatus.DONE and fourcc == 'sbpf':
+            upgrade_status[fourcc] = UpgradeStatus.SKIPPED
+            continue
 
-            upgrade_status[fourcc] = UpgradeStatus.STARTED
+        upgrade_status[fourcc] = UpgradeStatus.STARTED
 
-            if dpc:
-                error = 0
-                try:
-                    file_size = os.path.getsize(release_images[fourcc])
-                    split_size = SPLIT_SIZE if fourcc in SPLITTABLE_IMAGES else file_size
-                    offset = 0
+        error = 0
+        try:
+            file_size = os.path.getsize(release_images[fourcc])
+            split_size = SPLIT_SIZE if fourcc in SPLITTABLE_IMAGES else file_size
+            offset = 0
 
-                    while offset < file_size:
-                        dpc_params = {
-                            'active' : bool(args.active),
-                            'downgrade' : bool(args.downgrade),
-                            'fourcc' : fourcc,
-                            'offset' : offset
-                        }
+            while offset < file_size:
+                dpc_params = {
+                    'active' : bool(args.active),
+                    'downgrade' : bool(args.downgrade),
+                    'fourcc' : fourcc,
+                    'offset' : offset
+                }
 
-                        if dpc.version >= 2:
-                            dpc_params['async'] = True
-
-                        if not args.dry_run:
-                            with open(release_images[fourcc], 'rb') as f:
-                                f.seek(offset, os.SEEK_SET)
-                                blob = dpc.dpc_blob_from_string(f.read(split_size))
-                        else:
-                            blob = f"blob for {release_images[fourcc]} offset {offset} size {split_size}"
-
-                        command = [ 'upgrade', dpc_params, blob ]
-
-                        if not args.dry_run:
-                            resp = dpc.execute('fw_upgrade', command)
-                            print(f"Performing upgrade of {fourcc}@{offset}")
-                            if resp.get('async') and (resp['result'] == 0):
-                                resp = dpc.execute('fw_upgrade', ['async_status'])
-                                while resp['progress'] != 100:
-                                    time.sleep(1)
-                                    resp = dpc.execute('fw_upgrade', ['async_status'])
-
-                            if resp['result'] != 0:
-                                print(f"Upgrade of {fourcc}@{offset} failed: {resp['result']} -> {resp['description']}")
-                                upgrade_status[fourcc] = UpgradeStatus.FAILED
-                                raise UpgradeFailedException(fourcc, offset, resp)
-
-                            upgrade_status[fourcc] = UpgradeStatus.DONE
-                        else:
-                            print(f"Would execute {command}")
-
-                        offset += split_size
-
-                except UpgradeFailedException as e:
-                    error = 1
-                    if e.fourcc in IGNORE_ERRORS_IMAGES:
-                        print(f"Upgrade of {fourcc} failed, ignoring this error")
-                        error = 0
-                except:
-                    error = 1
-
-                res |= error
-
-            else: # !dpc
-                cmd = [os.path.join(binpath, 'fwupgrade'),
-                        '--image', release_images[fourcc], '-f', fourcc, '-d', dev]
-                if args.active:
-                    cmd.append('--active')
-                if args.downgrade:
-                    cmd.append('--downgrade')
-                if fourcc in ASYNC_PREF_IMAGES and have_async_fwupgrade:
-                    cmd.append('--async')
-                elif fourcc in ASYNC_ONLY_IMAGES:
-                    cmd.append('--async')
+                if dpc.version >= 2:
+                    dpc_params['async'] = True
 
                 if not args.dry_run:
-                    # CHECK CURRENT VERSION AND UPGRADE
-                    print(f"Upgrading {fourcc} with {release_images[fourcc]}")
-                    try:
-                        subprocess.check_output(cmd, stderr=subprocess.STDOUT)
-                        upgrade_status[fourcc] = UpgradeStatus.DONE
-                    except subprocess.CalledProcessError as e:
-                        # depending on the fw version, pufr/frmw/sbpf upgrades may fail
-                        # need to parse error log - if error reported by sbp is '2', then
-                        # this is the expected error and no need to panic
-                        print(e.output.decode())
-                        upgrade_status[fourcc] = UpgradeStatus.FAILED
-                        if e.returncode == errno.EIO and \
-                        fourcc in ('pufr', 'frmw', 'sbpf') and \
-                        (('Error in upgrade handling: 2' in e.output.decode()) or \
-                                ('Error in upgrade handling: 33554432' in e.output.decode())):
-                            print('If you see this error message, do not report it, it is expected')
-                        elif fourcc in IGNORE_ERRORS_IMAGES:
-                            print('Upgrade of {} failed, ignoring this error'.format(fourcc))
-                        else:
-                            res |= e.returncode
+                    with open(release_images[fourcc], 'rb') as f:
+                        f.seek(offset, os.SEEK_SET)
+                        blob = dpc.dpc_blob_from_string(f.read(split_size))
                 else:
-                    print(f"Would execute {cmd}")
+                    blob = f"blob for {release_images[fourcc]} offset {offset} size {split_size}"
 
-        if 'frmw' in upgrade_fourccs[dev] or 'sbpf' in upgrade_fourccs[dev]:
+                command = [ 'upgrade', dpc_params, blob ]
+
+                if not args.dry_run:
+                    resp = dpc.execute('fw_upgrade', command)
+                    print(f"Performing upgrade of {fourcc}@{offset}")
+                    if resp.get('async') and (resp['result'] == 0):
+                        resp = dpc.execute('fw_upgrade', ['async_status'])
+                        while resp['progress'] != 100:
+                            time.sleep(1)
+                            resp = dpc.execute('fw_upgrade', ['async_status'])
+
+                    if resp['result'] != 0:
+                        print(f"Upgrade of {fourcc}@{offset} failed: {resp['result']} -> {resp['description']}")
+                        upgrade_status[fourcc] = UpgradeStatus.FAILED
+                        raise UpgradeFailedException(fourcc, offset, resp)
+
+                    upgrade_status[fourcc] = UpgradeStatus.DONE
+                else:
+                    print(f"Would execute {command}")
+
+                offset += split_size
+
+        except UpgradeFailedException as e:
+            error = 1
+            if e.fourcc in IGNORE_ERRORS_IMAGES:
+                print(f"Upgrade of {fourcc} failed, ignoring this error")
+                error = 0
+        except:
+            error = 1
+
+        res |= error
+
+    if not args.dry_run:
+        if 'frmw' in dev_upgrade_fourccs or 'sbpf' in dev_upgrade_fourccs:
             # if we attempted to upgrade frmw or sbpf and neither
             # succeeded, report that as an error.
             if not (upgrade_status.get('frmw') == UpgradeStatus.DONE or
                     upgrade_status.get('sbpf') == UpgradeStatus.DONE):
                 res |= 1
 
-        # GET ALL FIRMWARE VERSIONS
-        if args.version_check:
-            if dpc:
-                print(dpc.execute("fw_upgrade", ['get_versions']))
-            else:
-                cmd = [os.path.join(binpath, 'fwupgrade'),
-                    '-a', '-d', dev]
-                try:
-                    run_check(cmd, stderr=subprocess.STDOUT)
-                except subprocess.CalledProcessError as e:
-                    print(e.output.decode())
-                    res |= e.returncode
-                    pass
-
-    for dev in pcidevs:
-        pcidev_unbind(dev)
+    # GET ALL FIRMWARE VERSIONS
+    if args.version_check:
+        if dpc:
+            print(dpc.execute("fw_upgrade", ['get_versions']))
 
     if res:
         raise Exception("Errors occured during upgrade")
@@ -554,8 +435,8 @@ def main():
     arg_parser = argparse.ArgumentParser(
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     arg_parser.add_argument('--ws', action='store', metavar='path',
-            help='workspace path, temp location will be used if not specified or'
-                 '<offline-root>/funos if offline is set')
+            help='workspace path, temp location will be used if not specified '
+                 'or current directory if offline')
 
     upgrade_group = arg_parser.add_mutually_exclusive_group()
     upgrade_group.add_argument('-u', '--upgrade', action='append', metavar='FOURCC',
@@ -577,19 +458,11 @@ def main():
     arg_parser.add_argument('--downgrade', action='store_true',
             help='Attempt to perform a firmware downgrade')
 
-    # no-server-update option doesn't do anything, currently kept for compatibility
-    # with other scripts. to be removed.
-    arg_parser.add_argument('--no-server-update',
-            action='store_true', help='[ignored]')
-
     arg_parser.add_argument('--dry-run', action='store_true',
             help='Do all the checks, but do not perform upgrade.')
 
     arg_parser.add_argument('--offline', action='store_true',
             help='Do not download any images, assume everything is available locally')
-
-    arg_parser.add_argument('--offline-root', default="/opt/fungible",
-            help='Location of the ControlPlane firmware')
 
     arg_parser.add_argument('--active', action='store_true',
             help='Attempt to upgrade active image')
@@ -612,12 +485,6 @@ def main():
 
     arg_parser.add_argument('--funos-type', help='FunOS/bundle type (storage, core etc.)')
 
-    if not dpc:
-        arg_parser.add_argument('--no-bind', dest='bind', action='store_false',
-            help='Do not bind/unbind PCIe vfio interface')
-        arg_parser.add_argument('--pci-devid', default=['1dad:0105:', '1dad:0005:', '1dad::1000'],
-            help='PCI device ID to use for upgrades')
-
     args, unknown = arg_parser.parse_known_args()
 
     if unknown:
@@ -631,8 +498,9 @@ def main():
         try:
             # always use python3 input
             # python3/input == python2/raw_input
-            input = raw_input
+            input_f = raw_input
         except NameError:
+            input_f = input
             pass
 
         sys.stdout.write("Attempting a downgrade of {active} image.\n"
@@ -640,14 +508,14 @@ def main():
                      "Are you sure? [Yes/No] ".format(
                     active="active" if args.active else "inactive"))
         sys.stdout.flush()
-        conf = input()
+        conf = input_f()
         if conf != 'Yes':
             print("Aborted by user")
             return
 
     if args.ws is None:
         if args.offline:
-            args.ws = os.path.join(args.offline_root, 'funos')
+            args.ws = os.getcwd()
         else:
             tmpws = tempfile.mkdtemp()
             args.ws = tmpws
@@ -659,14 +527,8 @@ def main():
                 pass
 
     os.chdir(args.ws)
-    os.putenv('WORKSPACE', args.ws)
 
     print(f"Using {args.ws} as workspace")
-    print(f"Using {'DPC' if dpc else 'HCI'} interface")
-
-    if dpc:
-        args.bind = False
-        args.pci_devid = []
 
     try:
         release_images = prepare(args)
