@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include <private/hw/csr/ccu.h>
+#include <FunOS/legacy/hw/csr/ccu.h>
 #include "pcieproxy.h"
 #include "endian.h"
 
