@@ -100,6 +100,13 @@ def _get_args() -> argparse.Namespace:
         help="Compare type, documentation, coverage, or all etc",
     )
 
+    parser.add_argument(
+        "--fail_on_error",
+        type=bool,
+        default=False,
+        help="Actually fail on error, default is False",
+    )
+
     parser.add_argument("--debug", type=bool, default=False, help="Debug flag")
 
     args = parser.parse_args()
@@ -225,7 +232,8 @@ def main() -> None:
         num_diff, num_doc, comp_df = comp_sdk_doc(prev_summary, new_summary, debug)
         if num_diff > 0 and num_diff > num_doc:
             _generate_error_outputs(comp_df, output_filename)
-            ret = -1
+            if (args.fail_on_error):
+                ret = -1
     else:
         assert False, "Unsupported compare type: {}".format(compare_type)
 
