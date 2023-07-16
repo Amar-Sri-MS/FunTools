@@ -8,7 +8,7 @@ PCIEPROXY_DIR := $(SDK_INSTALL_DIR)/pcieproxy/$(ARCH)
 # files for each target
 PCIEPROXY_LIB_FLAGS = -fvisibility=hidden -fPIC
 
-PCIEPROXY_FLAGS = -I $(SDKDIR)/FunSDK -I $(SDKDIR) $(PCIEPROXY_LIB_FLAGS)
+PCIEPROXY_FLAGS = -I $(SDKDIR)/FunSDK -I $(SDKDIR) $(PCIEPROXY_LIB_FLAGS) -I $(SDKDIR)/FunSDK/funosrt/include
 
 BUILD_DIR := build/$(ARCH)
 

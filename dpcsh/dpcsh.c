@@ -40,7 +40,7 @@
 #include <FunOS/services/commander/fun_commander_basic_commands.h>
 #include <FunOS/utils/threaded/fun_malloc_threaded.h>
 #include <FunOS/utils/common/base64.h>
-#include <FunOS/platform/include/platform/utils_platform.h>
+#include <FunOS/platform/utils_platform.h>
 
 #define FUNOS_SOCKET	"/tmp/funos-dpc.sock"      /* default FunOS socket */
 #define PROXY_SOCKET      "/tmp/dpc.sock" /* default unix proxy name */
