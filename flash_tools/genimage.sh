@@ -187,6 +187,7 @@ if [ $EMULATION == 0 ]; then
 	python3 $WORKSPACE/FunSDK/bin/flash_tools/generate_flash.py --config-type json \
 		--source-dir $SBP_INSTALL_DIR \
 		--source-dir $WORKSPACE/FunSDK/FunSDK/dpu_eepr \
+		--source-dir $WORKSPACE/FunSDK/FunSDK/sbpfw/roms \
 		--fail-on-error \
 		--chip $CHIP \
 		$WORKSPACE/FunSDK/bin/flash_tools/qspi_config_fungible.json \
@@ -208,6 +209,7 @@ else
 	python3 $WORKSPACE/FunSDK/bin/flash_tools/generate_flash.py --config-type json \
 		--source-dir $SBP_INSTALL_DIR \
 		--source-dir $WORKSPACE/FunSDK/FunSDK/dpu_eepr \
+		--source-dir $WORKSPACE/FunSDK/FunSDK/sbpfw/roms \
 		--enroll-cert ${WORKSPACE}/enroll_cert.bin \
 		--fail-on-error \
 		--chip $CHIP \

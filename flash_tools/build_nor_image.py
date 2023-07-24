@@ -110,8 +110,7 @@ def generate_dynamic_config(chip, eeprom):
     return json.dumps(top_dir, indent=4).encode('ascii')
 
 
-def generate_nor_image(args, script_directory,
-                       images_directory, eeprom_directory):
+def generate_nor_image(args, script_directory, images_directory, *dirs):
     ''' create the NOR image in images_directory with the arguments supplied '''
     #  fixed arguments
     run_args = ["python3",
@@ -119,9 +118,9 @@ def generate_nor_image(args, script_directory,
                 "--fail-on-error",
                 "--chip", args.chip,
                 "--config-type", "json",
-                "--source-dir", images_directory,
-                "--source-dir", eeprom_directory,
                 "--out-config", CONFIG_JSON]
+    for d in dirs:
+        run_args.extend(['--source-dir', d])
 
     # optional arguments
     if args.version:
@@ -442,6 +441,8 @@ def main():
     script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
     eeproms_dir = os.path.join(os.environ['WORKSPACE'],
                                'FunSDK/FunSDK/dpu_eepr')
+    sbus_roms_dir = os.path.join(os.environ['WORKSPACE'],
+                               'FunSDK/FunSDK/sbpfw/roms')
 
     args = sanitize_args(parse_args(), eeproms_dir)
 
@@ -467,7 +468,7 @@ def main():
                                   None if args.sign_all_eeproms else args.eeprom)
 
     # now generate a NOR image
-    generate_nor_image(args, script_dir, built_images_dir, eeproms_dir)
+    generate_nor_image(args, script_dir, built_images_dir, eeproms_dir, sbus_roms_dir)
 
     print("*** Images in {0} ***".format(built_images_dir))
 
