@@ -117,10 +117,26 @@ def process_query():
 
     all_bootsteps = get_bootstep_list(commit_val)
 
+    # listing
+    if bootstep == "all":
+        send_response_body(json.dumps(all_bootsteps, sort_keys=True, indent=4))
+        return
+
+    #enrollment client -> CSV list of boot steps: ROM or PUF-ROM
+    if bootstep == "enrollment":
+        PUF_INIT_RE = "BOOT_STEP_?\w*_PUF_INIT"
+        response_body = ",".join([f"{e[0]:#x}" for e in all_bootsteps
+                                  if re.match(PUF_INIT_RE, e[1])])
+        send_response_body(response_body)
+        return
+
+    # debug a crash -> decode bootstep
     if bootstep:
         interactive_boot_step(all_bootsteps, int(bootstep, base=0))
         return
 
+    # old, obsolete enrollment client doesn't send a boot step
+    # try to be nice: assuming old version of SBPfirmware too
     for e in all_bootsteps:
         if e[1] == 'BOOT_STEP_PUF_INIT':
             send_response_body(f"{e[0]:#x}")
