@@ -14,8 +14,9 @@ import re
 import bisect
 import cgi
 import traceback
-import requests
 import json
+import requests
+
 
 from common import (
     log,
@@ -23,29 +24,30 @@ from common import (
 )
 
 def parse_version(version):
+    ''' extract git commit from version string in Challenge Status'''
     VER_RE = r'(bld_(\d+))*-*([0-9a-fA-F]+)*'
     m = re.match(VER_RE, version)
     if not m:
-       raise ValueError("Invalid version format")
+        raise ValueError("Invalid version format")
     return m[2], m[3]
 
 
 def interactive_boot_step(bootsteps, step):
+    ''' boot step interactive decoder: returns "name" of boot step '''
     boot_step_nums = [v[0] for v in bootsteps]
     found_pos = bisect.bisect_right(boot_step_nums, step)
     if found_pos == 0:
-        send_response_body(f"Invalid boot step: {step}")
-        return
+        return f"Invalid boot step: {step}"
 
     found_boot_step = bootsteps[found_pos-1]
     diff = step - found_boot_step[0]
-    send_response_body(f"boot step {step}({step:#x}) is "
-        f"{found_boot_step[1]} {found_boot_step[0]}({found_boot_step[0]:#x})"
-        f" + {diff}")
+    return (f"boot step {step}({step:#x}) is "
+            f"{found_boot_step[1]} {found_boot_step[0]}({found_boot_step[0]:#x})"
+            f" + {diff}")
 
 
 def process_bootsteps_header(h):
-    # old SBP code - bootsteps are defined as CPP Macros
+    ''' old SBP code - bootsteps are defined as CPP Macros '''
     boot_steps = []
     BOOT_STEP_RE = re.compile(r'#\s*define\s+(BOOT_STEP_\w+)\s+(.*)$')
 
@@ -58,7 +60,7 @@ def process_bootsteps_header(h):
 
 
 def process_bootsteps_json(s):
-    # new SBP code - bootsteps are defined in interface json
+    ''' new SBP code - bootsteps are defined in interface json file '''
     bootsteps = json.loads(s)
 
     # depending on the SBP build version, the json may be present
@@ -74,11 +76,14 @@ def process_bootsteps_json(s):
 
 # list of (uri, parser) pairs, ordered in the preference order
 bootsteps_uris = (
-    ('https://raw.githubusercontent.com/fungible-inc/SBPFirmware/%s/software/esec/esec_interface.json', process_bootsteps_json),
-    ('https://raw.githubusercontent.com/fungible-inc/SBPFirmware/%s/software/esec/libs/common/eSecure_secureboot.h', process_bootsteps_header)
+    ('https://raw.githubusercontent.com/fungible-inc/SBPFirmware/%s/software/esec/esec_interface.json',
+     process_bootsteps_json),
+    ('https://raw.githubusercontent.com/fungible-inc/SBPFirmware/%s/software/esec/libs/common/eSecure_secureboot.h',
+     process_bootsteps_header)
 )
 
 def get_bootstep_list(version):
+    ''' retrieve and parse the list of boot steps from git commit '''
     with open('/etc/github_auth') as f:
         lines = f.readlines()
 
@@ -88,7 +93,9 @@ def get_bootstep_list(version):
     errors = [ f"Commit {version}" ]
 
     for (uri,handler) in bootsteps_uris:
-        r = requests.get(uri % version, auth=(github_user, github_token))
+        r = requests.get(uri % version,
+                         auth=(github_user, github_token),
+                         timeout=60)
         if r.status_code != 200:
             errors.append(f"uri:...{uri[-15:]}: github http err: {r.status_code}")
             # try next method
@@ -103,6 +110,8 @@ def get_bootstep_list(version):
 
 
 def process_query():
+    ''' process the query. Returns either a single line of text (text/plain)
+    or a CSV content (multiple values, text/csv) '''
     form = cgi.FieldStorage()
     version = form.getvalue("version", None)
     # bootstep is optional -- user interactive
@@ -119,57 +128,53 @@ def process_query():
 
     # listing
     if bootstep == "all":
-        send_response_body(json.dumps(all_bootsteps, sort_keys=True, indent=4))
-        return
+        response_body= "\n".join(f"{e[0]:#x},{e[1]}" for e in all_bootsteps)
+        return "csv", response_body
 
     #enrollment client -> CSV list of boot steps: ROM or PUF-ROM
     if bootstep == "enrollment":
-        PUF_INIT_RE = "BOOT_STEP_?\w*_PUF_INIT"
+        PUF_INIT_RE = r"BOOT_STEP_?\w*_PUF_INIT"
         response_body = ",".join([f"{e[0]:#x}" for e in all_bootsteps
                                   if re.match(PUF_INIT_RE, e[1])])
-        send_response_body(response_body)
-        return
+        return "csv", response_body
 
     # debug a crash -> decode bootstep
     if bootstep:
-        interactive_boot_step(all_bootsteps, int(bootstep, base=0))
-        return
+        return "plain", interactive_boot_step(all_bootsteps,
+                                              int(bootstep, base=0))
 
     # old, obsolete enrollment client doesn't send a boot step
     # try to be nice: assuming old version of SBPfirmware too
     for e in all_bootsteps:
         if e[1] == 'BOOT_STEP_PUF_INIT':
-            send_response_body(f"{e[0]:#x}")
-            return
+            return "plain", f"{e[0]:#x}"
 
     raise ValueError("Could not find boot step in file")
 
 
-
-
 def main_program():
-    # our content is always text/plain
-    print("Content-type: text/plain")
     try:
         # get the request
         method = os.environ["REQUEST_METHOD"]
         if method != "GET":
-            raise ValueError("Invalid request method %s" % method)
+            raise ValueError(f"Invalid request method {method}")
 
-        process_query()
+        text_type, body = process_query()
+        print(f"Content-type: text/{text_type}")
+        send_response_body(body)
 
     # key errors (missing form entries) as well as
     # value errors are translated as 400 Bad Request
     except (ValueError, KeyError) as err:
         # Log
-        log("Exception: %s" % err)
+        log(f"Exception: {err}")
         # Response
         print("Status: 400 Bad Request\n")
 
         # all other errors are reported as 500 Internal Server Error
     except Exception as err:
         # Log
-        log("Exception: %s" % err)
+        log(f"Exception: {err}")
         traceback.print_exc()
         # Response
         print("Status: 500 Internal Server Error\n")
