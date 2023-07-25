@@ -427,8 +427,13 @@ def discover_dpu():
     except FileNotFoundError:
         pass
 
-    dpu = dpc.execute("peek", ["config/processor_info/Model"])
-    return dpu.lower()
+    try:
+        dpu = dpc.execute("peek", ["config/processor_info/Model"])
+        return dpu.lower()
+    except:
+        pass
+
+    return "UNKNOWN"
 
 def main():
     tmpws = None
