@@ -136,6 +136,8 @@ def main_program():
 
     print("Test completed on server %s with %d errors" % (options.server, errors))
 
+    return errors
 
 if __name__=="__main__":
-    main_program()
+    errs = main_program()
+    exit(errs)
