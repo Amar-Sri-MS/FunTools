@@ -741,9 +741,11 @@ class Challenge:
 
 SERVER_URL_PRE = b"https://f1reg.fungible.com/cgi-bin/"
 
-def get_expected_boot_step(version):
+def get_expected_boot_steps(version):
 
-    url = SERVER_URL_PRE + b"enrollment_boot_step.cgi?version=" + version
+    url = SERVER_URL_PRE + \
+        b"enrollment_boot_step.cgi?bootstep=enrollment&version=" + \
+        version
     response = requests.get(url, timeout=10)
 
     if response.status_code != requests.codes.ok:
@@ -753,8 +755,9 @@ def get_expected_boot_step(version):
                         response.reason)
         return None
 
-    boot_step_val = int(response.text,0)
-    return boot_step_val
+    # CSV values: 0x,0x,....
+    boot_step_vals=[int(val,0) for val in response.text.split(",")]
+    return boot_step_vals
 
 def generate_enrollment_cert(tbs_cert):
 
@@ -855,22 +858,22 @@ def main():
     logging.info('Connected to challenge interface')
     # verify we are in the correct step
     boot_step, version = challenge.get_boot_step_and_version()
-    expected_boot_step = get_expected_boot_step(version)
+    expected_boot_steps = get_expected_boot_steps(version)
 
-    if expected_boot_step is None:
+    if expected_boot_steps is None:
         logging.warning("Unable to check for boot step (experimental version)\n"\
                         "Trying anyway")
     else:
-        if boot_step > expected_boot_step:
+        if boot_step > max(expected_boot_steps):
             logging.error("Enrollment not needed: chip is past the boot stage:"\
                           "0x%X > 0x%X",
-                          boot_step, expected_boot_step)
+                          boot_step, max(expected_boot_steps))
             return False
 
-        if boot_step < expected_boot_step:
+        if boot_step < min(expected_boot_steps):
             logging.error("Enrollment not possible: chip is stuck at an earlier "\
                           "boot stage: 0x%X < 0x%X",
-                          boot_step, expected_boot_step)
+                          boot_step, min(expected_boot_steps))
             return False
 
 
