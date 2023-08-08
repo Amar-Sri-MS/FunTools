@@ -90,11 +90,11 @@ static_assert(sizeof(struct {{struct.name}}) == {{ (struct.BitWidth() / 8) | int
 /* Offset of field "{{f.name}}" in packed field "{{field.name}}" */
 #define {{struct.name|as_macro}}_{{f.name|as_macro}}_S {{f.shift()}}
 
-/* Mask of field "{{f.name}}" in packed field "{{field.name}}" 
+/* Mask of field "{{f.name}}" in packed field "{{field.name}}"
    after shift. */
 #define {{struct.name|as_macro}}_{{f.name|as_macro}}_M {{f.mask}}
 
-/* Shifts a value to the location to be inserted in field {{f.name}} 
+/* Shifts a value to the location to be inserted in field {{f.name}}
  * inside packed field {{field.name}}.
 */
 #define {{struct.name|as_macro}}_{{f.name|as_macro}}_P(x) (({{field.type | as_cast}} x) << {{struct.name|as_macro}}_{{f.name|as_macro}}_S)
@@ -180,7 +180,7 @@ extern const char *{{struct.name}}_json_schema();
  * if it'll be useful for someone.
  */
 
-/* Swaps the endianness of the structure {{struct.name}} in memory. 
+/* Swaps the endianness of the structure {{struct.name}} in memory.
  * This function is a no-op if __DPU_BYTEORDER_BIG matches the current
  * endianness of the processor.
  *  Arguments:
@@ -218,8 +218,10 @@ The body of the header.
 #define __{{output_base|as_macro}}_H__
 
 // TODO(bowdidge): Consider removing init functions with no arguments.
+#if !defined(_WIN32)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
+#endif
 
 {% if generate_json %}
 #include <stdint.h> /* For basic integer types. */
@@ -243,7 +245,9 @@ The body of the header.
 
 {% endfor %}
 
+#if !defined(_WIN32)
 #pragma GCC diagnostic pop
+#endif
 
 #endif // __{{output_base|as_macro}}_H__
 
