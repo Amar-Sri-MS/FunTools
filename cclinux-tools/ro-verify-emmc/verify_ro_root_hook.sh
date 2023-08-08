@@ -9,7 +9,7 @@ for delay in `seq 1 30`; do
     ;;
   IN_PROGRESS )
     echo "rootfs verification still in progress, waiting ... ($delay/30)"
-    /usr/bin/dpcsh --pcie_nvme_sock=/dev/nvme0 -Q uboot boot { "in_progress":true } >/dev/null
+    /usr/bin/dpcsh -Q uboot boot { "in_progress":true } >/dev/null
     sleep 10
     ;;
   FAIL )
