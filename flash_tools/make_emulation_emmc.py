@@ -46,17 +46,9 @@ PARTITION_OFFSET = 1 * GB
 # the second partition table
 FUNOS_OFFSET = 33 * MB
 
-# Similarily to how FunOS is stored, linux is stored as raw data blob at an offset
-# from the beginning of eMMC memory (or second partition table).
-LINUX_OFFSET = 128 * MB
-
 # Similarily to how FunOS is stored, config blob is stored as raw data blob at an offset
 # from the beginning of eMMC memory (or second partition table).
 CCFG_OFFSET = PARTITION_OFFSET - 1 * MB
-
-# LINUX_LOAD_ADDR specifies where the linux image should start in RAM. This memory
-# block will be mapped into the VZ Guest
-LINUX_LOAD_ADDR = 0x9000000010100000
 
 # see eSecure_rsa_structs.h::fw_fun_header_t for a description of
 # the signature structure format. Signing info is always prepended to
@@ -147,7 +139,7 @@ def crc32(filename):
     return res & 0xffffffff
 
 
-def gen_boot_script(filename, funos_start_blk, ccfg_start_blk, linux_start_blk=-1):
+def gen_boot_script(filename, funos_start_blk, ccfg_start_blk):
     """Generate a u-boot boot script
 
     This is the default boot script to be loaded by u-boot.
@@ -170,20 +162,6 @@ def gen_boot_script(filename, funos_start_blk, ccfg_start_blk, linux_start_blk=-
                             'setexpr mmcstart ${mmcpart} - 1; else ' \
                             'setexpr mmcstart 0; ' \
                       'fi\n')
-
-        if linux_start_blk >= 0:
-            load_offset = FUN_SIGNATURE_SIZE if g.signed else 0
-            outfile.write('setexpr linux_mmcstart ${{mmcstart}} * 0x{offset:x}\n'.format(
-                    offset=PARTITION_OFFSET/BLOCK_SIZE))
-            outfile.write('setexpr linux_mmcstart ${{linux_mmcstart}} + 0x{mmc_start_blk:x}\n'.format(
-                    mmc_start_blk=linux_start_blk))
-            outfile.write('mmc read 0x{load_addr:x} ${{linux_mmcstart}} 0x{load_size_blk:x};\n'.format(
-                    load_addr=LINUX_LOAD_ADDR - load_offset,
-                    load_size_blk=filesize(g.linux) / BLOCK_SIZE))
-            if g.signed:
-                outfile.write('authfw 0x{load_addr:x} {load_size:x};\n'.format(
-                    load_addr=LINUX_LOAD_ADDR - load_offset,
-                    load_size=filesize(g.linux)))
 
         outfile.write('setexpr funos_mmcstart ${{mmcstart}} * 0x{offset:x}\n'.format(
                 offset=int(PARTITION_OFFSET/BLOCK_SIZE)))
@@ -288,7 +266,6 @@ def run():
         '-o', '--outdir', help='Output directory', required=True)
     parser.add_argument('-f', '--appfile',
                         help='Application file', required=True)
-    parser.add_argument('--linux', help='Path to linux image', metavar='VMLINUX')
     parser.add_argument(
         '-c', '--crc', help='Add crc check step', action='store_true')
     parser.add_argument(
@@ -312,7 +289,6 @@ def run():
 
     parser.parse_args(namespace=g)
 
-    linux_start_blk = (LINUX_OFFSET / BLOCK_SIZE) if g.linux else -1
     # there are 2 code paths when we want to generate bootscript
     # 1) with bootscript-only the bootscript is generated, it is later signed
     #    and passed to this script as fsfile together with filesystem flag
@@ -322,8 +298,7 @@ def run():
     #    and continue execution
     if g.bootscript_only or (g.fsfile is None and not g.filesystem):
         gen_boot_script(os.path.join(g.outdir, 'bootloader.scr'), int(FUNOS_OFFSET / BLOCK_SIZE),
-                    int(CCFG_OFFSET / BLOCK_SIZE),
-                    linux_start_blk)
+                    int(CCFG_OFFSET / BLOCK_SIZE))
         if g.bootscript_only:
             return
 
@@ -339,13 +314,6 @@ def run():
         fs = gen_fs(g.fsfile)
         pad_file(fs, outfile_bin, FUNOS_OFFSET)
         merge_file(g.work_file, outfile_bin)
-        if g.linux:
-            os.rename(outfile_bin, outfile_bin + ".tmp")
-            pad_file(outfile_bin + ".tmp", outfile_bin, LINUX_OFFSET)
-            os.remove(outfile_bin + ".tmp")
-            pad_file(g.linux, g.linux + ".tmp", BLOCK_SIZE)
-            merge_file(g.linux + ".tmp", outfile_bin)
-            os.remove(g.linux + ".tmp")
         files.append(outfile_bin)
     else:
         files.append(os.path.join(g.outdir, 'boot.pad.img'))
