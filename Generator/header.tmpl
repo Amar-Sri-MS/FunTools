@@ -218,7 +218,10 @@ The body of the header.
 #define __{{output_base|as_macro}}_H__
 
 // TODO(bowdidge): Consider removing init functions with no arguments.
-#if !defined(_WIN32)
+#if defined(_WIN32)
+#pragma warning( push )
+#pragma warning( disable : 4100 )
+#else
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #endif
@@ -245,7 +248,9 @@ The body of the header.
 
 {% endfor %}
 
-#if !defined(_WIN32)
+#if defined(_WIN32)
+#pragma warning( pop )
+#else
 #pragma GCC diagnostic pop
 #endif
 
