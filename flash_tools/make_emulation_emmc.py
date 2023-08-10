@@ -151,7 +151,6 @@ def gen_boot_script(filename, funos_start_blk, ccfg_start_blk):
     1st full sector of the memory (512 bytes)
     """
     boot_img = os.path.join(g.outdir, 'boot.img')
-    boot_pad_img = os.path.join(g.outdir, 'boot.pad.img')
 
     def filesize(f):
         hdr = FUN_SIGNATURE_SIZE if g.signed else 0
@@ -203,7 +202,6 @@ def gen_boot_script(filename, funos_start_blk, ccfg_start_blk):
            '-d', filename,
            boot_img]
     subprocess.call(cmd)
-    pad_file(boot_img, boot_pad_img, BLOCK_SIZE)
 
 
 def gen_fs(files):
@@ -269,7 +267,7 @@ def run():
     parser.add_argument(
         '-c', '--crc', help='Add crc check step', action='store_true')
     parser.add_argument(
-        '--filesystem', help='Generate filesystem for eMMC', action='store_true')
+        '--filesystem', help='[ignored]', action='store_true')
     parser.add_argument(
         '--hex', help='Generate output in hex format (for Palladium)', action='store_true')
     parser.add_argument(
@@ -296,7 +294,7 @@ def run():
     #    invoked only once and the boot.img is immediately embedded in the
     #    filesystem (see gen_fs()), so in this scenario generate the script
     #    and continue execution
-    if g.bootscript_only or (g.fsfile is None and not g.filesystem):
+    if g.bootscript_only:
         gen_boot_script(os.path.join(g.outdir, 'bootloader.scr'), int(FUNOS_OFFSET / BLOCK_SIZE),
                     int(CCFG_OFFSET / BLOCK_SIZE))
         if g.bootscript_only:
@@ -310,14 +308,11 @@ def run():
     outfile_bin = os.path.join(g.outdir, 'emmc_image.bin')
 
     files = []
-    if g.filesystem:
-        fs = gen_fs(g.fsfile)
-        pad_file(fs, outfile_bin, FUNOS_OFFSET)
-        merge_file(g.work_file, outfile_bin)
-        files.append(outfile_bin)
-    else:
-        files.append(os.path.join(g.outdir, 'boot.pad.img'))
-        files.append(g.work_file)
+
+    fs = gen_fs(g.fsfile)
+    pad_file(fs, outfile_bin, FUNOS_OFFSET)
+    merge_file(g.work_file, outfile_bin)
+    files.append(outfile_bin)
 
     outfile_mmc0 = os.path.join(g.outdir, 'mmc0_image.bin')
     outfile_mmc1 = os.path.join(g.outdir, 'mmc1_image.bin')
