@@ -181,7 +181,28 @@ def gen_boot_script(filename, funos_start_blk, ccfg_start_blk):
                 load_addr=LOAD_ADDR,
                 load_size=filesize(g.appfile)))
         outfile.write('elf_get_extent ${loadaddr};\n')
-        outfile.write('mmc dev; mmc read ${elf_extent} ${ccfg_mmcstart} 0; loadblob ${elf_extent};\n')
+        blob_mmc_addr = int(filesize(g.appfile) / BLOCK_SIZE) # relative to funos mmc addr
+        blob_addr = 0 # relative to elf_extent
+        for blob in g.blob:
+            # for each of the blobs calculate mmc and load location
+            # all blobs are stored sector-aligned after funos directly in emmc
+            # and loaded into RAM directly after funos runtime space
+            # This is somewhat limited by the amount of RAM before u-boot runtime,
+            # so loading a few hundred MBs of blobs would not work and will
+            # result in uboot crashing ... alternatively we could load in a higher
+            # memory region, but then we'll have more fragmentation in memory.
+            # Something to consider if needed in the future.
+            outfile.write('setexpr blob_addr ${{elf_extent}} + 0x{blob_addr:x}\n'.format(
+                blob_addr=blob_addr))
+            outfile.write('setexpr blob_mmcstart ${{funos_mmcstart}} + 0x{blob_mmc_addr:x}\n'.format(
+                blob_mmc_addr=blob_mmc_addr))
+            outfile.write('mmc dev; mmc read ${{blob_addr}} ${{blob_mmcstart}} 0; loadblob ${{blob_addr}};\n'.format())
+            blob_mmc_addr += int(filesize(blob) / BLOCK_SIZE)
+            blob_addr += filesize(blob)
+
+        outfile.write('setexpr ccfg_addr ${{elf_extent}} + 0x{blob_addr:x}\n'.format(
+                blob_addr=blob_addr))
+        outfile.write('mmc dev; mmc read ${ccfg_addr} ${ccfg_mmcstart} 0; loadblob ${ccfg_addr};\n')
         outfile.write('setenv bss_clear 0;\n')
         outfile.write('bootelf -p ${loadaddr};\n')
 
@@ -284,8 +305,17 @@ def run():
         '--fsfile', help='File(s) to put in the filesystem', action='append')
     parser.add_argument(
         '--bootscript-only', help='Only generate system boot script', action='store_true')
+    parser.add_argument(
+        '--blob', default=[], help='Signed blobs to put in emmc', action='append')
 
     parser.parse_args(namespace=g)
+
+    if len(g.blob) > 3:
+        # This is a limitation of u-boot at the moment. We can remove this check
+        # when u-boot is fixed to support more easily. On the other hand we should
+        # not really need to embed more files in emmc, so that should not be
+        # a major problem
+        parser.error("At most 3 blobs can be provided")
 
     # there are 2 code paths when we want to generate bootscript
     # 1) with bootscript-only the bootscript is generated, it is later signed
@@ -313,6 +343,11 @@ def run():
     pad_file(fs, outfile_bin, FUNOS_OFFSET)
     merge_file(g.work_file, outfile_bin)
     files.append(outfile_bin)
+
+    for b in g.blob:
+        blob_padded = os.path.join(g.outdir, os.path.basename(b) + '.pad')
+        pad_file(b, blob_padded, BLOCK_SIZE)
+        merge_file(blob_padded, outfile_bin)
 
     outfile_mmc0 = os.path.join(g.outdir, 'mmc0_image.bin')
     outfile_mmc1 = os.path.join(g.outdir, 'mmc1_image.bin')
