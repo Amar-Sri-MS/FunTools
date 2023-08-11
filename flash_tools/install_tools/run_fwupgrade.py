@@ -165,7 +165,7 @@ def prepare(args):
         return prepare_offline(args)
 
     bundle_funos_type = f'{args.funos_type}-' if args.funos_type else ''
-    SDK_FLASH_PATH = '/{}/funsdk/{}/Linux'.format(args.sdk_devline, args.version)
+    SDK_FLASH_PATH = '/{}/funsdk/{}'.format(args.sdk_devline, args.version)
     release_file = '{}{}_dev_signed.tgz'.format(bundle_funos_type, args.chip)
 
     if args.image_url == BASE_URL:
