@@ -12,7 +12,7 @@ MACHINE?=fs-bmc
 
 BUILD_DIR:=build/$(MACHINE)
 INSTALL_TARGET:=$(SDK_INSTALL_DIR)/bin/i2c_dbg/$(MACHINE)
-
+SO_SRCS_TAR:=i2c_dbg_so_src.tgz
 
 include $(MACHINE).mk
 
@@ -46,6 +46,12 @@ clean:
 $(INSTALL_TARGET):
 	mkdir -p $@
 
-install: all | $(INSTALL_TARGET)
+$(SO_SRCS_TAR):
+	tar -czf $(SO_SRCS_TAR) --exclude bmc_sbp_chal.py \
+	`git ls-tree -r HEAD --name-only`
+
+
+install: $(SO_SRCS_TAR) all | $(INSTALL_TARGET)
 	install $(BUILD_DIR)/i2c_dbg.so $(INSTALL_TARGET)
 	install bmc_sbp_chal.py $(INSTALL_TARGET)
+	install $(SO_SRCS_TAR)  $(INSTALL_TARGET)/..
