@@ -68,6 +68,16 @@ FVHT_LIST_CONFIG_OVERRIDE="""
 }}
 """
 
+CSRR_CONFIG_OVERRIDE="""
+{{ "signed_images": {{
+     "csr_override.bjson.signed": {{
+       "source": "csr_override_{chip}.bjson"
+        }}
+    }}
+}}
+"""
+
+
 def localdir(fname):
     return "./" + fname
 
@@ -121,6 +131,7 @@ def main():
     parser.add_argument('--dev-image', action='store_true', help='Create a development image installer')
     parser.add_argument('--extra-funos-suffix', action='append', help='Extra funos elf suffix to use')
     parser.add_argument('--funos-type', help='FunOS build type (storage, core etc.)')
+    parser.add_argument('--with-csrreplay', action='store_true', help='Include csr-replay blob')
 
     args = parser.parse_args()
 
@@ -155,6 +166,7 @@ def main():
             args.config = [
                 'bin/flash_tools/qspi_config_fungible.json',
                 'bin/flash_tools/mmc_config_fungible.json',
+                'bin/flash_tools/mmc_blobs_fungible.json',
                 'bin/flash_tools/key_bag_config.json',
                 'FunSDK/nvdimm_fw/nvdimm_fw_config.json' ]
         else:
@@ -175,6 +187,10 @@ def main():
         gf.merge_configs(config, json.loads(HOST_FIRMWARE_CONFIG_OVERRIDE), only_if_present=True)
         gf.merge_configs(config, json.loads(FUNOS_CONFIG_OVERRIDE.format(funos_appname=funos_appname)), only_if_present=True)
         gf.merge_configs(config, json.loads(EEPROM_LIST_CONFIG_OVERRIDE.format(eeprom_list=eeprom_list)), only_if_present=True)
+        gf.merge_configs(config, json.loads(CSRR_CONFIG_OVERRIDE.format(chip=args.chip)), only_if_present=True)
+
+        if not args.with_csrreplay:
+            del config['signed_images']['csr_override.bjson.signed']
 
         fvht_config = {}
         fvht_list_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
@@ -224,6 +240,7 @@ def main():
                 "FunSDK/dpu_eepr",
                 "FunSDK/nvdimm_fw",
                 "feature_sets",
+                "FunSDK/config/pipeline"
                 ]
         sdkpaths = [os.path.join(args.sdkdir, path) for path in paths]
 
@@ -304,6 +321,9 @@ def main():
                     '--filesystem',
                     '--signed',
                     '--bootscript-only']
+            if args.with_csrreplay:
+                cmd.extend(['--blob', 'csr_override_{chip}.bjson'.format(chip=args.chip)])
+
             subprocess.check_call(cmd)
 
         if not args.dev_image:
@@ -355,6 +375,9 @@ def main():
                 '--filesystem',
                 '--signed',
                 '--bootscript-only']
+
+        if args.with_csrreplay:
+            cmd.extend(['--blob', 'csr_override_{chip}.bjson'.format(chip=args.chip)])
         subprocess.check_call(cmd)
         os.chdir(curdir)
 
@@ -382,6 +405,8 @@ def main():
                 '--fsfile', 'boot.img.signed',
                 '--filesystem',
                 '--signed' ]
+        if args.with_csrreplay:
+                cmd.extend(['--blob', 'csr_override.bjson.signed'])
         subprocess.check_call(cmd)
 
         if not args.dev_image:
