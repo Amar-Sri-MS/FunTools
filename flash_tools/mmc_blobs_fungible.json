@@ -1,0 +1,15 @@
+{
+    "signed_images": {
+        "csr_override.bjson.signed": {
+            "source": "INVALID_TO_OVERRIDE",
+            "version": 1,
+            "fourcc": "csrr",
+            "cert": "",
+            "customer_cert": "",
+            "key_index": 0,
+            "description": "",
+            "pad": 512,
+            "no_export": true
+        }
+    }
+}
