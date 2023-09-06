@@ -80,6 +80,7 @@ SPLIT_SIZE = 2*1024*1024
 EXIT_CODE_OK = 0
 EXIT_CODE_ERROR = 1
 EXIT_CODE_DOWNGRADE_ATTEMPT = 2
+EXIT_CODE_UPGRADE_ATTEMPT = 3
 
 class UpgradeStatus(Enum):
     STARTED = 0
@@ -93,6 +94,9 @@ class UpgradeException(Exception):
     pass
 
 class DowngradeAttemptException(UpgradeException):
+    pass
+
+class UpgradeAttemptException(UpgradeException):
     pass
 
 class UpgradeFailedException(UpgradeException):
@@ -193,6 +197,16 @@ def _sbpfw_fourccs_fixup(fourccs):
 
     return fourccs
 
+def check_upgrade_compatibility(cur, to, fourcc, status):
+    # bcfg fourcc is not recognized by pufr and frmw versions older to 20738
+    if (fourcc == 'frmw' or fourcc == 'pufr' or fourcc == 'sbpf') and\
+        cur < 20738 and to > 20738  and status in ['active', 'unknown']:
+        print(f"\nIncompatible {fourcc} upgrade({cur} -> {to}) status: {status}!"\
+               " Upgrade to version 20738 before upgrading to version higher than 20738.")
+        return False;
+
+    return True
+
 
 def run_upgrade(args, release_images):
     """
@@ -244,6 +258,9 @@ def run_upgrade(args, release_images):
                 if fw['fourcc'] == 'mmc1' and fw['version'] < 11500 and \
                     fw.get('status','active') in ['active', 'unknown']:
                     release_images_fourccs = release_images_fourccs - ASYNC_ONLY_IMAGES
+
+                if not check_upgrade_compatibility(fw['version'], v, fw['fourcc'], fw.get('status','active')):
+                    raise UpgradeAttemptException()
 
                 # firmwares older than 9531 do not recognize kbag or husc as
                 # valid identifiers, so do not attempt to program these images, as this
@@ -307,6 +324,8 @@ def run_upgrade(args, release_images):
     else:
         for fourcc in set(args.upgrade):
             for fw in fwinfo['firmwares']:
+                if not check_upgrade_compatibility(fw['version'], v, fourcc, fw.get('status','active')):
+                    raise UpgradeAttemptException()
                 if fourcc_eq(fw['fourcc'], fourcc):
                     if fw['version'] < v or fw['fourcc'] in IGNORE_VERSION_IMAGES:
                         dev_upgrade_fourccs.append(fourcc)
@@ -533,10 +552,11 @@ def main():
         if args.check_image_only:
             i = { k:release_images.get(k) for k in args.upgrade if release_images.get(k) }
             sys.exit(EXIT_CODE_OK if len(i) == len(args.upgrade) else EXIT_CODE_ERROR)
-
         run_upgrade(args, release_images)
     except DowngradeAttemptException:
         sys.exit(EXIT_CODE_DOWNGRADE_ATTEMPT)
+    except UpgradeAttemptException:
+        sys.exit(EXIT_CODE_UPGRADE_ATTEMPT)
     except Exception as e:
         print(f"Upgrade error ... {e}")
         traceback.print_exc()

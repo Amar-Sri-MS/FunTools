@@ -41,6 +41,23 @@ EEPROM_CONFIG_OVERRIDE="""
 }
 """
 
+BOARD_CFG_PER_CHIP_SKU_DEFAULT = {
+	"f1": "f1_dev_board",
+	"f1d1": "fs800v2",
+	"s1": "fc50",
+	"s2": "ds400"
+}
+
+# These are dummy filler configs. Upgrade script picks the right one based on the sku
+BOARD_CONFIG_OVERRIDE="""
+{{ "signed_images": {{
+     "board_cfg.bin": {{
+         "source":"boardcfg_{sku_name}_default"
+         }}
+     }}
+}}
+"""
+
 FUNOS_CONFIG_OVERRIDE="""
 {{ "signed_images": {{
      "funos.signed.bin": {{
@@ -54,6 +71,15 @@ EEPROM_LIST_CONFIG_OVERRIDE="""
 {{ "signed_images": {{
      "eeprom_list": {{
          "source":"@file:{eeprom_list}"
+         }}
+     }}
+}}
+"""
+
+BOARD_CFG_LIST_CONFIG_OVERRIDE="""
+{{ "signed_images": {{
+     "board_cfg_list": {{
+         "source":"@file:{board_cfg_list}"
          }}
      }}
 }}
@@ -192,7 +218,12 @@ def main():
                 gf.merge_configs(config, json.load(f))
 
     eeprom_list = '{}_eeprom_list.json'.format(args.chip)
+    board_cfg_list = 'boardcfg_profile_list.json'
     fvht_list_file = None
+    default_board =  BOARD_CFG_PER_CHIP_SKU_DEFAULT.get(args.chip)
+    if not default_board:
+        print('Unsupported chip: {}!'.format(args.chip))
+        exit(1)
 
     if wanted('prepare') or wanted('sdk-prepare'):
         gf.merge_configs(config, json.loads(EEPROM_CONFIG_OVERRIDE), only_if_present=True)
@@ -200,6 +231,8 @@ def main():
         gf.merge_configs(config, json.loads(FUNOS_CONFIG_OVERRIDE.format(funos_appname=funos_appname)), only_if_present=True)
         gf.merge_configs(config, json.loads(EEPROM_LIST_CONFIG_OVERRIDE.format(eeprom_list=eeprom_list)), only_if_present=True)
         gf.merge_configs(config, json.loads(CSRR_CONFIG_OVERRIDE.format(chip=args.chip)), only_if_present=True)
+        gf.merge_configs(config, json.loads(BOARD_CFG_LIST_CONFIG_OVERRIDE.format(board_cfg_list=board_cfg_list)), only_if_present=True)
+        gf.merge_configs(config, json.loads(BOARD_CONFIG_OVERRIDE.format(sku_name=default_board)), only_if_present=True)
 
         if not args.with_csrreplay:
             try:
@@ -264,6 +297,7 @@ def main():
         paths_chip_specific = [ "FunSDK/u-boot/{chip}",
                 "FunSDK/sbpfw/firmware/chip_{chip}_emu_0",
                 "FunSDK/sbpfw/pufrom/chip_{chip}_emu_0",
+		 "feature_sets/boardcfg/{chip}",
                 ]
         sdkpaths.extend(
             [os.path.join(args.sdkdir, path.format(chip=args.chip)) for path in paths_chip_specific])

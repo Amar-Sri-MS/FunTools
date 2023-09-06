@@ -561,7 +561,8 @@ def main():
     else:
         for config_file in args.config:
             if config_file == '-':
-                merge_configs(config, json.load(sys.stdin))
+                x = json.load(sys.stdin)
+                merge_configs(config, x)
             else:
                 with open(config_file, 'r') as f:
                     merge_configs(config, json.load(f))
@@ -625,7 +626,7 @@ def run(arg_action, arg_enroll_cert = None, *args, **kwargs):
                         new_entries[fname] = new_v
             except:
                 print("Skipping generation of {}, input file {} not found".format(
-                        k, v['source'][len('@file:'):]))
+                    k, v['source'][len('@file:'):]))
 
             delete_entries.append(k)
 

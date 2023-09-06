@@ -187,6 +187,12 @@ else
 				log_msg "This sku \"$host_sku\" is not supported by this bundle"
 				exit 1
 			fi
+			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u bcfg --check-image-only --select-by-image-type "board_cfg_${host_sku}_default"
+			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
+			if [ $EXIT_STATUS -ne 0 ]; then
+				log_msg "This sku \"$host_sku\" is not supported by this bundle"
+				exit 1
+			fi
 		fi
 		./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version latest --force --downgrade
 		RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
@@ -230,7 +236,14 @@ else
 			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u eepr --version latest --force --downgrade --select-by-image-type "$host_sku"
 			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
 
-			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u eepr --version latest --force --downgrade --active --select-by-image-type "$host_sku"
+			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u eepr --version latest --force --downgrade --active --select-by_image-type "$host_sku"
+			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
+
+			log_msg "Downgrading bcfg \"$host_sku\""
+			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u bcfg --version latest --force --downgrade --select-by-image-type "board_cfg_${host_sku}_default"
+			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
+
+			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u bcfg --version latest --force --downgrade --active --select-by-image-type "board_cfg_${host_sku}_default"
 			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
 		fi
 	else
@@ -239,6 +252,13 @@ else
 
 		if [ $EXIT_STATUS -eq 2 ]; then
 			log_msg "Aborting ... downgrade argument required"
+			# exit early here, as this error code means no upgrade
+			# was performed by run_fwupgrade script
+			exit $EXIT_STATUS
+		fi
+
+		if [ $EXIT_STATUS -eq 3 ]; then
+			log_msg "Aborting upgrade!"
 			# exit early here, as this error code means no upgrade
 			# was performed by run_fwupgrade script
 			exit $EXIT_STATUS
@@ -265,13 +285,16 @@ else
 			dpcsh -Q boot_partition clear
 		fi
 
-		# skip eeprom update on sdk bundles, as eepr images are not present
+		# skip eeprom and bcfg update on sdk bundles, as eepr images are not present
 		if [ -n "$host_sku" ] && [ "$SDK_BUNDLE" -eq 0 ]; then
 			log_msg "Updating eepr \"$host_sku\""
 			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u eepr --select-by-image-type "$host_sku"
 			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
-		fi
 
+			log_msg "Updating bcfg \"$host_sku\""
+			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u bcfg --select-by-image-type "board_cfg_${host_sku}_default"
+			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
+		fi
 	fi
 fi
 

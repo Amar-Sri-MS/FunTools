@@ -34,6 +34,11 @@
             "optional": true,
             "index": "0"
         },
+        "BOARDCFG": {
+            "A": "board_cfg.bin",
+            "B": "board_cfg.bin",
+            "index": "200"
+        },
         "HBM_SBUS": {
             "A": "hbm_sbus.bin",
             "B": "hbm_sbus.bin",
@@ -108,10 +113,28 @@
             "customer_cert": "",
             "description": ""
         },
+        "board_cfg.bin": {
+            "source": "",
+            "version": 1,
+            "fourcc": "bcfg",
+            "key": "fpk3",
+            "cert": "",
+            "customer_cert": "",
+            "description": ""
+        },
         "eeprom_list": {
             "source": "@file:eeprom_list.json",
             "version": 1,
             "fourcc": "eepr",
+            "key": "fpk3",
+            "cert": "",
+            "customer_cert": "",
+            "description": ""
+        },
+       "board_cfg_list": {
+            "source": "@file:boardcfg_profile_list.json",
+            "version": 1,
+            "fourcc": "bcfg",
             "key": "fpk3",
             "cert": "",
             "customer_cert": "",
