@@ -190,7 +190,12 @@ def main():
         gf.merge_configs(config, json.loads(CSRR_CONFIG_OVERRIDE.format(chip=args.chip)), only_if_present=True)
 
         if not args.with_csrreplay:
-            del config['signed_images']['csr_override.bjson.signed']
+            try:
+                del config['signed_images']['csr_override.bjson.signed']
+            except:
+                # ignore errors, the csr_override entry might not exist depending
+                # on which input configs were used
+                pass
 
         fvht_config = {}
         fvht_list_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
