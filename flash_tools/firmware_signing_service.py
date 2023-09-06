@@ -11,6 +11,7 @@ import struct
 import binascii
 import hashlib
 import time
+import configparser
 
 import requests
 
@@ -41,7 +42,28 @@ CERT_LEN = 1096
 MAGIC_NUMBER_CERTIFICATE = 0xB1005EA5
 MAGIC_NUMBER_ENROLL_CERT = 0xB1005C1E
 
+
 SIGNING_SERVER_URL = "https://f1reg.fungible.com:4443"
+
+# look for possible override ~/.config/signing.ini
+try:
+    config_path = os.path.join(os.path.expanduser('~'),
+                               '.config',
+                               'signing.ini')
+    with open(config_path) as f:
+        content = "[no_section]\n" + f.read()
+
+    config = configparser.ConfigParser()
+    config.read_string(content)
+    SIGNING_SERVER_URL = config['no_section']['server_url']
+    print(">>> NOTE: overriding signing server url to %s" %
+          SIGNING_SERVER_URL)
+except:
+    pass
+
+
+
+
 SIGNING_SERVICE_URL = SIGNING_SERVER_URL + "/cgi-bin/signing_server.cgi"
 # Certificate files hierarchy:
 #.
