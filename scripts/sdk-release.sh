@@ -181,12 +181,10 @@ signing server to be accessible by the build system.
    . sudo ./signing_server.run
 
 2. Configuring the build system to use the signing server
-   . cd FunSDK
-   . config_sdk_signing_server.sh http://<IP address of signing server>
-   . Examples:
-       . config_sdk_signing_server.sh http://192.168.122.22
-       . config_sdk_signing_server.sh http://localhost
-
+   . Create a '.config/signing.ini' file in your home directory
+   . Add a line 'server_url = URL_OF_SIGNING_SERVER
+   . Example:
+		server_url = http://localhost:8080
 
 Building development bundles
 ============================

@@ -8,38 +8,23 @@ This file explains how to configure the SDK to use another Signing Server.
 
 ## Client configuration
 
-To use another Signing Server instance with the Fungible SDK, use the script `config_sdk_signing_server.sh` to specify the URL (HTTP(S)) of the Signing Server instance.
+To use another Signing Server instance with the Fungible SDK, edit or create the file ```signing.ini`` in the ```.config``` subdirectory of your home directory.
 
-```sh 
-./config_sdk_signing_server.sh <-C /path/to/Fungible_SDK> [SIGNING_SERVER_HTTP_URL]
-```
+Specify the new URL for the server by adding a line in this file:
 
-
-The script should be invoked with the current directory set to the Fungible SDK. If not, use the option `-C` to speficy the location of the Fungible SDK.
+```server_url = [DESIRED_SIGNING_SERVER_HTTP_URL]```
 
 #### Examples:
 
 Using a server installed on the same machine:
 
+
 ```sh
-$ ~/config_sdk_signing_server.sh -C ~/work/FunSDK http://localhost
-Replaced 1 occurrence(s) to "http://localhost"
+server_url = http://localhost
 ```
 
 Using a team server:
 
 ```sh
-$ ~/config_sdk_signing_server.sh -C ~/work/FunSDK https://teamserver.mycompany.com:8080
-Replaced 1 occurrence(s) to "https://teamserver.mycompany.com:8080"
+server_url = https://teamserver.mycompany.com:8080
 ```
-
-Using a team server (current directory is Fungible SDK)
-
-```sh 
-$ ./config_sdk_signing_server.sh https://teamserver.mycompany.com:8080
-Replaced 1 occurrence(s) to "https://teamserver.mycompany.com:8080"
-```
-
-
-#### Note:
-The configuration client can be used multiple times on the same Fungible SDK to change/correct the URL of the Signing Server.
