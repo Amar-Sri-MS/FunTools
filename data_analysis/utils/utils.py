@@ -351,7 +351,10 @@ def gen_per_group_summary_html(
     else:
         description = "all files"
 
-    df_api_group = _df_api.groupby(group, as_index=False).sum()
+    # group by behavior changed in pandas 2.0.0
+    # https://pandas.pydata.org/docs/dev/whatsnew/v2.0.0.html#
+    # DataFrame and DataFrameGroupBy aggregations (e.g. “sum”) with object-dtype columns no longer infer non-object dtypes for their results, explicitly call
+    df_api_group = _df_api.groupby(group, as_index=False)['documented'].sum()
     df_group_proto_count = _df_api.groupby(group, as_index=False)["proto_name"].count()
     # merge proto_name from df_group_proto_count to df_api_group
     df_api_group = pd.merge(df_api_group, df_group_proto_count, on=group)
