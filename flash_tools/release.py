@@ -100,17 +100,20 @@ CHIP_SPECIFIC_FILES = {
 def _rootfs(f, rootfs):
     return '{}.{}'.format(rootfs, f)
 
-def _mfg(f, signed=False):
+def _mfgfilename(f, name, signed=False):
     if signed:
-        return '{}.{}'.format(f, 'mfginstall')
+        return '{}.{}'.format(f, name)
     else:
-        return '{}.{}.{}'.format(f, 'mfginstall', 'unsigned')
+        return '{}.{}.{}'.format(f, name, 'unsigned')
+
+def _mfg(f, signed=False):
+    return _mfgfilename(f, 'mfginstall', signed)
+
+def _mfgnofv(f, signed=False):
+    return _mfgfilename(f, 'nofv.mfginstall', signed)
 
 def _nor(f, signed=False):
-    if signed:
-        return '{}.{}'.format(f, 'norinstall')
-    else:
-        return '{}.{}.{}'.format(f, 'norinstall', 'unsigned')
+    return _mfgfilename(f, 'norinstall', signed)
 
 def main():
     parser = argparse.ArgumentParser()
@@ -296,6 +299,7 @@ def main():
         if wanted('prepare'):
             # these files are not needed in sdk-prepare
             shutil.copy2(funos_appname, _mfg(funos_appname))
+            shutil.copy2(funos_appname, _mfgnofv(funos_appname))
             shutil.copy2(funos_appname, _nor(funos_appname))
 
             for chip_file in chip_specific_files:
@@ -589,23 +593,34 @@ def main():
 
         rootfs, _ = rootfs_files[0]
         mfgxdata = {
+            # fourc : (target, filename)
             'husc' : ('nor', 'hu_sbm_serdes.bin'),
             'hbsb' : ('nor', 'hbm_sbus.bin'),
             'kbag' : ('nor', 'key_bag.bin'),
             'host' : ('nor', 'host_firmware_packed.bin'),
             'sbpf' : ('nor', 'esecure_firmware_all.bin'),
+            'emmc' : ('mmc', 'emmc_image.bin'),
+        }
+
+        mfgxdata_fv = {
+            # fourc : (target, filename)
             'fgpt' : ('mmc', 'fgpt.signed'),
             'fvp1' : ('mmc', 'fvos.signed'),
             'fvp2' : ('mmc', rootfs),
             'fvp4' : ('mmc', _rootfs('fvht.bin', rootfs)),
-            'emmc' : ('mmc', 'emmc_image.bin'),
         }
 
         # that's a bit hacky ... need something better here
         if args.chip == 'f1' or args.chip == 'f1d1':
             mfgxdata['ccfg'] = ('mmc', 'ccfg-no-come.signed.bin')
+            mfgxdata_fv['ccfg'] = ('mmc', 'ccfg-legacy.signed.bin')
         elif args.chip == 's1':
             mfgxdata['ccfg'] = ('mmc', 'ccfg-s1-demo-10g_mpg.signed.bin')
+
+
+        mfgxdata_without_fv = mfgxdata
+        mfgxdata_with_fv = mfgxdata.copy()
+        mfgxdata_with_fv.update(mfgxdata_fv)
 
         mfgxdata_lists = {
             'fw_upgrade_all': 'all',
@@ -613,15 +628,18 @@ def main():
             'fw_upgrade_mmc': 'mmc'
         }
 
-        for fname, target in mfgxdata_lists.items():
-            # generate upgrade lists to be embedded in xdata
-            with open(fname, 'w') as f:
-                for key, (imgtarget, imgfile) in mfgxdata.items():
-                    if target == imgtarget or target == 'all':
-                        f.write("{}\n".format(key))
+        def _gen_xdata_funos(outname_modifier, target=None, with_fv=True):
+            mfgxdata = mfgxdata_with_fv if with_fv else mfgxdata_without_fv
+            outname_suffix = outname_modifier.__name__
+            print("Generating MFG image type {}".format(outname_suffix))
+            for fname, listtarget in mfgxdata_lists.items():
+                # generate upgrade lists to be embedded in xdata
+                with open(fname, 'w') as f:
+                    for key, (imgtarget, imgfile) in mfgxdata.items():
+                        if listtarget == imgtarget or listtarget == 'all':
+                            f.write("{}\n".format(key))
 
-        def _gen_xdata_funos(outname_modifier, target=None):
-            with open('fw_upgrade_xdata', 'w') as f:
+            with open('fw_upgrade_xdata_{}'.format(outname_suffix), 'w') as f:
                 # generate complete xdata list
                 for key, (imgtarget, imgfile) in mfgxdata.items():
                     if not target or imgtarget == target:
@@ -633,28 +651,30 @@ def main():
             cmd = [ localdir('xdata.py'),
                     outname_modifier(funos_appname),
                     'add-file-lists',
-                    'fw_upgrade_xdata' ]
+                    'fw_upgrade_xdata_{}'.format(outname_suffix) ]
             subprocess.call(cmd)
 
-        _gen_xdata_funos(_mfg)
+            # stash xdata lists for debugging
+            stash_dir = 'xdata_{}'.format(outname_suffix)
+            shutil.rmtree(stash_dir, ignore_errors=True)
+            os.mkdir(stash_dir)
+            for fname in mfgxdata_lists:
+                shutil.move(fname, stash_dir)
+
+            # take a copy of all funos default settings for signing
+            # and only override filenames used
+            mfg_app_config = config['signed_images'].get('funos.signed.bin').copy()
+            mfg_app_config['source'] = outname_modifier(funos_appname)
+            config['signed_mfg_images'] = {
+                outname_modifier(funos_appname, signed=True) : mfg_app_config
+            }
+            gf.set_search_paths([os.getcwd()])
+            gf.create_file(outname_modifier(funos_appname, signed=True), section='signed_mfg_images')
+
+
+        _gen_xdata_funos(_mfg, with_fv=True)
+        _gen_xdata_funos(_mfgnofv, with_fv=False)
         _gen_xdata_funos(_nor, 'nor')
-
-        # take a copy of all funos default settings for signing
-        # and only override filenames used
-        mfg_app_config = config['signed_images'].get('funos.signed.bin').copy()
-        mfg_app_config['source'] = _mfg(funos_appname)
-        config['signed_mfg_images'] = {
-            _mfg(funos_appname, signed=True) : mfg_app_config
-        }
-        gf.set_search_paths([os.getcwd()])
-        gf.create_file(_mfg(funos_appname, signed=True), section='signed_mfg_images')
-
-        mfg_app_config['source'] = _nor(funos_appname)
-        config['signed_mfg_images'] = {
-            _nor(funos_appname, signed=True) : mfg_app_config
-        }
-        gf.set_search_paths([os.getcwd()])
-        gf.create_file(_nor(funos_appname, signed=True), section='signed_mfg_images')
 
         os.chdir(curdir)
 
