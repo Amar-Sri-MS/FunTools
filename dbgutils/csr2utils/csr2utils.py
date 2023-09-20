@@ -67,6 +67,7 @@ class Register(object):
             # in this structure, but keep matching fields to make them
             # as compatible as possible
             'an_addr':hex(self.addr),
+            'csr_width': hex(self.width_bytes),
             'fld_list': [
                 { 'fld_width':f.width(),
                   'fld_name':f.name(),
@@ -507,27 +508,11 @@ def load_csr_spec(chip_type):
     global bundle
     global csr_names
 
-    csr2_dir = os.path.join(WS, 'FunHW', 'csr2api', 'v2')
-    bin_path = os.path.join(csr2_dir, 'csr2bundle.py')
-    bundle_path = os.path.join(csr2_dir, 'bundle.json')
-
-    logger.info('Creating CSR2 bundle at %s' % bundle_path)
-
-    json_dir = os.path.join(WS, 'FunSDK', 'FunSDK', 'chip', chip_type, 'csr')
-    if not os.path.exists(json_dir):
-        logger.error('csr json spec does not exist! path: {0}'.format(json_dir))
-        sys.exit(1)
-
-    bundle_cmd = [bin_path, 'chip_{}::root'.format(chip_type),
-                  '-I', json_dir,
-                  '-o', bundle_path,
-                  '-n', chip_type]
-    try:
-        subprocess.check_output(bundle_cmd)
-    except subprocess.CalledProcessError as e:
-        logger.error('Failed to create bundle: {0} cmd: {1}'.format(e.output, bundle_cmd))
-        return False
-
+    #Prebuild the per chip csr2 bundles under bundles directory
+    #Example command for S1
+    #SDK_DIR/FunHW/csr2api/v2/csr2bundle.py chip_s1::root -I $SDK_DIR/FunSDK/FunSDK/chip/s1/csr -o ./bundles/$item/bundle.json -n s1
+    #Alternatively refer to the "generate_dbgsh_docker.sh" script
+    bundle_path = os.path.join( 'bundles', chip_type, 'bundle.json')
     logger.info('Loading CSR2 bundle from %s' % bundle_path)
     bundle = csr2py2.load_bundle(bundle_path)
     csr_names = RegisterNames(bundle)

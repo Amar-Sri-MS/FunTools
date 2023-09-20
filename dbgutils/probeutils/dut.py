@@ -14,8 +14,11 @@ logger.setLevel(logging.INFO)
 
 
 class dut(object):
-    def __init__(self):
-        dut_cfg_file = pkg_resources.resource_filename('probeutils', 'dut.cfg')
+    def __init__(self, cfg_path=None):
+        if cfg_path:
+            dut_cfg_file = cfg_path
+        else:
+            dut_cfg_file = pkg_resources.resource_filename('probeutils', 'dut.cfg')
         with open(dut_cfg_file) as f:
             self.data = json.load(f)
 

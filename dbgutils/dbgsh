@@ -268,6 +268,8 @@ class dbgsh(cmd2.Cmd):
 			choices=['i2c', 'jtag', 'pcie'], help="connection mode")
     parser_connect.add_argument('-c', nargs=1, metavar=('chip'), dest='chip',
 			choices=['f1', 's1'], help="chip type")
+    parser_connect.add_argument('-p', nargs=1, metavar=('dut_config_file'), dest='dut_cfg_file',
+                                type=str, help="dut config file")
     parser_connect.add_argument('dut', nargs=1, type=str,
             help="device id(hint:serial number is device id)")
     parser_connect.add_argument('-f', dest='force', action='store_true', help="force connection")
