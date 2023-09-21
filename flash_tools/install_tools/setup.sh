@@ -336,6 +336,12 @@ fi
 
 echo "DPU done" >> $PROGRESS
 
+if [[ "$WITH_FUNVISOR" -eq 0 ]]; then
+	log_msg "Bundle without CCLinux"
+	sync
+	exit $EXIT_STATUS
+fi
+
 log_msg "Upgrading CCLinux"
 
 # Install partition table
