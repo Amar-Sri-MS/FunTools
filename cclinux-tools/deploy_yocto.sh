@@ -83,7 +83,7 @@ ln -s ../init.d/boot_success $DEPLOY_ROOT/etc/rc5.d/S98boot_success
 # details in the rootfs
 
 if [ ! -z "${JENKINS_URL}" -a ! -z "${JOB_NAME}" ]; then
-    if [ ! -e $WORKSPACE/dev_line.txt]; then
+    if [ ! -e $WORKSPACE/dev_line.txt ]; then
         echo "Build running in Jenkins node but dev_line.txt file wasn't found ..."
         exit 1
     fi
