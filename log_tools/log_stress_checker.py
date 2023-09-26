@@ -152,7 +152,9 @@ class GlobalLogChecker:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--filename", help="log file", required=False)
+    parser.add_argument("--filename",
+                        help="Log file. If not provided, reads from stdin",
+                        required=False)
     args = parser.parse_args()
 
     checker = GlobalLogChecker()
