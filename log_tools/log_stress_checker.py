@@ -6,6 +6,7 @@
 
 import argparse
 import re
+import sys
 
 
 class VpLogChecker:
@@ -151,11 +152,14 @@ class GlobalLogChecker:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("filename", help="log file")
+    parser.add_argument("--filename", help="log file", required=False)
     args = parser.parse_args()
 
     checker = GlobalLogChecker()
-    fh = open(args.filename, "r")
+    if args.filename:
+        fh = open(args.filename, "r")
+    else:
+        fh = sys.stdin
 
     for line in fh:
         checker.check(line)
