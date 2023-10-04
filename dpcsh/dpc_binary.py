@@ -17,7 +17,7 @@ class BinaryJSONEncoder(DpcEncoder):
     def __init__(self, windows = False):
         # type: (Any, bool) -> None
         self.windows = windows
-        pass
+
     def enable_command(self):
         # type: (Any) -> Union[bytes(), None]
         if not self.windows:
