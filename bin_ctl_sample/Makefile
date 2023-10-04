@@ -47,7 +47,7 @@ CFLAGS += -I $(LFUNQ_PATH)/include -DWITH_LIBFUNQ
 LDFLAGS += -L $(LFUNQ_PATH)/lib -lbin_ctl -lfunq
 
 # define header and library location in FunSDK
-CFLAGS += -I $(SDKDIR) -I $(SDKDIR)/FunSDK -g -Wall -Werror -Wno-multichar $(BRANCH) $(VER)
+CFLAGS += -I $(SDKDIR) -I $(SDKDIR)/FunSDK -I $(SDKDIR)/FunSDK/funosrt/include -g -Wall -Werror -Wno-multichar $(BRANCH) $(VER)
 
 # XXX: compatibility with FunOS build parameters
 #LDFLAGS += -L $(SDKDIR)/lib/${OS}/x86_64 -lfunclient -fsanitize=address
