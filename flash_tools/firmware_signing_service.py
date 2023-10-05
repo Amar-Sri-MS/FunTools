@@ -2,6 +2,7 @@
 
 '''
 Copyright (c) 2017-2020 Fungible, inc.
+Copyright (c) 2023 Microsoft Corporation.
 All Rights Reserved.
 '''
 
@@ -199,20 +200,6 @@ class SigningEnv:
             print("<<<<<<< EXCEPTION %s READING '%s' ==> DEVELOPMENT BUILD >>>>>>>" %
                   (ex, auth_token_file_name),
                   file=sys.stderr)
-
-################################################################
-# Base64 helpers for production server methods
-def to_b64(some_bytes):
-    return binascii.b2a_base64(some_bytes).rstrip().decode('utf-8')
-
-def from_b64(b64):
-    return binascii.a2b_base64(b64)
-
-def get_result(reply):
-    result = reply.get('result')
-    if result is None:
-        raise RuntimeError("No result from the server: %s" % reply)
-    return result
 
 #####################################################################
 # Connection TimeOut Exception wrapper
