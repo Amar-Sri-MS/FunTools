@@ -2,6 +2,7 @@
 
 '''
 Copyright (c) 2017-2020 Fungible, inc.
+Copyright (c) 2023 Microsoft Corporation.
 All Rights Reserved.
 '''
 
