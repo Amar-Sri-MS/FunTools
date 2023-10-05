@@ -164,6 +164,12 @@ def _extract_api_from_html(soup, debug=False):
                 values.append(dd.text.strip())
     return keys
 
+def _trim_leading_path(_df: pd.DataFrame, leading_str: str="../../FunSDK/FunSDK/funosrt/include/") -> None:
+    """trim leading path from filename"""
+    leading_str = leading_str[:-1] if leading_str.endswith("/") else leading_str
+    n_path = len(leading_str.split("/"))
+    _df["filename"] = _df["filename"].apply(lambda x: "/".join(x.split("/")[n_path:]))
+
 
 def _trim_filename(filename: str, n_path: int) -> str:
     """trim filename
@@ -183,6 +189,12 @@ def _trim_filename(filename: str, n_path: int) -> str:
     filename = "FunOS/" + "/".join(filename.split("/")[n_path:])[:-5]
     return filename
 
+
+def _update_filename_prepend_str(_df: pd.DataFrame, prepend_str: str="FunOS/sdk_include/") -> None:
+    """Update filename with  prepend_str"""
+    # append 'FunOS/sdk_include/' to filename of sdk_file_df
+    _df["filename"] = prepend_str + _df["filename"]
+    # _df["filename"] = "FunOS/sdk_include/" + _df["filename"]
 
 def extract_generated_api_info_from_html(header_search_path: str):
     """Extract generated API information by loading html files from the given path
@@ -359,7 +371,7 @@ def generate_api_documentation_summary(
     sdk_file_df = load_sdk_file_summary(sdk_dir)
 
     # append 'FunOS/sdk_include/' to filename of sdk_file_df
-    sdk_file_df["filename"] = "FunOS/sdk_include/" + sdk_file_df["filename"]
+    _update_filename_prepend_str(sdk_file_df)
 
     # load generated documentation list
     sdk_gen_doc_df = load_sdk_api_doc_gen_summary(html_search_path)
@@ -373,8 +385,10 @@ def generate_api_documentation_summary(
     ]
 
     df_api = pd.read_csv(sdk_api)
+
     # only keep the last dir names from FunOS
-    df_api["filename"] = df_api["filename"].apply(lambda x: "/".join(x.split("/")[6:]))
+    _trim_leading_path(df_api)
+    _update_filename_prepend_str(df_api)
 
     # add 'combined_api' column to create a unique key for each api
     df_api["combined_api"] = df_api["proto_name"] + ":" + df_api["filename"]
