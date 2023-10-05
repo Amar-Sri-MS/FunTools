@@ -22,7 +22,7 @@ from probeutils.dbgclient import *
 from probeutils.dut import *
 
 logger = logging.getLogger("csrutils")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.ERROR)
 
 class constants(object):
     WORD_SIZE_BITS = 64
@@ -1022,7 +1022,7 @@ def csr_poll_status(chip_inst, csr_address, csr_width_words, value_mask):
 def server_connect(args):
     logger.debug('args: {}'.format(args))
     dut_name = args.dut[0]
-    dut_path = args.dut_cfg_file[0] if args.dut_cfg_file else None
+    dut_cfg_path = args.dut_cfg_file[0] if args.dut_cfg_file else None
     
     if dut_name is None:
         print("Invalid dut!")
@@ -1040,15 +1040,15 @@ def server_connect(args):
         force_connect = True
         logger.info('Force connection: {0}'.format(force_connect))
 
-    probe = connect(dut_path, dut_name, mode, force_connect)
+    probe = connect(dut_cfg_path, dut_name, mode, force_connect)
     if probe is None:
         print('Failed to connect to dut: {0}'.format(dut_name, mode))
         return
 
-def connect(dut_path ,dut_name, mode, force_connect=False):
-    logger.debug('dut_path: {0} dut: {1} mode: {2}'.format(dut_path, dut_name, mode))
+def connect(dut_cfg_path ,dut_name, mode, force_connect=False):
+    logger.debug('dut_cfg_path: {0} dut: {1} mode: {2}'.format(dut_cfg_path, dut_name, mode))
     if mode == 'i2c':
-        dut_i2c_info = dut(dut_path).get_i2c_info(dut_name)
+        dut_i2c_info = dut(dut_cfg_path).get_i2c_info(dut_name)
         if dut_i2c_info is None:
             print('Failed to get i2c connection details!')
             return None
@@ -1074,7 +1074,7 @@ def connect(dut_path ,dut_name, mode, force_connect=False):
                                         bmc_ip_address=bmc_ip,
                                         chip_type=chip_type)
     elif mode == 'jtag':
-        dut_jtag_info = dut(dut_path).get_jtag_info(dut_name)
+        dut_jtag_info = dut(dut_cfg_path).get_jtag_info(dut_name)
         if dut_jtag_info is None:
             print('Failed to get jtag connection details!')
             return None
@@ -1099,7 +1099,7 @@ def connect(dut_path ,dut_name, mode, force_connect=False):
                                         probe_id = jtag_probe_id,
                                         chip_type=chip_type)
     elif mode == 'pcie':
-        dut_pcie_info = dut(dut_path).get_pcie_info(dut_name)
+        dut_pcie_info = dut(dut_cfg_path).get_pcie_info(dut_name)
         if dut_pcie_info is None:
             print('Failed to get pcie connection details!')
             return None

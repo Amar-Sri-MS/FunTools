@@ -1,8 +1,14 @@
-#! /bin/bash
+#! /bin/bash -e
 
 SDK_DIR=../../
 
 csr2_chips=(s1 f1d1 s2)
+
+#Check for PWD , needs to be invoked from FunTools/dbgutils directory
+if [[ "$PWD" != */FunTools/dbgutils ]]; then
+    echo "Not in FunTools/dbgutils directory. Exiting."
+    exit 1
+fi
 
 mkdir -p ./bundles
 mkdir -p ./FunHW

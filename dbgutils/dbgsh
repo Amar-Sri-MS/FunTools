@@ -24,6 +24,8 @@ logger.setLevel(logging.INFO)
 chip_type_parser = argparse.ArgumentParser()
 chip_type_parser.add_argument('-c', nargs=1,  metavar=('chip_type'), dest='chip_type', choices=['f1', 's1', 'f1d1', 's2'], type=str, help='chip type', required = True)
 chip_type_args, chip_type_remaining_args = chip_type_parser.parse_known_args()
+
+print(chip_type_remaining_args)
 sys.argv = [sys.argv[0]] + chip_type_remaining_args
 
 # Check if it should be CSR1 or CSR2 mode.

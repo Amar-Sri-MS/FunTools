@@ -2,7 +2,7 @@
 
 import string, os
 import logging
-from jtagutils import jtagutils
+#from jtagutils import jtagutils
 
 logger = logging.getLogger("jtagclient")
 logger.setLevel(logging.ERROR)
