@@ -318,9 +318,10 @@ def load_sdk_api_doc_gen_summary(
         # remove index.html
         if "index.html" in file:
             continue
-        # rearrange file path to be relative to FunOS so that it can be eaily compared with the SDK file list
+        # rearrange file path to be relative to FunOS so that it can be easily compared with the SDK file list
         file_name = "FunOS/" + "/".join(file.split("/")[n_path:])
         file_names.append(file_name[:-5])  # -5 to remove '.html'
+
     return pd.DataFrame(file_names, columns=["filename"])
 
 
@@ -356,6 +357,9 @@ def generate_api_documentation_summary(
 
     # load SDK file list
     sdk_file_df = load_sdk_file_summary(sdk_dir)
+
+    # append 'FunOS/sdk_include/' to filename of sdk_file_df
+    sdk_file_df["filename"] = "FunOS/sdk_include/" + sdk_file_df["filename"]
 
     # load generated documentation list
     sdk_gen_doc_df = load_sdk_api_doc_gen_summary(html_search_path)
@@ -446,6 +450,7 @@ def main() -> None:
     print("API HTML search path: {}".format(api_doc_gen_dir))
     print("Output json file: {}".format(output_json))
     print()
+
 
     (
         report,
