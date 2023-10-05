@@ -192,9 +192,7 @@ def _trim_filename(filename: str, n_path: int) -> str:
 
 def _update_filename_prepend_str(_df: pd.DataFrame, prepend_str: str="FunOS/sdk_include/") -> None:
     """Update filename with  prepend_str"""
-    # append 'FunOS/sdk_include/' to filename of sdk_file_df
     _df["filename"] = prepend_str + _df["filename"]
-    # _df["filename"] = "FunOS/sdk_include/" + _df["filename"]
 
 def extract_generated_api_info_from_html(header_search_path: str):
     """Extract generated API information by loading html files from the given path
