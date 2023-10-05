@@ -12,9 +12,16 @@ from typing import Any, Tuple, Union
 import binary_json
 
 class BinaryJSONEncoder(DpcEncoder):
+    # Windows proxy only supports binary_json
+    # therefore it starts with binary_json and does not need to be enabled
+    def __init__(self, windows = False):
+        # type: (Any, bool) -> None
+        self.windows = windows
+
     def enable_command(self):
         # type: (Any) -> Union[bytes(), None]
-        return b'{verb:encoding_binary_json, tid:0}\n'
+        if not self.windows:
+            return b'{verb:encoding_binary_json, tid:0}\n'
 
     def serialization_size(self, buffer):
         # type: (Any, bytes()) -> int
