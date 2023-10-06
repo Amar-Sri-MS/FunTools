@@ -1,0 +1,49 @@
+
+<!DOCTYPE HTML>
+<html lang="en">
+  <head>
+    <style>
+      h1 {text-align:center;}
+      h2 {text-align:center;}
+      .center {
+          display: block;
+          margin-left: auto;
+          margin-right: auto;
+      }
+    </style>
+    <title>DPU Signing</title>
+  </head>
+  <body>
+    <h1>DPU Signing Server Test Form</h1>
+    <form action="/cgi-bin/signing_server.cgi" method="get">
+      <div style="text-align:center;">
+	<div style="display: inline-flex; border: 1px solid black; padding: 10px;">
+	  <div style="display: inline-block; text-align: left;">
+	    <b>Select Command Parameters</b>
+	    <br><br>
+	    <label for="key">Key Name (ex. "fpk3"):  </label>
+	    <input type="text" id="key" name="key">
+	    <br><br>
+	    <label for="key">Key Set (0,1):  </label>
+	    <input type="text" id="production" name="production">
+	    <p>Format:</p>
+	     <input type="radio" id="binary" name="format" value="binary">
+	     <label for="binary">Binary</label><br>
+	     <input type="radio" id="public_key" name="format" value="public_key">
+	     <label for="public_key">Public Key</label><br>
+	     <input type="radio" id="hex" name="format" value="hex">
+	     <label for="hex">Hexadecimal</label><br>
+	     <input type="radio" id="base64" name="format" value="base64">
+	     <label for="base64">Base64</label><br>
+	     <input type="radio" id="c_struct" name="format" value="c_struct">
+	     <label for="c_struct">C-like Syntax</label><br>
+	    <br>
+	    <div style="text-align:center;">
+	      <button type="submit" name="cmd" value="modulus">Key Information</button>
+	    </div>
+	  </div>
+	</div>
+      </div>
+    </form>
+  </body>
+</html>

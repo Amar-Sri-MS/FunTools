@@ -1,4 +1,4 @@
-#! /usr/bin/env python3
+#! /usr/bin/env python3.9
 
 ##############################################################################
 #  enrollment_boot_step.cgi
@@ -19,6 +19,7 @@ import requests
 
 
 from common import (
+    DPU_REG_PATH,
     log,
     send_response_body,
 )
@@ -84,7 +85,7 @@ bootsteps_uris = (
 
 def get_bootstep_list(version):
     ''' retrieve and parse the list of boot steps from git commit '''
-    with open('/etc/github_auth') as f:
+    with open(os.path.join(DPU_REG_PATH, 'github_auth')) as f:
         lines = f.readlines()
 
     github_user = lines[0].strip()
