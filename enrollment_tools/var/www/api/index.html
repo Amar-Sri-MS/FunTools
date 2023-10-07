@@ -320,6 +320,9 @@ kbd {
 	pre {
 		word-wrap: break-word;
 	}
+  body {
+    padding: 2cm; 
+  }
 }
 </style>
 
@@ -352,11 +355,10 @@ kbd {
 
 <h5 id="toc_5">production (optional argument, default value: 0)</h5>
 
-<p>0: development HSM</p>
+<p>0: development security group
+1: security group 1</p>
 
-<p>1: DPU HSM</p>
-
-<p>2: AST2600 HSM</p>
+<p>(These are the only currently defined security groups)</p>
 
 <h5 id="toc_6">format (optional argument, default value: &#39;binary&#39;)</h5>
 
@@ -430,7 +432,9 @@ obvlAOTOVRM5V0PK7ruZCKfvBdPuFnPvUbC1OteB6ojOS2vG7nAuh7Qhw
 
 <h2 id="toc_7">POST</h2>
 
-<p>The post request is used to sign a single digest with the development or production keys.</p>
+<p>The post request is used
+1-to sign a single digest with the development or production keys.
+2-to generate/retrieve debugging certificates</p>
 
 <h3 id="toc_8">Hash signing</h3>
 
@@ -442,7 +446,7 @@ obvlAOTOVRM5V0PK7ruZCKfvBdPuFnPvUbC1OteB6ojOS2vG7nAuh7Qhw
 
 <h5 id="toc_11">algo (optional, default = &#39;sha512&#39;)</h5>
 
-<p>The hash algorithm that generated the digest. </p>
+<p>The hash algorithm that generated the digest.</p>
 
 <h5 id="toc_12">modulus (optional)</h5>
 
@@ -452,23 +456,26 @@ obvlAOTOVRM5V0PK7ruZCKfvBdPuFnPvUbC1OteB6ojOS2vG7nAuh7Qhw
 
 <p>Label identifying the key used for signing.</p>
 
-<h5 id="toc_14">auth_token (optional)</h5>
-
-<p>Authentication token obtained from an activated production HSM (required to sign with a production key).</p>
-
-<p><a href="https://docs.google.com/document/d/1d2lcyzSIQXHOLSK-LOkmb61ZHBOiTVhb3TZEKpZ5fE4/edit#heading=h.azk8glyelfia">Generating a token</a></p>
-
-<h5 id="toc_15">production (optional)</h5>
-
-<p>Identifier the HSM to use for the operation.</p>
-
-<ul>
-<li>0: development HSM (default if no auth_token specified)</li>
-<li>1: DPU HSM (default if auth_token is specified)</li>
-<li>2: BMC HSM </li>
-</ul>
-
 <p><em>NOTE: The two arguments modulus and key are optional but at least one of them must be provided.</em></p>
+
+<h5 id="toc_14">production (optional)</h5>
+
+<p>Identify the security group to use for the operation.</p>
+
+<p>0: development HSM (default)
+other groups requires TLS client authentication</p>
+
+<h3 id="toc_15">Debugging Certificate generation</h3>
+
+<h4 id="toc_16">Arguments</h4>
+
+<h5 id="toc_17">serial_number (required, 48 character hexadecimal string):</h5>
+
+<p>The serial number of the DPU</p>
+
+<h5 id="toc_18">key (required, PEM public key):</h5>
+
+<p>Public key associated with the requested certificate</p>
 
 
 
