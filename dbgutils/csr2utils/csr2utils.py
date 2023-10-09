@@ -405,10 +405,10 @@ class CSRAccessor(object):
                                                 csr_addr=addr,
                                                 csr_width_words=length)
         if status:
-            return data
+            return (status, data)
         else:
             logger.error('Raw peek failed: {0}'.format(data))
-            return None
+            return (status, 0x0)
 
     def poke(self, path, values):
         """
@@ -575,12 +575,19 @@ def csr2_raw_peek_args(args):
     This version of peek takes an address and length (64-bit words).
     """
     accessor = CSRAccessor(dbgprobe(), None)
-    data = accessor.raw_peek(str_to_int(args.addr),
+    (status, data) = accessor.raw_peek(str_to_int(args.addr),
                              str_to_int(args.length))
 
-    if data is not None:
-        formatter = RawValuesFormatter()
-        print(formatter.format(data))
+    if status and data is not None:
+        if not args.agent_mode:
+            formatter = RawValuesFormatter()
+            print(formatter.format(data))
+        else:
+            return (True, hex(data[0]))
+    else:
+        if args.agent_mode:
+            return (False, 0x0)
+
 
 def csr2_poke(csr_path, values):
     """
@@ -629,6 +636,8 @@ def csr2_raw_poke_args(args):
     accessor = CSRAccessor(dbgprobe(), None)
     addr = str_to_int(args.addr)
     values = [str_to_int(v) for v in args.vals]
+    if args.agent_mode:
+        return accessor.raw_poke(addr, values)
     accessor.raw_poke(addr, values)
 
 def csr2_find_by_name(csr_path):
