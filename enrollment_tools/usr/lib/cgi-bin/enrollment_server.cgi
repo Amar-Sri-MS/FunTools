@@ -118,31 +118,44 @@ def get_sn_values(sn):
 
 # fields are the same so used CERT_DESCS[0]
 FIELDS = [desc[0] for desc in CERT_DESCS[0]]
-FIELDS_LIST = ",".join(FIELDS)
 FIELDS_CONCAT = " || ".join(FIELDS)
-ARGS_LIST = ",".join([f"%({fld})s" for fld in FIELDS])
 
-INSERT_STMT = "INSERT INTO enrollment (" + \
-    FIELDS_LIST + ") VALUES (" + ARGS_LIST + ")"
 
 # psycopg2 parameters are always represented by %s
-RETRIEVE_STMT_ROOT = "SELECT " + FIELDS_CONCAT + " FROM enrollment "
-RETRIEVE_STMT = RETRIEVE_STMT_ROOT + "WHERE serial_nr = %s AND serial_info = %s"
+# retrieve from the view
+RETRIEVE_STMT_ROOT = "SELECT " + FIELDS_CONCAT + " FROM enrollment_certs_v "
+RETRIEVE_STMT = RETRIEVE_STMT_ROOT + "WHERE serial_info = %s AND serial_nr = %s"
 RETRIEVE_STMT_BY_ID = RETRIEVE_STMT_ROOT + "WHERE enroll_id = %s"
 
-def db_store_cert(conn, cert):
+# insertion
+# register_dpu: select or insert for serial_info, serial_nr returning chip_id
+INSERT_CHIP_STMT = "SELECT register_dpu(%s, %s)"
+#specific enroll_cert_fields: chip_id + all - SN_DESC
+ENROLL_CERT_FIELDS = ["chip_id"] + [desc[0] for desc in CERT_DESCS[0]
+                                  if not desc in SN_DESC]
+ENROLL_CERT_FIELDS_LIST = ",".join(ENROLL_CERT_FIELDS)
+ENROLL_CERT_ARGS_LIST = ",".join([f"%({fld})s" for fld in ENROLL_CERT_FIELDS])
+
+INSERT_ENROLL_CERT_STMT  = "INSERT INTO enrollment_certs (" + \
+    ENROLL_CERT_FIELDS_LIST + ") VALUES (" + ENROLL_CERT_ARGS_LIST + " ) "
+
+def  db_store_cert(conn, cert):
     ''' store the full certificate in the database '''
     values = get_cert_values(cert)
     with conn.cursor() as cur:
-        cur.execute(INSERT_STMT, values)
+        cur.execute(INSERT_CHIP_STMT,
+                    (values['serial_info'],
+                     values['serial_nr']))
+        values['chip_id'] = cur.fetchone()[0]
+        cur.execute(INSERT_ENROLL_CERT_STMT, values)
     conn.commit()
 
 def db_retrieve_cert_by_values(conn, values_dict):
     ''' retrieve the cert for the serial number '''
     with conn.cursor() as cur:
         cur.execute(RETRIEVE_STMT,
-                    (values_dict['serial_nr'],
-                     values_dict['serial_info']))
+                    (values_dict['serial_info'],
+                     values_dict['serial_nr']))
         row = cur.fetchone()
         if row:
             return row[0]
@@ -172,7 +185,7 @@ def db_print_summary(conn, fld_list):
     fields=sql.SQL(',').join(
         sql.Identifier(fld_name) for fld_name in fld_list)
     # safely generate the dynamic query
-    query = sql.SQL('select row_to_json(t) from (select {0} from enrollment) t'
+    query = sql.SQL('select row_to_json(t) from (select {0} from enrollment_certs_v) t'
                     ).format(fields)
 
     print("[")
