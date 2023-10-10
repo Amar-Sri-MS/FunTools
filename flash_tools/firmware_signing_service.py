@@ -90,9 +90,18 @@ DEFAULT_HTTP_TIMEOUT = 180
 MAX_CONNECTION_RETRY = 20
 RETRY_CONNECTION_SLEEP_SECS = 10
 
-# environment variable: if it is set and points to a file, it triggers the use
+# environment variable that points to a mutual authentication
+# certificate and key: if it is set and points to a file, it triggers the use
 # of the production keys and certificates
-HSM_AUTH_TOKEN_ENV_VAR = "FUN_HSM_TOKEN"
+PROD_SIGN_CERT_ENV_VAR = "PROD_SIGN_CERT_FILE"
+
+##############################################################################
+# Environment variable: client cert
+# This file must consist of the concatenation of the cert and the key
+#
+def production_client_cert_file():
+    return os.environ.get(PROD_SIGN_CERT_ENV_VAR)
+
 
 ##############################################################################
 # File access -- utils.py ported to Python 3
@@ -142,64 +151,6 @@ def write(filename, content, overwrite=True, tohex=False, tobyte=False,
             f.write("%s\n" % binascii.hexlify(content[pos]))
     else:
         f.write(content)
-
-
-#########################################################################
-# Environment Variable -- lazy singleton
-
-class SigningEnv:
-
-    __auth_token = None
-    __done = False
-
-    def __init__(self):
-        pass
-
-    def __del__(self):
-        pass
-
-
-    def __lazy_init(self):
-        if not SigningEnv.__done:
-            auth_token_file_name = os.environ.get(HSM_AUTH_TOKEN_ENV_VAR)
-            if auth_token_file_name:
-                self.__read_auth_token(auth_token_file_name)
-            else:
-                print("<<<<<<< NO '%s' IN ENVIRONMENT ==> DEVELOPMENT BUILD >>>>>>>" %
-                      HSM_AUTH_TOKEN_ENV_VAR,
-                      file=sys.stderr)
-
-            if SigningEnv.__auth_token:
-                print("<<<<<< USING '%s' AS AUTH.TOKEN ==> PRODUCTION BUILD >>>>>>>" %
-                      auth_token_file_name,
-                      file=sys.stderr)
-                print("<<<<<< AUTH.TOKEN = %s >>>>>>>" %
-                      SigningEnv.__auth_token,
-                      file=sys.stderr)
-                SigningEnv.__done = True
-
-
-    def __getattr__(self, name):
-        if name == 'auth_token':
-            self.__lazy_init()
-            return SigningEnv.__auth_token
-
-        return None
-
-
-    def __read_auth_token(self, auth_token_file_name):
-        try:
-            with open(auth_token_file_name, "r") as fp:
-                SigningEnv.__auth_token = fp.read()
-
-        except OSError:
-            print("<<<<<<< UNABLE TO OPEN '%s' ==> DEVELOPMENT BUILD >>>>>>>" %
-                  auth_token_file_name,
-                  file=sys.stderr)
-        except Exception as ex:
-            print("<<<<<<< EXCEPTION %s READING '%s' ==> DEVELOPMENT BUILD >>>>>>>" %
-                  (ex, auth_token_file_name),
-                  file=sys.stderr)
 
 #####################################################################
 # Connection TimeOut Exception wrapper
@@ -271,7 +222,8 @@ def get_modulus(name):
     }
 
     # if production, use typical URL with production=1
-    if SigningEnv().auth_token:
+    cert_file = production_client_cert_file()
+    if cert_file:
         params['production'] = '1'
 
     response = try_get(SIGNING_SERVICE_URL, params=params,
@@ -290,26 +242,25 @@ def pack_binary_form_data(title, bin_data):
 def hash_sign(digest, sign_key=None, modulus=None):
     ''' send a POST sign request with digest '''
 
-    auth_token = SigningEnv().auth_token
+    params = {}
+
+    # if production, use typical URL with production=1
+    cert_file = production_client_cert_file()
+    if cert_file:
+        params['production'] = '1'
 
     multipart_form_data = {'digest' : pack_binary_form_data("sha512", digest)}
 
     if modulus:
         multipart_form_data['modulus'] = pack_binary_form_data("modulus",
                                                                modulus)
-
-    if auth_token:
-        multipart_form_data['auth_token'] = pack_binary_form_data("auth",
-                                                                  auth_token)
-
-
-    params = {}
     if sign_key:
         params['key'] = sign_key
 
 
     response = try_post(SIGNING_SERVICE_URL,
                         files=multipart_form_data,
+                        cert=cert_file,
                         params=params,
                         timeout=DEFAULT_HTTP_TIMEOUT)
 
@@ -465,15 +416,8 @@ def get_cert(outfile, chip_type, cert_key, security_group):
     ''' retrieve the desired start certificate and store it in outfile '''
     if chip_type not in ['f1', 's1', 'f1d1', 's2', 'f2']:
         raise Exception("Start certificate: Unknown chip type %s" % chip_type)
-
-    if SigningEnv().auth_token:
-        content = retrieve_cert(True, chip_type, cert_key, security_group)
-    elif security_group == 0:
-        content = retrieve_cert(False, chip_type, cert_key, security_group)
-    else:
-        raise Exception("No current production authentication token and "
-                        "a non-zero security group was specified")
-
+    content = retrieve_cert(production_client_cert_file(),
+                            chip_type, cert_key, security_group)
     write(outfile, content)
 
 
