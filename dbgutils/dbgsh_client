@@ -5,6 +5,7 @@ import socket
 import struct
 
 PORT=65432
+HOST='127.0.0.1'
 
 #Supported message opcodes
 AGENT_REQ_CSR_READ = 1
@@ -15,7 +16,7 @@ CSR_ADDRESS=0x58e9130
 
 
 #DUMMY VALUE TO PERFORM PEEK/POKE
-TEST_VALUE=0xAAFFEE
+TEST_VALUE=0xCCFFEE
 
 
 PROTOCOL_VERSION=1
@@ -94,4 +95,4 @@ def tcp_client(host='127.0.0.1', port = PORT):
         s.close()
 
 if __name__ == '__main__':
-    tcp_client()
+    tcp_client(host=HOST, port=PORT)
