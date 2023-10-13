@@ -18,8 +18,6 @@ import traceback
 from contextlib import closing
 from enum import Enum
 
-# This is all under a try clause, as depending on FunOS version,
-# any or all of these modules could be missing ...
 sys.path.append('/usr/bin')
 import dpc_client
 import dpc_binary
