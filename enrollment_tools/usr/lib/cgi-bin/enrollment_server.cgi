@@ -22,14 +22,9 @@ import datetime
 import hashlib
 import json
 
-from contextlib import closing
 import cgi
 
 import traceback
-
-# db connection
-import psycopg2
-from psycopg2 import sql
 
 # certificate generation
 from asn1crypto import pem, core, keys, x509
@@ -38,32 +33,35 @@ from asn1crypto import pem, core, keys, x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
 
-from common import (
-    log,
-    send_response_body,
-    send_binary_buffer
-)
+from psycopg2 import sql
+
+from common import (log,
+                    send_response_body,
+                    send_binary_buffer)
+
+from db_helper import (SN_DESC,
+                       SN_LEN,
+                       ID_FLD,
+                       make_slicer_of,
+                       insert_select_chip_id,
+                       get_sn_values,
+                       pack_bytes_with_len_prefix,
+                       db_func)
+
 
 # serial number validation
 import sn_validation
 
 # signature and keys
 from openssl_esrp import (esrp_get_modulus,
+                          esrp_get_public_key,
                           esrp_sign_hash_with_key)
-
-ROOT_CERTIFICATE_PATH_NAME = 'enrollment_root_cert.der'
 
 #################################################################################
 #
 # Database routines
 #
 #################################################################################
-
-SN_DESC = (
-    ('serial_info', 8),
-    ('serial_nr', 16))
-
-SN_LEN = sum(desc[1] for desc in SN_DESC)
 
 PUF_KEY_COORD_LENS = [32, 48]
 
@@ -92,28 +90,10 @@ def get_desc_for_cert(cert):
 def get_desc_for_tbs_cert(tbs_cert):
     return TBS_CERT_LEN_MAP.get(len(tbs_cert))
 
-
-def make_slicer_of(b):
-    ''' return an object that will slice a string into multiple buffers '''
-    offset = [0]
-
-    def make_buff(size):
-        ''' create a buffer at the current offset of the specified size '''
-        ret = b[offset[0]:offset[0]+size]
-        offset[0] += size
-        return ret
-
-    return make_buff
-
-
 def get_cert_values(cert):
     ''' slice the cert into constituent buffers dictionary '''
     slicer = make_slicer_of(cert)
     return {desc[0]: slicer(desc[1]) for desc in get_desc_for_cert(cert) }
-
-def get_sn_values(sn):
-    slicer = make_slicer_of(sn)
-    return {desc[0]: slicer(desc[1]) for desc in SN_DESC }
 
 
 # fields are the same so used CERT_DESCS[0]
@@ -125,13 +105,11 @@ FIELDS_CONCAT = " || ".join(FIELDS)
 # retrieve from the view
 RETRIEVE_STMT_ROOT = "SELECT " + FIELDS_CONCAT + " FROM enrollment_certs_v "
 RETRIEVE_STMT = RETRIEVE_STMT_ROOT + "WHERE serial_info = %s AND serial_nr = %s"
-RETRIEVE_STMT_BY_ID = RETRIEVE_STMT_ROOT + "WHERE enroll_id = %s"
+RETRIEVE_STMT_BY_ID = RETRIEVE_STMT_ROOT + " WHERE " + ID_FLD + " = %s"
 
 # insertion
-# register_dpu: select or insert for serial_info, serial_nr returning chip_id
-INSERT_CHIP_STMT = "SELECT register_dpu(%s, %s)"
 #specific enroll_cert_fields: chip_id + all - SN_DESC
-ENROLL_CERT_FIELDS = ["chip_id"] + [desc[0] for desc in CERT_DESCS[0]
+ENROLL_CERT_FIELDS = [ID_FLD] + [desc[0] for desc in CERT_DESCS[0]
                                   if not desc in SN_DESC]
 ENROLL_CERT_FIELDS_LIST = ",".join(ENROLL_CERT_FIELDS)
 ENROLL_CERT_ARGS_LIST = ",".join([f"%({fld})s" for fld in ENROLL_CERT_FIELDS])
@@ -139,14 +117,13 @@ ENROLL_CERT_ARGS_LIST = ",".join([f"%({fld})s" for fld in ENROLL_CERT_FIELDS])
 INSERT_ENROLL_CERT_STMT  = "INSERT INTO enrollment_certs (" + \
     ENROLL_CERT_FIELDS_LIST + ") VALUES (" + ENROLL_CERT_ARGS_LIST + " ) "
 
-def  db_store_cert(conn, cert):
+def db_store_cert(conn, cert):
     ''' store the full certificate in the database '''
     values = get_cert_values(cert)
     with conn.cursor() as cur:
-        cur.execute(INSERT_CHIP_STMT,
-                    (values['serial_info'],
-                     values['serial_nr']))
-        values['chip_id'] = cur.fetchone()[0]
+        values[ID_FLD] = insert_select_chip_id(cur,
+                                                  values['serial_info'],
+                                                  values['serial_nr'])
         cur.execute(INSERT_ENROLL_CERT_STMT, values)
     conn.commit()
 
@@ -199,12 +176,6 @@ def db_print_summary(conn, fld_list):
                 print(",")
             print(json.dumps(row[0]), end="")
     print("\n]")
-
-
-def db_func(func, arg1):
-    ''' execute arbitrary function within the context of a db connection '''
-    with closing(psycopg2.connect("dbname=enrollment_db")) as db_conn:
-        return func(db_conn, arg1)
 
 
 ###########################################################################
@@ -390,11 +361,72 @@ def x509_tbs_cert(values, parent_cert):
     return tbs
 
 
+def x509_tbs_root_cert():
+    ''' generate a ToBeSigned X.509 Certificate '''
+    DEFAULT_DAYS_VALID = 365
+
+    tbs = x509.TbsCertificate()
+    tbs['version'] = 2
+    tbs['serial_number'] = 0
+
+    # build signature
+    signature = x509.SignedDigestAlgorithm()
+    signature['algorithm'] = 'sha512_rsa'
+    tbs['signature'] = signature
+
+    subject_names = { "common_name" :
+                      "PUF EC Key Verification Root Cert (Convenience)",
+                      "organization_name" : "Fungible",
+                      "country_name" : "US"
+                     }
+
+    distinguished_name =x509.Name.build(subject_names)
+    # issuer = subject
+    tbs['issuer'] = tbs['subject'] = distinguished_name
+
+    # validity
+    not_before = x509.GeneralizedTime()
+    start_dt = datetime.datetime.now(datetime.timezone.utc)
+    start_dt = start_dt.replace(microsecond = 0) # asn1 crypto bug
+    not_before.set(start_dt)
+    not_after = x509.GeneralizedTime()
+    not_after.set(start_dt + datetime.timedelta(days=DEFAULT_DAYS_VALID))
+    validity = x509.Validity()
+    validity['not_before'] = not_before
+    validity['not_after'] = not_after
+    tbs['validity'] = validity
+
+    fpk4_pub_key_pem = esrp_get_public_key(0, 'fpk4')
+    _,_,fpk4_pub_key_der = pem.unarmor(fpk4_pub_key_pem)
+    public_key_info = keys.PublicKeyInfo().load(fpk4_pub_key_der)
+
+    tbs['subject_public_key_info'] = public_key_info
+
+    # extensions
+    extensions = x509.Extensions()
+    # for DICE/RIoT, make it a CA cert
+    extensions.append(x509_basic_constraints(critical=True, ca=True))
+    extensions.append(x509_key_usage(True,
+                                     set(['digital_signature',
+                                          'key_agreement',
+                                          'key_cert_sign',
+                                          'crl_sign'])))
+    extensions.append(x509_key_identifier(public_key_info))
+
+    tbs['extensions'] = extensions
+
+    return tbs
+
+
 def x509_cert(values, parent_cert):
     ''' generate a X.509 Certificate '''
     cert = x509.Certificate()
 
-    tbs = x509_tbs_cert(values, parent_cert)
+    if parent_cert:
+        tbs = x509_tbs_cert(values, parent_cert)
+    else:
+        tbs = x509_tbs_root_cert()
+
     cert['tbs_certificate'] = tbs
     cert['signature_algorithm'] = tbs['signature']
 
@@ -409,18 +441,11 @@ def x509_cert(values, parent_cert):
     return cert
 
 
-def x509_from_fungible_cert(cert, parent_cert_file):
+def x509_from_fungible_cert(cert):
     ''' generate a X509 certificate for the device based
     on the enrollment certificate '''
 
-    # load the parent signing certificate
-    with  open(parent_cert_file, 'rb') as parent_f:
-        parent_cert_bytes = parent_f.read()
-
-    if pem.detect(parent_cert_bytes):
-        _,_,parent_cert_bytes = pem.unarmor(parent_cert_bytes)
-
-    parent_cert = x509.Certificate.load(parent_cert_bytes)
+    parent_cert = x509_cert(None, None)
     values =  get_cert_values(cert)
 
     return x509_cert(values, parent_cert)
@@ -438,9 +463,9 @@ def send_certificate_response(cert):
     send_response_body(cert_b64)
 
 
-def send_x509_certificate_response(cert, parent_cert_file):
+def send_x509_certificate_response(cert):
     ''' send back a X509 certificate '''
-    cert = x509_from_fungible_cert(cert, parent_cert_file)
+    cert = x509_from_fungible_cert(cert)
     sn = cert.subject.native['serial_number']
     # return the PEM encoded value
     x509_pem = pem.armor('CERTIFICATE', cert.dump())
@@ -448,19 +473,12 @@ def send_x509_certificate_response(cert, parent_cert_file):
                        'FUNGIBLE_' + sn + '.pem')
 
 
-def send_x509_root_certificate_response(parent_cert_file):
+def send_x509_root_certificate_response():
     ''' send back the X509 certificate '''
-    with open(parent_cert_file, 'rb') as parent_f:
-        x509_pem = parent_f.read()
-
-    root_file_name = os.path.splitext(
-        os.path.basename(parent_cert_file))[0]
-
-    if not pem.detect(x509_pem):
-        x509_pem = pem.armor('CERTIFICATE', x509_pem)
+    cert = x509_cert(None, None)
+    x509_pem = pem.armor('CERTIFICATE', cert.dump())
     send_response_body(x509_pem.decode('ascii'),
-                       root_file_name + '.pem')
-
+                       'fpk4root.pem')
 
 
 ##########################################################################
@@ -469,10 +487,22 @@ def send_x509_root_certificate_response(parent_cert_file):
 #
 ##########################################################################
 
-def hsm_sign(tbs_cert):
+def tbs_sign(tbs_cert):
     ''' Compute RAW signature for data '''
     digest = hashlib.sha512(tbs_cert).digest()
-    return esrp_sign_hash_with_key(0, 'fpk4', 'sha512', digest)
+    signature = esrp_sign_hash_with_key(0, 'fpk4', 'sha512', digest)
+    return tbs_cert + pack_bytes_with_len_prefix(signature, 516)
+
+def select_insert_enroll_cert(db_conn, tbs_cert):
+    ''' retrieve or generate and insert enrollment certificate with db '''
+    values = validate_tbs_cert(tbs_cert)
+    cert = db_retrieve_cert_by_values(db_conn, values)
+    if cert is None:
+        # sign the tbs_cert
+        cert = tbs_sign(tbs_cert)
+        # store it
+        db_store_cert(db_conn, cert)
+    return cert
 
 def do_enroll():
     ''' process POST request
@@ -480,17 +510,7 @@ def do_enroll():
     # read the TBS from request
     request = sys.stdin.read()
     tbs_cert = binascii.a2b_base64(request)
-
-    values = validate_tbs_cert(tbs_cert)
-
-    with closing(psycopg2.connect("dbname=enrollment_db")) as db_conn:
-        cert = db_retrieve_cert_by_values(db_conn, values)
-        if cert is None:
-            # sign the tbs_cert
-            cert = hsm_sign(tbs_cert)
-            # store it
-            db_store_cert(db_conn, cert)
-
+    cert = db_func(select_insert_enroll_cert, tbs_cert)
     send_certificate_response(cert)
 
 
@@ -514,9 +534,9 @@ def send_certificate(form, x509_format=False):
     ''' return a certificate from the request '''
     cert = None
 
-    enroll_id = form.getvalue("id", None)
-    if enroll_id:
-        cert = db_func(db_retrieve_cert_with_id, enroll_id)
+    chip_id = form.getvalue("id", None)
+    if chip_id:
+        cert = db_func(db_retrieve_cert_with_id, chip_id)
     else:
         sn = get_sn_from_form(form)
         if sn:
@@ -524,7 +544,7 @@ def send_certificate(form, x509_format=False):
         else:
             # if there is no serial number, return the X509 root cert
             if x509_format:
-                send_x509_root_certificate_response(ROOT_CERTIFICATE_PATH_NAME)
+                send_x509_root_certificate_response()
                 return
 
             raise ValueError("Missing parameter")
@@ -534,7 +554,7 @@ def send_certificate(form, x509_format=False):
         return
 
     if x509_format:
-        send_x509_certificate_response(cert, ROOT_CERTIFICATE_PATH_NAME)
+        send_x509_certificate_response(cert)
     else:
         send_certificate_response(cert)
 
@@ -571,8 +591,6 @@ def process_query():
     else:
         raise ValueError("Invalid command")
 
-
-
 def main_program():
     ''' start of script '''
     # our content is always text/plain
@@ -594,15 +612,14 @@ def main_program():
     # value errors are translated as 400 Bad Request
     except (ValueError, KeyError) as err:
         # Log
-        log(f"Exception: {err}")
+        log(f"Exception: {err}: {traceback.print_exc()}")
         # Response
         print("Status: 400 Bad Request\n")
 
         # all other errors are reported as 500 Internal Server Error
     except Exception as err: # pylint: disable=broad-exception-caught
         # Log
-        log(f"Exception: {err}")
-        traceback.print_exc()
+        log(f"Exception: {err}\n{traceback.format_exc()}")
         # Response
         print("Status: 500 Internal Server Error\n")
 

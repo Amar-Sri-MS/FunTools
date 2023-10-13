@@ -18,6 +18,8 @@ import json
 import warnings
 import urllib3
 
+from test_signing_server import get_key
+
 CGI_SCRIPT="enrollment_server.cgi"
 
 RECV_ROOT_CERT_FILE = 'recv_root_cert.pem'
@@ -244,9 +246,13 @@ def main_program():
                   ('./tbs_enrollment_cert_384.txt',
                    './enrollment_cert_384.txt', 48))
 
-    fpk4_hex = open('./fpk4_hex.txt', 'r').read()
-
     try:
+
+        # use signing server -- should be accessible
+        fpk4_hex = get_key(options.server,
+                           tls_verify,
+                           'fpk4', format="hex").decode('ascii')
+
         errors += retrieve_modulus(options.server, fpk4_hex, tls_verify)
 
         errors += retrieve_x509_root_cert(options.server, fpk4_hex, tls_verify)
