@@ -18,35 +18,28 @@ import traceback
 from contextlib import closing
 from enum import Enum
 
-try:
-    # This is all under a try clause, as depending on FunOS version,
-    # any or all of these modules could be missing ...
-    sys.path.append('/usr/bin')
-    import dpc_client
-    import dpc_binary
+sys.path.append('/usr/bin')
+import dpc_client
+import dpc_binary
 
-    class DpcFwUpgradeClient(dpc_client.DpcClient):
-        def __init__(self):
-            super().__init__(legacy_ok=False,
-                unix_sock=True,
-                encoder=dpc_binary.BinaryJSONEncoder())
-            # Try to execute fw_upgrade version query. If it's implemented
-            # and reports upgrade interface version 1 or higher, then the
-            # upgrade can be performed using DPC. Otherwise the fwupgrade
-            # script needs to use HCI-based fallback.
-            # Various run-time options may also depend on the interface
-            # version, so save it as a state variable to be used later
-            res = super().execute('fw_upgrade', ['version'])
-            if not res >= 1:
-                raise RuntimeError("DPC upgrade not supported")
+class DpcFwUpgradeClient(dpc_client.DpcClient):
+    def __init__(self):
+        super().__init__(legacy_ok=False,
+            unix_sock=True,
+            encoder=dpc_binary.BinaryJSONEncoder())
+        # Try to execute fw_upgrade version query. If it's implemented
+        # and reports upgrade interface version 1 or higher, then the
+        # upgrade can be performed using DPC. Otherwise the fwupgrade
+        # script needs to use HCI-based fallback.
+        # Various run-time options may also depend on the interface
+        # version, so save it as a state variable to be used later
+        res = super().execute('fw_upgrade', ['version'])
+        if not res >= 1:
+            raise RuntimeError("DPC upgrade not supported")
 
-            self.version = res
+        self.version = res
 
-    dpc = DpcFwUpgradeClient()
-
-except:
-    dpc = None
-    pass
+dpc = DpcFwUpgradeClient()
 
 BASE_URL = 'http://dochub.fungible.local/doc/jenkins'
 
