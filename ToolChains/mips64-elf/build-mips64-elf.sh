@@ -55,8 +55,9 @@ case $(uname) in
 	# export C_INCLUDE_PATH=$PWD/${gcc_version}/mpfr/src
     # host_binutils_config=--with-static-standard-libraries
 
-    export PATH="/opt/homebrew/opt/gnu-sed/libexec/gnubin:$PATH"
+	# need to brew install gnu-sed texinfo
     # sed --version will fail and kill the script if not gnu-sed
+    export PATH="/opt/homebrew/opt/gnu-sed/libexec/gnubin:$PATH"
     sed --version
     host_binutils_config=
     host_gcc_config=
@@ -73,8 +74,6 @@ case $(uname) in
 	exit 1
 	;;
 esac
-
-fi
 
 mkdir -p build
 cd build
