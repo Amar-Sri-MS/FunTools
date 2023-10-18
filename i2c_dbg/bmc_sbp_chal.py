@@ -1025,6 +1025,10 @@ class NOR_IMAGE(object):
     def read_dir_ex(self):
         dir_of_dir = self.read_dir_of_dir()
 
+        # empty flash case
+        if dir_of_dir == b'\xFF\xFF\xFF\xFF':
+            return None, None
+
         # 256 bytes enough to read the whole directory
         data = self.dbg_chal.read_flash(dir_of_dir,
                                         QSPI_PAGE_SIZE)
@@ -1511,12 +1515,56 @@ def do_full_update(nor_image, src_image, override_files, dry_run, install_missin
     print("Completed in %dmn %ds" % (duration / 60, duration % 60))
 
 
+def do_unconditional_rewrite(nor_image, src_image, override_files):
+    # identify sources: get_srcs_images() will give a set of good images
+    # with their addresses
+
+    st = datetime.datetime.now()
+
+    src_images = get_src_images(src_image, override_files)
+
+    for img_type, src_info in src_images.items():
+
+        print("writing %s image (version = %d) at 0x%08x" %
+              (bytes2str(img_type), src_info['version'], src_info['addr']))
+        # read the source image
+        img = nor_image.prepare_src_image(img_type, src_image, src_info)
+        new_image_size = NOR_IMAGE.size_from_img_header(img)
+
+        # erase the sectors at both addresses -- use set in case addresses are the same
+        for addr in set(src_dir[img_type]):
+            nor_image.erase_at_addr_for_size(addr, new_image_size)
+        # write the image at trgt_addr on NOR
+        nor_image.write_flash(src_info['addr'], img)
+
+    # finally write the directories
+    for addr in dir_addresses:
+        nor_image.erase_at_addr_for_size(addr, len(src_dir_bin))
+        nor_image.write_flash(addr, src_dir_bin)
+
+    # and the directory of directories (hard coded)
+    nor_image.erase_at_addr_for_size(0, max(DIR_OF_DIR_ADDRS) + len(dir_of_dirs))
+    for addr in DIR_OF_DIR_ADDRS:
+        nor_image.write_flash(addr, dir_of_dirs)
+
+    duration = (datetime.datetime.now() - st).total_seconds()
+    print("Completed in %dmn %ds" % (duration / 60, duration % 60))
+
+
+
 def same_image_addresses(img_type, dir1, dir2):
     return dir1.get(img_type, [0,0]) == dir2.get(img_type, [0,0])
 
 
 def do_full_rewrite(nor_image, src_image, override_files, nor_dir):
     ''' rewrite the nor flash: preserves only the enrollment certificate and host data '''
+
+    if nor_dir is None:
+        nor_dir = nor_image.read_dir()
+        if nor_dir is None:
+            # empty root dir -> empty or unrecoverable flash
+            do_unconditional_rewrite(nor_image, src_image, override_files)
+            return
 
     st = datetime.datetime.now()
 
@@ -1533,8 +1581,6 @@ def do_full_rewrite(nor_image, src_image, override_files, nor_dir):
     # if their current locations match the new ones do not do anything: safer and faster
     # otherwise save them.
     #
-    if nor_dir is None:
-        nor_dir = nor_image.read_dir()
 
     need_to_move = {}
     for img_type in HEADERLESS_4CC:
