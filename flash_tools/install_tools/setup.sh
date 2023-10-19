@@ -155,6 +155,12 @@ FW_UPGRADE_ARGS="$FW_UPGRADE_ARGS --no-version-check"
 
 EXIT_STATUS=0
 
+upgrade_interface_version=`dpcsh -nQ fw_upgrade version | jq -Mr ".result + 0"`
+log_msg "Upgrade interface version = $upgrade_interface_version"
+
+sbp_split_firmware=`dpcsh -nQ fw_upgrade sbp_split_firmware | jq -Mr ".result"`
+log_msg "SBP split firmware support = $sbp_split_firmware"
+
 CCFG_IMAGE_ID='ccfg'
 
 if [[ $ccfg_only == 'true' ]]; then
@@ -185,8 +191,30 @@ else
 		./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version latest --force --downgrade
 		RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
 
-		./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version latest --force --downgrade --active
-		RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
+		if [[ "$sbp_split_firmware" == "true" ]]; then
+			set_inactive_partition=$(dpcsh -Q boot_partition set_inactive | jq -Mr .result)
+			case $set_inactive_partition in
+				false)
+					# should never happen, switching to inactive partition failed
+					# indicate upgrade error but continue with the whole process anyway
+					EXIT_STATUS=1
+					;;
+				true)
+					: # marked inactive partition as the new boot default
+					;;
+				*)
+					: # unexpected status
+					log_msg "Unexpected set inactive partition result: $set_inactive_partition"
+					EXIT_STATUS=1
+					;;
+			esac
+		else
+			log_msg "Old DPU firmware, downgrading active images"
+			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version latest --force --downgrade --active
+			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
+		fi
+		# Saved partition is not yet used for emmc images, so use old-style method
+		# of erasing part of active image
 
 		# a small hack until proper downgrade is supported; as we're only going to update
 		# the inactive partition of funvisor data, erase enough of active funos image to make
@@ -214,6 +242,27 @@ else
 			# exit early here, as this error code means no upgrade
 			# was performed by run_fwupgrade script
 			exit $EXIT_STATUS
+		fi
+
+		# in case a boot partition was stored in flash, erase it to boot
+		# by default from a new (higher version) release
+
+		# workaround for broken FunOS/SBP until all fixes propagate throughout the tree ...
+		# When invoking a 'clear' and 'sbpf' entry does not exist in SBP's partition pointers, then
+		# SBP would return an error. Some version of FunOS do not handle this SBP error which
+		# leads to FunOS crash.
+		# On one hand SBP should not crash when trying to clear a boot partition if it's never
+		# been set before, on the other FunOS should not crash when SBP returns an error.
+		# But since broken code exists in current tree, need to work around that through the extra
+		# 'set_inactive' operation that would ensure 'sbpf' entry is created first.
+		if [[ $upgrade_interface_version -lt 3 ]]; then
+			if [[ "$sbp_split_firmware" == "true" ]]; then
+				dpcsh -Q boot_partition set_inactive
+			fi
+		fi
+
+		if [[ "$sbp_split_firmware" == "true" ]]; then
+			dpcsh -Q boot_partition clear
 		fi
 
 		# skip eeprom update on sdk bundles, as eepr images are not present
@@ -286,6 +335,12 @@ else
 fi
 
 echo "DPU done" >> $PROGRESS
+
+if [[ "$WITH_FUNVISOR" -eq 0 ]]; then
+	log_msg "Bundle without CCLinux"
+	sync
+	exit $EXIT_STATUS
+fi
 
 log_msg "Upgrading CCLinux"
 

@@ -8,10 +8,17 @@ DPC_SOCKET=/tmp/dpc.sock
 DPC_PID_FILE=/tmp/dpc.pid
 DEVICE_ID="1dad:0108:ff00"
 LOGS_FOLDER=/persist/logs
+DEBUG_ENABLE_FILE=/persist/config/dpc-enable-debug
 
 if [[ ! -f ${ST_STP_D} ]]; then
 	echo "${ST_STP_D} not found"
 	return 1
+fi
+
+if [[ -f ${DEBUG_ENABLE_FILE} ]]; then
+	DEBUG="--debug --verbose"
+else
+	DEBUG=
 fi
 
 start_dpc_proxy()
@@ -29,7 +36,7 @@ start_dpc_proxy()
 	fi
 
 	OPTS="--background --make-pidfile --pidfile ${DPC_PID_FILE} --startas ${BIN_PATH}/dpcsh"
-	CMD="--start -- -q${DEVICE_SLOT} --unix_proxy=${DPC_SOCKET} --log=${LOGS_FOLDER}/dpcsh-funq.log"
+	CMD="--start -- -q${DEVICE_SLOT} --unix_proxy=${DPC_SOCKET} --log=${LOGS_FOLDER}/dpcsh-funq.log ${DEBUG}"
 
 	${ST_STP_D} ${OPTS} ${CMD}
 

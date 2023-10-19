@@ -39,7 +39,7 @@
             "key_index": 0,
             "description": "",
             "delete_after_sign": true,
-            "skip_in_dev_bundle": true
+            "only_with_funvisor": true
         },
         "fvos.signed": {
             "source": "fvos.unsigned",
@@ -50,7 +50,7 @@
             "key_index": 0,
             "description": "",
             "delete_after_sign": true,
-            "skip_in_dev_bundle": true
+            "only_with_funvisor": true
         },
         "FVHT": {
             "source": "INVALID_TO_BE_OVERWRITTEN",
@@ -62,7 +62,7 @@
             "description": "",
             "no_export": true,
             "delete_after_sign": true,
-            "skip_in_dev_bundle": true
+            "only_with_funvisor": true
         }
     },
     "global_config": {

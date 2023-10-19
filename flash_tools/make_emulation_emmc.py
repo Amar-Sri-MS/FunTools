@@ -46,17 +46,9 @@ PARTITION_OFFSET = 1 * GB
 # the second partition table
 FUNOS_OFFSET = 33 * MB
 
-# Similarily to how FunOS is stored, linux is stored as raw data blob at an offset
-# from the beginning of eMMC memory (or second partition table).
-LINUX_OFFSET = 128 * MB
-
 # Similarily to how FunOS is stored, config blob is stored as raw data blob at an offset
 # from the beginning of eMMC memory (or second partition table).
 CCFG_OFFSET = PARTITION_OFFSET - 1 * MB
-
-# LINUX_LOAD_ADDR specifies where the linux image should start in RAM. This memory
-# block will be mapped into the VZ Guest
-LINUX_LOAD_ADDR = 0x9000000010100000
 
 # see eSecure_rsa_structs.h::fw_fun_header_t for a description of
 # the signature structure format. Signing info is always prepended to
@@ -147,7 +139,7 @@ def crc32(filename):
     return res & 0xffffffff
 
 
-def gen_boot_script(filename, funos_start_blk, ccfg_start_blk, linux_start_blk=-1):
+def gen_boot_script(filename, funos_start_blk, ccfg_start_blk):
     """Generate a u-boot boot script
 
     This is the default boot script to be loaded by u-boot.
@@ -159,7 +151,6 @@ def gen_boot_script(filename, funos_start_blk, ccfg_start_blk, linux_start_blk=-
     1st full sector of the memory (512 bytes)
     """
     boot_img = os.path.join(g.outdir, 'boot.img')
-    boot_pad_img = os.path.join(g.outdir, 'boot.pad.img')
 
     def filesize(f):
         hdr = FUN_SIGNATURE_SIZE if g.signed else 0
@@ -170,20 +161,6 @@ def gen_boot_script(filename, funos_start_blk, ccfg_start_blk, linux_start_blk=-
                             'setexpr mmcstart ${mmcpart} - 1; else ' \
                             'setexpr mmcstart 0; ' \
                       'fi\n')
-
-        if linux_start_blk >= 0:
-            load_offset = FUN_SIGNATURE_SIZE if g.signed else 0
-            outfile.write('setexpr linux_mmcstart ${{mmcstart}} * 0x{offset:x}\n'.format(
-                    offset=PARTITION_OFFSET/BLOCK_SIZE))
-            outfile.write('setexpr linux_mmcstart ${{linux_mmcstart}} + 0x{mmc_start_blk:x}\n'.format(
-                    mmc_start_blk=linux_start_blk))
-            outfile.write('mmc read 0x{load_addr:x} ${{linux_mmcstart}} 0x{load_size_blk:x};\n'.format(
-                    load_addr=LINUX_LOAD_ADDR - load_offset,
-                    load_size_blk=filesize(g.linux) / BLOCK_SIZE))
-            if g.signed:
-                outfile.write('authfw 0x{load_addr:x} {load_size:x};\n'.format(
-                    load_addr=LINUX_LOAD_ADDR - load_offset,
-                    load_size=filesize(g.linux)))
 
         outfile.write('setexpr funos_mmcstart ${{mmcstart}} * 0x{offset:x}\n'.format(
                 offset=int(PARTITION_OFFSET/BLOCK_SIZE)))
@@ -204,7 +181,28 @@ def gen_boot_script(filename, funos_start_blk, ccfg_start_blk, linux_start_blk=-
                 load_addr=LOAD_ADDR,
                 load_size=filesize(g.appfile)))
         outfile.write('elf_get_extent ${loadaddr};\n')
-        outfile.write('mmc dev; mmc read ${elf_extent} ${ccfg_mmcstart} 0; loadblob ${elf_extent};\n')
+        blob_mmc_addr = int(filesize(g.appfile) / BLOCK_SIZE) # relative to funos mmc addr
+        blob_addr = 0 # relative to elf_extent
+        for blob in g.blob:
+            # for each of the blobs calculate mmc and load location
+            # all blobs are stored sector-aligned after funos directly in emmc
+            # and loaded into RAM directly after funos runtime space
+            # This is somewhat limited by the amount of RAM before u-boot runtime,
+            # so loading a few hundred MBs of blobs would not work and will
+            # result in uboot crashing ... alternatively we could load in a higher
+            # memory region, but then we'll have more fragmentation in memory.
+            # Something to consider if needed in the future.
+            outfile.write('setexpr blob_addr ${{elf_extent}} + 0x{blob_addr:x}\n'.format(
+                blob_addr=blob_addr))
+            outfile.write('setexpr blob_mmcstart ${{funos_mmcstart}} + 0x{blob_mmc_addr:x}\n'.format(
+                blob_mmc_addr=blob_mmc_addr))
+            outfile.write('mmc dev; mmc read ${{blob_addr}} ${{blob_mmcstart}} 0; loadblob ${{blob_addr}};\n'.format())
+            blob_mmc_addr += int(filesize(blob) / BLOCK_SIZE)
+            blob_addr += filesize(blob)
+
+        outfile.write('setexpr ccfg_addr ${{elf_extent}} + 0x{blob_addr:x}\n'.format(
+                blob_addr=blob_addr))
+        outfile.write('mmc dev; mmc read ${ccfg_addr} ${ccfg_mmcstart} 0; loadblob ${ccfg_addr};\n')
         outfile.write('setenv bss_clear 0;\n')
         outfile.write('bootelf -p ${loadaddr};\n')
 
@@ -225,7 +223,6 @@ def gen_boot_script(filename, funos_start_blk, ccfg_start_blk, linux_start_blk=-
            '-d', filename,
            boot_img]
     subprocess.call(cmd)
-    pad_file(boot_img, boot_pad_img, BLOCK_SIZE)
 
 
 def gen_fs(files):
@@ -288,11 +285,10 @@ def run():
         '-o', '--outdir', help='Output directory', required=True)
     parser.add_argument('-f', '--appfile',
                         help='Application file', required=True)
-    parser.add_argument('--linux', help='Path to linux image', metavar='VMLINUX')
     parser.add_argument(
         '-c', '--crc', help='Add crc check step', action='store_true')
     parser.add_argument(
-        '--filesystem', help='Generate filesystem for eMMC', action='store_true')
+        '--filesystem', help='[ignored]', action='store_true')
     parser.add_argument(
         '--hex', help='Generate output in hex format (for Palladium)', action='store_true')
     parser.add_argument(
@@ -309,10 +305,18 @@ def run():
         '--fsfile', help='File(s) to put in the filesystem', action='append')
     parser.add_argument(
         '--bootscript-only', help='Only generate system boot script', action='store_true')
+    parser.add_argument(
+        '--blob', default=[], help='Signed blobs to put in emmc', action='append')
 
     parser.parse_args(namespace=g)
 
-    linux_start_blk = (LINUX_OFFSET / BLOCK_SIZE) if g.linux else -1
+    if len(g.blob) > 3:
+        # This is a limitation of u-boot at the moment. We can remove this check
+        # when u-boot is fixed to support more easily. On the other hand we should
+        # not really need to embed more files in emmc, so that should not be
+        # a major problem
+        parser.error("At most 3 blobs can be provided")
+
     # there are 2 code paths when we want to generate bootscript
     # 1) with bootscript-only the bootscript is generated, it is later signed
     #    and passed to this script as fsfile together with filesystem flag
@@ -320,10 +324,9 @@ def run():
     #    invoked only once and the boot.img is immediately embedded in the
     #    filesystem (see gen_fs()), so in this scenario generate the script
     #    and continue execution
-    if g.bootscript_only or (g.fsfile is None and not g.filesystem):
+    if g.bootscript_only:
         gen_boot_script(os.path.join(g.outdir, 'bootloader.scr'), int(FUNOS_OFFSET / BLOCK_SIZE),
-                    int(CCFG_OFFSET / BLOCK_SIZE),
-                    linux_start_blk)
+                    int(CCFG_OFFSET / BLOCK_SIZE))
         if g.bootscript_only:
             return
 
@@ -335,21 +338,16 @@ def run():
     outfile_bin = os.path.join(g.outdir, 'emmc_image.bin')
 
     files = []
-    if g.filesystem:
-        fs = gen_fs(g.fsfile)
-        pad_file(fs, outfile_bin, FUNOS_OFFSET)
-        merge_file(g.work_file, outfile_bin)
-        if g.linux:
-            os.rename(outfile_bin, outfile_bin + ".tmp")
-            pad_file(outfile_bin + ".tmp", outfile_bin, LINUX_OFFSET)
-            os.remove(outfile_bin + ".tmp")
-            pad_file(g.linux, g.linux + ".tmp", BLOCK_SIZE)
-            merge_file(g.linux + ".tmp", outfile_bin)
-            os.remove(g.linux + ".tmp")
-        files.append(outfile_bin)
-    else:
-        files.append(os.path.join(g.outdir, 'boot.pad.img'))
-        files.append(g.work_file)
+
+    fs = gen_fs(g.fsfile)
+    pad_file(fs, outfile_bin, FUNOS_OFFSET)
+    merge_file(g.work_file, outfile_bin)
+    files.append(outfile_bin)
+
+    for b in g.blob:
+        blob_padded = os.path.join(g.outdir, os.path.basename(b) + '.pad')
+        pad_file(b, blob_padded, BLOCK_SIZE)
+        merge_file(blob_padded, outfile_bin)
 
     outfile_mmc0 = os.path.join(g.outdir, 'mmc0_image.bin')
     outfile_mmc1 = os.path.join(g.outdir, 'mmc1_image.bin')

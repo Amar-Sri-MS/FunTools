@@ -37,7 +37,8 @@
             "cert": "",
             "customer_cert": "",
             "key_index": 0,
-            "description": ""
+            "description": "",
+            "only_with_funvisor": true
         },
         "fvos.signed": {
             "source": "fvos.unsigned",
@@ -46,7 +47,8 @@
             "cert": "",
             "customer_cert": "",
             "key_index": 0,
-            "description": ""
+            "description": "",
+            "only_with_funvisor": true
         },
         "FVHT": {
             "source": "INVALID_TO_BE_OVERWRITTEN",
@@ -56,7 +58,8 @@
             "customer_cert": "",
             "key_index": 0,
             "description": "",
-            "no_export": true
+            "no_export": true,
+            "only_with_funvisor": true
         }
     }
 }

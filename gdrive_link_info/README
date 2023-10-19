@@ -1,0 +1,12 @@
+To get info about some google drive link simply run the gdrive_link_to_name script
+and provide your link as a command line argument.
+
+After migrating to OneDrive, we have seen that we have no way of knowing what
+our google drive links point to.
+
+This directory contains a JSON file that maps a file ID to the file name, type,
+and file path (the file path may not include the full path, but the path included
+is correct and of value).
+
+The JSON contains mappings for all the files in the shared drive and certain other
+files (mostly files we found referenced in FunOS that were not on the shared drive).

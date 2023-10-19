@@ -14,7 +14,7 @@ import binary_json
 class BinaryJSONEncoder(DpcEncoder):
     def enable_command(self):
         # type: (Any) -> Union[bytes(), None]
-        return b'{verb:encoding_binary_json, tid:0}\n'
+        return b'{"verb":"encoding_binary_json", "tid":0}\n'
 
     def serialization_size(self, buffer):
         # type: (Any, bytes()) -> int
