@@ -1025,6 +1025,10 @@ class NOR_IMAGE(object):
     def read_dir_ex(self):
         dir_of_dir = self.read_dir_of_dir()
 
+        # empty flash case
+        if dir_of_dir == b'\xFF\xFF\xFF\xFF':
+            return None, None
+
         # 256 bytes enough to read the whole directory
         data = self.dbg_chal.read_flash(dir_of_dir,
                                         QSPI_PAGE_SIZE)
@@ -1537,17 +1541,17 @@ def do_full_rewrite(nor_image, src_image, override_files, nor_dir):
         nor_dir = nor_image.read_dir()
 
     need_to_move = {}
-    for img_type in HEADERLESS_4CC:
-        need_to_move[img_type] = not same_image_addresses(img_type,
-                                                          nor_dir,
-                                                          src_dir)
-
+    if nor_dir:
+        for img_type in HEADERLESS_4CC:
+            need_to_move[img_type] = not same_image_addresses(img_type,
+                                                              nor_dir,
+                                                              src_dir)
     # read the enrollment certificate from flash
-    if need_to_move[b'nrol']:
+    if need_to_move.get(b'nrol'):
         enrollment_cert = nor_image.read_enrollment_cert(nor_dir)
 
     # read the host data from flash
-    if need_to_move[b'hdat']:
+    if need_to_move.get(b'hdat'):
         host_data = nor_image.read_host_data(nor_dir)
 
     # identify sources: get_srcs_images() will give a set of good images
@@ -1569,14 +1573,14 @@ def do_full_rewrite(nor_image, src_image, override_files, nor_dir):
         nor_image.write_flash(src_info['addr'], img)
 
     # erase/write enrollment certificate
-    if need_to_move[b'nrol']:
+    if need_to_move.get(b'nrol'):
         for addr in set(src_dir[b'nrol']):
             nor_image.erase_at_addr_for_size(addr, ENROLLMENT_CERT_SIZE)
             if enrollment_cert:
                 nor_image.write_flash(addr, enrollment_cert)
 
     # erase/write host data: hdat should be in recent image but be prepared...
-    if need_to_move[b'hdat']:
+    if need_to_move.get(b'hdat'):
         addresses = src_dir.get(b'hdat', [FLASH_SIZE - QSPI_SECTOR_SIZE])
         addr = addresses[0] # use only one location
         nor_image.erase_at_addr_for_size(addr, 1) # erase only one sector
