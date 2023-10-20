@@ -659,6 +659,17 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
       WriteFile(output_base + '.c', source)
       return ("", [])
 
+  elif output_style is OutputStyleWindows:
+    extra_vars.append('windows')
+    header = GenerateFromTemplate(doc, 'header-windows.tmpl', input_filename,
+                                  output_base, extra_vars)
+    if not header:
+      return (None, ["Problems generating output from template."])
+    header = ReformatCode(header)
+    if output_base:
+      WriteFile(output_base + '.h', header)
+      return ("", [])
+
     else:
       # For testing, combine source and headers.
       return (header + source, [])
@@ -696,6 +707,8 @@ OutputStyleValidation = 3
 OutputStyleKernel = 4
 # Output Linux headers.
 OutputStyleLinux = 5
+# Output Windows headers.
+OutputStyleWindows = 6
 
 
 def SetFromArgs(key, codegen_args, default_value):
@@ -721,6 +734,8 @@ def ShowDeps(style):
     deps.extend(['validate.tmpl'])
   elif style == OutputStyleLinux:
     deps.extend(['header-linux.tmpl', 'source-linux.tmpl'])
+  elif style == OutputStyleWindows:
+    deps.extend(['header-windows.tmpl'])
 
   print(' '.join(os.path.join(basepath, f) for f in deps))
 
@@ -756,6 +771,8 @@ def main():
         output_style = OutputStyleValidation
       elif a == 'linux':
         output_style = OutputStyleLinux
+      elif a == 'windows':
+        output_style = OutputStyleWindows
       else:
         sys.stderr.write('Unknown output style "%s"' % a)
         sys.exit(2)
