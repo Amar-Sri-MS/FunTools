@@ -8,6 +8,14 @@ static check:
 
 format:
 % python3 -m black create-varstore.py
+
+The variable store is composed of 3 64K blocks, the last two are used
+internally to EDK2 as part of the fault-tolerant write feature, so the
+initial variable store data is kept in the first 64K block. These
+sizes are hard coded into the ACU EDK2 configuration, if we ever
+decide to change the sizes we would have to figure out how to make
+this script match.
+
 """
 
 from typing import List, Optional, Type, Dict, Any, Tuple, Union
@@ -30,14 +38,6 @@ def parse_args() -> argparse.Namespace:
                         help='String of the form: "name,part-number,start-lba,size-lba,guid,path". Boot0000 is created as first in BootOrder')
     # Required positional argument
     parser.add_argument("out_file", help="Output File", type=argparse.FileType('w+b'))
-
-    # Optional verbosity counter (eg. -v, -vv, -vvv, etc.)
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        action="count",
-        default=0,
-        help="Verbosity (-v, -vv, etc)")
 
     args: argparse.Namespace = parser.parse_args()
     return args
