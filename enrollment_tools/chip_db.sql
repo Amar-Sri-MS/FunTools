@@ -123,6 +123,69 @@ END
 $func$;
 
 
+CREATE EXTENSION plpython3u;
+
+CREATE OR REPLACE FUNCTION esrp_sign(_tbs bytea, _cert text)
+  RETURNS bytea
+AS $$
+
+import requests
+import hashlib
+
+def pack_bytes_with_len_prefix(b, size):
+    ''' used to transform signature/modulus to proper format '''
+    len_b = len(b)
+    ret = len_b.to_bytes(4, byteorder='little') + b # LE length prefix
+    len_pad = size - (4 + len_b)
+    if len_pad > 0:
+        ret += b'\x00' * len_pad
+    return ret
+
+digest = hashlib.sha512(_tbs).digest()
+
+url_str = "https://127.0.0.1:4443/cgi-bin/signing_server.cgi"
+
+multi_form_data = { 'digest' : ('sha512',
+                                digest,
+                                'application/octet-stream',
+                                {"Content-Length" : str(len(digest)) }
+                                )
+                   }
+
+params = {'key' : 'fpk4'}
+
+response = requests.post(url_str,
+			 cert=_cert,
+			 files=multi_form_data,
+			 params=params,
+			 verify=False)
+
+raw_sig = response.content
+signature = pack_bytes_with_len_prefix(raw_sig, 516)
+return signature
+
+$$ LANGUAGE plpython3u;
+
+
+
+
+CREATE OR REPLACE FUNCTION resign_all_cert(_cert text) RETURNS void
+LANGUAGE plpgsql AS
+$func$
+BEGIN
+
+update enrollment_certs as ec
+set rsa_signature = esrp_sign( v.magic||v.flags||v.serial_info||v.serial_nr||
+		    	       v.puf_key||v.nonce||v.activation_code,
+			       _cert)
+from
+	enrollment_certs_v v
+where
+	ec.chip_id = v.chip_id;
+END
+$func$;
+
+
 GRANT CONNECT ON DATABASE enrollment_db to "apache";
 GRANT SELECT,INSERT ON TABLE fungible_dpus, enrollment_certs, debug_certs to "apache";
 GRANT SELECT ON TABLE enrollment_certs_v, debug_certs_v to "apache";
