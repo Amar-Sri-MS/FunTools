@@ -313,7 +313,7 @@ struct fun_json *fun_json_dict_at(struct fun_json *j, const char *key)
 {
 	if (!fun_json_is_dict(j)) return 0;
 	struct fun_json_dict *d = (void *)j;
-	for (size_t i = 0; i < d->used; d++) {
+	for (size_t i = 0; i < d->used; i++) {
 		struct fun_json_string *k = (void *)d->kv[i].key;
 		if (strcmp(k->value, key) == 0) {
 			return d->kv[i].value;
