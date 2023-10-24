@@ -41,6 +41,7 @@ EEPROM_CONFIG_OVERRIDE="""
 }
 """
 
+# These are dummy filler configs. Upgrade script picks the right one based on the sku
 BOARD_CFG_PER_CHIP_SKU_DEFAULT = {
 	"f1": "f1_dev_board",
 	"f1d1": "fs800v2",
@@ -48,7 +49,6 @@ BOARD_CFG_PER_CHIP_SKU_DEFAULT = {
 	"s2": "ds400"
 }
 
-# These are dummy filler configs. Upgrade script picks the right one based on the sku
 BOARD_CONFIG_OVERRIDE="""
 {{ "signed_images": {{
      "board_cfg.bin": {{
