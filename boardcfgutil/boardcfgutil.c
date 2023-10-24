@@ -1223,7 +1223,7 @@ static void _handle_bin_input(const char *binfile)
 	
 	/* dump it */
 	if (_verbose > 0) {
-		printf("Encoded SKU config:\n");
+		printf("Encoded board config:\n");
 		_pretty_print_cfg(1, cfg);
 	}
 	
@@ -1403,7 +1403,7 @@ static bool _handle_json_input_per_prof(struct fun_json *input_json,
 
 	/* dump it */
 	if (_verbose > 0) {
-		printf("Encoded SKU config:\n");
+		printf("Encoded board config:\n");
 		_pretty_print_cfg(1, board_cfg);
 	}
 
