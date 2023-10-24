@@ -82,3 +82,7 @@ size_t fun_json_serialization_size(const struct fun_json *);
 
 // output must be preallocated, returns capacity used
 size_t fun_json_serialize(uint8_t *output, const struct fun_json *);
+
+// deserialize streams where we don't know how much to read at first
+size_t fun_json_binary_serialization_minimum_size(uint8_t first_byte);
+size_t fun_json_binary_serialization_size(const uint8_t *bytes, size_t size);
