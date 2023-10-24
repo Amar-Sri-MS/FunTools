@@ -479,6 +479,9 @@ size_t fun_json_binary_serialization_size(const uint8_t *bytes, size_t size) {
 	}
 
 	uint8_t ch = bytes[0];
+	if (size < fun_json_binary_serialization_minimum_size(ch)) {
+		return 0;
+	}
 	switch (ch) {
 		case BJSON_NULL:
 		case BJSON_TRUE:
@@ -487,37 +490,29 @@ size_t fun_json_binary_serialization_size(const uint8_t *bytes, size_t size) {
 			return 1;
 		case BJSON_ARRAY:
 		case BJSON_DICT: {
-			if (size < 9) return 0;
 			uint32_t subs_size = deserialize_uint32(bytes + 1);
 			return 9 + subs_size;
 		}
 		case BJSON_BYTE_ARRAY: {
-			if (size < 3) return 0;
 			uint16_t count = deserialize_uint16(bytes + 1);
 			return 3 + count;
 		}
 		case BJSON_DOUBLE:
-			if (size < 9) return 0;
 			return 9;
 		case BJSON_STR16: {
-			if (size < 4) return 0;
 			uint16_t len = deserialize_uint16(bytes + 1);
 			return 1 + 2 + len + 1;
 		}
 		case BJSON_STR32:
 		case BJSON_ERROR: {
-			if (size < 6) return 0;
 			uint32_t len = deserialize_uint32(bytes + 1);
 			return 1 + 4 + len + 1;
 		}
 		case BJSON_INT16:
-			if (size < 3) return 0;
 			return 3;
 		case BJSON_INT32:
-			if (size < 5) return 0;
 			return 5;
 		case BJSON_INT64:
-			if (size < 9) return 0;
 			return 9;
 		default:
 			if ((ch >= BJSON_TINY_STR) && (ch < BJSON_UINT7)) {
