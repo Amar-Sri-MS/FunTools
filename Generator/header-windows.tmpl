@@ -1,0 +1,327 @@
+{#
+
+Standard Fungible template for header file for generated structures.
+Generates structures, accessor macros and functions, and enum declarations.
+
+#}
+{#
+
+How to render each enum.
+
+#}
+{% macro enumDecl(enum) %}
+{% if enum.body_comment %}{{enum.body_comment|as_comment}}{% endif %}
+enum {{enum.name}} { {{enum.key_comment|as_comment}}
+{% for enum_variable in enum.variables %}
+	{{enum_variable.body_comment|as_comment}}{{enum_variable.name}} = {{enum_variable.value|as_hex}},{{enum_variable.key_comment|as_comment}}
+{% endfor %}
+{% if enum.tail_comment %}{{enum.tail_comment|as_comment}}{% endif %}
+};
+
+/* Human-readable strings for enum values in {{enum.name}}. */
+extern const char *{{enum.name|as_lower}}_names[];
+{%- endmacro %}
+{#
+
+How to render each flagset.
+
+#}
+{% macro flagsetDecl(flagset) %}
+/* Declarations for flag set {{flagset.name}}. */
+  {% if flagset.key_comment %}{{flagset.key_comment|as_comment}}{% endif %}
+  {% if flagset.body_comment %}{{flagset.body_comment|as_comment}}{% endif %}
+  {% for var in flagset.variables %}
+    {% if var.body_comment %}{{var.body_comment|as_comment}}{% endif %}
+static const unsigned int {{var.name}} = {{var.value|as_hex}};{{var.key_comment|as_comment}}
+  {% endfor %}
+
+/* String names for all power-of-two flags in {{flagset.name}}. */
+extern const char *{{flagset.name|as_lower}}_names[];
+{%- endmacro %}
+{#
+
+How to render each CONST
+
+#}
+{% macro constDecl(const) %}
+/* Declarations for constants {{const.name}}. */
+{% if const.key_comment %}{{const.key_comment|as_comment}}{% endif %}
+{% if const.body_comment %}{{const.body_comment|as_comment}}{% endif %}
+enum {{const.name}} {
+{% for var in const.variables %}
+  {% if var.body_comment %}{{var.body_comment|as_comment}}{% endif %}
+	{{var.name}} = {{var.value|as_hex}}, {{var.key_comment|as_comment}}
+{% endfor %}
+{% if const.tail_comment %}{{const.tail_comment|as_comment}}{% endif %}
+};
+{%- endmacro %}
+{#
+
+Macros for hiding which size macro to use.
+
+#}
+{% if generate_be %}
+{% macro toDpuWrapper(field) %}
+{% if generate_swap and field.type.bit_width != 8 and not field.type.IsNoSwap() %}cpu_to_be{{field.type.bit_width}}{% endif %}
+{%- endmacro %}
+{% elif generate_le %}
+{% macro toDpuWrapper(field) %}
+{% if generate_swap and field.type.bit_width != 8 and not field.type.IsNoSwap() %}cpu_to_le{{field.type.bit_width}}{% endif %}
+{%- endmacro %}
+{% else %}
+{% macro toDpuWrapper(field) %}
+{% if generate_swap and field.type.bit_width != 8 and not field.type.IsNoSwap() %}cpu_to_dpu{{field.type.bit_width}}{% endif %}
+{%- endmacro %}
+{% endif %}
+{# #}
+{% if generate_be %}
+{% macro fromDpuWrapper(field) %}
+{% if generate_swap and field.type.bit_width != 8 and not field.type.IsNoSwap() %}be{{field.type.bit_width}}_to_cpu{% endif %}
+{%- endmacro %}
+{% elif generate_le %}
+{% macro fromDpuWrapper(field) %}
+{% if generate_swap and field.type.bit_width != 8 and not field.type.IsNoSwap()
+ %}le{{field.type.bit_width}}_to_cpu{% endif %}
+{%- endmacro %}
+{% else %}
+{% macro fromDpuWrapper(field) %}
+{% if generate_swap and field.type.bit_width != 8 and not field.type.IsNoSwap() %}dpu_to_cpu{{field.type.bit_width}}{% endif %}
+{%- endmacro %}
+{% endif %}
+{#
+
+How to render each struct
+
+#}
+{% macro structDecl(struct) %}
+{# Note: The structure declarations with containing unions are too complex
+   to generate in templates, so do that work in code instead.
+#}
+{% if not struct.inline %}
+{# Generate structure definitions with DPU types. Their endianness is resolved later
+   at compile time. #}
+{{ struct.DefinitionString(True, True)}}{% if generate_cpacked %} __attribute__((packed)){% endif %};
+
+{% endif %}
+{# Generate macros for packed fields. #}
+{% for field in struct.fields %}
+   {% if field.packed_fields %}
+     {% for f in field.packed_fields %}
+       {% if f.is_reserved == false %}
+/* Offset of field "{{f.name}}" in packed field "{{field.name}}" */
+#define {{struct.name|as_macro}}_{{f.name|as_macro}}_S {{f.shift()}}U
+
+/* Mask of field "{{f.name}}" in packed field "{{field.name}}"
+ * after shift.
+ */
+#define {{struct.name|as_macro}}_{{f.name|as_macro}}_M {{f.mask}}
+
+/* Shifts a value to the location to be inserted in field {{f.name}}
+ * inside packed field {{field.name}}.
+ */
+#define {{struct.name|as_macro}}_{{f.name|as_macro}}_P(x) ({{toDpuWrapper(field)}}(({{f.type | as_cast}} x) << {{struct.name|as_macro}}_{{f.name|as_macro}}_S))
+
+/* Shifts a value to the location to be inserted in field {{f.name}}
+ * inside packed field {{field.name}}.
+ * Caller responsible for swapping order of bytes in case storing to a
+ * different endianness.
+ */
+#define {{struct.name|as_macro}}_{{f.name|as_macro}}_P_NOSWAP(x) (({{f.type | as_cast}} x) << {{struct.name|as_macro}}_{{f.name|as_macro}}_S)
+
+/* Returns value for field {{field.name}} from packed field
+ * {{field.name}}.
+ */
+#define {{struct.name|as_macro}}_{{f.name|as_macro}}_G(x) (({{fromDpuWrapper(field)}}(x) >> {{struct.name|as_macro}}_{{f.name|as_macro}}_S) & {{struct.name|as_macro}}_{{f.name|as_macro}}_M)
+
+/* Clears out the field {{f.name}} inside packed field
+ *  {{field.name}}
+ *  Usage:
+ *    x.{{field.name}} &= {{struct.name|as_macro}}_{{f.name|as_macro}}_Z;
+ */
+#define {{struct.name|as_macro}}_{{f.name|as_macro}}_Z \
+	(~(({{f.type|as_cast}} {{struct.name|as_macro}}_{{f.name|as_macro}}_M) \
+       << {{struct.name|as_macro}}_{{f.name|as_macro}}_S))
+
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+{% endfor %}
+{#
+
+The initializer
+
+#}
+{% if struct.arg_fields() %}
+{% if generate_init_macros %}
+#define {{struct.name|as_macro}}_INIT({% for field in struct.arg_fields() %}{{field.name}}{{ ", " if not loop.last }}{% endfor %}) \
+	(struct {{struct.name}}){ \
+  {% for field in struct.init_fields() %}
+    {% if field.packed_fields %}
+		.{{field.name}} = {{toDpuWrapper(field)}}( \
+      {% for f in field.fields_to_set() %}
+	{{f.parent_struct.name|as_macro}}_{{f.name|as_macro}}_P_NOSWAP({{f.name}}){{" |" if not loop.last }} \
+      {% endfor %}), \
+    {% else %}
+      {% if field.is_natural_width and field.type.bit_width != 8 and not field.type.IsNoSwap() %}
+		.{{field.name}} = {{toDpuWrapper(field)}}({{field.name}}), \
+      {% else %}
+		.{{field.name}} = {{field.name}}, \
+      {% endif %}
+    {% endif %}
+  {% endfor %}
+	}
+{% else %}
+/* Initializes the {{struct.name}} structure.
+ * Arguments:
+ *   s: pointer to structure to be initialized.
+   {% for field in struct.arg_fields() %}
+ *   {{field.name}}: {% if field.key_comment %} {{field.key_comment|as_line}} {% else %} {% endif %}
+
+   {% endfor %}
+
+{% if struct.non_arg_fields() | length > 0 %}
+ * Caller responsible for initializing these fields:
+     {% for f in struct.non_arg_fields() %}{% if not f.is_reserved %}
+ *   {{f.name}}
+     {% endif %}{% endfor %}
+{% endif %}
+ */
+static inline void {{struct.name}}_init(struct {{struct.init_struct().name}} *s{% for field in struct.arg_fields() %}, {{field | as_declaration }}{% endfor %})
+{
+  {% for field in struct.init_fields() %}
+    {% if field.packed_fields %}
+      s->{{field.init_accessor()}}{{field.name}} = {{toDpuWrapper(field)}}(
+      {% for f in field.fields_to_set() %}
+	{{f.parent_struct.name|as_macro}}_{{f.name|as_macro}}_P_NOSWAP({{f.name}}) {{" | " if not loop.last }}
+      {% endfor %});
+    {% else %}
+      {% if field.is_natural_width and field.type.bit_width != 8 %}
+        s->{{field.init_accessor()}}{{field.name}} = {{toDpuWrapper(field)}}({{field.name}});
+      {% else %}
+        s->{{field.init_accessor()}}{{field.name}} = {{field.name}};
+      {% endif %}
+    {% endif %}
+  {% endfor %}
+}
+{% endif %}
+
+{% endif %}
+{% if generate_dump %}
+#ifndef __KERNEL__
+
+/* Dump out the structure as a sequence of hex bytes, in big-endian order.
+ * For structures in union, the active structure is printed, padded to the
+ * length of the union.
+ * Printing structures with zero-length arrays calls assert().
+ */
+extern void {{struct.name}}_dump(FILE *file_des, {{struct.DeclarationString()}} *s);
+
+#endif  /* __KERNEL__ */
+
+{% endif %}
+/* End of helper macros for structure {{struct.name}} */
+{%- endmacro %}
+{#
+
+The body of the header.
+
+#}
+#ifndef __{{output_base|as_macro}}_H__
+#define __{{output_base|as_macro}}_H__
+
+#include <endian.h>
+#include <stdio.h>
+
+// Header created by generator.py
+// Do not change this file;
+// change the gen file "{{gen_file}}" instead.
+
+// Magic number to allow checking whether two interfaces were generated
+// from the same sources.
+#define {{gen_file|as_macro}}_VERSION_HASH {{gen_file_version_hash}}
+
+{% if not generate_init_macros %}
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+{% endif %}
+{% if generate_swap %}
+/* Structures are always stored in DPU byte order.  Values are swapped
+ * going in and coming out.
+ */
+
+#define __be8 uint8_t
+#define __be16 uint16_t
+#define __be32 uint32_t
+#define __be64 uint64_t
+#define __le8 uint8_t
+#define __le16 uint16_t
+#define __le32 uint32_t
+#define __le64 uint64_t
+
+{% if not generate_be and not generate_le %}
+#ifdef __DPU_BYTEORDER_BIG
+{% endif %}
+{% if not generate_le %}
+#define __dpu8 __be8
+#define __dpu16 __be16
+#define __dpu32 __be32
+#define __dpu64 __be64
+
+#define cpu_to_dpu16(x) (cpu_to_be16(x))
+#define cpu_to_dpu32(x) (cpu_to_be32(x))
+#define cpu_to_dpu64(x) (cpu_to_be64(x))
+
+#define dpu_to_cpu16(x) (be16_to_cpu(x))
+#define dpu_to_cpu32(x) (be32_to_cpu(x))
+#define dpu_to_cpu64(x) (be64_to_cpu(x))
+{% endif %}
+{% if not generate_be and not generate_le %}
+#else
+{% endif %}
+{% if not generate_be %}
+#define __dpu8 __le8
+#define __dpu16 __le16
+#define __dpu32 __le32
+#define __dpu64 __le64
+
+#define cpu_to_dpu16(x) (cpu_to_le16(x))
+#define cpu_to_dpu32(x) (cpu_to_le32(x))
+#define cpu_to_dpu64(x) (cpu_to_le64(x))
+
+#define dpu_to_cpu16(x) (le16_to_cpu(x))
+#define dpu_to_cpu32(x) (le32_to_cpu(x))
+#define dpu_to_cpu64(x) (le64_to_cpu(x))
+{% endif %}
+{% if not generate_be and not generate_le %}
+#endif /* __DPU_BYTEORDER_BIG */
+{% endif %}
+{% endif %}
+
+#define __u64 uint64_t
+#define __u8 uint8_t
+
+{% for decl in declarations %}
+{% if decl.is_enum %}
+{{ enumDecl(decl) }}
+{% endif %}
+{% if decl.is_flagset %}
+{{ flagsetDecl(decl) }}
+{% endif %}
+{% if decl.is_const %}
+{{ constDecl(decl) }}
+{% endif %}
+{% if decl.is_struct and not decl.is_inline %}
+{{ structDecl(decl) }}
+{% endif %}
+
+{% endfor %}
+{% if not generate_init_macros %}
+
+#ifdef __cplusplus
+};
+#endif
+
+{% endif %}
+#endif /* __{{output_base|as_macro}}_H__ */
