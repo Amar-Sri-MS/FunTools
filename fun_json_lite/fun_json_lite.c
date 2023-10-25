@@ -118,7 +118,7 @@ static void *allocate(struct fun_json_container *container, size_t size)
 	if (fun_json_container_get_free_mem(container) < size) {
 		return NULL;
 	}
-	void *result = (void *)container + container->used;
+	void *result = (uint8_t *)container + container->used;
 	container->used += size;
 	return result;
 }
@@ -646,15 +646,15 @@ const char *deserialize_string(const uint8_t *bytes, size_t *len)
 
 	if (ch == BJSON_STR16) {
 		*len = deserialize_uint16(bytes + 1);
-		ptr = (void *)bytes + 2 + 1;
+		ptr = (char *)bytes + 2 + 1;
 	} else
 	if (ch == BJSON_STR32 || ch == BJSON_ERROR) {
 		*len = deserialize_uint32(bytes + 1);
-		ptr = (void *)bytes + 4 + 1;
+		ptr = (char *)bytes + 4 + 1;
 	} else
 	if ((ch >= BJSON_TINY_STR) && (ch < BJSON_UINT7)) {
 		*len = ch & 0x3f;
-		ptr = (void *)bytes + 1;
+		ptr = (char *)bytes + 1;
 	}
 
 	if (len == 0) return NULL;
@@ -843,7 +843,7 @@ size_t fun_json_serialize(uint8_t *output, const struct fun_json *j)
 		}
 
 		output[0] = BJSON_DOUBLE;
-		double *output_d = (void *)output + 1;
+		double *output_d = (double *)(output + 1);
 		*output_d = p->double_value;
 		swap_double_in_place_if_needed(output_d);
 		return 8 + 1;
