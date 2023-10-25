@@ -270,7 +270,7 @@ static void __pretty_print_flags(struct valtab *tab, uint64_t flags)
 		       sep ? " | " : "",
 		       not ? "~" : "",
 		       tab[i].str);
-		
+
 		/* next */
 		sep = true;
 		i++;
@@ -375,7 +375,7 @@ static void _pretty_print_cfg(uint32_t depth, struct board_cfg *cfg)
 	/* validity check */
 	printf("%sconfig blob is%s valid\n",
 	       _tabs(depth), _cfg_valid(cfg) ? "" : " NOT");
-	
+
 	/* print all cfg entries */
 	printf("\n");
 
@@ -383,7 +383,7 @@ static void _pretty_print_cfg(uint32_t depth, struct board_cfg *cfg)
 
 	for (uint8_t i = 0; i < num_cfg_entries; i++) {
 		struct board_cfg_header *header = cfg_ptr;
-		uint16_t cfg_type = be16toh(header->cfg_type);	
+		uint16_t cfg_type = be16toh(header->cfg_type);
 		uint32_t size_bytes = be32toh(header->size_bytes);
 
 		switch (cfg_type) {
@@ -506,7 +506,7 @@ static bool hostunits_enable_bmap_get(const struct fun_json *host_intf_cfg_json,
 	}
 
 	/* set any rings as appropriate */
-	*hu_en_bmap &= BOARD_CFG_HSU_ENABLE_MASK; 
+	*hu_en_bmap &= BOARD_CFG_HSU_ENABLE_MASK;
 
 	return true;
 }
@@ -697,7 +697,7 @@ static bool parse_hu_cntlr_cfg(const struct fun_json *cntlr_json,
 		gpio_id = UINT16_MAX;
 	}
 	pcie_link_cfg->clock_switch_gpio = htobe16(gpio_id);
-	
+
         /* check for sris on/off */
 	assert(!pcie_link_cfg->flags);
         if (fun_json_lookup_string(cntlr_json, "sris", &str)) {
@@ -765,7 +765,7 @@ static bool _board_cfg_alloc(struct board_cfg **board_cfg_p,
 	if (!board_cfg) {
 		eprintf("Failed to allocate config size(%u)\n", new_size);
 		return false;
-	}	
+	}
 
 	memcpy((void *)board_cfg + cur_size, cfg_data, cfg_size);
 	num_cfg_entries++;
@@ -843,7 +843,7 @@ static bool host_intf_cfg_json_parse(const struct fun_json *host_intf_cfg_json,
 	assert(board_cfg);
 
 	uint64_t hu_en_bmap = 0;
-	
+
 	if (!hostunits_enable_bmap_get(host_intf_cfg_json, &hu_en_bmap))
 		return false;
 
@@ -855,7 +855,7 @@ static bool host_intf_cfg_json_parse(const struct fun_json *host_intf_cfg_json,
 	log("hu_en_bmap: 0x%" PRIx64 "\n", hu_en_bmap);
 
 	for (uint8_t hsu_id = 0; hu_en_bmap >> hsu_id; hsu_id++) {
-		if (!(hu_en_bmap >> hsu_id) & 0x1)
+		if (!((hu_en_bmap >> hsu_id) & 0x1))
 			continue;
 
 		char hu_key[32];
@@ -869,7 +869,7 @@ static bool host_intf_cfg_json_parse(const struct fun_json *host_intf_cfg_json,
 
 		if (!hu_cntlr_enable_bmap(hu_json, &cntlr_enable_bmp))
 			continue;
-	
+
 		if (!cntlr_enable_bmp)
 			continue;
 
@@ -884,16 +884,16 @@ static bool host_intf_cfg_json_parse(const struct fun_json *host_intf_cfg_json,
 		pcie_link_cfg->hsu_id = htobe16(hsu_id);
 		if (!parse_hu_cfg(hu_json, pcie_link_cfg))
 			return false;
-		
+
 		/* Loop through all the controller that are enabled */
 		for (uint8_t cid = 0; cntlr_enable_bmp >> cid; cid++) {
 			if (!((cntlr_enable_bmp >> cid) & 0x1))
 				continue;
-			
+
 			pcie_link_cfg->cntlr_id = htobe16(cid);
 
 			const struct fun_json *cntlr_json = NULL;
-			
+
 			/* Get the controller cfg json */
 			if (!hu_cntlr_json_get(host_intf_cfg_json,
 					       hsu_id, cid, &cntlr_json)) {
@@ -972,7 +972,7 @@ static bool ddr_cfg_parse(const struct fun_json *ddr_cfg_json,
 			eprintf("ddr channel size error!\n");
 			return false;
 		}
-		
+
 		ddr_cfg.ddr_size_GB[i] = htobe16(ddr_size);
 		log("ddr_size_GB[%u]: %u=%u\n", i, ddr_cfg.ddr_size_GB[i], ddr_size);
 	}
@@ -1063,7 +1063,7 @@ static bool _json_to_board_cfg(const struct fun_json *input_json,
 
 	/* check the input is at least semi-valid */
 	if (!fun_json_is_dict(sku_json))
-		return false;	
+		return false;
 
 	(*board_cfg)->magic = htobe64(BOARD_CFG_MAGIC);
 	(*board_cfg)->version = htobe32(BOARD_CFG_VERSION);
@@ -1144,7 +1144,7 @@ static void _write_cfg_to_file(const char *outdir, const char *fname,
 	int fd;
 	ssize_t n;
 	char fpath[PATH_MAX+1];
-	
+
 	assert(outdir != NULL);
 	assert(cfg != NULL);
 
@@ -1183,9 +1183,9 @@ static void _handle_bin_input(const char *binfile)
 	int fd = -1;
 	ssize_t n = 0;
 	struct stat sbuf;
-	
+
 	assert(binfile != NULL);
-	
+
 	/* this makes no sense without verbosity>0 */
 	_verbose++;
 
@@ -1207,11 +1207,11 @@ static void _handle_bin_input(const char *binfile)
 
 	n = read(fd, cfg, sbuf.st_size);
 	if (n < sbuf.st_size)
-		die("Failed to read all the expected bytes(%zd != %zd)!\n", n, sbuf.st_size);
+		die("Failed to read all the expected bytes(%zd != %" PRIu64 ")!\n", n, sbuf.st_size);
 	close(fd);
 
 	if (sbuf.st_size != BOARD_CFG_MAX_SIZE_BYTES) {
-		eprintf("WARNING: file is incorrect size (%zu != %u)\n",
+		eprintf("WARNING: file is incorrect size (%" PRIu64 "!= %u)\n",
 			sbuf.st_size, BOARD_CFG_MAX_SIZE_BYTES);
 
 	}
@@ -1220,13 +1220,13 @@ static void _handle_bin_input(const char *binfile)
 
 	if (cfg_size > BOARD_CFG_MAX_SIZE_BYTES)
 		die("Invalid(too big) cfg size: %u\n", cfg_size);
-	
+
 	/* dump it */
 	if (_verbose > 0) {
 		printf("Encoded board config:\n");
 		_pretty_print_cfg(1, cfg);
 	}
-	
+
 	/* return to previous value */
 	_verbose--;
 	free(cfg);
@@ -1246,7 +1246,7 @@ static char *_read_input_file(int fd, size_t *outsize)
 	if (buffer == NULL)
 		oom();
 	pp = buffer;
-	
+
 	while ((n = read(fd, pp, alloc_size - size)) > 0) {
 		/* total json so far + just read */
 		size += n;
@@ -1282,7 +1282,7 @@ static struct fun_json *_read_json(int fd)
 
 	buf = _read_input_file(fd, &size);
 	assert(buf);
-	
+
 	input_json = fun_json_create_from_text_with_status(buf, &parsed_all);
 
 	log("parsed_all: %d size: %zd strlen(buf): %zd\n", parsed_all, size, strlen(buf));
@@ -1303,13 +1303,13 @@ static struct fun_json *_read_bjson(int fd)
 
 	buf = _read_input_file(fd, &size);
 	assert(buf);
-	
+
 	input_json = fun_json_create_from_binary((uint8_t*)buf, size);
 
 	free(buf);
 	return input_json;
 }
-	
+
 
 static struct fun_json *read_input_file(int inmode, const char *infile)
 {
@@ -1365,10 +1365,10 @@ static void _write_board_prof_list(const char *outdir)
 	}
 
 	if (!board_cfg_profiles)
-		board_cfg_profiles = fun_json_create_empty_dict(); 
+		board_cfg_profiles = fun_json_create_empty_dict();
 
 	char *ouput = fun_json_to_text(board_cfg_profiles);
-	size_t output_size = strlen(ouput);	
+	size_t output_size = strlen(ouput);
 
 	log("output(%zd): %s\n", strlen(ouput), ouput);
 
@@ -1379,7 +1379,7 @@ static void _write_board_prof_list(const char *outdir)
 	}
 	close(fd);
 
-	fun_free_string(ouput);	
+	fun_free_string(ouput);
 	fun_json_release(board_cfg_profiles);
 }
 
@@ -1418,7 +1418,7 @@ static bool _handle_json_input_per_prof(struct fun_json *input_json,
 	}
 
 	if (!board_cfg_profiles) {
-		board_cfg_profiles = fun_json_create_empty_dict(); 
+		board_cfg_profiles = fun_json_create_empty_dict();
 	}
 
 	char chip_name[8];
@@ -1485,12 +1485,12 @@ static bool _is_applicable_board_profile(struct fun_json *input_json, const char
 	assert(fun_json_is_dict(subprofiles));
 
 	/* extract chip & board */
-	bool ret;
+	bool ret = false;
 	char chip_name[8];
 
 	/* Get the chip name of the sku */
 	if(!_chip_name_for_sku(input_json, sku_name, chip_name)) {
-		return false;	
+		return false;
 	}
 
 	/* Get the board layer for the sku */
@@ -1664,7 +1664,7 @@ _usage(const char *fname)
 	fprintf(stderr, "        -o <dir>       output files to <dir>\n");
 	fprintf(stderr, "        -s <sku_name>  filter input to <sku_name> only\n");
 	fprintf(stderr, "        -v[v]          verbose/very verbose\n");
-	
+
 	exit(1);
 }
 
@@ -1673,14 +1673,14 @@ main(int argc, char *argv[])
 {
 	int r = 0;
 	int c;
-	
+
 	int inmode = NOMODE;
-	char *infile = NULL;	
+	char *infile = NULL;
 	char *outdir = NULL;
 	char *binfile = NULL;
 	char *prof_name = NULL;
 	char *sku_name = NULL;
-	
+
 	while (1) {
 		static struct option long_options[] = {
 			{"in",      required_argument, 0,  'i' },
@@ -1693,7 +1693,7 @@ main(int argc, char *argv[])
 			{NULL,      no_argument,       0,  'v' },
 		};
 
-		
+
 		c = getopt_long(argc, argv, "i:o:l:I:O:vs:p:d:",
 				long_options, NULL);
 		if (c == -1)
@@ -1712,7 +1712,7 @@ main(int argc, char *argv[])
 			infile = optarg;
 			break;
 		case 'p':
-			
+
 			prof_name = optarg;
 			break;
 		case 'd':
@@ -1737,11 +1737,11 @@ main(int argc, char *argv[])
 	if (infile != NULL) {
 		_handle_json_input(inmode, infile, outdir, sku_name, prof_name);
 	}
-	
+
 	if (binfile != NULL) {
-		_handle_bin_input(binfile);	
+		_handle_bin_input(binfile);
 	}
-	
+
 	return r;
 }
 
