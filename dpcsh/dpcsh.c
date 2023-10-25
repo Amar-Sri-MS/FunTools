@@ -1851,9 +1851,9 @@ int main(int argc, char *argv[])
 
 	while ((ch = getopt_long(argc, argv,
 #ifdef __linux__
-				 "hB::b::D:i::c::u::p::q::T::t::I:nQSNXFR:LvdVYW",
+				 "hB::b::D:i::c:u::p::q::T::t::I:nQSNXFR:LvdVYW",
 #else
-				 "hB::b::D:i::c::u::T::t::nQSNXFR:LvdVY",
+				 "hB::b::D:i::c:u::T::t::nQSNXFR:LvdVY",
 #endif
 				 longopts, NULL)) != -1) {
 
