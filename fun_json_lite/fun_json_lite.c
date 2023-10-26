@@ -79,10 +79,8 @@ struct fun_json_container {
 
 static const struct fun_json const_null = { .type = fun_json_null_type };
 
-#define json_const_def(typename, value) static const struct fun_json_primitive const_##typename##_##value = \
-	{ .header = { .type = fun_json_##typename##_type }, .typename##_value = value, };
-
-#define json_bool_def(value) json_const_def(bool, value)
+#define json_bool_def(value) static const struct fun_json_primitive const_bool_##value = \
+	{ .header = { .type = fun_json_bool_type }, .bool_value = value, };
 
 json_bool_def(true)
 json_bool_def(false)
@@ -175,8 +173,8 @@ const struct fun_json *fun_json_create_int(struct fun_json_container *container,
 
 const struct fun_json *fun_json_create_bool(struct fun_json_container *container, bool value)
 {
-	if (value) return (void *)&const_bool_1;
-	return (void *)&const_bool_0;
+	if (value) return (void *)&const_bool_true;
+	return (void *)&const_bool_false;
 }
 
 const struct fun_json *fun_json_create_double(struct fun_json_container *container, double value)
