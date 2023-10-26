@@ -88,15 +88,17 @@ json_bool_def(true)
 json_bool_def(false)
 
 #define json_int_const(value) [value] = { .header = { .type = fun_json_int_type }, .int_value = value, }
-#define json_int_5_values(base) json_int_const(base), json_int_const(base + 1), json_int_const(base + 2), json_int_const(base + 3), json_int_const(base + 4)
-#define json_int_10_values(base) json_int_5_values(base), json_int_5_values(base + 5)
-#define json_int_20_values(base) json_int_10_values(base), json_int_10_values(base + 10)
-#define json_int_40_values(base) json_int_20_values(base), json_int_20_values(base + 20)
-#define json_int_80_values(base) json_int_40_values(base), json_int_40_values(base + 40)
-#define json_int_160_values(base) json_int_80_values(base), json_int_80_values(base + 80)
+#define json_int_2_values(base) json_int_const(base), json_int_const(base + 1)
+#define json_int_4_values(base) json_int_2_values(base), json_int_2_values(base + 2)
+#define json_int_8_values(base) json_int_4_values(base), json_int_4_values(base + 4)
+#define json_int_16_values(base) json_int_8_values(base), json_int_8_values(base + 8)
+#define json_int_32_values(base) json_int_16_values(base), json_int_16_values(base + 16)
+#define json_int_64_values(base) json_int_32_values(base), json_int_32_values(base + 32)
+#define json_int_128_values(base) json_int_64_values(base), json_int_64_values(base + 64)
+#define json_int_256_values(base) json_int_128_values(base), json_int_128_values(base + 128)
 
 static const struct fun_json_primitive const_int[256] = {
-	json_int_160_values(0), json_int_80_values(160), json_int_10_values(240), json_int_5_values(250), json_int_const(255)
+	json_int_256_values(0)
 };
 
 // The source of these constants is in FunOS
