@@ -552,14 +552,15 @@ size_t fun_json_binary_serialization_size(const uint8_t *bytes, size_t size) {
 	}
 }
 
-size_t fun_json_container_size_int()
+size_t fun_json_container_size_int(int64_t value)
 {
+	if (value >= 0 && value < 256) return 0; // pre-allocated statically
 	return sizeof(struct fun_json_primitive);
 }
 
 size_t fun_json_container_size_bool()
 {
-	return sizeof(struct fun_json_primitive);
+	return 0; // pre-allocated statically
 }
 
 size_t fun_json_container_size_double()
@@ -569,7 +570,7 @@ size_t fun_json_container_size_double()
 
 size_t fun_json_container_size_null()
 {
-	return sizeof(struct fun_json);
+	return 0; // pre-allocated statically
 }
 
 size_t fun_json_container_size_error(size_t len)
@@ -592,6 +593,11 @@ size_t fun_json_container_size_array(size_t size)
 	return sizeof(struct fun_json_array) + sizeof(void *) * size;
 }
 
+size_t fun_json_container_size_binary_array(size_t size)
+{
+	return sizeof(struct fun_json_binary_array) + size;
+}
+
 size_t fun_json_container_overhead()
 {
 	return sizeof(struct fun_json_container);
@@ -610,9 +616,11 @@ static size_t fun_json_container_size_internal(const uint8_t *bytes, size_t size
 		case BJSON_DOUBLE:
 			return fun_json_container_size_double();
 		case BJSON_INT16:
+			return fun_json_container_size_int(deserialize_int16(bytes + 1));
 		case BJSON_INT32:
+			return fun_json_container_size_int(deserialize_int32(bytes + 1));
 		case BJSON_INT64:
-			return fun_json_container_size_int();
+			return fun_json_container_size_int(deserialize_int64(bytes + 1));
 		case BJSON_ARRAY:{
 			uint32_t count = deserialize_uint32(bytes + 5);
 			size_t total = fun_json_container_size_array(count);
@@ -636,7 +644,7 @@ static size_t fun_json_container_size_internal(const uint8_t *bytes, size_t size
 		}
 		case BJSON_BYTE_ARRAY: {
 			uint16_t count = deserialize_uint16(bytes + 1);
-			return fun_json_container_size_array(count) + fun_json_container_size_int() * count;
+			return fun_json_container_size_binary_array(count);
 		}
 		case BJSON_STR16: {
 			uint16_t len = deserialize_uint16(bytes + 1);
@@ -655,7 +663,7 @@ static size_t fun_json_container_size_internal(const uint8_t *bytes, size_t size
 				uint8_t len = ch & 0x3f;
 				return fun_json_container_size_string(len);
 			}
-			if (ch >= BJSON_UINT7) return fun_json_container_size_int();
+			if (ch >= BJSON_UINT7) return fun_json_container_size_int(ch - BJSON_UINT7);
 			return 0;
 	}
 }

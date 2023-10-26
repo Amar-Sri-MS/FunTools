@@ -67,7 +67,8 @@ bool fun_json_fill_binary_array(uint8_t *, const struct fun_json *);
 // in order to be able to parse given binary_json
 size_t fun_json_container_size(const uint8_t *, size_t);
 size_t fun_json_container_overhead();
-size_t fun_json_container_size_int();
+size_t fun_json_container_size_int(int64_t value);
+size_t fun_json_container_size_binary_array(size_t size);
 size_t fun_json_container_size_bool();
 size_t fun_json_container_size_double();
 size_t fun_json_container_size_null();
