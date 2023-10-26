@@ -18,11 +18,10 @@ BUILD_ROOT ?= $(MACHINE)-build
 CFLAGS += -g -Wall -Werror -Wno-multichar
 LDFLAGS += 
 
-SRCS = fun_json_lite.c fun_json_lite_tester.c
-OBJS = $(addprefix $(BUILD_ROOT)/,$(SRCS:.c=.o))
+OBJS = fun_json_lite.o
 
 # default target goes first 
-all: fun_json_lite_tester
+all: fun_json_lite_tester fun_json_lite_test
 
 $(BUILD_ROOT):
 	mkdir -p $@
@@ -33,8 +32,14 @@ $(BUILD_ROOT)/%.o: %.c $(DEPS) | $(BUILD_ROOT)
 .PHONY: fun_json_lite_tester
 fun_json_lite_tester: $(BUILD_ROOT)/fun_json_lite_tester
 
-$(BUILD_ROOT)/fun_json_lite_tester: $(OBJS)
+.PHONY: fun_json_lite_test
+fun_json_lite_test: $(BUILD_ROOT)/fun_json_lite_test
+
+$(BUILD_ROOT)/fun_json_lite_tester: $(OBJS) $(BUILD_ROOT)/fun_json_lite_tester.o
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+$(BUILD_ROOT)/fun_json_lite_test: $(OBJS) $(BUILD_ROOT)/fun_json_lite_test.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 clean:
-	rm -f $(BUILD_ROOT)/fun_json_lite_tester $(OBJS)
+	rm -rf $(BUILD_ROOT)
