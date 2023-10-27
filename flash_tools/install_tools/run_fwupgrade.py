@@ -259,8 +259,8 @@ def run_upgrade(args, release_images):
                     fw.get('status','active') in ['active', 'unknown']:
                     release_images_fourccs = release_images_fourccs - ASYNC_ONLY_IMAGES
 
-                if not check_upgrade_compatibility(fw['version'], v, fw['fourcc'], fw.get('status','active')):
-                    raise UpgradeAttemptException()
+                if (not args.downgrade) and (not check_upgrade_compatibility(fw['version'], v, fw['fourcc'], fw.get('status','active'))):
+                        raise UpgradeAttemptException()
 
                 # firmwares older than 9531 do not recognize kbag or husc as
                 # valid identifiers, so do not attempt to program these images, as this
@@ -324,7 +324,7 @@ def run_upgrade(args, release_images):
     else:
         for fourcc in set(args.upgrade):
             for fw in fwinfo['firmwares']:
-                if not check_upgrade_compatibility(fw['version'], v, fourcc, fw.get('status','active')):
+                if (not args.downgrade) and (not check_upgrade_compatibility(fw['version'], v, fourcc, fw.get('status','active'))):
                     raise UpgradeAttemptException()
                 if fourcc_eq(fw['fourcc'], fourcc):
                     if fw['version'] < v or fw['fourcc'] in IGNORE_VERSION_IMAGES:
