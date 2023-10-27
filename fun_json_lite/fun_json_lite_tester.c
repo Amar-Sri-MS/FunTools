@@ -25,7 +25,7 @@ int main(int argc, char *argv[]) {
 	int return_code = 0;
 	size_t input_buffer_size, context_buffer_size, output_buffer_size;
 	struct fun_json_container *container;
-	struct fun_json *json;
+	const struct fun_json *json;
 
 	fseek(fp_in, 0, SEEK_END);
 	input_buffer_size = (size_t)ftell(fp_in);

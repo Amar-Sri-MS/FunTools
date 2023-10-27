@@ -19,12 +19,12 @@ enum fun_json_types {
 	fun_json_string_type = 5,
 	fun_json_array_type = 6,
 	fun_json_dict_type = 7,
-	fun_json_last_type = 8, // invalid type to check bounds
+	fun_json_binary_array_type = 8,
+	fun_json_last_type = 9, // invalid type to check bounds
 };
 
 struct fun_json {
 	enum fun_json_types type;
-	struct fun_json_container *container;
 };
 
 struct fun_json_primitive {
@@ -52,12 +52,18 @@ struct fun_json_array {
 	struct fun_json header;
 	size_t capacity;
 	size_t used;
-	struct fun_json *elements[];
+	const struct fun_json *elements[];
+};
+
+struct fun_json_binary_array {
+	struct fun_json header;
+	uint8_t *elements;
+	size_t size;
 };
 
 struct fun_json_kv {
-	struct fun_json *key;
-	struct fun_json *value;
+	const struct fun_json *key;
+	const struct fun_json *value;
 };
 
 struct fun_json_dict {
@@ -69,6 +75,28 @@ struct fun_json_dict {
 
 struct fun_json_container {
 	size_t size, used;
+};
+
+static const struct fun_json const_null = { .type = fun_json_null_type };
+
+#define json_bool_def(value) static const struct fun_json_primitive const_bool_##value = \
+	{ .header = { .type = fun_json_bool_type }, .bool_value = value, };
+
+json_bool_def(true)
+json_bool_def(false)
+
+#define json_int_const(value) [value] = { .header = { .type = fun_json_int_type }, .int_value = value, }
+#define json_int_2_values(base) json_int_const(base), json_int_const(base + 1)
+#define json_int_4_values(base) json_int_2_values(base), json_int_2_values(base + 2)
+#define json_int_8_values(base) json_int_4_values(base), json_int_4_values(base + 4)
+#define json_int_16_values(base) json_int_8_values(base), json_int_8_values(base + 8)
+#define json_int_32_values(base) json_int_16_values(base), json_int_16_values(base + 16)
+#define json_int_64_values(base) json_int_32_values(base), json_int_32_values(base + 32)
+#define json_int_128_values(base) json_int_64_values(base), json_int_64_values(base + 64)
+#define json_int_256_values(base) json_int_128_values(base), json_int_128_values(base + 128)
+
+static const struct fun_json_primitive const_int[256] = {
+	json_int_256_values(0)
 };
 
 // The source of these constants is in FunOS
@@ -130,27 +158,26 @@ static struct fun_json_primitive *allocate_primitive(struct fun_json_container *
 	if (!result) return NULL;
 
 	result->header.type = type;
-	result->header.container = container;
 	return result;
 }
 
-struct fun_json *fun_json_create_int(struct fun_json_container *container, int64_t value)
+const struct fun_json *fun_json_create_int(struct fun_json_container *container, int64_t value)
 {
+	if (value >= 0 && value < 256) return (void *)&const_int[value];
+
 	struct fun_json_primitive *result = allocate_primitive(container, fun_json_int_type);
 	if (!result) return NULL;
 	result->int_value = value;
 	return (void *)result;
 }
 
-struct fun_json *fun_json_create_bool(struct fun_json_container *container, bool value)
+const struct fun_json *fun_json_create_bool(struct fun_json_container *container, bool value)
 {
-	struct fun_json_primitive *result = allocate_primitive(container, fun_json_bool_type);
-	if (!result) return NULL;
-	result->bool_value = value;
-	return (void *)result;
+	if (value) return (void *)&const_bool_true;
+	return (void *)&const_bool_false;
 }
 
-struct fun_json *fun_json_create_double(struct fun_json_container *container, double value)
+const struct fun_json *fun_json_create_double(struct fun_json_container *container, double value)
 {
 	struct fun_json_primitive *result = allocate_primitive(container, fun_json_double_type);
 	if (!result) return NULL;
@@ -158,12 +185,9 @@ struct fun_json *fun_json_create_double(struct fun_json_container *container, do
 	return (void *)result;
 }
 
-struct fun_json *fun_json_create_null(struct fun_json_container *container)
+const struct fun_json *fun_json_create_null(struct fun_json_container *container)
 {
-	struct fun_json *result = allocate(container, sizeof(struct fun_json));
-	if (!result) return NULL;
-	result->type = fun_json_null_type;
-	return (void *)result;
+	return (void *)&const_null;
 }
 
 static struct fun_json *fun_json_create_error_len(struct fun_json_container *container, const char *message, size_t len)
@@ -172,11 +196,10 @@ static struct fun_json *fun_json_create_error_len(struct fun_json_container *con
 	if (!result) return NULL;
 	memcpy(result->message, message, len);
 	result->header.type = fun_json_error_type;
-	result->header.container = container;
 	return (void *)result;
 }
 
-struct fun_json *fun_json_create_error(struct fun_json_container *container, const char *message)
+const struct fun_json *fun_json_create_error(struct fun_json_container *container, const char *message)
 {
 	return fun_json_create_error_len(container, message, strlen(message));
 }
@@ -187,11 +210,10 @@ static struct fun_json *fun_json_create_string_len(struct fun_json_container *co
 	if (!result) return NULL;
 	memcpy(result->value, value, len);
 	result->header.type = fun_json_string_type;
-	result->header.container = container;
 	return (void *)result;
 }
 
-struct fun_json *fun_json_create_string(struct fun_json_container *container, const char *value)
+const struct fun_json *fun_json_create_string(struct fun_json_container *container, const char *value)
 {
 	return fun_json_create_string_len(container, value, strlen(value));
 }
@@ -201,7 +223,6 @@ struct fun_json *fun_json_create_array(struct fun_json_container *container, siz
 	struct fun_json_array *result = allocate(container, sizeof(struct fun_json_array) + capacity * sizeof(void *));
 	if (!result) return NULL;
 	result->header.type = fun_json_array_type;
-	result->header.container = container;
 	result->capacity = capacity;
 	result->used = 0;
 	return (void *)result;
@@ -209,18 +230,15 @@ struct fun_json *fun_json_create_array(struct fun_json_container *container, siz
 
 struct fun_json *fun_json_create_binary_array(struct fun_json_container *container, const uint8_t *value, size_t size)
 {
-	struct fun_json_array *result = allocate(container, sizeof(struct fun_json_array) + size * sizeof(void *));
+	struct fun_json_binary_array *result = allocate(container, sizeof(struct fun_json_binary_array));
 	if (!result) return NULL;
-	result->header.type = fun_json_array_type;
-	result->header.container = container;
-	result->capacity = size;
-	result->used = size;
-	for (size_t i = 0; i < size; i++) {
-		result->elements[i] = fun_json_create_int(container, value[i]);
-		if (!result->elements[i]) {
-			return NULL;
-		}
-	}
+	result->header.type = fun_json_binary_array_type;
+	result->size = size;
+
+	result->elements = allocate(container, size);
+	if (!result->elements) return NULL;
+	memcpy(result->elements, value, size);
+
 	return (void *)result;
 }
 
@@ -229,7 +247,6 @@ struct fun_json *fun_json_create_dict(struct fun_json_container *container, size
 	struct fun_json_dict *result = allocate(container, sizeof(struct fun_json_dict) + capacity * sizeof(struct fun_json_kv));
 	if (!result) return NULL;
 	result->header.type = fun_json_dict_type;
-	result->header.container = container;
 	result->capacity = capacity;
 	result->used = 0;
 	return (void *)result;
@@ -267,11 +284,12 @@ bool fun_json_is_string(const struct fun_json *j)
 
 bool fun_json_is_array(const struct fun_json *j)
 {
-	return j->type == fun_json_array_type;
+	return j->type == fun_json_array_type || j->type == fun_json_binary_array_type;
 }
 
 bool fun_json_is_binary_array(const struct fun_json *j)
 {
+	if (j->type == fun_json_binary_array_type) return true;
 	if (j->type != fun_json_array_type) return false;
 	const struct fun_json_array *a = (void *)j;
 	for (size_t i = 0; i < a->used; i++) {
@@ -289,6 +307,11 @@ bool fun_json_is_dict(const struct fun_json *j)
 
 size_t fun_json_array_count(const struct fun_json *j)
 {
+	if (j->type == fun_json_binary_array_type) {
+		const struct fun_json_binary_array *a = (void *)j;
+		return a->size;
+	}
+
 	if (!fun_json_is_array(j)) return 0;
 	struct fun_json_array *a = (void *)j;
 	return a->used;
@@ -301,15 +324,21 @@ size_t fun_json_dict_count(const struct fun_json *j)
 	return d->used;
 }
 
-struct fun_json *fun_json_array_at(struct fun_json *j, size_t index)
+const struct fun_json *fun_json_array_at(const struct fun_json *j, size_t index)
 {
+	if (j->type == fun_json_binary_array_type) {
+		const struct fun_json_binary_array *a = (void *)j;
+		if (a->size <= index) return NULL;
+		return (void *)(const_int + a->elements[index]);
+	}
+
 	if (!fun_json_is_array(j)) return 0;
 	struct fun_json_array *a = (void *)j;
 	if (a->used <= index) return NULL;
 	return a->elements[index];
 }
 
-struct fun_json *fun_json_dict_at(struct fun_json *j, const char *key)
+const struct fun_json *fun_json_dict_at(const struct fun_json *j, const char *key)
 {
 	if (!fun_json_is_dict(j)) return 0;
 	struct fun_json_dict *d = (void *)j;
@@ -322,7 +351,7 @@ struct fun_json *fun_json_dict_at(struct fun_json *j, const char *key)
 	return NULL;
 }
 
-const char *fun_json_dict_nth_key(struct fun_json *j, size_t index)
+const char *fun_json_dict_nth_key(const struct fun_json *j, size_t index)
 {
 	if (!fun_json_is_dict(j)) return 0;
 
@@ -334,7 +363,7 @@ const char *fun_json_dict_nth_key(struct fun_json *j, size_t index)
 	return key->value;
 }
 
-struct fun_json *fun_json_dict_nth_value(struct fun_json *j, size_t index)
+const struct fun_json *fun_json_dict_nth_value(const struct fun_json *j, size_t index)
 {
 	if (!fun_json_is_dict(j)) return 0;
 
@@ -343,7 +372,7 @@ struct fun_json *fun_json_dict_nth_value(struct fun_json *j, size_t index)
 	return d->kv[index].value;
 }
 
-bool fun_json_array_append(struct fun_json *array, struct fun_json *element)
+bool fun_json_array_append(struct fun_json *array, const struct fun_json *element)
 {
 	struct fun_json_array *a = (void *)array;
 	if (a->used == a->capacity) return false;
@@ -352,11 +381,11 @@ bool fun_json_array_append(struct fun_json *array, struct fun_json *element)
 	return true;
 }
 
-static bool fun_json_dict_append_len(struct fun_json *dict, const char *key, size_t key_length, struct fun_json *element)
+static bool fun_json_dict_append_len(struct fun_json_container *container, struct fun_json *dict, const char *key, size_t key_length, const struct fun_json *element)
 {
 	struct fun_json_dict *d = (void *)dict;
 	if (d->used == d->capacity) return false;
-	struct fun_json *key_json = fun_json_create_string_len(dict->container, key, key_length);
+	struct fun_json *key_json = fun_json_create_string_len(container, key, key_length);
 	if (!key_json) return false;
 	d->kv[d->used].key = key_json;
 	d->kv[d->used].value = element;
@@ -364,9 +393,9 @@ static bool fun_json_dict_append_len(struct fun_json *dict, const char *key, siz
 	return true;
 }
 
-bool fun_json_dict_append(struct fun_json *dict, const char *key, struct fun_json *element)
+bool fun_json_dict_append(struct fun_json_container *container, struct fun_json *dict, const char *key, const struct fun_json *element)
 {
-	return fun_json_dict_append_len(dict, key, strlen(key), element);
+	return fun_json_dict_append_len(container, dict, key, strlen(key), element);
 }
 
 int64_t fun_json_int_value(const struct fun_json *j)
@@ -524,14 +553,15 @@ size_t fun_json_binary_serialization_size(const uint8_t *bytes, size_t size) {
 	}
 }
 
-size_t fun_json_container_size_int()
+size_t fun_json_container_size_int(int64_t value)
 {
+	if (value >= 0 && value < 256) return 0; // pre-allocated statically
 	return sizeof(struct fun_json_primitive);
 }
 
 size_t fun_json_container_size_bool()
 {
-	return sizeof(struct fun_json_primitive);
+	return 0; // pre-allocated statically
 }
 
 size_t fun_json_container_size_double()
@@ -541,7 +571,7 @@ size_t fun_json_container_size_double()
 
 size_t fun_json_container_size_null()
 {
-	return sizeof(struct fun_json);
+	return 0; // pre-allocated statically
 }
 
 size_t fun_json_container_size_error(size_t len)
@@ -564,6 +594,11 @@ size_t fun_json_container_size_array(size_t size)
 	return sizeof(struct fun_json_array) + sizeof(void *) * size;
 }
 
+size_t fun_json_container_size_binary_array(size_t size)
+{
+	return sizeof(struct fun_json_binary_array) + size;
+}
+
 size_t fun_json_container_overhead()
 {
 	return sizeof(struct fun_json_container);
@@ -582,9 +617,11 @@ static size_t fun_json_container_size_internal(const uint8_t *bytes, size_t size
 		case BJSON_DOUBLE:
 			return fun_json_container_size_double();
 		case BJSON_INT16:
+			return fun_json_container_size_int(deserialize_int16(bytes + 1));
 		case BJSON_INT32:
+			return fun_json_container_size_int(deserialize_int32(bytes + 1));
 		case BJSON_INT64:
-			return fun_json_container_size_int();
+			return fun_json_container_size_int(deserialize_int64(bytes + 1));
 		case BJSON_ARRAY:{
 			uint32_t count = deserialize_uint32(bytes + 5);
 			size_t total = fun_json_container_size_array(count);
@@ -608,7 +645,7 @@ static size_t fun_json_container_size_internal(const uint8_t *bytes, size_t size
 		}
 		case BJSON_BYTE_ARRAY: {
 			uint16_t count = deserialize_uint16(bytes + 1);
-			return fun_json_container_size_array(count) + fun_json_container_size_int() * count;
+			return fun_json_container_size_binary_array(count);
 		}
 		case BJSON_STR16: {
 			uint16_t len = deserialize_uint16(bytes + 1);
@@ -627,7 +664,7 @@ static size_t fun_json_container_size_internal(const uint8_t *bytes, size_t size
 				uint8_t len = ch & 0x3f;
 				return fun_json_container_size_string(len);
 			}
-			if (ch >= BJSON_UINT7) return fun_json_container_size_int();
+			if (ch >= BJSON_UINT7) return fun_json_container_size_int(ch - BJSON_UINT7);
 			return 0;
 	}
 }
@@ -667,7 +704,7 @@ const char *deserialize_string(const uint8_t *bytes, size_t *len)
 	return ptr;
 }
 
-struct fun_json *fun_json_parse(struct fun_json_container *container, const uint8_t *bytes, size_t size)
+const struct fun_json *fun_json_parse(struct fun_json_container *container, const uint8_t *bytes, size_t size)
 {
 	uint8_t ch = bytes[0];
 	switch (ch) {
@@ -708,7 +745,7 @@ struct fun_json *fun_json_parse(struct fun_json_container *container, const uint
 				size_t value_size = fun_json_binary_serialization_size(bytes + parsed + key_size, size - parsed - key_size);
 				size_t len;
 				const char *string_value = deserialize_string(bytes + parsed, &len);
-				if (!fun_json_dict_append_len(dict, string_value, len, fun_json_parse(container, bytes + parsed + key_size, value_size))) {
+				if (!fun_json_dict_append_len(container, dict, string_value, len, fun_json_parse(container, bytes + parsed + key_size, value_size))) {
 					return NULL;
 				}
 				parsed += key_size + value_size;
@@ -745,6 +782,12 @@ struct fun_json *fun_json_parse(struct fun_json_container *container, const uint
 
 bool fun_json_fill_binary_array(uint8_t *buffer, const struct fun_json *j)
 {
+	if (j->type == fun_json_binary_array_type) {
+		const struct fun_json_binary_array *a = (void *)j;
+		memcpy(buffer, a->elements, a->size);
+		return true;
+	}
+
 	if (!fun_json_is_binary_array(j)) return false;
 	const struct fun_json_array *a = (void *)j;
 
