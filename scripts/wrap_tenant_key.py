@@ -89,7 +89,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.concatkdf import ConcatKDFHash
-
+from cryptography.hazmat.primitives.kdf.x963kdf import X963KDF
 
 
 
@@ -114,6 +114,21 @@ def print_c_bytes(barr, var_name):
 
     print("\n};")
 
+    # also print string constant
+    print("\n/*\n")
+    i = 0
+    for b in barr:
+        if i == 0:
+            print("\"", end = '')
+        print("\\x%02x" % b, end='')
+        i = i + 1
+        if i == 10:
+            print("\"")
+            i = 0
+    if i != 0:
+        print("\"")
+
+    print("\n*/")
 
 
 ## Crypto Routines
@@ -141,26 +156,19 @@ def generate_shared_secret(curve, peer_x, peer_y):
     return x_bin, y_bin, shared_key
 
 
-def wrap_with_kdf(shared_secret, plain_text):
 
-    AES_256_LEN = 32
+def wrap_with_kdf(kdf, shared_secret, plain_text, aes_key_len):
 
-    ckdf = ConcatKDFHash(algorithm=hashes.SHA256(),
-                length=AES_256_LEN + 4,  # AES Key + Implicit IV
-                otherinfo=None,
-                backend=default_backend())
-
-    key_material = ckdf.derive(shared_secret)
+    key_material = kdf.derive(shared_secret)
 
     # AES 256 key
-    aes_key = key_material[0:AES_256_LEN]
+    aes_key = key_material[0:aes_key_len]
     # GMC IV 12 bytes
-    iv = key_material[AES_256_LEN:AES_256_LEN+4] + os.urandom(8)
+    iv = key_material[aes_key_len:aes_key_len+4] + os.urandom(8)
 
     if VERBOSE:
         print_c_bytes(aes_key, "kek")
         print_c_bytes(iv, "IV")
-
 
     aesgcm = AESGCM(aes_key)
 
@@ -174,9 +182,25 @@ def wrap_secret(curve, peer_x, peer_y, plain_text):
 
     x_bin, y_bin, shared_key = generate_shared_secret(curve, peer_x, peer_y)
 
-    wrapped = wrap_with_kdf(shared_key, plain_text)
+    AES_256_LEN = 32
 
-    return x_bin, y_bin, wrapped
+    ckdf = ConcatKDFHash(algorithm=hashes.SHA256(),
+                length=AES_256_LEN + 4,  # AES Key + Implicit IV
+                otherinfo=None,
+                backend=default_backend())
+
+    wrapped1 = wrap_with_kdf(ckdf, shared_key, plain_text, AES_256_LEN)
+
+    xkdf = X963KDF(algorithm=hashes.SHA256(),
+                length=AES_256_LEN + 4,  # AES Key + Implicit IV
+                sharedinfo=None,
+                backend=default_backend())
+
+    wrapped2 = wrap_with_kdf(xkdf, shared_key, plain_text, AES_256_LEN)
+
+    return x_bin, y_bin, wrapped1, wrapped2
+
+
 
 def get_enroll_cert(chip_serial_nr):
 
@@ -225,8 +249,7 @@ def generate_test_vector(aes_key, chip_serial_nr):
     if chip_serial_nr == 'posix':
         chip_serial_nr = '01010011172400000000000012345678'
 
-    x,y,wrapped = wrap_key_for_import(aes_key, chip_serial_nr)
-    return x,y,wrapped
+    return wrap_key_for_import(aes_key, chip_serial_nr)
 
 
 ##############################################
@@ -235,12 +258,15 @@ def print_test_vector(args):
 
     aes_key = os.urandom(32)
 
-    x,y,wrapped = generate_test_vector(aes_key, args.serial_nr[0])
+    x,y,wrapped1,wrapped2 = generate_test_vector(aes_key, args.serial_nr[0])
     # print in C format
     print_c_bytes(aes_key, "key")
 
-    package = b''.join([x,y,wrapped])
-    print_c_bytes(package, "packed")
+    package = b''.join([x,y,wrapped1])
+    print_c_bytes(package, "packed_SP800_56")
+
+    package = b''.join([x,y,wrapped2])
+    print_c_bytes(package, "packed_x9_63")
 
 
 ##############################################
@@ -256,7 +282,7 @@ def verify_wrapped_key_aux(wrapped, kek):
         recovered_key = aesgcm.decrypt(wrapped_bin[:12], wrapped_bin[12:], None)
     except Exception as e:
         print("Key recovery failed: ", e)
-        return
+        return None
 
     return recovered_key
 
@@ -325,7 +351,7 @@ class DPCTester:
         print("Serial Number = %s" % serial_number)
         aes_key = os.urandom(32)
         print_c_bytes(aes_key, "Generated key")
-        x,y,wrapped = wrap_key_for_import(aes_key, serial_number)
+        x,y,wrapped,_ = wrap_key_for_import(aes_key, serial_number)
         package = b''.join([x,y,wrapped])
         imported_key, kek = self.import_package(package)
         print("Imported key: %s" % imported_key)
