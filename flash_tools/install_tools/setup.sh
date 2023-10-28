@@ -245,6 +245,13 @@ else
 
 			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u bcfg --version latest --force --downgrade --active --select-by-image-type "board_cfg_${host_sku}_default"
 			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
+
+			if [ $EXIT_STATUS -ne 0 ]; then
+				log_msg "Aborting upgrade! Check the compatibility"
+				# exit early here, as this error code means no upgrade
+				# was performed by run_fwupgrade script
+				exit $EXIT_STATUS
+			fi
 		fi
 	else
 		./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version $funos_sdk_version
@@ -294,6 +301,13 @@ else
 			log_msg "Updating bcfg \"$host_sku\""
 			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u bcfg --select-by-image-type "board_cfg_${host_sku}_default"
 			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
+
+			if [ $EXIT_STATUS -ne 0 ]; then
+				log_msg "Aborting upgrade! Check the compatibility"
+				# exit early here, as this error code means no upgrade
+				# was performed by run_fwupgrade script
+				exit $EXIT_STATUS
+			fi
 		fi
 	fi
 fi

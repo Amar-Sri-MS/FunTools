@@ -208,15 +208,7 @@ def check_upgrade_compatibility(cur, to, fourcc, status):
     return True
 
 def check_downgrade_compatibility(cur, to, fourcc, status):
-    # Some of the dev builds use version = 99999. They may not be able recognize bcfg fourcc.
-    # So, first downgrade to 20738 and them to the version intended.
-    # TODO(@nponugoti): check the bcfg support and do the compatibility check
-    if (fourcc == 'frmw' or fourcc == 'pufr' or fourcc == 'sbpf') and\
-        (cur == 99999)  and (status in ['active', 'unknown']):
-        print(f"\nIncompatible {fourcc} downgrade({cur} -> {to}) status: {status}!"\
-               " Downgrade to version 20738 before going to version higher than 20738.")
-        return False;
-
+	# For downgrades, "to" version is always 2 << 32. So, it is not possible to check the compatibility.
     return True
 
 def check_fw_compatibility(cur, to, fourcc, status, downgrade):
