@@ -45,15 +45,15 @@
 #define DBG_LOG_ENABLE 0
 
 #if DBG_LOG_ENABLE
-#define log(...)              do { fprintf (stdout, __VA_ARGS__); fflush(stdout); } while (0)
+#define log(...)                 do { fprintf (stdout, __VA_ARGS__); fflush(stdout); } while (0)
 #define BCFG_JSON_LOG(fmt, js)   do { fun_json_printf(fmt, js); } while(0)
 #else /* DBG_LOG_ENABLE */
-#define log(...)              do { } while (0)
+#define log(...)                 do { } while (0)
 #define BCFG_JSON_LOG(...)       do { } while (0)
 #endif /* DBG_LOG_ENABLE */
 
-#define eprintf(...)          do { fprintf (stderr, __VA_ARGS__); fflush(stderr); } while (0)
-#define die(...)              do { fprintf (stderr, __VA_ARGS__); fflush(stderr); exit(1); } while (0)
+#define eprintf(...)             do { fprintf (stderr, __VA_ARGS__); fflush(stderr); } while (0)
+#define die(...)                 do { fprintf (stderr, __VA_ARGS__); fflush(stderr); exit(1); } while (0)
 
 
 static int _verbose = 0;
@@ -84,7 +84,6 @@ struct valtab {
 };
 
 static struct valtab _pcie_cfg_flag_tab[] = {
-        { "NO_PHYS", PCIE_CNTLR_FLAGS_NO_PHY },
 	{"SRIS_ENABLED", PCIE_CNTLR_FLAGS_SRIS_ENABLE },
 
         /* must be last */
@@ -182,10 +181,10 @@ bool _cfg_valid(struct board_cfg *cfg)
 {
 	assert(cfg != NULL);
 
-	if (cfg->magic != htobe64(BOARD_CFG_MAGIC))
+	if (cfg->magic != htole64(BOARD_CFG_MAGIC))
 		return false;
 
-	if ((cfg->version <= 0) || (cfg->version > htobe32(BOARD_CFG_VERSION)))
+	if ((cfg->version <= 0) || (cfg->version > htole32(BOARD_CFG_VERSION)))
 		return false;
 
 	/* magic and version OK */
@@ -196,10 +195,10 @@ bool _pcie_cfg_valid(struct board_cfg_pcie *cfg)
 {
 	assert(cfg != NULL);
 
-	if (cfg->header.magic != htobe64(BOARD_CFG_PCIE_MAGIC))
+	if (cfg->header.magic != htole64(BOARD_CFG_PCIE_MAGIC))
 		return false;
 
-	if ((cfg->header.version <= 0) || (cfg->header.version > htobe32(BOARD_PCIE_CFG_VERSION)))
+	if ((cfg->header.version <= 0) || (cfg->header.version > htole32(BOARD_PCIE_CFG_VERSION)))
 		return false;
 
 	/* magic and version OK */
@@ -210,10 +209,10 @@ bool _pll_cfg_valid(struct board_cfg_pll *cfg)
 {
 	assert(cfg != NULL);
 
-	if (cfg->header.magic != htobe64(BOARD_CFG_PLL_MAGIC))
+	if (cfg->header.magic != htole64(BOARD_CFG_PLL_MAGIC))
 		return false;
 
-	if ((cfg->header.version <= 0) || (cfg->header.version > htobe32(BOARD_PLL_CFG_VERSION)))
+	if ((cfg->header.version <= 0) || (cfg->header.version > htole32(BOARD_PLL_CFG_VERSION)))
 		return false;
 
 	/* magic and version OK */
@@ -224,10 +223,10 @@ bool _ddr_cfg_valid(struct board_cfg_ddr *cfg)
 {
 	assert(cfg != NULL);
 
-	if (cfg->header.magic != htobe64(BOARD_CFG_DDR_MAGIC))
+	if (cfg->header.magic != htole64(BOARD_CFG_DDR_MAGIC))
 		return false;
 
-	if ((cfg->header.version <= 0) || (cfg->header.version > htobe32(BOARD_DDR_CFG_VERSION)))
+	if ((cfg->header.version <= 0) || (cfg->header.version > htole32(BOARD_DDR_CFG_VERSION)))
 		return false;
 
 	/* magic and version OK */
@@ -293,42 +292,41 @@ static void _pretty_print_board_cfg_header(uint32_t depth, struct board_cfg_head
 	char magic_str[sizeof(uint64_t)+1];
 
 	printf("%scfg type: %s [%u]\n", _tabs(depth),
-		__val2str(_cfgtype_valtab, be16toh(header->cfg_type)), be16toh(header->cfg_type));
-	printf("%sversion: %u\n",   _tabs(depth), be32toh(header->version));
-	printf("%ssize: %u\n",   _tabs(depth), be32toh(header->size_bytes));
+		__val2str(_cfgtype_valtab, le16toh(header->cfg_type)), le16toh(header->cfg_type));
+	printf("%sversion: %u\n",   _tabs(depth), le32toh(header->version));
+	printf("%ssize: %u\n",   _tabs(depth), le32toh(header->size_bytes));
 	_magic2printable(magic_str, header->magic);
-	printf("%smagic: %s [0x%" PRIx64 "]\n", _tabs(depth), magic_str, be64toh(header->magic));
+	printf("%smagic: %s [0x%" PRIx64 "]\n", _tabs(depth), magic_str, le64toh(header->magic));
 
 }
 
 static void _pretty_print_board_pcie_cfg(uint32_t depth, struct board_cfg_pcie *cfg)
 {
 	_pretty_print_board_cfg_header(depth, &cfg->header);
-	printf("%shsu_id: %u\n",   _tabs(depth), be16toh(cfg->link_cfg.hsu_id));
-	printf("%scntlr_id: %u\n", _tabs(depth), be16toh(cfg->link_cfg.cntlr_id));
-	printf("%sperst_gpio: %u\n", _tabs(depth), be16toh(cfg->link_cfg.perst_gpio));
-	printf("%sclock_switch_gpio: %u\n", _tabs(depth), be16toh(cfg->link_cfg.clock_switch_gpio));
+	printf("%shsu_id: %u\n",   _tabs(depth), cfg->link_cfg.hsu_id);
+	printf("%scntlr_id: %u\n", _tabs(depth), cfg->link_cfg.cntlr_id);
 	printf("%sbif: %s [%u]\n", _tabs(depth),
-			__val2str(_bif_valtab, be16toh(cfg->link_cfg.bif)),
-			be16toh(cfg->link_cfg.bif));
+			__val2str(_bif_valtab, cfg->link_cfg.bif), cfg->link_cfg.bif);
 	printf("%spcie_gen: %s [%u]\n", _tabs(depth),
-		__val2str(_gen_valtab, be16toh(cfg->link_cfg.pcie_gen)), be16toh(cfg->link_cfg.pcie_gen));
+		__val2str(_gen_valtab, cfg->link_cfg.pcie_gen), cfg->link_cfg.pcie_gen);
 	printf("%spcie_width: %s [%u]\n", _tabs(depth),
-	       __val2str(_width_valtab, be16toh(cfg->link_cfg.pcie_width)),
-	       be16toh(cfg->link_cfg.pcie_width));
+	       __val2str(_width_valtab, cfg->link_cfg.pcie_width),
+	       cfg->link_cfg.pcie_width);
 	printf("%sport_type: %s [%u]\n", _tabs(depth),
-	       __val2str(_porttype_valtab, be16toh(cfg->link_cfg.port_type)),
-	       be16toh(cfg->link_cfg.port_type));
-	printf("%spcie cfg flags: 0x%" PRIx64 " = ", _tabs(depth), be64toh(cfg->link_cfg.flags));
+	       __val2str(_porttype_valtab, cfg->link_cfg.port_type),
+	       cfg->link_cfg.port_type);
+	printf("%spcie cfg flags: 0x%" PRIx64 " = ", _tabs(depth), le64toh(cfg->link_cfg.flags));
 	pretty_print_pcie_cfg_flags(be64toh(cfg->link_cfg.flags));
+	printf("%sperst_gpio: %u\n", _tabs(depth), cfg->perst_gpio);
+	printf("%sclock_switch_gpio: %u\n", _tabs(depth), cfg->clock_switch_gpio);
 	printf("\n\n");
 }
 
 static void _pretty_print_board_pll_cfg(uint32_t depth, struct board_cfg_pll *cfg)
 {
 	_pretty_print_board_cfg_header(depth, &cfg->header);
-	printf("%ssoc_freq_MHz: %u\n",   _tabs(depth), be16toh(cfg->soc_freq_MHz));
-	printf("%spc_freq_MHz: %u\n",   _tabs(depth), be16toh(cfg->pc_freq_MHz));
+	printf("%ssoc_freq_MHz: %u\n",   _tabs(depth), le16toh(cfg->soc_freq_MHz));
+	printf("%spc_freq_MHz: %u\n",   _tabs(depth), le16toh(cfg->pc_freq_MHz));
 	printf("\n\n");
 }
 
@@ -341,7 +339,7 @@ static void _pretty_print_board_ddr_cfg(uint32_t depth, struct board_cfg_ddr *cf
 
 	printf("%sddr_sizes_GB: [ ", _tabs(depth));
 	for (uint8_t i = 0; i < num_channels; i++) {
-		printf("%d ", be16toh(cfg->ddr_size_GB[i]));
+		printf("%d ", le16toh(cfg->ddr_size_GB[i]));
 	}
 	printf("]\n\n");
 }
@@ -355,10 +353,10 @@ static void _pretty_print_cfg(uint32_t depth, struct board_cfg *cfg)
 	/* magic */
 	_magic2printable(mstr, cfg->magic);
 	printf("%smagic  : 0x%" PRIx64" [%s]\n",
-	       _tabs(depth), be64toh(cfg->magic), mstr);
+	       _tabs(depth), le64toh(cfg->magic), mstr);
 
 	/* version */
-	printf("%sversion: %u\n", _tabs(depth), be32toh(cfg->version));
+	printf("%sversion: %u\n", _tabs(depth), le32toh(cfg->version));
 
 	/* *description */
 	printf("%sdescription: %s\n", _tabs(depth), cfg->descr);
@@ -367,7 +365,7 @@ static void _pretty_print_cfg(uint32_t depth, struct board_cfg *cfg)
 	uint8_t num_cfg_entries = cfg->num_cfg_entries;
 	printf("%snum_cfg_entries: %u\n", _tabs(depth), num_cfg_entries);
 
-	uint32_t board_cfg_size = be32toh(cfg->size_bytes);
+	uint32_t board_cfg_size = le32toh(cfg->size_bytes);
 	printf("%ssize_bytes: %u (total: %u)\n",
 	       _tabs(depth), board_cfg_size,
 	       board_cfg_size + _board_cfg_data_start_offset());
@@ -383,8 +381,8 @@ static void _pretty_print_cfg(uint32_t depth, struct board_cfg *cfg)
 
 	for (uint8_t i = 0; i < num_cfg_entries; i++) {
 		struct board_cfg_header *header = cfg_ptr;
-		uint16_t cfg_type = be16toh(header->cfg_type);
-		uint32_t size_bytes = be32toh(header->size_bytes);
+		uint16_t cfg_type = le16toh(header->cfg_type);
+		uint32_t size_bytes = le32toh(header->size_bytes);
 
 		switch (cfg_type) {
 		case BOARD_CFG_PCIE:
@@ -614,7 +612,7 @@ static bool parse_hu_cfg(struct fun_json *hu_json, struct pcie_link_cfg *pcie_li
                 return false;
         }
 
-	pcie_link_cfg->bif = htobe16(bif);
+	pcie_link_cfg->bif = (uint8_t)bif;
 
 	return true;
 }
@@ -630,6 +628,53 @@ static bool hu_cntlr_host_bios_visible(const struct fun_json *cntlr_json)
 		return false;
 
 	return host_bios_visible;
+}
+
+
+/* Parse pcie endpoint gpio json config */
+static bool parse_hu_cntlr_gpio_cfg(const struct fun_json *cntlr_json,
+				    uint8_t port_type,
+				    struct board_cfg_pcie *pcie_cfg)
+{
+	uint8_t gpio_id = UINT8_MAX;
+	const struct fun_json *perst_json = fun_json_lookup(cntlr_json, "perst");
+
+	if (!perst_json) {
+		if (port_type == PCIE_PORT_TYPE_EP) {
+			eprintf("missing perst config for the hu contlr in ep mode\n");
+			return false;
+		}
+	} else {
+		if (!fun_json_is_dict(perst_json)) {
+			eprintf("invalid perst config(expected to be a dict)\n");
+			return false;
+		}
+
+		const char *str = NULL;
+
+		if (!fun_json_lookup_string(perst_json, "type", &str)) {
+			eprintf("missing perst type information\n");
+			return false;
+		}
+
+		if (strcmp(str, "GPIO")) {
+			eprintf("invalid perst mapping(should be GPIO)\n");
+			return false;
+		}
+
+		if (!fun_json_lookup_uint8(perst_json, "id", &gpio_id)) {
+			eprintf("missing gpio config\n");
+			return false;
+		}
+	}
+	pcie_cfg->perst_gpio = gpio_id;
+
+	if (!fun_json_lookup_uint8(cntlr_json, "clock_switch_gpio", &gpio_id)) {
+		gpio_id = UINT8_MAX;
+	}
+	pcie_cfg->clock_switch_gpio = gpio_id;
+
+        return true;
 }
 
 /* Parse controller json config */
@@ -655,54 +700,18 @@ static bool parse_hu_cntlr_cfg(const struct fun_json *cntlr_json,
                                 pcie_link_cfg->hsu_id, pcie_link_cfg->cntlr_id, str);
 			return false;
 		}
-                pcie_link_cfg->port_type =  htobe16(port_type);
+                pcie_link_cfg->port_type =  port_type;
         } else {
 		eprintf("WARNING: (%u:%u) Controller 'mode' not found!\n",
 			pcie_link_cfg->hsu_id, pcie_link_cfg->cntlr_id);
 		return false;
         }
 
-	uint16_t gpio_id = UINT16_MAX;
-	const struct fun_json *perst_json = fun_json_lookup(cntlr_json, "perst");
-
-	if (!perst_json) {
-		if (port_type == PCIE_PORT_TYPE_EP) {
-			eprintf("missing perst config for the hu contlr in ep mode\n");
-			return false;
-		}
-	} else {
-		if (!fun_json_is_dict(perst_json)) {
-			eprintf("invalid perst config(expected to be a dict)\n");
-			return false;
-		}
-
-		if (!fun_json_lookup_string(perst_json, "type", &str)) {
-			eprintf("missing perst type information\n");
-			return false;
-		}
-
-		if (strcmp(str, "GPIO")) {
-			eprintf("invalid perst mapping(should be GPIO)\n");
-			return false;
-		}
-
-		if (!fun_json_lookup_uint16(perst_json, "id", &gpio_id)) {
-			eprintf("missing gpio config\n");
-			return false;
-		}
-	}
-	pcie_link_cfg->perst_gpio = htobe16(gpio_id);
-
-	if (!fun_json_lookup_uint16(cntlr_json, "clock_switch_gpio", &gpio_id)) {
-		gpio_id = UINT16_MAX;
-	}
-	pcie_link_cfg->clock_switch_gpio = htobe16(gpio_id);
-
         /* check for sris on/off */
 	assert(!pcie_link_cfg->flags);
         if (fun_json_lookup_string(cntlr_json, "sris", &str)) {
                 en = PCIE_CNTLR_FLAGS_SRIS_ENABLE;
-                en = htobe64(en);
+                en = htole64(en);
                 if (strcmp(str, "ON") == 0) {
                         pcie_link_cfg->flags |= en;
                 }
@@ -716,7 +725,7 @@ static bool parse_hu_cntlr_cfg(const struct fun_json *cntlr_json,
                 eprintf("bad pcie_gen value\n");
                 return false;
         }
-        pcie_link_cfg->pcie_gen = htobe16(u64);
+        pcie_link_cfg->pcie_gen = (uint8_t)u64;
 
         /* pcie_width */
         if (!fun_json_lookup_string(cntlr_json, "pcie_width", &str))
@@ -726,14 +735,14 @@ static bool parse_hu_cntlr_cfg(const struct fun_json *cntlr_json,
                 eprintf("bad pcie_width value\n");
                 return false;
         }
-        pcie_link_cfg->pcie_width = htobe16(u64);
+        pcie_link_cfg->pcie_width = (uint8_t)u64;
 
         return true;
 }
 
 static uint32_t board_cfg_size(struct board_cfg *cfg)
 {
-	return _board_cfg_data_start_offset() + be32toh(cfg->size_bytes);
+	return _board_cfg_data_start_offset() + le32toh(cfg->size_bytes);
 }
 
 
@@ -757,7 +766,7 @@ static bool _board_cfg_alloc(struct board_cfg **board_cfg_p,
 	log("cur_size: %u new_size:%u\n", cur_size, new_size);
 
 	if(new_size > BOARD_CFG_MAX_SIZE_BYTES) {
-		eprintf("Exceeded total board config size\n");
+		eprintf("Exceeded total board config size(%uB)\n", new_size);
 		return false;
 	}
 
@@ -770,7 +779,7 @@ static bool _board_cfg_alloc(struct board_cfg **board_cfg_p,
 	memcpy((void *)board_cfg + cur_size, cfg_data, cfg_size);
 	num_cfg_entries++;
 
-	board_cfg->size_bytes = htobe32(new_size - cfg_data_offset);
+	board_cfg->size_bytes = htole32(new_size - cfg_data_offset);
 	board_cfg->num_cfg_entries = num_cfg_entries;
 
 	log("pcie new_size: %u num_cfg_entries: %u board_cfg:%p start: %p\n",
@@ -829,10 +838,10 @@ static void _fill_cfg_header(uint32_t type, uint64_t magic,
 {
 	assert(header);
 
-	header->cfg_type = htobe16(type);
-	header->magic = htobe64(magic);
-	header->size_bytes = htobe32(size);
-	header->version = htobe32(version);
+	header->cfg_type = htole16(type);
+	header->magic = htole64(magic);
+	header->size_bytes = htole32(size);
+	header->version = htole32(version);
 }
 
 /* parse host unit interface(pcie) config and generate board config blob */
@@ -881,7 +890,7 @@ static bool host_intf_cfg_json_parse(const struct fun_json *host_intf_cfg_json,
 				 BOARD_PCIE_CFG_VERSION,
 				 &board_cfg_pcie.header);
 
-		pcie_link_cfg->hsu_id = htobe16(hsu_id);
+		pcie_link_cfg->hsu_id = hsu_id;
 		if (!parse_hu_cfg(hu_json, pcie_link_cfg))
 			return false;
 
@@ -890,7 +899,7 @@ static bool host_intf_cfg_json_parse(const struct fun_json *host_intf_cfg_json,
 			if (!((cntlr_enable_bmp >> cid) & 0x1))
 				continue;
 
-			pcie_link_cfg->cntlr_id = htobe16(cid);
+			pcie_link_cfg->cntlr_id = cid;
 
 			const struct fun_json *cntlr_json = NULL;
 
@@ -911,6 +920,11 @@ static bool host_intf_cfg_json_parse(const struct fun_json *host_intf_cfg_json,
 			 pcie_link_cfg->flags = 0;
 
 			if (!parse_hu_cntlr_cfg(cntlr_json, pcie_link_cfg))
+				return false;
+
+			if(!parse_hu_cntlr_gpio_cfg(cntlr_json,
+						    pcie_link_cfg->port_type,
+						    &board_cfg_pcie))
 				return false;
 
 			/* add the pcie cfg to board config blob */
@@ -973,7 +987,7 @@ static bool ddr_cfg_parse(const struct fun_json *ddr_cfg_json,
 			return false;
 		}
 
-		ddr_cfg.ddr_size_GB[i] = htobe16(ddr_size);
+		ddr_cfg.ddr_size_GB[i] = htole16(ddr_size);
 		log("ddr_size_GB[%u]: %u=%u\n", i, ddr_cfg.ddr_size_GB[i], ddr_size);
 	}
 
@@ -1010,8 +1024,8 @@ static bool pll_cfg_parse(const struct fun_json *pll_cfg_json,
 			 BOARD_PLL_CFG_VERSION,
 			 &pll_cfg.header);
 
-	pll_cfg.soc_freq_MHz = htobe16(soc_freq);
-	pll_cfg.pc_freq_MHz = htobe16(pc_freq);
+	pll_cfg.soc_freq_MHz = htole16(soc_freq);
+	pll_cfg.pc_freq_MHz = htole16(pc_freq);
 
 
 	if (!board_cfg_add_pll_cfg(board_cfg, &pll_cfg))
@@ -1065,8 +1079,8 @@ static bool _json_to_board_cfg(const struct fun_json *input_json,
 	if (!fun_json_is_dict(sku_json))
 		return false;
 
-	(*board_cfg)->magic = htobe64(BOARD_CFG_MAGIC);
-	(*board_cfg)->version = htobe32(BOARD_CFG_VERSION);
+	(*board_cfg)->magic = htole64(BOARD_CFG_MAGIC);
+	(*board_cfg)->version = htole32(BOARD_CFG_VERSION);
 	snprintf((*board_cfg)->descr, ARRAY_SIZE((*board_cfg)->descr), "%s-%s",
 		 sku_name, prof_name);
 
@@ -1152,6 +1166,7 @@ static void _write_cfg_to_file(const char *outdir, const char *fname,
 	if ((n < 0) || (n > sizeof(fpath)))
 		die("path name error");
 
+	remove(fpath);
 	fd = open(fpath, O_WRONLY|O_CREAT, 0644);
 	if (fd < 0) {
 		perror("open");
@@ -1357,6 +1372,7 @@ static void _write_board_prof_list(const char *outdir)
 	if ((n < 0) || (n > sizeof(fpath)))
 		die("path name error\n");
 
+	remove(fpath);
 	int fd = open(fpath, O_WRONLY|O_CREAT, 0644);
 
 	if (fd < 0) {
@@ -1390,7 +1406,7 @@ static bool _handle_json_input_per_prof(struct fun_json *input_json,
 {
 	/* Override default config with the profile config */
 	fun_boot_config_for_profile(sku_name, prof_name, NULL, input_json);
-	BCFG_JSON_LOG("input_json: %s\n", input_json);
+	//BCFG_JSON_LOG("input_json: %s\n", input_json);
 
 	struct board_cfg *board_cfg = calloc(1, sizeof(*board_cfg));
 

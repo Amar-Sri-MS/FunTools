@@ -200,13 +200,32 @@ def _sbpfw_fourccs_fixup(fourccs):
 def check_upgrade_compatibility(cur, to, fourcc, status):
     # bcfg fourcc is not recognized by pufr and frmw versions older to 20738
     if (fourcc == 'frmw' or fourcc == 'pufr' or fourcc == 'sbpf') and\
-        cur < 20738 and to > 20738  and status in ['active', 'unknown']:
+        (cur < 20738 and to > 20738)  and (status in ['active', 'unknown']):
         print(f"\nIncompatible {fourcc} upgrade({cur} -> {to}) status: {status}!"\
                " Upgrade to version 20738 before upgrading to version higher than 20738.")
         return False;
 
     return True
 
+def check_downgrade_compatibility(cur, to, fourcc, status):
+    # Some of the dev builds use version = 99999. They may not be able recognize bcfg fourcc.
+    # So, first downgrade to 20738 and them to the version intended.
+    # TODO(@nponugoti): check the bcfg support and do the compatibility check
+    if (fourcc == 'frmw' or fourcc == 'pufr' or fourcc == 'sbpf') and\
+        (cur == 99999)  and (status in ['active', 'unknown']):
+        print(f"\nIncompatible {fourcc} downgrade({cur} -> {to}) status: {status}!"\
+               " Downgrade to version 20738 before going to version higher than 20738.")
+        return False;
+
+    return True
+
+def check_fw_compatibility(cur, to, fourcc, status, downgrade):
+    if downgrade:
+        if not check_downgrade_compatibility(cur, to, fourcc, status):
+            raise DowngradeAttemptException()
+    else:
+        if not check_upgrade_compatibility(cur, to, fourcc, status):
+            raise UpgradeAttemptException()
 
 def run_upgrade(args, release_images):
     """
@@ -259,8 +278,7 @@ def run_upgrade(args, release_images):
                     fw.get('status','active') in ['active', 'unknown']:
                     release_images_fourccs = release_images_fourccs - ASYNC_ONLY_IMAGES
 
-                if (not args.downgrade) and (not check_upgrade_compatibility(fw['version'], v, fw['fourcc'], fw.get('status','active'))):
-                        raise UpgradeAttemptException()
+                check_fw_compatibility(fw['version'], v, fw['fourcc'], fw.get('status','active'), args.downgrade)
 
                 # firmwares older than 9531 do not recognize kbag or husc as
                 # valid identifiers, so do not attempt to program these images, as this
@@ -324,8 +342,8 @@ def run_upgrade(args, release_images):
     else:
         for fourcc in set(args.upgrade):
             for fw in fwinfo['firmwares']:
-                if (not args.downgrade) and (not check_upgrade_compatibility(fw['version'], v, fourcc, fw.get('status','active'))):
-                    raise UpgradeAttemptException()
+                check_fw_compatibility(fw['version'], v, fourcc, fw.get('status','active'), args.downgrade)
+
                 if fourcc_eq(fw['fourcc'], fourcc):
                     if fw['version'] < v or fw['fourcc'] in IGNORE_VERSION_IMAGES:
                         dev_upgrade_fourccs.append(fourcc)
