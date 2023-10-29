@@ -202,11 +202,9 @@ def check_bcfg_compatibility(cur, to, fourcc, status):
     if (fourcc == 'bcfg'):
         try:
             bcfg_support = dpc.execute("fw_upgrade", ['sbp_board_cfg'])
-            print(f'bcfg_support: {bcfg_support}')
             if not bcfg_support:
                 return False
         except Exception as e:
-            print(e)
             print(f"\nIncompatible {fourcc} upgrade({cur} -> {to}) status: {status}!"\
                   " Upgrade/downgrade to version 207XX before upgrading to any other version.")
             return False;
