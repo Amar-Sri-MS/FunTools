@@ -50,7 +50,7 @@ BASE_URL = 'http://dochub.fungible.local/doc/jenkins'
 KNOWN_IMAGES = {'husd', 'husm', 'husc', 'hbsb',
                 'sbpf', 'kbag', 'host', 'emmc',
                 'mmc1', 'nvdm', 'scap', 'pufr',
-                'frmw'}
+                'frmw', 'bcfg'}
 # these images require async upgrade
 ASYNC_ONLY_IMAGES = {'nvdm', 'scap'}
 # these images should use async upgrade if supported
@@ -197,18 +197,32 @@ def _sbpfw_fourccs_fixup(fourccs):
 
     return fourccs
 
+def check_bcfg_compatibility(cur, to, fourcc, status):
+    # bcfg fourcc is not recognized by pufr and frmw versions older to 20XXX
+    if (fourcc == 'bcfg'):
+        try:
+            bcfg_support = dpc.execute("fw_upgrade", ['sbp_board_cfg'])
+            print(f'bcfg_support: {bcfg_support}')
+            if not bcfg_support:
+                return False
+        except Exception as e:
+            print(e)
+            print(f"\nIncompatible {fourcc} upgrade({cur} -> {to}) status: {status}!"\
+                  " Upgrade/downgrade to version 207XX before upgrading to any other version.")
+            return False;
+
+    return True
+
 def check_upgrade_compatibility(cur, to, fourcc, status):
-    # bcfg fourcc is not recognized by pufr and frmw versions older to 20738
-    if (fourcc == 'frmw' or fourcc == 'pufr' or fourcc == 'sbpf') and\
-        (cur < 20738 and to > 20738)  and (status in ['active', 'unknown']):
-        print(f"\nIncompatible {fourcc} upgrade({cur} -> {to}) status: {status}!"\
-               " Upgrade to version 20738 before upgrading to version higher than 20738.")
+    if not check_bcfg_compatibility(cur, to, fourcc, status):
         return False;
 
     return True
 
 def check_downgrade_compatibility(cur, to, fourcc, status):
-	# For downgrades, "to" version is always 2 << 32. So, it is not possible to check the compatibility.
+    if not check_bcfg_compatibility(cur, to, fourcc, status):
+        return False;
+
     return True
 
 def check_fw_compatibility(cur, to, fourcc, status, downgrade):
