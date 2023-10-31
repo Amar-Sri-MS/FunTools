@@ -103,30 +103,21 @@ def bytes_to_int(b):
 
 
 def print_c_bytes(barr, var_name):
-    print("\nconst uint8_t %s[%d] = {" % (var_name, len(barr)))
-    i = 0
-    for b in barr:
-        print("0x%02x, " % b, end='')
-        i = i + 1
-        if i == 10:
-            print()
-            i = 0
+    barr_len = len(barr)
+    barr_split = [barr[i:i+10] for i in range(0,barr_len, 10)]
+
+    print("\nconst uint8_t %s[%d] = {" % (var_name, barr_len))
+
+    for bl in barr_split:
+        print('"' + ''.join('0x%02x, ' % b for b in bl) + '"')
 
     print("\n};")
 
     # also print string constant
     print("\n/*\n")
-    i = 0
-    for b in barr:
-        if i == 0:
-            print("\"", end = '')
-        print("\\x%02x" % b, end='')
-        i = i + 1
-        if i == 10:
-            print("\"")
-            i = 0
-    if i != 0:
-        print("\"")
+
+    for bl in barr_split:
+        print('"' + ''.join('\\x%02x' % b for b in bl) + '"')
 
     print("\n*/")
 
