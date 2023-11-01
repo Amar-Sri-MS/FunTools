@@ -50,7 +50,7 @@ BASE_URL = 'http://dochub.fungible.local/doc/jenkins'
 KNOWN_IMAGES = {'husd', 'husm', 'husc', 'hbsb',
                 'sbpf', 'kbag', 'host', 'emmc',
                 'mmc1', 'nvdm', 'scap', 'pufr',
-                'frmw', 'bcfg'}
+                'frmw'}
 # these images require async upgrade
 ASYNC_ONLY_IMAGES = {'nvdm', 'scap'}
 # these images should use async upgrade if supported
@@ -80,7 +80,7 @@ SPLIT_SIZE = 2*1024*1024
 EXIT_CODE_OK = 0
 EXIT_CODE_ERROR = 1
 EXIT_CODE_DOWNGRADE_ATTEMPT = 2
-EXIT_CODE_UPGRADE_ATTEMPT = 3
+EXIT_CODE_COMPATIBILITY_ERROR = 3
 
 class UpgradeStatus(Enum):
     STARTED = 0
@@ -96,7 +96,7 @@ class UpgradeException(Exception):
 class DowngradeAttemptException(UpgradeException):
     pass
 
-class UpgradeAttemptException(UpgradeException):
+class CompatibilityException(UpgradeException):
     pass
 
 class UpgradeFailedException(UpgradeException):
@@ -199,37 +199,25 @@ def _sbpfw_fourccs_fixup(fourccs):
 
 def check_bcfg_compatibility(cur, to, fourcc, status):
     # bcfg fourcc is not recognized by pufr and frmw versions older to 20794
+    ret = True
     if (fourcc == 'bcfg'):
         try:
             bcfg_support = dpc.execute("fw_upgrade", ['sbp_board_cfg'])
             if not bcfg_support:
-                return False
+                ret = False
         except Exception as e:
-            print(f"\nIncompatible {fourcc} upgrade({cur} -> {to}) status: {status}!"\
-                  " Upgrade/downgrade to version 20794 before upgrading to any other version.")
-            return False;
+            print(e)
+            ret = False
 
-    return True
+    if not ret:
+        print(f"\nIncompatible {fourcc} upgrade({cur} -> {to}) status: {status}!"\
+              " Upgrade/downgrade to version 20794 before upgrading to any other version.")
 
-def check_upgrade_compatibility(cur, to, fourcc, status):
-    if not check_bcfg_compatibility(cur, to, fourcc, status):
-        return False;
-
-    return True
-
-def check_downgrade_compatibility(cur, to, fourcc, status):
-    if not check_bcfg_compatibility(cur, to, fourcc, status):
-        return False;
-
-    return True
+    return ret
 
 def check_fw_compatibility(cur, to, fourcc, status, downgrade):
-    if downgrade:
-        if not check_downgrade_compatibility(cur, to, fourcc, status):
-            raise DowngradeAttemptException()
-    else:
-        if not check_upgrade_compatibility(cur, to, fourcc, status):
-            raise UpgradeAttemptException()
+    if not check_bcfg_compatibility(cur, to, fourcc, status):
+        return False
 
 def run_upgrade(args, release_images):
     """
@@ -281,8 +269,6 @@ def run_upgrade(args, release_images):
                 if fw['fourcc'] == 'mmc1' and fw['version'] < 11500 and \
                     fw.get('status','active') in ['active', 'unknown']:
                     release_images_fourccs = release_images_fourccs - ASYNC_ONLY_IMAGES
-
-                check_fw_compatibility(fw['version'], v, fw['fourcc'], fw.get('status','active'), args.downgrade)
 
                 # firmwares older than 9531 do not recognize kbag or husc as
                 # valid identifiers, so do not attempt to program these images, as this
@@ -346,7 +332,6 @@ def run_upgrade(args, release_images):
     else:
         for fourcc in set(args.upgrade):
             for fw in fwinfo['firmwares']:
-                check_fw_compatibility(fw['version'], v, fourcc, fw.get('status','active'), args.downgrade)
 
                 if fourcc_eq(fw['fourcc'], fourcc):
                     if fw['version'] < v or fw['fourcc'] in IGNORE_VERSION_IMAGES:
@@ -368,6 +353,20 @@ def run_upgrade(args, release_images):
 
     if any(dev_downgrade_fourccs) and not args.downgrade and not args.dry_run:
         raise DowngradeAttemptException()
+
+    #do compatibility check for all upgrade fourccs
+    for fourcc in dev_upgrade_fourccs:
+            for fw in fwinfo['firmwares']:
+                if fourcc_eq(fw['fourcc'], fourcc):
+                    if not check_fw_compatibility(fw['version'], v, fourcc, fw.get('status','active'), False):
+                        raise CompatibilityException()
+
+    #do compatibility check for all downgrade fourccs
+    for fourcc in dev_downgrade_fourccs:
+            for fw in fwinfo['firmwares']:
+                if fourcc_eq(fw['fourcc'], fourcc):
+                    if not check_fw_compatibility(fw['version'], v, fourcc, fw.get('status','active'), True):
+                        raise CompatibilityException()
 
     upgrade_status = {}
     for fourcc in dev_upgrade_fourccs:
@@ -577,8 +576,8 @@ def main():
         run_upgrade(args, release_images)
     except DowngradeAttemptException:
         sys.exit(EXIT_CODE_DOWNGRADE_ATTEMPT)
-    except UpgradeAttemptException:
-        sys.exit(EXIT_CODE_UPGRADE_ATTEMPT)
+    except CompatibilityException:
+        sys.exit(EXIT_CODE_COMPATIBILITY_ERROR)
     except Exception as e:
         print(f"Upgrade error ... {e}")
         traceback.print_exc()
