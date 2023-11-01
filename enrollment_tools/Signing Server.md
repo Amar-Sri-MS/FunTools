@@ -24,11 +24,10 @@ Specify the label of the key in the HSM. The modulus of this key is returned in 
 
 ##### production (optional argument, default value: 0)
 
-0: development HSM
+0: development security group
+1: security group 1
 
-1: DPU HSM
-
-2: AST2600 HSM
+(These are the only currently defined security groups)
 
 ##### format (optional argument, default value: 'binary')
 
@@ -105,7 +104,9 @@ Possible values are:
 
 ## POST
 
-The post request is used to sign a single digest with the development or production keys.
+The post request is used
+1-to sign a single digest with the development or production keys.
+2-to generate/retrieve debugging certificates
 
 ### Hash signing
 
@@ -117,7 +118,7 @@ The digest to package as a PKCS v1.5 signature.
 
 ##### algo (optional, default = 'sha512')
 
-The hash algorithm that generated the digest. 
+The hash algorithm that generated the digest.
 
 ##### modulus (optional)
 
@@ -127,18 +128,29 @@ The modulus of the RSA key used for signing.
 
 Label identifying the key used for signing.
 
-##### auth_token (optional)
 
-Authentication token obtained from an activated production HSM (required to sign with a production key).
-
-[Generating a token](https://docs.google.com/document/d/1d2lcyzSIQXHOLSK-LOkmb61ZHBOiTVhb3TZEKpZ5fE4/edit#heading=h.azk8glyelfia)
+*NOTE: The two arguments modulus and key are optional but at least one of them must be provided.*
 
 ##### production (optional)
 
-Identifier the HSM to use for the operation.
+Identify the security group to use for the operation.
 
-* 0: development HSM (default if no auth_token specified)
-* 1: DPU HSM (default if auth_token is specified)
-* 2: BMC HSM 
+0: development HSM (default)
+other groups requires TLS client authentication
 
-*NOTE: The two arguments modulus and key are optional but at least one of them must be provided.*
+
+### Debugging Certificate generation
+
+#### Arguments
+
+##### serial_number (required, 48 character hexadecimal string):
+
+The serial number of the DPU
+
+##### key (required, PEM public key):
+
+Public key associated with the requested certificate
+
+
+
+

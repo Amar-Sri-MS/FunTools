@@ -1,0 +1,11 @@
+{
+    "Endpoint": "https://api.esrp.microsoft.com",
+    "ClientId": "3ca1cde7-b3de-4ee3-a6f2-66c0adfc7c52",
+    "AadTokenPath": "/var/lib/dpu_reg/aadtoken",
+    "RequestSignerPfxPath": "/var/lib/dpu_reg/dpu-signing-openssl.pfx",
+    "RequestSignerPfxPassword": "<password_for_pfx_here>",
+    "HttpTimeoutSeconds": 30,
+    "RequestTimeoutSeconds": 120,
+    "MaxRetries": 3,
+    "RetrySleepSeconds": 5
+}

@@ -8,15 +8,20 @@
 
 
 import argparse
-import requests
 import subprocess
 import traceback
 import re
 import binascii
 import configparser
-import json
 import warnings
 import urllib3
+import requests
+
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import rsa, padding
+
+from test_signing_server import get_key
+
 
 CGI_SCRIPT="enrollment_server.cgi"
 
@@ -40,42 +45,16 @@ CURVES = { 32: {ASN1_OID: 'prime256v1',
                  NIST_CURVE: 'P-384'} }
 
 
-def quiet(*args, **kw_args):
-    pass
-
-def compare_with_expected(text_result, expected_result, print_fn=print):
+def compare_with_expected(text_result, expected_result):
 
     if text_result.rstrip() == expected_result.rstrip():
-        print_fn("Success")
+        print("Success")
         return 0
-    else:
-        print_fn("Mismatch")
-        print_fn("Response=\n%s" % text_result)
-        print_fn("Expected=\n%s" % expected_result)
-        return 1
 
-
-def enroll_cert_gen(server, infile, expected_output, tls_verify, verbose=True):
-
-    url_str = "https://" + server + "/cgi-bin/" + CGI_SCRIPT
-
-    response = requests.put(url_str,
-                            data=open(infile, 'rb').read(),
-                            verify=tls_verify)
-
-    return compare_with_expected(response.text, expected_output,
-                                 print if verbose else quiet)
-
-def retrieve_enroll_cert(server, sn, expected_output, tls_verify, verbose=True):
-
-    url_str = "https://" + server + "/cgi-bin/" + CGI_SCRIPT
-
-    response = requests.get(url_str,
-                            params={'cmd':'cert', 'sn':sn},
-                            verify=tls_verify)
-
-    return compare_with_expected(response.text, expected_output,
-                                 print if verbose else quiet)
+    print("Mismatch")
+    print("Response=\n%s" % text_result)
+    print("Expected=\n%s" % expected_result)
+    return 1
 
 
 def retrieve_modulus(server, expected_output, tls_verify):
@@ -97,6 +76,77 @@ def retrieve_modulus(server, expected_output, tls_verify):
     errors += compare_with_expected(response.text, expected_output)
 
     return errors
+
+
+
+def verify_cert_response(response, tbs_64, fpk4, verbose):
+
+    errs = 0
+    cert_b64 = response.content # bytes
+    cert_bin = binascii.a2b_base64(cert_b64)
+    if len(cert_bin) < 516:
+        errs+=1
+        if verbose:
+            print(cert_b64)
+            print("cert length %d  < 516" % len(cert_bin))
+        return errs
+
+    f_signature = cert_bin[-516:] # last 516 bytes
+    tbs_bin = cert_bin[:-516]   # all less signature
+
+    if tbs_bin != binascii.a2b_base64(tbs_64):
+        errs +=1
+        if verbose:
+            print(cert_b64)
+            print("TBS received != TBS sent!")
+
+
+    signature_len = int.from_bytes(f_signature[:4], byteorder='little')
+    if signature_len > 512:
+        errs+=1
+        if verbose:
+            print(cert_b64)
+            print("signature length %d > 512" % signature_len)
+        return errs
+
+    signature = f_signature[4:4+signature_len]
+
+    # verify signature
+    try:
+
+        fpk4.verify(signature, tbs_bin, padding.PKCS1v15(), hashes.SHA512())
+
+    except Exception as ex:
+        if verbose:
+            print("Debugging Certificate verification failed: ex = %s" % ex)
+        errs += 1
+
+    return errs
+
+
+
+def retrieve_enroll_cert(server, sn, tbs_64, fpk4, tls_verify, verbose=True):
+    ''' test GET with Serial Number '''
+    url_str = "https://" + server + "/cgi-bin/" + CGI_SCRIPT
+
+    response = requests.get(url_str,
+                            params={'cmd':'cert', 'sn':sn},
+                            verify=tls_verify)
+
+    return verify_cert_response(response, tbs_64, fpk4, verbose)
+
+
+def enroll_cert_gen_verify(server, tbs_64, fpk4, tls_verify, verbose=True):
+    ''' test PUT with whole TBS '''
+    errs = 0
+    url_str = "https://" + server + "/cgi-bin/" + CGI_SCRIPT
+
+    response = requests.put(url_str,
+                            data=tbs_64,
+                            verify=tls_verify)
+
+    return verify_cert_response(response, tbs_64, fpk4, verbose)
+
 
 
 def retrieve_x509_root_cert(server, expected_modulus, tls_verify):
@@ -138,13 +188,10 @@ def retrieve_x509_root_cert(server, expected_modulus, tls_verify):
     return errors
 
 
-def retrieve_x509_cert(server, sn, sn_hex, key_length,
-                       cert_64, tls_verify):
+def retrieve_x509_cert(server, sn, sn_hex, pub_key_bin, tls_verify):
 
     errors = 0
 
-    cert_bin = binascii.a2b_base64(cert_64)
-    pub_key_bin = cert_bin[KEY_OFFSET:KEY_OFFSET+ (2 * key_length)]
     pub_key_hex = binascii.b2a_hex(pub_key_bin).decode('ascii')
 
     url_str = "https://" + server + "/cgi-bin/" + CGI_SCRIPT
@@ -175,7 +222,8 @@ def retrieve_x509_cert(server, sn, sn_hex, key_length,
     key_out = "[key]\n"  # dummy section required by configparser
     key_out += subprocess.check_output(cmd, shell=True).decode('ascii')
 
-    curve_params = CURVES[key_length]
+    curve_params = CURVES[len(pub_key_bin)//2]
+
     key_info = configparser.ConfigParser()
     key_info.read_string(key_out)
     curve_name = key_info.get('key', NIST_CURVE)
@@ -218,7 +266,7 @@ def retrieve_x509_cert(server, sn, sn_hex, key_length,
 
 
 
-# This test is best run by first deleting the record for SN = 1234 from the database
+# This test is best run by first deleting the record for SN = 0000_0001 from the database
 def main_program():
 
     errors = 0
@@ -229,35 +277,41 @@ def main_program():
                         default="f1reg.fungible.com",
                         help="Ip address or DNS name of server to test")
 
-    options = parser.parse_args()
+    args = parser.parse_args()
 
-    tls_verify = True if options.server == "f1reg.fungible.com" else False
+    tls_verify = args.server.endswith(".fungible.com")
 
     if not tls_verify:
         warnings.simplefilter('ignore',
                               category=urllib3.exceptions.InsecureRequestWarning)
 
-    test_cases = (('./tbs_enrollment_cert.txt',
-                   './enrollment_cert.txt', 32),
-                  ('./tbs_enrollment_cert_posix.txt',
-                  './enrollment_cert_posix.txt', 32),
-                  ('./tbs_enrollment_cert_384.txt',
-                   './enrollment_cert_384.txt', 48))
-
-    fpk4_hex = open('./fpk4_hex.txt', 'r').read()
+    test_cases = (('./tbs_enrollment_cert.txt', 32),
+                  ('./tbs_enrollment_cert_posix.txt', 32),
+                  ('./tbs_enrollment_cert_384.txt', 48),
+                  ('./tbs_enrollment_cert_0001.txt', 48))  #"disposable" cert: 0000_0001 S/N
 
     try:
-        errors += retrieve_modulus(options.server, fpk4_hex, tls_verify)
 
-        errors += retrieve_x509_root_cert(options.server, fpk4_hex, tls_verify)
+        # use signing server -- should be accessible
+        fpk4_hex = get_key(args.server,
+                           tls_verify,
+                           'fpk4', oformat="hex").decode('ascii')
+
+        errors += retrieve_modulus(args.server, fpk4_hex, tls_verify)
+
+        errors += retrieve_x509_root_cert(args.server, fpk4_hex, tls_verify)
+
+        fpk4 = rsa.RSAPublicNumbers(0x010001, int(fpk4_hex, 16)).public_key()
 
         for test_case in test_cases:
             tbs_file = test_case[0]
-            cert_file = test_case[1]
-            key_length = test_case[2]
+            key_length = test_case[1]
 
-            tbs = open(tbs_file, 'r').read()
-            tbs_bin = binascii.a2b_base64(tbs)
+            tbs_64 = open(tbs_file, 'r').read()
+
+            tbs_bin = binascii.a2b_base64(tbs_64)
+
+            pk_bin = tbs_bin[KEY_OFFSET: KEY_OFFSET +  2 * key_length]
 
             sn_bin = tbs_bin[SERIAL_NR_OFFSET:
                              SERIAL_NR_OFFSET+SERIAL_NR_LENGTH]
@@ -266,60 +320,45 @@ def main_program():
 
             print("\n\n%s" % sn_hex)
 
-            case_errors = 0
-            enroll_cert = open(cert_file, 'r').read() if cert_file else None
+            sub_errs = 0
 
-            if retrieve_enroll_cert(options.server,
-                                    sn_64,
-                                    enroll_cert,
-                                    tls_verify,
-                                    False) == 0:
+            if retrieve_enroll_cert(args.server, sn_64, tbs_64, fpk4,
+                                    tls_verify, False) == 0:
                 print("Certificate already in database\n")
 
             else:
                 # do an enroll_cert to generate the cert -- no cert will be returned
                 # so ignore errors
-                enroll_cert_gen(options.server,
-                                tbs_file,
-                                enroll_cert,
-                                tls_verify,
-                                False)
+                enroll_cert_gen_verify(args.server, tbs_64, fpk4,
+                                       tls_verify,False)
 
             # should retrieve a cert there when enrolling again or when cert
             # was in database
-            case_errors += enroll_cert_gen(options.server,
-                                           tbs_file,
-                                           enroll_cert,
+            sub_errs += enroll_cert_gen_verify(args.server, tbs_64, fpk4,
+                                               tls_verify)
+
+            sub_errs += retrieve_enroll_cert(args.server, sn_64, tbs_64, fpk4,
+                                             tls_verify)
+
+            sub_errs += retrieve_enroll_cert(args.server, sn_hex, tbs_64, fpk4,
+                                             tls_verify)
+
+            sub_errs += retrieve_x509_cert(args.server, sn_64, sn_hex, pk_bin,
                                            tls_verify)
 
-            case_errors += retrieve_enroll_cert(options.server,
-                                                sn_64,
-                                                enroll_cert,
-                                                tls_verify)
+            sub_errs += retrieve_x509_cert(args.server, sn_hex, sn_hex, pk_bin,
+                                           tls_verify)
 
-            case_errors += retrieve_enroll_cert(options.server,
-                                                sn_hex,
-                                                enroll_cert,
-                                                tls_verify)
 
-            case_errors += retrieve_x509_cert(options.server,
-                                              sn_64, sn_hex, key_length,
-                                              enroll_cert,
-                                              tls_verify)
+            print("Test case for sn %s: %d errors" % (sn_hex, sub_errs))
 
-            case_errors += retrieve_x509_cert(options.server,
-                                              sn_hex, sn_hex, key_length,
-                                              enroll_cert,
-                                              tls_verify)
-            print("Test case for sn %s: %d errors" % (sn_hex, case_errors))
+            errors += sub_errs
 
-            errors += case_errors
-
-    except Exception as ex:
+    except Exception:
         traceback.print_exc()
         errors += 1
 
-    print("Test completed on server %s with %d errors" % (options.server, errors))
+    print("Test completed on server %s with %d errors" % (args.server, errors))
 
 
 if __name__=="__main__":

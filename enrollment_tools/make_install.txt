@@ -1,3 +1,0 @@
-sudo tar --owner=root --group=root -cvzf install.tgz usr etc var
-# on the mac: after installing GNU tar as gtar
-# sudo gtar --owner=root --group=root --exclude='.DS_Store' -cvzf install.tgz usr etc var
