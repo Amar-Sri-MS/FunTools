@@ -24,6 +24,10 @@
             "key": "",
             "customer_cert": "customer_certificate.bin"
         },
+        "board_cfg_packed.bin": {
+            "key": "",
+            "customer_cert": "customer_certificate.bin"
+        },
         "host_firmware_packed.bin": {
             "key": "",
             "customer_cert": "customer_certificate.bin"

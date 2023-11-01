@@ -76,13 +76,13 @@ DEFAULT_EEPROMS = {
     ('f1', False)   : 'eeprom_f1_fs800',
 
     ('s1', True)    : 'eeprom_emu_s1_compute',
-    ('s1', False)   : 'eeprom_s1_fc200_1_0GHz_SoC',
+    ('s1', False)   : 'eeprom_s1_fc200',
 
-    ('f1d1', True)  : 'eeprom_emu_f1d1_compute_ddr',
+    ('f1d1', True)  : 'eeprom_emu_f1d1_compute_hbm',
     ('f1d1', False) : 'eeprom_f1d1_fs800v2_1_1GHz_SoC_1_7GHz_PC',
 
     ('s2', True)    : 'eeprom_emu_s2_compute',
-    ('s2', False)   : 'eeprom_s2_qemu',      #FIXME WHEN SILICON
+    ('s2', False)   : 'eeprom_ds400',      #FIXME WHEN SILICON
 }
 
 def remove_prefix(a_str, prefix):
@@ -96,13 +96,14 @@ def compress_file(src_path):
         with gzip.open(src_path + '.gz', 'wb') as f_out:
             shutil.copyfileobj(f_in, f_out)
 
-def generate_dynamic_config(chip, eeprom):
+def generate_dynamic_config(chip, eeprom, board_cfg):
     ''' generate on the fly a config string specifying the eeprom and the host '''
     uboot_rel_dir = "FunSDK/FunSDK/u-boot/" + chip + "/u-boot.bin"
     host_location = os.path.join(os.environ["WORKSPACE"], uboot_rel_dir)
 
     eeprom_source = {"source" : eeprom}
-    signed_images = {"eeprom_packed.bin" : eeprom_source}
+    board_cfg_source = {"source" : board_cfg}
+    signed_images = {"eeprom_packed.bin" : eeprom_source, "board_cfg.bin" : board_cfg_source}
     host_source = {"source" : host_location}
     signed_images["host_firmware_packed.bin"] = host_source
     top_dir = {"signed_images" : signed_images}
@@ -143,10 +144,8 @@ def generate_nor_image(args, script_directory, images_directory, *dirs):
     # stdin input will be used to send the config that was generated on the fly
     run_args.append("-")
 
-    print(run_args)
-
     # generate a config string on the fly: host for the chip, eeprom
-    extra_config = generate_dynamic_config(args.chip, args.eeprom)
+    extra_config = generate_dynamic_config(args.chip, args.eeprom, args.board_profile)
 
     subprocess.run(run_args, input=extra_config, cwd=images_directory,
                    check=True, stdout=sys.stdout, stderr=sys.stderr)
@@ -154,6 +153,45 @@ def generate_nor_image(args, script_directory, images_directory, *dirs):
     # compress the Nor image file preemptively
     full_nor_image_path = os.path.join(images_directory, NOR_IMAGE_FILE_NAME)
     compress_file(full_nor_image_path)
+
+
+def generate_board_cfg_signed_images(script_directory, images_directory,
+                                     board_cfg_directory, version,
+                                     board_cfg_profile):
+    ''' sign all the board cfg profiles and place them in the images_directory '''
+    #  fixed arguments
+    run_args = ["python3",
+                os.path.join(script_directory, "generate_flash.py"),
+                "--fail-on-error",
+                "--action", "sign",
+                "--config-type", "json",
+                "--source-dir", board_cfg_directory]
+
+    # optional arguments
+    if version:
+        run_args.extend(["--force-version", version])
+
+    # stdin input will be used to send the config that was generated on the fly
+    run_args.append("-")
+
+    extra_config = b'''
+    {
+        "signed_images": {
+        "board_cfg_list": {
+            "source": "%s",
+            "version": 1,
+            "fourcc": "bcfg",
+            "key": "fpk3",
+            "cert": "",
+            "customer_cert": "",
+            "description": ""
+        }
+    }
+    }
+    ''' % board_cfg_profile.encode('utf-8') if board_cfg_profile else b"@file:boardcfg_profile_list.json"
+
+    subprocess.run(run_args, input=extra_config, cwd=images_directory,
+                   check=True, stdout=sys.stdout, stderr=sys.stderr)
 
 
 def generate_eeprom_signed_images(script_directory, images_directory,
@@ -309,11 +347,15 @@ def parse_args():
                             help="Machine (f1,s1,etc...), default = f1")
     arg_parser.add_argument("-e", "--eeprom", action='store',
                             help="eeprom type")
+    arg_parser.add_argument("--board-profile", action='store',
+                            help="board profile")
     arg_parser.add_argument("--no-recompile", action='store_false',
                             dest="recompile",
                             help="Do not compile software, just build image")
     arg_parser.add_argument("--sign-all-eeproms", action='store_true',
                             help="Sign all eeproms -- legacy behavior")
+    arg_parser.add_argument("--sign-all-board-cfg-profiles", action='store_true',
+                            help="Sign all board cfg profiles")
     arg_parser.add_argument("--emulation", action='store_const', const=1, default=0,
                             help="emulation_build")
     arg_parser.add_argument("-n", "--enrollment-certificate", action='store',
@@ -361,7 +403,7 @@ def parse_args():
     return arg_parser.parse_args()
 
 
-def sanitize_args(args, eeproms_dir):
+def sanitize_args(args, eeproms_dir, board_cfg_dir):
     ''' sanitize the args and provide meaningful defaults '''
 
     # can we scp?
@@ -378,6 +420,7 @@ def sanitize_args(args, eeproms_dir):
     # eeprom
     # verify the file exists; if not show the list
     eeprom_files = sorted(os.listdir(eeproms_dir))
+    board_cfg_files = sorted(os.listdir(board_cfg_dir))
 
     if args.eeprom is None:
         try:
@@ -415,6 +458,28 @@ def sanitize_args(args, eeproms_dir):
 
         args.eeprom = sane_eeprom
 
+    sku_name = remove_prefix(args.eeprom, "eeprom_")
+    if args.board_profile is None:
+        args.board_profile = 'boardcfg_{}_default'.format(sku_name)
+        if not args.board_profile in board_cfg_files:
+            sku_name = remove_prefix(sku_name, args.chip + "_")
+            args.board_profile = 'boardcfg_{}_default'.format(sku_name)
+    else:
+        prof_name = remove_prefix(args.board_profile, 'boardcfg_')
+        if not prof_name.startswith(sku_name):
+            prof_name = args.chip + '_' + prof_name
+            if not prof_name.startswith(sku_name):
+                print("board cfg profile: {} for the sku: {} is invalid!".format(prof_name, sku_name))
+                sys.exit(1)
+
+    # verify the file exists; if not show the list
+    if not args.board_profile in board_cfg_files:
+        print("board_profile name is not found: \"{0}\"".format(args.board_profile))
+        print("Available board profiles are:")
+        print("\n".join(board_cfg_files))
+        sys.exit(1)
+
+
     # enrollment certificate
     if args.enrollment_certificate:
         args.enrollment_certificate = os.path.abspath(args.enrollment_certificate)
@@ -434,17 +499,20 @@ def sanitize_args(args, eeproms_dir):
 
     return args
 
-
 def main():
-
     ''' main '''
+    args = parse_args()
     script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
     eeproms_dir = os.path.join(os.environ['WORKSPACE'],
                                'FunSDK/FunSDK/dpu_eepr')
     sbus_roms_dir = os.path.join(os.environ['WORKSPACE'],
                                'FunSDK/FunSDK/sbpfw/roms')
 
-    args = sanitize_args(parse_args(), eeproms_dir)
+    board_cfg_dir = os.path.join(os.environ['WORKSPACE'],
+                                'FunSDK/feature_sets/boardcfg/{}{}'.format(
+			                        args.chip, '-emu' if args.emulation else ''))
+
+    args = sanitize_args(parse_args(), eeproms_dir, board_cfg_dir)
 
     BUILD_DIR_FORMAT = "{sbp}/{build_dir}_{chip}_{emulation}{debug}"
 
@@ -467,8 +535,12 @@ def main():
                                   eeproms_dir, args.version,
                                   None if args.sign_all_eeproms else args.eeprom)
 
+    generate_board_cfg_signed_images(script_dir, built_images_dir,
+                                  board_cfg_dir, args.version,
+                                  None if args.sign_all_board_cfg_profiles else args.board_profile)
+
     # now generate a NOR image
-    generate_nor_image(args, script_dir, built_images_dir, eeproms_dir, sbus_roms_dir)
+    generate_nor_image(args, script_dir, built_images_dir, eeproms_dir, sbus_roms_dir, board_cfg_dir)
 
     print("*** Images in {0} ***".format(built_images_dir))
 

@@ -213,6 +213,14 @@ else
 			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -U --version latest --force --downgrade --active
 			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
 		fi
+
+		if [ $EXIT_STATUS -eq 2 ]; then
+			log_msg "Aborting upgrade!"
+			# exit early here, as this error code means no downgrade
+			# was performed by run_fwupgrade script
+			exit $EXIT_STATUS
+		fi
+
 		# Saved partition is not yet used for emmc images, so use old-style method
 		# of erasing part of active image
 
@@ -230,7 +238,7 @@ else
 			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u eepr --version latest --force --downgrade --select-by-image-type "$host_sku"
 			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
 
-			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u eepr --version latest --force --downgrade --active --select-by-image-type "$host_sku"
+			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u eepr --version latest --force --downgrade --active --select-by_image-type "$host_sku"
 			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
 		fi
 	else
@@ -239,6 +247,13 @@ else
 
 		if [ $EXIT_STATUS -eq 2 ]; then
 			log_msg "Aborting ... downgrade argument required"
+			# exit early here, as this error code means no upgrade
+			# was performed by run_fwupgrade script
+			exit $EXIT_STATUS
+		fi
+
+		if [ $EXIT_STATUS -eq 3 ]; then
+			log_msg "Aborting upgrade!"
 			# exit early here, as this error code means no upgrade
 			# was performed by run_fwupgrade script
 			exit $EXIT_STATUS
@@ -271,7 +286,6 @@ else
 			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u eepr --select-by-image-type "$host_sku"
 			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
 		fi
-
 	fi
 fi
 
