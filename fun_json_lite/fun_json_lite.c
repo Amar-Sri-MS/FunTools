@@ -209,6 +209,7 @@ static struct fun_json *fun_json_create_string_len(struct fun_json_container *co
 	struct fun_json_string *result = allocate(container, sizeof(struct fun_json_string) + len + 1);
 	if (!result) return NULL;
 	memcpy(result->value, value, len);
+	result->value[len] = 0;
 	result->header.type = fun_json_string_type;
 	return (void *)result;
 }
