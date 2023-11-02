@@ -182,19 +182,34 @@ QSPI_EMULATION=$(cat <<-JSON
 JSON
 )
 
+prefix="eeprom_"
+board_name=${VARIANT#"$prefix"}
+
+BOARD_CFG_DEF=$(cat <<-JSON
+{ "signed_images": {
+     "board_cfg.bin": {
+         "source":"boardcfg_${board_name}_default"
+         }
+     }
+}
+JSON
+)
+
 if [ $EMULATION == 0 ]; then
 	# generate flash image for real chip
 	python3 $WORKSPACE/FunSDK/bin/flash_tools/generate_flash.py --config-type json \
 		--source-dir $SBP_INSTALL_DIR \
 		--source-dir $WORKSPACE/FunSDK/FunSDK/dpu_eepr \
 		--source-dir $WORKSPACE/FunSDK/FunSDK/sbpfw/roms \
+		--source-dir $WORKSPACE/FunSDK/feature_sets/boardcfg/${CHIP} \
 		--fail-on-error \
 		--chip $CHIP \
 		$WORKSPACE/FunSDK/bin/flash_tools/qspi_config_fungible.json \
 		$WORKSPACE/FunSDK/bin/flash_tools/key_bag_config.json \
 		$CUSTOMER_CONFIG_JSON \
 		<(echo $HOST_FIRMWARE_DEF) \
-		<(echo $EEPROM_DEF)
+		<(echo $EEPROM_DEF) \
+		<(echo $BOARD_CFG_DEF)
 	# Flash images for real hardware
 	cp qspi_image_hw.byte ${WORKSPACE}/sbpimage/flash_image_hw.byte
 	cp qspi_image_hw.bin ${WORKSPACE}/sbpimage/flash_image_hw.bin
@@ -210,6 +225,7 @@ else
 		--source-dir $SBP_INSTALL_DIR \
 		--source-dir $WORKSPACE/FunSDK/FunSDK/dpu_eepr \
 		--source-dir $WORKSPACE/FunSDK/FunSDK/sbpfw/roms \
+		--source-dir $WORKSPACE/FunSDK/feature_sets/boardcfg/${CHIP}-emu \
 		--enroll-cert ${WORKSPACE}/enroll_cert.bin \
 		--fail-on-error \
 		--chip $CHIP \
@@ -218,7 +234,8 @@ else
 		$CUSTOMER_CONFIG_JSON \
 		<(echo $HOST_FIRMWARE_DEF) \
 		<(echo $EEPROM_DEF) \
-		<(echo $QSPI_EMULATION)
+		<(echo $QSPI_EMULATION) \
+		<(echo $BOARD_CFG_DEF)
 	# Flash images for Palladium emulation (limited to 2MB)
 	cp qspi_image_emu.byte ${WORKSPACE}/sbpimage/flash_image.byte
 	cp qspi_image_emu.bin ${WORKSPACE}/sbpimage/flash_image.bin
