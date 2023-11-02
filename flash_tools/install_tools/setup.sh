@@ -244,6 +244,7 @@ else
 
 			log_msg "Downgrading bcfg \"$host_sku\""
 			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u bcfg --version latest --force --downgrade --select-by-image-type "board_cfg_${host_sku}_default"
+			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
 			if [ $RC -eq 3 ]; then
 				log_msg "Compatibility error. Aborting downgrade!"
 				exit $RC
@@ -288,7 +289,8 @@ else
 			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
 
 			log_msg "Updating bcfg \"$host_sku\""
-			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u bcfg --select-by-image-type "board_cfg_${host_sku}_default --version $funos_sdk_version"
+			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u bcfg --version $funos_sdk_version --select-by-image-type "board_cfg_${host_sku}_default"
+			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
 			if [ $RC -eq 3 ]; then
 				log_msg "Compatibility error. Aborting Upgrade!"
 				exit $RC

@@ -219,6 +219,8 @@ def check_fw_compatibility(cur, to, fourcc, status, downgrade):
     if not check_bcfg_compatibility(cur, to, fourcc, status):
         return False
 
+    return True
+
 def run_upgrade(args, release_images):
     """
         Perform firmware upgrade
@@ -356,17 +358,17 @@ def run_upgrade(args, release_images):
 
     #do compatibility check for all upgrade fourccs
     for fourcc in dev_upgrade_fourccs:
-            for fw in fwinfo['firmwares']:
-                if fourcc_eq(fw['fourcc'], fourcc):
-                    if not check_fw_compatibility(fw['version'], v, fourcc, fw.get('status','active'), False):
-                        raise CompatibilityException()
+        for fw in fwinfo['firmwares']:
+            if fourcc_eq(fw['fourcc'], fourcc):
+                if not check_fw_compatibility(fw['version'], v, fourcc, fw.get('status','active'), False):
+                    raise CompatibilityException()
 
     #do compatibility check for all downgrade fourccs
     for fourcc in dev_downgrade_fourccs:
-            for fw in fwinfo['firmwares']:
-                if fourcc_eq(fw['fourcc'], fourcc):
-                    if not check_fw_compatibility(fw['version'], v, fourcc, fw.get('status','active'), True):
-                        raise CompatibilityException()
+        for fw in fwinfo['firmwares']:
+            if fourcc_eq(fw['fourcc'], fourcc):
+                if not check_fw_compatibility(fw['version'], v, fourcc, fw.get('status','active'), True):
+                    raise CompatibilityException()
 
     upgrade_status = {}
     for fourcc in dev_upgrade_fourccs:
