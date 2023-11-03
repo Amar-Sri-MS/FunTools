@@ -189,7 +189,7 @@ def encodeDict(d: dict) -> bytes:
     data += encode(k) + encode(d[k])
 
   return bjsonDict + uInt32LittleEndian(len(data)) + uInt32LittleEndian(len(d)) + data
-  
+
 
 def encode(d: Any) -> bytes:
   if d is None:
@@ -197,7 +197,7 @@ def encode(d: Any) -> bytes:
 
   if isinstance(d, bool):
     return encodeBool(d)
-    
+
   if isinstance(d, int):
     return encodeInt(d)
 
@@ -262,7 +262,7 @@ def serialization_size(b: bytes) -> int:
     return 5
 
   if b.startswith(bjsonInt64):
-    return 5
+    return 9
 
   return -1
 
@@ -294,18 +294,18 @@ def decode(b: bytes) -> Any:
 
   if b[0] >= bjsonTinyString and b[0] < bjsonUint7:
     size = b[0] - bjsonTinyString
-    return b[1:size+1].decode("utf-8") 
+    return b[1:size+1].decode("utf-8")
 
   if b[0] >= bjsonUint7:
     return int(b[0] - bjsonUint7)
 
   if b.startswith(bjsonSmallString):
     size = decodeUint16LittleEndian(b[1:])
-    return b[3:size+3].decode("utf-8") 
+    return b[3:size+3].decode("utf-8")
 
   if b.startswith(bjsonString) or b.startswith(bjsonError):
     size = decodeUint32LittleEndian(b[1:])
-    return b[5:size+5].decode("utf-8") 
+    return b[5:size+5].decode("utf-8")
 
   if b.startswith(bjsonArray):
     size = decodeUint32LittleEndian(b[5:])
