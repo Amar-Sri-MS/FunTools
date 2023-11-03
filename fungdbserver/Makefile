@@ -10,17 +10,20 @@ CXX=g++
 WORKSPACE ?= ../..
 SDKDIR ?= $(WORKSPACE)/FunSDK
 SDK_INSTALL_DIR ?= $(SDKDIR)
-### Default to C targets for buildling locally 
+### Default to C targets for buildling locally
 
 # TODO(bowdidge): Add tests to all when GOOGLETEST_DIR always present.
-all: hbm_unshard ddr_unshard ddr_unshard_s2
+all: hbm_unshard ddr_unshard ddr_unshard_s2 hbm_unshard_f2
 
 clean:
 	/bin/rm -f hbm_unshard ddr_unshard ddr_unshard_test \
 	    ddr_unshard_s2 ddr_address_s2_test *.o
 
-hbm_unshard: hbm_unshard.o
-	$(CC) ${CFLAGS} -o hbm_unshard hbm_unshard.o
+hbm_unshard: hbm_unshard.c hbm_unshard_f1.c.inc
+	$(CC) ${CFLAGS} -DCONFIG_F1 -o $@ $<
+
+hbm_unshard_f2: hbm_unshard.c hbm_unshard_f2.c.inc
+	$(CC) ${CFLAGS} -DCONFIG_F2 -o $@ $<
 
 ddr_unshard: ddr_unshard.o ddr_address.h ddr_address.o
 	$(CC) ${CFLAGS} -o ddr_unshard ddr_unshard.o ddr_address.o
