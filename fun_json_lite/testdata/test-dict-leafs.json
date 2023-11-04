@@ -3,5 +3,6 @@
 	"key2": "testing123",
 	"key3": 3.14e-3,
 	"key4": true,
-	"key5": 7
+	"key5": 92233720368,
+	"key6": 7
 }
