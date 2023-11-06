@@ -177,7 +177,7 @@ class DpcSocket:
         if ready[0]:
             self.__buffer += self.__sock.recv(self.__chunk_size)
             remaining_time = timeout_seconds - start_time + time.time() if timeout_seconds is not None else None
-            if remaining_time is not None and remaining_time < 0:
+            if remaining_time < 0:
                 raise DpcTimeoutError('receive() timeout')
             return remaining_time
         raise DpcTimeoutError('receive() timeout')
