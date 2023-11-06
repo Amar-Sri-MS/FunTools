@@ -13,34 +13,33 @@
 #define NPC 2
 #define NSHARDS (NCHANNELS * NPC)
 
+#ifdef CONFIG_F1
 #define BLEN    16
 #define JUNKLEN 2
+#define WORD_TYPE uint64_t
+#elif defined CONFIG_F2
+#define BLEN    8
+#define JUNKLEN 1
+#define WORD_TYPE uint32_t
+#else
+#error unknown config type
+#endif
+
 #define LINELEN (BLEN+JUNKLEN+1)
 #define CHUNK   (16*1024)
 
 #define STRIDE 64
 
 #define CH_SWIZZLE 1
-static const uint32_t CHNUMS[] = {2, 3, 6, 7, 0, 1, 4, 5, 10,
-				  11, 14, 15, 8, 9, 12, 13};
 
 struct infile {
 	char *name;
 	char *fname;
 	int srcfd;
 	int binfd;
-	uint64_t *map;
+	WORD_TYPE *map;
 	size_t size;
 };
-
-#define H0 0x001
-#define H1 0x002
-#define H2 0x180
-#define H3 0x240
-#define H4 0x028
-#define H5 0x410
-#define H6 0x000
-#define H7 0x004
 
 #define CH_SWIZZLE 1
 #define HBM_MODE  4
@@ -77,7 +76,7 @@ static int create_bin_file(const char *outfile)
 	int fd = -1;
 
 	fd = open(outfile, O_CREAT | O_WRONLY | O_TRUNC, 0644);
-	
+
 	if (fd < 0) {
 		printf("failed to open output file %s\n", outfile);
 		exit(1);
@@ -111,14 +110,14 @@ static const char HEXVALS[256] = {
 	['F'] = 0xf,
 };
 
-static uint64_t hexval(char c)
+static WORD_TYPE hexval(char c)
 {
 	return HEXVALS[c];
 }
 
-static uint64_t decode_line(const char *p)
+static WORD_TYPE decode_line(const char *p)
 {
-	uint64_t n = 0;
+	WORD_TYPE n = 0;
 	int i;
 
 	/* atoi() and byte-swap in one */
@@ -138,10 +137,10 @@ static void decode_input(int i)
 	size_t j;
 	bool done = false;
 	char buf[CHUNK * LINELEN];
-	uint64_t obuf[CHUNK];
+	WORD_TYPE obuf[CHUNK];
 	struct infile *f = &shards[i];
 	char *p;
-	
+
 	/* create a temporary fd for the binary*/
 	f->fname = strdup("shard-XXXXXX");
 	f->binfd = mkstemp(f->fname);
@@ -151,7 +150,7 @@ static void decode_input(int i)
 	}
 	// printf("opened shard %s\n", f->fname);
 	unlink(f->fname);
-		
+
 	/* do the actual decode */
 	while (!done) {
 		/* read in a large number of lines */
@@ -193,7 +192,7 @@ static void decode_input(int i)
 			printf("WARNING: input file sizes differ\n");
 			warned = true;
 		}
-			
+
 		if (f->size < minsize)
 			minsize = f->size;
 	}
@@ -229,117 +228,23 @@ static uint64_t red_xor(uint64_t x)
 	x = (x>>2)  ^ x;
 	x = (x>>1)  ^ x;
 	x &= 1;
-	
+
 	return x;
 }
 
-struct infile *addr2shard(uint64_t addr, size_t *offset)
-{
-	uint64_t shard, saddr, row, col, bank;
-	uint64_t qsys_num, ch_addr, ch_num, ch_num2, pseudo_chan;
-	uint64_t qsn[2];
-	uint64_t qn[7];
-		
-	shard = addr & 3;
-	saddr = addr >> 2;
+#ifdef CONFIG_F1
+#include "hbm_unshard_f1.c.inc"
+#elif defined CONFIG_F2
+#include "hbm_unshard_f2.c.inc"
+#endif
 
-	qsn[0] = red_xor(H0 & saddr);
-	qsn[1] = red_xor(H1 & saddr);
-
-	qn[1] = red_xor(H2 & saddr);
-	qn[2] = red_xor(H3 & saddr);
-	qn[3] = red_xor(H4 & saddr);
-	qn[4] = red_xor(H5 & saddr);
-	// qn[5] = red_xor(H6 & saddr); // XXX: doesn't exist?!
-	qn[6] = red_xor(H7 & saddr);
-        
-	qsys_num = (qsn[1] << 1) | qsn[0];
-	qsys_num = qsys_num + shard * 4;
-
-	if (CH_SWIZZLE) {
-		assert(qsys_num >= 0);
-		assert(qsys_num <= 15);
-		ch_num = CHNUMS[qsys_num];
-	} else {
-		ch_num = qsys_num;
-	}
-
-	row = (saddr >> 11) & 0x3fff;
-	col = (saddr & 0xf0) >> 1;
-	bank = (qn[4] << 3) | (qn[3] << 2) | (qn[2] << 1) | qn[1];
-
-	pseudo_chan = qn[6];
-	ch_num2 = (pseudo_chan * 16) + ch_num;
-
-	assert((pseudo_chan == 0) || (pseudo_chan == 1));
-	assert(ch_num >= 0);
-	assert(ch_num <= 15);
-        
-	ch_addr = (bank << 21) | (row << 7) | col;
-
-	/* return the results in word offset from an infile */
-	*offset = ch_addr / sizeof(uint64_t);
-	return &shards[ch_num2];
-
-}
-
-static void unshard(int fd)
-{
-	uint64_t addr = 0;
-	struct infile *f = NULL;
-	size_t offset, i, c = 0;
-	ssize_t n;
-	uint64_t buf[CHUNK][STRIDE/sizeof(uint64_t)];
-
-	for (addr = 0; addr < minsize * NSHARDS; addr += STRIDE) {
-
-		/* compute where it's coming from */
-		f = addr2shard(addr, &offset);
-
-		/* copy to the output buffer in swapped pairs */
-		assert(f->map != NULL);
-		for (i = 0; i < (STRIDE/sizeof(uint64_t)); i+=2) {
-			buf[c][i+0] = f->map[offset+1];
-			buf[c][i+1] = f->map[offset+0];
-		}
-		c++;
-		
-		/* see if we should flush the output buffer */
-		if (c == CHUNK) {
-			n = write(fd, buf, c * STRIDE);
-			if (n != (c * STRIDE)) {
-				perror("write");
-				exit(1);
-			}
-			c = 0;
-		}
-
-		if (addr && !(addr % (1ULL << 25))) {
-			printf(".");
-			fflush(stdout);
-		}
-		if (addr && !(addr % (1ULL << 30))) {
-			printf("%" PRId64 "gb\n", addr >> 30);
-		}
-	}
-
-	printf("\n");
-	if (c > 0) {
-		n = write(fd, buf, c * STRIDE);
-		if (n != (c * STRIDE)) {
-			perror("write");
-			exit(1);
-		}
-	}
-
-}
 
 int main(int argc, char *argv[])
 {
 	const char *prefix = NULL;
 	const char *outfile = NULL;
 	int fd = -1;
-	
+
 	if (argc != 3) {
 		printf("usage: %s <outfile> <shard-prefix>\n", argv[0]);
 		exit(1);
@@ -360,6 +265,6 @@ int main(int argc, char *argv[])
 
 	/* do the actual assembly */
 	unshard(fd);
-	
+
 	return 0;
 }
