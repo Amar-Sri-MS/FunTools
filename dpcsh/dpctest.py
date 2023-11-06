@@ -78,6 +78,17 @@ class TestDPCCommands(unittest.TestCase):
             self.client.set_timeout(None)
             self.client.async_recv_any()
 
+    def testTimeout2(self):
+        self.client.set_timeout(1.5)
+        try:
+            self.client.async_send("delay", [1, "echo", "breaking out of the wait loop"])
+            self.client.execute('sleep', [2])
+            self.assertTrue(False)
+        except dpc_client.DpcTimeoutError:
+            print('timeout2 works')
+            self.client.set_timeout(None)
+            self.client.async_recv_any()
+
     def testLargeCommands(self):
         """Tests that long messages don't get truncated or corrupted."""
         for i in (10, 100, 1000):
