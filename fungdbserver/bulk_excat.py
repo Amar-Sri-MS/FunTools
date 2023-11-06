@@ -25,7 +25,7 @@ FUNOS_TGZ_FLAVOURS = [
     "funos~%s-qemu.tgz"
 ]
 
-CHIPS = ["f1", "s1", "f1d1", "s2"]
+CHIPS = ["f1", "s1", "f1d1", "s2", "f2"]
 PKGS = ["core", "storage", "pkgdemo"]
 
 FUNOS_FLAVOURS = [
