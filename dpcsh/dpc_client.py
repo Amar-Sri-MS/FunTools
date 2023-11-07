@@ -157,7 +157,7 @@ class DpcSocket:
         if timeout_seconds is None:
             return None, bytes_sent
 
-        remaining_time = timeout_seconds + (time.time() - start_time)
+        remaining_time = timeout_seconds - (time.time() - start_time)
         if remaining_time < 0:
             raise DpcTimeoutError('receive() timeout')
 
