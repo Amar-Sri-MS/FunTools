@@ -28,7 +28,12 @@ FUNOS_TGZ_FLAVOURS = [
 CHIPS = ["f1", "s1", "f1d1", "s2", "f2"]
 PKGS = ["core", "storage", "pkgdemo"]
 
+# build with make or imggen
 FUNOS_FLAVOURS = [
+    "funos-{chip}",
+    "funos-{chip}-release",
+    "funos-{chip}-emu",
+    "funos-{chip}-emu-release",
     "funos-{pkg}-{chip}",
     "funos-{pkg}-{chip}-release",
     "funos-{pkg}-{chip}-emu",
@@ -38,12 +43,12 @@ FUNOS_FLAVOURS = [
 ]
 
 # build the full compliment of possible FunOS binaries to publish
-FUNOS_BINARIES = []
+FUNOS_BINARIES = set()
 for chip in CHIPS:
     d = {"chip": chip}
     for pkg in PKGS:
         d["pkg"] = pkg
-        FUNOS_BINARIES += [flav.format(**d) for flav in FUNOS_FLAVOURS]
+        FUNOS_BINARIES.update([flav.format(**d) for flav in FUNOS_FLAVOURS])
 
 FUNOS_TGZS = sum([[flav % chip for chip in CHIPS] for flav in FUNOS_TGZ_FLAVOURS], [])
 
