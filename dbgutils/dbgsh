@@ -342,8 +342,8 @@ class dbgsh(cmd2.Cmd):
 #addr -     Register address to read or write, 8 bytes
 #val -      Returned read value for CSR read operations and value to write for CSR write operations, 8 bytes
 def pack_data(protocol_version, request_id, message_opcode, status, address, value):
-    # The format string 'IIIIQQ' packs the data in the order: 4 bytes, 4 bytes, 4 bytes, 4 bytes, 8 bytes, 8 bytes
-    packed_data = struct.pack('IIIIQQ', protocol_version, request_id, message_opcode, status, address, value)
+    # The format string 'IIIiQQ' packs the data in the order: 4 bytes, 4 bytes, 4 bytes, 4 bytes, 8 bytes, 8 bytes
+    packed_data = struct.pack('IIIiQQ', protocol_version, request_id, message_opcode, status, address, value)
     return packed_data
 
 def unpack_data(data):
@@ -404,7 +404,7 @@ def start_server(dbg_shell, host='0.0.0.0', port = PORT):
                                 iv = str_to_int(val)
                                 status = 0
                             else:
-                                iv = -9999; #Invalid value
+                                iv = 0; #Invalid value
                                 status = -1
 
                             packed_data = pack_data(PROTOCOL_VERSION, id, op, status, address, iv)
