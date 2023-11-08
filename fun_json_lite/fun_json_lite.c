@@ -209,6 +209,7 @@ static struct fun_json *fun_json_create_string_len(struct fun_json_container *co
 	struct fun_json_string *result = allocate(container, sizeof(struct fun_json_string) + len + 1);
 	if (!result) return NULL;
 	memcpy(result->value, value, len);
+	result->value[len] = 0;
 	result->header.type = fun_json_string_type;
 	return (void *)result;
 }
@@ -827,6 +828,10 @@ size_t fun_json_serialization_size(const struct fun_json *j)
 		size_t len = strlen(p->message);
 		return len + 4 + 1;
 	}
+	if (j->type == fun_json_binary_array_type) {
+		struct fun_json_binary_array *a = (void *)j;
+		return 2 + 1 + a->size;
+	}
 	if (j->type == fun_json_array_type) {
 		struct fun_json_array *a = (void *)j;
 		if (fun_json_is_binary_array(j)) {
@@ -934,6 +939,16 @@ size_t fun_json_serialize(uint8_t *output, const struct fun_json *j)
 		*((uint32_t *)output) = len;
 		memcpy(output + 4, p->message, len);
 		return 5 + len;
+	}
+
+	if (j->type == fun_json_binary_array_type) {
+		struct fun_json_binary_array *a = (void *)j;
+
+		output[0] = BJSON_BYTE_ARRAY;
+		*((uint16_t *)(output + 1)) = a->size;
+		fun_json_fill_binary_array(output + 3, j);
+
+		return 2 + 1 + a->size;
 	}
 
 	if (j->type == fun_json_array_type) {
