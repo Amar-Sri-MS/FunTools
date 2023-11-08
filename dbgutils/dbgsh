@@ -399,11 +399,16 @@ def start_server(dbg_shell, host='0.0.0.0', port = PORT):
                             PeekArgs = namedtuple("PeekArgs", ["addr", "length", "agent_mode"])
                             args = PeekArgs(addr=str(address), length=str(FLD_WIDTH), agent_mode=True)
 
-                            sts, val = csr2_raw_peek_args(args)
-                            if sts:
-                                iv = str_to_int(val)
-                                status = 0
-                            else:
+                            try:
+                                sts, val = csr2_raw_peek_args(args)
+                                if sts:
+                                    iv = str_to_int(val)
+                                    status = 0
+                                else:
+                                    iv = 0; #Invalid value
+                                    status = -1
+                            except Exception as e:
+                                logging.error(traceback.format_exc())
                                 iv = 0; #Invalid value
                                 status = -1
 
@@ -415,10 +420,15 @@ def start_server(dbg_shell, host='0.0.0.0', port = PORT):
                             PokeArgs = namedtuple('PokeArgs', ['addr', 'vals', 'agent_mode'])
                             args = PokeArgs(addr=str(address), vals=[str(val)], agent_mode=True)
                             logger.info("Doing a CSR WRITE at {} with value {}".format(address, val))
-                            ret_val = csr2_raw_poke_args(args)
-                            if ret_val is True:
-                                status = 0
-                            else:
+
+                            try:
+                                ret_val = csr2_raw_poke_args(args)
+                                if ret_val is True:
+                                    status = 0
+                                else:
+                                    status = -1
+                            except Exception as e:
+                                logging.error(traceback.format_exc())
                                 status = -1
 
                             packed_data = pack_data(PROTOCOL_VERSION, id, op, status, address, (val))
