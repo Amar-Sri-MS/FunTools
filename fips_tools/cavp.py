@@ -93,7 +93,7 @@ class DPCCAVP(AbsCAVPTestRunner):
         dpc = None
 
         print("Connecting to %s:%s" % (host, port))
-        for i in range(0, 10):
+        for i in range(0, 20):
             try:
                 dpc = dpc_client.DpcClient(server_address=(host, port))
                 break
