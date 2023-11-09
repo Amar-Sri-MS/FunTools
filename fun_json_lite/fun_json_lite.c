@@ -705,6 +705,116 @@ const char *deserialize_string(const uint8_t *bytes, size_t *len)
 	return ptr;
 }
 
+#define BLOB_BYTE_ARRAY_LOG_SIZE	(15)
+#define BLOB_BYTE_ARRAY_SIZE	(1 << BLOB_BYTE_ARRAY_LOG_SIZE)
+
+struct fun_json *fun_json_create_blob(struct fun_json_container *container, const uint8_t *bytes, size_t count)
+{
+	if (!count) {
+		return NULL; // we need to exclude 0 for being able to round trip
+	}
+	if (count > UINT32_MAX) {
+		return NULL;
+	}
+	struct fun_json *blob = NULL;
+	size_t num_full_bas = count >> BLOB_BYTE_ARRAY_LOG_SIZE;
+	bool leftovers = (num_full_bas << BLOB_BYTE_ARRAY_LOG_SIZE) != count;
+	size_t num_bas = num_full_bas + (leftovers ? 1 : 0);
+
+	blob = fun_json_create_array(container, num_bas);
+	if (!blob) {
+		return NULL;
+	}
+	size_t i = 0;
+
+	for (i = 0; i < num_full_bas; i++) {
+		struct fun_json *ba = fun_json_create_binary_array(container, bytes + (i << BLOB_BYTE_ARRAY_LOG_SIZE), BLOB_BYTE_ARRAY_SIZE);
+		if (!ba) goto err;
+		fun_json_array_append(blob, ba);
+	}
+	if (leftovers) {
+		struct fun_json *ba = fun_json_create_binary_array(container, bytes + (i << BLOB_BYTE_ARRAY_LOG_SIZE), count - (num_full_bas << BLOB_BYTE_ARRAY_LOG_SIZE));
+		if (!ba) goto err;
+		i++;
+		fun_json_array_append(blob, ba);
+	}
+	return blob;
+err:
+	// TODO: deallocate space in container: will leak on failure otherwise
+	return NULL;
+}
+
+// It is assumed that all the byte-arrays have the BLOB_BYTE_ARRAY_SIZE items, except the last
+// (this is important to quickly compute the byte count)
+// If 0 is returned the blob is malformed
+size_t fun_json_blob_byte_count(const struct fun_json *blob)
+{
+	size_t num_bas = fun_json_array_count(blob);
+
+	if (!num_bas) {
+		return 0;
+	}
+	const struct fun_json *ba0 = fun_json_array_at(blob, 0);
+	size_t c0 = fun_json_array_count(ba0);
+
+	if (!c0) {
+		return 0;
+	}
+	if (num_bas == 1) {
+		return c0;
+	}
+	if (c0 != BLOB_BYTE_ARRAY_SIZE) {
+		return 0;
+	}
+	const struct fun_json *ba_last = fun_json_array_at(blob, num_bas-1);
+	size_t c_last = fun_json_array_count(ba_last);
+
+	if (!c_last) {
+		return 0;
+	}
+	return ((num_bas - 1) << BLOB_BYTE_ARRAY_LOG_SIZE) + c_last;
+}
+
+bool fun_json_blob_fill_memory(const struct fun_json *blob, uint8_t *ptr, size_t size)
+{
+	size_t num_bas = fun_json_array_count(blob);
+
+	if (!num_bas) {
+		return false;
+	}
+	uint64_t count = 0;
+
+	// For simplicity, we do 2 passes
+	for (size_t i = 0; i < num_bas; i++) {
+		const struct fun_json *ba = fun_json_array_at(blob, i);
+		size_t this_count = fun_json_array_count(ba);
+		if (!this_count) {
+			return false;
+		}
+		if ((i != num_bas-1) && (this_count != BLOB_BYTE_ARRAY_SIZE)) {
+			return false;
+		}
+		count += this_count;
+	}
+	if (count > UINT32_MAX) {
+		return false;
+	}
+	if (size != count) {
+		return false;
+	}
+
+	for (size_t i = 0; i < num_bas; i++) {
+		const struct fun_json *ba = fun_json_array_at(blob, i);
+		size_t this_count = fun_json_array_count(ba);
+
+		if (!fun_json_fill_binary_array(ptr, ba)) {
+			return false;
+		}
+		ptr += this_count;
+	}
+	return true;
+}
+
 const struct fun_json *fun_json_parse(struct fun_json_container *container, const uint8_t *bytes, size_t size)
 {
 	uint8_t ch = bytes[0];

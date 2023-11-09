@@ -77,6 +77,11 @@ size_t fun_json_container_size_string(size_t);
 size_t fun_json_container_size_dict(size_t);
 size_t fun_json_container_size_array(size_t);
 
+// blob operations (conveniences for arrays of binary arrays)
+struct fun_json *fun_json_create_blob(struct fun_json_container *container, const uint8_t *, size_t);
+size_t fun_json_blob_byte_count(const struct fun_json *);
+bool fun_json_blob_fill_memory(const struct fun_json *, uint8_t *, size_t);
+
 const struct fun_json *fun_json_parse(struct fun_json_container *, const uint8_t *, size_t);
 
 size_t fun_json_serialization_size(const struct fun_json *);
@@ -87,3 +92,4 @@ size_t fun_json_serialize(uint8_t *output, const struct fun_json *);
 // deserialize streams where we don't know how much to read at first
 size_t fun_json_binary_serialization_minimum_size(uint8_t first_byte);
 size_t fun_json_binary_serialization_size(const uint8_t *bytes, size_t size);
+
