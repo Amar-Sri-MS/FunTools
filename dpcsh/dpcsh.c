@@ -86,11 +86,17 @@ static bool _nocli_script_mode = false;
 
 struct dpc_thread {
 	pthread_t thread;
-	void *args[3];
+	void *args[4];
+};
+
+struct dpc_connections_status {
+	bool open;
+	pthread_mutex_t close_lock;
 };
 
 struct dpc_worker {
 	struct dpc_thread in, out; // in and out of FunOS
+	struct dpc_connections_status connections;
 	bool used;
 };
 
@@ -1524,24 +1530,39 @@ static void _do_session(struct dpcsock_connection *dest,
 	}
 }
 
-static void *_run_thread(void *args)
-{
-	void **connections = args;
-	_do_session(connections[0], connections[1]);
-	connections[2] = args; // setting this to a non-NULL
-	return NULL;
-}
-
-static void close_connections(struct dpcsock_connection *funos, struct dpcsock_connection *cmd)
+static void close_connections_unsafe(struct dpcsock_connection *funos, struct dpcsock_connection *cmd)
 {
 	dpcsocket_close(funos);
 	dpcsocket_close(cmd);
+}
+
+static void close_connections(struct dpc_connections_status *connections, struct dpcsock_connection *c1, struct dpcsock_connection *c2)
+{
+	if (!connections->open) return;
+	pthread_mutex_lock(&connections->close_lock);
+
+	if (!connections->open) goto unlock;
+
+	close_connections_unsafe(c1, c2);
+	connections->open = false;
+
+unlock:
+	pthread_mutex_unlock(&connections->close_lock);
 }
 
 static void delete_connections(struct dpcsock_connection *funos, struct dpcsock_connection *cmd)
 {
 	dpcsocket_delete(funos);
 	dpcsocket_delete(cmd);
+}
+
+static void *_run_thread(void *args)
+{
+	void **connections = args;
+	_do_session(connections[0], connections[1]);
+	connections[2] = args; // setting this to a non-NULL
+	close_connections(connections[3], connections[0], connections[1]);
+	return NULL;
 }
 
 static void open_new_connections(struct dpcsock *funos_socket,
@@ -1569,23 +1590,24 @@ static void _finalize_worker(struct dpc_worker *worker, bool force_terminate)
 	worker->used = false;
 
 	if (force_terminate)
-		close_connections(worker->in.args[0], worker->in.args[1]);
+		close_connections(&worker->connections, worker->in.args[0], worker->in.args[1]);
 
 	pthread_join(worker->in.thread, NULL);
 	pthread_join(worker->out.thread, NULL);
 
 	if (!force_terminate)
-		close_connections(worker->in.args[0], worker->in.args[1]);
+		close_connections(&worker->connections, worker->in.args[0], worker->in.args[1]);
 
 	delete_connections(worker->in.args[0], worker->in.args[1]);
 }
 
-static void _start_thread(struct dpc_thread *t,
+static void _start_thread(struct dpc_thread *t, struct dpc_connections_status *connections,
 	struct dpcsock_connection *source, struct dpcsock_connection *dest)
 {
 	t->args[0] = source;
 	t->args[1] = dest;
 	t->args[2] = 0;
+	t->args[3] = connections;
 	pthread_create(&t->thread, NULL, _run_thread, t->args);
 }
 
@@ -1603,14 +1625,16 @@ static void _add_worker(struct dpc_worker *workers, size_t max_workers,
 		}
 		if (!workers[i].used) {
 			workers[i].used = true;
-			_start_thread(&workers[i].in, funos, cmd);
-			_start_thread(&workers[i].out, cmd, funos);
+			workers[i].connections.open = true;
+			workers[i].connections.close_lock = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
+			_start_thread(&workers[i].in, &workers[i].connections, funos, cmd);
+			_start_thread(&workers[i].out, &workers[i].connections, cmd, funos);
 			log_debug(_debug_log, "added thread #%zu\n", i);
 			return;
 		}
 	}
 	log_error("out of connections\n");
-	close_connections(funos, cmd);
+	close_connections_unsafe(funos, cmd);
 	delete_connections(funos, cmd);
 }
 
@@ -1632,7 +1656,7 @@ static void _do_interactive(struct dpcsock *funos_socket,
 	do {
 		open_new_connections(funos_socket, cmd_socket, &funos, &cmd);
 		if (!funos || !cmd || cmd->fd < 0) {
-			close_connections(funos, cmd);
+			close_connections_unsafe(funos, cmd);
 			delete_connections(funos, cmd);
 			break;
 		}
@@ -1728,7 +1752,7 @@ static bool _do_cli(char *buf,
 	}
 
 connect_fail:
-	close_connections(funos, cmd);
+	close_connections_unsafe(funos, cmd);
 	delete_connections(funos, cmd);
 
 	return ok;
