@@ -67,6 +67,7 @@ class Register(object):
             # in this structure, but keep matching fields to make them
             # as compatible as possible
             'an_addr':hex(self.addr),
+            'csr_width': hex(self.width_bytes),
             'fld_list': [
                 { 'fld_width':f.width(),
                   'fld_name':f.name(),
@@ -404,10 +405,10 @@ class CSRAccessor(object):
                                                 csr_addr=addr,
                                                 csr_width_words=length)
         if status:
-            return data
+            return (status, data)
         else:
             logger.error('Raw peek failed: {0}'.format(data))
-            return None
+            return (status, 0x0)
 
     def poke(self, path, values):
         """
@@ -507,27 +508,11 @@ def load_csr_spec(chip_type):
     global bundle
     global csr_names
 
-    csr2_dir = os.path.join(WS, 'FunHW', 'csr2api', 'v2')
-    bin_path = os.path.join(csr2_dir, 'csr2bundle.py')
-    bundle_path = os.path.join(csr2_dir, 'bundle.json')
-
-    logger.info('Creating CSR2 bundle at %s' % bundle_path)
-
-    json_dir = os.path.join(WS, 'FunSDK', 'FunSDK', 'chip', chip_type, 'csr')
-    if not os.path.exists(json_dir):
-        logger.error('csr json spec does not exist! path: {0}'.format(json_dir))
-        sys.exit(1)
-
-    bundle_cmd = [bin_path, 'chip_{}::root'.format(chip_type),
-                  '-I', json_dir,
-                  '-o', bundle_path,
-                  '-n', chip_type]
-    try:
-        subprocess.check_output(bundle_cmd)
-    except subprocess.CalledProcessError as e:
-        logger.error('Failed to create bundle: {0} cmd: {1}'.format(e.output, bundle_cmd))
-        return False
-
+    #Prebuild the per chip csr2 bundles under bundles directory
+    #Example command for S1
+    #SDK_DIR/FunHW/csr2api/v2/csr2bundle.py chip_s1::root -I $SDK_DIR/FunSDK/FunSDK/chip/s1/csr -o ./bundles/$item/bundle.json -n s1
+    #Alternatively refer to the "generate_dbgsh_docker.sh" script
+    bundle_path = os.path.join( 'bundles', chip_type, 'bundle.json')
     logger.info('Loading CSR2 bundle from %s' % bundle_path)
     bundle = csr2py2.load_bundle(bundle_path)
     csr_names = RegisterNames(bundle)
@@ -590,12 +575,19 @@ def csr2_raw_peek_args(args):
     This version of peek takes an address and length (64-bit words).
     """
     accessor = CSRAccessor(dbgprobe(), None)
-    data = accessor.raw_peek(str_to_int(args.addr),
+    (status, data) = accessor.raw_peek(str_to_int(args.addr),
                              str_to_int(args.length))
 
-    if data is not None:
-        formatter = RawValuesFormatter()
-        print(formatter.format(data))
+    if status and data is not None:
+        if not args.agent_mode:
+            formatter = RawValuesFormatter()
+            print(formatter.format(data))
+        else:
+            return (True, hex(data[0]))
+    else:
+        if args.agent_mode:
+            return (False, 0x0)
+
 
 def csr2_poke(csr_path, values):
     """
@@ -644,6 +636,8 @@ def csr2_raw_poke_args(args):
     accessor = CSRAccessor(dbgprobe(), None)
     addr = str_to_int(args.addr)
     values = [str_to_int(v) for v in args.vals]
+    if args.agent_mode:
+        return accessor.raw_poke(addr, values)
     accessor.raw_poke(addr, values)
 
 def csr2_find_by_name(csr_path):

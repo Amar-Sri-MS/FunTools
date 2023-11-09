@@ -4,6 +4,8 @@
 # Debug shell application.
 #
 
+import sys
+import io
 import argcomplete
 import argparse
 import cmd2
@@ -11,9 +13,9 @@ import json
 import logging
 import os
 import string
-
 from cmd2 import with_argparser
 from csrutils.csrutils import *
+from collections import namedtuple
 
 logger = logging.getLogger("dbgutils")
 logger.setLevel(logging.INFO)
@@ -23,18 +25,41 @@ logger.setLevel(logging.INFO)
 #
 chip_type_parser = argparse.ArgumentParser()
 chip_type_parser.add_argument('-c', nargs=1,  metavar=('chip_type'), dest='chip_type', choices=['f1', 's1', 'f1d1', 's2'], type=str, help='chip type', required = True)
+chip_type_parser.add_argument('--agent-mode', dest='agent_mode', action='store_true',
+                    help='Enable agent mode')
+chip_type_parser.set_defaults(agent_mode=False)
+chip_type_parser.add_argument('-dut-name', dest='dut_name', type=str,
+                    help='Name of the DUT (Device Under Test)')
+chip_type_parser.add_argument('-server-port', dest='server_port', type=int,
+                              help='Port for the dbgsh agent, defaults to 65432')
+chip_type_parser.set_defaults(server_port=65432)
+
 chip_type_args, chip_type_remaining_args = chip_type_parser.parse_known_args()
+
+
+print(chip_type_remaining_args)
 sys.argv = [sys.argv[0]] + chip_type_remaining_args
 
 # Check if it should be CSR1 or CSR2 mode.
 chip_type = chip_type_args.chip_type[0]
 csr2_mode = True if chip_type != 'f1' else False
 
-logger.debug('chip type: {}'.format(csr2_mode))
+agent_mode = chip_type_args.agent_mode
+
+
+if agent_mode and not chip_type_args.dut_name:
+    print("Agent mode requires a DUT name")
+    raise SystemExit
+
+dut_name = chip_type_args.dut_name
+server_port = chip_type_args.server_port
+
+logger.debug('chip type: {}, agent_mode: {} , dut_name {}'.format(csr2_mode, agent_mode, dut_name))
 
 # csr2 has dependency on FunHW repo, So, for simplicity of usage don't import csr2utils
 if csr2_mode:
     from csr2utils import *
+    from csr2utils.csr2utils import *
     csr2utils.load_csr_spec(chip_type_args.chip_type[0])
 
 # Returns action class for field argument min length check
@@ -184,7 +209,7 @@ class dbgsh(cmd2.Cmd):
                                          formatter_class=ArgFormatter)
         raw_peek.add_argument('addr', help="csr address")
         raw_peek.add_argument('length', help="csr length (64-bit words)")
-        raw_peek.set_defaults(func=csr2utils.csr2_raw_peek_args)
+        raw_peek.set_defaults(func=csr2utils.csr2_raw_peek_args, agent_mode=agent_mode)
 
         raw_poke = subparsers.add_parser('raw_poke', help="CSR raw poke",
                                          formatter_class=ArgFormatter)
@@ -268,6 +293,8 @@ class dbgsh(cmd2.Cmd):
 			choices=['i2c', 'jtag', 'pcie'], help="connection mode")
     parser_connect.add_argument('-c', nargs=1, metavar=('chip'), dest='chip',
 			choices=['f1', 's1'], help="chip type")
+    parser_connect.add_argument('-p', nargs=1, metavar=('dut_config_file'), dest='dut_cfg_file',
+                                type=str, help="dut config file")
     parser_connect.add_argument('dut', nargs=1, type=str,
             help="device id(hint:serial number is device id)")
     parser_connect.add_argument('-f', dest='force', action='store_true', help="force connection")
@@ -306,10 +333,128 @@ class dbgsh(cmd2.Cmd):
         print("Quitting.")
         raise SystemExit
 
+#Format for data exchange b/w dbgsh agent and client
+#version -  Version number, starting with 1 , 4 bytes
+#id -       Request identifier specified by the DDR App (I.e., a random identifier for each request, or a monotonic counter).
+#           Primarily used for debug and tracking requests between the DDR App and the DBGSH Agent, 4 bytes
+#op -       Operation type for the request, 4 bytes
+#status -   Status of the request, set by the DBGSH Agent. Zero status is success. Non-zero status is a failure, 4 bytes
+#addr -     Register address to read or write, 8 bytes
+#val -      Returned read value for CSR read operations and value to write for CSR write operations, 8 bytes
+def pack_data(protocol_version, request_id, message_opcode, status, address, value):
+    # The format string 'IIIiQQ' packs the data in the order: 4 bytes, 4 bytes, 4 bytes, 4 bytes, 8 bytes, 8 bytes
+    packed_data = struct.pack('IIIiQQ', protocol_version, request_id, message_opcode, status, address, value)
+    return packed_data
+
+def unpack_data(data):
+    return struct.unpack('IIIIQQ', data)
+
+if agent_mode:
+    #Port for the dbgsh agent
+    PORT = server_port
+    #Constants
+    FLD_WIDTH=1 #64b words , supports only 1
+    AGENT_REQ_CSR_READ=1
+    AGENT_REQ_CSR_WRITE=2
+    PROTOCOL_VERSION=1
+
+def recv_exact(sock, num_bytes=32):
+    chunks = []
+    bytes_received = 0
+    while bytes_received < num_bytes:
+        chunk = sock.recv(num_bytes - bytes_received)
+        if not chunk:
+            # The connection was closed
+            break
+        chunks.append(chunk)
+        bytes_received += len(chunk)
+    return b''.join(chunks)
+
+def start_server(dbg_shell, host='0.0.0.0', port = PORT):
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind((host, port))
+            s.listen()
+            logger.info("Server started on {}:{}".format(host, port))
+            #Repeatedly accept connections from the client
+            while True:
+                #Blocking call only single connection is supported
+                conn, addr = s.accept()
+                with conn:
+                    while True:
+                        logger.info("Connected by: {}".format(addr))
+                        logger.info("Blocked on recv\n")
+                        data = recv_exact(conn)
+                        if not data:
+                            #The connection has been closed
+                            print("Connection closed by peer {}".format(conn.getpeername()))
+                            break
+                        version, id, op, status, address, val = unpack_data(data)
+                        assert version == PROTOCOL_VERSION
+                        assert op == AGENT_REQ_CSR_READ or op == AGENT_REQ_CSR_WRITE
+
+                        if op == AGENT_REQ_CSR_READ:
+                            #READ CSR
+                            logger.info("CSR READ {}".format(address))
+                            PeekArgs = namedtuple("PeekArgs", ["addr", "length", "agent_mode"])
+                            args = PeekArgs(addr=str(address), length=str(FLD_WIDTH), agent_mode=True)
+
+                            try:
+                                sts, val = csr2_raw_peek_args(args)
+                                if sts:
+                                    iv = str_to_int(val)
+                                    status = 0
+                                else:
+                                    iv = 0; #Invalid value
+                                    status = -1
+                            except Exception as e:
+                                logging.error(traceback.format_exc())
+                                iv = 0; #Invalid value
+                                status = -1
+
+                            packed_data = pack_data(PROTOCOL_VERSION, id, op, status, address, iv)
+                            conn.sendall(packed_data)
+                            logger.info("Sent READ RESPONE")
+                        elif op == AGENT_REQ_CSR_WRITE:
+                            #WRITE CSR
+                            PokeArgs = namedtuple('PokeArgs', ['addr', 'vals', 'agent_mode'])
+                            args = PokeArgs(addr=str(address), vals=[str(val)], agent_mode=True)
+                            logger.info("Doing a CSR WRITE at {} with value {}".format(address, val))
+
+                            try:
+                                ret_val = csr2_raw_poke_args(args)
+                                if ret_val is True:
+                                    status = 0
+                                else:
+                                    status = -1
+                            except Exception as e:
+                                logging.error(traceback.format_exc())
+                                status = -1
+
+                            packed_data = pack_data(PROTOCOL_VERSION, id, op, status, address, (val))
+                            conn.sendall(packed_data)
+
+                        else:
+                            #Do nothing, send back the same data with error code
+                            packed_data = pack_data(PROTOCOL_VERSION, id, op, -2, address, val)
+                            conn.sendall(packed_data)
+                            logger.info("Invalid operation")
+    except KeyboardInterrupt:
+        disconnect_command = 'disconnect'
+        dbg_shell.onecmd_plus_hooks(disconnect_command)
+        sys.exit(0)
 
 if __name__ == '__main__':
-    c = dbgsh()
-    c.prompt = 'dbgsh > '
-    c.allow_redirection = True
-    c.cmdloop()
+    if agent_mode:
+        c = dbgsh()
+        logger.info('agent mode')
+        cmd_str = 'connect {}'.format(dut_name)
+        c.onecmd_plus_hooks(cmd_str)
+
+        start_server(dbg_shell=c)
+    else:
+        c = dbgsh()
+        c.prompt = 'dbgsh > '
+        c.allow_redirection = True
+        c.cmdloop()
 

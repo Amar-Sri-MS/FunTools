@@ -1,0 +1,98 @@
+#!/usr/bin/env python3
+
+#TEST SCRIPT TO TEST DBGSH AGENT MODE
+import socket
+import struct
+
+PORT=65432
+HOST='127.0.0.1'
+
+#Supported message opcodes
+AGENT_REQ_CSR_READ = 1
+AGENT_REQ_CSR_WRITE = 2
+
+#CSR ADDRESS (ZIP SCRATCH PAD ADDRESS for F1D1) 
+CSR_ADDRESS=0x58e9130
+
+
+#DUMMY VALUE TO PERFORM PEEK/POKE
+TEST_VALUE=0xCCFFEE
+
+
+PROTOCOL_VERSION=1
+
+#To be set by the client
+REQUEST_ID=1
+
+
+def pack_data(protocol_version, request_id, message_opcode, status, address, value):
+    # The format string 'IIIIQQ' packs the data in the order: 4 bytes, 4 bytes, 4 bytes, 4 bytes, 8 bytes, 8 bytes
+    packed_data = struct.pack('IIIIQQ', protocol_version, request_id, message_opcode, status, address, value)
+    return packed_data
+
+def unpack_data(data):
+    return struct.unpack('IIIIQQ', data)
+
+def recv_exact(sock, num_bytes=32):
+    chunks = []
+    bytes_received = 0
+    while bytes_received < num_bytes:
+        chunk = sock.recv(num_bytes - bytes_received)
+        if not chunk:
+            # The connection was closed
+            break
+        chunks.append(chunk)
+        bytes_received += len(chunk)
+    return b''.join(chunks)
+
+def tcp_client(host='127.0.0.1', port = PORT):
+    # Create a socket object
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        # Connect to the specified server host and port
+        # Open connection
+        s.connect((host, port))
+
+        #Create a raw peek command
+        msg = pack_data(PROTOCOL_VERSION, REQUEST_ID, AGENT_REQ_CSR_READ, 0, CSR_ADDRESS, 0x0)
+
+        #Send the command
+        s.sendall(msg)
+
+        print("Waiting for response")
+        # Wait for a response from the server and print it
+        data = recv_exact(s)
+
+        #Unpack the data
+        version, id, op, status, address, val = unpack_data(data)
+
+        print('Received from server: version: {}, id: {}, op: {}, status: {}, address: {}, val: {}'.format(version, id, op, status, hex(address), hex(val)))
+
+        #Create a raw poke command
+        msg = pack_data(PROTOCOL_VERSION, REQUEST_ID, AGENT_REQ_CSR_WRITE, 0, CSR_ADDRESS, TEST_VALUE)
+
+        print("Sending poke command\n")
+        s.sendall(msg)
+
+        print("Waiting for response")
+        data = recv_exact(s)
+
+        version, id, op, status, address, val = unpack_data(data)
+
+        if status == 0:
+            print("Poke successful")
+            print("Peeking again")
+            msg = pack_data(PROTOCOL_VERSION, REQUEST_ID, AGENT_REQ_CSR_READ, 0, CSR_ADDRESS, 0x0)
+            s.sendall(msg)
+            recv_exact(s)
+            version, id, op, status, address, val = unpack_data(data)
+            print('Received from server: version: {}, id: {}, op: {}, status: {}, address: {}, val: {}'.format(version, id, op, status, hex(address), hex(val)))
+            if(val == TEST_VALUE):
+                print("Poke successful" )
+        else:
+            print("Poke failed")
+
+        #Explicitly closing a connection
+        s.close()
+
+if __name__ == '__main__':
+    tcp_client(host=HOST, port=PORT)

@@ -210,7 +210,7 @@ class bmc:
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         try:
-            client.connect(self.bmc_ip_address, username = 'root', password='root', timeout = 3)
+            client.connect(self.bmc_ip_address, username = 'root', password='root', look_for_keys=False, timeout = 3)
         except Exception as e:
             status_msg = ('Failed to connect to BMC: {0}! using "root"\n').format(self.bmc_ip_address)
             #status_msg = status_msg + traceback.format_exc()
