@@ -157,8 +157,8 @@ class DpcSocket:
         if timeout_seconds is None:
             return None, bytes_sent
 
-        remaining_time = timeout_seconds - start_time + time.time()
-        if remaining_time is not None and remaining_time < 0:
+        remaining_time = timeout_seconds - (time.time() - start_time)
+        if remaining_time < 0:
             raise DpcTimeoutError('receive() timeout')
 
         return remaining_time, bytes_sent
@@ -176,7 +176,7 @@ class DpcSocket:
         ready = select.select([self.__sock], [], [], timeout_seconds)
         if ready[0]:
             self.__buffer += self.__sock.recv(self.__chunk_size)
-            remaining_time = timeout_seconds - start_time + time.time() if timeout_seconds is not None else None
+            remaining_time = timeout_seconds - (time.time() - start_time) if timeout_seconds is not None else None
             if remaining_time is not None and remaining_time < 0:
                 raise DpcTimeoutError('receive() timeout')
             return remaining_time
@@ -299,10 +299,11 @@ class DpcClient(object):
 
         # wait and dequeue until we find the one we want
         while True:
-            if start_time is not None and time.time() - start_time > effective_timeout:
+            remaining_time = (effective_timeout - (time.time() - start_time)) if start_time is not None else None
+            if remaining_time is not None and remaining_time < 0:
                 raise DpcTimeoutError('async_recv_wait_raw() timeout')
 
-            r = self.async_wait(custom_timeout, timeout_seconds)
+            r = self.async_wait(remaining_time is not None, remaining_time)
             if r is None:
                 return r
             if tid is None or r['tid'] == tid:
