@@ -17,6 +17,8 @@ import time
 import unittest
 import xmlrunner
 import dpc_binary
+import multiprocessing
+import random
 
 class TestDPCCommands(unittest.TestCase):
     """Tests that standard DPC commands.
@@ -217,6 +219,38 @@ def wait_for_port(host, port, timeout):
                 raise Exception('Timeout while waiting for the port to open')
 
 
+def testParallel(client):
+    client.execute('sleep', [2])
+    client.close()
+
+
+def run_using_factory(exclude, factory):
+    """ Initializes DPC client from factory, runs standard tests """
+
+    client = factory()
+
+    if not run_tests_client(client, exclude):
+        return False
+
+    client.close()
+
+    processes = []
+    for _ in range(0, 100):
+        client = factory()
+        p = multiprocessing.Process(target=testParallel, args=(client,))
+        p.start()
+        processes.append(p)
+
+    #check for return code from all processes
+    for p in processes:
+        p.join()
+        if p.exitcode != 0:
+            return False
+
+    print('All processes finished successfully')
+    return True
+
+
 def run_using_env(style, exclude):
     """ Initializes DPC client from env.json, runs standard tests """
 
@@ -224,15 +258,13 @@ def run_using_env(style, exclude):
     wait_for_port(host, port, 60)
 
     print('Connecting to dpc host at %s:%s' % (host, port))
-    client = dpc_client.DpcClient(server_address=(host, port))
 
-    if not run_tests_client(client, exclude):
+    if not run_using_factory(exclude, lambda: dpc_client.DpcClient(server_address=(host, port))):
         return False
 
     print('Checking the same with binary protocol')
-    binary_client = dpc_client.DpcClient(server_address=(host, port), encoder=dpc_binary.BinaryJSONEncoder())
 
-    return run_tests_client(binary_client, exclude)
+    return run_using_factory(exclude, lambda: dpc_client.DpcClient(server_address=(host, port), encoder=dpc_binary.BinaryJSONEncoder()))
 
 
 STYLES = {"tcp": (True, ["--verbose", "--tcp_proxy"], False, 0),
