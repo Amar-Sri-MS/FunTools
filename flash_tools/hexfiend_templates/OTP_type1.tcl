@@ -30,22 +30,7 @@ section "Serial Number" {
 }
 
 section "Tamper levels" {
-    hex 1 "Tamper 1"
-    hex 1 "Tamper 2"
-    hex 1 "Tamper 3"
-    hex 1 "Tamper 4"
-    hex 1 "Tamper 5"
-    hex 1 "Tamper 6"
-    hex 1 "Tamper 7"
-    hex 1 "Tamper 8"
-    hex 1 "Tamper 9"
-    hex 1 "Tamper 10"
-    hex 1 "Tamper 11"
-    hex 1 "Tamper 12"
-    hex 1 "Tamper 13"
-    hex 1 "Tamper 14"
-    hex 1 "Tamper 15"
-    hex 1 "Tamper 16"
+   tampers
 }
 
 section "Customer" {

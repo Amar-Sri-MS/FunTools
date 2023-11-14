@@ -15,6 +15,14 @@ proc serial_number {} {
 	hex 4 "S/N"
 }
 
+proc tampers {} {
+    for {set i 0 } {$i < 16} {incr i} {
+	set dtamper [hex 1]
+	entry [ format "Tamper %d" [expr {$i * 2} ]] [expr {$dtamper & 0x7}]
+	entry [ format "Tamper %d" [expr {$i * 2 + 1} ]]  [expr {$dtamper >> 4}]
+    }
+}
+
 proc sig_or_key {name} {
     section $name {
 	set save_pos [pos]
@@ -54,7 +62,6 @@ proc TBS_SBP_certificate {} {
     }
     key
 }
-
 
 proc dir_of_dir {} {
 
