@@ -145,7 +145,7 @@ def _nor(f, signed=False):
     return _mfgfilename(f, 'norinstall', signed)
 
 def _want_funvisor(args):
-    return args.funvisor or args.dev_image
+    return args.funvisor and not args.dev_image
 
 
 def main():
