@@ -863,7 +863,7 @@ class DBG_Chal(DBG_FlashOp):
 
     def read_otp(self, option):
         rdata = self.challenge_cmd(GET_OTP | option)
-        if option == 0:
+        if option == OTP_CM:
             otpcm = OTPCM()
             otpcm.set_bin(rdata)
             otp_decoded = otpcm.get_txt()
