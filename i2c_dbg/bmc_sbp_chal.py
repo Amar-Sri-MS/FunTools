@@ -599,6 +599,11 @@ GET_PUBKEY = 0xFE020000
 GET_ENROLL_INFO = 0xFF050000
 SET_ENROLL_INFO = 0xFF060000
 
+# OTP READ Options:
+OTP_CM = 0
+OTP_SM = 1
+OTP_FULL = 2
+
 # Chip must report being in this boot step for enrollment
 BOOT_STEP_PUF_INIT = 0x68
 
@@ -856,12 +861,16 @@ class DBG_Chal(DBG_FlashOp):
         rdata = self.challenge_cmd(GET_STATUS)
         return self.decode_status_bytes(rdata)
 
-    def read_otp(self):
-        rdata = self.challenge_cmd(GET_OTP)
-        otpcm = OTPCM()
-        otpcm.set_bin(rdata)
-        otp_decoded = otpcm.get_txt()
-        return otp_decoded
+    def read_otp(self, option):
+        rdata = self.challenge_cmd(GET_OTP | option)
+        if option == 0:
+            otpcm = OTPCM()
+            otpcm.set_bin(rdata)
+            otp_decoded = otpcm.get_txt()
+            return otp_decoded
+
+        #otherwise return hex dump
+        return hex_str(rdata)
 
     def get_key(self, index, customer=False):
 
@@ -1705,7 +1714,12 @@ def execute_challenge_command(challenge_interface, args):
         return
 
     if args.otp:
-        data = challenge_interface.read_otp()
+        data = challenge_interface.read_otp(OTP_CM)
+        print("OTP:\n%s" % data)
+        return
+
+    if args.otp_full:
+        data = challenge_interface.read_otp(OTP_FULL)
         print("OTP:\n%s" % data)
         return
 
@@ -1896,7 +1910,9 @@ def main():
     diag_grp.add_argument("--status", action="store_true",
                           help="Display esecure device status")
     diag_grp.add_argument("--otp", action="store_true",
-                          help="Display OTP content (requires unlocking in ROM)")
+                          help="Display OTP content (might require unlocking in ROM)depending on the chip)")
+    diag_grp.add_argument("--otp-full", action="store_true",
+                          help="Display Full OTP content (might require unlocking in ROM)depending on the chip)")
     diag_grp.add_argument("--serial-number", action="store_true",
                           help="Display Serial Number Information")
     diag_grp.add_argument("--fungible-key", metavar="KEY_INDEX",
