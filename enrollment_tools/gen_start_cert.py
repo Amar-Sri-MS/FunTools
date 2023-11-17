@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # HSM Key management for SBP
 # Copyright (c) 2018-2020 Fungible,inc. All Rights reserved.
+# Copyright (c) 2023 Microsoft Corporation. All Rights reserved.
 #
 # Implements the following commands:
 #
@@ -8,7 +9,13 @@
 # modulus: export the modulus of a RSA key, in binary or in C source code format
 # certificate: generate a certificate
 # remove: remove the key from the HSM
-# pem2c: convert a PEM file into C format
+
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+# pylint: disable=consider-using-f-string
+# pylint: disable=broad-exception-raised
+# pylint: disable=bare-except
 
 
 import os
@@ -17,24 +24,14 @@ import binascii
 import argparse
 import sys
 import getpass
-import json
-import string
 
 from asn1crypto import pem, keys
 
 import pkcs11
 import pkcs11.util.rsa
-import pkcs11.util.ec
 
 MAX_SIGNATURE_SIZE = 512
-SIGNED_ATTRIBUTES_SIZE = 32
-SIGNED_DESCRIPTION_SIZE = 32
-SERIAL_INFO_NUMBER_SIZE = 24
-CERT_PUB_KEY_POS = 64
-MAX_KEYS_IN_KEYBAG = 96
-
-MAGIC_NUMBER_CERTIFICATE = 0xB1005EA5
-MAGIC_NUMBER_ENROLL_CERT = 0xB1005C1E
+TBS_CERT_LEN = 580
 
 
 def get_from_user(prompt):
@@ -239,10 +236,6 @@ def sign_with_key(label, data):
     key_type = private[pkcs11.Attribute.KEY_TYPE]
     if key_type == pkcs11.KeyType.RSA:
         mechanism = pkcs11.Mechanism.SHA512_RSA_PKCS
-    elif key_type == pkcs11.KeyType.EC:
-        #most HSMs do not support ECDSA_SHAxyz
-        data = hsm.session.digest(data, mechanism=pkcs11.Mechanism.SHA256)
-        mechanism = pkcs11.Mechanism.ECDSA
     else:
         raise ValueError("Unsupported key type")
 
@@ -348,120 +341,32 @@ def sign_binary(binary, sign_key):
     return append_signature_to_binary(binary, signature)
 
 
-def read_public_key_file(pub_key_file):
-    # READ modulus from file
-    contents = read(pub_key_file)
-    # if PEM file, decode it
-    if pem.detect(contents):
-        obj_name, _, der_bytes = pem.unarmor(contents)
-        if obj_name == 'RSA PRIVATE KEY':
-            cert_rsa_key = pkcs11.util.rsa.decode_rsa_private_key(der_bytes)
-            modulus = get_modulus(cert_rsa_key)
-        elif obj_name == 'RSA PUBLIC KEY':
-            cert_rsa_key = pkcs11.util.rsa.decode_rsa_public_key(der_bytes)
-            modulus = get_modulus(cert_rsa_key)
-        elif obj_name == 'PUBLIC KEY':
-            modulus = get_modulus_from_public_key_bytes(der_bytes)
-        else:
-            raise RuntimeError("Cannot use PEM file with '%s' as modulus source" %
-                               obj_name)
-    elif all(chr(c) in string.hexdigits for c in contents.strip()):
-        modulus = binascii.a2b_hex(contents.strip())
-    else:
-        raise RuntimeError("Not a valid PEM file: %s" % pub_key_file)
-
-    return modulus
-
-
-def pem_to_c(pub_key_file, outfile):
-
-    modulus = read_public_key_file(pub_key_file)
-    len_modulus = len(modulus)
-
-    c_modulus = "%d,\n{\n" % len_modulus
-
-    for pos in range(0, len_modulus):
-        c_modulus += "0x%02x, " % modulus[pos]
-        if pos % 8 == 7:
-            c_modulus += "\n"
-    if len_modulus % 8 != 0:
-        c_modulus += "\n"
-    c_modulus += "}"
-    write(outfile, c_modulus.encode())
-
-
-
-def cert_gen(outfile, sign_key, pub_key_file,
-             serial_number, serial_number_mask, debugger_flags):
-
-    # MAGIC NUMBER, DEBUG FLAGS, 0, TAMPER FLAGS=0
-    dflags = int(debugger_flags, 0)
-    to_be_signed = struct.pack('<4I', MAGIC_NUMBER_CERTIFICATE, dflags, 0, 0)
-
-    # SERIAL NUMBER
-    s_num = binascii.a2b_hex(serial_number)
-    if len(s_num) != SERIAL_INFO_NUMBER_SIZE:
-        raise ValueError("Serial Number length must be exactly " +
-                         str(SERIAL_INFO_NUMBER_SIZE) + " bytes long")
-    to_be_signed += s_num
-
-    # SERIAL NUMBER MASK
-    s_num_mask = binascii.a2b_hex(serial_number_mask)
-    if len(s_num_mask) != SERIAL_INFO_NUMBER_SIZE:
-        raise ValueError("Serial Number Mask length must be exactly " +
-                         str(SERIAL_INFO_NUMBER_SIZE) + " bytes long")
-    to_be_signed += s_num_mask
-
-    # READ modulus from file
-    modulus = read_public_key_file(pub_key_file)
-
-    assert len(to_be_signed) == CERT_PUB_KEY_POS
-    to_be_signed = append_modulus_to_binary(to_be_signed, modulus)
-
-    # SIGNATURE
-    if sign_key:
-        cert = sign_binary(to_be_signed, sign_key)
-    else:
-        return to_be_signed
-
-    write(outfile, cert)
-    return None
-
-
 def parse_and_execute():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("command",
                         help="command to execute: list, remove, modulus, pem2c, certificate")
 
-    parser.add_argument("-c", "--certificate-values-file", metavar="FILE",
-                        help="file with the certificate values (certificate)")
-
     parser.add_argument("-k", "--key", dest="sign_key",
                         help="key name (remove, modulus, certificate)")
 
     parser.add_argument("-o", "--output", dest="out_path", metavar="FILE",
-                        help="location to output to (modulus, pem2c, certificate)")
-
-    parser.add_argument("-p", "--public-key-file", metavar="FILE",
-                        help="public key file in PEM or binary format (pem2c, certificate)")
+                        help="location to output to (modulus, certificate)")
 
     parser.add_argument("-s", "--size_in_bits", dest="key_size_in_bits", default="4096",
                         help="key size in bits if key has to be created (modulus)")
 
+    parser.add_argument("--sig",
+                        help="signature file (certificate)")
+
+    parser.add_argument("-t", "--tbs-cert",
+                        help="TBS certificate to sign (certificate)")
+
     options = parser.parse_args()
 
-    if options.command == 'pem2c':
-        if options.public_key_file is None:
-            err_msg += '\nPublic key file required for certificate command.'
-
-        pem_to_c(options.public_key_file, options.out_path)
-        sys.exit(0)
-
-    elif options.command == 'list':
+    if options.command == 'list':
 
         list_all_keys()
-        sys.exit(0)
 
     elif options.command == 'remove':
 
@@ -471,7 +376,6 @@ def parse_and_execute():
             sys.exit(1)
 
         remove_key(options.sign_key)
-        sys.exit(0)
 
     elif options.command == 'modulus':
 
@@ -483,31 +387,34 @@ def parse_and_execute():
         export_pub_key(options.out_path,
                        options.sign_key,
                        int(options.key_size_in_bits, 0))
-        sys.exit(0)
 
     elif options.command == 'certificate':
 
         err_msg = ''
-        if options.sign_key is None:
-            err_msg += '\nKey name required for certificate command.'
-        if options.public_key_file is None:
-            err_msg += '\nPublic key file required for certificate command.'
-        if options.certificate_values_file is None:
-            err_msg += '\nCertificate value file required for certificate  command.'
+        if options.sign_key is None and options.sig is None:
+            err_msg += '\nKey name or signature file required for certificate command.'
 
-        if len(err_msg):
+        if options.tbs_cert is None:
+            err_msg += '\ntbs-cert required for certificate command.'
+
+        if err_msg:
             parser.print_help()
             print(err_msg)
             sys.exit(1)
 
-        # parse the value file
-        with open(options.certificate_values_file, "r") as fp:
-            values = json.load(fp)
+        to_be_signed = read(options.tbs_cert)
 
-        cert_gen(options.out_path, options.sign_key,
-                 options.public_key_file, values["serial_number"],
-                 values["serial_number_mask"], values["debugger_flags"])
+        assert len(to_be_signed) == TBS_CERT_LEN
 
+        if options.sign_key:
+            cert = sign_binary(to_be_signed, options.sign_key)
+        else:
+            signature = read(options.sig)
+            cert = append_signature_to_binary(to_be_signed, signature)
+        write(options.out_path,cert)
+
+
+    sys.exit(0)
 
 if __name__ == "__main__":
     # Do important stuff that needs to be synchronized
