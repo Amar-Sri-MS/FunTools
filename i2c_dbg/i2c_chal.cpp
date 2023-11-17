@@ -21,7 +21,7 @@
    will not work on the default build system
 */
 
-#if __GLIBC_MINOR__ > MAX_GLIBC_MINOR
+#if defined(MAX_GLIBC_MINOR) && __GLIBC_MINOR__ > MAX_GLIBC_MINOR
 #error Compiler using too new a version of GLIBC: will not run on target
 #error Please build on another host
 #endif
