@@ -154,10 +154,15 @@ static byte_vector i2c_dbg_chal_read(int chip_instance, int num_bytes)
 		 * how many bytes to return, so ensure that a valid number is
 		 * always requested
 		 */
-		if (flit_size >= MAX_FLIT_SIZE) {
-			flit_size = MAX_FLIT_SIZE - 4;
-		}
+#define FLIT_SIZE_ADJUST (4)
+#else
+#define FLIT_SIZE_ADJUST (0)
 #endif
+
+		if (flit_size >= MAX_FLIT_SIZE) {
+			flit_size = MAX_FLIT_SIZE - FLIT_SIZE_ADJUST;
+		}
+
 		int flit_read = i2c_dbg_chal_read_flit(chip_instance,
 						       flit_data,
 						       flit_size);
@@ -444,7 +449,8 @@ void i2c_dbg_write_flash_aux(int chip_instance, uint32_t offset,
 			i2c_dbg_chal_cmd_int(FLASH_WRITE_ADD_DATA,
 					     chip_instance,
 					     add_data_params,
-					     2 * sizeof(uint32_t) + load_size);
+					     2 * sizeof(uint32_t) + load_size,
+					     1);
 			offset_in_page += load_size;
 		}
 
@@ -453,7 +459,8 @@ void i2c_dbg_write_flash_aux(int chip_instance, uint32_t offset,
 		i2c_dbg_chal_cmd_int(FLASH_WRITE_FLUSH_DATA,
 				     chip_instance,
 				     &cmd_params,
-				     sizeof(cmd_params));
+				     sizeof(cmd_params),
+				     1);
 		offset += page_size;
 	}
 }
