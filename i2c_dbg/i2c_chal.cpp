@@ -449,7 +449,8 @@ void i2c_dbg_write_flash_aux(int chip_instance, uint32_t offset,
 			i2c_dbg_chal_cmd_int(FLASH_WRITE_ADD_DATA,
 					     chip_instance,
 					     add_data_params,
-					     2 * sizeof(uint32_t) + load_size);
+					     2 * sizeof(uint32_t) + load_size,
+					     1);
 			offset_in_page += load_size;
 		}
 
@@ -458,7 +459,8 @@ void i2c_dbg_write_flash_aux(int chip_instance, uint32_t offset,
 		i2c_dbg_chal_cmd_int(FLASH_WRITE_FLUSH_DATA,
 				     chip_instance,
 				     &cmd_params,
-				     sizeof(cmd_params));
+				     sizeof(cmd_params),
+				     1);
 		offset += page_size;
 	}
 }
