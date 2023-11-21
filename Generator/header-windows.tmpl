@@ -229,8 +229,21 @@ The body of the header.
 #ifndef __{{output_base|as_macro}}_H__
 #define __{{output_base|as_macro}}_H__
 
-#include <endian.h>
 #include <stdio.h>
+#include <endian.h>
+
+#define be64_to_cpu(x)		be64toh(x)
+#define be32_to_cpu(x)		be32toh(x)
+#define be16_to_cpu(x)		be16toh(x)
+#define le64_to_cpu(x)		le64toh(x)
+#define le32_to_cpu(x)		le32toh(x)
+#define le16_to_cpu(x)		le16toh(x)
+#define cpu_to_be64(x)		htobe64(x)
+#define cpu_to_be32(x)		htobe32(x)
+#define cpu_to_be16(x)		htobe16(x)
+#define cpu_to_le64(x)		htole64(x)
+#define cpu_to_le32(x)		htole32(x)
+#define cpu_to_le16(x)		htole16(x)
 
 // Header created by generator.py
 // Do not change this file;
@@ -239,6 +252,9 @@ The body of the header.
 // Magic number to allow checking whether two interfaces were generated
 // from the same sources.
 #define {{gen_file|as_macro}}_VERSION_HASH {{gen_file_version_hash}}
+
+#pragma warning( push)
+#pragma warning (disable : 4200)
 
 {% if not generate_init_macros %}
 #ifdef __cplusplus
@@ -324,4 +340,5 @@ extern "C" {
 #endif
 
 {% endif %}
+#pragma warning( pop)
 #endif /* __{{output_base|as_macro}}_H__ */
