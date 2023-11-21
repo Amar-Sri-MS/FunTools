@@ -23,6 +23,7 @@ GENERATOR_SRC = generator.py \
 		source.tmpl \
                 kernel.tmpl \
 	        header-linux.tmpl \
+		header-windows.tmpl \
 		source-linux.tmpl
 
 test: generator-test test_rdma_packed test_rdma_packed_html
