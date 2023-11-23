@@ -186,8 +186,6 @@ def prepare(args):
         return prepare_offline(args)
 
 def _sbpfw_fourccs_fixup(fourccs):
-    if 'pufr' in fourccs:
-        fourccs.remove('pufr') # pufr is not upgraded as part of standard flow
     if 'sbpf' in fourccs and 'frmw' in fourccs:
         # if both sbpf and frmw are present, then keep both in list but ensure
         # that they are ordered such that frmw is first in the list of updates
