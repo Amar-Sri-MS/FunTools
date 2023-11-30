@@ -121,8 +121,15 @@ ALL_ROOTFS_FILES = {
 }
 
 CHIP_SPECIFIC_FILES = {
-    # none right now
+    # "f1d1" : { 'TODO_path_to_PXE_driver_in_SDK/TODO_name_of_PXE_driver.bin' }
 }
+
+
+SKU_SPECIFIC_MFGINSTALL = {
+    # ('f1d1', 's21f1_xio') : { 'dcc1' : ('mmc', 'TODO_name_of_PXE_driver.bin' )},
+    # ('f1d1', 's21f1_xstore') : { 'dcc1' : ('mmc', 'TODO_name_of_PXE_driver.bin' )},
+}
+
 
 CHIP_WITH_FUNVISOR = [ 'f1', 'f1d1', 's1' ]
 
@@ -735,11 +742,30 @@ def main():
         mfgxdata_with_fv = mfgxdata.copy()
         mfgxdata_with_fv.update(mfgxdata_fv)
 
-
+        # standard mfginstall images
         if args.chip in CHIP_WITH_FUNVISOR:
             _gen_xdata_funos(_mfg, mfgxdata_with_fv)
         _gen_xdata_funos(_mfgnofv, mfgxdata_without_fv)
         _gen_xdata_funos(_nor, mfgxdata_without_fv, 'nor')
+
+        # special per-sku mfginstall images
+        for _target,_entry in SKU_SPECIFIC_MFGINSTALL.items():
+            if _target[0] != args.chip:
+                continue
+
+            _sku_mfgxdata_without_fv = mfgxdata.copy()
+            _sku_mfgxdata_without_fv.update(_entry)
+            _sku_mfgxdata_with_fv = _sku_mfgxdata_without_fv.copy()
+            _sku_mfgxdata_with_fv.update(mfgxdata_fv)
+
+            if args.chip in CHIP_WITH_FUNVISOR:
+                suffix = "{}.{}".format(_target[1], _mfg(None))
+                namegen = lambda f,signed=False: _mfgfilename(f, suffix, signed)
+                _gen_xdata_funos(namegen, _sku_mfgxdata_with_fv)
+
+            suffix = "{}.{}".format(_target[1], _mfgnofv(None))
+            namegen = lambda f,signed=False: _mfgfilename(f, suffix, signed)
+            _gen_xdata_funos(namegen, _sku_mfgxdata_without_fv)
 
         os.chdir(curdir)
 
