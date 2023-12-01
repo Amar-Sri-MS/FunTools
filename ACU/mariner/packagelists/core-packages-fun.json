@@ -1,0 +1,14 @@
+{
+    "packages": [
+        "shim-unsigned",
+        "grub2-efi-binary",
+        "ca-certificates",
+        "cronie-anacron",
+        "logrotate",
+        "core-packages-base-image",
+	"pciutils",
+	"kernel=5.15.138.1-2.cm2",
+        "initramfs"
+    ],
+    "_comment": "Install 'initramfs' last to avoid unnecessary regeneration when other packages, such as 'kernel', are installed."
+}
