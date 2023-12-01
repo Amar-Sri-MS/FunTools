@@ -3,7 +3,7 @@
         {
             "PartitionTableType": "gpt",
             "MaxSize": 512,
-	    "SectorSize":4096,
+	    "BlockSize":4096,
             "Artifacts": [
                 {
                     "Name": "fun-acu",
@@ -46,7 +46,7 @@
                 }
             ],
             "PackageLists": [
-                "packagelists/core-packages-image-aarch64.json",
+                "packagelists/core-packages-fun.json",
 		"packagelists/core-tools-packages.json",
 		"packagelists/ssh-server.json"
             ],
