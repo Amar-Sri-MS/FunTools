@@ -121,13 +121,13 @@ ALL_ROOTFS_FILES = {
 }
 
 CHIP_SPECIFIC_FILES = {
-    # "f1d1" : { 'TODO_path_to_PXE_driver_in_SDK/TODO_name_of_PXE_driver.bin' }
+     "f1d1" : { 'FunSDK/PXE_driver/fundxe/FungibleDxe.bin' }
 }
 
 
 SKU_SPECIFIC_MFGINSTALL = {
-    # ('f1d1', 's21f1_xio') : { 'dcc1' : ('mmc', 'TODO_name_of_PXE_driver.bin' )},
-    # ('f1d1', 's21f1_xstore') : { 'dcc1' : ('mmc', 'TODO_name_of_PXE_driver.bin' )},
+    ('f1d1', 's21f1_xio') : { 'dcc1' : ('mmc', 'FungibleDxe.bin' )},
+    ('f1d1', 's21f1_xstore') : { 'dcc1' : ('mmc', 'FungibleDxe.bin' )},
 }
 
 
