@@ -1142,9 +1142,17 @@ static bool _json_to_board_cfg(const struct fun_json *input_json,
 
 #define FNAME_MAX_LEN 128
 
-static char *_profile_file_name(const char *sku_name, const char *prof_name, char *fname)
+static char *_profile_file_name(const char *sku_name, char *chip_name,  const char *prof_name, char *fname)
 {
-	int n = snprintf(fname, FNAME_MAX_LEN, "boardcfg_%s_%s", sku_name, prof_name) < 0;
+	int n;
+
+	if (_is_posix_or_emu_sku(sku_name)) {
+		n = snprintf(fname, FNAME_MAX_LEN, "boardcfg_%s_%s", sku_name, prof_name) < 0;
+	} else {
+		/* chip_name is inserted into profile file name to be consistant with per-sku eepr names used in upgrade scripts */
+		n = snprintf(fname, FNAME_MAX_LEN, "boardcfg_%s_%s_%s", chip_name, sku_name, prof_name) < 0;
+	}
+
 	if ((n < 0) || (n > FNAME_MAX_LEN - 1))
 		return NULL;
 
@@ -1426,7 +1434,12 @@ static bool _handle_json_input_per_prof(struct fun_json *input_json,
 	log("generating final blob for profile: %s\n", prof_name);
 
 	char fname_buf[FNAME_MAX_LEN];
-	const char *out_fname = _profile_file_name(sku_name, prof_name, fname_buf);
+	char chip_name[8];
+
+	if (!_chip_name_for_sku(input_json, sku_name, chip_name))
+		die("failed to get chip name for the sku: %s\n", sku_name);
+
+	const char *out_fname = _profile_file_name(sku_name, chip_name, prof_name, fname_buf);
 
 	/* write to a path if it exists */
 	if (outdir != NULL) {
@@ -1437,15 +1450,9 @@ static bool _handle_json_input_per_prof(struct fun_json *input_json,
 		board_cfg_profiles = fun_json_create_empty_dict();
 	}
 
-	char chip_name[8];
-	if (!_chip_name_for_sku(input_json, sku_name, chip_name))
-		die("failed to get chip name for the sku: %s\n", sku_name);
-
 	char image_type[FNAME_MAX_LEN] = {};
 	const char *keys[] = { "chip", "sku", "prof_name", "image_type", "filename" };
-
-	snprintf(image_type, FNAME_MAX_LEN, "board_cfg_%s_%s", sku_name, prof_name);
-
+	snprintf(image_type, FNAME_MAX_LEN, "boardcfg_%s_%s", sku_name, prof_name);
 	const char *values[] = { chip_name, sku_name, prof_name, image_type, out_fname };
 	struct fun_json *pjson = fun_json_create_dict_from_strings(ARRAY_SIZE(keys), keys, fun_json_no_copy_no_own, values, fun_json_copy);
 

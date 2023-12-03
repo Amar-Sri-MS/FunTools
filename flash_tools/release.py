@@ -52,7 +52,7 @@ BOARD_CFG_PER_CHIP_SKU_DEFAULT = {
 BOARD_CONFIG_OVERRIDE="""
 {{ "signed_images": {{
      "board_cfg.bin": {{
-         "source":"boardcfg_{sku_name}_default"
+         "source":"boardcfg_{chip}_{sku_name}_default"
          }}
      }}
 }}
@@ -232,7 +232,7 @@ def main():
         gf.merge_configs(config, json.loads(EEPROM_LIST_CONFIG_OVERRIDE.format(eeprom_list=eeprom_list)), only_if_present=True)
         gf.merge_configs(config, json.loads(CSRR_CONFIG_OVERRIDE.format(chip=args.chip)), only_if_present=True)
         gf.merge_configs(config, json.loads(BOARD_CFG_LIST_CONFIG_OVERRIDE.format(board_cfg_list=board_cfg_list)), only_if_present=True)
-        gf.merge_configs(config, json.loads(BOARD_CONFIG_OVERRIDE.format(sku_name=default_board)), only_if_present=True)
+        gf.merge_configs(config, json.loads(BOARD_CONFIG_OVERRIDE.format(chip=args.chip, sku_name=default_board)), only_if_present=True)
 
         if not args.with_csrreplay:
             try:

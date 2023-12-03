@@ -188,7 +188,7 @@ else
 				exit 1
 			fi
 
-			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u bcfg --check-image-only --select-by-image-type "board_cfg_${host_sku}_default"
+			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u bcfg --check-image-only --select-by-image-type "boardcfg_${host_sku}_default"
 			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
 			if [ $EXIT_STATUS -ne 0 ]; then
 				log_msg "Default board config for the sku \"$host_sku\" is not supported by this bundle"
@@ -243,7 +243,7 @@ else
 			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
 
 			log_msg "Downgrading bcfg \"$host_sku\""
-			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u bcfg --version latest --force --downgrade --select-by-image-type "board_cfg_${host_sku}_default"
+			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u bcfg --version latest --force --downgrade --select-by-image-type "boardcfg_${host_sku}_default"
 			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
 			if [ $RC -eq 3 ]; then
 				log_msg "Compatibility error. Aborting downgrade!"
@@ -289,7 +289,7 @@ else
 			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
 
 			log_msg "Updating bcfg \"$host_sku\""
-			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u bcfg --version $funos_sdk_version --select-by-image-type "board_cfg_${host_sku}_default"
+			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u bcfg --version $funos_sdk_version --select-by-image-type "boardcfg_${host_sku}_default"
 			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
 			if [ $RC -eq 3 ]; then
 				log_msg "Compatibility error. Aborting Upgrade!"
