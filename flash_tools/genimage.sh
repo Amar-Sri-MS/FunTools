@@ -188,7 +188,7 @@ board_name=${VARIANT#"$prefix"}
 BOARD_CFG_DEF=$(cat <<-JSON
 { "signed_images": {
      "board_cfg.bin": {
-         "source":"boardcfg_${board_name}_default"
+         "source":"board_cfg_${board_name}_default"
          }
      }
 }

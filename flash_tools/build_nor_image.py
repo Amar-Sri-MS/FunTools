@@ -188,7 +188,7 @@ def generate_board_cfg_signed_images(script_directory, images_directory,
         }
     }
     }
-    ''' % board_cfg_profile.encode('utf-8') if board_cfg_profile else b"@file:boardcfg_profile_list.json"
+    ''' % board_cfg_profile.encode('utf-8') if board_cfg_profile else b"@file:board_cfg_profile_list.json"
 
     subprocess.run(run_args, input=extra_config, cwd=images_directory,
                    check=True, stdout=sys.stdout, stderr=sys.stderr)
@@ -460,12 +460,12 @@ def sanitize_args(args, eeproms_dir, board_cfg_dir):
 
     sku_name = remove_prefix(args.eeprom, "eeprom_")
     if args.board_profile is None:
-        args.board_profile = 'boardcfg_{}_default'.format(sku_name)
+        args.board_profile = 'board_cfg_{}_default'.format(sku_name)
         if not args.board_profile in board_cfg_files:
             sku_name = remove_prefix(sku_name, args.chip + "_")
-            args.board_profile = 'boardcfg_{}_default'.format(sku_name)
+            args.board_profile = 'board_cfg_{}_default'.format(sku_name)
     else:
-        prof_name = remove_prefix(args.board_profile, 'boardcfg_')
+        prof_name = remove_prefix(args.board_profile, 'board_cfg_')
         if not prof_name.startswith(sku_name):
             prof_name = args.chip + '_' + prof_name
             if not prof_name.startswith(sku_name):

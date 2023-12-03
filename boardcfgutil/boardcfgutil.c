@@ -1147,10 +1147,10 @@ static char *_profile_file_name(const char *sku_name, char *chip_name,  const ch
 	int n;
 
 	if (_is_posix_or_emu_sku(sku_name)) {
-		n = snprintf(fname, FNAME_MAX_LEN, "boardcfg_%s_%s", sku_name, prof_name) < 0;
+		n = snprintf(fname, FNAME_MAX_LEN, "board_cfg_%s_%s", sku_name, prof_name) < 0;
 	} else {
 		/* chip_name is inserted into profile file name to be consistant with per-sku eepr names used in upgrade scripts */
-		n = snprintf(fname, FNAME_MAX_LEN, "boardcfg_%s_%s_%s", chip_name, sku_name, prof_name) < 0;
+		n = snprintf(fname, FNAME_MAX_LEN, "board_cfg_%s_%s_%s", chip_name, sku_name, prof_name) < 0;
 	}
 
 	if ((n < 0) || (n > FNAME_MAX_LEN - 1))
@@ -1376,7 +1376,7 @@ static void _write_board_prof_list(const char *outdir)
 		return;
 
 	char fpath[PATH_MAX+1];
-	int n = snprintf(fpath, sizeof(fpath), "%s/%s", outdir, "boardcfg_profile_list.json") < 0;
+	int n = snprintf(fpath, sizeof(fpath), "%s/%s", outdir, "board_cfg_profile_list.json") < 0;
 	if ((n < 0) || (n > sizeof(fpath)))
 		die("path name error\n");
 
@@ -1452,7 +1452,7 @@ static bool _handle_json_input_per_prof(struct fun_json *input_json,
 
 	char image_type[FNAME_MAX_LEN] = {};
 	const char *keys[] = { "chip", "sku", "prof_name", "image_type", "filename" };
-	snprintf(image_type, FNAME_MAX_LEN, "boardcfg_%s_%s", sku_name, prof_name);
+	snprintf(image_type, FNAME_MAX_LEN, "board_cfg_%s_%s", sku_name, prof_name);
 	const char *values[] = { chip_name, sku_name, prof_name, image_type, out_fname };
 	struct fun_json *pjson = fun_json_create_dict_from_strings(ARRAY_SIZE(keys), keys, fun_json_no_copy_no_own, values, fun_json_copy);
 

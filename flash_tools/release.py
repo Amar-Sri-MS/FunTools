@@ -52,7 +52,7 @@ BOARD_CFG_PER_CHIP_SKU_DEFAULT = {
 BOARD_CONFIG_OVERRIDE="""
 {{ "signed_images": {{
      "board_cfg.bin": {{
-         "source":"boardcfg_{chip}_{sku_name}_default"
+         "source":"board_cfg_{chip}_{sku_name}_default"
          }}
      }}
 }}
@@ -218,7 +218,7 @@ def main():
                 gf.merge_configs(config, json.load(f))
 
     eeprom_list = '{}_eeprom_list.json'.format(args.chip)
-    board_cfg_list = 'boardcfg_profile_list.json'
+    board_cfg_list = 'board_cfg_profile_list.json'
     fvht_list_file = None
     default_board =  BOARD_CFG_PER_CHIP_SKU_DEFAULT.get(args.chip)
     if not default_board:
