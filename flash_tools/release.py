@@ -121,8 +121,15 @@ ALL_ROOTFS_FILES = {
 }
 
 CHIP_SPECIFIC_FILES = {
-    # none right now
+     "f1d1" : { 'FunSDK/PXE_driver/fundxe/FungibleDxe.bin' }
 }
+
+
+SKU_SPECIFIC_MFGINSTALL = {
+    ('f1d1', 's21f1_xio') : { 'dcc1' : ('mmc', 'FungibleDxe.bin' )},
+    ('f1d1', 's21f1_xstore') : { 'dcc1' : ('mmc', 'FungibleDxe.bin' )},
+}
+
 
 CHIP_WITH_FUNVISOR = [ 'f1', 'f1d1', 's1' ]
 
@@ -130,6 +137,8 @@ def _rootfs(f, rootfs):
     return '{}.{}'.format(rootfs, f)
 
 def _mfgfilename(f, name, signed=False):
+    if f is None:
+        return name
     if signed:
         return '{}.{}'.format(f, name)
     else:
@@ -342,10 +351,6 @@ def main():
 
         if wanted('prepare'):
             # these files are not needed in sdk-prepare
-            shutil.copy2(funos_appname, _mfg(funos_appname))
-            shutil.copy2(funos_appname, _mfgnofv(funos_appname))
-            shutil.copy2(funos_appname, _nor(funos_appname))
-
             for chip_file in chip_specific_files:
                 shutil.copy2(os.path.join(args.sdkdir, chip_file), os.path.basename(chip_file))
 
@@ -656,46 +661,17 @@ def main():
         os.chdir(args.destdir)
 
         rootfs, _ = rootfs_files[0]
-        mfgxdata = {
-            # fourc : (target, filename)
-            'husc' : ('nor', 'hu_sbm_serdes.bin'),
-            'hbsb' : ('nor', 'hbm_sbus.bin'),
-            'kbag' : ('nor', 'key_bag.bin'),
-            'host' : ('nor', 'host_firmware_packed.bin'),
-            'sbpf' : ('nor', 'esecure_firmware_all.bin'),
-            'emmc' : ('mmc', 'emmc_image.bin'),
-        }
 
-        mfgxdata_fv = {
-            # fourc : (target, filename)
-            'fgpt' : ('mmc', 'fgpt.signed'),
-            'fvp1' : ('mmc', 'fvos.signed'),
-            'fvp2' : ('mmc', rootfs),
-            'fvp4' : ('mmc', _rootfs('fvht.bin', rootfs)),
-        }
+        def _gen_xdata_funos(outname_modifier, mfgxdata, target=None):
+            mfgxdata_lists = {
+                'fw_upgrade_all': 'all',
+                'fw_upgrade_nor': 'nor',
+                'fw_upgrade_mmc': 'mmc'
+            }
 
-        # that's a bit hacky ... need something better here
-        if args.chip == 'f1' or args.chip == 'f1d1':
-            mfgxdata_fv['ccfg'] = ('mmc', 'ccfg-no-come.signed.bin')
-            mfgxdata['ccfg'] = ('mmc', 'ccfg-legacy.signed.bin')
-        elif args.chip == 's1':
-            mfgxdata['ccfg'] = ('mmc', 'ccfg-s1-demo-10g_mpg.signed.bin')
-
-
-        mfgxdata_without_fv = mfgxdata
-        mfgxdata_with_fv = mfgxdata.copy()
-        mfgxdata_with_fv.update(mfgxdata_fv)
-
-        mfgxdata_lists = {
-            'fw_upgrade_all': 'all',
-            'fw_upgrade_nor': 'nor',
-            'fw_upgrade_mmc': 'mmc'
-        }
-
-        def _gen_xdata_funos(outname_modifier, target=None, with_fv=True):
-            mfgxdata = mfgxdata_with_fv if with_fv else mfgxdata_without_fv
-            outname_suffix = outname_modifier.__name__
+            outname_suffix = outname_modifier(None)
             print("Generating MFG image type {}".format(outname_suffix))
+            shutil.copy2(funos_appname, outname_modifier(funos_appname))
             for fname, listtarget in mfgxdata_lists.items():
                 # generate upgrade lists to be embedded in xdata
                 with open(fname, 'w') as f:
@@ -736,10 +712,60 @@ def main():
             gf.create_file(outname_modifier(funos_appname, signed=True), section='signed_mfg_images')
 
 
+        mfgxdata = {
+            # fourc : (target, filename)
+            'husc' : ('nor', 'hu_sbm_serdes.bin'),
+            'hbsb' : ('nor', 'hbm_sbus.bin'),
+            'kbag' : ('nor', 'key_bag.bin'),
+            'host' : ('nor', 'host_firmware_packed.bin'),
+            'sbpf' : ('nor', 'esecure_firmware_all.bin'),
+            'emmc' : ('mmc', 'emmc_image.bin'),
+        }
+
+        mfgxdata_fv = {
+            # fourc : (target, filename)
+            'fgpt' : ('mmc', 'fgpt.signed'),
+            'fvp1' : ('mmc', 'fvos.signed'),
+            'fvp2' : ('mmc', rootfs),
+            'fvp4' : ('mmc', _rootfs('fvht.bin', rootfs)),
+        }
+
+        # that's a bit hacky ... need something better here
+        if args.chip == 'f1' or args.chip == 'f1d1':
+            mfgxdata_fv['ccfg'] = ('mmc', 'ccfg-no-come.signed.bin')
+            mfgxdata['ccfg'] = ('mmc', 'ccfg-legacy.signed.bin')
+        elif args.chip == 's1':
+            mfgxdata['ccfg'] = ('mmc', 'ccfg-s1-demo-10g_mpg.signed.bin')
+
+
+        mfgxdata_without_fv = mfgxdata
+        mfgxdata_with_fv = mfgxdata.copy()
+        mfgxdata_with_fv.update(mfgxdata_fv)
+
+        # standard mfginstall images
         if args.chip in CHIP_WITH_FUNVISOR:
-            _gen_xdata_funos(_mfg, with_fv=True)
-        _gen_xdata_funos(_mfgnofv, with_fv=False)
-        _gen_xdata_funos(_nor, 'nor')
+            _gen_xdata_funos(_mfg, mfgxdata_with_fv)
+        _gen_xdata_funos(_mfgnofv, mfgxdata_without_fv)
+        _gen_xdata_funos(_nor, mfgxdata_without_fv, 'nor')
+
+        # special per-sku mfginstall images
+        for _target,_entry in SKU_SPECIFIC_MFGINSTALL.items():
+            if _target[0] != args.chip:
+                continue
+
+            _sku_mfgxdata_without_fv = mfgxdata.copy()
+            _sku_mfgxdata_without_fv.update(_entry)
+            _sku_mfgxdata_with_fv = _sku_mfgxdata_without_fv.copy()
+            _sku_mfgxdata_with_fv.update(mfgxdata_fv)
+
+            if args.chip in CHIP_WITH_FUNVISOR:
+                suffix = "{}.{}".format(_target[1], _mfg(None))
+                namegen = lambda f,signed=False: _mfgfilename(f, suffix, signed)
+                _gen_xdata_funos(namegen, _sku_mfgxdata_with_fv)
+
+            suffix = "{}.{}".format(_target[1], _mfgnofv(None))
+            namegen = lambda f,signed=False: _mfgfilename(f, suffix, signed)
+            _gen_xdata_funos(namegen, _sku_mfgxdata_without_fv)
 
         os.chdir(curdir)
 
