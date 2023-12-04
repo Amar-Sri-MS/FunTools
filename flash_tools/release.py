@@ -103,6 +103,15 @@ CSRR_CONFIG_OVERRIDE="""
 }}
 """
 
+ACUFW_CONFIG_OVERRIDE="""
+{{ "signed_images": {{
+     "acufw.blob.signed": {{
+       "source": "blcombined_{chip}.bin"
+        }}
+    }}
+}}
+"""
+
 
 def localdir(fname):
     return "./" + fname
@@ -121,7 +130,8 @@ ALL_ROOTFS_FILES = {
 }
 
 CHIP_SPECIFIC_FILES = {
-     "f1d1" : { 'FunSDK/PXE_driver/fundxe/FungibleDxe.bin' }
+     "f1d1" : { 'FunSDK/PXE_driver/fundxe/FungibleDxe.bin' },
+     "s2" : { 'FunSDK/ATF/release/blcombined_s2.bin' },
 }
 
 
@@ -132,6 +142,8 @@ SKU_SPECIFIC_MFGINSTALL = {
 
 
 CHIP_WITH_FUNVISOR = [ 'f1', 'f1d1', 's1' ]
+CHIP_WITH_ACU = [ 's2' ]
+
 
 def _rootfs(f, rootfs):
     return '{}.{}'.format(rootfs, f)
@@ -156,6 +168,8 @@ def _nor(f, signed=False):
 def _want_funvisor(args):
     return args.funvisor and not args.dev_image
 
+def _want_acufw(args):
+    return args.chip in CHIP_WITH_ACU
 
 def main():
     parser = argparse.ArgumentParser()
@@ -242,6 +256,7 @@ def main():
         gf.merge_configs(config, json.loads(CSRR_CONFIG_OVERRIDE.format(chip=args.chip)), only_if_present=True)
         gf.merge_configs(config, json.loads(BOARD_CFG_LIST_CONFIG_OVERRIDE.format(board_cfg_list=board_cfg_list)), only_if_present=True)
         gf.merge_configs(config, json.loads(BOARD_CONFIG_OVERRIDE.format(chip=args.chip, sku_name=default_board)), only_if_present=True)
+        gf.merge_configs(config, json.loads(ACUFW_CONFIG_OVERRIDE.format(chip=args.chip)), only_if_present=True)
 
         if not args.with_csrreplay:
             try:
@@ -249,6 +264,12 @@ def main():
             except:
                 # ignore errors, the csr_override entry might not exist depending
                 # on which input configs were used
+                pass
+
+        if not _want_acufw(args):
+            try:
+                del config['signed_images']['acufw.blob.signed']
+            except:
                 pass
 
         fvht_config = {}
@@ -299,14 +320,15 @@ def main():
                 "FunSDK/dpu_eepr",
                 "FunSDK/nvdimm_fw",
                 "feature_sets",
-                "FunSDK/config/pipeline"
+                "FunSDK/config/pipeline",
+                "FunSDK/ATF/release"
                 ]
         sdkpaths = [os.path.join(args.sdkdir, path) for path in paths]
 
         paths_chip_specific = [ "FunSDK/u-boot/{chip}",
                 "FunSDK/sbpfw/firmware/chip_{chip}_emu_0",
                 "FunSDK/sbpfw/pufrom/chip_{chip}_emu_0",
-		 "feature_sets/boardcfg/{chip}",
+                "feature_sets/boardcfg/{chip}",
                 ]
         sdkpaths.extend(
             [os.path.join(args.sdkdir, path.format(chip=args.chip)) for path in paths_chip_specific])
@@ -381,6 +403,8 @@ def main():
                     '--bootscript-only']
             if args.with_csrreplay:
                 cmd.extend(['--blob', 'csr_override_{chip}.bjson'.format(chip=args.chip)])
+            if _want_acufw(args):
+                cmd.extend(['--blob', 'blcombined_{chip}.bin'.format(chip=args.chip)])
 
             subprocess.check_call(cmd)
 
@@ -435,6 +459,8 @@ def main():
 
         if args.with_csrreplay:
             cmd.extend(['--blob', 'csr_override_{chip}.bjson'.format(chip=args.chip)])
+        if _want_acufw(args):
+            cmd.extend(['--blob', 'blcombined_{chip}.bin'.format(chip=args.chip)])
         subprocess.check_call(cmd)
         os.chdir(curdir)
 
@@ -463,7 +489,9 @@ def main():
                 '--filesystem',
                 '--signed' ]
         if args.with_csrreplay:
-                cmd.extend(['--blob', 'csr_override.bjson.signed'])
+            cmd.extend(['--blob', 'csr_override.bjson.signed'])
+        if _want_acufw(args):
+            cmd.extend(['--blob', 'acufw.blob.signed'])
         subprocess.check_call(cmd)
 
         if _want_funvisor(args):
