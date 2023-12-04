@@ -462,15 +462,7 @@ def sanitize_args(args, eeproms_dir, board_cfg_dir):
     if args.board_profile is None:
         args.board_profile = 'board_cfg_{}_default'.format(sku_name)
         if not args.board_profile in board_cfg_files:
-            sku_name = remove_prefix(sku_name, args.chip + "_")
-            args.board_profile = 'board_cfg_{}_default'.format(sku_name)
-    else:
-        prof_name = remove_prefix(args.board_profile, 'board_cfg_')
-        if not prof_name.startswith(sku_name):
-            prof_name = args.chip + '_' + prof_name
-            if not prof_name.startswith(sku_name):
-                print("board cfg profile: {} for the sku: {} is invalid!".format(prof_name, sku_name))
-                sys.exit(1)
+            args.board_profile = 'board_cfg_{}_{}_default'.format(args.chip, sku_name)
 
     # verify the file exists; if not show the list
     if not args.board_profile in board_cfg_files:
