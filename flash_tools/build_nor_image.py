@@ -462,6 +462,7 @@ def sanitize_args(args, eeproms_dir, board_cfg_dir):
     if args.board_profile is None:
         args.board_profile = 'board_cfg_{}_default'.format(sku_name)
         if not args.board_profile in board_cfg_files:
+            # fungible hw sku's have chip name prefixed
             args.board_profile = 'board_cfg_{}_{}_default'.format(args.chip, sku_name)
 
     # verify the file exists; if not show the list
