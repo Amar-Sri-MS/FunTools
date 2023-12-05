@@ -132,7 +132,7 @@
             "description": ""
         },
        "board_cfg_list": {
-            "source": "@file:boardcfg_profile_list.json",
+            "source": "@file:board_cfg_profile_list.json",
             "version": 1,
             "fourcc": "bcfg",
             "key": "fpk3",

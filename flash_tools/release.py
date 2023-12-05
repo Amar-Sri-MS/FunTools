@@ -52,7 +52,7 @@ BOARD_CFG_PER_CHIP_SKU_DEFAULT = {
 BOARD_CONFIG_OVERRIDE="""
 {{ "signed_images": {{
      "board_cfg.bin": {{
-         "source":"boardcfg_{sku_name}_default"
+         "source":"board_cfg_{chip}_{sku_name}_default"
          }}
      }}
 }}
@@ -241,7 +241,7 @@ def main():
                 gf.merge_configs(config, json.load(f))
 
     eeprom_list = '{}_eeprom_list.json'.format(args.chip)
-    board_cfg_list = 'boardcfg_profile_list.json'
+    board_cfg_list = 'board_cfg_profile_list.json'
     fvht_list_file = None
     default_board =  BOARD_CFG_PER_CHIP_SKU_DEFAULT.get(args.chip)
     if not default_board:
@@ -255,7 +255,7 @@ def main():
         gf.merge_configs(config, json.loads(EEPROM_LIST_CONFIG_OVERRIDE.format(eeprom_list=eeprom_list)), only_if_present=True)
         gf.merge_configs(config, json.loads(CSRR_CONFIG_OVERRIDE.format(chip=args.chip)), only_if_present=True)
         gf.merge_configs(config, json.loads(BOARD_CFG_LIST_CONFIG_OVERRIDE.format(board_cfg_list=board_cfg_list)), only_if_present=True)
-        gf.merge_configs(config, json.loads(BOARD_CONFIG_OVERRIDE.format(sku_name=default_board)), only_if_present=True)
+        gf.merge_configs(config, json.loads(BOARD_CONFIG_OVERRIDE.format(chip=args.chip, sku_name=default_board)), only_if_present=True)
         gf.merge_configs(config, json.loads(ACUFW_CONFIG_OVERRIDE.format(chip=args.chip)), only_if_present=True)
 
         if not args.with_csrreplay:
