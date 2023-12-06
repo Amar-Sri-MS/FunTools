@@ -3,17 +3,20 @@
 ##############################################################################
 #  enrollment_client.py
 #
-#  Utility -- Used for production enrollment -- BMC
+#  Utility -- Used for production enrollment
 #
-#  Stand alone script using i2c CLI tools on the BMC
+#  Stand alone script using i2c CLI tools on the BMC or other
 #
 #  Copyright (c) 2018-2022. Fungible, inc. All Rights Reserved.
+#  Copyright (c) 2023. Microsoft Corporation. All Rights Reserved.
 #
 ##############################################################################
 
+# pylint: disable=missing-function-docstring, missing-class-docstring
+# pylint: disable=consider-using-f-string
+
 '''
- This script is used for enrollment on BMC machines using the I2C/DBG/Challenge
- Interface.
+ This script is used for enrollment using the I2C/DBG/Challenge Interface.
  A general rule is that all binary data is manipulated using python bytearray
 '''
 
@@ -26,6 +29,7 @@ import subprocess
 import argparse
 import logging
 import traceback
+from enum import Enum
 
 #conditional imports to allow running on simple local BMC python installations
 REQUESTS_WARN = r'''
@@ -36,7 +40,7 @@ You can still use this script for simple tests.
 
 PARAMIKO_WARN = r'''
 Python module "paramiko" could not be imported.
-This module is necessary to connect via SSH to the BMC.
+This module is necessary to connect via SSH to the BMC or other with i2c interface.
 '''
 
 
@@ -58,10 +62,11 @@ except:
 # Constants
 #
 ###############################################################
-class CMD:
+class CMD(Enum):
     ''' namespace for challenge commands constants '''
     GET_SERIAL_NUMBER = 0xFE000000
     GET_STATUS = 0xFE010000
+    PREPARE_QSPI = 0xFE080000
     GET_ENROLL_INFO = 0xFF050000
     SET_ENROLL_INFO = 0xFF060000
 
@@ -85,7 +90,7 @@ The machine is now enrolled.'''
 
 ########################################################################
 #
-# I2C command line interface executer
+# I2C command line interface executer or commander
 #
 ########################################################################
 
@@ -94,7 +99,7 @@ class I2CCliCmdr:
     def close(self):
         pass
 
-    def get_cmd_output(self, cmd):
+    def get_cmd_output(self, _cmd):
         return None
 
 
@@ -152,7 +157,7 @@ class I2CCliSSHCmdr(I2CCliCmdr):
 
 class I2CCliCmd():
 
-    def prepare_cmd(self, bus_num, read_len=0, write_bytes=None):
+    def prepare_cmd(self, _bus_num, read_len=0, write_bytes=None):
         # num_read or write_bytes must be specified ...
         assert(read_len > 0 or write_bytes is not None)
         # but not both at once ...
@@ -189,14 +194,14 @@ class I2CTransferCli(I2CCliCmd):
 
         return cmd
 
-    def process_read_output(self, cmd, read_cmd_output):
+    def process_read_output(self, _cmd, read_cmd_output):
         output_lines = read_cmd_output.splitlines()
         logging.debug(output_lines)
         # i2ctransfer output: 1 line: 0x78 0xbc ... 0xda
         return bytearray([int(x,16) for x in output_lines[0].split()])
 
 
-    def process_write_output(self, cmd, write_cmd_output, write_data_length):
+    def process_write_output(self, cmd, write_cmd_output, _write_data_length):
         if len(write_cmd_output) != 0:
             logging.error('No output is expected for the cmd: %s',cmd)
             return False
@@ -222,7 +227,7 @@ class I2CTestCli(I2CCliCmd):
         return cmd
 
 
-    def process_read_output(self, cmd, read_cmd_output):
+    def process_read_output(self, _cmd, read_cmd_output):
         output_lines = read_cmd_output.splitlines()
         logging.debug(output_lines)
         # i2c-test output:
@@ -271,11 +276,11 @@ class I2CInterface:
     def disconnect(self):
         pass
 
-    def read(self, bus_num, len_data):
+    def read(self, _bus_num, _len_data):
         ''' return bytes read as a bytearray() '''
         return bytearray()
 
-    def write(self, bus_num, write_data):
+    def write(self, _bus_num, _write_data):
         ''' return bool for success '''
         return False
 
@@ -714,6 +719,14 @@ class Challenge:
         report_error("GetSerialNumber", rdata)
         return None
 
+    def prepare_qspi(self):
+        rdata = self.dbg_chal.execute_cmd(CMD.PREPARE_QSPI)
+        if rdata and cmd_status_ok(rdata):
+            return True
+
+        report_error("PrepareQSPI", rdata)
+        return False
+
     def get_enroll_tbs(self):
         rdata = self.dbg_chal.execute_cmd(CMD.GET_ENROLL_INFO)
         if rdata and cmd_status_ok(rdata):
@@ -748,7 +761,7 @@ def get_expected_boot_steps(version):
         version
     response = requests.get(url, timeout=10)
 
-    if response.status_code != requests.codes.ok:
+    if response.status_code != requests.codes.ok: # pylint: disable=no-member
         logging.warning("Server response for boot step of version %s: %d %s" ,
                         version.decode('ascii'),
                         response.status_code,
@@ -770,7 +783,7 @@ def generate_enrollment_cert(tbs_cert):
     response = requests.put(SERVER_URL_PRE + b"enrollment_server.cgi",
                             data=tbs_cert_64, timeout=10)
 
-    if response.status_code != requests.codes.ok:
+    if response.status_code != requests.codes.ok: # pylint: disable=no-member
         logging.error("Server response: %d %s",
                       response.status_code, response.reason)
         return None
@@ -789,12 +802,12 @@ def get_cert_of_serial_number(serial_no):
     url = SERVER_URL_PRE + b"enrollment_server.cgi?cmd=cert&sn=" + sn_64
     response = requests.get(url, timeout=10)
 
-    if response.status_code == requests.codes.not_found:
+    if response.status_code == requests.codes.not_found: # pylint: disable=no-member
         # expected if there is no cert in the database
         logging.info("No enrollment certificate for this serial number")
         return None
 
-    if response.status_code != requests.codes.ok:
+    if response.status_code != requests.codes.ok:  # pylint: disable=no-member
         logging.error("Server response: %d %s",
                       response.status_code, response.reason)
         return None
@@ -805,16 +818,33 @@ def get_cert_of_serial_number(serial_no):
 
     return binascii.a2b_base64(cert_64)
 
-
-#########################################################################
+##########################################################################
+# Auxiliary procedures
 #
-# Main
-#
-#########################################################################
 
-def main():
+def report_incorrect_boot_step(boot_step, expected_boot_steps):
+    if boot_step > max(expected_boot_steps):
+        logging.error("Enrollment not needed: chip is past the boot "\
+                      "stage: 0x%X > 0x%X",
+                      boot_step, max(expected_boot_steps))
+    elif boot_step < min(expected_boot_steps):
+        logging.error("Enrollment not possible: chip is stuck at an "\
+                      "earlier boot stage: 0x%X < 0x%X",
+                      boot_step, min(expected_boot_steps))
+    else:
+        logging.error("Enrollment not possible: chip is at boot step "\
+                      "0x%X not in %s",
+                      boot_step,
+                      ",".join("0x%X" for eb in expected_boot_steps))
+
+
+def enrollment_in_rom(boot_step, expected_boot_steps):
+    return len(expected_boot_steps)>1 and boot_step == min(expected_boot_steps)
+
+
+def parse_arguments():
     parser = argparse.ArgumentParser(
-        description="Perform enrollment via I2C on a BMC")
+        description="Perform enrollment via I2C")
 
     log_levels = { logging.getLevelName(a) : a for a in
                    [logging.DEBUG, logging.INFO, logging.WARN, logging.ERROR] }
@@ -831,15 +861,25 @@ def main():
                         "do not use for local exectution")
 
     parser.add_argument("-b", "--bus",
-                        help="i2c bus on the BMC to use (for non Fungible BMC. "\
+                        help="i2c bus to use; "\
                         "If specified, chip argument is ignored")
 
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+#########################################################################
+#
+# Main
+#
+#########################################################################
+
+def main():
+
+    args = parse_arguments()
 
     logging.basicConfig()
     logger = logging.getLogger() # root level logger
     logger.setLevel(args.log)
-
 
     if args.bus is None:
         args.bus = 3 if args.chip == 0 else 5
@@ -863,19 +903,9 @@ def main():
     if expected_boot_steps is None:
         logging.warning("Unable to check for boot step (experimental version)\n"\
                         "Trying anyway")
-    else:
-        if boot_step > max(expected_boot_steps):
-            logging.error("Enrollment not needed: chip is past the boot stage:"\
-                          "0x%X > 0x%X",
-                          boot_step, max(expected_boot_steps))
-            return False
-
-        if boot_step < min(expected_boot_steps):
-            logging.error("Enrollment not possible: chip is stuck at an earlier "\
-                          "boot stage: 0x%X < 0x%X",
-                          boot_step, min(expected_boot_steps))
-            return False
-
+    elif not boot_step in expected_boot_steps:
+        report_incorrect_boot_step(boot_step, expected_boot_steps)
+        return False
 
     logging.info("Chip at the correct boot step; retrieving serial number")
     # Get serial number
@@ -889,13 +919,18 @@ def main():
     #if the cert is there, write it
     if cert:
         logging.info("Found certificate for this serial number")
+
+        if enrollment_in_rom(boot_step, expected_boot_steps):
+            if not challenge.prepare_qspi():
+                logging.error("Prepare Flash for writing certificate failed")
+                return False
+
         if challenge.save_enroll_cert(cert):
             print(ENROLL_CERT_INSTALLED % (args.chip, args.bmc))
             return True
 
         logging.error("Enrollment certificate could not be installed")
         return False
-
 
     # cert was not in database: enroll and get tbs information
     tbs_cert = challenge.get_enroll_tbs()
