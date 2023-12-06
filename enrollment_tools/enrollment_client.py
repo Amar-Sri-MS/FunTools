@@ -29,6 +29,7 @@ import subprocess
 import argparse
 import logging
 import traceback
+from enum import Enum
 
 #conditional imports to allow running on simple local BMC python installations
 REQUESTS_WARN = r'''
@@ -61,7 +62,7 @@ except:
 # Constants
 #
 ###############################################################
-class CMD:              # pylint: disable=too-few-public-methods
+class CMD(Enum):
     ''' namespace for challenge commands constants '''
     GET_SERIAL_NUMBER = 0xFE000000
     GET_STATUS = 0xFE010000
