@@ -342,7 +342,7 @@ def run_upgrade(args, release_images):
                         dev_downgrade_fourccs.add(fourcc)
                     else:
                         # Versions are equal or inactive image, ignore
-                        pass
+                        continue
                     break
             else:
                 # also update if fourcc doesn't exist yet
