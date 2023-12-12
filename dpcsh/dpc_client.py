@@ -191,7 +191,7 @@ class DpcSocket:
             return self.receive(remaining_time_seconds)
 
         line = self.__buffer[:position]
-        self.__buffer = self.__buffer[position + 1:]
+        self.__buffer = self.__buffer[position:]
 
         return self.__encoder.decode(line)
 
