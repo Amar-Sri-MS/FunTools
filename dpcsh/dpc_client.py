@@ -87,7 +87,8 @@ class TextJSONEncoder(DpcEncoder):
 
     def serialization_size(self, buffer):
         # type: (Any, bytes()) -> int
-        return buffer.find(b'\n')
+        position = buffer.find(b'\n')
+        return position + 1 if position != -1 else -1
 
     def decode(self, buffer):
         # type: (Any, bytes()) -> Any
@@ -191,7 +192,7 @@ class DpcSocket:
             return self.receive(remaining_time_seconds)
 
         line = self.__buffer[:position]
-        self.__buffer = self.__buffer[position + 1:]
+        self.__buffer = self.__buffer[position:]
 
         return self.__encoder.decode(line)
 
