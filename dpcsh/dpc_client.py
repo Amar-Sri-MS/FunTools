@@ -87,7 +87,8 @@ class TextJSONEncoder(DpcEncoder):
 
     def serialization_size(self, buffer):
         # type: (Any, bytes()) -> int
-        return buffer.find(b'\n')
+        position = buffer.find(b'\n')
+        return position + 1 if position != -1 else -1
 
     def decode(self, buffer):
         # type: (Any, bytes()) -> Any
