@@ -43,7 +43,7 @@ static char *_read_input_file(int fd, size_t *outsize)
 	if (buffer == NULL)
 		oom();
 	pp = buffer;
-	
+
 	while ((n = read(fd, pp, alloc_size - size)) > 0) {
 		/* total json so far + just read */
 		size += n;
@@ -105,7 +105,7 @@ static int _write_output_file(int fd, char *buf, ssize_t len)
 {
 	ssize_t delta = 0;
 	ssize_t offset = 0;
-	
+
 	do {
 		delta = write(fd, &buf[offset], len-offset);
 		if (delta > 0)
@@ -116,7 +116,7 @@ static int _write_output_file(int fd, char *buf, ssize_t len)
 		perror("write");
 		return -1;
 	}
-	
+
 	if (offset != len) {
 		fprintf(stderr, "truncated output\n");
 		return -1;
@@ -235,7 +235,7 @@ static struct fun_json *_read_bjson(int fd)
 	free(buf);
 	return input;
 }
-	
+
 static int _write_json(int fd, struct fun_json *json, int mode)
 {
 	char *buf = NULL;
@@ -246,7 +246,7 @@ static int _write_json(int fd, struct fun_json *json, int mode)
 		buf = fun_json_to_text(json);
 	else if (mode == TEXT_ONE_LINE)
 		buf = fun_json_to_text_oneline(json, &dummy_size);
-		
+
 	if (!buf)
 		return -1;
 
@@ -256,7 +256,7 @@ static int _write_json(int fd, struct fun_json *json, int mode)
 	/* be nice and print a newline */
 	if (r == 0)
 		_write_output_file(fd, "\n", 1);
-	
+
 	return r;
 }
 
@@ -347,13 +347,13 @@ main(int argc, char *argv[])
 {
 	int r = 0;
 	int c;
-	
+
 	int inmode = NOMODE;
 	int outmode = NOMODE;
 	char *infile = NULL;
 	char *outfile = "-"; /* default text to stdout */
 	int infd, outfd;
-	
+
 	while (1) {
 		int option_index = 0;
 		static struct option long_options[] = {
@@ -367,7 +367,7 @@ main(int argc, char *argv[])
 			{"out-base64", required_argument, 0,  'E' },
 		};
 
-		
+
 		c = getopt_long(argc, argv, "i:o:l:I:O:f:e:E:",
 				long_options, NULL);
 		if (c == -1)
@@ -417,13 +417,9 @@ main(int argc, char *argv[])
 
 	if (outmode == NOMODE)
 		outmode = TEXT;
-	
+
 	/* open input file */
 	if (strcmp(infile, "-") == 0) {
-		if (inmode == BINARY) {
-			fprintf(stderr, "not reading binary from stdin\n");
-			exit(1);
-		}
 		infd = STDIN_FILENO;
 	} else {
 		infd = open(infile, O_RDONLY);
@@ -434,10 +430,6 @@ main(int argc, char *argv[])
 	}
 
 	if (strcmp(outfile, "-") == 0) {
-		if (outmode == BINARY) {
-			fprintf(stderr, "not writing binary to stdout\n");
-			exit(1);
-		}
 		outfd = STDOUT_FILENO;
 	} else {
 		outfd = open(outfile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
@@ -505,6 +497,6 @@ main(int argc, char *argv[])
 		r = 5;
 		fprintf(stderr, "no json found in input\n");
 	}
-	
+
 	return r;
 }
