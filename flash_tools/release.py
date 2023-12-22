@@ -20,6 +20,7 @@ import generate_flash as gf
 import flash_utils
 import eeprom_replace as er
 import os_utils
+import gzip
 
 
 HOST_FIRMWARE_CONFIG_OVERRIDE="""
@@ -732,11 +733,16 @@ def main():
             # and only override filenames used
             mfg_app_config = config['signed_images'].get('funos.signed.bin').copy()
             mfg_app_config['source'] = outname_modifier(funos_appname)
+
+            signed_filename = outname_modifier(funos_appname, signed=True)
             config['signed_mfg_images'] = {
-                outname_modifier(funos_appname, signed=True) : mfg_app_config
+                signed_filename : mfg_app_config
             }
             gf.set_search_paths([os.getcwd()])
-            gf.create_file(outname_modifier(funos_appname, signed=True), section='signed_mfg_images')
+            gf.create_file(signed_filename, section='signed_mfg_images')
+            with open(signed_filename, 'rb') as f_in:
+                with gzip.open(signed_filename + '.gz', 'wb') as f_out:
+                    shutil.copyfileobj(f_in, f_out)
 
 
         mfgxdata = {
