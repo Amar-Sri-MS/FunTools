@@ -764,9 +764,12 @@ def main():
         }
 
         # that's a bit hacky ... need something better here
-        if args.chip == 'f1' or args.chip == 'f1d1':
+        if args.chip == 'f1':
             mfgxdata_fv['ccfg'] = ('mmc', 'ccfg-no-come.signed.bin')
             mfgxdata['ccfg'] = ('mmc', 'ccfg-legacy.signed.bin')
+        elif args.chip == 'f1d1':
+            mfgxdata_fv['ccfg'] = ('mmc', 'ccfg-no-come.signed.bin')
+            mfgxdata['ccfg'] = ('mmc', 'ccfg-s21f1_xio.signed.bin')
         elif args.chip == 's1':
             mfgxdata['ccfg'] = ('mmc', 'ccfg-s1-demo-10g_mpg.signed.bin')
 
