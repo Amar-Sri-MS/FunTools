@@ -716,7 +716,6 @@ class DBG_File(DBG_FlashOp):
         self.f.write(to_write)
 
 
-
 class DBG_Chal(DBG_FlashOp):
 
     def __init__(self, chip_inst, port, cert_file, key_file, start_cert_file, i2c_dev):
@@ -768,10 +767,11 @@ class DBG_Chal(DBG_FlashOp):
         return header_bytes[0] + 0x0100 * header_bytes[1]
 
     def write_flash(self, nor_addr, input_data):
-
         return self.i2c_dbg.write_flash(self.chip_inst, nor_addr, input_data)
 
     def read_flash(self, offset, num_bytes):
+        if offset > FLASH_SIZE:
+            raise RuntimeError("Attempt to read past FLASH SIZE @ %x" % offset)
         return self.i2c_dbg.read_flash(self.chip_inst, offset, num_bytes)
 
     def decode_extra_data(self, extra_bytes, version):
@@ -1035,7 +1035,7 @@ class NOR_IMAGE(object):
         dir_of_dir = self.read_dir_of_dir()
 
         # empty flash case
-        if dir_of_dir == b'\xFF\xFF\xFF\xFF':
+        if dir_of_dir > FLASH_SIZE:
             return None, None
 
         # 256 bytes enough to read the whole directory
