@@ -131,6 +131,7 @@ ALL_ROOTFS_FILES = {
 }
 
 CHIP_SPECIFIC_FILES = {
+     "f1" : { 'FunSDK/PXE_driver/fundxe/FungibleDxe.bin' }, # for FS1600-gen9 testing
      "f1d1" : { 'FunSDK/PXE_driver/fundxe/FungibleDxe.bin' },
      "s2" : { 'FunSDK/ATF/release/blcombined_s2.bin' },
 }
