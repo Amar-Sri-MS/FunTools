@@ -177,7 +177,7 @@ def main():
 
     parser.add_argument('config', nargs='*', help='Configuration file(s)')
     parser.add_argument('--action',
-        choices={'all', 'prepare', 'sdk-prepare', 'release', 'sdk-release', 'certificate', 'sign', 'image', 'tarball', 'bundle', 'eeprbundle', 'mfginstall', 'mfgtarball'},
+        choices={'all', 'prepare', 'sdk-prepare', 'release', 'sdk-release', 'gen-funos-loader', 'certificate', 'sign', 'image', 'tarball', 'bundle', 'eeprbundle', 'mfginstall', 'mfgtarball'},
         default='all',
         help='Action to be performed on the input files')
     parser.add_argument('--sdkdir', default=os.getcwd(), help='SDK root directory')
@@ -218,7 +218,7 @@ def main():
         elif args.action == 'release':
             return action in ['sign', 'image', 'tarball', 'bundle', 'eeprbundle', 'mfginstall', 'mfgtarball']
         elif args.action == 'sdk-release':
-            return action in ['funos_loader', 'sign', 'image', 'bundle']
+            return action in ['gen-funos-loader', 'sign', 'image', 'bundle']
         else:
             return action == args.action
 
@@ -446,7 +446,7 @@ def main():
         gf.run('certificates')
         os.chdir(curdir)
 
-    if wanted('funos_loader'):
+    if wanted('gen-funos-loader'):
         # if funos image is different then create a new bootloader script
         os.chdir(args.destdir)
         cmd = [ localdir('make_emulation_emmc.py'),
