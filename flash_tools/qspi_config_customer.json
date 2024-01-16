@@ -24,7 +24,7 @@
             "key": "",
             "customer_cert": "customer_certificate.bin"
         },
-        "board_cfg_packed.bin": {
+        "board_cfg.bin": {
             "key": "",
             "customer_cert": "customer_certificate.bin"
         },
