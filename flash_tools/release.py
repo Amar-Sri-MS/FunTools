@@ -138,7 +138,9 @@ CHIP_SPECIFIC_FILES = {
 
 
 SKU_SPECIFIC_MFGINSTALL = {
-    ('f1d1', 's21f1') : { 'dcc1' : ('mmc', 'FungibleDxe.bin' )},
+    ('f1d1', 's21f1') : { 'dcc1' : ('mmc', 'FungibleDxe.bin' ),
+                          'ccfg-s21f1_xio' : ('mmc', 'ccfg-s21f1_xio.signed.bin'),
+                          'ccfg-s21f1_xstore' : ('mmc', 'ccfg-s21f1_xstore.signed.bin') },
 }
 
 
@@ -770,7 +772,7 @@ def main():
             mfgxdata['ccfg'] = ('mmc', 'ccfg-legacy.signed.bin')
         elif args.chip == 'f1d1':
             mfgxdata_fv['ccfg'] = ('mmc', 'ccfg-no-come.signed.bin')
-            mfgxdata['ccfg'] = ('mmc', 'ccfg-s21f1_xio.signed.bin')
+            mfgxdata['ccfg'] = ('mmc', 'ccfg-legacy.signed.bin')
         elif args.chip == 's1':
             mfgxdata['ccfg'] = ('mmc', 'ccfg-s1-demo-10g_mpg.signed.bin')
 
