@@ -87,7 +87,7 @@ bool {{struct.name}}_json_init(struct fun_json *j,
 	struct fun_json *{{field.name}}_j = fun_json_lookup(j, "{{field.name}}");
 	if ({{field.name}}_j) {
     {% if field.endian %}
-		  s->{{field.name}} = cpu_to_{{field.endian}}(fun_json_to_int64({{field.name}}_j, 0));
+      s->{{field.name}} = cpu_to_{{field.endian}}(fun_json_to_int64({{field.name}}_j, 0));
     {% else %}
       s->{{field.name}} = fun_json_to_int64({{field.name}}_j, 0);
     {% endif %
