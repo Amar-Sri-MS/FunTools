@@ -557,10 +557,11 @@ class Field(Declaration):
 
     # Endianness of the field, if it's a fixed endianness.
     self.endian = None
-    if type.name.startswith('__le'):
-      self.endian = type.name[2:]
-    elif type.name.startswith('__be'):
-      self.endian = type.name[2:]
+    type_name = type.TypeName() if type is not None else ''
+    if type_name.startswith('__le'):
+      self.endian = type_name[2:]
+    elif type_name.startswith('__be'):
+      self.endian = type_name[2:]
 
     # Fields for a composite object such as a struct or union.
     self.subfields = []
