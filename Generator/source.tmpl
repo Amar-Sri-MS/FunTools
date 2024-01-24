@@ -36,7 +36,7 @@ const char *{{flagset.name | as_lower }}_names[] = {
 {% if generate_json %}
 
 #include <FunOS/nucleus/types.h>
-#include <FunOS/utils/common/macros.h>
+#include <FunOS/utils/common/endian_macros.h>
 
 {% for struct in structs %}
 
