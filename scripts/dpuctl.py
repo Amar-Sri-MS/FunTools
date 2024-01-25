@@ -549,7 +549,6 @@ def parse_args() -> argparse.Namespace:
     # fast restart
     parser_restart = subparsers.add_parser('restart')
     parser_restart.set_defaults(func=cmd_restart)
-    parser.set_defaults(dpuarg="0")
 
     # Simple TCP and UDP logging server
     parser_logserver = subparsers.add_parser('logserver')
@@ -563,6 +562,7 @@ def parse_args() -> argparse.Namespace:
                                    default=[2661,6666],
                                    help="UDP ports to listen on")
     parser_logserver.set_defaults(func=cmd_logserver)
+    parser_logserver.set_defaults(dpuarg="0")
 
 
     # do the actual parse
