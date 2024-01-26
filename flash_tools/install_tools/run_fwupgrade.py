@@ -258,25 +258,6 @@ def run_upgrade(args, release_images):
             dev_upgrade_fourccs = list(release_images_fourccs)
         else:
             for fw in fwinfo['firmwares']:
-                # 'status' is not reported before build 8654, so do not assume
-                # it's always there. If frmw version is < 8654 but FunOS is newer,
-                # then 'status' field exists and is set to 'unknown'
-
-                # async upgrade (even if supported by fwupgrade app) may not work
-                # correctly on builds around 11500, all branches have the necessary
-                # fixes in after 11500, so only attempt to upgrade async images for
-                # those systems
-                if fw['fourcc'] == 'mmc1' and fw['version'] < 11500 and \
-                    fw.get('status','active') in ['active', 'unknown']:
-                    release_images_fourccs = release_images_fourccs - ASYNC_ONLY_IMAGES
-
-                # firmwares older than 9531 do not recognize kbag or husc as
-                # valid identifiers, so do not attempt to program these images, as this
-                # will result in an error.
-                if fw['fourcc'] == 'frmw' and fw['version'] < 9531 and \
-                    fw.get('status','active') in ['active', 'unknown']:
-                    release_images_fourccs = release_images_fourccs - { 'kbag', 'husc' }
-
                 # FunOS doesn't recognise incompatible devices and currently the
                 # only way we find out that it's a different device type is when
                 # the upgrade fails. The only externally visible method to determine
