@@ -555,6 +555,14 @@ class Field(Declaration):
                         name.startswith('rsvd') or
                         name.startswith('unused'))
 
+    # Endianness of the field, if it's a fixed endianness.
+    self.endian = None
+    type_name = type.TypeName() if type is not None else ''
+    if type_name.startswith('__le'):
+      self.endian = type_name[2:]
+    elif type_name.startswith('__be'):
+      self.endian = type_name[2:]
+
     # Fields for a composite object such as a struct or union.
     self.subfields = []
     self.is_field = True

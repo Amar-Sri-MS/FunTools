@@ -34,6 +34,10 @@ const char *{{flagset.name | as_lower }}_names[] = {
 {% endfor %}
 
 {% if generate_json %}
+
+#include <FunOS/nucleus/types.h>
+#include <FunOS/utils/common/endian_macros.h>
+
 {% for struct in structs %}
 
 /*
@@ -86,7 +90,11 @@ bool {{struct.name}}_json_init(struct fun_json *j,
 
 	struct fun_json *{{field.name}}_j = fun_json_lookup(j, "{{field.name}}");
 	if ({{field.name}}_j) {
-		s->{{field.name}} = fun_json_to_int64({{field.name}}_j, 0);
+    {% if field.endian %}
+      s->{{field.name}} = cpu_to_{{field.endian}}(fun_json_to_int64({{field.name}}_j, 0));
+    {% else %}
+      s->{{field.name}} = fun_json_to_int64({{field.name}}_j, 0);
+    {% endif %}
 	}
     {% endif %}
   {% endif %}
