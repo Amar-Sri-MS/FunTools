@@ -82,7 +82,7 @@ DEFAULT_EEPROMS = {
     ('f1d1', False) : 'eeprom_f1d1_fs800v2_1_1GHz_SoC_1_7GHz_PC',
 
     ('s2', True)    : 'eeprom_emu_s2_compute',
-    ('s2', False)   : 'eeprom_ds400',      #FIXME WHEN SILICON
+    ('s2', False)   : 'eeprom_ds400_1x16_pcie',      #FIXME WHEN SILICON
 }
 
 def remove_prefix(a_str, prefix):

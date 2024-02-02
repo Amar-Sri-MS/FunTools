@@ -47,7 +47,7 @@ BOARD_CFG_PER_CHIP_SKU_DEFAULT = {
 	"f1": "f1_dev_board",
 	"f1d1": "fs800v2",
 	"s1": "fc50",
-	"s2": "ds400"
+	"s2": "ds400_1x16_pcie"
 }
 
 BOARD_CONFIG_OVERRIDE="""
