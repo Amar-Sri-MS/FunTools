@@ -5,8 +5,8 @@ struct infile *addr2shard(uint64_t addr, size_t *offset)
 	uint64_t qsn[2];
 	uint64_t qn[7];
 	const uint32_t CHNUMS[] = {
-				3, 7, 11, 15, 2, 6, 10, 14,
-				13, 9, 5, 1, 12, 8, 4, 0};
+				0, 4, 8, 12, 1, 5, 9, 13,
+				14, 10, 6, 2, 15, 11, 7, 3};
 	const uint64_t QSN0 = 0x4fffffe;
 	const uint64_t QSN1 = 0x8fffffe;
 	const uint64_t QN0 = 0x0020848;
