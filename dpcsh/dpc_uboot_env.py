@@ -38,7 +38,7 @@ def set_host_data(dpc, args):
         # uboot is limited to only support a few variables in flash
         # and dpcsh nvme transport implementation is currently limited
         # to sending only a max cmd size of 4k, so we're expecting most
-        # of the env file to be nulls that can be stripped before sendin
+        # of the env file to be nulls that can be stripped before sending
         raise Exception('Too many config entries')
 
     data_enc = base64.b64encode(data[:ENV_BLOB_SIZE//2]).decode('ascii')
@@ -54,22 +54,10 @@ def main():
     parser.add_argument('action', choices=['get', 'set'], help='Action to perform')
     parser.add_argument('--config-file', default='/tmp/uboot_sbp.env',
                         help='Local file to store/read copy of u-boot environment')
-    parser.add_argument('--dpc-socket',
+    parser.add_argument('--dpc-socket', required=True,
                         help='Unix socket of dpcsh')
 
     args = parser.parse_args()
-    dpcsh = None
-
-    if not args.dpc_socket:
-        args.dpc_socket = '/tmp/dpc_uboot_env_{}.sock'.format(os.getpid())
-        dpcsh_cmd = [
-            'dpcsh',
-            '--pcie_nvme_sock=/dev/nvme0',
-            '--nvme_cmd_timeout=10000',
-            '--unix_proxy={}'.format(args.dpc_socket)
-        ]
-        dpcsh = subprocess.Popen(dpcsh_cmd)
-        time.sleep(3)
 
     try:
         dpc = dpc_client.DpcClient(unix_sock=True, server_address = args.dpc_socket)
@@ -80,14 +68,6 @@ def main():
     except Exception as e:
         print("Command failed, error:{}".format(e))
         raise
-    finally:
-        if dpcsh:
-            dpcsh.terminate()
-            try:
-                # dpcsh doesn't clean up after itself
-                os.unlink(args.dpc_socket)
-            except:
-                pass
 
     return 0
 
