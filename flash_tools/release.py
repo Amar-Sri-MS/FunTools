@@ -365,6 +365,9 @@ def main():
         shutil.rmtree('install_tools', ignore_errors=True)
         shutil.copytree(os.path.join(args.sdkdir, 'bin/flash_tools/install_tools'),
             'install_tools')
+        shutil.rmtree('mfg_dpc_scripts', ignore_errors=True)
+        shutil.copytree(os.path.join(args.sdkdir, 'bin/flash_tools/mfg_dpc_scripts'),
+            'mfg_dpc_scripts')
         if _want_funvisor(args):
             for rootfs, _ in rootfs_files:
                 root_file = os.path.join(args.sdkdir, 'deployments', rootfs)
@@ -703,6 +706,14 @@ def main():
             outname_suffix = outname_modifier(None)
             print("Generating MFG image type {}".format(outname_suffix))
             shutil.copy2(funos_appname, outname_modifier(funos_appname))
+
+            # Prepare a list of dpcsh scripts to include
+            mfgxdata_dpcsh = {}
+            for f in os.scandir('mfg_dpc_scripts'):
+                if f.is_file() and (os.path.splitext(f)[1] == '.dpcsh'):
+                    assert ' ' not in f.name, "DPC script filenames must not contain spaces ({})".format(f.name)
+                    mfgxdata_dpcsh[f.name] = f.path
+
             for fname, listtarget in mfgxdata_lists.items():
                 # generate upgrade lists to be embedded in xdata
                 with open(fname, 'w') as f:
@@ -718,6 +729,9 @@ def main():
 
                 for fname in mfgxdata_lists:
                     f.write("{} {}\n".format(fname, os.path.join(os.getcwd(), fname)))
+
+                for file, path in mfgxdata_dpcsh.items():
+                    f.write("{} {}\n".format(file, path))
 
             cmd = [ localdir('xdata.py'),
                     outname_modifier(funos_appname),
