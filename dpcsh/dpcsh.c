@@ -50,6 +50,7 @@
 #define DPC_B64SRV_PORT 40223   /* default dpcuart listen port */
 #define HTTP_PORTNO     9001    /* default HTTP listen port */
 #define NO_FLOW_CTRL_DELAY_USEC	10000	/* no flow control delay in usec */
+#define DPC_JSON_PRETTY_PRINT_FLAGS (FUN_JSON_PRETTY_PRINT_HUMAN_READABLE_STRINGS | FUN_JSON_PRETTY_PRINT_CONVERT_ERRORS_TO_STRING)
 
 const char *dpcsh_path;
 
@@ -474,7 +475,7 @@ static struct fun_ptr_and_size _transcode(struct fun_ptr_and_size source,
 		fun_json_fill_error_message(json, &msg);
 		log_info("Transcode error: %s\n", msg);
 	} else if (dest->socket->mode == SOCKMODE_TERMINAL) {
-		uint32_t flags = FUN_JSON_PRETTY_PRINT_HUMAN_READABLE_STRINGS | (use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0);
+		uint32_t flags = DPC_JSON_PRETTY_PRINT_FLAGS | (use_hex ? FUN_JSON_PRETTY_PRINT_USE_HEX_FOR_NUMBERS : 0);
 		json_text = fun_json_pretty_print(json,
 							  0, "    ",
 							  100, flags,
@@ -728,7 +729,7 @@ static void apply_command_locally(const struct fun_json *json,
 	if (result && !fun_json_fill_error_message(result, NULL)) {
 		if (_verbose_log) {
 			fun_json_printf_with_flags(PRELUDE BLUE POSTLUDE "Locally applied command: %s" NORMAL_COLORIZE "\n", result,
-				FUN_JSON_PRETTY_PRINT_HUMAN_READABLE_STRINGS);
+				DPC_JSON_PRETTY_PRINT_FLAGS);
 		}
 	}
 	fun_json_release(j);
@@ -786,7 +787,7 @@ static bool _decode_jsons_from_buffer(struct dpcsock_connection *connection)
 				struct fun_json *json = fun_json_create_from_binary_with_options(transcoded.ptr, transcoded.size, true);
 				log_debug(_debug_log, "parsed binary json from %s\n", connection->socket->verbose_log_name);
 				fun_json_printf_with_flags(INPUT_COLORIZE "%s" NORMAL_COLORIZE "\n",
-						json, FUN_JSON_PRETTY_PRINT_HUMAN_READABLE_STRINGS);
+						json, DPC_JSON_PRETTY_PRINT_FLAGS);
 				fun_json_release(json);
 			}
 
@@ -806,7 +807,7 @@ static bool _decode_jsons_from_buffer(struct dpcsock_connection *connection)
 				if (_verbose_log) {
 					log_debug(_debug_log, "parsed json from %s\n", connection->socket->verbose_log_name);
 					fun_json_printf_with_flags(INPUT_COLORIZE "%s" NORMAL_COLORIZE "\n",
-							json, FUN_JSON_PRETTY_PRINT_HUMAN_READABLE_STRINGS);
+							json, DPC_JSON_PRETTY_PRINT_FLAGS);
 				}
 
 				bool complete;
