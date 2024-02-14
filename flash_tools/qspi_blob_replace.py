@@ -6,19 +6,38 @@ import json
 import shutil
 import subprocess
 import flash_utils
+import tempfile
 
-def replace(infile, outfile, eepr):
-    parts = list(filter(lambda f: f[0] == 'eepr', flash_utils.get_entries(infile)))
-    shutil.copy2(infile, outfile)
-    for p in parts:
-        cmd = ['dd',
-               'if={}'.format(eepr),
+SECTOR_SIZE = 64*1024
+
+def replace(infile, outfile, replacement_bin, replacement_fourcc='eepr'):
+    parts = list(filter(lambda f: f[0] == replacement_fourcc, flash_utils.get_entries(infile)))
+
+    if outfile:
+        shutil.copy2(infile, outfile)
+    else:
+        outfile = infile
+
+    with tempfile.NamedTemporaryFile('wb') as tmp, open(replacement_bin, 'rb') as infile:
+        data = infile.read()
+        tmp.write(data)
+        # pad up to a full sector
+        tmp.write(bytes([0xff] * (SECTOR_SIZE - (len(data) % SECTOR_SIZE))))
+        tmp.flush()
+        size = 4096
+
+        for p in parts:
+            seek = p[1] // 4096
+            assert p[1] % SECTOR_SIZE == 0
+
+            cmd = ['dd',
+               'if={}'.format(tmp.name),
                'of={}'.format(outfile),
                'conv=notrunc',
-               'obs=1',
+               'bs={}'.format(size),
                'status=none',
-               'seek={}'.format(p[1])]
-        subprocess.call(cmd)
+               'seek={}'.format(seek)]
+            subprocess.call(cmd)
 
 def main():
     parser = argparse.ArgumentParser()
