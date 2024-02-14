@@ -18,7 +18,7 @@ import tarfile
 import tempfile
 import generate_flash as gf
 import flash_utils
-import eeprom_replace as er
+import qspi_blob_replace as br
 import os_utils
 import gzip
 
@@ -349,7 +349,7 @@ def main():
                   "bin/flash_tools/firmware_signing_service.py",
                   "bin/flash_tools/key_bag_create.py",
                   "bin/flash_tools/key_replace.py",
-                  "bin/flash_tools/eeprom_replace.py",
+                  "bin/flash_tools/qspi_blob_replace.py",
                   "bin/flash_tools/flash_utils.py",
                   "bin/flash_tools/gen_hash_tree.py",
                   "bin/flash_tools/os_utils.py",
@@ -513,8 +513,11 @@ def main():
             with open(eeprom_list) as f:
                 eeproms = json.load(f)
                 for skuid, value in eeproms.items():
-                    er.replace('{}.bin'.format(output_image),
+                    br.replace('{}.bin'.format(output_image),
                         '{}.bin.{}'.format(output_image, skuid), value['filename'] + '.bin')
+                    br.replace('{}.bin.{}'.format(output_image, skuid), None,
+                        'board_cfg_{chip}_{sku_name}_default.bin'.format(chip=args.chip.lower(), sku_name=value['base_sku']),
+                        replacement_fourcc='bcfg')
         except:
             pass
 

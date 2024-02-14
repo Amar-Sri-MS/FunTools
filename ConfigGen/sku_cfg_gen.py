@@ -542,7 +542,8 @@ class SKUCfgGen():
                     sku_var = sku_name + suffix
                     eeprom_list[sku_var] = {
                         'filename' : self.eeprom_filename(sku_var, chip_type),
-                        'image_type' : sku_var
+                        'image_type' : sku_var,
+                        'base_sku' : sku_name
                     }
 
                     try:
