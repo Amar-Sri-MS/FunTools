@@ -34,6 +34,9 @@
 #define CHIP_DEVICE_1 "/dev/i2c5"
 #endif
 
+#define STRINGIFY(x)	      #x
+#define XSTRINGIFY(x)	      STRINGIFY(x)
+
 using std::min;
 
 #define  CHAL_HEADER_SIZE (4)
@@ -296,6 +299,9 @@ const unsigned char *i2c_dbg_chal_cmd(uint32_t command,
 				      int reply_delay_usec,
 				      int *result_len)
 {
+	enum {
+			GET_STATUS = 0xFE010000
+	};
 	static byte_vector reply;
 	*result_len = 0;
 	const unsigned char *ret = 0;
@@ -313,6 +319,10 @@ const unsigned char *i2c_dbg_chal_cmd(uint32_t command,
 	catch (...)
 	{
 		printf("Unknown exception\n");
+	}
+	/* if the command was status always print version of this SO */
+	if (command == GET_STATUS) {
+		printf("i2c_dbg.so version " XSTRINGIFY(GIT_VERSION) "\n");
 	}
 	return ret;
 }
