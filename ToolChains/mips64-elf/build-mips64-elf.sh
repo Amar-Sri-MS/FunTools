@@ -31,6 +31,10 @@ done
 binutils_version=binutils-2.40
 gcc_version=gcc-12.2.0
 gdb_version=gdb-13.1
+# David Daney's comment in PR-2061
+## We need to be careful with binutils version and test that tools like addr2line work in finite time on large FunOS release images.
+# Not sure if anyone is writing the test for add2line. But documenting there just in case.
+
 
 toolchain=mips64-unknown-elf-${binutils_version}_${gcc_version}_${gdb_version}-$(uname -s)_$(uname -m)
 
@@ -43,7 +47,8 @@ gcc_url="http://ftpmirror.gnu.org/gcc/${gcc_version}/${gcc_archive}"
 gdb_archive=${gdb_version}.tar.xz
 gdb_url="http://ftpmirror.gnu.org/gdb/${gdb_archive}"
 
-# pathes if any
+# These patches probably need to be forward ported if you upgrade the gcc version.
+# patches if any
 case ${gcc_version} in
 gcc-11.3.0)
 	gcc_patches=(970-macos_arm64-building-fix.patch)
@@ -53,6 +58,7 @@ gcc-11.3.0)
 	;;
 esac
 
+# These patches probably need to be forward ported if you upgrade the gdb version. We cannot lose the ability to debug FunOS images.
 case ${gdb_version} in
 gdb-11.2)
 	gdb_patches=(fungible-enable-tls.patch fungible-enable-core.patch)
