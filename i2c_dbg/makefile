@@ -9,8 +9,7 @@
 
 MACHINE?=fs-bmc
 
-git_version := $(shell git rev-parse --short HEAD 2>/dev/null)
-git_version := $(git_version)$(shell git diff --quiet || echo '*')
+git_version := $(shell git describe)
 
 BUILD_DIR:=build/$(MACHINE)
 INSTALL_TARGET:=$(SDK_INSTALL_DIR)/bin/i2c_dbg/$(MACHINE)
