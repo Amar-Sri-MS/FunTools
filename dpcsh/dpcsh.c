@@ -1622,10 +1622,10 @@ static void _do_interactive(struct dpcsock *funos_socket,
 	_wait_finalize_workers(workers, MAX_CLIENTS_THREADS);
 }
 
-static char *_get_buf_from_arguments(int argc, char *argv[])
+static char *_get_buf_from_arguments(int argc, char *argv[], int startIndex)
 {
 	size_t bufsize = 1; // 1 for the terminating zero
-	for (int i = 0; i < argc; i++) {
+	for (int i = startIndex; i < argc; i++) {
 		bufsize += strlen(argv[i]) + 1; // +1 for the separator space
 	}
 	char *buf = malloc(bufsize);
@@ -1634,7 +1634,7 @@ static char *_get_buf_from_arguments(int argc, char *argv[])
 		return NULL;
 	}
 	int n = 0;
-	for (int i = 0; i < argc; i++) {
+	for (int i = startIndex; i < argc; i++) {
 		n += snprintf(buf + n, bufsize - n, "%s ", argv[i]);
 	}
 	buf[strlen(buf) - 1] = 0;	// trim the last space
@@ -1671,7 +1671,7 @@ static char *_get_buf_from_file(const char *filename)
 // Return true if execution proceeded normally, false on any error
 static bool _do_cli(char *buf,
 		    struct dpcsock *funos_socket,
-		    struct dpcsock *cmd_socket, int startIndex)
+		    struct dpcsock *cmd_socket)
 {
 	bool ok = false;
 
@@ -1683,7 +1683,7 @@ static bool _do_cli(char *buf,
 		goto connect_fail;
 	}
 
-	size_t len = strlen(buf);
+	size_t len = strlen(buf) + 1;
 
 	cmd->read_buffer.ptr = (uint8_t *)buf;
 	cmd->read_buffer.size = len;
@@ -2170,7 +2170,7 @@ int main(int argc, char *argv[])
 			if (script) {
 				buf = _get_buf_from_file(script);
 			} else {
-				buf = _get_buf_from_arguments(argc, argv);
+				buf = _get_buf_from_arguments(argc, argv, optind);
 			}
 
 			if (!buf) {
@@ -2178,7 +2178,7 @@ int main(int argc, char *argv[])
 				exit(EINVAL);
 			}
 
-			bool ok = _do_cli(buf, &funos_sock, &cmd_sock, optind);
+			bool ok = _do_cli(buf, &funos_sock, &cmd_sock);
 
 			if (!ok) {
 				// We got a JSON error back, let's return an error code
