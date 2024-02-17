@@ -9,6 +9,7 @@
 
 MACHINE?=fs-bmc
 
+git_version := $(shell git describe)
 
 BUILD_DIR:=build/$(MACHINE)
 INSTALL_TARGET:=$(SDK_INSTALL_DIR)/bin/i2c_dbg/$(MACHINE)
@@ -20,7 +21,8 @@ CXX:=$(CROSS_COMPILE)g++
 CC:=$(CROSS_COMPILE)g++
 STRIP:=$(CROSS_COMPILE)strip
 
-CXXFLAGS+= -Os
+
+CXXFLAGS+= -Os -DGIT_VERSION=$(git_version)
 LDFLAGS+= -L. -static-libgcc -static-libstdc++ -Wl,-rpath=/usr/local/lib --shared
 
 
