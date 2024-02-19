@@ -1623,12 +1623,8 @@ static void _do_interactive(struct dpcsock *funos_socket,
 	_wait_finalize_workers(workers, MAX_CLIENTS_THREADS);
 }
 
-// Return true if execution proceeded normally, false on any error
-static bool _do_cli(int argc, char *argv[],
-		    struct dpcsock *funos_socket,
-		    struct dpcsock *cmd_socket, int startIndex)
+static char *_get_buf_from_arguments(int argc, char *argv[], int startIndex)
 {
-	bool ok = false;
 	size_t bufsize = 1; // 1 for the terminating zero
 	for (int i = startIndex; i < argc; i++) {
 		bufsize += strlen(argv[i]) + 1; // +1 for the separator space
@@ -1636,10 +1632,50 @@ static bool _do_cli(int argc, char *argv[],
 	char *buf = malloc(bufsize);
 	if (!buf) {
 		log_error("failed to allocate command buffer of size %zu", bufsize);
-		goto malloc_fail;
+		return NULL;
 	}
-
 	int n = 0;
+	for (int i = startIndex; i < argc; i++) {
+		n += snprintf(buf + n, bufsize - n, "%s ", argv[i]);
+	}
+	buf[strlen(buf) - 1] = 0;	// trim the last space
+	return buf;
+}
+
+static char *_get_buf_from_file(const char *filename)
+{
+	FILE *f = fopen(filename, "r");
+	if (!f) {
+		log_error("can't open file %s\n", filename);
+		return NULL;
+	}
+	fseek(f, 0, SEEK_END);
+	size_t len = ftell(f);
+	fseek(f, 0, SEEK_SET);
+	char *buf = malloc(len + 1);
+	if (!buf) {
+		log_error("can't allocate buffer for file %s\n", filename);
+		fclose(f);
+		return NULL;
+	}
+	if (fread(buf, 1, len, f) != len) {
+		log_error("can't read file %s\n", filename);
+		fclose(f);
+		free(buf);
+		return NULL;
+	}
+	fclose(f);
+	buf[len] = 0;
+	return buf;
+}
+
+// Return true if execution proceeded normally, false on any error
+static bool _do_cli(char *buf,
+		    struct dpcsock *funos_socket,
+		    struct dpcsock *cmd_socket)
+{
+	bool ok = false;
+
 	struct dpcsock_connection *funos, *cmd;
 	open_new_connections(funos_socket, cmd_socket, &funos, &cmd);
 
@@ -1648,14 +1684,7 @@ static bool _do_cli(int argc, char *argv[],
 		goto connect_fail;
 	}
 
-	for (int i = startIndex; i < argc; i++) {
-		n += snprintf(buf + n, bufsize - n, "%s ", argv[i]);
-		log_debug(_debug_log, "buf=%s n=%d\n", buf, n);
-	}
-
-	size_t len = strlen(buf);
-
-	buf[len - 1] = 0;	// trim the last space
+	size_t len = strlen(buf) + 1;
 
 	cmd->read_buffer.ptr = (uint8_t *)buf;
 	cmd->read_buffer.size = len;
@@ -1675,7 +1704,7 @@ static bool _do_cli(int argc, char *argv[],
 connect_fail:
 	close_connections(funos, cmd);
 	delete_connections(funos, cmd);
-malloc_fail:
+
 	return ok;
 }
 
@@ -1732,6 +1761,7 @@ static struct option longopts[] = {
 	{ "nocli",           no_argument,       NULL, 'n' },
 	{ "nocli-quiet",     no_argument,       NULL, 'Q' },
 	{ "oneshot",         no_argument,       NULL, 'S' },
+	{ "script",          required_argument, NULL, 's' },
 	{ "manual_base64",   no_argument,       NULL, 'N' },
 	{ "no_dev_init",     no_argument,       NULL, 'X' },
 	{ "no_flow_control", no_argument,       NULL, 'F' },
@@ -1780,6 +1810,7 @@ static void usage(const char *argv0)
 	printf("       -n, --nocli                   issue request from command-line arguments and terminate\n");
 	printf("       -Q, --nocli-quiet             issue request from command-line arguments and terminate, only print response\n");
 	printf("       -S, --oneshot                 don't reconnect after command side disconnect\n");
+	printf("       -s, --script                  run the script and terminate\n");
 	printf("       -N, --manual_base64           just translate base64 back and forward\n");
 	printf("       -X, --no_dev_init             don't init the UART device, use as-is\n");
 	printf("       -R, --baud=rate               specify non-standard baud rate (default=" DEFAULT_BAUD ")\n");
@@ -1806,6 +1837,7 @@ int main(int argc, char *argv[])
 {
 	enum mode mode = MODE_INTERACTIVE; /* default user control */
 	bool one_shot = false;  /* run a single command and terminate */
+	char *script = NULL;    /* run a script and terminate */
 	int ch, first_unknown = -1;
 	struct dpcsock funos_sock = {0}; /* connection to FunOS */
 	struct dpcsock cmd_sock = {0};   /* connection to commanding agent */
@@ -1852,9 +1884,9 @@ int main(int argc, char *argv[])
 
 	while ((ch = getopt_long(argc, argv,
 #ifdef __linux__
-				 "hB::b::D:i::c:u::p::q::T::t::I:nQSNXFR:LvdVYW",
+				 "hB::b::s:D:i::c:u::p::q::T::t::I:nQSNXFR:LvdVYW",
 #else
-				 "hB::b::D:i::c:u::T::t::nQSNXFR:LvdVY",
+				 "hB::b::s:D:i::c:u::T::t::nQSNXFR:LvdVY",
 #endif
 				 longopts, NULL)) != -1) {
 
@@ -1970,8 +2002,12 @@ int main(int argc, char *argv[])
 		case 'Q':  /* "nocli-quiet" -- run one command and exit */
 			_nocli_script_mode = true;
 		case 'n':  /* "nocli" -- run one command and exit */
-		case 'S':  /* "oneshot" -- run one connection and exit */
+		case 'S':  /* "oneshot" -- same as nocli */
 			one_shot = true;
+			break;
+		case 's':  /* "script" -- run the script and exit */
+			one_shot = true;
+			script = optarg;
 			break;
 		case 'F':  /* "no_flow_control" -- run without flow control */
 			_no_flow_control = true;
@@ -2131,8 +2167,19 @@ int main(int argc, char *argv[])
 	case MODE_INTERACTIVE:
 	case MODE_NOCONNECT: {
 		if (one_shot) {
+			char *buf = NULL;
+			if (script) {
+				buf = _get_buf_from_file(script);
+			} else {
+				buf = _get_buf_from_arguments(argc, argv, optind);
+			}
 
-			bool ok = _do_cli(argc, argv, &funos_sock, &cmd_sock, optind);
+			if (!buf) {
+				log_error("failed to get the command\n");
+				exit(EINVAL);
+			}
+
+			bool ok = _do_cli(buf, &funos_sock, &cmd_sock);
 
 			if (!ok) {
 				// We got a JSON error back, let's return an error code
