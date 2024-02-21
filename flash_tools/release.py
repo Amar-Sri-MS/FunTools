@@ -288,6 +288,15 @@ def main():
         if config['signed_images'].get(list(fvht_override['signed_images'].keys())[0]):
             gf.merge_configs(config, fvht_override)
 
+        for k in list(config['signed_images'].keys()):
+            el = config['signed_images'][k]
+            if el.get('chip'):
+                if args.chip not in el.get('chip'):
+                    del config['signed_images'][k]
+                else:
+                    del config['signed_images'][k]['chip']
+
+
     gf.set_config(config)
     gf.set_chip_type(args.chip)
 
