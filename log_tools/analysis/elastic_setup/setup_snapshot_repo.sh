@@ -21,7 +21,7 @@ curl -X PUT "${URL}/_snapshot/logs_snapshots" -H 'Content-Type: application/json
 {
     "type": "fs",
     "settings": {
-        "location": "/archive/users/sourabhj/snapshots/logs",
+        "location": "/archive2/users/sourabhj/snapshots/logs",
         "compress": true
     }
 }
