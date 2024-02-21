@@ -93,7 +93,8 @@ RETRIEVE_STMT = RETRIEVE_STMT_ROOT + "WHERE serial_info = %s AND serial_nr = %s"
 # insertion
 # only a few fields -- others have default values
 INS_CERT_FIELDS = [ID_FLD] + [desc[0] for desc in CERT_DESCS
-                                  if not desc in SN_DESC] + ["pub_key_pem"]
+                                  if not desc in SN_DESC] +["pub_key_pem",
+                                                            "requester"]
 
 INS_CERT_FIELDS_LIST = ",".join(INS_CERT_FIELDS)
 INS_CERT_ARGS_LIST = ",".join([f"%({fld})s" for fld in INS_CERT_FIELDS])
@@ -257,6 +258,7 @@ def auth_log(msg):
 
     # log the operation
     log(f"Signing by {user_DN}: {msg}")
+    return user_DN
 
 
 def get_debugging_certificate(form, hex_serial_nr):
@@ -279,17 +281,16 @@ def get_debugging_certificate(form, hex_serial_nr):
     # otherwise try to insert a new debugging cert
     # get security group
     key_set = int.from_bytes(serial_nr[14:16], byteorder='big')
-    if key_set == 0:
-        raise ValueError("Use debugging certficate for group 0")
 
-    # mutual authentication required for production signing FWIW
-    auth_log(f"debugging certificate for {hex_serial_nr}")
+    # mutual authentication required for production signing and
+    # debugging certificate generation
+    values['requester'] = auth_log(f"debugging certificate for {hex_serial_nr}")
 
     # retrieve the PEM key ensuring str type
     values['pub_key_pem'] = form.getvalue('key', None)
 
     modulus = read_public_key_file(values['pub_key_pem'])
-    # build the TBS
+    # build the TBS using default values if present if desc
     for desc in CERT_DESCS:
         if len(desc) > 2:
             values[desc[0]] = desc[2]
