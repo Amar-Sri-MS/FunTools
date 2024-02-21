@@ -138,7 +138,7 @@ CHIP_SPECIFIC_FILES = {
 
 
 SKU_SPECIFIC_MFGINSTALL = {
-    ('f1d1', 's21f1') : { 'dcc1' : ('mmc', 'FungibleDxe.bin' ),
+    ('f1d1', 's21f1') : { 'dcc1' : ('mmc', 'FungibleDxe.signed.bin' ),
                           'ccfg-s21f1_xio' : ('mmc', 'ccfg-s21f1_xio.signed.bin'),
                           'ccfg-s21f1_xstore' : ('mmc', 'ccfg-s21f1_xstore.signed.bin') },
 }
