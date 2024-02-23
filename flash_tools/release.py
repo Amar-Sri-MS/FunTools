@@ -138,7 +138,7 @@ CHIP_SPECIFIC_FILES = {
 
 
 SKU_SPECIFIC_MFGINSTALL = {
-    ('f1d1', 's21f1') : { 'dcc1' : ('mmc', 'FungibleDxe.bin' ),
+    ('f1d1', 's21f1') : { 'dcc1' : ('mmc', 'FungibleDxe.signed.bin' ),
                           'ccfg-s21f1_xio' : ('mmc', 'ccfg-s21f1_xio.signed.bin'),
                           'ccfg-s21f1_xstore' : ('mmc', 'ccfg-s21f1_xstore.signed.bin') },
 }
@@ -287,6 +287,15 @@ def main():
         fvht_override = json.loads(FVHT_LIST_CONFIG_OVERRIDE.format(fvht_list=fvht_list_file.name))
         if config['signed_images'].get(list(fvht_override['signed_images'].keys())[0]):
             gf.merge_configs(config, fvht_override)
+
+        for k in list(config['signed_images'].keys()):
+            el = config['signed_images'][k]
+            if el.get('chip'):
+                if args.chip not in el.get('chip'):
+                    del config['signed_images'][k]
+                else:
+                    del config['signed_images'][k]['chip']
+
 
     gf.set_config(config)
     gf.set_chip_type(args.chip)
