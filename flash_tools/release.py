@@ -801,6 +801,9 @@ def main():
             mfgxdata['ccfg'] = ('mmc', 'ccfg-legacy.signed.bin')
         elif args.chip == 's1':
             mfgxdata['ccfg'] = ('mmc', 'ccfg-s1-demo-10g_mpg.signed.bin')
+        elif args.chip == 's2':
+            mfgxdata['ccfg-ds400_1x16_pcie'] = ('mmc', 'ccfg-ds400_adapter.signed.bin')
+            mfgxdata['ccfg-ds400_4x4_e1s'] = ('mmc', 'ccfg-ds400_storage.signed.bin')
 
 
         mfgxdata_without_fv = mfgxdata
