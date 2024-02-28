@@ -722,7 +722,15 @@ class DBG_Chal(DBG_FlashOp):
         self.i2c_dbg = i2c_dbg()
         self.chip_inst = chip_inst
         if i2c_dev:
+            # i2c_dev can be a dev port (/dev/i2c-17) or a number (17):
+            # Linux's i2ctools and enrollment_client.py uses the number
+            # so as a convenience for the user,  detect that case and
+            # generate the devport for the user if a number is provided
+            if i2c_dev.isdigit():
+                i2c_dev = "/dev/i2c-%d" % i2c_dev
+
             self.i2c_dbg.set_chip_device(chip_inst, i2c_dev)
+
         if logger.getEffectiveLevel() <= logging.DEBUG:
             print('Using device "%s" for chip %d\n' %
               (bytes2str(self.i2c_dbg.get_chip_device(chip_inst)),chip_inst))
@@ -1899,7 +1907,8 @@ def main():
     spec_grp.add_argument("--chip", type=int, default=0, choices=[0,1],
                           help="chip instance number (default = 0)")
 
-    spec_grp.add_argument("--i2c-dev", type=str, help="path to i2c device")
+    spec_grp.add_argument("--i2c-dev", type=str,
+                          help="number or path to i2c device")
     spec_grp.add_argument("--log", choices=log_levels.keys(),
                           default="ERROR",
                           help="set log level")
