@@ -561,10 +561,12 @@ class I2CDbgChallenge:
         return self.i2c_dbg_chal_read(CHAL_HEADER_SIZE)
 
 
-    def execute_cmd(self, cmd_no, cmd_data=None, reply_delay_msec=0):
+    def execute_cmd(self, cmd_enum, cmd_data=None, reply_delay_msec=0):
 
         # Flush
         self.i2c_dbg_chal_fifo_flush()
+
+        cmd_no = cmd_enum.value
 
         logging.debug("challenge cmd: 0x%08x", cmd_no)
 
