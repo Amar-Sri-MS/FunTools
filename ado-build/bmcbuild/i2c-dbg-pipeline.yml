@@ -1,19 +1,40 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
+name: i2c_dbg BMC build
 
 trigger:
 - master
 
-pool:
-  vmImage: ubuntu-latest
 
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+jobs:
+  - job: build
+    timeoutInMinutes: 10
+    pool: funsdk-arm64-mariner-pool-1es  
+    container:
+      image: ubuntu:18.04
+      options: "--name ci-container -v /usr/bin/docker:/tmp/docker:ro"
+    steps:
+    - script: |
+        echo i2c_dbg bld
+        echo pwd
+        pwd
+        echo ls
+        ls
+        echo uname -a
+        uname -a
+        echo lsb_release
+        lsb_release -a
+        echo yum
+        yum -h
+        echu df
+        df -h
+        echo set
+        set
+      displayName: 'Pre-build diags'
+    - script: |
+        cd ${BUILD_SOURCESDIRECTORY}/ado-build/bmcbuild
+        ./bmcbuild.sh
+      displayName: Build docker
+    - script: |
+        cd ${BUILD_SOURCESDIRECTORY}/ado-build/bmcbuild
+        ./bmcrun.sh
+      displayName: 'build'
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
