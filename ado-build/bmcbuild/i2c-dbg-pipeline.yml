@@ -34,4 +34,7 @@ jobs:
         cd ${BUILD_SOURCESDIRECTORY}/ado-build/bmcbuild
         ./bmcrun.sh
       displayName: 'build'
-
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: '$(Build.ArtifactStagingDirectory)'
+        artifactName: drop
