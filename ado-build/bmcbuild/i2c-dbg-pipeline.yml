@@ -34,7 +34,7 @@ jobs:
         cd ${BUILD_SOURCESDIRECTORY}/ado-build/bmcbuild
         ./bmcrun.sh ${BUILD_SOURCESDIRECTORY} ${BUILD_STAGINGDIRECTORY}
       displayName: 'build'
-    - task: PublishPipelineArtifacts@1
+    - task: PublishPipelineArtifact@1
       inputs:
         targetPath: '$(Build.ArtifactStagingDirectory)'
         artifactName: drop
