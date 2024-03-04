@@ -32,7 +32,6 @@ jobs:
       displayName: Build docker
     - script: |
         cd ${BUILD_SOURCESDIRECTORY}/ado-build/bmcbuild
-        ls /usr/bin
         ./bmcrun.sh
       displayName: 'build'
     - task: PublishBuildArtifacts@1

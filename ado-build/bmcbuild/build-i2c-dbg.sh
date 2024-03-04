@@ -1,7 +1,7 @@
 #!/bin/bash
 
 cd ~/src/i2c_dbg
-make
+ls /usr/bin
 make MACHINE=fs-bmc-hf
 make MACHINE=rpi
 make MACHINE=qemu
