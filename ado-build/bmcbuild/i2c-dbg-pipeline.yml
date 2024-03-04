@@ -1,0 +1,40 @@
+name: i2c_dbg BMC build
+
+trigger:
+- master
+
+
+jobs:
+  - job: build
+    timeoutInMinutes: 10
+    pool: funsdk-arm64-mariner-pool-1es  
+    steps:
+    - script: |
+        echo i2c_dbg bld
+        echo pwd
+        pwd
+        echo ls
+        ls
+        echo uname -a
+        uname -a
+        echo lsb_release
+        lsb_release -a
+        echo yum
+        yum -h
+        echu df
+        df -h
+        echo set
+        set
+      displayName: 'Pre-build diags'
+    - script: |
+        cd ${BUILD_SOURCESDIRECTORY}/ado-build/bmcbuild
+        ./bmcbuild.sh
+      displayName: Build docker
+    - script: |
+        cd ${BUILD_SOURCESDIRECTORY}/ado-build/bmcbuild
+        ./bmcrun.sh
+      displayName: 'build'
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: '$(Build.ArtifactStagingDirectory)'
+        artifactName: drop

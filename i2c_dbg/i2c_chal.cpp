@@ -227,6 +227,10 @@ byte_vector i2c_dbg_chal_cmd(uint32_t command, int chip_instance,
 			     int reply_delay_usec)
 {
 
+	if (reply_delay_usec < 10) {
+		reply_delay_usec = 10;
+	}
+
 	/* Flush */
 	i2c_dbg_chal_fifo_flush(chip_instance);
 
