@@ -32,9 +32,10 @@ jobs:
       displayName: Build docker
     - script: |
         cd ${BUILD_SOURCESDIRECTORY}/ado-build/bmcbuild
-        ./bmcrun.sh
+        ./bmcrun.sh ${BUILD_SOURCESDIRECTORY} ${BUILD_STAGINGDIRECTORY}
       displayName: 'build'
-    - task: PublishBuildArtifacts@1
+    - task: PublishPipelineArtifacts@1
       inputs:
-        pathToPublish: '$(Build.ArtifactStagingDirectory)'
+        targetPath: '$(Build.ArtifactStagingDirectory)'
         artifactName: drop
+        publishLocation: 'pipeline'

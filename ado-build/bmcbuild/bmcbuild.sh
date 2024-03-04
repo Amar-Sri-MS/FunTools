@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Get your host's UID and GID
 export HOST_UID=$(id -u)
 export HOST_GID=$(id -g)
