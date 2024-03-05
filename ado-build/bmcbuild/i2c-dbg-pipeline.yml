@@ -62,7 +62,8 @@ jobs:
         set
       displayName: 'Pre-build diags'
     - script: |
-        sudo yum -y install gcc-c++
+        sudo yum -y install make gcc-c++
+        sudo yum -y install glibc-devel kernel-headers binutils
       displayName: 'install pre-reqs'
     - script: |
         cd ${BUILD_SOURCESDIRECTORY}/i2c_dbg
