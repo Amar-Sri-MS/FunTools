@@ -5,7 +5,7 @@ trigger:
 
 
 jobs:
-  - job: build-fs-bmc-hf
+  - job: build_fs_bmc_hf
     timeoutInMinutes: 10
     pool: funsdk-arm64-mariner-pool-1es  
     steps:
@@ -40,7 +40,7 @@ jobs:
         artifactName: drop-fs-bmc-hf
         publishLocation: 'pipeline'
 
-  - job: build-rpi
+  - job: build_rpi
     timeoutInMinutes: 10
     pool: funsdk-arm64-mariner-pool-1es  
     steps:
@@ -71,7 +71,7 @@ jobs:
         artifactName: drop-rpi
         publishLocation: 'pipeline'        
 
-  - job: build-qemu
+  - job: build_qemu
     timeoutInMinutes: 10
     pool:
       vmImage: 'ubuntu-latest'  
