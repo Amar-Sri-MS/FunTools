@@ -60,6 +60,7 @@ CREATE TABLE IF NOT EXISTS debug_certs (
  modulus            BYTEA NOT NULL CHECK (OCTET_LENGTH(modulus)=516),
  rsa_signature	    BYTEA NOT NULL CHECK (OCTET_LENGTH(rsa_signature)=516),
  pub_key_pem        VARCHAR NOT NULL,
+ requester          VARCHAR NOT NULL,
  timestamp          TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
 
 
@@ -93,6 +94,7 @@ SELECT 	d.chip_id as chip_id,
 	d.modulus AS modulus,
 	d.rsa_signature AS rsa_signature,
 	d.pub_key_pem as pub_key_pem,
+	d.requester as requester,
 	d.timestamp as timestamp
 FROM debug_certs d, fungible_dpus f
 WHERE d.chip_id = f.chip_id;

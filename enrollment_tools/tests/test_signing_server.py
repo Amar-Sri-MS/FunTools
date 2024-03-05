@@ -198,8 +198,8 @@ def test_get_debugging_cert(server, client_certificate,
 
     errs = 0
 
-    # test serial nr: all zeroes except group = 0x0001
-    hex_serial_nr = b"00" * 8 + b"00" * 6 + b"0001" + b"00" * 8
+    # test serial nr: all zeroes
+    hex_serial_nr = b"00" * 8 + b"00" * 6 + b"0000" + b"00" * 8
 
     debugging_cert = get_debugging_cert(server, client_certificate,
                                         public_key_file, tls_verify,
@@ -226,9 +226,9 @@ def test_get_debugging_cert(server, client_certificate,
     signature_len = int.from_bytes(signature_fld[0:4], byteorder='little')
     signature = signature_fld[4:4+signature_len]
 
-    # get fpk2, group 1
+    # get fpk2, group 0
     fpk2_1_pem = get_key(server, tls_verify, 'fpk2',
-                     group=1, oformat='public_key')
+                     group=0, oformat='public_key')
 
     fpk2_1_pub = serialization.load_pem_public_key(fpk2_1_pem)
     try:
