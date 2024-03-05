@@ -62,6 +62,9 @@ jobs:
         set
       displayName: 'Pre-build diags'
     - script: |
+        sudo yum -y install gcc-c++
+      displayName: 'install pre-reqs'
+    - script: |
         cd ${BUILD_SOURCESDIRECTORY}/i2c_dbg
         make MACHINE=rpi 
       displayName: 'build'
