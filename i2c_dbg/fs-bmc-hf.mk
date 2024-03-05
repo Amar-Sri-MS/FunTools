@@ -1,5 +1,5 @@
 #
-# FS1600.mk
+# ds400 BMC
 #
 # Copyright (c) 2022. Fungible,inc.
 # All Rights Reserved.
@@ -15,5 +15,5 @@ CROSS_COMPILE:=arm-linux-gnueabihf-
 endif
 
 CPPFLAGS:= -DMAX_GLIBC_MINOR=31
-LDLIBS:= -li2c
+LDLIBS := 
 OBJECTS+=$(BUILD_DIR)/linux_i2c_intf.o
