@@ -10,7 +10,7 @@ jobs:
     pool: funsdk-arm64-mariner-pool-1es  
     steps:
     - script: |
-        echo i2c_dbg bld
+        echo i2c_dbg bld fs_bmc_hf
         echo pwd
         pwd
         echo ls
