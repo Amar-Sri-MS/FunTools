@@ -16,4 +16,5 @@ for p in build/* ; do
     i=`basename $p`
     mkdir -p ~/artifacts/$i
     cp build/$i/i2c_dbg.so ~/artifacts/$i
+    cp bmc_sbp_chal.py ~/artifacts/$i
 done
