@@ -222,13 +222,15 @@ static byte_vector i2c_dbg_chal_cmd_header_read(int chip_instance)
 	return i2c_dbg_chal_read(chip_instance, CHAL_HEADER_SIZE);
 }
 
+#define MIN_REPLAY_DELAY 1000
+
 byte_vector i2c_dbg_chal_cmd(uint32_t command, int chip_instance,
 			     const void *data, int data_len,
 			     int reply_delay_usec)
 {
 
-	if (reply_delay_usec < 10) {
-		reply_delay_usec = 10;
+	if (reply_delay_usec < MIN_REPLAY_DELAY) {
+		reply_delay_usec = MIN_REPLAY_DELAY;
 	}
 
 	/* Flush */
