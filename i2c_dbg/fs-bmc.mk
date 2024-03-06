@@ -16,3 +16,4 @@ endif
 
 CPPFLAGS:= -DMAX_GLIBC_MINOR=31
 LDLIBS:= -li2c
+ARTIFACT_FILES += libi2c.so
