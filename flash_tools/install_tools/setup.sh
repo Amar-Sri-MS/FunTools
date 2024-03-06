@@ -222,24 +222,9 @@ else
 			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
 		fi
 
-		# Saved partition is not yet used for emmc images, so use old-style method
-		# of erasing part of active image
-
-		# a small hack until proper downgrade is supported; as we're only going to update
-		# the inactive partition of funvisor data, erase enough of active funos image to make
-		# it unbootable from uboot's perspective to force booing into (current) inactive.
-		dd if=/dev/zero of=emmc_wipe.bin bs=1024 count=1024
-		RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
-
-		./run_fwupgrade.py ${FW_UPGRADE_ARGS} --upgrade-file mmc1=emmc_wipe.bin --active
-		RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
-
 		if [ -n "$host_sku" ]; then
 			log_msg "Downgrading eepr \"$host_sku\""
 			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u eepr --version latest --force --downgrade --select-by-image-type "$host_sku"
-			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
-
-			./run_fwupgrade.py ${FW_UPGRADE_ARGS} -u eepr --version latest --force --downgrade --active --select-by-image-type "$host_sku"
 			RC=$?; [ $EXIT_STATUS -eq 0 ] && [ $RC -ne 0 ] && EXIT_STATUS=$RC # only set EXIT_STATUS to error on first error
 
 			log_msg "Downgrading bcfg \"$host_sku\""
