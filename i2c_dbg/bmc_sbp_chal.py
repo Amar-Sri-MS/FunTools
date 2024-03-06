@@ -1585,7 +1585,8 @@ def do_full_rewrite(nor_image, src_image, override_files, nor_dir):
 
         # erase the sectors at both addresses -- use set in case addresses are the same
         for addr in set(src_dir[img_type]):
-            nor_image.erase_at_addr_for_size(addr, new_image_size)
+            nor_image.erase_at_addr_for_size(addr,
+                                             new_image_size + IMG_HEADER_SIZE)
         # write the image at trgt_addr on NOR
         nor_image.write_flash(src_info['addr'], img)
 
