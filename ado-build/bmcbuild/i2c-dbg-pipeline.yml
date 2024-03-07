@@ -67,7 +67,7 @@ jobs:
       displayName: 'install pre-reqs'
     - script: |
         cd ${BUILD_SOURCESDIRECTORY}/i2c_dbg
-        make MACHINE=rpi 
+        make MACHINE=rpi ARTIFACTS_DIR=${BUILD_STAGINGDIRECTORY}/rpi artifact 
       displayName: 'build'
     - task: PublishPipelineArtifact@1
       inputs:
@@ -99,7 +99,7 @@ jobs:
       displayName: 'Pre-build diags'
     - script: |
         cd ${BUILD_SOURCESDIRECTORY}/i2c_dbg
-        make MACHINE=qemu 
+        make MACHINE=qemu ARTIFACTS_DIR=${BUILD_STAGINGDIRECTORY}/qemu artifact 
       displayName: 'build'
     - task: PublishPipelineArtifact@1
       inputs:
