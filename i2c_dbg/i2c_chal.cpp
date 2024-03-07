@@ -228,11 +228,11 @@ byte_vector i2c_dbg_chal_cmd(uint32_t command, int chip_instance,
 			     const void *data, int data_len,
 			     int reply_delay_usec)
 {
-
+#ifndef USE_POSIX_SOCKET
 	if (reply_delay_usec < MIN_REPLAY_DELAY) {
 		reply_delay_usec = MIN_REPLAY_DELAY;
 	}
-
+#endif
 	/* Flush */
 	i2c_dbg_chal_fifo_flush(chip_instance);
 
