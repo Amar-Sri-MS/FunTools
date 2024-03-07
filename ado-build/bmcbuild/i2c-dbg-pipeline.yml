@@ -1,16 +1,16 @@
-name: i2c_dbg BMC build
+name: i2c_dbg multi build
 
 trigger:
 - master
 
 
 jobs:
-  - job: build
+  - job: build_fs_bmc_hf
     timeoutInMinutes: 10
     pool: funsdk-arm64-mariner-pool-1es  
     steps:
     - script: |
-        echo i2c_dbg bld
+        echo i2c_dbg bld fs_bmc_hf
         echo pwd
         pwd
         echo ls
@@ -34,8 +34,75 @@ jobs:
         cd ${BUILD_SOURCESDIRECTORY}/ado-build/bmcbuild
         ./bmcrun.sh ${BUILD_SOURCESDIRECTORY} ${BUILD_STAGINGDIRECTORY}
       displayName: 'build'
-    - task: PublishPipelineArtifacts@1
+    - task: PublishPipelineArtifact@1
       inputs:
         targetPath: '$(Build.ArtifactStagingDirectory)'
-        artifactName: drop
+        artifactName: drop-fs-bmc-hf
+        publishLocation: 'pipeline'
+
+  - job: build_rpi
+    timeoutInMinutes: 10
+    pool: funsdk-arm64-mariner-pool-1es  
+    steps:
+    - script: |
+        echo i2c_dbg bld
+        echo pwd
+        pwd
+        echo ls
+        ls
+        echo uname -a
+        uname -a
+        echo lsb_release
+        lsb_release -a
+        echo yum
+        yum -h
+        echu df
+        df -h
+        echo set
+        set
+      displayName: 'Pre-build diags'
+    - script: |
+        sudo yum -y install make gcc-c++
+        sudo yum -y install glibc-devel kernel-headers binutils
+      displayName: 'install pre-reqs'
+    - script: |
+        cd ${BUILD_SOURCESDIRECTORY}/i2c_dbg
+        make MACHINE=rpi 
+      displayName: 'build'
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: '$(Build.ArtifactStagingDirectory)'
+        artifactName: drop-rpi
+        publishLocation: 'pipeline'        
+
+  - job: build_qemu
+    timeoutInMinutes: 10
+    pool:
+      vmImage: 'ubuntu-latest'  
+    steps:
+    - script: |
+        echo i2c_dbg bld
+        echo pwd
+        pwd
+        echo ls
+        ls
+        echo uname -a
+        uname -a
+        echo lsb_release
+        lsb_release -a
+        echo yum
+        yum -h
+        echu df
+        df -h
+        echo set
+        set
+      displayName: 'Pre-build diags'
+    - script: |
+        cd ${BUILD_SOURCESDIRECTORY}/i2c_dbg
+        make MACHINE=qemu 
+      displayName: 'build'
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: '$(Build.ArtifactStagingDirectory)'
+        artifactName: drop-qemu
         publishLocation: 'pipeline'
