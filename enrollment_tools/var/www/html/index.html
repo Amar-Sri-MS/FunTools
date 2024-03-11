@@ -3,21 +3,44 @@
 <html lang="en">
   <head>
     <style>
-      h1 {text-align:center;}
-      h2 {text-align:center;}
+      h1 {text-align:center; font-size: 18pt}
+      h2 {text-align:center; font-size: 16pt}
       .center {
           display: block;
           margin-left: auto;
           margin-right: auto;
+      }
+      table, th, td {
+      padding: 4px;
+      border: 1px solid black;
+      text-align: left;
+      border-collapse: collapse;
+      }
+      th {
+	  background-color: aqua;
+      }
+      .mono {
+	  font-family: "Lucida Console", "Menlo", "Monaco", "Courier", monospace;
+	  font-size: 10pt
+      }
+      .summary {
+      }
+      .inactive {
+	  border: 1px solid black;
+	  padding: 10px;
+	  background: aqua;
       }
     </style>
     <title>DPU Registration</title>
     <link rel="shortcut icon" href="./images/favicons.png">
   </head>
   <body>
+	<script>
+
+	</script>
     <img src="./images/dpu.png" class="center" alt="DPU logo" height="150">
     <h1>DPU Registration Server</h1>
-    <form action="/cgi-bin/enrollment_server.cgi" method="get">
+    <form id="enroll_cert_forms" action="/cgi-bin/enrollment_server.cgi" method="get">
       <div style="text-align:center;">
 	<div style="display: inline-flex; border: 1px solid black; padding: 10px;">
 	  <div style="display: inline-block; text-align: left;">
@@ -75,5 +98,68 @@
 	</div>
       </div>
     </form>
+    <script>
+
+
+      function displayOneCert(cert, display_flds) {
+	  var rowHTML = "<tr>"
+	  var full_sn = cert["serial_info"].substring(2) +
+	      cert["serial_nr"].substring(2)
+	  var start_a = "<a href=/cgi-bin/enrollment_server.cgi?cmd=cert&sn=" +
+	      full_sn + ">"
+	  for (var key in cert) {
+	      fld_val = cert[key]
+	      if (display_flds.includes(key)) {
+		  if (typeof fld_val == "string" && fld_val.startsWith("\\x")) {
+		      fld_val = fld_val.substring(2)
+		      rowHTML += "<td class=\"mono\">" + start_a + fld_val + "</a></td>"
+		  } else {
+		      rowHTML += "<td>" + start_a + fld_val + "</a></td>"
+		  }
+	      }
+	  }
+	  rowHTML += "</tr>"
+	  return rowHTML
+      }
+
+      function displayCerts(certs, display_flds) {
+	  var tableHTML = "<table class=\"summary\"><tr>"
+	  first = certs[0]
+	  for (var key in first) {
+	      if (display_flds.includes(key)) {
+		  tableHTML += "<th>" + key + "</th>"
+	      }
+	  }
+	  tableHTML += "</tr>"
+	  for (var cert of certs) {
+	      tableHTML += displayOneCert(cert, display_flds)
+	  }
+	  tableHTML += "</table>"
+	  document.body.innerHTML = tableHTML
+      }
+
+      async function retrieveCerts(url, display_flds) {
+	  const response = await fetch(url)
+	  const certs = await response.json()
+	  console.log(certs)
+	  displayCerts(certs, display_flds)
+      }
+
+      function getData(form) {
+	  var formData = new FormData(form);
+	  var url = "https://f1reg.fungible.com/cgi-bin/enrollment_server.cgi" +
+	      "?cmd=summary&fld=serial_info&fld=serial_nr";
+	  for (var fld of formData.values()) {
+    	      url += "&fld="+fld;
+  	  }
+	  retrieveCerts(url, Array.from(formData.values()))
+      }
+
+      document.getElementById("enroll_cert_forms").addEventListener("submit", function (e) {
+	  e.preventDefault()
+  	  getData(e.target)
+      })
+
+    </script>
   </body>
 </html>
