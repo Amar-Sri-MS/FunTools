@@ -229,6 +229,7 @@ The body of the header.
 #ifndef __{{output_base|as_macro}}_H__
 #define __{{output_base|as_macro}}_H__
 
+#ifdef __linux__
 #ifndef __KERNEL__
 #include <endian.h>
 #include <linux/types.h>
@@ -245,10 +246,11 @@ The body of the header.
 #define cpu_to_le64(x)		htole64(x)
 #define cpu_to_le32(x)		htole32(x)
 #define cpu_to_le16(x)		htole16(x)
-#endif
+#endif /* __KERNEL__ */
 {% if generate_json %}
 #include <stdio.h>
 {% endif %}
+#endif /* __linux__ */
 
 // Header created by generator.py
 // Do not change this file;
@@ -307,8 +309,10 @@ extern "C" {
 {% endif %}
 
 {% if not generate_init_macros %}
+#ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
+#endif
 
 {% endif %}
 {% for decl in declarations %}
@@ -327,7 +331,9 @@ extern "C" {
 
 {% endfor %}
 {% if not generate_init_macros %}
+#ifdef __GNUC__
 #pragma GCC diagnostic pop
+#endif
 
 #ifdef __cplusplus
 };
