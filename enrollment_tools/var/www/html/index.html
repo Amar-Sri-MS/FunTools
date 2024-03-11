@@ -144,12 +144,18 @@
 
       function getData(form) {
 	  var formData = new FormData(form);
-	  var url = "https://f1reg.fungible.com/cgi-bin/enrollment_server.cgi" +
-	      "?cmd=summary&fld=serial_info&fld=serial_nr";
+	  var url = "https://f1reg.fungible.com/cgi-bin/enrollment_server.cgi?cmd=summary";
 	  for (var fld of formData.values()) {
     	      url += "&fld="+fld;
   	  }
-	  retrieveCerts(url, Array.from(formData.values()))
+	  fields = Array.from(formData.values())
+	  if (!fields.includes("serial_info")) {
+	      url += "&fld=serial_info"
+	  }
+	  if (!fields.includes("serial_nr")) {
+	      url += "&fld=serial_nr"
+	  }
+	  retrieveCerts(url, fields)
       }
 
       document.getElementById("enroll_cert_forms").addEventListener("submit", function (e) {
