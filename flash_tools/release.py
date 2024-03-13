@@ -145,6 +145,33 @@ CHIP_WITH_FUNVISOR = [ 'f1', 'f1d1', 's1' ]
 CHIP_WITH_ACU = [ 's2' ]
 
 
+def bundle_filename(chip, package_type, bundle_type, release, *, sku=None, release_num=None, build_num=None, flags=None, fileext=None):
+    # filename template format
+    # dpu-PACKAGE_TYPE-CHIP[_SKU]-BUNDLE_TYPE-RELEASE_NUM-BUILD_NUM[-FLAGS][-DEBUG].[BUNDLE_FORMAT]
+    # package_type = core, storage, eeprom, other ...
+    # chip = f1, f1d1, s1, s2 ...
+    # bundle_type = setup|mfgfull|mfgnor
+    # release_num = 1.0, 2.0 etc
+    # build_num = 12345
+    # flags = fv, nofv, dev, optionally more separated by underscores
+    # release = "-debug" or none
+    # fileext = sh, tgz, gz
+    template = "dpu-{package_type}-{chip}{sku}-{bundle_type}-{release_num}-{build_num}{flags}{release}{fileext}"
+
+    normalize = lambda v:v.replace('-','_') if isinstance(v, str) else v
+
+    return template.format(
+        chip=chip,
+        package_type=package_type,
+        sku='_{}'.format(normalize(sku)) if sku else '',
+        bundle_type=normalize(bundle_type),
+        release_num=normalize(release_num) if release_num else 'unknown',
+        build_num=normalize(build_num) if build_num else 'unknown',
+        flags='-' + '_'.join(normalize(flags)) if flags else '',
+        release='-debug' if not release else '',
+        fileext='.{}'.format(fileext) if fileext else '',
+    )
+
 def _rootfs(f, rootfs):
     return '{}.{}'.format(rootfs, f)
 
@@ -193,8 +220,9 @@ def main():
     parser.add_argument('--default-config-files', dest='default_cfg', action='store_true')
     parser.add_argument('--dev-image', action='store_true', help='Create a development image installer')
     parser.add_argument('--extra-funos-suffix', action='append', help='Extra funos elf suffix to use')
-    parser.add_argument('--funos-type', help='FunOS build type (storage, core etc.)')
+    parser.add_argument('--funos-type', default='core', help='FunOS build type (storage, core etc.)')
     parser.add_argument('--with-csrreplay', action='store_true', help='Include csr-replay blob')
+    parser.add_argument('--release-version', help='Set release version for the package')
 
     args = parser.parse_args()
 
@@ -598,7 +626,7 @@ def main():
                 return not _want_funvisor(args)
             return False
 
-        def bundle_gen(rootfs, bundle_target, suffix):
+        def bundle_gen(rootfs, bundle_target, bundle_flags):
             os.chdir(args.destdir)
             shutil.rmtree('bundle_installer', ignore_errors=True)
             os.mkdir('bundle_installer')
@@ -649,12 +677,21 @@ def main():
                     'WITH_FUNVISOR={}\n'.format(1 if args.funvisor else 0)
                 ])
 
-            bundle_name = 'development_image' if args.dev_image else bundle_target
+            if args.dev_image:
+                bundle_flags.append('dev')
+                bundle_name = 'development_image'
+            else:
+                bundle_name = bundle_target
+
+            archive_name = bundle_filename(args.chip, args.funos_type,
+                'setup', args.release, release_num=args.release_version,
+                build_num=args.force_version, flags=bundle_flags, fileext='sh')
+
             makeself = [
                 os_utils.path_fixup('makeself'),
                 '--follow',
                 'bundle_installer',
-                f'setup_bundle_{bundle_funos_type}{bundle_name}{suffix}.sh',
+                archive_name,
                 f'{"CCLinux/" if args.funvisor else ""}FunOS {args.funos_type} {bundle_name} installer',
                 './setup.sh'
             ]
@@ -664,14 +701,14 @@ def main():
 
         fv = args.funvisor
         for rootfs, bundle_target in rootfs_files:
-            # List of tuples (use_funvisor, suffix) to generate bundles
-            # For DPUs with funvisor support add an extra '_nofv' suffix to bundles
-            # and preserve default name for funvisor bundles.
-            fv_opts = [(False, '_nofv'), (True, '')] if args.chip in CHIP_WITH_FUNVISOR \
-                    else [(False, '')]
-            for fv_opt, suffix in fv_opts:
+            # List of tuples (use_funvisor, bundle_flags) to generate bundles
+            # For DPUs with funvisor support add an extra 'nofv'/'fv' bundle flag
+            # Keep flag-free for no-funvisor chips
+            fv_opts = [(False, ['nofv']), (True, ['fv'])] if args.chip in CHIP_WITH_FUNVISOR \
+                    else [(False, [])]
+            for fv_opt, bundle_flags in fv_opts:
                 args.funvisor = fv_opt
-                bundle_gen(rootfs, bundle_target, suffix)
+                bundle_gen(rootfs, bundle_target, bundle_flags)
         args.funvisor = fv
 
 
@@ -704,11 +741,15 @@ def main():
                         'HW_BASE="{}"\n'.format(value['hw_base'].upper())
                     ])
 
+                archive_name = bundle_filename(args.chip, 'eepr',
+                    'setup', True, sku=skuid, release_num=args.release_version,
+                    build_num=args.force_version, flags=None, fileext='sh')
+
                 makeself = [
                     os_utils.path_fixup('makeself'),
                     '--follow',
                     'eepr_installer',
-                    'setup_bundle_eepr_{}_{}.sh'.format(args.chip.lower(), skuid),
+                    archive_name,
                     'DPU EEPR {} installer'.format(skuid),
                     './setup_eepr.sh'
                 ]
