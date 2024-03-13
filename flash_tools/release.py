@@ -175,23 +175,6 @@ def bundle_filename(chip, package_type, bundle_type, release, *, sku=None, relea
 def _rootfs(f, rootfs):
     return '{}.{}'.format(rootfs, f)
 
-def _mfgfilename(f, name, signed=False):
-    if f is None:
-        return name
-    if signed:
-        return '{}.{}'.format(f, name)
-    else:
-        return '{}.{}.{}'.format(f, name, 'unsigned')
-
-def _mfg(f, signed=False):
-    return _mfgfilename(f, 'mfginstall', signed)
-
-def _mfgnofv(f, signed=False):
-    return _mfgfilename(f, 'nofv.mfginstall', signed)
-
-def _nor(f, signed=False):
-    return _mfgfilename(f, 'norinstall', signed)
-
 def _want_funvisor(args):
     return args.funvisor and not args.dev_image
 
@@ -765,16 +748,20 @@ def main():
         else:
             rootfs = ''
 
-        def _gen_xdata_funos(outname_modifier, mfgxdata, target=None):
+        def _gen_xdata_funos(mfgxdata, bundle_type, bundle_flags, *, sku=None, target=None):
             mfgxdata_lists = {
                 'fw_upgrade_all': 'all',
                 'fw_upgrade_nor': 'nor',
                 'fw_upgrade_mmc': 'mmc'
             }
 
-            outname_suffix = outname_modifier(None)
-            print("Generating MFG image type {}".format(outname_suffix))
-            shutil.copy2(funos_appname, outname_modifier(funos_appname))
+            bundle_name = bundle_filename(args.chip, args.funos_type,
+                bundle_type, args.release, sku=sku, release_num=args.release_version,
+                build_num=args.force_version, flags=bundle_flags)
+            funos_mfgname = bundle_name + '.unsigned'
+
+            print("Generating MFG image {}".format(bundle_name))
+            shutil.copy2(funos_appname, funos_mfgname)
 
             # Prepare a list of dpcsh scripts to include
             mfgxdata_dpcsh = {}
@@ -790,7 +777,7 @@ def main():
                         if listtarget == imgtarget or listtarget == 'all':
                             f.write("{}\n".format(key))
 
-            with open('fw_upgrade_xdata_{}'.format(outname_suffix), 'w') as f:
+            with open('fw_upgrade_xdata_{}'.format(bundle_name), 'w') as f:
                 # generate complete xdata list
                 for key, (imgtarget, imgfile) in mfgxdata.items():
                     if not target or imgtarget == target:
@@ -803,13 +790,13 @@ def main():
                     f.write("{} {}\n".format(file, path))
 
             cmd = [ localdir('xdata.py'),
-                    outname_modifier(funos_appname),
+                    funos_mfgname,
                     'add-file-lists',
-                    'fw_upgrade_xdata_{}'.format(outname_suffix) ]
+                    'fw_upgrade_xdata_{}'.format(bundle_name) ]
             subprocess.call(cmd)
 
             # stash xdata lists for debugging
-            stash_dir = 'xdata_{}'.format(outname_suffix)
+            stash_dir = 'xdata_{}'.format(bundle_name)
             shutil.rmtree(stash_dir, ignore_errors=True)
             os.mkdir(stash_dir)
             for fname in mfgxdata_lists:
@@ -818,9 +805,9 @@ def main():
             # take a copy of all funos default settings for signing
             # and only override filenames used
             mfg_app_config = config['signed_images'].get('funos.signed.bin').copy()
-            mfg_app_config['source'] = outname_modifier(funos_appname)
+            mfg_app_config['source'] = funos_mfgname
 
-            signed_filename = outname_modifier(funos_appname, signed=True)
+            signed_filename = bundle_name
             config['signed_mfg_images'] = {
                 signed_filename : mfg_app_config
             }
@@ -869,9 +856,12 @@ def main():
 
         # standard mfginstall images
         if args.chip in CHIP_WITH_FUNVISOR:
-            _gen_xdata_funos(_mfg, mfgxdata_with_fv)
-        _gen_xdata_funos(_mfgnofv, mfgxdata_without_fv)
-        _gen_xdata_funos(_nor, mfgxdata_without_fv, 'nor')
+            _gen_xdata_funos(mfgxdata_with_fv, 'mfgfull', ['fv'])
+            _gen_xdata_funos(mfgxdata_without_fv, 'mfgfull', ['nofv'])
+        else:
+            _gen_xdata_funos(mfgxdata_without_fv, 'mfgfull', None)
+
+        _gen_xdata_funos(mfgxdata_without_fv, 'mfgnor', None, target='nor')
 
         # special per-sku mfginstall images
         for _target,_entry in SKU_SPECIFIC_MFGINSTALL.items():
@@ -884,13 +874,10 @@ def main():
             _sku_mfgxdata_with_fv.update(mfgxdata_fv)
 
             if args.chip in CHIP_WITH_FUNVISOR:
-                suffix = "{}.{}".format(_target[1], _mfg(None))
-                namegen = lambda f,signed=False: _mfgfilename(f, suffix, signed)
-                _gen_xdata_funos(namegen, _sku_mfgxdata_with_fv)
-
-            suffix = "{}.{}".format(_target[1], _mfgnofv(None))
-            namegen = lambda f,signed=False: _mfgfilename(f, suffix, signed)
-            _gen_xdata_funos(namegen, _sku_mfgxdata_without_fv)
+                _gen_xdata_funos(_sku_mfgxdata_with_fv, 'mfgfull', ['fv'], sku=_target[1])
+                _gen_xdata_funos(_sku_mfgxdata_without_fv, 'mfgfull', ['nofv'], sku=_target[1])
+            else:
+                _gen_xdata_funos(_sku_mfgxdata_without_fv, 'mfgfull', sku=_target[1])
 
         os.chdir(curdir)
 
@@ -898,9 +885,7 @@ def main():
         os.chdir(args.destdir)
         tarfiles = []
 
-        mod = _mfg if args.chip in CHIP_WITH_FUNVISOR else _mfgnofv
         tarfiles.extend(glob.glob('qspi_image_hw.bin.*'))
-        tarfiles.append(mod(funos_appname, signed=True))
 
         if os.path.exists('.version'):
             tarfiles.append('.version')
