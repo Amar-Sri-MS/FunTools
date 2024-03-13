@@ -4,6 +4,8 @@
 
 #define BIG_CONTAINER_SIZE 1000000
 #define BINARY_ARRAY_SIZE 10000
+#define BLOB_SIZE 100000
+#define BLOB_SERIALIZATION_SIZE 100021
 
 static void binary_array_test(void) {
     // random binary array
@@ -51,6 +53,42 @@ static void binary_array_test(void) {
     }
 }
 
+static void blob_test(void) {
+    // random binary array
+    uint8_t binary_array[BLOB_SIZE];
+
+    for (int i = 0; i < sizeof(binary_array); i++) {
+        binary_array[i] = rand() % 256;
+    }
+
+    void *json_memory = malloc(BIG_CONTAINER_SIZE);
+    struct fun_json_container *container = fun_json_create_container(json_memory, BIG_CONTAINER_SIZE);
+    struct fun_json *json = fun_json_create_blob(container, binary_array, sizeof(binary_array));
+    if (json == NULL) {
+        printf("fun_json_create_blob failed\n");
+        exit(1);
+    }
+
+    uint8_t binary_array_out[sizeof(binary_array)];
+    if (!fun_json_blob_fill_memory(json, binary_array_out, sizeof(binary_array_out))) {
+        printf("fun_json_fill_blob failed\n");
+        exit(1);
+    }
+
+    for (int i = 0; i < sizeof(binary_array); i++) {
+        if (binary_array[i] != binary_array_out[i]) {
+            printf("binary array mismatch\n");
+            exit(1);
+        }
+    }
+
+    if (fun_json_serialization_size(json) > BLOB_SERIALIZATION_SIZE) {
+        printf("size is incorrect %zu > %d\n", fun_json_serialization_size(json), BLOB_SERIALIZATION_SIZE);
+        exit(1);
+    }
+}
+
 int main(int argc, char *argv[]) {
     binary_array_test();
+    blob_test();
 }
