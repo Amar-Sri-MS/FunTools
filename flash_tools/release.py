@@ -832,6 +832,8 @@ def main():
                 with gzip.open(signed_filename + '.gz', 'wb') as f_out:
                     shutil.copyfileobj(f_in, f_out)
 
+            os.remove(funos_mfgname)
+
 
         mfgxdata = {
             # fourc : (target, filename)
