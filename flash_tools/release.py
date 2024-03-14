@@ -227,10 +227,16 @@ def main():
     rootfs_files = ALL_ROOTFS_FILES.get(args.chip, [])
 
     def wanted(action):
+        nodev_actions = ['eeprbundle', 'mfginstall', 'mfgtarball']
         if args.action == 'all':
+            if args.dev_image:
+                return action not in nodev_actions
             return True
         elif args.action == 'release':
-            return action in ['sign', 'image', 'tarball', 'bundle', 'eeprbundle', 'mfginstall', 'mfgtarball']
+            rel_actions = ['sign', 'image', 'tarball', 'bundle']
+            if not args.dev_image:
+                rel_actions.extend(nodev_actions)
+            return action in rel_actions
         elif args.action == 'sdk-release':
             return action in ['gen-funos-loader', 'sign', 'image', 'bundle']
         else:
@@ -693,8 +699,8 @@ def main():
         for rootfs, bundle_target in rootfs_files:
             # List of tuples (use_funvisor, bundle_flags) to generate bundles
             # For DPUs with funvisor support add an extra 'nofv'/'fv' bundle flag
-            # Keep flag-free for no-funvisor chips
-            fv_opts = [(False, ['nofv']), (True, ['fv'])] if args.chip in CHIP_WITH_FUNVISOR \
+            # Keep flag-free for no-funvisor chips or dev-image builds that only contain funos
+            fv_opts = [(False, ['nofv']), (True, ['fv'])] if (args.chip in CHIP_WITH_FUNVISOR and not args.dev_image) \
                     else [(False, [])]
             for fv_opt, bundle_flags in fv_opts:
                 args.funvisor = fv_opt
