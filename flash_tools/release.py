@@ -213,7 +213,6 @@ def main():
         parser.error("One of '--default-config-files' or a list of config files is required")
 
     funos_suffixes = [f'-{args.funos_type}' if args.funos_type else '', args.chip]
-    bundle_funos_type = f'{args.funos_type}-' if args.funos_type else ''
 
     if args.release:
         funos_suffixes.append('release')
@@ -593,7 +592,15 @@ def main():
             ])
         tarfiles.append('release.txt')
 
-        with tarfile.open(f'{bundle_funos_type}{args.chip}_sdk_signed_release.tgz', mode='w:gz') as tar:
+        bundle_flags = []
+        if args.dev_image:
+            bundle_flags.append('dev')
+
+        archive_name = bundle_filename(args.chip, args.funos_type,
+                'setup', args.release, release_num=args.release_version,
+                build_num=args.force_version, flags=bundle_flags, fileext='tgz')
+
+        with tarfile.open(archive_name, mode='w:gz') as tar:
             for f in tarfiles:
                 tar.add(f)
 
@@ -890,7 +897,11 @@ def main():
         if os.path.exists('.version'):
             tarfiles.append('.version')
 
-        with tarfile.open(f'{bundle_funos_type}{args.chip}_mfg_package.tgz', mode='w:gz') as tar:
+        archive_name = bundle_filename(args.chip, args.funos_type,
+                'mfgnorpack', args.release, release_num=args.release_version,
+                build_num=args.force_version, fileext='tgz')
+
+        with tarfile.open(archive_name, mode='w:gz') as tar:
             for f in tarfiles:
                 tar.add(f)
 
