@@ -150,7 +150,7 @@ def bundle_filename(chip, package_type, bundle_type, release, *, sku=None, relea
     # dpu-PACKAGE_TYPE-CHIP[_SKU]-BUNDLE_TYPE-RELEASE_NUM-BUILD_NUM[-FLAGS][-DEBUG].[BUNDLE_FORMAT]
     # package_type = core, storage, eeprom, other ...
     # chip = f1, f1d1, s1, s2 ...
-    # bundle_type = setup|mfgfull|mfgnor
+    # bundle_type = setup|mfg|mfgnor
     # release_num = 1.0, 2.0 etc
     # build_num = 12345
     # flags = fv, nofv, dev, optionally more separated by underscores
@@ -873,10 +873,10 @@ def main():
 
         # standard mfginstall images
         if args.chip in CHIP_WITH_FUNVISOR:
-            _gen_xdata_funos(mfgxdata_with_fv, 'mfgfull', ['fv'])
-            _gen_xdata_funos(mfgxdata_without_fv, 'mfgfull', ['nofv'])
+            _gen_xdata_funos(mfgxdata_with_fv, 'mfg', ['fv'])
+            _gen_xdata_funos(mfgxdata_without_fv, 'mfg', ['nofv'])
         else:
-            _gen_xdata_funos(mfgxdata_without_fv, 'mfgfull', None)
+            _gen_xdata_funos(mfgxdata_without_fv, 'mfg', None)
 
         _gen_xdata_funos(mfgxdata_without_fv, 'mfgnor', None, target='nor')
 
@@ -891,10 +891,10 @@ def main():
             _sku_mfgxdata_with_fv.update(mfgxdata_fv)
 
             if args.chip in CHIP_WITH_FUNVISOR:
-                _gen_xdata_funos(_sku_mfgxdata_with_fv, 'mfgfull', ['fv'], sku=_target[1])
-                _gen_xdata_funos(_sku_mfgxdata_without_fv, 'mfgfull', ['nofv'], sku=_target[1])
+                _gen_xdata_funos(_sku_mfgxdata_with_fv, 'mfg', ['fv'], sku=_target[1])
+                _gen_xdata_funos(_sku_mfgxdata_without_fv, 'mfg', ['nofv'], sku=_target[1])
             else:
-                _gen_xdata_funos(_sku_mfgxdata_without_fv, 'mfgfull', sku=_target[1])
+                _gen_xdata_funos(_sku_mfgxdata_without_fv, 'mfg', sku=_target[1])
 
         os.chdir(curdir)
 
