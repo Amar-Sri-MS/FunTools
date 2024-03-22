@@ -569,6 +569,13 @@ def main():
         if os.path.exists('.version'):
             tarfiles.append('.version')
 
+        with open('release.txt', "w") as cfg:
+            cfg.writelines([
+                'CHIP_NAME="{}"\n'.format(args.chip.upper()),
+                'DEV_IMAGE={}\n'.format(1 if args.dev_image else 0)
+            ])
+        tarfiles.append('release.txt')
+
         with tarfile.open(f'{bundle_funos_type}{args.chip}_sdk_signed_release.tgz', mode='w:gz') as tar:
             for f in tarfiles:
                 tar.add(f)
