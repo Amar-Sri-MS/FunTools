@@ -1,0 +1,9 @@
+{
+    "packages": [
+	"pciutils",
+	"usbutils",
+	"fio",
+	"kernel-tools"
+    ],
+    "_comment": "Extra packages for ACU."
+}
