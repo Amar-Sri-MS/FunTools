@@ -21,6 +21,7 @@ import flash_utils
 import qspi_blob_replace as br
 import os_utils
 import gzip
+from decimal import Decimal
 
 
 HOST_FIRMWARE_CONFIG_OVERRIDE="""
@@ -126,14 +127,10 @@ ALL_ROOTFS_FILES = {
     # bundle types
     "f1" : [ ('fs1600-rootfs-ro.squashfs', 'f1') ],
     "s1" : [ ('s1-rootfs-ro.squashfs', 's1') ],
-    "f1d1" : [ ('fs1600-rootfs-ro.squashfs', 'f1d1') ],
-    "s2" : [ (None, 's2')]
+    "f1d1" : [ ('fs1600-rootfs-ro.squashfs', 'f1d1') ]
 }
 
 CHIP_SPECIFIC_FILES = {
-     "f1" : { 'FunSDK/PXE_driver/fundxe/FungibleDxe.bin' }, # for FS1600-gen9 testing
-     "f1d1" : { 'FunSDK/PXE_driver/fundxe/FungibleDxe.bin' },
-     "s2" : { 'FunSDK/ATF/release/blcombined_s2.bin' },
 }
 
 
@@ -174,6 +171,10 @@ def _want_funvisor(args):
 def _want_acufw(args):
     return args.chip in CHIP_WITH_ACU
 
+def _int_from_any(string):
+    return int(Decimal(string))
+
+
 def main():
     parser = argparse.ArgumentParser()
     config = {}
@@ -185,7 +186,7 @@ def main():
         help='Action to be performed on the input files')
     parser.add_argument('--sdkdir', default=os.getcwd(), help='SDK root directory')
     parser.add_argument('--destdir', default='RELEASE', help='Destination directory for output')
-    parser.add_argument('--force-version', type=int, help='Override firmware versions')
+    parser.add_argument('--force-version', type=_int_from_any, help='Override firmware versions')
     parser.add_argument('--force-description', help='Override firmware description strings')
     parser.add_argument('--chip', choices=['f1', 's1', 'f1d1', 's2'], default='f1', help='Target chip')
     parser.add_argument('--debug-build', dest='release', action='store_false', help='Use debug application binary')
@@ -213,7 +214,7 @@ def main():
 
     args.sdkdir = os.path.abspath(args.sdkdir) # later processing fails if relative path is given
     funos_appname = "funos{}.stripped".format('-'.join(funos_suffixes))
-    rootfs_files = ALL_ROOTFS_FILES[args.chip]
+    rootfs_files = ALL_ROOTFS_FILES.get(args.chip, [])
 
     def wanted(action):
         if args.action == 'all':
@@ -333,17 +334,22 @@ def main():
                 "FunSDK/nvdimm_fw",
                 "feature_sets",
                 "FunSDK/config/pipeline",
-                "FunSDK/ATF/release"
+                "FunSDK/PXE_driver/fundxe"
                 ]
         sdkpaths = [os.path.join(args.sdkdir, path) for path in paths]
 
-        paths_chip_specific = [ "FunSDK/u-boot/{chip}",
+        paths_variable = [ "FunSDK/u-boot/{chip}",
                 "FunSDK/sbpfw/firmware/chip_{chip}_emu_0",
                 "FunSDK/sbpfw/pufrom/chip_{chip}_emu_0",
                 "feature_sets/boardcfg/{chip}",
+                "FunSDK/ATF/{atf_release_dir}"
                 ]
+        paths_variable_subs = {
+            'chip' : args.chip,
+            'atf_release_dir': 'release' if args.release else 'debug'
+        }
         sdkpaths.extend(
-            [os.path.join(args.sdkdir, path.format(chip=args.chip)) for path in paths_chip_specific])
+            [os.path.join(args.sdkdir, path.format(**paths_variable_subs)) for path in paths_variable])
 
         # temporary as gf.run() doesn't support configurable target location
         if not os.path.exists(args.destdir):
@@ -713,7 +719,10 @@ def main():
     if wanted('mfginstall'):
         os.chdir(args.destdir)
 
-        rootfs, _ = rootfs_files[0]
+        if rootfs_files:
+            rootfs, _ = rootfs_files[0]
+        else:
+            rootfs = ''
 
         def _gen_xdata_funos(outname_modifier, mfgxdata, target=None):
             mfgxdata_lists = {
