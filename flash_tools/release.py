@@ -21,6 +21,7 @@ import flash_utils
 import qspi_blob_replace as br
 import os_utils
 import gzip
+from decimal import Decimal
 
 
 HOST_FIRMWARE_CONFIG_OVERRIDE="""
@@ -170,6 +171,10 @@ def _want_funvisor(args):
 def _want_acufw(args):
     return args.chip in CHIP_WITH_ACU
 
+def _int_from_any(string):
+    return int(Decimal(string))
+
+
 def main():
     parser = argparse.ArgumentParser()
     config = {}
@@ -181,7 +186,7 @@ def main():
         help='Action to be performed on the input files')
     parser.add_argument('--sdkdir', default=os.getcwd(), help='SDK root directory')
     parser.add_argument('--destdir', default='RELEASE', help='Destination directory for output')
-    parser.add_argument('--force-version', type=int, help='Override firmware versions')
+    parser.add_argument('--force-version', type=_int_from_any, help='Override firmware versions')
     parser.add_argument('--force-description', help='Override firmware description strings')
     parser.add_argument('--chip', choices=['f1', 's1', 'f1d1', 's2'], default='f1', help='Target chip')
     parser.add_argument('--debug-build', dest='release', action='store_false', help='Use debug application binary')
