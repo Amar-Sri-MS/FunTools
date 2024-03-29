@@ -131,9 +131,6 @@ ALL_ROOTFS_FILES = {
 }
 
 CHIP_SPECIFIC_FILES = {
-     "f1" : { 'FunSDK/PXE_driver/fundxe/FungibleDxe.bin' }, # for FS1600-gen9 testing
-     "f1d1" : { 'FunSDK/PXE_driver/fundxe/FungibleDxe.bin' },
-     "s2" : { 'FunSDK/ATF/release/blcombined_s2.bin' },
 }
 
 
@@ -333,7 +330,8 @@ def main():
                 "FunSDK/nvdimm_fw",
                 "feature_sets",
                 "FunSDK/config/pipeline",
-                "FunSDK/ATF/release"
+                "FunSDK/ATF/release",
+                "FunSDK/PXE_driver/fundxe"
                 ]
         sdkpaths = [os.path.join(args.sdkdir, path) for path in paths]
 
