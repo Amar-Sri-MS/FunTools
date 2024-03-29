@@ -329,18 +329,22 @@ def main():
                 "FunSDK/nvdimm_fw",
                 "feature_sets",
                 "FunSDK/config/pipeline",
-                "FunSDK/ATF/release",
                 "FunSDK/PXE_driver/fundxe"
                 ]
         sdkpaths = [os.path.join(args.sdkdir, path) for path in paths]
 
-        paths_chip_specific = [ "FunSDK/u-boot/{chip}",
+        paths_variable = [ "FunSDK/u-boot/{chip}",
                 "FunSDK/sbpfw/firmware/chip_{chip}_emu_0",
                 "FunSDK/sbpfw/pufrom/chip_{chip}_emu_0",
                 "feature_sets/boardcfg/{chip}",
+                "FunSDK/ATF/{atf_release_dir}"
                 ]
+        paths_variable_subs = {
+            'chip' : args.chip,
+            'atf_release_dir': 'release' if args.release else 'debug'
+        }
         sdkpaths.extend(
-            [os.path.join(args.sdkdir, path.format(chip=args.chip)) for path in paths_chip_specific])
+            [os.path.join(args.sdkdir, path.format(**paths_variable_subs)) for path in paths_variable])
 
         # temporary as gf.run() doesn't support configurable target location
         if not os.path.exists(args.destdir):
