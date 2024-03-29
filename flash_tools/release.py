@@ -126,8 +126,7 @@ ALL_ROOTFS_FILES = {
     # bundle types
     "f1" : [ ('fs1600-rootfs-ro.squashfs', 'f1') ],
     "s1" : [ ('s1-rootfs-ro.squashfs', 's1') ],
-    "f1d1" : [ ('fs1600-rootfs-ro.squashfs', 'f1d1') ],
-    "s2" : [ (None, 's2')]
+    "f1d1" : [ ('fs1600-rootfs-ro.squashfs', 'f1d1') ]
 }
 
 CHIP_SPECIFIC_FILES = {
@@ -210,7 +209,7 @@ def main():
 
     args.sdkdir = os.path.abspath(args.sdkdir) # later processing fails if relative path is given
     funos_appname = "funos{}.stripped".format('-'.join(funos_suffixes))
-    rootfs_files = ALL_ROOTFS_FILES[args.chip]
+    rootfs_files = ALL_ROOTFS_FILES.get(args.chip, [])
 
     def wanted(action):
         if args.action == 'all':
@@ -711,7 +710,10 @@ def main():
     if wanted('mfginstall'):
         os.chdir(args.destdir)
 
-        rootfs, _ = rootfs_files[0]
+        if rootfs_files:
+            rootfs, _ = rootfs_files[0]
+        else:
+            rootfs = ''
 
         def _gen_xdata_funos(outname_modifier, mfgxdata, target=None):
             mfgxdata_lists = {
