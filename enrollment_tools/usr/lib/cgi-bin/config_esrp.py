@@ -79,6 +79,11 @@ def check_token(esrp_cfg_path):
     client_id_cfg_path = os.path.join(DPU_REG_PATH, client_id)
 
     client_id_cfg = read_json(client_id_cfg_path)
+    aad_token_path = esrp_cfg['AadTokenPath']
+
+    # if the add_token file does not exist, then it is "expired"
+    if not os.path.isfile(aad_token_path):
+        client_id_cfg['TokenExpiresOn'] = 0
 
     with UMaskContext(0o177) as _ :
         # if the token is expired, request a new one until it succeeds
