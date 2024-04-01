@@ -41,11 +41,6 @@ def read_json(file_path):
     with open(file_path, 'r', encoding='utf-8') as file_p:
         return json.load(file_p)
 
-def write_json(file_path, json_data):
-    ''' write json to file '''
-    with open(file_path, 'w', encoding='utf-8') as file_p:
-        return json.dump(json_data, file_p)
-
 def get_new_oauth(esrp_cfg, client_id_cfg):
     ''' send a request for a new access token '''
     post_url='https://login.windows.net/Microsoft.onMicrosoft.com/oauth2/token'
@@ -60,6 +55,20 @@ def get_new_oauth(esrp_cfg, client_id_cfg):
     response.raise_for_status()
     return json.loads(response.text)
 
+class UMaskContext():
+    ''' context manager class to set os.umask '''
+
+    def __init__(self, new_umask):
+        self.new_umask = new_umask
+        self.old_umask = None
+
+    def __enter__(self):
+        self.old_umask = os.umask(self.new_umask)
+
+    def __exit__(self, exc_type, exc_value, exc_tb):
+        os.umask(self.old_umask)
+        # propagate exception
+
 
 def check_token(esrp_cfg_path):
     ''' verify/get a valid token in esrpconfig['AddTokenPath'] '''
@@ -71,36 +80,37 @@ def check_token(esrp_cfg_path):
 
     client_id_cfg = read_json(client_id_cfg_path)
 
-    # if the token is expired, request a new one until it succeeds
-    while client_id_cfg['TokenExpiresOn'] < time.time():
-        try:
-            # write the token to the file and then the new expiration
-            with open(client_id_cfg_path,
-                      'w', encoding='utf-8') as file_cfg:
+    with UMaskContext(0o177) as _ :
+        # if the token is expired, request a new one until it succeeds
+        while client_id_cfg['TokenExpiresOn'] < time.time():
+            try:
+                # write the token to the file and then the new expiration
+                with open(client_id_cfg_path,
+                          'w', encoding='utf-8') as file_cfg:
 
-                # lock file to this process -- exception if already locked by
-                # another process - basically used as a critical section
-                flock(file_cfg, LOCK_EX | LOCK_NB)
+                    # lock file to this process -- exception if already locked by
+                    # another process - basically used as a critical section
+                    flock(file_cfg, LOCK_EX | LOCK_NB)
 
-                oauth_dict = get_new_oauth(esrp_cfg, client_id_cfg)
-                expires_on = int(oauth_dict['expires_on'],0)
-                client_id_cfg['TokenExpiresOn'] = expires_on - EXPIRATION_MARGIN_SECS
+                    oauth_dict = get_new_oauth(esrp_cfg, client_id_cfg)
+                    expires_on = int(oauth_dict['expires_on'],0)
+                    client_id_cfg['TokenExpiresOn'] = expires_on - EXPIRATION_MARGIN_SECS
 
-                # write the token
-                with open(esrp_cfg['AadTokenPath'],
-                          'w', encoding='utf-8') as file_token:
-                    file_token.write(oauth_dict['access_token'])
+                    # write the token
+                    with open(esrp_cfg['AadTokenPath'],
+                              'w', encoding='utf-8') as file_token:
+                        file_token.write(oauth_dict['access_token'])
 
-                # write the new expiration
-                json.dump(client_id_cfg, file_cfg)
-                # not really necessary, lock released when closing file
-                flock(file_cfg, LOCK_UN)
+                    # write the new expiration
+                    json.dump(client_id_cfg, file_cfg)
+                    # not really necessary, lock released when closing file
+                    flock(file_cfg, LOCK_UN)
 
-        except BlockingIOError:
-            pass
+            except BlockingIOError:
+                pass
 
-        except: #pylint: disable=bare-except
-            traceback.print_exc()
+            except: #pylint: disable=bare-except
+                traceback.print_exc()
 
-        # reread the json
-        client_id_cfg = read_json(client_id_cfg_path)
+            # reread the json
+            client_id_cfg = read_json(client_id_cfg_path)
