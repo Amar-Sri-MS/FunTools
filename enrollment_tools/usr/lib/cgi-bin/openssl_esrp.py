@@ -83,7 +83,7 @@ OPENSSL_PATH='openssl'
 ######################################################################
 
 
-def get_public_key(key):
+def get_public_key(key: object) -> object:
     ''' return the public key from a public key or a private key '''
     try:
         key = key.public_key()
@@ -91,16 +91,16 @@ def get_public_key(key):
         pass
     return key
 
-def key_n(key):
+def key_n(key: object) -> int:
     ''' return modulus of key (private or public) '''
     return get_public_key(key).public_numbers().n
 
 
-def int2bytes(n):
+def int2bytes(n: int) -> bytes:
     ''' convert interger to big endian bytes '''
     return n.to_bytes((n.bit_length()+7) //8, byteorder='big')
 
-def get_modulus_bytes(key):
+def get_modulus_bytes(key: object) -> bytes:
     ''' return bytes of key modulus '''
     return int2bytes(key_n(key))
 
@@ -109,7 +109,7 @@ def get_modulus_bytes(key):
 # Development keys: local PEM Files
 #
 
-def load_key_from_path(fname):
+def load_key_from_path(fname: str) -> object:
     ''' load key (private or public) from PEM file '''
     with open(fname, 'rb') as f_p:
         pem_data = f_p.read()
@@ -126,12 +126,12 @@ def load_key_from_path(fname):
     return None
 
 
-def key_has_modulus(key, modulus):
-    ''' True if key has the same modulus '''
+def key_has_modulus(key: object, modulus: int) -> bool:
+    ''' True if key has the same modulus (filter function) '''
     return modulus == key_n(key)
 
 
-def search_paths_for_modulus( paths, modulus):
+def search_paths_for_modulus( paths: list[str], modulus: int) -> object:
     ''' Search all paths for key with that modulus '''
     for curr_path in paths:
         key = load_key_from_path(curr_path)
@@ -139,14 +139,14 @@ def search_paths_for_modulus( paths, modulus):
             return key
     return None
 
-def get_key_with_label(key_label):
+def get_key_with_label(key_label: str) -> object:
     ''' load key from PEM file '''
     key_path = os.path.join(DEV_KEY_PATH, key_label) + ".pem"
     key = load_key_from_path(key_path)
     return key
 
 
-def get_key_with_modulus(modulus):
+def get_key_with_modulus(modulus: bytes) -> object:
     ''' get key with modulus from PEM file collections '''
     # find key with that modulus
     # modulus to int
@@ -159,26 +159,30 @@ def get_key_with_modulus(modulus):
 
     return key
 
-def get_modulus_bytes_of_key(key_label):
+def get_modulus_bytes_of_key(key_label: str) -> bytes:
     ''' get modulus bytes from key '''
     key = get_key_with_label(key_label)
     return get_modulus_bytes(key)
 
 
-def sign_hash(key, digest_name, digest):
+def sign_hash(key: object, digest_name: str, digest: bytes) -> bytes:
     ''' sign digest with key '''
     hash_algo = HASH_ALGO_NAMES[digest_name]()
     return key.sign(digest,
                     padding.PKCS1v15(),
                     utils.Prehashed(hash_algo))
 
-def sign_hash_with_label(key_label, digest_name, digest):
+def sign_hash_with_label(key_label: str,
+                         digest_name: str,
+                         digest: bytes) -> bytes:
     ''' sign digest with key identified by label '''
     key = get_key_with_label(key_label)
     return sign_hash(key, digest_name, digest)
 
 
-def sign_hash_with_modulus(modulus, digest_name, digest):
+def sign_hash_with_modulus(modulus: bytes,
+                           digest_name: str,
+                           digest: bytes) -> bytes:
     ''' sign digest with key identified by modulus '''
     key = get_key_with_modulus(modulus)
     return sign_hash(key, digest_name, digest)
@@ -195,8 +199,8 @@ def sign_hash_with_modulus(modulus, digest_name, digest):
 # DER operations
 #
 
-def get_modulus_from_public_key_bytes(pub_info_der):
-    ''' extract the modulus from the PUBLIC KEY ASN.1 structure '''
+def get_modulus_from_public_key_bytes(pub_info_der: bytes) -> bytes:
+    ''' extract the modulus from the PUBLIC KEY ASN.1 structure (DER) '''
     pub_key = load_der_public_key(pub_info_der)
 
     if not pub_key.isinstance(pub_key,rsa.RSAPublicKey):
@@ -213,7 +217,7 @@ def get_modulus_from_public_key_bytes(pub_info_der):
 # to capture the results instead of piping to stdout
 #
 
-def esrp_ossl_engine_do(args, stdin_input=None):
+def esrp_ossl_engine_do(args: list[str], stdin_input: object = None) -> bytes:
     ''' bottleneck routine for ossl cli command execution
     the name of the output file will be appended to the args
     result of the command will be returned as bytes or None if error
@@ -246,7 +250,7 @@ def esrp_ossl_engine_do(args, stdin_input=None):
 # code here even though there's a simpler solution
 # since this code works in all cases.
 
-def esrp_get_public_key_aux(key_name, modulus_only):
+def esrp_get_public_key_aux(key_name: str, modulus_only: bool) -> bytes:
     ''' get ESRP key modulus '''
     the_args = ['pkey',
                '-in', f'KeyCode={key_name};' + FULL_CONFIG_STR,
@@ -262,7 +266,9 @@ def esrp_get_public_key_aux(key_name, modulus_only):
     return pub_info
 
 
-def esrp_sign_hash_aux(key_name, algo_name, digest):
+def esrp_sign_hash_aux(key_name: str,
+                       algo_name: str,
+                       digest: bytes) -> bytes:
     ''' sign a digest '''
     the_args = ['pkeyutl',
                 '-inkey', f'KeyCode={key_name};' + FULL_CONFIG_STR,
@@ -274,7 +280,9 @@ def esrp_sign_hash_aux(key_name, algo_name, digest):
     return signature_der
 
 
-def esrp_sign_hash_with_modulus_aux(modulus, algo_name, digest):
+def esrp_sign_hash_with_modulus_aux(modulus: bytes,
+                                    algo_name: str,
+                                    digest: bytes) -> bytes:
     ''' identify the key with the modulus and sign a digest '''
     for key_name in KEY_IN_CERTS:
         key_modulus = esrp_get_public_key_aux(key_name,
@@ -292,7 +300,7 @@ def esrp_sign_hash_with_modulus_aux(modulus, algo_name, digest):
 #
 
 
-def esrp_get_public_key(key_set, key_label):
+def esrp_get_public_key(key_set: int, key_label: str) -> bytes:
     ''' return the public key in PEM format '''
 
     # fpk4 special case: always use the (more protected) production key
@@ -311,7 +319,7 @@ def esrp_get_public_key(key_set, key_label):
     raise ValueError(f"Invalid key set: {key_set}")
 
 
-def esrp_get_modulus(key_set, key_label):
+def esrp_get_modulus(key_set: int, key_label: str) -> bytes:
     ''' return the RSA modulus as bytes '''
     # fpk4 special case: always use the (more protected) production key
     if key_label == 'fpk4':
@@ -326,7 +334,10 @@ def esrp_get_modulus(key_set, key_label):
 
     raise ValueError(f"Invalid key set: {key_set}")
 
-def esrp_sign_hash_with_key(key_set, key_label, algo_name, digest):
+def esrp_sign_hash_with_key(key_set: int,
+                            key_label: str,
+                            algo_name: str,
+                            digest: bytes) -> bytes:
     ''' signs a digest using RSA PKCS1.5 '''
 
     # fpk4 special case: always use the (more protected) production key
@@ -343,7 +354,10 @@ def esrp_sign_hash_with_key(key_set, key_label, algo_name, digest):
     raise ValueError(f"Invalid key set: {key_set}")
 
 
-def esrp_sign_hash_with_modulus(key_set, modulus, algo_name, digest):
+def esrp_sign_hash_with_modulus(key_set: int,
+                                modulus: bytes,
+                                algo_name: str,
+                                digest: bytes) -> bytes:
     ''' signs a digest using RSA PKCS1.5 using the key with the modulus specified
     This is an infrequent operation and only with "customer" keys '''
     if key_set == 0:
@@ -355,7 +369,7 @@ def esrp_sign_hash_with_modulus(key_set, modulus, algo_name, digest):
     raise ValueError(f"Invalid key set: {key_set}")
 
 
-def esrp_signer_cert():
+def esrp_signer_cert() -> str:
     ''' returns the ESRP signer certificate (check need for renewal) '''
     esrp_cfg = read_json(ESRP_CONFIG_PATH)
 
