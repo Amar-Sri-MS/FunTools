@@ -11,6 +11,7 @@ import binascii
 import hashlib
 import argparse
 import traceback
+import urllib3
 import requests
 
 
@@ -112,17 +113,19 @@ def get_debugging_cert(server, client_cert, public_key_file,
 
 ####### tests
 
-def test_get_binary_fpk2(server, tls_verify):
-    fpk2 = get_key(server, tls_verify, 'fpk2')
+def check_value(msg, read_bytes, expected_bytes):
+    ''' compare bytes string '''
+    if read_bytes != expected_bytes:
+        print(msg)
+        print("Expected %s" % expected_bytes)
+        print("Got      %s" % read_bytes)
+        return 1
+    return 0
 
-    fpk2_text = open('./fpk2_hex.txt', 'r').read().rstrip()
 
-    fpk2_exp = binascii.unhexlify(fpk2_text)
-
-    if fpk2 == fpk2_exp:
-        return 0
-
-    return 1
+def test_get_binary_fpk2(server, tls_verify, exp_fpk2_modulus):
+    fpk2_modulus = get_key(server, tls_verify, 'fpk2')
+    return check_value("FPK2 modulus bytes", fpk2_modulus, exp_fpk2_modulus)
 
 
 def test_get_customer_cert(server, tls_verify):
@@ -132,21 +135,14 @@ def test_get_customer_cert(server, tls_verify):
     customer_cert_exp = open('../development_keys_certs/cpk1_certificate.bin',
                              'rb').read()
 
-    if customer_cert == customer_cert_exp:
-        return 0
-
-    return 1
+    return check_value("Customer Certificate", customer_cert, customer_cert_exp)
 
 
-def test_hash_sign_ex(fpk2, server, tls_verify, algo_name):
+def test_hash_sign_ex(fpk2, fpk2_modulus, server, tls_verify, algo_name):
 
     tbs = b'Between silk and cyanide'
 
     digest = hashlib.new(algo_name, tbs).digest()
-
-    modulus_int = fpk2.public_numbers().n
-    modulus = modulus_int.to_bytes((modulus_int.bit_length()+7) // 8,
-                                   byteorder='big')
 
     err = 0
     # test 1: sign with key name
@@ -155,7 +151,7 @@ def test_hash_sign_ex(fpk2, server, tls_verify, algo_name):
 
     # test 2 : sign with modulus
     server_signature2 = hash_sign(server, tls_verify, digest,
-                                  algo_name=algo_name, modulus=modulus)
+                                  algo_name=algo_name, modulus=fpk2_modulus)
 
     # PKCS: same signature
     if server_signature1 != server_signature2:
@@ -175,14 +171,6 @@ def test_hash_sign_ex(fpk2, server, tls_verify, algo_name):
         err += 1
 
     return err
-
-def check_value(read_bytes, expected_bytes):
-    ''' compare bytes string '''
-    if read_bytes != expected_bytes:
-        print("Expected %s" % expected_bytes)
-        print("Got      %s" % read_bytes)
-        return 1
-    return 0
 
 
 def test_get_debugging_cert(server, client_certificate,
@@ -204,12 +192,12 @@ def test_get_debugging_cert(server, client_certificate,
     debugging_cert = get_debugging_cert(server, client_certificate,
                                         public_key_file, tls_verify,
                                         hex_serial_nr)
-    errs += check_value(debugging_cert[0:4],   b'\xA5\x5E\x00\xB1')
-    errs += check_value(debugging_cert[4:8],   b'\xFF' * 4)
-    errs += check_value(debugging_cert[8:12],  b'\x00' * 4)
-    errs += check_value(debugging_cert[12:16], b'\xFF' * 4)
-    errs += check_value(debugging_cert[16:40], binascii.a2b_hex(hex_serial_nr))
-    errs += check_value(debugging_cert[40:64], b'\xFF' * 24)
+    errs += check_value("debug cert [0:4]", debugging_cert[0:4],   b'\xA5\x5E\x00\xB1')
+    errs += check_value("debug cert [4:8]", debugging_cert[4:8],   b'\xFF' * 4)
+    errs += check_value("debug cert [8:12]", debugging_cert[8:12],  b'\x00' * 4)
+    errs += check_value("debug cert [12:16]", debugging_cert[12:16], b'\xFF' * 4)
+    errs += check_value("debug cert [16:40]", debugging_cert[16:40], binascii.a2b_hex(hex_serial_nr))
+    errs += check_value("debug cert [40:64]", debugging_cert[40:64], b'\xFF' * 24)
 
     cert_pub_key = debugging_cert[64:580]
     cert_n_len = int.from_bytes(cert_pub_key[0:4], byteorder='little')
@@ -219,6 +207,7 @@ def test_get_debugging_cert(server, client_certificate,
     with open(public_key_file, 'rb') as fd:
         pub_key = serialization.load_pem_public_key(fd.read())
     n = pub_key.public_numbers().n
+
     modulus = n.to_bytes((n.bit_length() + 7) // 8)
     errs += check_value(cert_modulus, modulus)
 
@@ -259,16 +248,23 @@ def main_program():
 
     tls_verify = options.server.endswith(".fungible.com")
 
-    modulus_hex = open('fpk2_hex.txt', 'r').read().rstrip()
+    if not tls_verify:
+        urllib3.disable_warnings()
 
-    fpk2 = rsa.RSAPublicNumbers(0x010001,
-                                int(modulus_hex, 16)).public_key()
+    fpk2_data = open('../development_keys_certs/fpk2.pem', 'rb').read()
+    fpk2_priv = serialization.load_pem_private_key(fpk2_data, password=None)
+    fpk2 = fpk2_priv.public_key()
+
+    fpk2_n = fpk2.public_numbers().n
+    fpk2_modulus = fpk2_n.to_bytes((fpk2_n.bit_length()+7) // 8,
+                                   byteorder='big')
 
     try:
-        errors += test_get_binary_fpk2(options.server, tls_verify)
+        errors += test_get_binary_fpk2(options.server, tls_verify, fpk2_modulus)
         errors += test_get_customer_cert(options.server, tls_verify)
         for hash_algo in ("sha224", "sha256", "sha384", "sha512"):
             errors += test_hash_sign_ex(fpk2,
+                                        fpk2_modulus,
                                         options.server,
                                         tls_verify,
                                         hash_algo)
