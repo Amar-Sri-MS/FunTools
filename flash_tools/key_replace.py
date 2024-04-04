@@ -103,8 +103,12 @@ def update_file(file, number, app, key):
         ret = app.update_key(number, key)
         print("Key {} {}updated in {} with '{}' (net)".
               format(number, "not " if ret == 1 else "", file, key))
+    except RuntimeError as e:
+        print("Unexpected error when processing key {} for {}:{}".format(number, file, e))
+        raise
     except Exception as e:
         print("Key {} not found in {}:{}".format(number, file, e))
+        raise
     return 0
 
 
