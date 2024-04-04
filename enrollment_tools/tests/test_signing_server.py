@@ -299,7 +299,7 @@ def main_program():
 
     try:
 
-        # get pfk4 (ESRP key)
+        # get fpk4 (ESRP key)
         fpk4_pem = get_key(options.server, tls_verify,
                            'fpk4', oformat='public_key')
         fpk4 = serialization.load_pem_public_key(fpk4_pem)
