@@ -203,7 +203,7 @@ def get_modulus_from_public_key_bytes(pub_info_der: bytes) -> bytes:
     ''' extract the modulus from the PUBLIC KEY ASN.1 structure (DER) '''
     pub_key = load_der_public_key(pub_info_der)
 
-    if not pub_key.isinstance(pub_key,rsa.RSAPublicKey):
+    if not isinstance(pub_key,rsa.RSAPublicKey):
         raise ValueError("Not an RSA key")
 
     return get_modulus_bytes(pub_key)
