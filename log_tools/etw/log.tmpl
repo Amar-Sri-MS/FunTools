@@ -1,0 +1,25 @@
+//
+// Logging function for {{evt.symbol}}
+//
+void log_{{evt.symbol}}(
+		const struct flow *flow,
+		const struct module *module,
+		fun_uuid_t activity_id,
+		uint8_t dest,
+{% for item in evt_tmpl.items %}
+		{{type_map[item.intype][0]}} {{item.name}}{{"," if not loop.last else ""}}
+{%- endfor %}
+) {
+
+	struct fun_log_kvp entries[] = {
+{% for item in evt_tmpl.items %}
+		fun_log_create_{{type_map[item.intype][1]}}_entry("{{item.name}}", {{item.name}}),
+{%- endfor %}
+	};
+
+	uint64_t keyword = 0ULL;
+{%- for kw in evt.keywords %}
+	keyword |= {{keyword_map[kw]}}ULL;
+{%- endfor %}
+	EVENTLOG_STRUCTURED(flow, module, activity_id, dest, {{level_map[evt.level]}}, keyword, "{{evt.value}}", ARRAY_SIZE(entries), entries);
+}
