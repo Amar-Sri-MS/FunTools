@@ -78,6 +78,13 @@ class TestDPCCommands(unittest.TestCase):
             self.client.set_timeout(None)
             self.client.async_recv_any()
 
+    def testError(self):
+        try:
+            self.client.execute('the_verb_does_not_exist', [2])
+            self.assertTrue(False)
+        except dpc_client.DpcExecutionError:
+            print('error works')
+
     def testTimeout2(self):
         self.client.set_timeout(1.5)
         try:
