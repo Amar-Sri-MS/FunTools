@@ -318,6 +318,13 @@ class Type:
       return False
     return True
 
+  def IsSwappable(self):
+      """Returns True if the type is subject to byte-swapping.
+      This is the case for scalar multi-byte fields that do not specify
+      their endianness.
+      """
+      return self.bit_width > 8 and self.IsScalar() and not self.IsNoSwap()
+
   def BaseName(self):
     """Returns base type name without array and other modifiers."""
     return self.base_type.Name()
@@ -504,10 +511,6 @@ class Field(Declaration):
     # String name of the C type, or a generic type for signed-ness.
     self.type = type
 
-    # Does this field need to be swapped when converting from a different
-    # endian processor?
-    self.swappable = type is not None and type.bit_width > 8
-
     # True if the field doesn't actually represent a specific bit pattern.
     # Used for variable length arrays.
     self.no_offset = False
@@ -523,6 +526,11 @@ class Field(Declaration):
       self.is_natural_width = True
     else:
       self.is_natural_width = self.type.bit_width == self.bit_width
+
+    # Does this field need to be swapped when converting from a different
+    # endian processor? Yes, if it isn't a bitfield and its type has the
+    # requirement.
+    self.swappable = type is not None and type.IsSwappable() and self.is_natural_width
 
     # Minimum and maximum value allowed in the field.
     # TODO(bowdidge): Handle signed types.
@@ -545,10 +553,6 @@ class Field(Declaration):
     # True if field was explicitly defined to be less than its natural size.
     self.is_bitfield = self.is_natural_width
 
-    # True if field needs to be swapped when converting from a different
-    # ended processor.  Irrelevant for packed fields.
-    self.swappable = type is not None and type.bit_width > 8
-
     # True if field appears to be a reserved field that doesn't need to be
     # initialized or manipulated.
     self.is_reserved = (name.startswith('reserved') or
@@ -570,10 +574,6 @@ class Field(Declaration):
     self.packed_field = None
     self.parent_struct = None
 
-    self.is_reserved = (name.startswith('reserved') or
-                        name.startswith('rsvd') or
-                        name.startswith('unused'))
-
   def __str__(self):
     if self.no_offset:
       return('<Field: name=%s, type=%s, no offset>' %
@@ -586,8 +586,8 @@ class Field(Declaration):
       return('<Field: name=%s, type=%s, start: flit=%d, bit=%d, '
              'end: flit=%d, bit=%d>' % (self.name, self.type,
                                         self.StartFlit(), self.StartBit(),
-
                                         self.EndFlit(), self.EndBit()))
+
   def fields_to_set(self):
     """Returns a list of packed fields (fields actually holding multiple
     other fields).

@@ -41,6 +41,23 @@ class TestTypes(unittest.TestCase):
       self.assertFalse(parser.ArrayTypeForName("uint64_t", 10,
                                                linux_type=True).IsNoSwap())
 
+  def testSwappable(self):
+      self.assertFalse(parser.TypeForName("uint8_t",
+                                          linux_type=True).IsSwappable())
+      self.assertTrue(parser.TypeForName("uint16_t",
+                                         linux_type=True).IsSwappable())
+      self.assertTrue(parser.TypeForName("uint64_t",
+                                         linux_type=True).IsSwappable())
+      self.assertFalse(parser.TypeForName("__be32",
+                                          linux_type=True).IsSwappable())
+      self.assertFalse(parser.TypeForName("__le16",
+                                          linux_type=True).IsSwappable())
+
+      self.assertFalse(parser.ArrayTypeForName("__be32", 10,
+                                              linux_type=True).IsSwappable())
+      self.assertFalse(parser.ArrayTypeForName("uint16_t", 10,
+                                              linux_type=True).IsSwappable())
+
   def testBaseName(self):
     self.assertEqual("uint32_t", 
                      parser.TypeForName("uint32_t").BaseName())
