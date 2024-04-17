@@ -4,7 +4,9 @@
 # Copyright Fungible Inc. 2017.
 
 import os
+import random
 import re
+import string
 import sys
 import utils
 
@@ -1434,7 +1436,7 @@ class GenParser:
   # Parses a generated header document and creates the internal data structure
   # describing the file.
 
-  def __init__(self, linux_type=False, dpu_endianness = 'Any'):
+  def __init__(self, linux_type=False, dpu_endianness = 'Any', mangle_fields = False):
     # Create a GenParser.
     # current_document is the top level object.
     self.current_document = Document()
@@ -1454,6 +1456,10 @@ class GenParser:
     self.bits_consumed = 0
     # Current line being parsed.
     self.current_line = 0
+
+    self.mangle_suffix = ''
+    if mangle_fields:
+        self.mangle_suffix = '_' + random.choice(string.ascii_letters)
 
     self.base_types = {}
     type_map = DefaultTypeMap(linux_type)
@@ -1915,7 +1921,8 @@ class GenParser:
         'field name "%s" is not a valid identifier name.' % name)
       return True
 
-    if containing_struct.HasFieldWithName(name):
+    mangled_name = name + self.mangle_suffix
+    if containing_struct.HasFieldWithName(mangled_name):
       self.AddError(
         'Field with name "%s" already exists in struct "%s"' % (
           name, containing_struct.Name()))
@@ -1946,7 +1953,7 @@ class GenParser:
         self.AddError('Bit pattern specified for zero-length array: "%s".' % flit_bit_spec_str)
         return True
 
-      zero_array = Field(name, type, -1, -1)
+      zero_array = Field(mangled_name, type, -1, -1)
       zero_array.no_offset = True
       zero_array.key_comment = key_comment
       zero_array.body_comment = body_comment
@@ -1972,7 +1979,7 @@ class GenParser:
     start_offset = flit * 64 + (utils.FLIT_SIZE - start_bit - 1)
     end_offset = flit * 64 + (utils.FLIT_SIZE - end_bit - 1)
     bit_size = end_offset - start_offset + 1
-    new_field = Field(name, type, start_offset, bit_size)
+    new_field = Field(mangled_name, type, start_offset, bit_size)
     new_field.filename = self.current_document.filename
     new_field.line_number = self.current_line
 
