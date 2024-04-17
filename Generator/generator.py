@@ -346,24 +346,31 @@ class Packer(Pass):
 
 
 def Usage():
-  sys.stderr.write('generator.py: usage: [-d] [-g [code, html] [-o file]\n')
-  sys.stderr.write('-c options: change codegen options.\n')
+  sys.stderr.write('generator.py: usage: [-d] [-c <options>] [-g [code, html]] [-o file]\n')
+  sys.stderr.write('-c options: comma-separated list of codegen options\n')
   sys.stderr.write('-g code: generate header file to stdout (default)\n')
   sys.stderr.write('-g html: generate HTML description of header\n')
   sys.stderr.write('-o filename_base: send output to named file\n')
-  sys.stderr.write('                  for code generation, appends correct extension.\n')
-  sys.stderr.write('-d dump generator\'s runtime dependencies')
-  sys.stderr.write('Codegen options include:\n')
-  sys.stderr.write('  pack: combine multiple bitfields into a single:\n')
-  sys.stderr.write('        field, and create accessor macros.\n')
+  sys.stderr.write('                  for code generation, appends correct extension\n')
+  sys.stderr.write('-d dump generator\'s runtime dependencies\n')
+  sys.stderr.write('\nCodegen options include:\n')
+  sys.stderr.write('  pack: combine multiple bitfields into a single field,\n')
+  sys.stderr.write('        and create accessor macros.\n')
   sys.stderr.write('  json: generate routines for initializing a structure\n')
-  sys.stderr.write('        from a JSON representation.')
+  sys.stderr.write('        from a JSON representation.\n')
   sys.stderr.write('  dump: generate routines to dump a hex representation\n')
-  sys.stderr.write('        of all structures.')
+  sys.stderr.write('        of all structures.\n')
   sys.stderr.write('  cpacked: use __attribute__((packed)) on all structures\n')
   sys.stderr.write('        to allow fields to be at non-natural alignments.\n')
+  sys.stderr.write('  swap: emit byte-swapping code\n')
+  sys.stderr.write('  linux: generate code suitable for Linux and Windows\n')
+  sys.stderr.write('         user- and kernel-space apps and drivers\n')
+  sys.stderr.write('  be: generate code only for BE FunOS\n')
+  sys.stderr.write('  le: generate code only for LE FunOS\n')
+  sys.stderr.write('  init_macros: generate macros rather than inline functions\n')
+  sys.stderr.write('               to initialize HCI structures\n')
 
-  sys.stderr.write('Example: -c json,nopack enables json, and disables packing.\n')
+  sys.stderr.write('\nExample: -c json,nopack enables json, and disables packing.\n')
 
 def ReformatCode(source):
   """Rewrites the source to match Linux coding style.
