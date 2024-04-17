@@ -111,17 +111,17 @@ How to render each struct
 /* Offset of field "{{f.name}}" in packed field "{{field.name}}" */
 #define {{struct.name|as_macro}}_{{f.name|as_macro}}_S {{f.shift()}}U
 
-/* Mask of field "{{f.name}}" in packed field "{{field.name}}" 
+/* Mask of field "{{f.name}}" in packed field "{{field.name}}"
  * after shift.
  */
 #define {{struct.name|as_macro}}_{{f.name|as_macro}}_M {{f.mask}}
 
-/* Shifts a value to the location to be inserted in field {{f.name}} 
+/* Shifts a value to the location to be inserted in field {{f.name}}
  * inside packed field {{field.name}}.
  */
 #define {{struct.name|as_macro}}_{{f.name|as_macro}}_P(x) ({{toDpuWrapper(field)}}(({{f.type | as_cast}} x) << {{struct.name|as_macro}}_{{f.name|as_macro}}_S))
 
-/* Shifts a value to the location to be inserted in field {{f.name}} 
+/* Shifts a value to the location to be inserted in field {{f.name}}
  * inside packed field {{field.name}}.
  * Caller responsible for swapping order of bytes in case storing to a
  * different endianness.
@@ -226,6 +226,9 @@ extern void {{struct.name}}_dump(FILE *file_des, {{struct.DeclarationString()}} 
 The body of the header.
 
 #}
+// Header created by generator.py.
+// Do not modify this file, edit the source "{{gen_file}}" instead.
+
 #ifndef __{{output_base|as_macro}}_H__
 #define __{{output_base|as_macro}}_H__
 
@@ -234,33 +237,61 @@ The body of the header.
 #include <endian.h>
 #include <linux/types.h>
 
-#define be64_to_cpu(x)		be64toh(x)
-#define be32_to_cpu(x)		be32toh(x)
-#define be16_to_cpu(x)		be16toh(x)
-#define le64_to_cpu(x)		le64toh(x)
-#define le32_to_cpu(x)		le32toh(x)
-#define le16_to_cpu(x)		le16toh(x)
-#define cpu_to_be64(x)		htobe64(x)
-#define cpu_to_be32(x)		htobe32(x)
-#define cpu_to_be16(x)		htobe16(x)
-#define cpu_to_le64(x)		htole64(x)
-#define cpu_to_le32(x)		htole32(x)
-#define cpu_to_le16(x)		htole16(x)
+#define be64_to_cpu(x) be64toh(x)
+#define be32_to_cpu(x) be32toh(x)
+#define be16_to_cpu(x) be16toh(x)
+#define le64_to_cpu(x) le64toh(x)
+#define le32_to_cpu(x) le32toh(x)
+#define le16_to_cpu(x) le16toh(x)
+#define cpu_to_be64(x) htobe64(x)
+#define cpu_to_be32(x) htobe32(x)
+#define cpu_to_be16(x) htobe16(x)
+#define cpu_to_le64(x) htole64(x)
+#define cpu_to_le32(x) htole32(x)
+#define cpu_to_le16(x) htole16(x)
 #endif /* __KERNEL__ */
 {% if generate_json %}
 #include <stdio.h>
 {% endif %}
-#endif /* __linux__ */
+#elif defined(_WIN32) || defined(_WIN64)
+#include <stdint.h>
 
-// Header created by generator.py
-// Do not change this file;
-// change the gen file "{{gen_file}}" instead.
+typedef uint8_t __u8;
+typedef uint16_t __u16, __le16, __be16;
+typedef uint32_t __u32, __le32, __be32;
+typedef uint64_t __u64, __le64, __be64;
 
-// Magic number to allow checking whether two interfaces were generated
-// from the same sources.
-#define {{gen_file|as_macro}}_VERSION_HASH {{gen_file_version_hash}}
+{#
+
+Windows is always LE.
+
+#}
+#define le16_to_cpu(x) (x)
+#define le32_to_cpu(x) (x)
+#define le64_to_cpu(x) (x)
+#define be16_to_cpu(x) _byteswap_ushort(x)
+#define be32_to_cpu(x) _byteswap_ulong(x)
+#define be64_to_cpu(x) _byteswap_uint64(x)
+
+#define cpu_to_le16(x) (x)
+#define cpu_to_le32(x) (x)
+#define cpu_to_le64(x) (x)
+#define cpu_to_be16(x) _byteswap_ushort(x)
+#define cpu_to_be32(x) _byteswap_ulong(x)
+#define cpu_to_be64(x) _byteswap_uint64(x)
+#endif /* _WIN32 || _WIN64 */
+
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4200)
+#endif
 
 {% if not generate_init_macros %}
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -308,13 +339,6 @@ extern "C" {
 {% endif %}
 {% endif %}
 
-{% if not generate_init_macros %}
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#endif
-
-{% endif %}
 {% for decl in declarations %}
 {% if decl.is_enum %}
 {{ enumDecl(decl) }}
@@ -331,14 +355,18 @@ extern "C" {
 
 {% endfor %}
 {% if not generate_init_macros %}
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
-
 #ifdef __cplusplus
 };
 #endif
 
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 {% endif %}
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+
 #endif /* __{{output_base|as_macro}}_H__ */
 
