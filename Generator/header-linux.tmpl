@@ -62,30 +62,24 @@ Macros for hiding which size macro to use.
 #}
 {% if generate_be %}
 {% macro toDpuWrapper(field) %}
-{% if generate_swap and field.type.bit_width != 8 and not field.type.IsNoSwap() %}cpu_to_be{{field.type.bit_width}}{% endif %}
+{% if generate_swap and field.type.IsSwappable() %}cpu_to_be{{field.type.bit_width}}{% endif %}
+{%- endmacro %}
+{% macro fromDpuWrapper(field) %}
+{% if generate_swap and field.type.IsSwappable() %}be{{field.type.bit_width}}_to_cpu{% endif %}
 {%- endmacro %}
 {% elif generate_le %}
 {% macro toDpuWrapper(field) %}
-{% if generate_swap and field.type.bit_width != 8 and not field.type.IsNoSwap() %}cpu_to_le{{field.type.bit_width}}{% endif %}
+{% if generate_swap and field.type.IsSwappable() %}cpu_to_le{{field.type.bit_width}}{% endif %}
+{%- endmacro %}
+{% macro fromDpuWrapper(field) %}
+{% if generate_swap and field.type.IsSwappable() %}le{{field.type.bit_width}}_to_cpu{% endif %}
 {%- endmacro %}
 {% else %}
 {% macro toDpuWrapper(field) %}
-{% if generate_swap and field.type.bit_width != 8 and not field.type.IsNoSwap() %}cpu_to_dpu{{field.type.bit_width}}{% endif %}
+{% if generate_swap and field.type.IsSwappable() %}cpu_to_dpu{{field.type.bit_width}}{% endif %}
 {%- endmacro %}
-{% endif %}
-{# #}
-{% if generate_be %}
 {% macro fromDpuWrapper(field) %}
-{% if generate_swap and field.type.bit_width != 8 and not field.type.IsNoSwap() %}be{{field.type.bit_width}}_to_cpu{% endif %}
-{%- endmacro %}
-{% elif generate_le %}
-{% macro fromDpuWrapper(field) %}
-{% if generate_swap and field.type.bit_width != 8 and not field.type.IsNoSwap()
- %}le{{field.type.bit_width}}_to_cpu{% endif %}
-{%- endmacro %}
-{% else %}
-{% macro fromDpuWrapper(field) %}
-{% if generate_swap and field.type.bit_width != 8 and not field.type.IsNoSwap() %}dpu_to_cpu{{field.type.bit_width}}{% endif %}
+{% if generate_swap and field.type.IsSwappable() %}dpu_to_cpu{{field.type.bit_width}}{% endif %}
 {%- endmacro %}
 {% endif %}
 {#
@@ -162,7 +156,7 @@ The initializer
 	{{f.parent_struct.name|as_macro}}_{{f.name|as_macro}}_P_NOSWAP({{f.name}}){{" |" if not loop.last }} \
       {% endfor %}), \
     {% else %}
-      {% if field.is_natural_width and field.type.bit_width != 8 and not field.type.IsNoSwap() %}
+      {% if field.swappable %}
 		.{{field.name}} = {{toDpuWrapper(field)}}({{field.name}}), \
       {% else %}
 		.{{field.name}} = {{field.name}}, \
@@ -195,7 +189,7 @@ static inline void {{struct.name}}_init(struct {{struct.init_struct().name}} *s{
 	{{f.parent_struct.name|as_macro}}_{{f.name|as_macro}}_P_NOSWAP({{f.name}}) {{" | " if not loop.last }}
       {% endfor %});
     {% else %}
-      {% if field.is_natural_width and field.type.bit_width != 8 %}
+      {% if field.swappable %}
         s->{{field.init_accessor()}}{{field.name}} = {{toDpuWrapper(field)}}({{field.name}});
       {% else %}
         s->{{field.init_accessor()}}{{field.name}} = {{field.name}};
