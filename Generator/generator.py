@@ -591,7 +591,12 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
 
   if input_filename.endswith('.gen') or input_filename.endswith('.pgen'):
     use_linux_types = (output_style == OutputStyleLinux)
-    gen_parser = parser.GenParser(use_linux_types)
+    dpu_endianness = 'Any'
+    if 'be' in options:
+        dpu_endianness = 'BE'
+    elif 'le' in options:
+        dpu_endianness = 'LE'
+    gen_parser = parser.GenParser(use_linux_types, dpu_endianness)
     errors = gen_parser.Parse(input_filename, input_stream)
     doc = gen_parser.current_document
   else:

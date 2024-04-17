@@ -289,20 +289,26 @@ Windows is always LE.
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 {% endif %}
 {% if generate_swap %}
-/* Structures are always stored in DPU byte order.  Values are swapped
- * going in and coming out.
- */
 
+/*
+ * Structure fields have the endianness expected by the DPU.
+ * Host values are swapped going in and coming out.
+ */
 {% if not generate_be and not generate_le %}
+{#
+
+The DPU endianness is unknown at generation time. Generate code that can handle
+both BE and LE DPUs. The endianness is resolved when the header is compiled.
+
+#}
 #ifdef __DPU_BYTEORDER_BIG
-{% endif %}
-{% if not generate_le %}
 #define __dpu16 __be16
 #define __dpu32 __be32
 #define __dpu64 __be64
+{% endif %}
+{% if not generate_le %}
 
 #define cpu_to_dpu16(x) (cpu_to_be16(x))
 #define cpu_to_dpu32(x) (cpu_to_be32(x))
@@ -314,11 +320,11 @@ extern "C" {
 {% endif %}
 {% if not generate_be and not generate_le %}
 #else
-{% endif %}
-{% if not generate_be %}
 #define __dpu16 __le16
 #define __dpu32 __le32
 #define __dpu64 __le64
+{% endif %}
+{% if not generate_be %}
 
 #define cpu_to_dpu16(x) (cpu_to_le16(x))
 #define cpu_to_dpu32(x) (cpu_to_le32(x))

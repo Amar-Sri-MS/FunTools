@@ -140,13 +140,44 @@ no_endian_map = {
   'uint64_t' : '__u64'
 }
 
-# Type names to use on Linux for DPU-endian fields.
-dpu_endian_map = {
+# Type names to use for DPUs that may have either endianness at codegen time.
+dpu_any_endian_map = {
   'uint8_t' : '__u8',
   'uint16_t' : '__dpu16',
   'uint32_t' : '__dpu32',
   'uint64_t' : '__dpu64'
 }
+
+# Type names to use for BE DPUs
+dpu_be_endian_map = {
+  'uint8_t' : '__u8',
+  'uint16_t' : '__be16',
+  'uint32_t' : '__be32',
+  'uint64_t' : '__be64'
+}
+
+# Type names to use for LE DPUs
+dpu_le_endian_map = {
+  'uint8_t' : '__u8',
+  'uint16_t' : '__le16',
+  'uint32_t' : '__le32',
+  'uint64_t' : '__le64'
+}
+
+dpu_endian_map = None
+
+def SetDPUEndianMap(dpu_endianness):
+    """Based on the targeted DPU endianness select the endianness map."""
+    global dpu_endian_map
+
+    if dpu_endianness == 'Any':
+        dpu_endian_map = dpu_any_endian_map
+    elif dpu_endianness == 'BE':
+        dpu_endian_map = dpu_be_endian_map
+    elif dpu_endianness == 'LE':
+        dpu_endian_map = dpu_le_endian_map
+    else:
+        raise ValueError('unknown DPU endianness %s' % dpu_endianness)
 
 
 def NoStraddle(width, offset, bound):
@@ -1403,7 +1434,7 @@ class GenParser:
   # Parses a generated header document and creates the internal data structure
   # describing the file.
 
-  def __init__(self, linux_type=False):
+  def __init__(self, linux_type=False, dpu_endianness = 'Any'):
     # Create a GenParser.
     # current_document is the top level object.
     self.current_document = Document()
@@ -1430,6 +1461,8 @@ class GenParser:
       has_endianness = name in builtin_endian_type_widths
       self.base_types[name] = BaseType(name, type_map[name],
                                        has_endianness=has_endianness)
+
+    SetDPUEndianMap(dpu_endianness)
 
   def AddError(self, msg):
     if self.current_document.filename:
