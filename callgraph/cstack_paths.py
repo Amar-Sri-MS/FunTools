@@ -1,5 +1,6 @@
 import argparse
 import glob
+import os
 import re
 
 
@@ -8,6 +9,7 @@ class Node:
         self.name = name
         self.stack_usage = stack_usage
         self.id = -1
+        self.dummy = False
 
     def set_id(self, id):
         self.id = id
@@ -35,10 +37,12 @@ class Node:
 class CGraph:
     def __init__(self):
         self.nodes_by_name = {}
+        self.nodes = []
         self.adj_list = []
 
     def add_node(self, node):
         self.nodes_by_name[node.name] = node
+        self.nodes.append(node)
         self.adj_list.append(list())
 
         node_id = len(self.adj_list) - 1
@@ -47,6 +51,7 @@ class CGraph:
     def replace_node(self, node):
         old_node = self.nodes_by_name[node.name]
         node.set_id(old_node.id)
+        self.nodes[old_node.id] = node
         self.nodes_by_name[node.name] = node
 
     def get_node(self, name):
@@ -57,22 +62,66 @@ class CGraph:
 
     def __str__(self):
         s = ""
-        for name in self.nodes_by_name:
-            node = self.nodes_by_name[name]
-            s += "{}: {}\n".format(node.id, name)
+        for node in self.nodes:
+            s += "{}: {}\n".format(node.id, node.name)
 
         for i, edges in enumerate(self.adj_list):
             s += "{}: {}\n".format(i, edges)
         return s
 
 
+class CGraphStackCheck:
+    def __init__(self, cgraph):
+        self.cgraph = cgraph
+
+    def _reset(self):
+        self.visited = set()
+        self.completed = set()
+
+    def check(self, root_id):
+        self._reset()
+        su, culprits = self.dfs(root_id)
+        return su, culprits
+
+    def dfs(self, root_id):
+        if root_id in self.visited:
+            print(
+                "Cycle detected for {} : probable recursion?".format(
+                    self.cgraph.nodes[root_id]
+                )
+            )
+            for v in self.visited:
+                print("Cycle member: {}".format(self.cgraph.nodes[v]))
+            return 0, []
+
+        max_su = 0
+        max_culprits = []
+
+        self.visited.add(root_id)
+        neighbours = self.cgraph.adj_list[root_id]
+        for n in neighbours:
+            su, culprits = self.dfs(n)
+            if su > max_su:
+                max_su = su
+                max_culprits = culprits
+
+        self.visited.remove(root_id)
+        self.completed.add(root_id)
+
+        max_culprits.append(root_id)
+        max_su += self.cgraph.nodes[root_id].stack_usage
+        return max_su, max_culprits
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("function", type=str, help="function name")
+    parser.add_argument("objdir", type=str, help="path to obj directory with .ci files")
+    parser.add_argument("function", type=str, help="function name as in .ci file")
     args = parser.parse_args()
 
     cgraph = CGraph()
-    files = glob.glob("/Users/jimmyyeap/Fun/FunOS/build/f1/obj/utils/common/*.ci")
+    files = glob.glob(os.path.join(args.objdir, "**/*.ci"), recursive=True)
+    print(files)
     for f in files:
         fh = open(f, "r")
         for line in fh:
@@ -81,9 +130,20 @@ def main():
     for f in files:
         fh = open(f, "r")
         for line in fh:
-            add_edge_to_graph(cgraph, line)
+            try:
+                add_edge_to_graph(cgraph, line)
+            except:
+                print(f, line)
 
     print(cgraph)
+
+    sc = CGraphStackCheck(cgraph)
+    su, culprits = sc.check(cgraph.get_node(args.function).id)
+
+    print("Stack usage: {}".format(su))
+    for culprit in reversed(culprits):
+        cn = cgraph.nodes[culprit]
+        print("\t{}\t{}".format(cn.stack_usage, cn.name))
 
 
 def add_node_to_graph(cgraph, line):
@@ -107,6 +167,13 @@ def add_edge_to_graph(cgraph, line):
     start, end = parse_edge(line)
     snode = cgraph.get_node(start)
     enode = cgraph.get_node(end)
+
+    if snode is None:
+        print("Creating dummy start for {}".format(line))
+        snode = create_dummy_node(start, cgraph)
+    if enode is None:
+        print("Creating dummy end for {}".format(line))
+        enode = create_dummy_node(end, cgraph)
     cgraph.add_edge(snode, enode)
 
 
@@ -115,6 +182,13 @@ def parse_edge(line):
     if m:
         return m.group(1), m.group(2)
     return None, None
+
+
+def create_dummy_node(name, cgraph):
+    node = Node(name, 0)
+    node.dummy = True
+    cgraph.add_node(node)
+    return node
 
 
 def check_duplicates(cgraph):
