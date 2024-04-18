@@ -369,6 +369,7 @@ def Usage():
   sys.stderr.write('  le: generate code only for LE FunOS\n')
   sys.stderr.write('  init_macros: generate macros rather than inline functions\n')
   sys.stderr.write('               to initialize HCI structures\n')
+  sys.stderr.write('  mangle: mangle field names in generated structures\n')
 
   sys.stderr.write('\nExample: -c json,nopack enables json, and disables packing.\n')
 
@@ -591,7 +592,13 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
 
   if input_filename.endswith('.gen') or input_filename.endswith('.pgen'):
     use_linux_types = (output_style == OutputStyleLinux)
-    gen_parser = parser.GenParser(use_linux_types)
+    mangle_fields = 'mangle' in options
+    dpu_endianness = 'Any'
+    if 'be' in options:
+        dpu_endianness = 'BE'
+    elif 'le' in options:
+        dpu_endianness = 'LE'
+    gen_parser = parser.GenParser(use_linux_types, dpu_endianness, mangle_fields)
     errors = gen_parser.Parse(input_filename, input_stream)
     doc = gen_parser.current_document
   else:
@@ -802,6 +809,7 @@ def main():
   codegen_be = SetFromArgs('be', codegen_args, False)
   codegen_le = SetFromArgs('le', codegen_args, False)
   codegen_init_macros = SetFromArgs('init_macros', codegen_args, False)
+  codegen_mangle = SetFromArgs('mangle', codegen_args, False)
 
   if codegen_be and codegen_le:
     sys.stderr.write('\'be\' and \'le\' codegen options are mutually exclusive\n')
@@ -827,6 +835,8 @@ def main():
     codegen_options.append('le')
   if codegen_init_macros:
     codegen_options.append('init_macros')
+  if codegen_mangle:
+    codegen_options.append('mangle')
 
   if len(args) == 0:
       sys.stderr.write('No genfile named.\n')

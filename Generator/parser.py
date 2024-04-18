@@ -4,7 +4,9 @@
 # Copyright Fungible Inc. 2017.
 
 import os
+import random
 import re
+import string
 import sys
 import utils
 
@@ -140,13 +142,44 @@ no_endian_map = {
   'uint64_t' : '__u64'
 }
 
-# Type names to use on Linux for DPU-endian fields.
-dpu_endian_map = {
+# Type names to use for DPUs that may have either endianness at codegen time.
+dpu_any_endian_map = {
   'uint8_t' : '__u8',
   'uint16_t' : '__dpu16',
   'uint32_t' : '__dpu32',
   'uint64_t' : '__dpu64'
 }
+
+# Type names to use for BE DPUs
+dpu_be_endian_map = {
+  'uint8_t' : '__u8',
+  'uint16_t' : '__be16',
+  'uint32_t' : '__be32',
+  'uint64_t' : '__be64'
+}
+
+# Type names to use for LE DPUs
+dpu_le_endian_map = {
+  'uint8_t' : '__u8',
+  'uint16_t' : '__le16',
+  'uint32_t' : '__le32',
+  'uint64_t' : '__le64'
+}
+
+dpu_endian_map = None
+
+def SetDPUEndianMap(dpu_endianness):
+    """Based on the targeted DPU endianness select the endianness map."""
+    global dpu_endian_map
+
+    if dpu_endianness == 'Any':
+        dpu_endian_map = dpu_any_endian_map
+    elif dpu_endianness == 'BE':
+        dpu_endian_map = dpu_be_endian_map
+    elif dpu_endianness == 'LE':
+        dpu_endian_map = dpu_le_endian_map
+    else:
+        raise ValueError('unknown DPU endianness %s' % dpu_endianness)
 
 
 def NoStraddle(width, offset, bound):
@@ -1403,7 +1436,7 @@ class GenParser:
   # Parses a generated header document and creates the internal data structure
   # describing the file.
 
-  def __init__(self, linux_type=False):
+  def __init__(self, linux_type=False, dpu_endianness = 'Any', mangle_fields = False):
     # Create a GenParser.
     # current_document is the top level object.
     self.current_document = Document()
@@ -1424,12 +1457,18 @@ class GenParser:
     # Current line being parsed.
     self.current_line = 0
 
+    self.mangle_suffix = ''
+    if mangle_fields:
+        self.mangle_suffix = '_' + random.choice(string.ascii_letters)
+
     self.base_types = {}
     type_map = DefaultTypeMap(linux_type)
     for name in type_map:
       has_endianness = name in builtin_endian_type_widths
       self.base_types[name] = BaseType(name, type_map[name],
                                        has_endianness=has_endianness)
+
+    SetDPUEndianMap(dpu_endianness)
 
   def AddError(self, msg):
     if self.current_document.filename:
@@ -1882,7 +1921,8 @@ class GenParser:
         'field name "%s" is not a valid identifier name.' % name)
       return True
 
-    if containing_struct.HasFieldWithName(name):
+    mangled_name = name + self.mangle_suffix
+    if containing_struct.HasFieldWithName(mangled_name):
       self.AddError(
         'Field with name "%s" already exists in struct "%s"' % (
           name, containing_struct.Name()))
@@ -1913,7 +1953,7 @@ class GenParser:
         self.AddError('Bit pattern specified for zero-length array: "%s".' % flit_bit_spec_str)
         return True
 
-      zero_array = Field(name, type, -1, -1)
+      zero_array = Field(mangled_name, type, -1, -1)
       zero_array.no_offset = True
       zero_array.key_comment = key_comment
       zero_array.body_comment = body_comment
@@ -1939,7 +1979,7 @@ class GenParser:
     start_offset = flit * 64 + (utils.FLIT_SIZE - start_bit - 1)
     end_offset = flit * 64 + (utils.FLIT_SIZE - end_bit - 1)
     bit_size = end_offset - start_offset + 1
-    new_field = Field(name, type, start_offset, bit_size)
+    new_field = Field(mangled_name, type, start_offset, bit_size)
     new_field.filename = self.current_document.filename
     new_field.line_number = self.current_line
 
