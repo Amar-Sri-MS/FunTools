@@ -535,6 +535,7 @@ def GenerateFromTemplate(doc, template_filename, generator_file, output_base,
     lambda decl : decl.DefinitionString(linux, big_endian_types))
   env.filters['as_declaration'] = lambda decl :  decl.DeclarationString(linux)
   env.filters['as_cast'] = lambda type : type.CastString(linux)
+  env.filters['as_mangled'] = lambda field : field.MangledName()
   env.filters['type_only'] = lambda field : field.type.DeclarationName(linux)
 
   if output_base:

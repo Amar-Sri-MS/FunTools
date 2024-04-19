@@ -519,6 +519,7 @@ class Function(Declaration):
     self.body_comment = comment
     self.is_function = True
 
+
 class Field(Declaration):
   # Representation of a field in a structure or union.
   #
@@ -529,6 +530,9 @@ class Field(Declaration):
   # in the opposite fashion with 63 as the high bit of the flit.
   # The StartOffset and EndOffset use the high bit = 0 system;
   # the StartBit and EndBit use high bit = 63.
+
+  # When name mangling is enabled names are modified by appending this suffix.
+  mangle_suffix = ''
 
   def __init__(self, name, type, offset_start, bit_width):
     """Creates a new field in a struct.
@@ -541,6 +545,7 @@ class Field(Declaration):
     Declaration.__init__(self)
     # name of the field declaration.
     self.name = name
+    self.mangled_name = name + self.mangle_suffix
     # String name of the C type, or a generic type for signed-ness.
     self.type = type
 
@@ -621,6 +626,10 @@ class Field(Declaration):
                                         self.StartFlit(), self.StartBit(),
                                         self.EndFlit(), self.EndBit()))
 
+  @classmethod
+  def SetMangling(cls, suffix):
+      cls.mangle_suffix = suffix
+
   def fields_to_set(self):
     """Returns a list of packed fields (fields actually holding multiple
     other fields).
@@ -631,6 +640,9 @@ class Field(Declaration):
 
   def Name(self):
     return self.name
+
+  def MangledName(self):
+    return self.mangled_name
 
   def Type(self):
     return self.type
@@ -790,11 +802,13 @@ class Field(Declaration):
         new_subfield.CreateSubfields()
 
 
-  def DefinitionString(self, linux_type=False, dpu_endian=False):
+  def DefinitionString(self, linux_type=False, dpu_endian=False, mangled=True):
     """Pretty-print a field in a structure or union.  Returns string."""
     str = ''
     field_type = self.Type()
     type_name = field_type.DeclarationName(linux_type, dpu_endian);
+
+    name = self.mangled_name if mangled else self.name
 
     if field_type.IsRecord():
       struct = field_type.base_type.node
@@ -815,11 +829,11 @@ class Field(Declaration):
     if self.type.IsArray():
       if self.type.ArraySize() == 0:
         str += '%s %s[];%s\n' % (type_name,
-                                 self.name,
+                                 name,
                                  key_comment)
       else:
         str += '%s %s[%d];%s\n' % (type_name,
-                                   self.name,
+                                   name,
                                    self.type.ArraySize(),
                                    key_comment)
     else:
@@ -829,9 +843,7 @@ class Field(Declaration):
       var_bits = ''
       if self.type.IsScalar() and type_width != var_width:
         var_bits = ':%d' % var_width
-      str += '%s %s%s;%s\n' % (type_name,
-                                   self.name, var_bits,
-                                   key_comment)
+      str += '%s %s%s;%s\n' % (type_name, name, var_bits, key_comment)
 
     return str
 
@@ -1042,7 +1054,7 @@ class Struct(Declaration):
     of the provided type inside a union inside the current structure.
     """
     for field in self.FieldsBeforePacking():
-      if field.type.IsRecord() and field.type.base_type.node.is_union:
+      if field.type.IsUnion():
         union = field.type.base_type.node
         for union_field in union.FieldsBeforePacking():
           if (union_field.type.IsRecord() and
@@ -1457,9 +1469,8 @@ class GenParser:
     # Current line being parsed.
     self.current_line = 0
 
-    self.mangle_suffix = ''
     if mangle_fields:
-        self.mangle_suffix = '_' + random.choice(string.ascii_letters)
+        Field.SetMangling('_' + random.choice(string.ascii_letters))
 
     self.base_types = {}
     type_map = DefaultTypeMap(linux_type)
@@ -1919,8 +1930,7 @@ class GenParser:
         'field name "%s" is not a valid identifier name.' % name)
       return True
 
-    mangled_name = name + self.mangle_suffix
-    if containing_struct.HasFieldWithName(mangled_name):
+    if containing_struct.HasFieldWithName(name):
       self.AddError(
         'Field with name "%s" already exists in struct "%s"' % (
           name, containing_struct.Name()))
@@ -1951,7 +1961,7 @@ class GenParser:
         self.AddError('Bit pattern specified for zero-length array: "%s".' % flit_bit_spec_str)
         return True
 
-      zero_array = Field(mangled_name, type, -1, -1)
+      zero_array = Field(name, type, -1, -1)
       zero_array.no_offset = True
       zero_array.key_comment = key_comment
       zero_array.body_comment = body_comment
@@ -1977,7 +1987,7 @@ class GenParser:
     start_offset = flit * 64 + (utils.FLIT_SIZE - start_bit - 1)
     end_offset = flit * 64 + (utils.FLIT_SIZE - end_bit - 1)
     bit_size = end_offset - start_offset + 1
-    new_field = Field(mangled_name, type, start_offset, bit_size)
+    new_field = Field(name, type, start_offset, bit_size)
     new_field.filename = self.current_document.filename
     new_field.line_number = self.current_line
 
