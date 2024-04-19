@@ -90,6 +90,9 @@ Field read/write macros.
 {% macro writeField(field) %}
 {% if field.swappable %}{{toDpuWrapper(field)}}({{field.name}}){% else %}{{field.name}}{% endif %}
 {%- endmacro %}
+{% macro bitfieldMacro(field, suffix) %}
+{{field.parent_struct.name|as_macro}}_{{field.name|as_macro}}_{{suffix}}
+{%- endmacro %}
 {#
 
 How to render each struct
@@ -111,36 +114,36 @@ How to render each struct
      {% for f in field.packed_fields %}
        {% if f.is_reserved == false %}
 /* Offset of field "{{f.name}}" in packed field "{{field.name}}" */
-#define {{struct.name|as_macro}}_{{f.name|as_macro}}_S {{f.shift()}}U
+#define {{bitfieldMacro(f, 'S')}} {{f.shift()}}U
 
 /* Mask of field "{{f.name}}" in packed field "{{field.name}}"
  * after shift.
  */
-#define {{struct.name|as_macro}}_{{f.name|as_macro}}_M {{f.mask}}
+#define {{bitfieldMacro(f, 'M')}} {{f.mask}}
 
 /* Shifts a value to the location to be inserted in field {{f.name}}
  * inside packed field {{field.name}}.
  */
-#define {{struct.name|as_macro}}_{{f.name|as_macro}}_P(x) ({{toDpuWrapper(field)}}(({{f.type | as_cast}} x) << {{struct.name|as_macro}}_{{f.name|as_macro}}_S))
+#define {{bitfieldMacro(f, 'P')}}(x) ({{toDpuWrapper(field)}}(({{f.type | as_cast}}(x)) << {{bitfieldMacro(f, 'S')}}))
 
 /* Shifts a value to the location to be inserted in field {{f.name}}
  * inside packed field {{field.name}}.
  * Caller responsible for swapping order of bytes in case storing to a
  * different endianness.
  */
-#define {{struct.name|as_macro}}_{{f.name|as_macro}}_P_NOSWAP(x) (({{f.type | as_cast}} x) << {{struct.name|as_macro}}_{{f.name|as_macro}}_S)
+#define {{bitfieldMacro(f, 'P_NOSWAP')}}(x) (({{f.type | as_cast}}(x)) << {{bitfieldMacro(f, 'S')}})
 
 /* Returns value for field {{field.name}} from packed field
  * {{field.name}}.
  */
-#define {{struct.name|as_macro}}_{{f.name|as_macro}}_G(x) (({{fromDpuWrapper(field)}}(x) >> {{struct.name|as_macro}}_{{f.name|as_macro}}_S) & {{struct.name|as_macro}}_{{f.name|as_macro}}_M)
+#define {{bitfieldMacro(f, 'G')}}(x) (({{fromDpuWrapper(field)}}(x) >> {{bitfieldMacro(f, 'S')}}) & {{bitfieldMacro(f, 'M')}})
 
 /* Clears out the field {{f.name}} inside packed field
  *  {{field.name}}
  *  Usage:
  *    x.{{field.name}} &= {{struct.name|as_macro}}_{{f.name|as_macro}}_Z;
  */
-#define {{struct.name|as_macro}}_{{f.name|as_macro}}_Z (~(({{f.type|as_cast}}{{struct.name|as_macro}}_{{f.name|as_macro}}_M) << {{struct.name|as_macro}}_{{f.name|as_macro}}_S))
+#define {{bitfieldMacro(f, 'Z')}} (~(({{f.type|as_cast}}{{bitfieldMacro(f, 'M')}}) << {{bitfieldMacro(f, 'S')}}))
 
       {% endif %}
     {% endfor %}
@@ -156,15 +159,15 @@ The field getters and setters
 {% for subfield in field.fields_to_set() %}
 static inline {{subfield | type_only}} {{struct.name}}_get_{{subfield.name}}(const struct {{struct.init_struct().name}} *s)
 {
-	return {{subfield.parent_struct.name|as_macro}}_{{subfield.name|as_macro}}_G(s->{{field.init_accessor()}}{{field.name}});
+	return {{bitfieldMacro(subfield, 'G')}}(s->{{field.init_accessor()}}{{field.name}});
 }
 
 static inline void {{struct.name}}_set_{{subfield.name}}(struct {{struct.init_struct().name}} *s, {{subfield | as_declaration }})
 {
 	{{field | as_declaration}} = {{fromDpuWrapper(field)}}(s->{{field.init_accessor()}}{{field.name}});
 
-	{{field.name}} &= {{subfield.parent_struct.name|as_macro}}_{{subfield.name|as_macro}}_Z;
-	{{field.name}} |= {{subfield.parent_struct.name|as_macro}}_{{subfield.name|as_macro}}_P_NOSWAP({{subfield.name}});
+	{{field.name}} &= {{bitfieldMacro(subfield, 'Z')}};
+	{{field.name}} |= {{bitfieldMacro(subfield, 'P_NOSWAP')}}({{subfield.name}});
 	s->{{field.init_accessor()}}{{field.name}} = {{writeField(field)}};
 }
 
@@ -199,7 +202,7 @@ The initializer
     {% if field.packed_fields %}
 		.{{field.name}} = {{toDpuWrapper(field)}}( \
       {% for f in field.fields_to_set() %}
-	{{f.parent_struct.name|as_macro}}_{{f.name|as_macro}}_P_NOSWAP({{f.name}}){{" |" if not loop.last }} \
+	{{bitfieldMacro(f, 'P_NOSWAP')}}({{f.name}}){{" |" if not loop.last }} \
       {% endfor %}), \
     {% else %}
       {% if field.swappable %}
@@ -232,7 +235,7 @@ static inline void {{struct.name}}_init(struct {{struct.init_struct().name}} *s{
     {% if field.packed_fields %}
       s->{{field.init_accessor()}}{{field.name}} = {{toDpuWrapper(field)}}(
       {% for f in field.fields_to_set() %}
-	{{f.parent_struct.name|as_macro}}_{{f.name|as_macro}}_P_NOSWAP({{f.name}}) {{" | " if not loop.last }}
+	{{bitfieldMacro(f, 'P_NOSWAP')}}({{f.name}}) {{" | " if not loop.last }}
       {% endfor %});
     {% else %}
       s->{{field.init_accessor()}}{{field.name}} = {{writeField(field)}};
