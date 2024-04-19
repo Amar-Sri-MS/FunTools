@@ -15,15 +15,12 @@ import utils
 FAKE_WIDTH = 8675309
 
 class BaseType:
-  """Represents a the base type name without qualifications.
+  """Represents a base type name without qualifications.
 
   The base type only contains a scalar type, struct, or union.
   Arrays, const, etc. would be represented in the Type class.
-
-  has_endianness is true if base type represents a type that has a fixed
-  endianness.  Fields with the base_type alone shouldn't be swapped.
   """
-  def __init__(self, name, bit_width=0, node=None, has_endianness=False):
+  def __init__(self, name, bit_width=0, node=None):
     # Short name used in file.
     self.name = name
     # Number of bits.
@@ -31,8 +28,9 @@ class BaseType:
     # Parsed struct or union, or None if built-in.
     self.node = node
 
-    # True if type represents a fixed endianness and shouldn't be swapped.
-    self.has_endianness = has_endianness
+    # True if type is a scalar that specifies an explicit endianness.
+    # Values of endian-explicit types should not be byte-swapped.
+    self.has_endianness = node is None and name in builtin_endian_type_widths
 
   def PrintFormat(self):
     """Returns format string for printf appropriate for the value.
@@ -52,6 +50,10 @@ class BaseType:
   def BitWidth(self):
     """Returns the width of the base type itself."""
     return self.bit_width
+
+  def IsScalar(self):
+      """Returns True for scalar types, False for structs/unions."""
+      return self.node is None
 
   def Alignment(self):
     """Returns expected alignment of objects of this type in bits.
@@ -86,9 +88,9 @@ class BaseType:
     return True
 
 
-# Types for fields with preferred endianness.
-# these fields are used to mark fields that should be kept in their
-# preferred orientation.
+# Types that specify a specific endianness.
+# These types are used to mark fields that should be kept in their
+# preferred byte-order.
 # Available both in Linux and FunOS.
 builtin_endian_type_widths = {
   '__le16': 16,
@@ -103,7 +105,7 @@ builtin_endian_type_widths = {
 # dictionary during execution.
 # Only these types are allowed in gen files.
 builtin_type_widths = {
-  # width of type in bytes.
+  # width of type in bits.
   'unsigned' : 32,
   'signed' : 32,
 
@@ -123,8 +125,8 @@ builtin_type_widths = {
   'uint128_t': 128,
 }
 
-# In Linux mode, only these unsigned fixed width type names are allowed.
-# They will be replaced with the __le* / __be* / __u8 types.
+# In Linux mode, only these unsigned fixed-width type names are allowed.
+# They will be replaced with the __le* / __be* / __u* types.
 builtin_linux_type_widths = {
   'uint8_t': 8,
   'uint16_t': 16,
@@ -235,7 +237,8 @@ def DefaultTypeMap(linux_type=False):
   type_map.update(builtin_endian_type_widths)
   return type_map
 
-def BaseTypeForName(name,linux_type=False):
+
+def BaseTypeForName(name, linux_type=False):
   """Returns a BaseType for the builtin type with the provided name.
 
   If linux_type is true, then substitute Linux type names for appropriate
@@ -246,40 +249,43 @@ def BaseTypeForName(name,linux_type=False):
   if name not in type_map:
     return None
 
-  has_endianness = name in builtin_endian_type_widths
+  return BaseType(name, type_map[name])
 
-  return BaseType(name, type_map[name], has_endianness=has_endianness)
 
 def TypeForName(name, linux_type=False):
   """Returns a type for the builtin type with the provided name.
 
   If linux_type is true, substitute linux types.
   """
-  type_map = DefaultTypeMap(linux_type=linux_type)
-
-  if name not in type_map:
+  base_type = BaseTypeForName(name, linux_type)
+  if base_type is None:
     return None
-  return Type(BaseTypeForName(name))
+
+  return Type(base_type)
+
 
 def ArrayTypeForName(name, element_count, linux_type=False):
-  """Returns a type for the builtin type with the provided name and size.
+  """Returns a type for an array of the given base type and element count.
 
   name is the string name of the type name.
   element_count is the size of the array.
-  linux_type is true if the type should use a """
-  type_map = DefaultTypeMap(linux_type)
-
-  if name not in type_map:
+  linux_type is true if the type should be one of the Linux types.
+  """
+  base_type = BaseTypeForName(name, linux_type)
+  if base_type is None:
     return None
-  return Type(BaseTypeForName(name), element_count)
+
+  return Type(base_type, element_count)
+
 
 def RecordTypeForStruct(the_struct):
   """Returns a type for a field that would hold a single struct."""
   base_type = BaseType(the_struct.name, 0, the_struct)
   return Type(base_type)
 
+
 def RecordArrayTypeForStruct(the_struct, element_count):
-  """Returns a type for a field that would hold a single struct."""
+  """Returns a type for a field that would hold an array of structs."""
   base_type = BaseType(the_struct.name, 0, the_struct)
   return Type(base_type, element_count)
 
@@ -290,18 +296,17 @@ class Type:
   def __init__(self, base_type, array_size=None):
     self.base_type = base_type
     # Number of elements in the array.
-    self.array_size = 0
+    self.array_size = None
     # Size of the total object in bits.
     self.bit_width = 0
     # True if type represents an array type.
     self.is_array = False
+    # True for scalar types
+    self.scalar = False
 
     if array_size is not None:
       self.is_array = True
       self.array_size = array_size
-    else:
-      self.is_array = False
-      self.array_size = None
 
     if self.is_array:
       self.alignment = base_type.Alignment()
@@ -311,6 +316,7 @@ class Type:
       self.alignment = base_type.Alignment()
       self.bit_width = base_type.BitWidth()
     else:
+      self.scalar = True
       self.alignment = base_type.Alignment()
       # Integer types generally align to size - 8 bit values
       # aligning to bytes, 16 bit to nibble, 32 bits to 32 bits, etc.
@@ -345,11 +351,7 @@ class Type:
   def IsScalar(self):
     """Returns true if the type is a scalar, builtin type."""
     # TODO(bowdidge): Should uint128_t count as scalar or not?
-    if self.is_array:
-      return False
-    if self.base_type.node:
-      return False
-    return True
+    return self.scalar
 
   def IsSwappable(self):
       """Returns True if the type is subject to byte-swapping.
@@ -367,7 +369,7 @@ class Type:
 
     If linux_type is true, use Linux's preferred type names.
     If dpu_endian is False, use an endian-agnostic type, i.e., host-endian.
-    If dpu-endian is True, use a DPU-endian type.
+    If dpu_endian is True, use a DPU-endian type.
     """
     if self.base_type.node:
       return self.base_type.node.Tag() + ' ' + self.base_type.name
@@ -407,8 +409,6 @@ class Type:
       else:
         return '%s[%d]' % (self.DeclarationName(linux_type, endian),
                            self.array_size)
-    elif self.base_type.node:
-      return '%s' % self.DeclarationName(linux_type, endian)
     else:
       return self.DeclarationName(linux_type, endian)
 
@@ -1464,9 +1464,7 @@ class GenParser:
     self.base_types = {}
     type_map = DefaultTypeMap(linux_type)
     for name in type_map:
-      has_endianness = name in builtin_endian_type_widths
-      self.base_types[name] = BaseType(name, type_map[name],
-                                       has_endianness=has_endianness)
+      self.base_types[name] = BaseType(name, type_map[name])
 
     SetDPUEndianMap(dpu_endianness)
 
