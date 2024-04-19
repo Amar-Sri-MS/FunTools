@@ -1166,6 +1166,18 @@ void dpcsocket_delete(struct dpcsock_connection *connection)
 	free(connection);
 }
 
+static void _read_enqueue_noblock(struct dpcsock_connection *connection)
+{
+	if (connection->socket->mode == SOCKMODE_FUNQ ||
+		connection->socket->mode == SOCKMODE_NVME) {
+		return;
+	}
+
+	if (!_read_all_available_data_from_fd(connection)) return;
+
+	_decode_jsons_from_buffer(connection);
+}
+
 static bool _read_enqueue(struct dpcsock_connection *connection)
 {
 	if (connection->socket->mode == SOCKMODE_FUNQ) {
@@ -1683,6 +1695,9 @@ static bool _do_cli(char *buf,
 		log_error("can't open connections\n");
 		goto connect_fail;
 	}
+
+	// read all existing data
+	_read_enqueue_noblock(funos);
 
 	size_t len = strlen(buf) + 1;
 
