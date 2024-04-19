@@ -9,6 +9,12 @@ PCIEPROXY_DIR := $(SDK_INSTALL_DIR)/pcieproxy/$(ARCH)
 PCIEPROXY_LIB_FLAGS = -fvisibility=hidden -fPIC
 
 PCIEPROXY_FLAGS = -I $(SDKDIR)/FunSDK -I $(SDKDIR) $(PCIEPROXY_LIB_FLAGS) -I $(SDKDIR)/FunSDK/funosrt/include
+# hardcode s1 headers for now ... we need access to some CSR defines for CSR2 target.
+# CCU bits are the same regardless of which chip is used, so this is safe to do, even if
+# not completely appropriate, but we're building only a single proxy that works with
+# all targets. No need to complicate this further by building per-dpu target if all
+# are going to end up being the same anyway
+PCIEPROXY_FLAGS += -I $(SDKDIR)/FunSDK/chip/s1/include
 
 BUILD_DIR := build/$(ARCH)
 
