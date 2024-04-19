@@ -95,6 +95,14 @@ Field read/write macros.
 {%- endmacro %}
 {#
 
+Macro to access a given field in a structure given a pointer to the structure.
+
+#}
+{% macro structField(ptr, field) %}
+{{ptr}}->{{field.init_accessor()}}{{field | as_mangled}}
+{%- endmacro %}
+{#
+
 How to render each struct
 
 #}
@@ -159,16 +167,16 @@ The field getters and setters
 {% for subfield in field.fields_to_set() %}
 static inline {{subfield | type_only}} {{struct.name}}_get_{{subfield.name}}(const struct {{struct.init_struct().name}} *s)
 {
-	return {{bitfieldMacro(subfield, 'G')}}(s->{{field.init_accessor()}}{{field | as_mangled}});
+	return {{bitfieldMacro(subfield, 'G')}}({{structField('s', field)}});
 }
 
 static inline void {{struct.name}}_set_{{subfield.name}}(struct {{struct.init_struct().name}} *s, {{subfield | as_declaration }})
 {
-	{{field | as_declaration}} = {{fromDpuWrapper(field)}}(s->{{field.init_accessor()}}{{field | as_mangled}});
+	{{field | as_declaration}} = {{fromDpuWrapper(field)}}({{structField('s', field)}});
 
 	{{field.name}} &= {{bitfieldMacro(subfield, 'Z')}};
 	{{field.name}} |= {{bitfieldMacro(subfield, 'P_NOSWAP')}}({{subfield.name}});
-	s->{{field.init_accessor()}}{{field | as_mangled}} = {{writeField(field)}};
+	{{structField('s', field)}} = {{writeField(field)}};
 }
 
 {% endfor %}
@@ -176,15 +184,15 @@ static inline void {{struct.name}}_set_{{subfield.name}}(struct {{struct.init_st
 static inline {{field | type_only}} {{struct.name}}_get_{{field.name}}(const struct {{struct.init_struct().name}} *s)
 {
   {% if field.swappable %}
-	return {{fromDpuWrapper(field)}}(s->{{field.init_accessor()}}{{field | as_mangled}});
+	return {{fromDpuWrapper(field)}}({{structField('s', field)}});
   {% else %}
-	return s->{{field.init_accessor()}}{{field | as_mangled}};
+	return {{structField('s', field)}};
   {% endif %}
 }
 
 static inline void {{struct.name}}_set_{{field.name}}(struct {{struct.init_struct().name}} *s, {{field | as_declaration }})
 {
-	s->{{field.init_accessor()}}{{field | as_mangled}} = {{writeField(field)}};
+	{{structField('s', field)}} = {{writeField(field)}};
 }
 
 {% endif %}
@@ -233,12 +241,12 @@ static inline void {{struct.name}}_init(struct {{struct.init_struct().name}} *s{
 {
   {% for field in struct.init_fields() %}
     {% if field.packed_fields %}
-      s->{{field.init_accessor()}}{{field | as_mangled}} = {{toDpuWrapper(field)}}(
+      {{structField('s', field)}} = {{toDpuWrapper(field)}}(
       {% for f in field.fields_to_set() %}
 	{{bitfieldMacro(f, 'P_NOSWAP')}}({{f.name}}) {{" | " if not loop.last }}
       {% endfor %});
     {% else %}
-      s->{{field.init_accessor()}}{{field | as_mangled}} = {{writeField(field)}};
+      {{structField('s', field)}} = {{writeField(field)}};
     {% endif %}
   {% endfor %}
 }
