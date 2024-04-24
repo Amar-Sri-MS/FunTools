@@ -80,9 +80,10 @@ class CGraph:
 
 
 class CGraphStackCheck:
-    def __init__(self, cgraph, report_cycles):
+    def __init__(self, cgraph, report_cycles, wutrace_enabled):
         self.cgraph = cgraph
         self.report_cycles = report_cycles
+        self.wutrace_enabled = wutrace_enabled
 
         # Each augmentation is a tuple of:
         #   - maximum stack usage including this node
@@ -129,6 +130,8 @@ class CGraphStackCheck:
         self.visited[root_id] = True
         neighbours = self.cgraph.adj_list[root_id]
         for idx, n in enumerate(neighbours):
+            if not self.wutrace_enabled and self.is_wutrace_node(n):
+                continue
             su = self.dfs_callgraph(n)
             if su > max_su:
                 max_su = su
@@ -149,6 +152,10 @@ class CGraphStackCheck:
         for v in self.visited:
             print("Cycle member: {}".format(self.cgraph.nodes[v]))
 
+    def is_wutrace_node(self, node_id):
+        node = self.cgraph.nodes[node_id]
+        return node.name == "trace_wu_send"
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -156,6 +163,11 @@ def main():
     parser.add_argument("function", type=str, help="function name as in .ci file")
     parser.add_argument(
         "--report-cycles", action="store_true", help="report cycles in graph"
+    )
+    # wu tracing adds a significant amount of C-stack, so make
+    # it opt-in when determining usage.
+    parser.add_argument(
+        "--wutrace-enabled", action="store_true", help="assume wu tracing is enabled"
     )
     args = parser.parse_args()
 
@@ -176,7 +188,7 @@ def main():
             except:
                 print(f, line)
 
-    sc = CGraphStackCheck(cgraph, args.report_cycles)
+    sc = CGraphStackCheck(cgraph, args.report_cycles, args.wutrace_enabled)
     su, culprits = sc.check(cgraph.get_node(args.function).id)
 
     print("Stack usage: {}".format(su))
