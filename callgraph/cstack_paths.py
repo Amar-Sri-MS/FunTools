@@ -69,6 +69,21 @@ class CGraph:
     def add_edge(self, start, end):
         self.adj_list[start.id].append(end.id)
 
+    def get_roots(self):
+        root_table = {}
+        for node in self.nodes:
+            root_table[node.id] = True
+
+        for nbs in self.adj_list:
+            for neighbour in nbs:
+                root_table[neighbour] = False
+
+        roots = set()
+        for node in root_table:
+            if root_table[node]:
+                roots.add(node)
+        return roots
+
     def __str__(self):
         s = ""
         for node in self.nodes:
@@ -160,7 +175,9 @@ class CGraphStackCheck:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("objdir", type=str, help="path to obj directory with .ci files")
-    parser.add_argument("function", type=str, help="function name as in .ci file")
+    parser.add_argument(
+        "--function", type=str, help="print stack path for function name as in .ci file"
+    )
     parser.add_argument(
         "--report-cycles", action="store_true", help="report cycles in graph"
     )
@@ -189,12 +206,39 @@ def main():
                 print(f, line)
 
     sc = CGraphStackCheck(cgraph, args.report_cycles, args.wutrace_enabled)
-    su, culprits = sc.check(cgraph.get_node(args.function).id)
+
+    if args.function:
+        print_worst_case_path(args.function, cgraph, sc)
+    else:
+        print_top_users(cgraph, sc)
+
+
+def print_worst_case_path(func_name, cgraph, stack_check):
+    su, culprits = stack_check.check(cgraph.get_node(func_name).id)
 
     print("Stack usage: {}".format(su))
     for culprit in culprits:
         cn = cgraph.nodes[culprit]
         print("\t{}\t{}".format(cn.stack_usage, cn.name))
+
+
+def print_top_users(cgraph, stack_check):
+    roots = cgraph.get_roots()
+
+    top_count = 100
+    su_and_root = []
+    for node in cgraph.nodes:
+        if node.id not in roots:
+            continue
+        su, _ = stack_check.check(node.id)
+        su_and_root.append((su, node.name))
+
+    su_and_root.sort()
+    su_and_root.reverse()
+    print("Top stack users")
+    for i in range(top_count):
+        su, node_name = su_and_root[i]
+        print("{}\t{}".format(su, node_name))
 
 
 def add_node_to_graph(cgraph, line):
