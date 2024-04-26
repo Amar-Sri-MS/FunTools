@@ -1702,8 +1702,8 @@ static bool _do_cli(char *buf,
 		goto connect_fail;
 	}
 
-	// assign random transaction id
-	tid = rand();
+	// assign random transaction id + pid of the process to avoid collision
+	tid = (uint64_t)rand() << 32 | getpid();
 	target_tid = tid;
 
 	size_t len = strlen(buf) + 1;
