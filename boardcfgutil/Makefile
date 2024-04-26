@@ -15,11 +15,12 @@ ARCH := $(shell uname -m)
 SDKDIR ?= ../../FunSDK
 SDK_INSTALL_DIR ?= $(SDKDIR)
 
-all: boardcfgutil 
+all: boardcfgutil
 
 # define header and library location in FunSDK
 CFLAGS ?= -I $(SDKDIR)/FunSDK/funosrt/include  \
-	  -I $(SDKDIR) -Wall -Werror
+	  -I $(SDKDIR) -Wall -Werror \
+	  -g
 
 # XXX: compatibility with FunOS build parameters
 LDFLAGS_ASAN ?= -fsanitize=address
@@ -51,10 +52,10 @@ ifeq ($(OS),Darwin)
 DARWIN_ASAN_FIXUP := find /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/ -name libclang_rt.asan_osx_dynamic.dylib -exec cp {} $(SDK_INSTALL_DIR)/bin/$(OS)/$(ARCH) \;
 endif
 
-install: boardcfgutil 
+install: boardcfgutil
 	mkdir -p $(SDK_INSTALL_DIR)/bin/$(OS)/$(ARCH)
 	cp boardcfgutil $(SDK_INSTALL_DIR)/bin/$(OS)/$(ARCH)
 	$(DARWIN_ASAN_FIXUP)
 
 clean:
-	-rm -f boardcfgutil 
+	-rm -f boardcfgutil

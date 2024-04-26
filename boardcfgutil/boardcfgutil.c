@@ -114,6 +114,7 @@ static struct valtab _cfgtype_valtab[] = {
 	{ "PCIE",   BOARD_CFG_PCIE },
 	{ "PLL",   BOARD_CFG_PLL },
 	{ "DDR", BOARD_CFG_DDR },
+	{ "PMIC", BOARD_CFG_PMIC },
 
 	/* must be last */
 	{NULL, 0}
@@ -344,6 +345,24 @@ static void _pretty_print_board_ddr_cfg(uint32_t depth, struct board_cfg_ddr *cf
 	printf("]\n\n");
 }
 
+static void _pretty_print_board_pmic_cfg(uint32_t depth, struct board_cfg_pmic *cfg)
+{
+	_pretty_print_board_cfg_header(depth, &cfg->header);
+	uint8_t num_entries = cfg->num_entries;
+
+	printf("%snum_entries: %u\n", _tabs(depth), num_entries);
+
+	for (uint8_t i = 0; i < num_entries; i++) {
+		printf("%s[%d]\n", _tabs(depth), i);
+		printf("%si2c m: %hhd s:0x%hx\n", _tabs(depth+1),
+			cfg->cfg[i].bus_id, le16toh(cfg->cfg[i].i2c_address));
+		printf("%sgpio: %hhd active_high: %s\n", _tabs(depth+1),
+			cfg->cfg[i].status_gpio, cfg->cfg[i].gpio_active_high ? "Y":"N");
+		printf("%s\n", _tabs(depth));
+	}
+	printf("\n");
+}
+
 static void _pretty_print_cfg(uint32_t depth, struct board_cfg *cfg)
 {
 	char mstr[sizeof(uint64_t) + 1];
@@ -393,6 +412,9 @@ static void _pretty_print_cfg(uint32_t depth, struct board_cfg *cfg)
 			break;
 		case BOARD_CFG_DDR:
 			_pretty_print_board_ddr_cfg(depth + 1, cfg_ptr);
+			break;
+		case BOARD_CFG_PMIC:
+			_pretty_print_board_pmic_cfg(depth + 1, cfg_ptr);
 			break;
 		default:
 			eprintf("Invalid cfg type: %u\n", cfg_type);
@@ -832,6 +854,20 @@ static bool board_cfg_add_pll_cfg(struct board_cfg **board_cfg_p,
 	return true;
 }
 
+static bool board_cfg_add_pmic_cfg(struct board_cfg **board_cfg_p,
+				  struct board_cfg_pmic *pmic_cfg)
+{
+	assert(board_cfg_p);
+	assert(pmic_cfg);
+
+	if(!(_board_cfg_alloc(board_cfg_p, pmic_cfg, sizeof(*pmic_cfg)))) {
+		eprintf("Failed to allocate pmic cfg entry!");
+		return false;
+	}
+
+	return true;
+}
+
 static void _fill_cfg_header(uint32_t type, uint64_t magic,
 			     uint32_t size, uint32_t version,
 			     OUT struct board_cfg_header *header)
@@ -1034,6 +1070,75 @@ static bool pll_cfg_parse(const struct fun_json *pll_cfg_json,
 	return true;
 }
 
+/* parse single array entry */
+static bool pmic_cfg_parse_single(const struct fun_json *pmic_cfg_entry_json,
+			struct board_cfg_pmic *pmic_cfg, int id)
+{
+	uint16_t tmp;
+	if (!fun_json_lookup_uint16(pmic_cfg_entry_json, "i2c_slave_addr", &tmp)) {
+		eprintf("pmic i2c_slave_addr config is missing\n");
+		return false;
+	}
+
+	pmic_cfg->cfg[id].i2c_address = htole16(tmp);
+
+	if (!fun_json_lookup_uint8(pmic_cfg_entry_json, "i2c_master", &pmic_cfg->cfg[id].bus_id)) {
+		eprintf("pmic i2c_master config is missing\n");
+		return false;
+	}
+
+	if (!fun_json_lookup_uint8(pmic_cfg_entry_json, "stat_gpio", &pmic_cfg->cfg[id].status_gpio)) {
+		eprintf("pmic stat_gpio config is missing\n");
+		return false;
+	}
+
+	if (!fun_json_lookup_bool(pmic_cfg_entry_json, "stat_gpio_active_high", &pmic_cfg->cfg[id].gpio_active_high)) {
+		eprintf("pmic stat_gpio_active_high config is missing\n");
+		return false;
+	}
+
+	return true;
+}
+
+/* parse pmic config and generate board config blob */
+static bool pmic_cfg_parse(const struct fun_json *pmic_cfg_json,
+			struct board_cfg **board_cfg)
+{
+	assert(pmic_cfg_json);
+	assert(board_cfg);
+
+	/*
+	 * PMIC config is an array of config entries
+	 */
+
+	struct board_cfg_pmic pmic_cfg = { };
+	fun_json_index_t cnt = fun_json_array_count(pmic_cfg_json);
+	if ((cnt == 0) || (cnt > BOARD_PMIC_CFG_NUM_ENTRIES_MAX)) {
+		eprintf("Invalid number of pmic config entries: %d\n", cnt);
+		return false;
+	}
+
+	_fill_cfg_header(BOARD_CFG_PMIC, BOARD_CFG_PMIC_MAGIC,
+		sizeof(pmic_cfg),
+		BOARD_PMIC_CFG_VERSION,
+		&pmic_cfg.header);
+
+	pmic_cfg.num_entries = cnt;
+
+	for_each_index_in_json_array(i, pmic_cfg_json) {
+		if (!pmic_cfg_parse_single(fun_json_array_at(pmic_cfg_json, i),
+					&pmic_cfg, i)) {
+			return false;
+		}
+	}
+
+	if (!board_cfg_add_pmic_cfg(board_cfg, &pmic_cfg))
+		return false;
+
+	return true;
+}
+
+
 static bool _is_posix_sku(const char *sku_name)
 {
 	return strstr(sku_name, "posix");
@@ -1135,6 +1240,12 @@ static bool _json_to_board_cfg(const struct fun_json *input_json,
 
 		if (!pll_cfg_parse(pll_cfg_json, board_cfg))
 			return false;
+	}
+
+	/* pmic control is not profile based, it is optional and may exist on some platforms only */
+	const struct fun_json *pmic_cfg_json = fun_json_lookup(sku_json, "pmic");
+	if (pmic_cfg_json && !pmic_cfg_parse(pmic_cfg_json, board_cfg)) {
+		return false;
 	}
 
 	return true;
@@ -1735,7 +1846,6 @@ main(int argc, char *argv[])
 			infile = optarg;
 			break;
 		case 'p':
-
 			prof_name = optarg;
 			break;
 		case 'd':
