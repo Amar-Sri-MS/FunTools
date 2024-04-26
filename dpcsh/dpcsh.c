@@ -104,6 +104,21 @@ struct dpc_worker {
 #define RETRY_NOARG   (RETRY_DEFAULT)
 static uint16_t connect_retries = RETRY_DEFAULT;
 
+/* increasing transaction id */
+static uint64_t tid = 0;
+static bool transaction_tracking = false;
+static bool transaction_completed = false;
+static uint64_t target_tid;
+
+static void track_tid(const struct fun_json *json)
+{
+	uint64_t tid;
+	if (fun_json_lookup_uint64(json, "tid", &tid) && tid == target_tid) {
+		log_debug(_debug_log, "Transaction %" PRIu64 " completed\n", tid);
+		transaction_completed = true;
+	}
+}
+
 static void _print_version(void)
 {
 	if (_nocli_script_mode && !_debug_log)
@@ -465,6 +480,10 @@ static struct fun_ptr_and_size _transcode(struct fun_ptr_and_size source,
 		json = fun_json_create_const_error("malformed JSON, transcode failed");
 	}
 
+	if (transaction_tracking) {
+		track_tid(json);
+	}
+
 	// transcode to text json
 	size_t unused;
 	char *json_text = NULL;
@@ -644,7 +663,6 @@ static struct fun_json *line2json(char *line, enum parsingmode pmode, const char
 
 	if (pmode == PARSE_TEXT) {
 		/* parse as a command-line with an always increasing tid */
-		static uint64_t tid = 0;
 		json = fun_commander_line_to_command(line, &tid, error);
 	} else {
 		/* parse as a real JSON blob */
@@ -1166,18 +1184,6 @@ void dpcsocket_delete(struct dpcsock_connection *connection)
 	free(connection);
 }
 
-static void _read_enqueue_noblock(struct dpcsock_connection *connection)
-{
-	if (connection->socket->mode == SOCKMODE_FUNQ ||
-		connection->socket->mode == SOCKMODE_NVME) {
-		return;
-	}
-
-	if (!_read_all_available_data_from_fd(connection)) return;
-
-	_decode_jsons_from_buffer(connection);
-}
-
 static bool _read_enqueue(struct dpcsock_connection *connection)
 {
 	if (connection->socket->mode == SOCKMODE_FUNQ) {
@@ -1696,8 +1702,9 @@ static bool _do_cli(char *buf,
 		goto connect_fail;
 	}
 
-	// read all existing data
-	_read_enqueue_noblock(funos);
+	// assign random transaction id + pid of the process to avoid collision
+	tid = (uint64_t)rand() << 32 | getpid();
+	target_tid = tid;
 
 	size_t len = strlen(buf) + 1;
 
@@ -1709,12 +1716,16 @@ static bool _do_cli(char *buf,
 	ok = _decode_jsons_from_buffer(cmd);
 	ok = ok && _write_dequeue(funos, cmd);
 
-	do {
-		ok = ok && _wait_read(funos);
-		ok = ok && _read_enqueue(funos);
-	} while (ok && !dpcsh_ptr_queue_size(funos->binary_json_queue));
+	transaction_tracking = true;
 
-	ok = ok && _write_dequeue(cmd, funos);
+	while (!transaction_completed) {
+		do {
+			ok = ok && _wait_read(funos);
+			ok = ok && _read_enqueue(funos);
+		} while (ok && !dpcsh_ptr_queue_size(funos->binary_json_queue));
+
+		ok = ok && _write_dequeue(cmd, funos);
+	}
 
 connect_fail:
 	close_connections(funos, cmd);
