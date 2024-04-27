@@ -808,7 +808,7 @@ class Field(Declaration):
     field_type = self.Type()
     type_name = field_type.DeclarationName(linux_type, dpu_endian);
 
-    name = self.mangled_name if mangled else self.name
+    name = self.mangled_name if mangled and not field_type.IsRecord() else self.name
 
     if field_type.IsRecord():
       struct = field_type.base_type.node
