@@ -117,7 +117,10 @@ def objdump_debug_line_parse(objdump, bin_file, is_full_path=False):
       continue
 
     if len(line) > 3:
-      continue
+      if line[3] == 'x':
+        line = line[:3]
+      else:
+        continue
 
     if len(line) == 2:
       if line[0] == 'CU:':
@@ -127,6 +130,9 @@ def objdump_debug_line_parse(objdump, bin_file, is_full_path=False):
     if len(line) == 1:
       assert cur_fname == None
       cur_fname = line[0].rsplit(':', 1)[0]
+      continue
+
+    if line[1] == '-':
       continue
 
     try:
