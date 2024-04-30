@@ -127,7 +127,10 @@ ALL_ROOTFS_FILES = {
     # bundle types
     "f1" : [ ('fs1600-rootfs-ro.squashfs', 'f1') ],
     "s1" : [ ('s1-rootfs-ro.squashfs', 's1') ],
-    "f1d1" : [ ('fs1600-rootfs-ro.squashfs', 'f1d1') ]
+    "f1d1" : [ ('fs1600-rootfs-ro.squashfs', 'f1d1') ],
+    # Currently bundle generation logic requires that a rootfs entry is present,
+    # even if no rootfs is actually specified (this needs a better fix in the bundle_gen logic)
+    "s2" : [ (None, 's2')]
 }
 
 CHIP_SPECIFIC_FILES = {
