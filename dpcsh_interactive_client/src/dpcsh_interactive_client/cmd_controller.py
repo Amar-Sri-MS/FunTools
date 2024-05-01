@@ -14,9 +14,7 @@ class CmdController(Cmd):
     def __init__(self, target_ip, target_port, verbose=False):
         Cmd.__init__(self)
         self.prompt = "(dpc_cli) "
-        self.dpc_client = DpcClient(
-            target_ip=target_ip, target_port=target_port, verbose=verbose
-        )
+        self.dpc_client = DpcClient(server_address=(target_ip,target_port))
         self._port_cmd_obj = PortCommands(dpc_client=self.dpc_client)
         self._funos_cmd_obj = FunOSCommands(dpc_client=self.dpc_client)
         self._sys_cmd_obj = SystemCommands(dpc_client=self.dpc_client)

@@ -8,7 +8,7 @@ import os
 import tempfile
 import shutil
 import numpy as np
-
+"""
 try:
     import pandas as pd
 
@@ -17,7 +17,7 @@ except ImportError:
     print("{}: Import failed, pandas numpy!".format(__file__))
     print(">>> 'pip install pandas' will fix this")
     os.exit(-1)
-
+"""
 """NOTE: this method is a duplicate from nu_commands.py"""
 TIME_INTERVAL = 1
 TOTAL_CLUSTERS = 8
