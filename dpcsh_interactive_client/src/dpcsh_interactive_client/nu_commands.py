@@ -6414,7 +6414,12 @@ class PeekCommands(object):
                         del result[key][_key]
         return result
 
-    def peek_ocm_resource_stats(
+    def peek_ocm_resource_stats(self, diff=None, grep_regex=None, get_result_only=False, iterations=9999999):
+        cmd = "stats/ocm_dam/pool"
+        result = self.dpc_client.execute(verb='peek', arg_list=[cmd])
+        return self._get_nested_dict_stats(cmd, cmd_output=result, iterations=iterations, grep_regex=grep_regex)
+
+    def _peek_ocm_resource_stats(
         self, diff=None, grep_regex=None, get_result_only=False, iterations=9999999
     ):
         iteration_count = 0
