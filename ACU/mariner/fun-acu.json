@@ -2,7 +2,7 @@
     "Disks": [
         {
             "PartitionTableType": "gpt",
-            "MaxSize": 512,
+            "MaxSize": 768,
 	    "BlockSize":4096,
             "Artifacts": [
                 {
@@ -46,9 +46,10 @@
                 }
             ],
             "PackageLists": [
-                "packagelists/core-packages-fun.json",
+                "packagelists/core-packages-image-aarch64.json",
 		"packagelists/core-tools-packages.json",
-		"packagelists/ssh-server.json"
+		"packagelists/ssh-server.json",
+		"packagelists/extra-packages-fun.json"
             ],
             "KernelOptions": {
                 "default": "kernel"
