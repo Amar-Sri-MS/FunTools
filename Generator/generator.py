@@ -511,9 +511,9 @@ def GenerateFromTemplate(doc, template_filename, generator_file, output_base,
   swap = 'generate_swap' in extra_vars
 
   # Don't use endian types by default.  None=plain type, True=big.
-  big_endian_types = None
-  if linux and swap:
-    big_endian_types = True
+  endian_types = None
+  if swap:
+    endian_types = True
 
   env = Environment(loader=FileSystemLoader(this_dir))
   env.lstrip_blocks = True
@@ -532,7 +532,7 @@ def GenerateFromTemplate(doc, template_filename, generator_file, output_base,
 
   # Filters for declarations.
   env.filters['as_definition'] = (
-    lambda decl : decl.DefinitionString(linux, big_endian_types))
+    lambda decl : decl.DefinitionString(linux, endian_types))
   env.filters['as_declaration'] = lambda decl :  decl.DeclarationString(linux)
   env.filters['as_cast'] = lambda type : type.CastString(linux)
   env.filters['as_mangled'] = lambda field : field.MangledName()

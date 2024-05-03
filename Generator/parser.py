@@ -144,25 +144,47 @@ no_endian_map = {
   'uint64_t' : '__u64'
 }
 
-# Type names to use for DPUs that may have either endianness at codegen time.
-dpu_any_endian_map = {
+# Type names to use for DPUs that may have either endianness at Linux codegen time.
+linux_any_endian_map = {
   'uint8_t' : '__u8',
   'uint16_t' : '__dpu16',
   'uint32_t' : '__dpu32',
   'uint64_t' : '__dpu64'
 }
 
-# Type names to use for BE DPUs
-dpu_be_endian_map = {
+# Type names to use for DPUs that may have native endianness at FunOS codegen time.
+dpu_no_endian_map = {
+  'uint8_t' : 'uint8_t',
+  'uint16_t' : 'uint16_t',
+  'uint32_t' : 'uint32_t',
+  'uint64_t' : 'uint64_t'
+}
+
+# Type names to use in Linux for BE DPUs
+linux_be_endian_map = {
   'uint8_t' : '__u8',
   'uint16_t' : '__be16',
   'uint32_t' : '__be32',
   'uint64_t' : '__be64'
 }
 
-# Type names to use for LE DPUs
-dpu_le_endian_map = {
+# Type names to use in FunOS for BE DPUs
+dpu_be_endian_map = {
+  'uint16_t' : '__be16',
+  'uint32_t' : '__be32',
+  'uint64_t' : '__be64'
+}
+
+# Type names to use in Linux for LE DPUs
+linux_le_endian_map = {
   'uint8_t' : '__u8',
+  'uint16_t' : '__le16',
+  'uint32_t' : '__le32',
+  'uint64_t' : '__le64'
+}
+
+# Type names to use in FunOS for LE DPUs
+dpu_le_endian_map = {
   'uint16_t' : '__le16',
   'uint32_t' : '__le32',
   'uint64_t' : '__le64'
@@ -170,16 +192,25 @@ dpu_le_endian_map = {
 
 dpu_endian_map = None
 
-def SetDPUEndianMap(dpu_endianness):
+def SetDPUEndianMap(dpu_endianness, linux_type):
     """Based on the targeted DPU endianness select the endianness map."""
     global dpu_endian_map
 
     if dpu_endianness == 'Any':
-        dpu_endian_map = dpu_any_endian_map
+        if linux_type:
+          dpu_endian_map = linux_any_endian_map
+        else:
+          dpu_endian_map = dpu_no_endian_map
     elif dpu_endianness == 'BE':
-        dpu_endian_map = dpu_be_endian_map
+        if linux_type:
+          dpu_endian_map = linux_be_endian_map
+        else:
+          dpu_endian_map = dpu_be_endian_map
     elif dpu_endianness == 'LE':
-        dpu_endian_map = dpu_le_endian_map
+        if linux_type:
+          dpu_endian_map = linux_le_endian_map
+        else:
+          dpu_endian_map = dpu_le_endian_map
     else:
         raise ValueError('unknown DPU endianness %s' % dpu_endianness)
 
@@ -374,17 +405,19 @@ class Type:
     if self.base_type.node:
       return self.base_type.node.Tag() + ' ' + self.base_type.name
 
-    if linux_type:
-      if self.IsNoSwap():
-        # Already have an endianness?  Use the existing type name.
-        return self.base_type.name
-      elif dpu_endian is False:
+    if self.IsNoSwap():
+      # Already have an endianness?  Use the existing type name.
+      return self.base_type.name
+    elif dpu_endian is False:
+      if linux_type is True:
         return no_endian_map[self.base_type.name]
-      elif dpu_endian is True:
-        if self.base_type.name in dpu_endian_map:
-          return dpu_endian_map[self.base_type.name]
       else:
-        raise ValueError('bad dpu_endian value')
+        return self.base_type.name
+    elif dpu_endian is True:
+      if self.base_type.name in dpu_endian_map:
+        return dpu_endian_map[self.base_type.name]
+    elif linux_type:
+      raise ValueError('bad dpu_endian value %s' % (dpu_endian  ))
 
     return self.base_type.Name()
 
@@ -1477,7 +1510,7 @@ class GenParser:
     for name in type_map:
       self.base_types[name] = BaseType(name, type_map[name])
 
-    SetDPUEndianMap(dpu_endianness)
+    SetDPUEndianMap(dpu_endianness, linux_type)
 
   def AddError(self, msg):
     if self.current_document.filename:
