@@ -33,10 +33,7 @@
 import os
 import argparse
 import sys
-from pathlib import Path
-import json
-from typing import Iterable, Any, List, Optional, Union, Callable, TextIO, Dict, Tuple
-import yaml
+from typing import Tuple
 
 
 try:
@@ -198,7 +195,7 @@ def _generate_error_outputs(df: pd.DataFrame, output_filename: str) -> None:
 
     html_header_str = f"<br>  <br> <h1> {error_msg} </h1> <br>"
     html_header_str += f"<h4> {error_desc} </h4>"
-    html_header_str += f"<br>"
+    html_header_str += "<br>"
     html_footer_str = """<br> <br>"""
     html_str = html_header_str + table_str + html_footer_str
 
@@ -232,7 +229,7 @@ def main() -> None:
         num_diff, num_doc, comp_df = comp_sdk_doc(prev_summary, new_summary, debug)
         if num_diff > 0 and num_diff > num_doc:
             _generate_error_outputs(comp_df, output_filename)
-            if (args.fail_on_error):
+            if args.fail_on_error:
                 ret = -1
     else:
         assert False, "Unsupported compare type: {}".format(compare_type)
