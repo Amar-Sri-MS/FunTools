@@ -331,6 +331,29 @@ The body of the header.
 #else
 #define _MANGLE(x) x
 #endif /* HCI_MANGLE */
+
+/* hci-specific operators for mangling */
+#define hci_sizeof(x)       sizeof(_MANGLE(x))
+#define hci_offsetof(x)     offsetof(_MANGLE(x))
+#define hci_addressof(x)    (&_MANGLE(x))
+#define hci_array_access(x) _MANGLE(x)
+
+{% elif generate_mangle %}
+
+/* hci-specific operators for mangling */
+#define hci_sizeof(x)       sizeof(x ## _{{ mangle_suffix }})
+#define hci_offsetof(x)     offsetof(x ## _{{ mangle_suffix }})
+#define hci_addressof(x)    (&(x ## _{{ mangle_suffix }}))
+#define hci_array_access(x) (x ## _{{ mangle_suffix }})
+
+{% else  %}
+
+/* hci-operators are just native for mangling */
+#define hci_sizeof(x)        sizeof(x)
+#define hci_offsetof(x)      offsetof(x)
+#define hci_addressof(x)     (&(x))
+#define hci_array_access(x)  (x)
+
 {% endif %}
 
 {% for decl in declarations %}

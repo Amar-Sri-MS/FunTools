@@ -1483,7 +1483,7 @@ class GenParser:
   # Parses a generated header document and creates the internal data structure
   # describing the file.
 
-  def __init__(self, linux_type=False, dpu_endianness = 'Any', mangle_fields = ""):
+  def __init__(self, linux_type=False, dpu_endianness = 'Any', mangle_fields = "", mangle_suffix = "x"):
     # Create a GenParser.
     # current_document is the top level object.
     self.current_document = Document()
@@ -1505,8 +1505,7 @@ class GenParser:
     self.current_line = 0
 
     if mangle_fields == "mangle":
-      mchar = random.choice(string.ascii_letters)
-      Field.SetMangling(lambda name: name + '_' + mchar)
+      Field.SetMangling(lambda name: name + '_' + mangle_suffix)
     elif mangle_fields == "flexmangle":
       Field.SetMangling(lambda name: f"_MANGLE({name})")
     else:

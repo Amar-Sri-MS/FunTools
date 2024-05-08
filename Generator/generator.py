@@ -18,6 +18,8 @@ import hashlib
 import os
 import subprocess
 import sys
+import random
+import string
 
 import htmlgen
 import parser
@@ -558,7 +560,11 @@ def GenerateFromTemplate(doc, template_filename, generator_file, output_base,
     }
 
   for var in extra_vars:
-    jinja_docs[var] = True
+    if type(var) is not tuple:
+      jinja_docs[var] = True
+    else:
+      print(f"Processing tuple variable {var}")
+      jinja_docs[var[0]] = var[1]
 
   template = env.get_template(template_filename)
   return template.render(jinja_docs, env=env)
@@ -591,6 +597,7 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
   # Process a single .gen file and create the appropriate header/docs.
   doc = None
   errors = None
+  mangle_suffix = None
 
   if input_filename.endswith('.gen') or input_filename.endswith('.pgen'):
     use_linux_types = (output_style == OutputStyleLinux)
@@ -598,6 +605,7 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
       mangle_fields = "flexmangle"
     elif ('mangle' in options):
       mangle_fields = "mangle"
+      mangle_suffix = random.choice(string.ascii_letters)
     else:
       mangle_fields = ""
 
@@ -606,7 +614,7 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
         dpu_endianness = 'BE'
     elif 'le' in options:
         dpu_endianness = 'LE'
-    gen_parser = parser.GenParser(use_linux_types, dpu_endianness, mangle_fields)
+    gen_parser = parser.GenParser(use_linux_types, dpu_endianness, mangle_fields, mangle_suffix)
     errors = gen_parser.Parse(input_filename, input_stream)
     doc = gen_parser.current_document
   else:
@@ -645,6 +653,7 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
   # Convert list of extra codegen features into variables named
   #  generate_{{codegen-style}} that will be in the template.
   extra_vars = ['generate_' + o for o in options]
+  extra_vars.append(("mangle_suffix", mangle_suffix))
   if output_style is OutputStyleHTML:
     html_generator = htmlgen.HTMLGenerator()
     source = html_generator.VisitDocument(doc)
