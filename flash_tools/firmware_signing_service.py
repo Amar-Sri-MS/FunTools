@@ -44,7 +44,8 @@ MAGIC_NUMBER_CERTIFICATE = 0xB1005EA5
 MAGIC_NUMBER_ENROLL_CERT = 0xB1005C1E
 
 
-SIGNING_SERVER_URL = "https://f1reg.fungible.com:4443"
+DEFAULT_SIGNING_SERVER = "https://f1reg.fungible.com:4443"
+SIGNING_SERVER_URL = os.environ.get('DPU_SIGNING_SERVER', DEFAULT_SIGNING_SERVER)
 
 # look for possible override ~/.config/signing.ini
 try:
