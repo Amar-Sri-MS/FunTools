@@ -594,7 +594,13 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
 
   if input_filename.endswith('.gen') or input_filename.endswith('.pgen'):
     use_linux_types = (output_style == OutputStyleLinux)
-    mangle_fields = 'mangle' in options
+    if ('flexmangle' in options):
+      mangle_fields = "flexmangle"
+    elif ('mangle' in options):
+      mangle_fields = "mangle"
+    else:
+      mangle_fields = ""
+
     dpu_endianness = 'Any'
     if 'be' in options:
         dpu_endianness = 'BE'
@@ -812,6 +818,7 @@ def main():
   codegen_le = SetFromArgs('le', codegen_args, False)
   codegen_init_macros = SetFromArgs('init_macros', codegen_args, False)
   codegen_mangle = SetFromArgs('mangle', codegen_args, False)
+  codegen_flexmangle = SetFromArgs('flexmangle', codegen_args, False)
 
   if codegen_be and codegen_le:
     sys.stderr.write('\'be\' and \'le\' codegen options are mutually exclusive\n')
@@ -839,6 +846,8 @@ def main():
     codegen_options.append('init_macros')
   if codegen_mangle:
     codegen_options.append('mangle')
+  if codegen_flexmangle:
+    codegen_options.append('flexmangle')
 
   if len(args) == 0:
       sys.stderr.write('No genfile named.\n')

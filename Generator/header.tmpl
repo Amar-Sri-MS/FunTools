@@ -324,6 +324,15 @@ The body of the header.
 #include <FunOS/utils/threaded/fun_json.h>
 {% endif %}
 
+{% if generate_flexmangle %}
+/* Flexible Mangling define "HCI_MANGLE" to get mangled field names */
+#ifdef HCI_MANGLE
+#define _MANGLE(x) x ## _l
+#else
+#define _MANGLE(x) x
+#endif /* HCI_MANGLE */
+{% endif %}
+
 {% for decl in declarations %}
 {% if decl.is_enum %}
  {{ enumDecl(decl) }}

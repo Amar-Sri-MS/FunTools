@@ -564,8 +564,8 @@ class Field(Declaration):
   # The StartOffset and EndOffset use the high bit = 0 system;
   # the StartBit and EndBit use high bit = 63.
 
-  # When name mangling is enabled names are modified by appending this suffix.
-  mangle_suffix = ''
+  # When name mangling is enabled names are modified by applying a lambda.
+  mangle_func = lambda self, x: x
 
   def __init__(self, name, type, offset_start, bit_width):
     """Creates a new field in a struct.
@@ -578,7 +578,7 @@ class Field(Declaration):
     Declaration.__init__(self)
     # name of the field declaration.
     self.name = name
-    self.mangled_name = name + self.mangle_suffix
+    self.mangled_name = self.mangle_func(name)
     # String name of the C type, or a generic type for signed-ness.
     self.type = type
 
@@ -660,8 +660,10 @@ class Field(Declaration):
                                         self.EndFlit(), self.EndBit()))
 
   @classmethod
-  def SetMangling(cls, suffix):
-      cls.mangle_suffix = suffix
+  def SetMangling(cls, func):
+    # lambdas on classes weirdly demand a self argument whereas
+    # lambdas on instances do not.
+    cls.mangle_func = lambda self, x: func(x)
 
   def fields_to_set(self):
     """Returns a list of packed fields (fields actually holding multiple
@@ -1481,7 +1483,7 @@ class GenParser:
   # Parses a generated header document and creates the internal data structure
   # describing the file.
 
-  def __init__(self, linux_type=False, dpu_endianness = 'Any', mangle_fields = False):
+  def __init__(self, linux_type=False, dpu_endianness = 'Any', mangle_fields = ""):
     # Create a GenParser.
     # current_document is the top level object.
     self.current_document = Document()
@@ -1502,8 +1504,13 @@ class GenParser:
     # Current line being parsed.
     self.current_line = 0
 
-    if mangle_fields:
-        Field.SetMangling('_' + random.choice(string.ascii_letters))
+    if mangle_fields == "mangle":
+      mchar = random.choice(string.ascii_letters)
+      Field.SetMangling(lambda name: name + '_' + mchar)
+    elif mangle_fields == "flexmangle":
+      Field.SetMangling(lambda name: f"_MANGLE({name})")
+    else:
+      Field.SetMangling(lambda name: name)
 
     self.base_types = {}
     type_map = DefaultTypeMap(linux_type)
