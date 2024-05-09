@@ -97,13 +97,13 @@ REWRITES: List[Tuple[str, str]] = [
 
     # get accessors. The suble differeneces in casts confuse comby, so we enumerate the possibilities
     ("(:[cast])->:[expr:e]->{member}", "{struct}_get_{member}((:[cast])->:[expr])"), # XXX: cast type
-    ("(:[cast]).:[expr:e]->{member}", "{struct}_get_{member}((:[cast]).:[expr])"), # XXX: cast type
+    ("(:[cast])->:[expr:e].{member}", "{struct}_get_{member}((:[cast]).:[expr])"), # XXX: cast type
     ("(:[cast]):[expr:e]->{member}", "(:[cast]){struct}_get_{member}(:[expr])"), # XXX: cast result
     (":[expr:e]->{member}", "{struct}_get_{member}(:[expr])"),
 
     # get accessors. The suble differeneces in casts confuse comby, so we enumerate the possibilities
     ("(:[cast]).:[expr:e].{member}", "{struct}_get_{member}(&(:[cast]).:[expr])"), # XXX: cast type
-    ("(:[cast]).:[expr:e].{member}", "{struct}_get_{member}(&(:[cast]).:[expr])"), # XXX: cast type
+    ("(:[cast]).:[expr:e]->{member}", "{struct}_get_{member}(&(:[cast])->:[expr])"), # XXX: cast type
     ("(:[cast]):[expr:e].{member}", "(:[cast]){struct}_get_{member}(&:[expr])"), # XXX: cast result
     (":[expr:e].{member}", "{struct}_get_{member}(&:[expr])"),
 ]
