@@ -563,7 +563,7 @@ def GenerateFromTemplate(doc, template_filename, generator_file, output_base,
     if type(var) is not tuple:
       jinja_docs[var] = True
     else:
-      print(f"Processing tuple variable {var}")
+      # print(f"Processing tuple variable {var}")
       jinja_docs[var[0]] = var[1]
 
   template = env.get_template(template_filename)
