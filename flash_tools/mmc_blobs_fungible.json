@@ -24,17 +24,6 @@
             "no_export": true
         },
 
-        "FungibleDxe.signed.bin": {
-            "chip": [ "f1", "f1d1" ],
-            "source": "FungibleDxe.bin",
-            "version": 1,
-            "fourcc": "dcc1",
-            "cert": "",
-            "customer_cert": "",
-            "key_index": 0,
-            "description": "",
-            "pad": 512
-        },
         "FungibleDxe.huop.signed.bin": {
             "chip": [ "f1", "f1d1" ],
             "source": "FungibleDxe.bin",
