@@ -15,13 +15,14 @@ import re
 from comby import Comby # type: ignore 
 import os
 import pickle
+import glob
 
 comby = Comby(language=".c")
 
 ## parse the following line with regex:
 ## accelerators/crypto_hostif.c:3567:22: error: ‘struct fun_req_common’ has no member named ‘op’; did you mean ‘op_l’?
 ## <filname>:<line>:<col>: error: ‘struct <struct>’ has no member named ‘<member>’; did you mean ‘<member>_l’?
-RE: str = r"([\.\/a-zA-Z0-9_-]+):(\d+):(\d+): error: .struct (\w+). has no member named .(\w+).; did you mean .(\w+)_l.\?"
+RE: str = r"([\.\/a-zA-Z0-9_-]+):(\d+):(\d+:)? error: .(?:const )?struct (\w+). has no member named .(\w+).; did you mean .(\w+)_l.\?"
 
 MAX_LOG_LEVEL: int = 0
 
@@ -62,16 +63,34 @@ class Fixup:
         return f"{self.line}: {self.stname}"
 
 ###
-##  parse_args
+##  line rewrite logic
 #
 
+# rewrites for lines missing accessors (usually arrays)
+ARRAY_REWRITES: List[Tuple[str, str]] = [
+    (":[expr:e]->{member};", "hci_array_access(:[expr]->{member});"),
+    (":[expr:e]->{member}", "hci_array_access(:[expr]->{member})"),
+    
+    (":[expr:e].{member};", "hci_array_access(:[expr].{member});"),
+    (":[expr:e].{member}", "hci_array_access(:[expr].{member})"),
+]
+
+# rewrites for lines with nested accessors (type mismatch)
+NESTED_REWRITES: List[Tuple[str, str]] = [
+    (":[expr:e]->:[nest:e].{member}:[semi~;?]",
+        "({struct}_get_{member}(:[expr])):[semi]"),
+
+    ("(:[expr:e]->:[nest:e].{member}):[semi~;?]",
+        "({struct}_get_{member}(:[expr])):[semi]"),
+
+]
+
+# catch-all rewrites for general field access
 REWRITES: List[Tuple[str, str]] = [
     # regular assignments -> set accessor
     # need a variant with semicolon and without because of the way comby parses weird
-    (":[expr:e]->{member} = :[value:e];", "{struct}_set_{member}(:[expr], :[value]);"), # XXX: semicolon
-    (":[expr:e]->{member} = :[value:e]", "{struct}_set_{member}(:[expr], :[value])"),
-    (":[expr:e].{member} = :[value:e];", "{struct}_set_{member}(&:[expr], :[value]);"), # XXX: semicolon
-    (":[expr:e].{member} = :[value:e]", "{struct}_set_{member}(&:[expr], :[value])"),
+    (":[expr:e]->{member} = :[value:e]:[semi~;?]", "{struct}_set_{member}(:[expr], :[value]):[semi]"),
+    (":[expr:e].{member} = :[value:e]:[semi~;?]", "{struct}_set_{member}(&:[expr], :[value]):[semi]"),
 
     # or-equals (|=) assignments -> expand to a set and a get, eg.
     # foo->bar |= expr; -> foo_set_bar(foo_get_bar(foo) | expr);
@@ -96,42 +115,42 @@ REWRITES: List[Tuple[str, str]] = [
     ("!:[expr:e].{member}", "!{struct}_get_{member}(&:[expr])"), # XXX: exclamation
 
     # get accessors. The suble differeneces in casts confuse comby, so we enumerate the possibilities
-    ("(:[cast])->:[expr:e]->{member}", "{struct}_get_{member}((:[cast])->:[expr])"), # XXX: cast type
-    ("(:[cast])->:[expr:e].{member}", "{struct}_get_{member}((:[cast]).:[expr])"), # XXX: cast type
+    ("(:[cast])->:[expr:e]->{member}", "{struct}_get_{member}(&(:[cast])->:[expr])"), # XXX: cast type
+    ("(:[cast])->:[expr:e].{member}", "{struct}_get_{member}(&(:[cast])->:[expr])"), # XXX: cast type
     ("(:[cast]):[expr:e]->{member}", "(:[cast]){struct}_get_{member}(:[expr])"), # XXX: cast result
     (":[expr:e]->{member}", "{struct}_get_{member}(:[expr])"),
 
     # get accessors. The suble differeneces in casts confuse comby, so we enumerate the possibilities
     ("(:[cast]).:[expr:e].{member}", "{struct}_get_{member}(&(:[cast]).:[expr])"), # XXX: cast type
-    ("(:[cast]).:[expr:e]->{member}", "{struct}_get_{member}(&(:[cast])->:[expr])"), # XXX: cast type
+    ("(:[cast]).:[expr:e]->{member}", "{struct}_get_{member}(&(:[cast]).:[expr])"), # XXX: cast type
     ("(:[cast]):[expr:e].{member}", "(:[cast]){struct}_get_{member}(&:[expr])"), # XXX: cast result
     (":[expr:e].{member}", "{struct}_get_{member}(&:[expr])"),
 ]
 
 def fixup_line(accessors: Dict[str, Accessor], lines: List[str], fixup: Fixup) -> None:
 
-    LOG(f"Fixing up line: {fixup.line}")
+    LOG(f"Fixing up line: {fixup.line} for {fixup.struct}.{fixup.member}")
 
     gettr = f"{fixup.struct}_get_{fixup.member}"
     settr = f"{fixup.struct}_set_{fixup.member}"
 
-    # check there's an accessor
     if (gettr not in accessors.keys()) and (settr not in accessors.keys()):
-        LOG(f"\tSkipping rewrite, no accessor found: {gettr} or {settr}")
-        return
-
-    # check it's the right type
-    if (accessors[gettr].structarg != fixup.struct):
-        LOG(f"\tSkipping rewrite, wrong type: {accessors[gettr].structarg} != {fixup.struct}")
-        return
+        # no accessor, so try array rewrites
+        VERBOSE('\tAppears to be an array')
+        rewrite_list = ARRAY_REWRITES
+    elif (accessors[gettr].structarg != fixup.struct):
+        # no type match, so likely a nested accessor
+        VERBOSE('\tAppears to be a nested accessor')
+        rewrite_list = NESTED_REWRITES
+    else:
+        # accessor with type match, so use regular rewrites
+        VERBOSE('\tAppears to be a regular accessor')
+        rewrite_list = REWRITES
 
     # get the line
     line = lines[fixup.line - 1]
 
-    # see if it's an assignment
-    matchstr = f":[expr]->{fixup.member} = :[value]"
-
-    for rewrite in REWRITES:
+    for rewrite in rewrite_list:
 
         matchstr = rewrite[0].format(member=fixup.member, struct=fixup.struct)
         replacestr = rewrite[1].format(member=fixup.member, struct=fixup.struct)
@@ -204,15 +223,9 @@ def load_accessors(hciheader: str) -> Dict[str, Accessor]:
     # if PKLFILE exists, load it
     # otherwise, parse hciheader and save PKLFILE
 
-    assert os.path.exists(hciheader), f"File {hciheader} does not exist"
+    # assert os.path.exists(hciheader), f"File {hciheader} does not exist"
 
-    hciheader_mtime = os.path.getmtime(hciheader)
-    try:
-        pklfile_mtime = os.path.getmtime(PKLFILE)
-    except FileNotFoundError:
-        pklfile_mtime = 0
-
-    if hciheader_mtime < pklfile_mtime:
+    if os.path.exists(PKLFILE):
         LOG(f"Loading accessors from {PKLFILE}")
         try:
             with open(PKLFILE, "rb") as fl:
@@ -222,33 +235,36 @@ def load_accessors(hciheader: str) -> Dict[str, Accessor]:
             LOG(f"Error loading pickle file: {e}")
             pass
 
-    LOG(f"Regenerating accessors from {hciheader}, this may take a while")
-    fl = open(hciheader, "r")
-    lines = fl.readlines()
+    acc_files = glob.glob(hciheader)
 
-    accessors: Dict[str, Accessor] = {}
+    LOG(f'Regenerating accessors from {", ".join(acc_files)}, this may take a while')
+    for header in acc_files:
+        fl = open(header, "r")
+        lines = fl.readlines()
 
-    account: int = 0
-    lcount: int = 0
-    while True:
-        # make a bunch of text
-        line = "".join(lines[lcount:lcount+STRIDE])
+        accessors: Dict[str, Accessor] = {}
 
-        # print(line)
-        if (lcount > len(lines)):
-            break
+        account: int = 0
+        lcount: int = 0
+        while True:
+            # make a bunch of text
+            line = "".join(lines[lcount:lcount+STRIDE])
 
-        # parse the text
-        accs = parse_accessor(line)
+            # print(line)
+            if (lcount > len(lines)):
+                break
 
-        for acc in accs:
-            VERBOSE(f"Found Accessor: {acc.func}")
-            accessors[acc.func] = acc
-            account += 1
+            # parse the text
+            accs = parse_accessor(line)
 
-        if (lcount % 1000) == 0:
-            LOG(f"{lcount}/{len(lines)} lines processed, {account} accessors found")
-        lcount += STRIDE
+            for acc in accs:
+                VERBOSE(f"Found Accessor: {acc.func}")
+                accessors[acc.func] = acc
+                account += 1
+
+            if (lcount % 1000) == 0:
+                LOG(f"{lcount}/{len(lines)} lines processed, {account} accessors found")
+            lcount += STRIDE
 
     LOG(f"Found {account} ({len(accessors)}) accessors, saving pickle file {PKLFILE}")
 
@@ -264,13 +280,13 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
  
     # We need to header file to scrape valid accessor functions
-    parser.add_argument("hciheader", help="funhci.h header file")
+    parser.add_argument("hciheader", help="funhci.h header file glob")
 
     # File full of errors
     parser.add_argument("errfile", help="Error file")
  
-    # Optional argument flag which defaults to False
-    #parser.add_argument("-f", "--flag", action="store_true", default=False)
+    # Just parse the error file and exit
+    parser.add_argument("-J", "--just-errs", action="store_true", default=False)
  
     # Optional argument which requires a parameter (eg. -d test)
     #parser.add_argument("-n", "--name", action="store", dest="name")
@@ -296,7 +312,8 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args: argparse.Namespace = parse_args()
  
-    accessors: Dict[str, Accessor] = load_accessors(args.hciheader)
+    if not args.just_errs:
+        accessors: Dict[str, Accessor] = load_accessors(args.hciheader)
 
     LOG(f"Reading file {args.errfile}")
     fl = open(args.errfile, "r")
@@ -320,7 +337,10 @@ def main() -> int:
         # extract match groups
         filename: str = match.group(1)
         line: int = int(match.group(2))
-        col: int = int(match.group(3))
+        try:
+            col: int = int(match.group(3))
+        except:
+            col = -1
         struct: str = match.group(4)
         member: str = match.group(5)
         member_l: str = match.group(6)
@@ -336,6 +356,10 @@ def main() -> int:
         fixups.setdefault(filename, list()).append(Fixup(filename, line, col, struct, member))
 
     LOG(f"Matched {matched} lines")
+
+    if args.just_errs:
+        LOG("Early exit for matching errors only")
+        return -1
 
     VERBOSE(f"Found accessors: {accessors.keys()}")
 
