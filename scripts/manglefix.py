@@ -89,8 +89,10 @@ NESTED_REWRITES: List[Tuple[str, str]] = [
 REWRITES: List[Tuple[str, str]] = [
     # regular assignments -> set accessor
     # need a variant with semicolon and without because of the way comby parses weird
-    (":[expr:e]->{member} = :[value:e]:[semi~;?]", "{struct}_set_{member}(:[expr], :[value]):[semi]"),
-    (":[expr:e].{member} = :[value:e]:[semi~;?]", "{struct}_set_{member}(&:[expr], :[value]):[semi]"),
+    (":[expr:e]->{member} = :[value];", "{struct}_set_{member}(:[expr], :[value]);"), # XXX: semicolon
+    (":[expr:e]->{member} = :[value:e]", "{struct}_set_{member}(:[expr], :[value])"),
+    (":[expr:e].{member} = :[value];", "{struct}_set_{member}(&:[expr], :[value]);"), # XXX: semicolon
+    (":[expr:e].{member} = :[value:e]", "{struct}_set_{member}(&:[expr], :[value])"),
 
     # or-equals (|=) assignments -> expand to a set and a get, eg.
     # foo->bar |= expr; -> foo_set_bar(foo_get_bar(foo) | expr);
