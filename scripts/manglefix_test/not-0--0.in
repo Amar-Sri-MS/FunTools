@@ -1,0 +1,1 @@
+	if (!pc_sgl->sgl_len || !pc_sgl->sgl_data)

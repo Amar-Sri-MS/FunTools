@@ -1,0 +1,1 @@
+	pc_md = (struct fun_crypto_host_md *) pc_req->metadata;

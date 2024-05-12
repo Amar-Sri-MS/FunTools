@@ -1,0 +1,1 @@
+	if (!fun_subop_sgl_get_sgl_len(pc_sgl) || !fun_subop_sgl_get_sgl_data(pc_sgl))

@@ -22,9 +22,14 @@ comby = Comby(language=".c")
 ## parse the following line with regex:
 ## accelerators/crypto_hostif.c:3567:22: error: ‘struct fun_req_common’ has no member named ‘op’; did you mean ‘op_l’?
 ## <filname>:<line>:<col>: error: ‘struct <struct>’ has no member named ‘<member>’; did you mean ‘<member>_l’?
-RE: str = r"([\.\/a-zA-Z0-9_-]+):(\d+):(\d+:)? error: .(?:const )?struct (\w+). has no member named .(\w+).; did you mean .(\w+)_l.\?"
+
+## Just the regext for the file, line and maybe column and a space
+RE_FILE: str = r"([\.\/a-zA-Z0-9_-]+):(\d+):(\d+:)? "
+RE_ERR: str = RE_FILE + r"error: .(?:const )?struct (\w+). has no member named .(\w+).; did you mean .(\w+)_l.\?"
+
 
 MAX_LOG_LEVEL: int = 0
+DEFAULT_TEST_CASES: int = 3
 
 def LOG(msg: str, level: int = 0) -> None:
     if level <= MAX_LOG_LEVEL:
@@ -36,6 +41,43 @@ def VERBOSE(msg: str) -> None:
 def DEBUG(msg: str) -> None:
     LOG(msg, 2)
 
+###
+##  sdk dir finding
+#
+
+def find_sdkdir() -> str:
+    # check for env var
+    if 'SDKROOT' in os.environ:
+        return os.environ['SDKROOT']
+
+    # check for workspace
+    if 'WORKSPACE' in os.environ:
+        return os.path.join(os.environ['WORKSPACE'], "FunSDK")
+
+    # guess root based on script path
+    scriptpath = os.path.realpath(__file__)
+    scriptdir = os.path.dirname(scriptpath)
+
+    # $WORKSPACE/FunTools/scripts -> $WORKSPACE/FunSDK
+    sdkdir = os.path.join(scriptdir, "..", "..", "FunSDK")
+
+    if os.path.exists(sdkdir):
+        return sdkdir
+
+    # random junk
+    return "/does_not_exist"    
+    
+
+def get_test_dir(args: argparse.Namespace) -> str:
+    # "manglefix_test" directory in the same directory as the script
+    scriptpath = os.path.realpath(__file__)
+    scriptdir = os.path.dirname(scriptpath)
+    testdir = os.path.join(scriptdir, "manglefix_test")
+    return testdir
+
+###
+##   classes
+#
 class Accessor:
     def __init__(self, func: str, struct: str, flavour: str, member: str, structarg: str):
         self.func: str = func
@@ -49,12 +91,14 @@ class Accessor:
 
 class Fixup:
     def __init__(self, filename: str,
-                        line: int,
+                        line: str,
+                        lineno: int,
                         col: int,
                         struct: str,
                         member: str):
         self.filename: str = filename
-        self.line: int = line
+        self.line: str = line
+        self.lineno: int = lineno
         self.col: int = col
         self.struct: str = struct
         self.member: str = member
@@ -62,76 +106,155 @@ class Fixup:
     def __str__(self) -> str:
         return f"{self.line}: {self.stname}"
 
+
+def add_fixup_for_error(fixups: Dict[str, List[Fixup]], filename: str, errtext: str) -> Fixup:
+    # match the error text
+    match = re.match(RE_ERR, errtext)
+    if match is None:
+        raise RuntimeError(f"Error parsing error text: {errtext} in {file}")
+
+    filename = match.group(1)
+    lineno = int(match.group(2))
+    try:
+        col = int(match.group(3))
+    except:
+        col = -1
+    struct = match.group(4)
+    member = match.group(5)
+    member_l = match.group(6)
+
+    # ensure member == member_l
+    if member != member_l:
+        VERBOSE(f"member != member_l: {member} != {member_l}")
+        return
+
+    # add it to fixups
+    fixup = Fixup(filename, errtext, lineno, col, struct, member)
+    fixups.setdefault(filename, list()).append(fixup)
+
+    return fixup
+
 ###
 ##  line rewrite logic
 #
 
+class Testcase():
+    def __init__(self, name: str, intext: str, outtext: str, fixup: Fixup, filename: Optional[str] = None):
+        self.name: str = name
+        self.filename: Optional[str] = None
+        self.new = self.filename is None
+        self.intext: str = intext
+        self.outtext: str = outtext
+        self.errtext: str = fixup.line
+
+    def is_new(self):
+        return self.new
+
+class Rewrite():
+    def __init__(self, name: str, match: str, replace: str):
+        self.name: str = name
+        self.match: str = match
+        self.replace: str = replace
+        self.tests: List[Testcase] = []
+        self.usedcount = 0
+
+    def inctests(self):
+        self.testcount += 1
+
+    def testcase(self, intext: str, outtext: str, fixup: Fixup) -> None:
+        if (len(self.tests) >= DEFAULT_TEST_CASES):
+            return
+
+        tc = Testcase(self.name, intext, outtext, fixup)
+        self.tests.append(tc)
+
+    def incused(self):
+        self.usedcount += 1
+
+    def newtestcases(self):
+        count = 0
+        for tc in self.tests:
+            if (tc.is_new()):
+                count += 1
+
+        return count
+
+    def __str__(self) -> str:
+        return f"{self.name}: {self.match} -> {self.replace}"
+
 # rewrites for lines missing accessors (usually arrays)
-ARRAY_REWRITES: List[Tuple[str, str]] = [
-    (":[expr:e]->{member};", "hci_array_access(:[expr]->{member});"),
-    (":[expr:e]->{member}", "hci_array_access(:[expr]->{member})"),
+ARRAY_REWRITES: List[Tuple[str, str, str]] = [
+    Rewrite("array-0", ":[expr:e]->{member};", "hci_array_access(:[expr]->{member});"),
+    Rewrite("array-1", ":[expr:e]->{member}", "hci_array_access(:[expr]->{member})"),
     
-    (":[expr:e].{member};", "hci_array_access(:[expr].{member});"),
-    (":[expr:e].{member}", "hci_array_access(:[expr].{member})"),
+    Rewrite("array-2", ":[expr:e].{member};", "hci_array_access(:[expr].{member});"),
+    Rewrite("array-3", ":[expr:e].{member}", "hci_array_access(:[expr].{member})"),
 ]
 
 # rewrites for lines with nested accessors (type mismatch)
-NESTED_REWRITES: List[Tuple[str, str]] = [
-    (":[expr:e]->:[nest:e].{member}:[semi~;?]",
-        "({struct}_get_{member}(:[expr])):[semi]"),
+NESTED_REWRITES: List[Tuple[str, str, str]] = [
+    Rewrite("nest-0", ":[expr:e]->:[nest:e].{member}:[semi~;?]",
+        "{struct}_get_{member}(:[expr]):[semi]"),
 
-    ("(:[expr:e]->:[nest:e].{member}):[semi~;?]",
+    Rewrite("nest-1", "(:[expr:e]->:[nest:e].{member}):[semi~;?]",
         "({struct}_get_{member}(:[expr])):[semi]"),
-
 ]
 
 # catch-all rewrites for general field access
-REWRITES: List[Tuple[str, str]] = [
+REWRITES: List[Tuple[str, str, str]] = [
     # regular assignments -> set accessor
     # need a variant with semicolon and without because of the way comby parses weird
-    (":[expr:e]->{member} = :[value];", "{struct}_set_{member}(:[expr], :[value]);"), # XXX: semicolon
-    (":[expr:e]->{member} = :[value:e]", "{struct}_set_{member}(:[expr], :[value])"),
-    (":[expr:e].{member} = :[value];", "{struct}_set_{member}(&:[expr], :[value]);"), # XXX: semicolon
-    (":[expr:e].{member} = :[value:e]", "{struct}_set_{member}(&:[expr], :[value])"),
+    Rewrite("set-0", ":[expr:e]->{member} = :[value];", "{struct}_set_{member}(:[expr], :[value]);"), # XXX: semicolon
+    Rewrite("set-1", ":[expr:e]->{member} = :[value:e]", "{struct}_set_{member}(:[expr], :[value])"),
+    Rewrite("set-2", ":[expr:e].{member} = :[value];", "{struct}_set_{member}(&:[expr], :[value]);"), # XXX: semicolon
+    Rewrite("set-3", ":[expr:e].{member} = :[value:e]", "{struct}_set_{member}(&:[expr], :[value])"),
 
     # or-equals (|=) assignments -> expand to a set and a get, eg.
     # foo->bar |= expr; -> foo_set_bar(foo_get_bar(foo) | expr);
-    (":[expr:e]->{member} |= :[value:e];",
+    Rewrite("oreq-0", ":[expr:e]->{member} |= :[value:e];",
         "{struct}_set_{member}(:[expr], {struct}_get_{member}(:[expr]) | :[value]);"), # XXX: semicolon
-    (":[expr:e]->{member} |= :[value:e]",
+    Rewrite("oreq-1", ":[expr:e]->{member} |= :[value:e]",
         "{struct}_set_{member}(:[expr], {struct}_get_{member}(:[expr]) | :[value])"),
 
     # and-equals (&=) assignments -> expand to a set and a get, eg.
     # foo->bar &= expr; -> foo_set_bar(foo_get_bar(foo) & expr);
-    (":[expr:e]->{member} &= :[value:e];",
+    Rewrite("andeq-0", ":[expr:e]->{member} &= :[value:e];",
         "{struct}_set_{member}(:[expr], {struct}_get_{member}(:[expr]) & :[value]);"), # XXX: semicolon
-    (":[expr:e]->{member} &= :[value:e]",
+    Rewrite("andeq-1", ":[expr:e]->{member} &= :[value:e]",
         "{struct}_set_{member}(:[expr], {struct}_get_{member}(:[expr]) & :[value])"),
 
     # address-of accessors
-    ("&:[expr:e]->{member}", "hci_addressof(:[expr]->{member})"),
-    ("&:[expr:e].{member}", "hci_addressof(:[expr].{member})"),
+    Rewrite("addrof-0", "&:[expr:e]->{member}", "hci_addressof(:[expr]->{member})"),
+    Rewrite("addrof-0", "&:[expr:e].{member}", "hci_addressof(:[expr].{member})"),
 
     # get accessors with "!" on the front. comby weird parsing again
-    ("!:[expr:e]->{member}", "!{struct}_get_{member}(:[expr])"), # XXX: exclamation
-    ("!:[expr:e].{member}", "!{struct}_get_{member}(&:[expr])"), # XXX: exclamation
+    Rewrite("not-0", "!:[expr:e]->{member}", "!{struct}_get_{member}(:[expr])"), # XXX: exclamation
+    Rewrite("not-1", "!:[expr:e].{member}", "!{struct}_get_{member}(&:[expr])"), # XXX: exclamation
 
     # get accessors. The suble differeneces in casts confuse comby, so we enumerate the possibilities
-    ("(:[cast])->:[expr:e]->{member}", "{struct}_get_{member}(&(:[cast])->:[expr])"), # XXX: cast type
-    ("(:[cast])->:[expr:e].{member}", "{struct}_get_{member}(&(:[cast])->:[expr])"), # XXX: cast type
-    ("(:[cast]):[expr:e]->{member}", "(:[cast]){struct}_get_{member}(:[expr])"), # XXX: cast result
-    (":[expr:e]->{member}", "{struct}_get_{member}(:[expr])"),
+    Rewrite("get-ptr-0", "(:[cast])->:[expr:e]->{member}",
+            "{struct}_get_{member}(&(:[cast])->:[expr])"), # XXX: cast type
+    Rewrite("get-ptr-1", "(:[cast])->:[expr:e].{member}",
+            "{struct}_get_{member}(&(:[cast])->:[expr])"), # XXX: cast type
+    Rewrite("get-ptr-2", "(:[cast]):[expr:e]->{member}",
+            "(:[cast]){struct}_get_{member}(:[expr])"), # XXX: cast result
+    Rewrite("get-ptr-3", ":[expr:e]->{member}", "{struct}_get_{member}(:[expr])"),
 
     # get accessors. The suble differeneces in casts confuse comby, so we enumerate the possibilities
-    ("(:[cast]).:[expr:e].{member}", "{struct}_get_{member}(&(:[cast]).:[expr])"), # XXX: cast type
-    ("(:[cast]).:[expr:e]->{member}", "{struct}_get_{member}(&(:[cast]).:[expr])"), # XXX: cast type
-    ("(:[cast]):[expr:e].{member}", "(:[cast]){struct}_get_{member}(&:[expr])"), # XXX: cast result
-    (":[expr:e].{member}", "{struct}_get_{member}(&:[expr])"),
+    Rewrite("get-mem-0", "(:[cast]).:[expr:e].{member}",
+            "{struct}_get_{member}(&(:[cast]).:[expr])"), # XXX: cast type
+    Rewrite("get-mem-1", "(:[cast]).:[expr:e]->{member}",
+            "{struct}_get_{member}(&(:[cast]).:[expr])"), # XXX: cast type
+    Rewrite("get-mem-2", "(:[cast]):[expr:e].{member}",
+            "(:[cast]){struct}_get_{member}(&:[expr])"), # XXX: cast result
+    Rewrite("get-mem-3", ":[expr:e].{member}", "{struct}_get_{member}(&:[expr])"),
 ]
+
+ALL_REWRITES: List[Rewrite] = ARRAY_REWRITES + NESTED_REWRITES + REWRITES
 
 def fixup_line(accessors: Dict[str, Accessor], lines: List[str], fixup: Fixup) -> None:
 
-    LOG(f"Fixing up line: {fixup.line} for {fixup.struct}.{fixup.member}")
+    LOG(f"Fixing up line: {fixup.line.strip()} for {fixup.struct}.{fixup.member}")
 
     gettr = f"{fixup.struct}_get_{fixup.member}"
     settr = f"{fixup.struct}_set_{fixup.member}"
@@ -150,12 +273,12 @@ def fixup_line(accessors: Dict[str, Accessor], lines: List[str], fixup: Fixup) -
         rewrite_list = REWRITES
 
     # get the line
-    line = lines[fixup.line - 1]
+    line = lines[fixup.lineno - 1]
 
     for rewrite in rewrite_list:
 
-        matchstr = rewrite[0].format(member=fixup.member, struct=fixup.struct)
-        replacestr = rewrite[1].format(member=fixup.member, struct=fixup.struct)
+        matchstr = rewrite.match.format(member=fixup.member, struct=fixup.struct)
+        replacestr = rewrite.replace.format(member=fixup.member, struct=fixup.struct)
 
         oline = line
         line = comby.rewrite(line, matchstr, replacestr)
@@ -163,13 +286,17 @@ def fixup_line(accessors: Dict[str, Accessor], lines: List[str], fixup: Fixup) -
         if (line == oline):
             # next
             continue
-        LOG(f"Rewrote: {oline} -> {line}")
-        lines[fixup.line - 1] = line
+        LOG(f"Rewrite {rewrite.name}: {oline} -> {line}")
+        lines[fixup.lineno - 1] = line
+        
+        rewrite.incused()
+        rewrite.testcase(oline, line, fixup)
 
         # only allow a single rewrite per fixup on a line
         break
 
-def fixup_file(accessors: Dict[str, Accessor], filename: str, fixup_list: List[Fixup]) -> None:
+def fixup_file(args: argparse.Namespace, accessors: Dict[str, Accessor],
+                filename: str, fixup_list: List[Fixup]) -> None:
     LOG(f"Fixing up file: {filename}")
 
     # read the file
@@ -181,11 +308,27 @@ def fixup_file(accessors: Dict[str, Accessor], filename: str, fixup_list: List[F
     for fixup in fixup_list:
         fixup_line(accessors, lines, fixup)
 
-    # write the file
-    fl = open(filename, "w")
-    for line in lines:
-        fl.write(line)
-    fl.close()
+    if (not args.unit_test_mode):
+        # operational mode: write back the file
+        fl = open(filename, "w")
+        for line in lines:
+            fl.write(line)
+        fl.close()
+    else:
+        # unit test mode: validate the file against the .out file
+        fl = open(filename.replace(".in", ".out"), "r")
+        outlines = fl.readlines()
+        fl.close()
+
+        # compare inlines and outlines
+        for (inline, outline) in zip(lines, outlines):
+            if (inline != outline):
+                LOG(f"Validation failed: {inline} != {outline}")
+                raise RuntimeError("Test failed!")
+
+        LOG(f"Validation passed for {filename}")
+
+        
 
 ###
 ##  parsing accessors
@@ -218,17 +361,15 @@ def parse_accessor(line: str) -> List[Accessor]:
 
 PKLFILE: str = "/tmp/accessors.pkl"
 STRIDE: int = 5000
-def load_accessors(hciheader: str) -> Dict[str, Accessor]:
+def load_accessors(hciheaders: str) -> Dict[str, Accessor]:
 
     # check the timestamp on hciheader
     # if it's newer than PKLFILE, regenerate PKLFILE
     # if PKLFILE exists, load it
     # otherwise, parse hciheader and save PKLFILE
 
-    # assert os.path.exists(hciheader), f"File {hciheader} does not exist"
-
     if os.path.exists(PKLFILE):
-        LOG(f"Loading accessors from {PKLFILE}")
+        LOG(f"Loading cached accessors from {PKLFILE}")
         try:
             with open(PKLFILE, "rb") as fl:
                 accessors = pickle.load(fl)
@@ -237,7 +378,7 @@ def load_accessors(hciheader: str) -> Dict[str, Accessor]:
             LOG(f"Error loading pickle file: {e}")
             pass
 
-    acc_files = glob.glob(hciheader)
+    acc_files = glob.glob(hciheaders)
 
     LOG(f'Regenerating accessors from {", ".join(acc_files)}, this may take a while')
     for header in acc_files:
@@ -276,23 +417,181 @@ def load_accessors(hciheader: str) -> Dict[str, Accessor]:
     return accessors
 
 ###
+##  test case reading, writing and re-evaluating
+#
+
+def write_test_cases(args: argparse.Namespace, rewrite: Rewrite) -> None:
+    VERBOSE(f"Writing test cases for {rewrite.name}")
+
+    # get the path to the tests
+    testdir = get_test_dir(args)
+
+    # first work out the existing max test case number
+    globstr = f"{testdir}/{rewrite.name}--*.in"
+    files = glob.glob(globstr)
+    maxnum = -1
+    for file in files:
+        match = re.match(f"{rewrite.name}--(\d+).in", file)
+        if match:
+            num = int(match.group(1))
+            if num > maxnum:
+                maxnum = num
+
+    # account for the new test cases
+    testnum = maxnum + 1
+
+    # write out the test cases
+    for tc in rewrite.tests:
+
+        # mint a new filename
+        if (tc.is_new()):
+            assert os.path.exists(f"{testdir}/{tc.filename}.in")
+            continue
+        else:
+            tc.filename = f"{rewrite.name}--{testnum}"
+            testnum += 1
+
+        LOG(f"Writing new test case for {tc.filename}")
+
+        # fixup the error text to `{TESTDIR}/{tc.filename.in}:1[column:] `
+        lineinfo = re.match(RE_FILE, tc.errtext)
+
+        # fail if we didn't match
+        assert lineinfo is not None
+
+        # construct the new line info
+        newlineinfo = f"{{TESTDIR}}/{tc.filename}.in:1:{lineinfo.group(3)} "
+
+        # replace the line info in the error text      
+        newerrtext = newlineinfo + tc.errtext[len(lineinfo.group(0)):]
+
+        # write the test case
+        LOG(f"Writing test case {tc.filename}")
+        fl = open(f"{testdir}/{tc.filename}.in", "w")
+        fl.write(tc.intext)
+        fl.close()
+
+        fl = open(f"{testdir}/{tc.filename}.out", "w")
+        fl.write(tc.outtext)
+        fl.close()
+
+        fl = open(f"{testdir}/{tc.filename}.err", "w")
+        fl.write(newerrtext)
+        fl.close()
+
+def parse_unit_tests(args: argparse.Namespace, fixups: Dict[str, List[Fixup]]) -> None:
+    LOG("Parsing all unit tests")
+
+    # test case directory
+    testdir = get_test_dir(args)
+
+    # find all the test cases
+    globstr = f"{testdir}/*.in"
+    files = glob.glob(globstr)
+
+    # number of tests without a home
+    tests_no_rewrites: int = 0
+    total_tests: int = 0
+
+    # for each test case, read it in and re-evaluate
+    for file in files:
+        # extract the rewrite name from the filename
+        match = re.match(f"{testdir}/(.*)--\d+.in", file)
+        if match is None:
+            tests_no_rewrites += 1
+            rewriter = None
+        else:
+            rewriter = match.group(1)
+        VERBOSE(f"Reading test case: {file} (rewrite = {rewriter})")
+
+        # read the actual files
+        fl = open(file, "r")
+        intext = fl.read()
+        fl.close()
+
+        # read the out file
+        fl = open(file.replace(".in", ".out"), "r")
+        outtext = fl.read()
+        fl.close()
+
+        # read the err file
+        fl = open(file.replace(".in", ".err"), "r")
+        errtext = fl.read()
+        fl.close()
+
+        # format error text to test paths
+        errtext = errtext.format(TESTDIR=testdir)
+
+        # add it to the fixup list
+        fixup = add_fixup_for_error(fixups, file, errtext)
+
+        # construct the test case for it
+        tc = Testcase(file, intext, outtext, fixup)
+
+        # add the test case to the rewrite
+        if (rewriter is not None):
+            for rewrite in ALL_REWRITES:
+                if (rewrite.name != rewriter):
+                    continue
+                rewrite.tests.append(tc)
+
+        total_tests += 1
+
+    LOG(f"Read {total_tests} tests, {tests_no_rewrites} without rewrites")
+
+###
+##   reading compiler error logs 
+#
+
+def parse_errfile(args: argparse.Namespace, fixups: Dict[str, List[Fixup]]) -> None:
+
+    LOG(f"Reading compiler error log {args.errfile}")
+    fl = open(args.errfile, "r")
+    lines = fl.readlines()
+
+    matched: int = 0
+
+    for line in lines:
+        # match line against RE
+        match = re.match(RE_ERR, line)
+
+        # continue if no match
+        if match is None:
+            continue
+
+        VERBOSE(f"Matched line: {line.strip()}")
+        matched += 1
+
+        add_fixup_for_error(fixups, args.errfile, line)
+
+    LOG(f"Matched {matched} lines")
+
+###
 ##  parse_args
 #
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
  
-    # We need to header file to scrape valid accessor functions
-    parser.add_argument("hciheader", help="funhci.h header file glob")
-
     # File full of errors
-    parser.add_argument("errfile", help="Error file")
+    parser.add_argument("--errfile", help="gcc error file to process")
  
+    # Unit test mode
+    parser.add_argument("-U", "--unit-test", action="store_true", default=False)
+
     # Just parse the error file and exit
-    parser.add_argument("-J", "--just-errs", action="store_true", default=False)
+    parser.add_argument("-J", "--just-parse, action="store_true", default=False)
  
+    # Generate test cases
+    parser.add_argument("-G", "--generate-tests",
+                        action="store_true", default=False)
+
+    # Number of test cases to generate up to
+    parser.add_argument("-T", "--test-cases",
+                        action="store", default=DEFAULT_TEST_CASES)
+
     # Optional argument which requires a parameter (eg. -d test)
-    #parser.add_argument("-n", "--name", action="store", dest="name")
- 
+    parser.add_argument("--sdkdir", action="store", default=find_sdkdir());
+
     # Optional verbosity counter (eg. -v, -vv, -vvv, etc.)
     parser.add_argument(
         "-v",
@@ -306,6 +605,8 @@ def parse_args() -> argparse.Namespace:
     global MAX_LOG_LEVEL
     MAX_LOG_LEVEL = args.verbose
 
+    args.unit_test_mode = False
+
     return args
  
 ###
@@ -314,59 +615,51 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args: argparse.Namespace = parse_args()
  
-    if not args.just_errs:
-        accessors: Dict[str, Accessor] = load_accessors(args.hciheader)
+    if not args.just_parse:
+        headerglob = os.path.join(args.sdkdir, "FunSDK", "hci", "include", "FunHCI", "*.h")
+        accessors: Dict[str, Accessor] = load_accessors(headerglob)
 
-    LOG(f"Reading file {args.errfile}")
-    fl = open(args.errfile, "r")
-    lines = fl.readlines()
-
+    # list of fixups to do
     fixups: Dict[str, List[Fixup]] = {}
-    
-    matched: int = 0
 
-    for line in lines:
-        # match line against RE
-        match = re.match(RE, line)
+    if args.unit_test:
+        # load the unit tests and inject all the fixups
+        args.unit_test_mode = True
+        args.load_unit_tests = True
+        parse_unit_tests(args, fixups)
+    elif args.generate_tests:
+        # just load the tests so we can save the delta
+        args.load_unit_tests = True
+        parse_unit_tests(args, None)
 
-        # continue if no match
-        if match is None:
-            continue
+    # load the error file
+    if args.errfile is not None:
+        parse_errfile(args, fixups)
 
-        VERBOSE(f"Matched line: {line.strip()}")
-        matched += 1
-
-        # extract match groups
-        filename: str = match.group(1)
-        line: int = int(match.group(2))
-        try:
-            col: int = int(match.group(3))
-        except:
-            col = -1
-        struct: str = match.group(4)
-        member: str = match.group(5)
-        member_l: str = match.group(6)
-
-        DEBUG(f"Found line: filename: {filename}, line: {line}, col: {col}, struct: {struct}, member: {member}, member_l: {member_l}")
-        
-        # ensure member == member_l
-        if member != member_l:
-            VERBOSE(f"member != member_l: {member} != {member_l}")
-            continue
-        
-        # add it to fixups
-        fixups.setdefault(filename, list()).append(Fixup(filename, line, col, struct, member))
-
-    LOG(f"Matched {matched} lines")
-
-    if args.just_errs:
+    # early out for quick parsing testing
+    if args.just_parse:
         LOG("Early exit for matching errors only")
         return -1
 
-    VERBOSE(f"Found accessors: {accessors.keys()}")
+    VERBOSE(f"Using {accessors.keys()} accessors")
 
-    for filename, fixup_list in fixups.items():
-        fixup_file(accessors, filename, fixup_list)
+    # Run all the fixups
+    try:
+        for filename, fixup_list in fixups.items():
+            fixup_file(args, accessors, filename, fixup_list)
+    except KeyboardInterrupt:
+        LOG(f"Keyboard interrupt while processing {filename}")
+
+    # Dump the rewrite stats
+    print()
+    print("Dumping stats:")    
+    for rewrite in ALL_REWRITES:
+        LOG(f"Rewrite: {rewrite.name:15} used {rewrite.usedcount} times. {len(rewrite.tests)} test cases total, {rewrite.newtestcases} new.")
+
+    # write out test cases
+    if args.generate_tests:
+        for rewrite in ALL_REWRITES:
+            write_test_cases(args, rewrite)
 
     return 0
  

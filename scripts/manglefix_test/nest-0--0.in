@@ -1,0 +1,1 @@
+	curve_type = fun_crypto_ec_curve_type(pc_req->pke_setkey_req.pke_ec_req.curve_id);

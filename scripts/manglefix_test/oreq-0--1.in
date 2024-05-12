@@ -1,0 +1,1 @@
+		pc_req->flags |= FUN_CRYPTO_FLAG_DATA_IN_SGL;

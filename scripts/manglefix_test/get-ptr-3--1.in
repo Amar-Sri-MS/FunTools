@@ -1,0 +1,1 @@
+	    (params->alg >= FUN_CRYPTO_ALG_MAX)) {

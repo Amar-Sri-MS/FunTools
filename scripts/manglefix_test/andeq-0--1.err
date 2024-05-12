@@ -1,0 +1,1 @@
+{TESTDIR}/andeq-0--1.in:1:10: error: ‘struct fun_crypto_aead_req’ has no member named ‘flags’; did you mean ‘flags_l’?
