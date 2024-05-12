@@ -16,6 +16,7 @@ from comby import Comby # type: ignore
 import os
 import pickle
 import glob
+import fnmatch
 
 comby = Comby(language=".c")
 
@@ -107,7 +108,7 @@ class Fixup:
         return f"{self.line}: {self.stname}"
 
 
-def add_fixup_for_error(fixups: Dict[str, List[Fixup]], filename: str, errtext: str) -> Fixup:
+def add_fixup_for_error(fixups: Optional[Dict[str, List[Fixup]]], filename: str, errtext: str) -> Fixup:
     # match the error text
     match = re.match(RE_ERR, errtext)
     if match is None:
@@ -128,9 +129,10 @@ def add_fixup_for_error(fixups: Dict[str, List[Fixup]], filename: str, errtext: 
         VERBOSE(f"member != member_l: {member} != {member_l}")
         return
 
-    # add it to fixups
+    # add it to fixups, if we're collecting
     fixup = Fixup(filename, errtext, lineno, col, struct, member)
-    fixups.setdefault(filename, list()).append(fixup)
+    if (fixups is not None):
+        fixups.setdefault(filename, list()).append(fixup)
 
     return fixup
 
@@ -139,13 +141,15 @@ def add_fixup_for_error(fixups: Dict[str, List[Fixup]], filename: str, errtext: 
 #
 
 class Testcase():
-    def __init__(self, name: str, intext: str, outtext: str, fixup: Fixup, filename: Optional[str] = None):
+    def __init__(self, name: str, intext: str, outtext: str, fixup: Fixup,
+                filename: Optional[str] = None, nooutfile: bool = False):
         self.name: str = name
         self.filename: Optional[str] = None
-        self.new = self.filename is None
+        self.new = self.filename is not None
         self.intext: str = intext
         self.outtext: str = outtext
         self.errtext: str = fixup.line
+        self.nooutfile: bool = nooutfile
 
     def is_new(self):
         return self.new
@@ -256,21 +260,36 @@ def fixup_line(accessors: Dict[str, Accessor], lines: List[str], fixup: Fixup) -
 
     LOG(f"Fixing up line: {fixup.line.strip()} for {fixup.struct}.{fixup.member}")
 
+    # assume base accessor names
     gettr = f"{fixup.struct}_get_{fixup.member}"
     settr = f"{fixup.struct}_set_{fixup.member}"
 
-    if (gettr not in accessors.keys()) and (settr not in accessors.keys()):
-        # no accessor, so try array rewrites
-        VERBOSE('\tAppears to be an array')
-        rewrite_list = ARRAY_REWRITES
-    elif (accessors[gettr].structarg != fixup.struct):
-        # no type match, so likely a nested accessor
-        VERBOSE('\tAppears to be a nested accessor')
-        rewrite_list = NESTED_REWRITES
+    if (gettr  in accessors.keys()) and (settr  in accessors.keys()):
+        if (accessors[gettr].structarg != fixup.struct):
+            # no type match, so likely a nested accessor
+            VERBOSE('\tAppears to be a nested accessor')
+            rewrite_list = NESTED_REWRITES
+        else:
+            # accessor with type match, so use regular rewrites
+            VERBOSE('\tAppears to be a regular accessor')
+            rewrite_list = REWRITES
     else:
-        # accessor with type match, so use regular rewrites
-        VERBOSE('\tAppears to be a regular accessor')
-        rewrite_list = REWRITES
+        rewrite_list = None
+
+        # otherwise, try the "_pack" suffix
+        if (fixup.member.endswith("_pack")):
+            memnopack = fixup.member[:-5]
+            gettr = f"{fixup.struct}_get_{memnopack}"
+            settr = f"{fixup.struct}_set_{memnopack}"
+
+            # assume we're just doing this crazy with regular rewrites
+            if (gettr  in accessors.keys()) and (settr  in accessors.keys()):
+                rewrite_list = REWRITES
+
+        if (rewrite_list is None):
+            # no accessor, so try array rewrites
+            VERBOSE('\tAppears to be an array')
+            rewrite_list = ARRAY_REWRITES
 
     # get the line
     line = lines[fixup.lineno - 1]
@@ -309,24 +328,31 @@ def fixup_file(args: argparse.Namespace, accessors: Dict[str, Accessor],
         fixup_line(accessors, lines, fixup)
 
     if (not args.unit_test_mode):
-        # operational mode: write back the file
-        fl = open(filename, "w")
-        for line in lines:
-            fl.write(line)
-        fl.close()
+        if (args.no_write):
+            VERBOSE(f"Not writing file {filename} due to --no-write")
+        else:
+            # operational mode: write back the file
+            fl = open(filename, "w")
+            for line in lines:
+                fl.write(line)
+            fl.close()
     else:
         # unit test mode: validate the file against the .out file
-        fl = open(filename.replace(".in", ".out"), "r")
-        outlines = fl.readlines()
-        fl.close()
+        outfilename = filename.replace(".in", ".out")
+        if (not os.path.exists(outfilename)):
+            LOG(f"Missing model output file {outfilename} for {filename}, skipping validation")
+        else:
+            fl = open(outfilename, "r")
+            outlines = fl.readlines()
+            fl.close()
 
-        # compare inlines and outlines
-        for (inline, outline) in zip(lines, outlines):
-            if (inline != outline):
-                LOG(f"Validation failed: {inline} != {outline}")
-                raise RuntimeError("Test failed!")
+            # compare inlines and outlines
+            for (inline, outline) in zip(lines, outlines):
+                if (inline != outline):
+                    LOG(f"Validation failed: {inline} != {outline}")
+                    raise RuntimeError("Test failed!")
 
-        LOG(f"Validation passed for {filename}")
+            LOG(f"Validation passed for {filename}")
 
         
 
@@ -479,7 +505,7 @@ def write_test_cases(args: argparse.Namespace, rewrite: Rewrite) -> None:
         fl.write(newerrtext)
         fl.close()
 
-def parse_unit_tests(args: argparse.Namespace, fixups: Dict[str, List[Fixup]]) -> None:
+def parse_unit_tests(args: argparse.Namespace, fixups: Optional[Dict[str, List[Fixup]]]) -> None:
     LOG("Parsing all unit tests")
 
     # test case directory
@@ -510,9 +536,16 @@ def parse_unit_tests(args: argparse.Namespace, fixups: Dict[str, List[Fixup]]) -
         fl.close()
 
         # read the out file
-        fl = open(file.replace(".in", ".out"), "r")
-        outtext = fl.read()
-        fl.close()
+        nooutfile = False
+        outfname = file.replace(".in", ".out")
+        if os.path.exists(outfname):
+            fl = open(outfname, "r")
+            outtext = fl.read()
+            fl.close()
+        else:
+            outtext = ""
+            nooutfile = True
+
 
         # read the err file
         fl = open(file.replace(".in", ".err"), "r")
@@ -522,11 +555,11 @@ def parse_unit_tests(args: argparse.Namespace, fixups: Dict[str, List[Fixup]]) -
         # format error text to test paths
         errtext = errtext.format(TESTDIR=testdir)
 
-        # add it to the fixup list
+        # maybe add it to the fixup list
         fixup = add_fixup_for_error(fixups, file, errtext)
 
         # construct the test case for it
-        tc = Testcase(file, intext, outtext, fixup)
+        tc = Testcase(file, intext, outtext, fixup, file, nooutfile=nooutfile)
 
         # add the test case to the rewrite
         if (rewriter is not None):
@@ -579,10 +612,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("-U", "--unit-test", action="store_true", default=False)
 
     # Just parse the error file and exit
-    parser.add_argument("-J", "--just-parse, action="store_true", default=False)
+    parser.add_argument("-J", "--just-parse", action="store_true", default=False)
  
+    # Filter files to process
+    parser.add_argument("--filter", action="store", default=None)
+
     # Generate test cases
     parser.add_argument("-G", "--generate-tests",
+                        action="store_true", default=False)
+
+    # Don't write anything
+    parser.add_argument("-N", "--no-write",
                         action="store_true", default=False)
 
     # Number of test cases to generate up to
@@ -646,6 +686,12 @@ def main() -> int:
     # Run all the fixups
     try:
         for filename, fixup_list in fixups.items():
+            # filter
+            if (args.filter is not None) and (not fnmatch.fnmatch(filename, args.filter)):
+                VERBOSE(f"Skipping {filename} due to filter")
+                continue
+
+            # actual match
             fixup_file(args, accessors, filename, fixup_list)
     except KeyboardInterrupt:
         LOG(f"Keyboard interrupt while processing {filename}")
@@ -654,12 +700,15 @@ def main() -> int:
     print()
     print("Dumping stats:")    
     for rewrite in ALL_REWRITES:
-        LOG(f"Rewrite: {rewrite.name:15} used {rewrite.usedcount} times. {len(rewrite.tests)} test cases total, {rewrite.newtestcases} new.")
+        LOG(f"Rewrite: {rewrite.name:15} used {rewrite.usedcount} times. {len(rewrite.tests)} test cases total, {rewrite.newtestcases()} new.")
 
     # write out test cases
     if args.generate_tests:
-        for rewrite in ALL_REWRITES:
-            write_test_cases(args, rewrite)
+        if (args.no_write):
+            LOG("Not writing test cases due to --no-write")
+        else:
+            for rewrite in ALL_REWRITES:
+                write_test_cases(args, rewrite)
 
     return 0
  

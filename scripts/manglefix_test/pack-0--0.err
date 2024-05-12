@@ -1,0 +1,1 @@
+{TESTDIR}/pack-0--0.in:1: error: ‘struct fun_nu_ffe_entry_tmp_tcam’ has no member named ‘key_pack’; did you mean ‘key_pack_l’? for fun_nu_ffe_entry_tmp_tcam.key_pack
