@@ -144,8 +144,8 @@ class Testcase():
     def __init__(self, name: str, intext: str, outtext: str, fixup: Fixup,
                 filename: Optional[str] = None, nooutfile: bool = False):
         self.name: str = name
-        self.filename: Optional[str] = None
-        self.new = self.filename is not None
+        self.filename: Optional[str] = filename
+        self.new = self.filename is None
         self.intext: str = intext
         self.outtext: str = outtext
         self.errtext: str = fixup.line
