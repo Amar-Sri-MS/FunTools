@@ -188,11 +188,18 @@ class Rewrite():
 
 # rewrites for lines missing accessors (usually arrays)
 ARRAY_REWRITES: List[Tuple[str, str, str]] = [
+    # take precidence over the other rewrites
+    Rewrite("array-4", "&:[expr:e]->{member}[0]", "hci_array_access(:[expr]->{member})"),
+    Rewrite("array-5", "&:[expr:e].{member}[0]", "hci_array_access(:[expr].{member})"),
+
+    # simple array accesses via pointer
     Rewrite("array-0", ":[expr:e]->{member};", "hci_array_access(:[expr]->{member});"),
     Rewrite("array-1", ":[expr:e]->{member}", "hci_array_access(:[expr]->{member})"),
     
+    # simple array accesses via member
     Rewrite("array-2", ":[expr:e].{member};", "hci_array_access(:[expr].{member});"),
     Rewrite("array-3", ":[expr:e].{member}", "hci_array_access(:[expr].{member})"),
+
 ]
 
 # rewrites for lines with nested accessors (type mismatch)
@@ -332,6 +339,12 @@ def fixup_file(args: argparse.Namespace, accessors: Dict[str, Accessor],
 
     # for each line, fix it up
     for fixup in fixup_list:
+        # skip if we're filtering by line
+        if (args.line) and (fixup.lineno not in args.line):
+            VERBOSE(f"Skipping line {fixup.lineno} due to --line")
+            continue
+
+        # do the actual fixup
         fixup_line(accessors, lines, fixup)
 
     if (not args.unit_test_mode):
@@ -623,6 +636,9 @@ def parse_args() -> argparse.Namespace:
  
     # Filter files to process
     parser.add_argument("--filter", action="store", default=None)
+
+    # Filter files to process
+    parser.add_argument("--line", action="append", default=[], type=int)
 
     # Generate test cases
     parser.add_argument("-G", "--generate-tests",
