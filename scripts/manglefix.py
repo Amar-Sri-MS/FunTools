@@ -112,7 +112,7 @@ def add_fixup_for_error(fixups: Optional[Dict[str, List[Fixup]]], filename: str,
     # match the error text
     match = re.match(RE_ERR, errtext)
     if match is None:
-        raise RuntimeError(f"Error parsing error text: {errtext} in {file}")
+        raise RuntimeError(f"Error parsing error text: {errtext} in {filename}")
 
     filename = match.group(1)
     lineno = int(match.group(2))
@@ -470,7 +470,7 @@ def write_test_cases(args: argparse.Namespace, rewrite: Rewrite) -> None:
     for tc in rewrite.tests:
 
         # mint a new filename
-        if (tc.is_new()):
+        if (not tc.is_new()):
             assert os.path.exists(f"{testdir}/{tc.filename}.in")
             continue
         else:
