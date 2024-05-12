@@ -165,11 +165,13 @@ class Rewrite():
     def inctests(self):
         self.testcount += 1
 
-    def testcase(self, intext: str, outtext: str, fixup: Fixup) -> None:
-        if (len(self.tests) >= DEFAULT_TEST_CASES):
+    def testcase(self, args: argparse.Namespace, intext: str,
+                    outtext: str, fixup: Fixup) -> None:
+        if ((len(args.line) == 0) and (len(self.tests) >= DEFAULT_TEST_CASES)):
             return
 
-        tc = Testcase(self.name, intext, outtext, fixup)
+        tc: Testcase = Testcase(self.name, intext, outtext, fixup)
+        LOG(f"Created new test case {tc.name}")
         self.tests.append(tc)
 
     def incused(self):
@@ -265,7 +267,8 @@ REWRITES: List[Tuple[str, str, str]] = [
 
 ALL_REWRITES: List[Rewrite] = ARRAY_REWRITES + NESTED_REWRITES + REWRITES
 
-def fixup_line(accessors: Dict[str, Accessor], lines: List[str], fixup: Fixup) -> None:
+def fixup_line(args: argparse.Namespace, accessors: Dict[str, Accessor],
+                lines: List[str], fixup: Fixup) -> None:
 
     LOG(f"Fixing up line: {fixup.line.strip()} for {fixup.struct}.{fixup.member}")
 
@@ -323,7 +326,7 @@ def fixup_line(accessors: Dict[str, Accessor], lines: List[str], fixup: Fixup) -
         lines[fixup.lineno - 1] = line
         
         rewrite.incused()
-        rewrite.testcase(oline, line, fixup)
+        rewrite.testcase(args, oline, line, fixup)
 
         # only allow a single rewrite per fixup on a line
         break
@@ -345,7 +348,7 @@ def fixup_file(args: argparse.Namespace, accessors: Dict[str, Accessor],
             continue
 
         # do the actual fixup
-        fixup_line(accessors, lines, fixup)
+        fixup_line(args, accessors, lines, fixup)
 
     if (not args.unit_test_mode):
         if (args.no_write):
@@ -491,7 +494,8 @@ def write_test_cases(args: argparse.Namespace, rewrite: Rewrite) -> None:
 
         # mint a new filename
         if (not tc.is_new()):
-            assert os.path.exists(f"{testdir}/{tc.filename}.in")
+            print(f"Skipping existing test case {tc.filename}")
+            assert os.path.exists(f"{tc.filename}")
             continue
         else:
             tc.filename = f"{rewrite.name}--{testnum}"
@@ -723,7 +727,10 @@ def main() -> int:
     print()
     print("Dumping stats:")    
     for rewrite in ALL_REWRITES:
-        LOG(f"Rewrite: {rewrite.name:15} used {rewrite.usedcount} times. {len(rewrite.tests)} test cases total, {rewrite.newtestcases()} new.")
+        snew = ""
+        if (rewrite.newtestcases() > 0):
+            snew = f", {rewrite.newtestcases()} new."
+        LOG(f"Rewrite: {rewrite.name:15} used {rewrite.usedcount} times. {len(rewrite.tests)} test cases{snew}")
 
     # write out test cases
     if args.generate_tests:

@@ -1,0 +1,1 @@
+	ffe_main_meta_fv_t *md_fv = hci_array_access(hci_array_access(hci_array_access((ffe_main_meta_fv_t *)x->fae_resp.md_fv)));
