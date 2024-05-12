@@ -229,7 +229,9 @@ REWRITES: List[Tuple[str, str, str]] = [
 
     # address-of accessors
     Rewrite("addrof-0", "&:[expr:e]->{member}", "hci_addressof(:[expr]->{member})"),
-    Rewrite("addrof-0", "&:[expr:e].{member}", "hci_addressof(:[expr].{member})"),
+    Rewrite("addrof-1", "&:[expr:e].{member}", "hci_addressof(:[expr].{member})"),
+    Rewrite("addrof-2", "&(:[expr:e]->{member})", "hci_addressof(:[expr]->{member})"),
+    Rewrite("addrof-3", "&(:[expr:e].{member})", "hci_addressof(:[expr].{member})"),
 
     # get accessors with "!" on the front. comby weird parsing again
     Rewrite("not-0", "!:[expr:e]->{member}", "!{struct}_get_{member}(:[expr])"), # XXX: exclamation
@@ -264,6 +266,9 @@ def fixup_line(accessors: Dict[str, Accessor], lines: List[str], fixup: Fixup) -
     gettr = f"{fixup.struct}_get_{fixup.member}"
     settr = f"{fixup.struct}_set_{fixup.member}"
 
+    # assume the full member name
+    member = fixup.member
+
     if (gettr  in accessors.keys()) and (settr  in accessors.keys()):
         if (accessors[gettr].structarg != fixup.struct):
             # no type match, so likely a nested accessor
@@ -284,6 +289,8 @@ def fixup_line(accessors: Dict[str, Accessor], lines: List[str], fixup: Fixup) -
 
             # assume we're just doing this crazy with regular rewrites
             if (gettr  in accessors.keys()) and (settr  in accessors.keys()):
+                # update member and use the normal rewrites
+                member = memnopack
                 rewrite_list = REWRITES
 
         if (rewrite_list is None):
@@ -297,7 +304,7 @@ def fixup_line(accessors: Dict[str, Accessor], lines: List[str], fixup: Fixup) -
     for rewrite in rewrite_list:
 
         matchstr = rewrite.match.format(member=fixup.member, struct=fixup.struct)
-        replacestr = rewrite.replace.format(member=fixup.member, struct=fixup.struct)
+        replacestr = rewrite.replace.format(member=member, struct=fixup.struct)
 
         oline = line
         line = comby.rewrite(line, matchstr, replacestr)
