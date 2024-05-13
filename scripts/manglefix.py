@@ -211,10 +211,19 @@ NESTED_REWRITES: List[Tuple[str, str, str]] = [
 
     Rewrite("nest-1", "(:[expr:e]->:[nest:e].{member}):[semi~;?]",
         "({struct}_get_{member}(:[expr])):[semi]"),
+
+    Rewrite("nest-2", ":[expr:e]->{member}:[semi~;?]",
+        "{struct}_get_{member}(:[expr]):[semi]"),
+
+    Rewrite("nest-3", "(:[expr:e].{member}):[semi~;?]",
+        "({struct}_get_{member}(:[expr])):[semi]"),
 ]
 
 # catch-all rewrites for general field access
 REWRITES: List[Tuple[str, str, str]] = [
+    Rewrite("amgib-0", ":[expr0:e]->{member} = :[expr1:e]->{member}:[semi~;?]",
+                "HCI_AMBIGUOUS_ASSIGN(UNK, {struct}, {member}, :[expr0], :[expr1]):[semi]"),
+
     # regular assignments -> set accessor
     # need a variant with semicolon and without because of the way comby parses weird
     Rewrite("set-0", ":[expr:e]->{member} = :[value];", "{struct}_set_{member}(:[expr], :[value]);"), # XXX: semicolon
@@ -318,7 +327,7 @@ def fixup_line(args: argparse.Namespace, accessors: Dict[str, Accessor],
     if (gettr  in accessors.keys()) and (settr  in accessors.keys()):
         if (accessors[gettr].structarg != fixup.struct):
             # no type match, so likely a nested accessor
-            VERBOSE('\tAppears to be a nested accessor')
+            VERBOSE(f'\tAppears to be a nested accessor {accessors[gettr].structarg} != {fixup.struct}')
             rewrite_list = NESTED_REWRITES
         else:
             # accessor with type match, so use regular rewrites
