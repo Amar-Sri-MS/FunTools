@@ -238,6 +238,17 @@ REWRITES: List[Tuple[str, str, str]] = [
     Rewrite("andeq-1", ":[expr:e]->{member} &= :[value:e]",
         "{struct}_set_{member}(:[expr], {struct}_get_{member}(:[expr]) & :[value])"),
 
+    # and-equals (>>=) assignments -> expand to a set and a get, eg.
+    # foo->bar >>= expr; -> foo_set_bar(foo_get_bar(foo) >> expr);
+    Rewrite("shifteq-0", ":[expr:e]->{member} >>= :[value:e];",
+        "{struct}_set_{member}(:[expr], {struct}_get_{member}(:[expr]) >> :[value]);"), # XXX: semicolon
+    Rewrite("shifteq-1", ":[expr:e]->{member} >>= :[value:e]",
+        "{struct}_set_{member}(:[expr], {struct}_get_{member}(:[expr]) >> :[value])"),
+    Rewrite("shifteq-2", ":[expr:e]->{member} <<= :[value:e];",
+        "{struct}_set_{member}(:[expr], {struct}_get_{member}(:[expr]) << :[value]);"), # XXX: semicolon
+    Rewrite("shifteq-3", ":[expr:e]->{member} <<= :[value:e]",
+        "{struct}_set_{member}(:[expr], {struct}_get_{member}(:[expr]) << :[value])"),
+
     # address-of accessors
     Rewrite("addrof-0", "&:[expr:e]->{member}", "hci_addressof(:[expr]->{member})"),
     Rewrite("addrof-1", "&:[expr:e].{member}", "hci_addressof(:[expr].{member})"),
