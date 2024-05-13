@@ -214,13 +214,14 @@ static inline {{subfield | type_only}} {{struct.name}}_get_{{subfield.name}}(con
 	return {{bitfieldMacro(subfield, 'G')}}({{fromDpuWrapper(field, structField('s', field))}});
 }
 
-static inline void {{struct.name}}_set_{{subfield.name}}(struct {{struct.init_struct().name}} *s, {{subfield | as_declaration }})
+static inline {{subfield | type_only}} {{struct.name}}_set_{{subfield.name}}(struct {{struct.init_struct().name}} *s, {{subfield | as_declaration }})
 {
 	{{field | as_declaration}} = {{fromDpuWrapper(field, structField('s', field))}};
 
 	{{field.name}} &= {{bitfieldMacro(subfield, 'Z')}};
 	{{field.name}} |= {{bitfieldMacro(subfield, 'P_NOSWAP')}}({{subfield.name}});
 	{{structField('s', field)}} = {{toDpuWrapper(field, field.name)}};
+  return {{subfield.name}};
 }
 
 {% endfor %}
@@ -234,9 +235,10 @@ static inline {{field | type_only}} {{struct.name}}_get_{{field.name}}(const str
   {% endif %}
 }
 
-static inline void {{struct.name}}_set_{{field.name}}(struct {{struct.init_struct().name}} *s, {{field | as_declaration }})
+static inline {{field | type_only}} {{struct.name}}_set_{{field.name}}(struct {{struct.init_struct().name}} *s, {{field | as_declaration }})
 {
 	{{structField('s', field)}} = {{toDpuWrapper(field, field.name)}};
+  return {{field.name}};
 }
 
 {% endif %}
