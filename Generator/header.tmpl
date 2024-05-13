@@ -214,13 +214,14 @@ static inline {{subfield | type_only}} {{struct.name}}_get_{{subfield.name}}(con
 	return {{bitfieldMacro(subfield, 'G')}}({{fromDpuWrapper(field, structField('s', field))}});
 }
 
-static inline void {{struct.name}}_set_{{subfield.name}}(struct {{struct.init_struct().name}} *s, {{subfield | as_declaration }})
+static inline {{subfield | type_only}} {{struct.name}}_set_{{subfield.name}}(struct {{struct.init_struct().name}} *s, {{subfield | as_declaration }})
 {
 	{{field | as_declaration}} = {{fromDpuWrapper(field, structField('s', field))}};
 
 	{{field.name}} &= {{bitfieldMacro(subfield, 'Z')}};
 	{{field.name}} |= {{bitfieldMacro(subfield, 'P_NOSWAP')}}({{subfield.name}});
 	{{structField('s', field)}} = {{toDpuWrapper(field, field.name)}};
+  return {{subfield.name}};
 }
 
 {% endfor %}
@@ -234,9 +235,10 @@ static inline {{field | type_only}} {{struct.name}}_get_{{field.name}}(const str
   {% endif %}
 }
 
-static inline void {{struct.name}}_set_{{field.name}}(struct {{struct.init_struct().name}} *s, {{field | as_declaration }})
+static inline {{field | type_only}} {{struct.name}}_set_{{field.name}}(struct {{struct.init_struct().name}} *s, {{field | as_declaration }})
 {
 	{{structField('s', field)}} = {{toDpuWrapper(field, field.name)}};
+  return {{field.name}};
 }
 
 {% endif %}
@@ -322,6 +324,38 @@ The body of the header.
 #include <stdint.h> /* For basic integer types. */
 
 #include <FunOS/utils/threaded/fun_json.h>
+{% endif %}
+
+{% if generate_flexmangle %}
+/* Flexible Mangling define "HCI_MANGLE" to get mangled field names */
+#ifdef HCI_MANGLE
+#define _MANGLE(x) x ## _l
+#else
+#define _MANGLE(x) x
+#endif /* HCI_MANGLE */
+
+/* hci-specific operators for mangling */
+#define hci_sizeof(x)       sizeof(_MANGLE(x))
+#define hci_offsetof(x)     offsetof(_MANGLE(x))
+#define hci_addressof(x)    (&_MANGLE(x))
+#define hci_array_access(x) (_MANGLE(x))
+
+{% elif generate_mangle %}
+
+/* hci-specific operators for mangling */
+#define hci_sizeof(x)       sizeof(x ## _{{ mangle_suffix }})
+#define hci_offsetof(x)     offsetof(x ## _{{ mangle_suffix }})
+#define hci_addressof(x)    (&(x ## _{{ mangle_suffix }}))
+#define hci_array_access(x) ({x ## _{{ mangle_suffix }}))
+
+{% else  %}
+
+/* hci-operators are just native for mangling */
+#define hci_sizeof(x)        sizeof(x)
+#define hci_offsetof(x)      offsetof(x)
+#define hci_addressof(x)     (&(x))
+#define hci_array_access(x)  (x)
+
 {% endif %}
 
 {% for decl in declarations %}
