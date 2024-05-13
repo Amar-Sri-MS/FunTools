@@ -1,0 +1,1 @@
+{TESTDIR}/noset-2--0.in:1: error: ‘struct fun_nu_update_probe_path_req’ has no member named ‘path_index’; did you mean ‘path_index_l’?

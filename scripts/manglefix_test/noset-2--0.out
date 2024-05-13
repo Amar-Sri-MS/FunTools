@@ -1,0 +1,1 @@
+    pathinfo.path_index = fun_nu_update_probe_path_req_get_path_index(req);
