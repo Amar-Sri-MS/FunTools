@@ -340,6 +340,9 @@ The body of the header.
 #define hci_addressof(x)    (&_MANGLE(x))
 #define hci_array_access(x) (_MANGLE(x))
 
+#define _HCI_AMBIGUOUS_ASSIGN_UNK(struct, member, expr0, acc0, expr1, acc1) \
+  expr0 acc0 member = expr1 acc1 _MANGLE(member);
+
 {% elif generate_mangle %}
 
 /* hci-specific operators for mangling */
@@ -347,6 +350,9 @@ The body of the header.
 #define hci_offsetof(x)     offsetof(x ## _{{ mangle_suffix }})
 #define hci_addressof(x)    (&(x ## _{{ mangle_suffix }}))
 #define hci_array_access(x) ({x ## _{{ mangle_suffix }}))
+
+#define _HCI_AMBIGUOUS_ASSIGN_UNK(struct, member, expr0, acc0, expr1, acc1) \
+  expr0 ## acc0 ## member = expr1 ## acc1 ## member ## _{{ mangle_suffix }};
 
 {% else  %}
 
@@ -356,7 +362,22 @@ The body of the header.
 #define hci_addressof(x)     (&(x))
 #define hci_array_access(x)  (x)
 
+#define _HCI_AMBIGUOUS_ASSIGN_UNK(struct, member, expr0, acc0, expr1, acc1) \
+  expr0 acc0 member = expr1 acc1 member;
+
 {% endif %}
+
+
+#define _HCI_AMBIGUOUS_ASSIGN_SET(struct, member, expr0, acc0, expr1, acc1) \
+  struct ## _get_ ## member(expr0, expr1 ## member);
+
+#define _HCI_AMBIGUOUS_ASSIGN_GET(struct, member, expr0, acc0, expr1, acc1) \
+  expr0 ## member = struct ## _get_ ## member(expr1);
+
+
+#define HCI_AMBIGUOUS_ASSIGN(hint, struct, member, expr0, acc0, expr1, acc1) \
+  _HCI_AMBIGUOUS_ASSIGN_ ## hint(struct, member, expr0, acc0, expr1, acc1)
+
 
 {% for decl in declarations %}
 {% if decl.is_enum %}

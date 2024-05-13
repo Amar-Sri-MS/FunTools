@@ -221,17 +221,22 @@ NESTED_REWRITES: List[Tuple[str, str, str]] = [
 
 # catch-all rewrites for general field access
 REWRITES: List[Tuple[str, str, str]] = [
+    # Ambiguous assignments where "member" is on both sides. re-write to a
+    # macro accessor we can resolve later
     Rewrite("amgib-0", ":[expr0:e]->{member} = :[expr1:e]->{member}:[semi~;?]",
-                "HCI_AMBIGUOUS_ASSIGN(UNK, {struct}, {member}, :[expr0], :[expr1]):[semi]"),
+                "HCI_AMBIGUOUS_ASSIGN(UNK, {struct}, {member}, :[expr0], ->, :[expr1], ->):[semi]"),
+
+    Rewrite("amgib-1", ":[expr0:e].{member} = :[expr1:e]->{member}:[semi~;?]",
+                "HCI_AMBIGUOUS_ASSIGN(UNK, {struct}, {member}, :[expr0], ., :[expr1], ->):[semi]"),
 
     # regular assignments -> set accessor
     # need a variant with semicolon and without because of the way comby parses weird
     Rewrite("set-0", ":[expr:e]->{member} = :[value];", "{struct}_set_{member}(:[expr], :[value]);"), # XXX: semicolon
     Rewrite("set-1", ":[expr:e]->{member} = :[value:e]", "{struct}_set_{member}(:[expr], :[value])"),
-    Rewrite("set-2", ":[expr0:e]->:[expr1:e].{member} = :[value];",
-            "{struct}_set_{member}(&:[expr0]->:[expr1], :[value]);"), # XXX: semicolon
-    Rewrite("set-3", ":[expr0:e]->:[expr1:e].{member} = :[value:e]",
-            "{struct}_set_{member}(&:[expr]->:[expr2], :[value])"),
+    Rewrite("set-2", ":[expr:e].{member} = :[value];",
+            "{struct}_set_{member}(&:[expr], :[value]);"), # XXX: semicolon
+    Rewrite("set-3", ":[expr:e].{member} = :[value:e]",
+            "{struct}_set_{member}(&:[expr2], :[value])"),
 
     # or-equals (|=) assignments -> expand to a set and a get, eg.
     # foo->bar |= expr; -> foo_set_bar(foo_get_bar(foo) | expr);

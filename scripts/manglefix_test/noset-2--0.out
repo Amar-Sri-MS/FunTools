@@ -1,1 +1,1 @@
-    pathinfo.path_index = fun_nu_update_probe_path_req_get_path_index(req);
+    HCI_AMBIGUOUS_ASSIGN(UNK, fun_nu_update_probe_path_req, path_index, pathinfo, ., req, ->);
