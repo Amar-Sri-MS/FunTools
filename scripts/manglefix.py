@@ -219,8 +219,10 @@ REWRITES: List[Tuple[str, str, str]] = [
     # need a variant with semicolon and without because of the way comby parses weird
     Rewrite("set-0", ":[expr:e]->{member} = :[value];", "{struct}_set_{member}(:[expr], :[value]);"), # XXX: semicolon
     Rewrite("set-1", ":[expr:e]->{member} = :[value:e]", "{struct}_set_{member}(:[expr], :[value])"),
-    Rewrite("set-2", ":[expr:e].{member} = :[value];", "{struct}_set_{member}(&:[expr], :[value]);"), # XXX: semicolon
-    Rewrite("set-3", ":[expr:e].{member} = :[value:e]", "{struct}_set_{member}(&:[expr], :[value])"),
+    Rewrite("set-2", ":[expr0:e]->:[expr1:e].{member} = :[value];",
+            "{struct}_set_{member}(&:[expr0]->:[expr1], :[value]);"), # XXX: semicolon
+    Rewrite("set-3", ":[expr0:e]->:[expr1:e].{member} = :[value:e]",
+            "{struct}_set_{member}(&:[expr]->:[expr2], :[value])"),
 
     # or-equals (|=) assignments -> expand to a set and a get, eg.
     # foo->bar |= expr; -> foo_set_bar(foo_get_bar(foo) | expr);
@@ -480,7 +482,9 @@ def write_test_cases(args: argparse.Namespace, rewrite: Rewrite) -> None:
     files = glob.glob(globstr)
     maxnum = -1
     for file in files:
-        match = re.match(f"{rewrite.name}--(\d+).in", file)
+        # LOG(f"Found test case {file}")
+        match = re.match(f".*/{rewrite.name}--(\d+).in", file)
+        # LOG(f"Match: {match}")
         if match:
             num = int(match.group(1))
             if num > maxnum:
@@ -488,6 +492,9 @@ def write_test_cases(args: argparse.Namespace, rewrite: Rewrite) -> None:
 
     # account for the new test cases
     testnum = maxnum + 1
+
+    ## FIXME: testnum is coming up broken!!
+    LOG(f"Starting testnum at {testnum}")
 
     # write out the test cases
     for tc in rewrite.tests:
@@ -515,9 +522,13 @@ def write_test_cases(args: argparse.Namespace, rewrite: Rewrite) -> None:
         # replace the line info in the error text      
         newerrtext = newlineinfo + tc.errtext[len(lineinfo.group(0)):]
 
-        # write the test case
+        # write the test case, making sure not to overwrite anything
         LOG(f"Writing test case {tc.filename}")
-        fl = open(f"{testdir}/{tc.filename}.in", "w")
+
+        infilename = f"{testdir}/{tc.filename}.in"
+        assert not os.path.exists(infilename)
+
+        fl = open(infilename, "w")
         fl.write(tc.intext)
         fl.close()
 
