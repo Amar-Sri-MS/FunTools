@@ -1,1 +1,1 @@
-{TESTDIR}/shifteq-2--0.in:1:None error: ‘struct fun_roce_test_req’ has no member named ‘arg1’; did you mean ‘arg1_l’?
+{TESTDIR}/shifteq-2--0.in:1: error: ‘struct fun_roce_test_req’ has no member named ‘arg1’; did you mean ‘arg1_l’?

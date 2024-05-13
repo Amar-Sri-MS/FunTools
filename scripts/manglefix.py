@@ -238,7 +238,30 @@ REWRITES: List[Tuple[str, str, str]] = [
     Rewrite("andeq-1", ":[expr:e]->{member} &= :[value:e]",
         "{struct}_set_{member}(:[expr], {struct}_get_{member}(:[expr]) & :[value])"),
 
-    # and-equals (>>=) assignments -> expand to a set and a get, eg.
+    # plus-equals (+=) assignments -> expand to a set and a get, eg.
+    # foo->bar += expr; -> foo_set_bar(foo_get_bar(foo) + expr);
+    Rewrite("addeq-0", ":[expr:e]->{member} += :[value:e];",
+        "{struct}_set_{member}(:[expr], {struct}_get_{member}(:[expr]) + :[value]);"), # XXX: semicolon
+    Rewrite("addeq-1", ":[expr:e]->{member} += :[value:e]",
+        "{struct}_set_{member}(:[expr], {struct}_get_{member}(:[expr]) + :[value])"),
+    Rewrite("subeq-0", ":[expr:e]->{member} -= :[value:e];",
+        "{struct}_set_{member}(:[expr], {struct}_get_{member}(:[expr]) - :[value]);"), # XXX: semicolon
+    Rewrite("subeq-1", ":[expr:e]->{member} -= :[value:e]",
+        "{struct}_set_{member}(:[expr], {struct}_get_{member}(:[expr]) - :[value])"),
+
+    # postinc (++) assignments -> expand to a set and a get, eg.
+    # foo->bar++; -> foo_set_bar(foo_get_bar(foo) + 1);
+    Rewrite("postinc-0", ":[expr:e]->{member}++;",
+        "{struct}_set_{member}(:[expr], {struct}_get_{member}(:[expr]) + 1);"), # XXX: semicolon
+    Rewrite("postinc-1", ":[expr:e]->{member}++",
+        "{struct}_set_{member}(:[expr], {struct}_get_{member}(:[expr]) + 1)"),
+    Rewrite("postsub-0", ":[expr:e]->{member}--;",
+        "{struct}_set_{member}(:[expr], {struct}_get_{member}(:[expr]) - 1);"), # XXX: semicolon
+    Rewrite("postsub-1", ":[expr:e]->{member}--",
+        "{struct}_set_{member}(:[expr], {struct}_get_{member}(:[expr]) - 1)"),
+
+
+    # shift-equals (>>=) assignments -> expand to a set and a get, eg.
     # foo->bar >>= expr; -> foo_set_bar(foo_get_bar(foo) >> expr);
     Rewrite("shifteq-0", ":[expr:e]->{member} >>= :[value:e];",
         "{struct}_set_{member}(:[expr], {struct}_get_{member}(:[expr]) >> :[value]);"), # XXX: semicolon
@@ -528,7 +551,10 @@ def write_test_cases(args: argparse.Namespace, rewrite: Rewrite) -> None:
         assert lineinfo is not None
 
         # construct the new line info
-        newlineinfo = f"{{TESTDIR}}/{tc.filename}.in:1:{lineinfo.group(3)} "
+        colinfo = ""
+        if (lineinfo.group(3) is not None):
+            colinfo = lineinfo.group(3)
+        newlineinfo = f"{{TESTDIR}}/{tc.filename}.in:1:{colinfo} "
 
         # replace the line info in the error text      
         newerrtext = newlineinfo + tc.errtext[len(lineinfo.group(0)):]
