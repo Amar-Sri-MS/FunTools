@@ -174,7 +174,9 @@ class CGraphStackCheck:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("objdir", type=str, help="path to obj directory with .ci files", nargs="+")
+    parser.add_argument(
+        "objdir", type=str, help="path to obj directory with .ci files", nargs="+"
+    )
     parser.add_argument(
         "--function", type=str, help="print stack path for function name as in .ci file"
     )
@@ -217,9 +219,7 @@ def main():
     if not args.mtracker_enabled:
         excls.update(build_mtracker_exclusions())
 
-    sc = CGraphStackCheck(
-        cgraph, args.report_cycles, excls
-    )
+    sc = CGraphStackCheck(cgraph, args.report_cycles, excls)
 
     if args.function:
         print_worst_case_path(args.function, cgraph, sc)
@@ -232,11 +232,13 @@ def build_wutrace_exclusions():
 
 
 def build_mtracker_exclusions():
-    return set([
-        "fun_mtracker_record_alloc_multiple",
-        "fun_mtracker_record_alloc",
-        "full_stack_here",
-    ])
+    return set(
+        [
+            "fun_mtracker_record_alloc_multiple",
+            "fun_mtracker_record_alloc",
+            "full_stack_here",
+        ]
+    )
 
 
 def print_worst_case_path(func_name, cgraph, stack_check):
