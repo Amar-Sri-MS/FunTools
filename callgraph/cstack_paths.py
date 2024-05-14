@@ -95,11 +95,10 @@ class CGraph:
 
 
 class CGraphStackCheck:
-    def __init__(self, cgraph, report_cycles, wutrace_enabled, mtracker_enabled):
+    def __init__(self, cgraph, report_cycles, exclusions):
         self.cgraph = cgraph
         self.report_cycles = report_cycles
-        self.wutrace_enabled = wutrace_enabled
-        self.mtracker_enabled = mtracker_enabled
+        self.exclusions = exclusions
 
         # Each augmentation is a tuple of:
         #   - maximum stack usage including this node
@@ -146,9 +145,7 @@ class CGraphStackCheck:
         self.visited[root_id] = True
         neighbours = self.cgraph.adj_list[root_id]
         for idx, n in enumerate(neighbours):
-            if not self.wutrace_enabled and self.is_wutrace_node(n):
-                continue
-            if not self.mtracker_enabled and self.is_mtracker_node(n):
+            if self.is_node_excluded(n):
                 continue
             su = self.dfs_callgraph(n)
             if su > max_su:
@@ -170,17 +167,9 @@ class CGraphStackCheck:
         for v in self.visited:
             print("Cycle member: {}".format(self.cgraph.nodes[v]))
 
-    def is_wutrace_node(self, node_id):
+    def is_node_excluded(self, node_id):
         node = self.cgraph.nodes[node_id]
-        return node.name == "trace_wu_send"
-
-    def is_mtracker_node(self, node_id):
-        node = self.cgraph.nodes[node_id]
-        return node.name in [
-            "fun_mtracker_record_alloc_multiple",
-            "fun_mtracker_record_alloc",
-            "full_stack_here",
-        ]
+        return node.name in self.exclusions
 
 
 def main():
@@ -222,14 +211,32 @@ def main():
             except:
                 print(f, line)
 
+    excls = set()
+    if not args.wutrace_enabled:
+        excls.update(build_wutrace_exclusions())
+    if not args.mtracker_enabled:
+        excls.update(build_mtracker_exclusions())
+
     sc = CGraphStackCheck(
-        cgraph, args.report_cycles, args.wutrace_enabled, args.mtracker_enabled
+        cgraph, args.report_cycles, excls
     )
 
     if args.function:
         print_worst_case_path(args.function, cgraph, sc)
     else:
         print_top_users(cgraph, sc)
+
+
+def build_wutrace_exclusions():
+    return set(["trace_wu_send"])
+
+
+def build_mtracker_exclusions():
+    return set([
+        "fun_mtracker_record_alloc_multiple",
+        "fun_mtracker_record_alloc",
+        "full_stack_here",
+    ])
 
 
 def print_worst_case_path(func_name, cgraph, stack_check):
