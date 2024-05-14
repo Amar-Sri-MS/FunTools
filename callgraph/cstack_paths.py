@@ -185,7 +185,7 @@ class CGraphStackCheck:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("objdir", type=str, help="path to obj directory with .ci files")
+    parser.add_argument("objdir", type=str, help="path to obj directory with .ci files", nargs="+")
     parser.add_argument(
         "--function", type=str, help="print stack path for function name as in .ci file"
     )
@@ -204,7 +204,9 @@ def main():
     args = parser.parse_args()
 
     cgraph = CGraph()
-    files = glob.glob(os.path.join(args.objdir, "**/*.ci"), recursive=True)
+    files = []
+    for objdir in args.objdir:
+        files.extend(glob.glob(os.path.join(objdir, "**/*.ci"), recursive=True))
 
     # Two pass approach: nodes then edges
     for f in files:
@@ -234,9 +236,12 @@ def print_worst_case_path(func_name, cgraph, stack_check):
     su, culprits = stack_check.check(cgraph.get_node(func_name).id)
 
     print("Stack usage: {}".format(su))
+    running_sum = 0
+    print("\t{}\t{}\t{}".format("Local", "Cumulative", "Name"))
     for culprit in culprits:
         cn = cgraph.nodes[culprit]
-        print("\t{}\t{}".format(cn.stack_usage, cn.name))
+        running_sum += cn.stack_usage
+        print("\t{}\t{}\t\t{}".format(cn.stack_usage, running_sum, cn.name))
 
 
 def print_top_users(cgraph, stack_check):
