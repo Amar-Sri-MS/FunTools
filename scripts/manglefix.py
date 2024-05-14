@@ -233,10 +233,10 @@ REWRITES: List[Tuple[str, str, str]] = [
     # need a variant with semicolon and without because of the way comby parses weird
     Rewrite("set-0", ":[expr:e]->{member} = :[value];", "{struct}_set_{member}(:[expr], :[value]);"), # XXX: semicolon
     Rewrite("set-1", ":[expr:e]->{member} = :[value:e]", "{struct}_set_{member}(:[expr], :[value])"),
-    Rewrite("set-2", ":[expr:e].{member} = :[value];",
-            "{struct}_set_{member}(&:[expr], :[value]);"), # XXX: semicolon
-    Rewrite("set-3", ":[expr:e].{member} = :[value:e]",
-            "{struct}_set_{member}(&:[expr2], :[value])"),
+    Rewrite("set-2", ":[expr:e].{member} =:[sp~[ \t\n]*]:[value:e];",
+            "{struct}_set_{member}(&:[expr],:[sp]:[value]);"), # XXX: semicolon
+    Rewrite("set-3", ":[expr:e].{member} =:[sp]:[value:e]",
+            "{struct}_set_{member}(&:[expr2],:[sp]:[value])"),
 
     # or-equals (|=) assignments -> expand to a set and a get, eg.
     # foo->bar |= expr; -> foo_set_bar(foo_get_bar(foo) | expr);
@@ -361,6 +361,22 @@ def fixup_line(args: argparse.Namespace, accessors: Dict[str, Accessor],
     # get the line
     line = lines[fixup.lineno - 1]
 
+    # see if it needs to become multi-line
+    inputlines: int = 1
+    if (line.strip()[-1] == "="):
+        VERBOSE(f"Multi-line assignment: {line.strip()}")
+        offset = 0
+        while True:
+            addline = lines[fixup.lineno + offset]
+            line += addline
+            offset += 1
+            if (";" in addline):
+                inputlines = offset + 1
+                break
+
+        assert inputlines > 1
+        VERBOSE(f"Identified multi-line assignment: {inputlines} lines")
+
     for rewrite in rewrite_list:
 
         matchstr = rewrite.match.format(member=fixup.member, struct=fixup.struct)
@@ -372,8 +388,24 @@ def fixup_line(args: argparse.Namespace, accessors: Dict[str, Accessor],
         if (line == oline):
             # next
             continue
+
         LOG(f"Rewrite {rewrite.name}: {oline} -> {line}")
-        lines[fixup.lineno - 1] = line
+
+        # re-write each line into the result
+        newlines = line.split("\n")
+        if (newlines[-1] == ""):
+            newlines = newlines[:-1]
+        outputlines = len(newlines)
+        assert outputlines <= inputlines
+        if (outputlines < inputlines):
+            LOG(f"Lost input lines {inputlines} -> {outputlines}, appending empty lines")
+            newlines += [""] * (inputlines - outputlines)
+        # re-append the newlines
+        newlines = [line + "\n" for line in newlines]
+        offset = -1
+        for nline in newlines:
+            lines[fixup.lineno + offset] = nline
+            offset += 1
         
         rewrite.incused()
         rewrite.testcase(args, oline, line, fixup)
@@ -422,7 +454,7 @@ def fixup_file(args: argparse.Namespace, accessors: Dict[str, Accessor],
             # compare inlines and outlines
             for (inline, outline) in zip(lines, outlines):
                 if (inline != outline):
-                    LOG(f"Validation failed: {inline} != {outline}")
+                    LOG(f"Validation failed: '{repr(inline)}' ({len(inline)}) != '{repr(outline)}' ({len(outline)})")
                     raise RuntimeError("Test failed!")
 
             LOG(f"Validation passed for {filename}")
