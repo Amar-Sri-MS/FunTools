@@ -236,7 +236,7 @@ REWRITES: List[Tuple[str, str, str]] = [
     Rewrite("set-2", ":[expr:e].{member} =:[sp~[ \t\n]*]:[value:e];",
             "{struct}_set_{member}(&:[expr],:[sp]:[value]);"), # XXX: semicolon
     Rewrite("set-3", ":[expr:e].{member} =:[sp]:[value:e]",
-            "{struct}_set_{member}(&:[expr2],:[sp]:[value])"),
+            "{struct}_set_{member}(&:[expr],:[sp]:[value])"),
 
     # or-equals (|=) assignments -> expand to a set and a get, eg.
     # foo->bar |= expr; -> foo_set_bar(foo_get_bar(foo) | expr);
@@ -702,6 +702,8 @@ def parse_errfile(args: argparse.Namespace, fixups: Dict[str, List[Fixup]]) -> N
 
     matched: int = 0
 
+    seen: List[str] = []
+
     for line in lines:
         # match line against RE
         match = re.match(RE_ERR, line)
@@ -709,6 +711,13 @@ def parse_errfile(args: argparse.Namespace, fixups: Dict[str, List[Fixup]]) -> N
         # continue if no match
         if match is None:
             continue
+
+        # continue if we've seen it
+        if line in seen:
+            continue
+
+        # add it to the seen list
+        seen.append(line)
 
         VERBOSE(f"Matched line: {line.strip()}")
         matched += 1
