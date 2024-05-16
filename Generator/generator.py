@@ -609,12 +609,17 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
     else:
       mangle_fields = ""
 
+    minmangle = False
+    if ('minmangle' in options):
+      print("Using minmangle")
+      minmangle = True
+
     dpu_endianness = 'Any'
     if 'be' in options:
         dpu_endianness = 'BE'
     elif 'le' in options:
         dpu_endianness = 'LE'
-    gen_parser = parser.GenParser(use_linux_types, dpu_endianness, mangle_fields, mangle_suffix)
+    gen_parser = parser.GenParser(use_linux_types, dpu_endianness, mangle_fields, mangle_suffix, minmangle)
     errors = gen_parser.Parse(input_filename, input_stream)
     doc = gen_parser.current_document
   else:
@@ -828,6 +833,7 @@ def main():
   codegen_init_macros = SetFromArgs('init_macros', codegen_args, False)
   codegen_mangle = SetFromArgs('mangle', codegen_args, False)
   codegen_flexmangle = SetFromArgs('flexmangle', codegen_args, False)
+  codegen_minmangle = SetFromArgs('minmangle', codegen_args, False)
 
   if codegen_be and codegen_le:
     sys.stderr.write('\'be\' and \'le\' codegen options are mutually exclusive\n')
@@ -857,6 +863,8 @@ def main():
     codegen_options.append('mangle')
   if codegen_flexmangle:
     codegen_options.append('flexmangle')
+  if codegen_minmangle:
+    codegen_options.append('minmangle')
 
   if len(args) == 0:
       sys.stderr.write('No genfile named.\n')

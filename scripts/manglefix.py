@@ -48,8 +48,8 @@ def DEBUG(msg: str) -> None:
 
 def find_sdkdir() -> str:
     # check for env var
-    if 'SDKROOT' in os.environ:
-        return os.environ['SDKROOT']
+    if 'SDKDIR' in os.environ:
+        return os.environ['SDKDIR']
 
     # check for workspace
     if 'WORKSPACE' in os.environ:
@@ -63,6 +63,7 @@ def find_sdkdir() -> str:
     sdkdir = os.path.join(scriptdir, "..", "..", "FunSDK")
 
     if os.path.exists(sdkdir):
+        VERBOSE(f"Guessed SDKDIR: {sdkdir}")
         return sdkdir
 
     # random junk
@@ -510,6 +511,9 @@ def load_accessors(hciheaders: str) -> Dict[str, Accessor]:
             pass
 
     acc_files = glob.glob(hciheaders)
+
+    if len(acc_files) == 0:
+        raise RuntimeError(f"No headers found matching {hciheaders}")
 
     LOG(f'Regenerating accessors from {", ".join(acc_files)}, this may take a while')
     for header in acc_files:
