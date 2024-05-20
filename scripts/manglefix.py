@@ -234,9 +234,9 @@ REWRITES: List[Tuple[str, str, str]] = [
     # need a variant with semicolon and without because of the way comby parses weird
     Rewrite("set-0", ":[expr:e]->{member} = :[value];", "{struct}_set_{member}(:[expr], :[value]);"), # XXX: semicolon
     Rewrite("set-1", ":[expr:e]->{member} = :[value:e]", "{struct}_set_{member}(:[expr], :[value])"),
-    Rewrite("set-2", ":[expr:e].{member} =:[sp~[ \t\n]*]:[value:e];",
+    Rewrite("set-2", ":[expr:e].{member} =:[sp~[ \t\n]+]:[value:e];",
             "{struct}_set_{member}(&:[expr],:[sp]:[value]);"), # XXX: semicolon
-    Rewrite("set-3", ":[expr:e].{member} =:[sp]:[value:e]",
+    Rewrite("set-3", ":[expr:e].{member} =:[sp~[ \t\n]+]:[value:e]",
             "{struct}_set_{member}(&:[expr],:[sp]:[value])"),
 
     # or-equals (|=) assignments -> expand to a set and a get, eg.
