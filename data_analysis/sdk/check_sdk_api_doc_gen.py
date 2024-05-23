@@ -4,18 +4,21 @@
 
    Copyright (c) 2023 Fungible. All rights reserved.
 
-    Examples
-    --------
+This script is used to check the documentation generation for SDK APIs. It extracts API information from HTML files and compares it with the SDK file list to identify any missing or undocumented APIs.
 
-    >>> python ./check_sdk_api_doc_gen.py
+Examples
+--------
+To run the script:
+>>> python ./check_sdk_api_doc_gen.py
 
-    Checks
-    ------
-    static check:
-    >>> mypy ./check_sdk_api_doc_gen.py
+Checks
+------
+static check:
+>>> mypy ./check_sdk_api_doc_gen.py
 
-    format:
-    >>> black ./check_sdk_api_doc_gen.py
+format:
+>>> black ./check_sdk_api_doc_gen.py
+>>> ruff ./check_sdk_api_doc_gen.py --fix
 
 """
 
@@ -23,7 +26,7 @@ import os
 import argparse
 import sys
 import json
-from typing import Iterable, Any, List, Optional, Union, Callable, TextIO, Dict, Tuple
+from typing import List, Dict
 import glob
 from bs4 import BeautifulSoup
 
@@ -54,6 +57,13 @@ def _get_args() -> argparse.Namespace:
         type=str,
         default="sdk_api_doc_gen_report.json",
         help="Output json file",
+    )
+
+    parser.add_argument(
+        "--api_doc_gen_df",
+        type=str,
+        default="df_api_doc_gen.pkl",
+        help="API doc extracted dataframe",
     )
 
     parser.add_argument(
@@ -132,7 +142,7 @@ def _extract_func_name(proto_str: str) -> str:
     return name
 
 
-def _extract_api_from_html(soup, debug=False):
+def _extract_api_from_html(soup, debug=False) -> List[Dict[str, str]]:
     """extract api from html file
 
     Parameters
@@ -142,11 +152,14 @@ def _extract_api_from_html(soup, debug=False):
 
     Returns
     -------
-    List[str]: api list
+    api_info_list: List[Dict[str, str]]
+        list of api info dict
 
     """
-    keys = []
+
+    api_info_list = []
     for dl in soup.findAll("dl", {"class": "c function"}):
+        api_info = {}
         if debug:
             print("DL ", dl)
         for dt in dl.findAll("dt"):
@@ -157,14 +170,42 @@ def _extract_api_from_html(soup, debug=False):
                 continue
             if debug:
                 print(proto_name)
-            keys.append(proto_name)
-        # for debugging, collection dscription
+            api_info["proto_name"] = proto_name
+
+        # find brief description
+        p_tag = dl.find_next("p")
+        assert p_tag is not None
+        api_info["brief"] = p_tag.text.strip()
+
+        # if parameters exists, then read them
+        p_tag = p_tag.find_next("p")
+        while p_tag and p_tag.text == "Parameters":
+            # read parameter
+            p_tag = p_tag.find_next("p")
+            # check if parameter exists, if not move to next
+            p_tag = p_tag.find_next("p")
+
+        # check if 'Description' exists
+        if p_tag and p_tag.text == "Description":
+            # read description content
+            p_tag = p_tag.find_next("p")
+            long_desc = p_tag.text.strip()
+
+        else:
+            long_desc = ""
+        api_info["long"] = long_desc
+        api_info_list.append(api_info)
+
         if False:
             for dd in dl.findAll("dd"):
                 values.append(dd.text.strip())
-    return keys
 
-def _trim_leading_path(_df: pd.DataFrame, leading_str: str="../../FunSDK/FunSDK/funosrt/include/") -> None:
+    return api_info_list
+
+
+def _trim_leading_path(
+    _df: pd.DataFrame, leading_str: str = "../../FunSDK/FunSDK/funosrt/include/"
+) -> None:
     """trim leading path from filename"""
     leading_str = leading_str[:-1] if leading_str.endswith("/") else leading_str
     n_path = len(leading_str.split("/"))
@@ -190,9 +231,12 @@ def _trim_filename(filename: str, n_path: int) -> str:
     return filename
 
 
-def _update_filename_prepend_str(_df: pd.DataFrame, prepend_str: str="FunOS/sdk_include/") -> None:
-    """Update filename with  prepend_str"""
+def _update_filename_prepend_str(_df: pd.DataFrame, prepend_str: str = "") -> None:
+    """Update filename with  prepend_str
+    NOTE: this is to make the filename to be consistent with the SDK file list
+    """
     _df["filename"] = prepend_str + _df["filename"]
+
 
 def extract_generated_api_info_from_html(header_search_path: str):
     """Extract generated API information by loading html files from the given path
@@ -220,11 +264,14 @@ def extract_generated_api_info_from_html(header_search_path: str):
         with open(html_file, "r") as f:
             html = f.read()
             soup = BeautifulSoup(html, features="html.parser")
-            proto_names = _extract_api_from_html(soup)
+            api_info_list = _extract_api_from_html(soup)
             filename = _trim_filename(html_file, n_path)
-            for proto_name in proto_names:
+            for api_info in api_info_list:
+                proto_name = api_info["proto_name"]
                 d = {
                     "proto_name": proto_name,
+                    "brief_desc": api_info["brief"],
+                    "long_desc": api_info["long"],
                     "filename": filename,
                     "combined_api": f"{proto_name}:{filename}",
                 }
@@ -258,7 +305,7 @@ def load_sdk_file_summary_using_csv(
 def load_sdk_file_summary_counting_sdk_headers(
     sdk_dir: str, sdk_header_dir: str
 ) -> pd.DataFrame:
-    """load sdk file summary by counting the number of headder files in SDK directory
+    """load sdk file summary by counting the number of header files in SDK directory
 
     Returns
     -------
@@ -292,8 +339,7 @@ def load_sdk_file_summary_counting_sdk_headers(
 def load_sdk_file_summary(
     sdk_dir: str, sdk_header_dir: str = "FunSDK/funosrt/include/FunOS"
 ) -> pd.DataFrame:
-
-    # by counting the number of headder files in SDK directory
+    # by counting the number of header files in SDK directory
     return load_sdk_file_summary_counting_sdk_headers(sdk_dir, sdk_header_dir)
 
 
@@ -368,7 +414,6 @@ def generate_api_documentation_summary(
     # load SDK file list
     sdk_file_df = load_sdk_file_summary(sdk_dir)
 
-    # append 'FunOS/sdk_include/' to filename of sdk_file_df
     _update_filename_prepend_str(sdk_file_df)
 
     # load generated documentation list
@@ -426,7 +471,7 @@ def generate_api_documentation_summary(
     report_str = json.dumps(report, indent=4)
     print(report_str)
 
-    return report, df_api, undocumented_headers_df
+    return report, df_api, undocumented_headers_df, df_api_doc_gen
 
 
 def main() -> None:
@@ -449,6 +494,7 @@ def main() -> None:
         os.makedirs(output_dir)
 
     output_json = os.path.join(output_dir, args.output_json)
+    api_doc_gen_df = os.path.join(output_dir, args.api_doc_gen_df)
 
     output_html = os.path.join(output_dir, args.output_html)
     output_undocumented_html = os.path.join(output_dir, args.output_undocumented_html)
@@ -461,18 +507,25 @@ def main() -> None:
     print("-------")
     print("API HTML search path: {}".format(api_doc_gen_dir))
     print("Output json file: {}".format(output_json))
+    print("API df file: {}".format(api_doc_gen_df))
     print()
-
 
     (
         report,
         df_api_extracted,
         undocumented_headers_df,
+        df_api_doc_gen,
     ) = generate_api_documentation_summary(sdk_dir, api_doc_gen_dir, sdk_api)
 
     # save report to json file
     with open(output_json, "w") as f:
         json.dump(report, f, indent=4)
+
+    # save df_api_doc_gen to pickle file
+    df_api_doc_gen.to_pickle(api_doc_gen_df)
+
+    # load df_api_doc_gen.pkl to dataframe_load
+    # df_api_doc_gen_load = pd.read_pickle(os.path.join(output_dir, "df_api_doc_gen.pkl"))
 
     df_api_extracted.to_csv(
         os.path.join(output_dir, "sdk_api_summary.csv"), index=False
