@@ -601,18 +601,21 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
 
   if input_filename.endswith('.gen') or input_filename.endswith('.pgen'):
     use_linux_types = (output_style == OutputStyleLinux)
-    if ('flexmangle' in options):
-      mangle_fields = "flexmangle"
-    elif ('mangle' in options):
-      mangle_fields = "mangle"
-      mangle_suffix = random.choice(string.ascii_letters)
-    else:
-      mangle_fields = ""
 
+    # resolve minmangle first 
     minmangle = False
     if ('minmangle' in options):
       print("Using minmangle")
       minmangle = True
+
+    # resolve actual mangling strategy
+    if ('flexmangle' in options):
+      mangle_fields = "flexmangle"
+    elif (('mangle' in options) or minmangle):
+      mangle_fields = "mangle"
+      mangle_suffix = random.choice(string.ascii_letters)
+    else:
+      mangle_fields = ""
 
     dpu_endianness = 'Any'
     if 'be' in options:
