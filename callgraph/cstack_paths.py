@@ -34,7 +34,7 @@ class Node:
         return None
 
     def _extract_stack_usage(label):
-        m = re.match(".*?([\d]+) bytes", label)
+        m = re.match(r".*?([\d]+) bytes", label)
         if m:
             return int(m.group(1))
         return 0
