@@ -1841,7 +1841,7 @@ int main(int argc, char *argv[])
 
 	while ((ch = getopt_long(argc, argv,
 #ifdef __linux__
-				 "hB::b::s:D:i::c:u::p::q::T::t::I:nQSNXFR:LvdVYW",
+				 "hB::b::s:D:i::c:u::q::T::t::I:nQSNXFR:LvdVY",
 #else
 				 "hB::b::s:D:i::c:u::T::t::nQSNXFR:LvdVY",
 #endif
@@ -2013,18 +2013,6 @@ int main(int argc, char *argv[])
 			connect_retries = opt_num(optarg, RETRY_NOARG);
 
 			break;
-#ifdef __linux__
-		case 'W':  /* "timeout" -- set timeout for cmd */
-			funos_sock.cmd_timeout = atoi(optarg);
-			if (funos_sock.cmd_timeout <= 0) {
-				printf("timeout must be a positive decimal integer\n");
-				usage(argv[0]);
-				exit(1);
-			}
-			cmd_timeout_is_set = true;
-			break;
-#endif //__linux__
-
 		default:
 			usage(argv[0]);
 			exit(1);
