@@ -19,7 +19,6 @@ enum sockmode {
 	SOCKMODE_IP,
 	SOCKMODE_UNIX,
 	SOCKMODE_DEV,
-	SOCKMODE_NVME,
 	SOCKMODE_FUNQ
 };
 
@@ -53,11 +52,7 @@ struct dpcsock {
 struct dpcsock_connection {
 	struct dpcsock *socket;
 	int fd;                  /* connected fd */
-	bool nvme_write_done;    /* flag indicating whether write to nvme device
-                                    is successful so that we can read from it */
 	enum parsingmode encoding;   /* use binary json for encoding */
-	uint32_t nvme_session_id;
-	uint32_t nvme_seq_num;
 	void *funq_connection;
 
 	bool closing;
@@ -69,11 +64,9 @@ struct dpcsock_connection {
 	// it would never lead to a double-transcoding
 	struct dpcsh_ptr_queue *binary_json_queue;
 
-	// for libfunq and NVMe only
-	pthread_mutex_t nvme_lock;
+	// for libfunq only
 	pthread_mutex_t funq_queue_lock;
 	pthread_cond_t data_available;
-	bool nvme_data_written;
 };
 
 // Flag that controls how JSON is printed
