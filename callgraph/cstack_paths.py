@@ -191,6 +191,12 @@ def main():
     parser.add_argument(
         "--mtracker-enabled", action="store_true", help="assume mtracker is enabled"
     )
+    parser.add_argument(
+        "--ignore",
+        action="append",
+        help="repeatable node name to exclude from paths",
+        default=list(),
+    )
 
     args = parser.parse_args()
 
@@ -218,6 +224,7 @@ def main():
         excls.update(build_wutrace_exclusions())
     if not args.mtracker_enabled:
         excls.update(build_mtracker_exclusions())
+    excls.update(set(args.ignore))
 
     sc = CGraphStackCheck(cgraph, args.report_cycles, excls)
 
