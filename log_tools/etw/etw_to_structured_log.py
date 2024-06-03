@@ -8,6 +8,7 @@
 #
 
 import argparse
+import json
 import os
 import xml.etree.ElementTree as ET
 
@@ -59,40 +60,21 @@ class Data:
 
 class LogGen:
 
-    def __init__(self, templates_by_id, keywords):
+    def __init__(self, template_basename, typemap_basename, templates_by_id, keywords):
         self.templates_by_id = templates_by_id
         self.mask_by_keywords = keywords
 
         script_dir = os.path.dirname(__file__)
         self.jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(script_dir))
-        self.jinja_tmpl = self.jinja_env.get_template("log.tmpl")
-        self.type_map = self.create_type_mapping()
+        self.jinja_tmpl = self.jinja_env.get_template(template_basename)
+        self.type_map = self.create_type_mapping(typemap_basename)
         self.level_map = self.create_level_mapping()
 
-    def create_type_mapping(self):
+    def create_type_mapping(self, typemap_basename):
         """ETW data types to FunOS log data types"""
-        bytes_t = ("struct fun_ptr_and_size", "bytes")
-
-        return {
-            "win:GUID": bytes_t,
-            "win:UInt8": ("uint8_t", "uint64"),
-            "win:UInt16": ("uint16_t", "uint64"),
-            "win:UInt32": ("uint32_t", "uint64"),
-            "win:UInt64": ("uint64_t", "uint64"),
-            "win:Int16": ("int16_t", "int64"),
-            "win:Int32": ("int32_t", "int64"),
-            "win:Int64": ("int64_t", "int64"),
-            "win:Float": ("double", "double"),
-            "win:Double": ("double", "double"),
-            "win:Boolean": ("bool", "bool"),
-            "win:HexInt32": bytes_t,
-            "win:HexInt64": bytes_t,
-            "win:Binary": bytes_t,
-            "win:AnsiString": bytes_t,
-            "win:UnicodeString": bytes_t,
-            "win:FILETIME": bytes_t,
-            "win:SYSTEMTIME": bytes_t,
-        }
+        with open(typemap_basename, "r") as f:
+            type_map = json.load(f)
+            return type_map
 
     def create_level_mapping(self):
         """ETW levels to FunOS log severity"""
@@ -123,6 +105,12 @@ class LogGen:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("manifest", help="ETW (input) manifest")
+    parser.add_argument(
+        "--template", default="default_log.tmpl", help="output log template (jinja2)"
+    )
+    parser.add_argument(
+        "--type-map", default="default_typemap.json", help="ETW to FunOS type mapping"
+    )
     args = parser.parse_args()
 
     tree = ET.parse(args.manifest)
@@ -135,7 +123,7 @@ def main():
     templates_by_id = build_templates_by_id(provider, namespace)
     mask_by_keywords = build_keywords(provider, namespace)
 
-    gen = LogGen(templates_by_id, mask_by_keywords)
+    gen = LogGen(args.template, args.type_map, templates_by_id, mask_by_keywords)
     for event in events:
         print(gen.generate(event))
 
@@ -159,9 +147,7 @@ def build_events(provider, namespace):
         attrs = event_elem.attrib
         keywords = attrs.get("keywords", "")
         tmpl = attrs.get("template", None)
-        ev = Event(
-            attrs["symbol"], attrs["value"], tmpl, attrs["level"], keywords
-        )
+        ev = Event(attrs["symbol"], attrs["value"], tmpl, attrs["level"], keywords)
         events.append(ev)
     return events
 
