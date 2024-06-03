@@ -79,9 +79,19 @@ class LogGen:
             "win:UInt16": ("uint16_t", "uint64"),
             "win:UInt32": ("uint32_t", "uint64"),
             "win:UInt64": ("uint64_t", "uint64"),
+            "win:Int16": ("int16_t", "int64"),
+            "win:Int32": ("int32_t", "int64"),
             "win:Int64": ("int64_t", "int64"),
+            "win:Float": ("double", "double"),
+            "win:Double": ("double", "double"),
+            "win:Boolean": ("bool", "bool"),
+            "win:HexInt32": bytes_t,
+            "win:HexInt64": bytes_t,
             "win:Binary": bytes_t,
+            "win:AnsiString": bytes_t,
             "win:UnicodeString": bytes_t,
+            "win:FILETIME": bytes_t,
+            "win:SYSTEMTIME": bytes_t,
         }
 
     def create_level_mapping(self):
@@ -96,9 +106,12 @@ class LogGen:
 
     def generate(self, event):
         event_tid = event.template_id
+        event_tmpl = None
+        if event_tid:
+            event_tmpl = self.templates_by_id[event_tid]
         tmpl_dict = {
             "evt": event,
-            "evt_tmpl": self.templates_by_id[event_tid],
+            "evt_tmpl": event_tmpl,
             "type_map": self.type_map,
             "keyword_map": self.mask_by_keywords,
             "level_map": self.level_map,
@@ -145,8 +158,9 @@ def build_events(provider, namespace):
     for event_elem in events_elem.findall("evt:event", namespace):
         attrs = event_elem.attrib
         keywords = attrs.get("keywords", "")
+        tmpl = attrs.get("template", None)
         ev = Event(
-            attrs["symbol"], attrs["value"], attrs["template"], attrs["level"], keywords
+            attrs["symbol"], attrs["value"], tmpl, attrs["level"], keywords
         )
         events.append(ev)
     return events
@@ -173,6 +187,9 @@ def build_templates_by_id(provider, namespace):
 def build_keywords(provider, namespace):
     keywords = {}
     keywords_elem = provider.find("evt:keywords", namespace)
+    if keywords_elem is None:
+        return keywords
+
     for kw_elem in keywords_elem.findall("evt:keyword", namespace):
         attrs = kw_elem.attrib
         keywords[attrs["name"]] = attrs["mask"]
