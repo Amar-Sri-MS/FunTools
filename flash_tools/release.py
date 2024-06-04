@@ -146,37 +146,27 @@ SKU_SPECIFIC_MFGINSTALL = {
 
 CHIP_WITH_FUNVISOR = [ 'f1', 'f1d1', 's1' ]
 CHIP_WITH_ACU = [ 's2' ]
-CHIP_MAY_USE_NVDIMM = [ 'f1', 'f1d1' ]
 
-def bundle_filename(chip, package_type, bundle_type, release, *, sku=None, release_num=None, build_num=None, flags=None, fileext=None):
-    # filename template format
-    # dpu-PACKAGE_TYPE-CHIP[_SKU]-BUNDLE_TYPE-RELEASE_NUM-BUILD_NUM[-FLAGS][-DEBUG].[BUNDLE_FORMAT]
-    # package_type = core, storage, eeprom, other ...
-    # chip = f1, f1d1, s1, s2 ...
-    # bundle_type = setup|mfg|mfgnor
-    # release_num = 1.0, 2.0 etc
-    # build_num = 12345
-    # flags = fv, nofv, dev, optionally more separated by underscores
-    # release = "-debug" or none
-    # fileext = sh, tgz, gz
-    template = "dpu-{package_type}-{chip}{sku}-{bundle_type}-{release_num}-{build_num}{flags}{release}{fileext}"
-
-    normalize = lambda v:v.replace('-','_') if isinstance(v, str) else v
-
-    return template.format(
-        chip=chip,
-        package_type=package_type,
-        sku='_{}'.format(normalize(sku)) if sku else '',
-        bundle_type=normalize(bundle_type),
-        release_num=normalize(release_num) if release_num else 'unknown',
-        build_num=normalize(build_num) if build_num else 'unknown',
-        flags='-' + '_'.join(normalize(flags)) if flags else '',
-        release='-debug' if not release else '',
-        fileext='.{}'.format(fileext) if fileext else '',
-    )
 
 def _rootfs(f, rootfs):
     return '{}.{}'.format(rootfs, f)
+
+def _mfgfilename(f, name, signed=False):
+    if f is None:
+        return name
+    if signed:
+        return '{}.{}'.format(f, name)
+    else:
+        return '{}.{}.{}'.format(f, name, 'unsigned')
+
+def _mfg(f, signed=False):
+    return _mfgfilename(f, 'mfginstall', signed)
+
+def _mfgnofv(f, signed=False):
+    return _mfgfilename(f, 'nofv.mfginstall', signed)
+
+def _nor(f, signed=False):
+    return _mfgfilename(f, 'norinstall', signed)
 
 def _want_funvisor(args):
     return args.funvisor and not args.dev_image
@@ -206,9 +196,8 @@ def main():
     parser.add_argument('--default-config-files', dest='default_cfg', action='store_true')
     parser.add_argument('--dev-image', action='store_true', help='Create a development image installer')
     parser.add_argument('--extra-funos-suffix', action='append', help='Extra funos elf suffix to use')
-    parser.add_argument('--funos-type', default='core', help='FunOS build type (storage, core etc.)')
+    parser.add_argument('--funos-type', help='FunOS build type (storage, core etc.)')
     parser.add_argument('--with-csrreplay', action='store_true', help='Include csr-replay blob')
-    parser.add_argument('--release-version', help='Set release version for the package')
 
     args = parser.parse_args()
 
@@ -216,6 +205,7 @@ def main():
         parser.error("One of '--default-config-files' or a list of config files is required")
 
     funos_suffixes = [f'-{args.funos_type}' if args.funos_type else '', args.chip]
+    bundle_funos_type = f'{args.funos_type}-' if args.funos_type else ''
 
     if args.release:
         funos_suffixes.append('release')
@@ -230,16 +220,10 @@ def main():
     rootfs_files = ALL_ROOTFS_FILES.get(args.chip, [])
 
     def wanted(action):
-        nodev_actions = ['eeprbundle', 'mfginstall', 'mfgtarball']
         if args.action == 'all':
-            if args.dev_image:
-                return action not in nodev_actions
             return True
         elif args.action == 'release':
-            rel_actions = ['sign', 'image', 'tarball', 'bundle']
-            if not args.dev_image:
-                rel_actions.extend(nodev_actions)
-            return action in rel_actions
+            return action in ['sign', 'image', 'tarball', 'bundle', 'eeprbundle', 'mfginstall', 'mfgtarball']
         elif args.action == 'sdk-release':
             return action in ['gen-funos-loader', 'sign', 'image', 'bundle']
         else:
@@ -251,10 +235,8 @@ def main():
                 'bin/flash_tools/qspi_config_fungible.json',
                 'bin/flash_tools/mmc_config_fungible.json',
                 'bin/flash_tools/mmc_blobs_fungible.json',
-                'bin/flash_tools/key_bag_config.json' ]
-
-            if args.chip in CHIP_MAY_USE_NVDIMM:
-                args.config.append('FunSDK/nvdimm_fw/nvdimm_fw_config.json')
+                'bin/flash_tools/key_bag_config.json',
+                'FunSDK/nvdimm_fw/nvdimm_fw_config.json' ]
         else:
             args.config = [ 'image.json' ]
 
@@ -603,15 +585,7 @@ def main():
             ])
         tarfiles.append('release.txt')
 
-        bundle_flags = []
-        if args.dev_image:
-            bundle_flags.append('dev')
-
-        archive_name = bundle_filename(args.chip, args.funos_type,
-                'setup', args.release, release_num=args.release_version,
-                build_num=args.force_version, flags=bundle_flags, fileext='tgz')
-
-        with tarfile.open(archive_name, mode='w:gz') as tar:
+        with tarfile.open(f'{bundle_funos_type}{args.chip}_sdk_signed_release.tgz', mode='w:gz') as tar:
             for f in tarfiles:
                 tar.add(f)
 
@@ -627,7 +601,7 @@ def main():
                 return not _want_funvisor(args)
             return False
 
-        def bundle_gen(rootfs, bundle_target, bundle_flags):
+        def bundle_gen(rootfs, bundle_target, suffix):
             os.chdir(args.destdir)
             shutil.rmtree('bundle_installer', ignore_errors=True)
             os.mkdir('bundle_installer')
@@ -678,21 +652,12 @@ def main():
                     'WITH_FUNVISOR={}\n'.format(1 if args.funvisor else 0)
                 ])
 
-            if args.dev_image:
-                bundle_flags.append('dev')
-                bundle_name = 'development_image'
-            else:
-                bundle_name = bundle_target
-
-            archive_name = bundle_filename(args.chip, args.funos_type,
-                'setup', args.release, release_num=args.release_version,
-                build_num=args.force_version, flags=bundle_flags, fileext='sh')
-
+            bundle_name = 'development_image' if args.dev_image else bundle_target
             makeself = [
                 os_utils.path_fixup('makeself'),
                 '--follow',
                 'bundle_installer',
-                archive_name,
+                f'setup_bundle_{bundle_funos_type}{bundle_name}{suffix}.sh',
                 f'{"CCLinux/" if args.funvisor else ""}FunOS {args.funos_type} {bundle_name} installer',
                 './setup.sh'
             ]
@@ -702,14 +667,14 @@ def main():
 
         fv = args.funvisor
         for rootfs, bundle_target in rootfs_files:
-            # List of tuples (use_funvisor, bundle_flags) to generate bundles
-            # For DPUs with funvisor support add an extra 'nofv'/'fv' bundle flag
-            # Keep flag-free for no-funvisor chips or dev-image builds that only contain funos
-            fv_opts = [(False, ['nofv']), (True, ['fv'])] if (args.chip in CHIP_WITH_FUNVISOR and not args.dev_image) \
-                    else [(False, [])]
-            for fv_opt, bundle_flags in fv_opts:
+            # List of tuples (use_funvisor, suffix) to generate bundles
+            # For DPUs with funvisor support add an extra '_nofv' suffix to bundles
+            # and preserve default name for funvisor bundles.
+            fv_opts = [(False, '_nofv'), (True, '')] if args.chip in CHIP_WITH_FUNVISOR \
+                    else [(False, '')]
+            for fv_opt, suffix in fv_opts:
                 args.funvisor = fv_opt
-                bundle_gen(rootfs, bundle_target, bundle_flags)
+                bundle_gen(rootfs, bundle_target, suffix)
         args.funvisor = fv
 
 
@@ -742,15 +707,11 @@ def main():
                         'HW_BASE="{}"\n'.format(value['hw_base'].upper())
                     ])
 
-                archive_name = bundle_filename(args.chip, 'eepr',
-                    'setup', True, sku=skuid, release_num=args.release_version,
-                    build_num=args.force_version, flags=None, fileext='sh')
-
                 makeself = [
                     os_utils.path_fixup('makeself'),
                     '--follow',
                     'eepr_installer',
-                    archive_name,
+                    'setup_bundle_eepr_{}_{}.sh'.format(args.chip.lower(), skuid),
                     'DPU EEPR {} installer'.format(skuid),
                     './setup_eepr.sh'
                 ]
@@ -766,20 +727,16 @@ def main():
         else:
             rootfs = ''
 
-        def _gen_xdata_funos(mfgxdata, bundle_type, bundle_flags, *, sku=None, target=None):
+        def _gen_xdata_funos(outname_modifier, mfgxdata, target=None):
             mfgxdata_lists = {
                 'fw_upgrade_all': 'all',
                 'fw_upgrade_nor': 'nor',
                 'fw_upgrade_mmc': 'mmc'
             }
 
-            bundle_name = bundle_filename(args.chip, args.funos_type,
-                bundle_type, args.release, sku=sku, release_num=args.release_version,
-                build_num=args.force_version, flags=bundle_flags)
-            funos_mfgname = bundle_name + '.unsigned'
-
-            print("Generating MFG image {}".format(bundle_name))
-            shutil.copy2(funos_appname, funos_mfgname)
+            outname_suffix = outname_modifier(None)
+            print("Generating MFG image type {}".format(outname_suffix))
+            shutil.copy2(funos_appname, outname_modifier(funos_appname))
 
             # Prepare a list of dpcsh scripts to include
             mfgxdata_dpcsh = {}
@@ -795,7 +752,7 @@ def main():
                         if listtarget == imgtarget or listtarget == 'all':
                             f.write("{}\n".format(key))
 
-            with open('fw_upgrade_xdata_{}'.format(bundle_name), 'w') as f:
+            with open('fw_upgrade_xdata_{}'.format(outname_suffix), 'w') as f:
                 # generate complete xdata list
                 for key, (imgtarget, imgfile) in mfgxdata.items():
                     if not target or imgtarget == target:
@@ -808,13 +765,13 @@ def main():
                     f.write("{} {}\n".format(file, path))
 
             cmd = [ localdir('xdata.py'),
-                    funos_mfgname,
+                    outname_modifier(funos_appname),
                     'add-file-lists',
-                    'fw_upgrade_xdata_{}'.format(bundle_name) ]
+                    'fw_upgrade_xdata_{}'.format(outname_suffix) ]
             subprocess.call(cmd)
 
             # stash xdata lists for debugging
-            stash_dir = 'xdata_{}'.format(bundle_name)
+            stash_dir = 'xdata_{}'.format(outname_suffix)
             shutil.rmtree(stash_dir, ignore_errors=True)
             os.mkdir(stash_dir)
             for fname in mfgxdata_lists:
@@ -823,9 +780,9 @@ def main():
             # take a copy of all funos default settings for signing
             # and only override filenames used
             mfg_app_config = config['signed_images'].get('funos.signed.bin').copy()
-            mfg_app_config['source'] = funos_mfgname
+            mfg_app_config['source'] = outname_modifier(funos_appname)
 
-            signed_filename = bundle_name
+            signed_filename = outname_modifier(funos_appname, signed=True)
             config['signed_mfg_images'] = {
                 signed_filename : mfg_app_config
             }
@@ -834,8 +791,6 @@ def main():
             with open(signed_filename, 'rb') as f_in:
                 with gzip.open(signed_filename + '.gz', 'wb') as f_out:
                     shutil.copyfileobj(f_in, f_out)
-
-            os.remove(funos_mfgname)
 
 
         mfgxdata = {
@@ -876,12 +831,9 @@ def main():
 
         # standard mfginstall images
         if args.chip in CHIP_WITH_FUNVISOR:
-            _gen_xdata_funos(mfgxdata_with_fv, 'mfg', ['fv'])
-            _gen_xdata_funos(mfgxdata_without_fv, 'mfg', ['nofv'])
-        else:
-            _gen_xdata_funos(mfgxdata_without_fv, 'mfg', None)
-
-        _gen_xdata_funos(mfgxdata_without_fv, 'mfgnor', None, target='nor')
+            _gen_xdata_funos(_mfg, mfgxdata_with_fv)
+        _gen_xdata_funos(_mfgnofv, mfgxdata_without_fv)
+        _gen_xdata_funos(_nor, mfgxdata_without_fv, 'nor')
 
         # special per-sku mfginstall images
         for _target,_entry in SKU_SPECIFIC_MFGINSTALL.items():
@@ -894,10 +846,13 @@ def main():
             _sku_mfgxdata_with_fv.update(mfgxdata_fv)
 
             if args.chip in CHIP_WITH_FUNVISOR:
-                _gen_xdata_funos(_sku_mfgxdata_with_fv, 'mfg', ['fv'], sku=_target[1])
-                _gen_xdata_funos(_sku_mfgxdata_without_fv, 'mfg', ['nofv'], sku=_target[1])
-            else:
-                _gen_xdata_funos(_sku_mfgxdata_without_fv, 'mfg', sku=_target[1])
+                suffix = "{}.{}".format(_target[1], _mfg(None))
+                namegen = lambda f,signed=False: _mfgfilename(f, suffix, signed)
+                _gen_xdata_funos(namegen, _sku_mfgxdata_with_fv)
+
+            suffix = "{}.{}".format(_target[1], _mfgnofv(None))
+            namegen = lambda f,signed=False: _mfgfilename(f, suffix, signed)
+            _gen_xdata_funos(namegen, _sku_mfgxdata_without_fv)
 
         os.chdir(curdir)
 
@@ -905,16 +860,14 @@ def main():
         os.chdir(args.destdir)
         tarfiles = []
 
+        mod = _mfg if args.chip in CHIP_WITH_FUNVISOR else _mfgnofv
         tarfiles.extend(glob.glob('qspi_image_hw.bin.*'))
+        tarfiles.append(mod(funos_appname, signed=True))
 
         if os.path.exists('.version'):
             tarfiles.append('.version')
 
-        archive_name = bundle_filename(args.chip, args.funos_type,
-                'mfgnorpack', args.release, release_num=args.release_version,
-                build_num=args.force_version, fileext='tgz')
-
-        with tarfile.open(archive_name, mode='w:gz') as tar:
+        with tarfile.open(f'{bundle_funos_type}{args.chip}_mfg_package.tgz', mode='w:gz') as tar:
             for f in tarfiles:
                 tar.add(f)
 
