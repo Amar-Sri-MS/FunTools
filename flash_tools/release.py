@@ -199,8 +199,8 @@ def main():
         help='Action to be performed on the input files')
     parser.add_argument('--sdkdir', default=os.getcwd(), help='SDK root directory')
     parser.add_argument('--destdir', default='RELEASE', help='Destination directory for output')
-    parser.add_argument('--force-version', type=_int_from_any, help='Set firmware versions (used in auth signature and as a build number in manifest files)')
-    parser.add_argument('--force-description', help='Set firmware description strings (used in auth signature)')
+    parser.add_argument('--force-version', type=_int_from_any, help='Override firmware versions')
+    parser.add_argument('--force-description', help='Override firmware description strings')
     parser.add_argument('--chip', choices=['f1', 's1', 'f1d1', 's2'], default='f1', help='Target chip')
     parser.add_argument('--debug-build', dest='release', action='store_false', help='Use debug application binary')
     parser.add_argument('--default-config-files', dest='default_cfg', action='store_true')
@@ -208,8 +208,7 @@ def main():
     parser.add_argument('--extra-funos-suffix', action='append', help='Extra funos elf suffix to use')
     parser.add_argument('--funos-type', default='core', help='FunOS build type (storage, core etc.)')
     parser.add_argument('--with-csrreplay', action='store_true', help='Include csr-replay blob')
-    parser.add_argument('--release-version', help='Set release version for the package (used in package filenames)')
-    parser.add_argument('--release-bldnum', help='Set build number for the package (used in package filenames)')
+    parser.add_argument('--release-version', help='Set release version for the package')
 
     args = parser.parse_args()
 
@@ -610,7 +609,7 @@ def main():
 
         archive_name = bundle_filename(args.chip, args.funos_type,
                 'setup', args.release, release_num=args.release_version,
-                build_num=args.release_bldnum, flags=bundle_flags, fileext='tgz')
+                build_num=args.force_version, flags=bundle_flags, fileext='tgz')
 
         with tarfile.open(archive_name, mode='w:gz') as tar:
             for f in tarfiles:
@@ -687,7 +686,7 @@ def main():
 
             archive_name = bundle_filename(args.chip, args.funos_type,
                 'setup', args.release, release_num=args.release_version,
-                build_num=args.release_bldnum, flags=bundle_flags, fileext='sh')
+                build_num=args.force_version, flags=bundle_flags, fileext='sh')
 
             makeself = [
                 os_utils.path_fixup('makeself'),
@@ -745,7 +744,7 @@ def main():
 
                 archive_name = bundle_filename(args.chip, 'eepr',
                     'setup', True, sku=skuid, release_num=args.release_version,
-                    build_num=args.release_bldnum, flags=None, fileext='sh')
+                    build_num=args.force_version, flags=None, fileext='sh')
 
                 makeself = [
                     os_utils.path_fixup('makeself'),
@@ -776,7 +775,7 @@ def main():
 
             bundle_name = bundle_filename(args.chip, args.funos_type,
                 bundle_type, args.release, sku=sku, release_num=args.release_version,
-                build_num=args.release_bldnum, flags=bundle_flags)
+                build_num=args.force_version, flags=bundle_flags)
             funos_mfgname = bundle_name + '.unsigned'
 
             print("Generating MFG image {}".format(bundle_name))
@@ -913,7 +912,7 @@ def main():
 
         archive_name = bundle_filename(args.chip, args.funos_type,
                 'mfgnorpack', args.release, release_num=args.release_version,
-                build_num=args.release_bldnum, fileext='tgz')
+                build_num=args.force_version, fileext='tgz')
 
         with tarfile.open(archive_name, mode='w:gz') as tar:
             for f in tarfiles:
