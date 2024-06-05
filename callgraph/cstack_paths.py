@@ -34,7 +34,7 @@ class Node:
         return None
 
     def _extract_stack_usage(label):
-        m = re.match(".*?([\d]+) bytes", label)
+        m = re.match(r".*?([\d]+) bytes", label)
         if m:
             return int(m.group(1))
         return 0
@@ -69,6 +69,21 @@ class CGraph:
     def add_edge(self, start, end):
         self.adj_list[start.id].append(end.id)
 
+    def get_roots(self):
+        root_table = {}
+        for node in self.nodes:
+            root_table[node.id] = True
+
+        for nbs in self.adj_list:
+            for neighbour in nbs:
+                root_table[neighbour] = False
+
+        roots = set()
+        for node in root_table:
+            if root_table[node]:
+                roots.add(node)
+        return roots
+
     def __str__(self):
         s = ""
         for node in self.nodes:
@@ -80,10 +95,10 @@ class CGraph:
 
 
 class CGraphStackCheck:
-    def __init__(self, cgraph, report_cycles, wutrace_enabled):
+    def __init__(self, cgraph, report_cycles, exclusions):
         self.cgraph = cgraph
         self.report_cycles = report_cycles
-        self.wutrace_enabled = wutrace_enabled
+        self.exclusions = exclusions
 
         # Each augmentation is a tuple of:
         #   - maximum stack usage including this node
@@ -130,7 +145,7 @@ class CGraphStackCheck:
         self.visited[root_id] = True
         neighbours = self.cgraph.adj_list[root_id]
         for idx, n in enumerate(neighbours):
-            if not self.wutrace_enabled and self.is_wutrace_node(n):
+            if self.is_node_excluded(n):
                 continue
             su = self.dfs_callgraph(n)
             if su > max_su:
@@ -152,15 +167,19 @@ class CGraphStackCheck:
         for v in self.visited:
             print("Cycle member: {}".format(self.cgraph.nodes[v]))
 
-    def is_wutrace_node(self, node_id):
+    def is_node_excluded(self, node_id):
         node = self.cgraph.nodes[node_id]
-        return node.name == "trace_wu_send"
+        return node.name in self.exclusions
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("objdir", type=str, help="path to obj directory with .ci files")
-    parser.add_argument("function", type=str, help="function name as in .ci file")
+    parser.add_argument(
+        "objdir", type=str, help="path to obj directory with .ci files", nargs="+"
+    )
+    parser.add_argument(
+        "--function", type=str, help="print stack path for function name as in .ci file"
+    )
     parser.add_argument(
         "--report-cycles", action="store_true", help="report cycles in graph"
     )
@@ -169,10 +188,22 @@ def main():
     parser.add_argument(
         "--wutrace-enabled", action="store_true", help="assume wu tracing is enabled"
     )
+    parser.add_argument(
+        "--mtracker-enabled", action="store_true", help="assume mtracker is enabled"
+    )
+    parser.add_argument(
+        "--ignore",
+        action="append",
+        help="repeatable node name to exclude from paths",
+        default=list(),
+    )
+
     args = parser.parse_args()
 
     cgraph = CGraph()
-    files = glob.glob(os.path.join(args.objdir, "**/*.ci"), recursive=True)
+    files = []
+    for objdir in args.objdir:
+        files.extend(glob.glob(os.path.join(objdir, "**/*.ci"), recursive=True))
 
     # Two pass approach: nodes then edges
     for f in files:
@@ -188,13 +219,64 @@ def main():
             except:
                 print(f, line)
 
-    sc = CGraphStackCheck(cgraph, args.report_cycles, args.wutrace_enabled)
-    su, culprits = sc.check(cgraph.get_node(args.function).id)
+    excls = set()
+    if not args.wutrace_enabled:
+        excls.update(build_wutrace_exclusions())
+    if not args.mtracker_enabled:
+        excls.update(build_mtracker_exclusions())
+    excls.update(set(args.ignore))
+
+    sc = CGraphStackCheck(cgraph, args.report_cycles, excls)
+
+    if args.function:
+        print_worst_case_path(args.function, cgraph, sc)
+    else:
+        print_top_users(cgraph, sc)
+
+
+def build_wutrace_exclusions():
+    return set(["trace_wu_send"])
+
+
+def build_mtracker_exclusions():
+    return set(
+        [
+            "fun_mtracker_record_alloc_multiple",
+            "fun_mtracker_record_alloc",
+            "full_stack_here",
+        ]
+    )
+
+
+def print_worst_case_path(func_name, cgraph, stack_check):
+    su, culprits = stack_check.check(cgraph.get_node(func_name).id)
 
     print("Stack usage: {}".format(su))
+    running_sum = 0
+    print("\t{}\t{}\t{}".format("Local", "Cumulative", "Name"))
     for culprit in culprits:
         cn = cgraph.nodes[culprit]
-        print("\t{}\t{}".format(cn.stack_usage, cn.name))
+        running_sum += cn.stack_usage
+        print("\t{}\t{}\t\t{}".format(cn.stack_usage, running_sum, cn.name))
+
+
+def print_top_users(cgraph, stack_check):
+    roots = cgraph.get_roots()
+
+    top_count = 100
+    su_and_root = []
+    for node in cgraph.nodes:
+        if node.id not in roots:
+            continue
+        su, _ = stack_check.check(node.id)
+        su_and_root.append((su, node.name))
+
+    su_and_root.sort()
+    su_and_root.reverse()
+    print("Top stack users")
+    for i in range(top_count):
+        su, node_name = su_and_root[i]
+        print("{}\t{}".format(su, node_name))
 
 
 def add_node_to_graph(cgraph, line):

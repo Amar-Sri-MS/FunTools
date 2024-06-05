@@ -126,7 +126,7 @@ def prepare_offline(args, path='', select=None):
 
     images = {}
     with open(rel('image.json'), 'r') as f:
-        release = json.load(f,encoding='ascii')
+        release = json.load(f)
 
         if not select:
             if args.image_type:
