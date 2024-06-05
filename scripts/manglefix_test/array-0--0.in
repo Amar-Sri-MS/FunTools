@@ -1,0 +1,1 @@
+	host_md = (struct fun_crypto_host_md *) host_req->metadata;

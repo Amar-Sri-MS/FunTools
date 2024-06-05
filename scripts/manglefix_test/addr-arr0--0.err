@@ -1,0 +1,1 @@
+{TESTDIR}/addr-arr0--0.in:1: error: ‘struct fun_nu_tunnel_entry’ has no member named ‘dst_ftep0’; did you mean ‘dst_ftep0_l’? for fun_nu_tunnel_entry.dst_ftep0

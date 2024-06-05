@@ -1,0 +1,1 @@
+		fun_crypto_aes_req_set_flags(pc_req, fun_crypto_aes_req_get_flags(pc_req) | FUN_CRYPTO_FLAG_DATA_IN_SGL);

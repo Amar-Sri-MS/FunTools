@@ -1,0 +1,1 @@
+	fun_rsp_common_set_ret(&rsp_rfp_lb->common, ret);

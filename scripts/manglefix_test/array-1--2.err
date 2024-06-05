@@ -1,0 +1,1 @@
+{TESTDIR}/array-1--2.in:1:12: error: ‘struct fun_crypto_aead_req’ has no member named ‘iv’; did you mean ‘iv_l’?

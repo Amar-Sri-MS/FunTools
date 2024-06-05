@@ -1,0 +1,1 @@
+		fun_roce_test_req_set_arg1(req, fun_roce_test_req_get_arg1(req) << 1); // double

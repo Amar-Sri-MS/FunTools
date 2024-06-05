@@ -1,0 +1,1 @@
+{TESTDIR}/array-3--2.in:1: error: ‘const struct fun_nu_fae_resp’ has no member named ‘md_fv’; did you mean ‘md_fv_l’?

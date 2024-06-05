@@ -1,0 +1,1 @@
+		req->arg1 <<= 1; // double

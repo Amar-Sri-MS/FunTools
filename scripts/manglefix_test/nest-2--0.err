@@ -1,0 +1,1 @@
+{TESTDIR}/nest-2--0.in:1: error: ‘struct fun_admin_rdma_create_req’ has no member named ‘qp_type’; did you mean ‘qp_type_l’?

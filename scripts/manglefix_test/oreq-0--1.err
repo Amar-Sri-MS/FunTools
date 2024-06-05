@@ -1,0 +1,1 @@
+{TESTDIR}/oreq-0--1.in:1:11: error: ‘struct fun_crypto_aes_req’ has no member named ‘flags’; did you mean ‘flags_l’?

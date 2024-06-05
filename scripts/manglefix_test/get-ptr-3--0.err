@@ -1,0 +1,1 @@
+{TESTDIR}/get-ptr-3--0.in:1:15: error: ‘struct fun_xform_params’ has no member named ‘alg’; did you mean ‘alg_l’?

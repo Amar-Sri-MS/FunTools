@@ -1,0 +1,1 @@
+{TESTDIR}/addeq-0--0.in:1: error: ‘struct fun_roce_test_req’ has no member named ‘arg0’; did you mean ‘arg0_l’?

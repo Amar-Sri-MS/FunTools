@@ -1,0 +1,1 @@
+{TESTDIR}/get-mem-3--1.in:1:20: error: ‘struct fun_subop_imm’ has no member named ‘len’; did you mean ‘len_l’?

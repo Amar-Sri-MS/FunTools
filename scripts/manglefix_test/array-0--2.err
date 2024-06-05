@@ -1,0 +1,1 @@
+{TESTDIR}/array-0--2.in:1:45: error: ‘struct fun_crypto_aes_req’ has no member named ‘metadata’; did you mean ‘metadata_l’?

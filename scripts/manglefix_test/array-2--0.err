@@ -1,0 +1,1 @@
+{TESTDIR}/array-2--0.in:1:17: error: ‘struct fun_subop_imm’ has no member named ‘data’; did you mean ‘data_l’?

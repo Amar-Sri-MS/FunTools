@@ -1,0 +1,1 @@
+{TESTDIR}/nest-0--0.in:1:74: error: ‘struct fun_crypto_pke_ec_req’ has no member named ‘curve_id’; did you mean ‘curve_id_l’?
