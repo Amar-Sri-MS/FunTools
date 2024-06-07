@@ -605,7 +605,6 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
     # resolve minmangle first 
     minmangle = False
     if ('minmangle' in options):
-      print("Using minmangle")
       minmangle = True
 
     # resolve actual mangling strategy
