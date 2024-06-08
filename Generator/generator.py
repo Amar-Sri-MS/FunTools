@@ -605,16 +605,17 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
     # resolve minmangle first 
     minmangle = False
     if ('minmangle' in options):
-      print("Using minmangle")
       minmangle = True
 
     # resolve actual mangling strategy
     if ('flexmangle' in options):
       mangle_fields = "flexmangle"
-    elif (('mangle' in options) or minmangle):
+    elif ('mangle' in options):
       mangle_fields = "mangle"
       mangle_suffix = random.choice(string.ascii_letters)
     else:
+      if (minmangle):
+        raise RuntimeError("minmangle requires mangle or flexmangle")
       mangle_fields = ""
 
     dpu_endianness = 'Any'
@@ -781,8 +782,8 @@ def ShowDeps(style):
 
 def main():
   try:
-    opts, args = getopt.getopt(sys.argv[1:], 'hc:g:o:d',
-                               ['help', 'output=', 'codegen=', 'deps'])
+    opts, args = getopt.getopt(sys.argv[1:], 'hc:g:o:s:d',
+                               ['help', 'output=', 'codegen=', 'seed=', 'deps'])
   except getopt.GetoptError as err:
     print(str(err))
     Usage()
@@ -817,6 +818,9 @@ def main():
         sys.exit(2)
     elif o in ('-d', '--deps'):
       show_deps = True
+    elif o in ('-s', '--seed'):
+      # seed random based on the arg
+      random.seed(a)
     else:
       assert False, 'Unhandled option %s' % o
 

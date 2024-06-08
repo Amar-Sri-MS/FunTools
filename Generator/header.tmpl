@@ -345,11 +345,14 @@ The body of the header.
 
 {% elif generate_mangle %}
 
+/* to disable brokenness */
+#define HCI_MANGLE
+
 /* hci-specific operators for mangling */
 #define hci_sizeof(x)       sizeof(x ## _{{ mangle_suffix }})
 #define hci_offsetof(x)     offsetof(x ## _{{ mangle_suffix }})
 #define hci_addressof(x)    (&(x ## _{{ mangle_suffix }}))
-#define hci_array_access(x) ({x ## _{{ mangle_suffix }}))
+#define hci_array_access(x) ((x ## _{{ mangle_suffix }}))
 
 #define _HCI_AMBIGUOUS_ASSIGN_UNK(struct, member, expr0, acc0, expr1, acc1) \
   expr0 ## acc0 ## member = expr1 ## acc1 ## member ## _{{ mangle_suffix }};

@@ -1,8 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-generic python command-line boilerplate with mypy annotations
- 
+fix mangling call sites for FunOS/FunSDK code based on gcc error messages
+
+How to use:
+
+# Simple self-test, run the unit tests:
+./mangflefix.py -U
+
+ # 
+
 static check:
 % mypy myfile.py
  
@@ -26,7 +33,7 @@ comby = Comby(language=".c")
 
 ## Just the regext for the file, line and maybe column and a space
 RE_FILE: str = r"([\.\/a-zA-Z0-9_-]+):(\d+):(\d+:)? "
-RE_ERR: str = RE_FILE + r"error: .(?:const )?struct (\w+). has no member named .(\w+).; did you mean .(\w+)_l.\?"
+RE_ERR: str = RE_FILE + r"error: .(?:const )?struct (\w+). has no member named .(\w+).; did you mean .(\w+)_[a-z].\?"
 
 
 MAX_LOG_LEVEL: int = 0
@@ -567,7 +574,7 @@ def write_test_cases(args: argparse.Namespace, rewrite: Rewrite) -> None:
     maxnum = -1
     for file in files:
         # LOG(f"Found test case {file}")
-        match = re.match(f".*/{rewrite.name}--(\d+).in", file)
+        match = re.match(f".*/{rewrite.name}--(\\d+).in", file)
         # LOG(f"Match: {match}")
         if match:
             num = int(match.group(1))
@@ -644,7 +651,7 @@ def parse_unit_tests(args: argparse.Namespace, fixups: Optional[Dict[str, List[F
     # for each test case, read it in and re-evaluate
     for file in files:
         # extract the rewrite name from the filename
-        match = re.match(f"{testdir}/(.*)--\d+.in", file)
+        match = re.match(f"{testdir}/(.*)--\\d+.in", file)
         if match is None:
             tests_no_rewrites += 1
             rewriter = None

@@ -694,8 +694,11 @@ class Field(Declaration):
 
         p = p.parent_struct
 
-    # fall through / default case -- mangle all (or none of if not mangling)
-    return self.mangled_name
+      # use an unmangled name otherwise
+      return self.name
+    else:
+      # mangle all the names
+      return self.mangled_name
 
   def Type(self):
     return self.type
@@ -1524,7 +1527,6 @@ class GenParser:
     self.current_line = 0
 
     if mangle_fields == "mangle":
-      print("Using mangling!")
       Field.SetMangling(lambda name: name + '_' + mangle_suffix)
     elif mangle_fields == "flexmangle":
       Field.SetMangling(lambda name: f"_MANGLE({name})")
