@@ -5,16 +5,37 @@ fix mangling call sites for FunOS/FunSDK code based on gcc error messages
 
 How to use:
 
-# Simple self-test, run the unit tests:
+### Simple self-test, run the unit tests:
 ./mangflefix.py -U
 
- # 
+### loop to iterate on fixing mangles:
+
+ # cd into your project (note, requires latest FunTools also in $WORKSPACE)
+ 1. cd ${WORKSPACE}/{FunOS, FunBlockDev,...}
+ # clean build results so bad deps don't kill you
+ 2. make clean
+ # try and build every target for a given machine and capture errors to log file
+ 3. make -j8 MACHINE=s2 -k >minmangle.err 2>&1
+ # check status
+ 4. echo $?
+ # inspect errors
+ 5. cat minmangle.err | grep "error:" | less
+ # run the mangle fixer
+ 6. time ${WORKSPACE}/FunTools/scripts/manglefix.py --errfile minmangle.err
+ # re-run the make to see what's needs hand fixing (rinse and repeat)
+ 7. make -j8 MACHINE=s2
+
+ # pro-tip: the vscode "Changed lines" lines feature is super helpful when reviewing
+ # manglefix changes. It's the blue-and-white diagonally striped side-bar on the
+ # left next to the line number. Click the vertical bar and it will show you the
+ # changes since the last commit and you can copy the previous code / use it as a
+ # reference to tweak by hand.
 
 static check:
-% mypy myfile.py
+% mypy manglefile.py
  
 format:
-% python3 -m black myfile.py
+% python3 -m black manglefix.py
 """
 from typing import List, Optional, Type, Dict, Any, Tuple
 import argparse
