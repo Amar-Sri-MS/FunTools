@@ -54,7 +54,7 @@ comby = Comby(language=".c")
 
 ## Just the regext for the file, line and maybe column and a space
 RE_FILE: str = r"([\.\/a-zA-Z0-9_-]+):(\d+):(\d+:)? "
-RE_ERR: str = RE_FILE + r"error: .(?:const )?struct (\w+). has no member named .(\w+).; did you mean .(\w+)_[a-z].\?"
+RE_ERR: str = RE_FILE + r"error: .(?:const )?struct (\w+). has no member named .(\w+).; did you mean .(\w+)_[a-zA-Z].\?"
 
 
 MAX_LOG_LEVEL: int = 0
