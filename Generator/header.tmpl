@@ -73,17 +73,17 @@ Macros for hiding which size macro to use.
 #}
 {% if generate_be %}
 {% macro toDpuWrapper(field, var) %}
-{% if generate_swap and field.type.IsSwappable() %}cpu_to_be{{field.type.bit_width}}({{var}}){% else %}{{var}}{% endif %}
+{% if generate_swap and field.IsSwappable() %}cpu_to_be{{field.type.bit_width}}({{var}}){% else %}{{var}}{% endif %}
 {%- endmacro %}
 {% macro fromDpuWrapper(field, var) %}
-{% if generate_swap and field.type.IsSwappable() %}be{{field.type.bit_width}}_to_cpu({{var}}){% else %}{{var}}{% endif %}
+{% if generate_swap and field.IsSwappable() %}be{{field.type.bit_width}}_to_cpu({{var}}){% else %}{{var}}{% endif %}
 {%- endmacro %}
 {% elif generate_le %}
 {% macro toDpuWrapper(field, var) %}
-{% if generate_swap and field.type.IsSwappable() %}cpu_to_le{{field.type.bit_width}}({{var}}){% else %}{{var}}{% endif %}
+{% if generate_swap and field.IsSwappable() %}cpu_to_le{{field.type.bit_width}}({{var}}){% else %}{{var}}{% endif %}
 {%- endmacro %}
 {% macro fromDpuWrapper(field, var) %}
-{% if generate_swap and field.type.IsSwappable() %}le{{field.type.bit_width}}_to_cpu({{var}}){% else %}{{var}}{% endif %}
+{% if generate_swap and field.IsSwappable() %}le{{field.type.bit_width}}_to_cpu({{var}}){% else %}{{var}}{% endif %}
 {%- endmacro %}
 {% else %}
 {% macro toDpuWrapper(field, var) %}
