@@ -8,6 +8,7 @@
 #
 
 import argparse
+import json
 import os
 import xml.etree.ElementTree as ET
 
@@ -59,30 +60,21 @@ class Data:
 
 class LogGen:
 
-    def __init__(self, templates_by_id, keywords):
+    def __init__(self, template_basename, typemap_basename, templates_by_id, keywords):
         self.templates_by_id = templates_by_id
         self.mask_by_keywords = keywords
 
         script_dir = os.path.dirname(__file__)
         self.jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(script_dir))
-        self.jinja_tmpl = self.jinja_env.get_template("log.tmpl")
-        self.type_map = self.create_type_mapping()
+        self.jinja_tmpl = self.jinja_env.get_template(template_basename)
+        self.type_map = self.create_type_mapping(typemap_basename)
         self.level_map = self.create_level_mapping()
 
-    def create_type_mapping(self):
+    def create_type_mapping(self, typemap_basename):
         """ETW data types to FunOS log data types"""
-        bytes_t = ("struct fun_ptr_and_size", "bytes")
-
-        return {
-            "win:GUID": bytes_t,
-            "win:UInt8": ("uint8_t", "uint64"),
-            "win:UInt16": ("uint16_t", "uint64"),
-            "win:UInt32": ("uint32_t", "uint64"),
-            "win:UInt64": ("uint64_t", "uint64"),
-            "win:Int64": ("int64_t", "int64"),
-            "win:Binary": bytes_t,
-            "win:UnicodeString": bytes_t,
-        }
+        with open(typemap_basename, "r") as f:
+            type_map = json.load(f)
+            return type_map
 
     def create_level_mapping(self):
         """ETW levels to FunOS log severity"""
@@ -96,9 +88,12 @@ class LogGen:
 
     def generate(self, event):
         event_tid = event.template_id
+        event_tmpl = None
+        if event_tid:
+            event_tmpl = self.templates_by_id[event_tid]
         tmpl_dict = {
             "evt": event,
-            "evt_tmpl": self.templates_by_id[event_tid],
+            "evt_tmpl": event_tmpl,
             "type_map": self.type_map,
             "keyword_map": self.mask_by_keywords,
             "level_map": self.level_map,
@@ -110,6 +105,12 @@ class LogGen:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("manifest", help="ETW (input) manifest")
+    parser.add_argument(
+        "--template", default="default_log.tmpl", help="output log template (jinja2)"
+    )
+    parser.add_argument(
+        "--type-map", default="default_typemap.json", help="ETW to FunOS type mapping"
+    )
     args = parser.parse_args()
 
     tree = ET.parse(args.manifest)
@@ -122,7 +123,7 @@ def main():
     templates_by_id = build_templates_by_id(provider, namespace)
     mask_by_keywords = build_keywords(provider, namespace)
 
-    gen = LogGen(templates_by_id, mask_by_keywords)
+    gen = LogGen(args.template, args.type_map, templates_by_id, mask_by_keywords)
     for event in events:
         print(gen.generate(event))
 
@@ -145,9 +146,8 @@ def build_events(provider, namespace):
     for event_elem in events_elem.findall("evt:event", namespace):
         attrs = event_elem.attrib
         keywords = attrs.get("keywords", "")
-        ev = Event(
-            attrs["symbol"], attrs["value"], attrs["template"], attrs["level"], keywords
-        )
+        tmpl = attrs.get("template", None)
+        ev = Event(attrs["symbol"], attrs["value"], tmpl, attrs["level"], keywords)
         events.append(ev)
     return events
 
@@ -173,6 +173,9 @@ def build_templates_by_id(provider, namespace):
 def build_keywords(provider, namespace):
     keywords = {}
     keywords_elem = provider.find("evt:keywords", namespace)
+    if keywords_elem is None:
+        return keywords
+
     for kw_elem in keywords_elem.findall("evt:keyword", namespace):
         attrs = kw_elem.attrib
         keywords[attrs["name"]] = attrs["mask"]
