@@ -697,7 +697,7 @@ class Field(Declaration):
       # use an unmangled name otherwise
       return self.name
     else:
-      # mangle all the names
+      # mangle all the names (or none if not mangling)
       return self.mangled_name
 
   def Type(self):
