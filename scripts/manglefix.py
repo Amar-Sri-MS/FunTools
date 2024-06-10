@@ -544,13 +544,13 @@ def load_accessors(hciheaders: str) -> Dict[str, Accessor]:
         raise RuntimeError(f"No headers found matching {hciheaders}")
 
     LOG(f'Regenerating accessors from {", ".join(acc_files)}, this may take a while')
+    accessors: Dict[str, Accessor] = {}
+    account: int = 0
+
     for header in acc_files:
         fl = open(header, "r")
         lines = fl.readlines()
 
-        accessors: Dict[str, Accessor] = {}
-
-        account: int = 0
         lcount: int = 0
         while True:
             # make a bunch of text
