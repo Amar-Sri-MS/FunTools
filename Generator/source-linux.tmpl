@@ -12,7 +12,7 @@ void {{struct.name}}_dump(FILE *file_des, {{struct.DeclarationString()}} *s) {
 
   {% if struct.is_union %}
     {% if struct.fields and struct.fields[0].type.IsRecord() and struct.fields[0].type.base_type.node.fields[0].fixed_value %}
-      switch ((({{struct.fields[0].type.ParameterTypeName()}}*)s)->{{struct.fields[0].type.base_type.node.fields[0].name}}) {
+      switch ((({{struct.fields[0].type.ParameterTypeName()}}*)s)->{{struct.fields[0].type.base_type.node.fields[0] | as_mangled}}) {
       {% for field in struct.fields %}
         case {% if field.type.base_type.node.fields[0].fixed_value %} {{field.type.base_type.node.fields[0].fixed_value}} {% else %} /* PUT COMMENT IN {{struct.name}}.{{field.name}}.{{field.type.base_type.node.fields[0].name}} FOR VALUE */ {% endif %}:
           {{field.type.TypeName()}}_dump(file_des, &(s->{{field.name}}));
@@ -72,7 +72,7 @@ void {{struct.name}}_dump(FILE *file_des, {{struct.DeclarationString()}} *s) {
  	       {{field.type.base_type.Name()}}_dump(
                           file_des, &(s->{{field.name}}));
           {% else %}
-	     dump_hex_{{field.type.BitWidth()}}(file_des, s->{{field.name}});
+	     dump_hex_{{field.type.BitWidth()}}(file_des, s->{{field | as_mangled}});
           {% endif %}
         {% endif %}
       {% endif %}
