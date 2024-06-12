@@ -242,6 +242,13 @@ static inline {{field | type_only}} {{struct.name}}_set_{{field.name}}(struct {{
 }
 
 {% endif %}
+
+{% if field.is_natural_width %}
+static inline {{field.type.DeclarationName()}}* {{struct.name}}_addressof_{{field.name}}(struct {{struct.init_struct().name}} *s)
+{
+	return &{{structField('s', field)}};
+}
+{% endif %}
 {% endfor %}
 
 {% if generate_json %}
