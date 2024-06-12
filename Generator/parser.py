@@ -680,6 +680,26 @@ class Field(Declaration):
     This method determines which fields get packed accessors.
     """
     return [x for x in self.packed_fields if not x.is_reserved]
+  
+  def IsSwappable(self):
+    """Returns True if the type is subject to byte-swapping.
+    This is the case for scalar multi-byte fields that do not specify
+    their endianness.
+    """
+    if self.minmangle:
+      # walk the tree to find if a parent is marked for mangle
+      p = self.parent_struct
+      while p is not None:
+        if p.always_mangle:
+          return self.swappable
+
+        p = p.parent_struct
+
+      # don't swap.
+      return False
+    else:
+      # Default swap behavior
+      return self.swappable
 
   def Name(self):
     return self.name
@@ -862,7 +882,22 @@ class Field(Declaration):
     """Pretty-print a field in a structure or union.  Returns string."""
     str = ''
     field_type = self.Type()
-    type_name = field_type.DeclarationName(linux_type, dpu_endian);
+
+    # Only use endian types in structures that are always mangled if minmangle is set.
+    use_endian = False
+    if self.minmangle:
+      # walk the tree to find if a parent is marked for mangle
+      p = self.parent_struct
+      while p is not None:
+        if p.always_mangle:
+          use_endian = True
+          break
+
+        p = p.parent_struct
+    else:
+      use_endian = dpu_endian
+
+    type_name = field_type.DeclarationName(linux_type, dpu_endian and use_endian)
 
     name = self.MangledName() if mangled and not field_type.IsRecord() else self.name
 
