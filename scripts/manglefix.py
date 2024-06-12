@@ -54,7 +54,7 @@ comby = Comby(language=".c")
 
 ## Just the regext for the file, line and maybe column and a space
 RE_FILE: str = r"([\.\/a-zA-Z0-9_-]+):(\d+):(\d+:)? "
-RE_ERR: str = RE_FILE + r"error: .(?:const )?struct (\w+). has no member named .(\w+).; did you mean .(\w+)_[a-z].\?"
+RE_ERR: str = RE_FILE + r"error: .(?:const )?struct (\w+). has no member named .(\w+).; did you mean .(\w+)_[a-zA-Z].\?"
 
 
 MAX_LOG_LEVEL: int = 0
@@ -544,13 +544,13 @@ def load_accessors(hciheaders: str) -> Dict[str, Accessor]:
         raise RuntimeError(f"No headers found matching {hciheaders}")
 
     LOG(f'Regenerating accessors from {", ".join(acc_files)}, this may take a while')
+    accessors: Dict[str, Accessor] = {}
+    account: int = 0
+
     for header in acc_files:
         fl = open(header, "r")
         lines = fl.readlines()
 
-        accessors: Dict[str, Accessor] = {}
-
-        account: int = 0
         lcount: int = 0
         while True:
             # make a bunch of text
