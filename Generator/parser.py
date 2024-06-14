@@ -699,17 +699,20 @@ class Field(Declaration):
       p = p.parent_struct
 
     return False
-  
-  def IsSwappable(self):
-    """Returns True if the type is subject to byte-swapping.
-    This is the case for scalar multi-byte fields that do not specify
-    their endianness.
-    """
-    if self.minmangle and not self.IsAlwaysMangled():
-      return False
 
-    # Default swap behavior
-    return self.swappable
+  def IsAlwaysBe(self):
+    """Returns True if the field is part of a structure whose multi-byte members
+    are always BE.
+    """
+    # walk the tree to find if a parent is marked for BE
+    p = self.parent_struct
+    while p is not None:
+      if p.always_be:
+        return True
+
+      p = p.parent_struct
+
+    return False
 
   def Name(self):
     return self.name
@@ -890,8 +893,7 @@ class Field(Declaration):
     field_type = self.Type()
 
     # Only use big-endian types in structures that are always mangled if minmangle is set.
-    force_be = self.minmangle and self.IsAlwaysMangled()
-    type_name = field_type.DeclarationName(linux_type, dpu_endian, force_be)
+    type_name = field_type.DeclarationName(linux_type, dpu_endian, self.IsAlwaysBe())
 
     name = self.MangledName() if mangled and not field_type.IsRecord() else self.name
 
@@ -1101,6 +1103,7 @@ class Struct(Declaration):
     self.parent_struct = None
     self.is_struct = True
     self.always_mangle = False
+    self.always_be = False
 
   def FieldWithBaseType(self, base_type):
     """Returns first field with the given type.
@@ -1622,6 +1625,7 @@ class GenParser:
     current_struct.line_number = self.current_line
     current_struct.key_comment = self.StripKeyComment(key_comment)
     current_struct.always_mangle = mangled
+    current_struct.always_be = mangled and Field.minmangle
 
     if len(self.current_comment) > 0:
       current_struct.body_comment = self.current_comment
@@ -1647,6 +1651,10 @@ class GenParser:
       # inherit parent mangling
       if (containing_object.always_mangle):
         current_struct.always_mangle = True
+
+      # inherit parent endianness
+      if (containing_object.always_be):
+        current_struct.always_be = True
 
     # TODO(bowdidge): Instantiate field with struct if necessary.
     # Need to pass variable.
