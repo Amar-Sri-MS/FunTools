@@ -389,7 +389,10 @@ class Type:
       This is the case for scalar multi-byte fields that do not specify
       their endianness.
       """
-      return self.bit_width > 8 and self.IsScalar() and not self.IsNoSwap()
+      if self.IsArray():
+        return self.base_type.node is None and self.base_type.BitWidth() > 8 and not self.base_type.has_endianness
+      else:
+        return self.bit_width > 8 and self.IsScalar() and not self.IsNoSwap()
 
   def BaseName(self):
     """Returns base type name without array and other modifiers."""
