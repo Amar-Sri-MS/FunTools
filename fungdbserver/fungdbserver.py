@@ -1668,7 +1668,7 @@ def run_gdb_async(port, elffile):
             "-ex", "compare-sections .note.gnu.build-id"]
 
     # make sure we discard gdb's bootstrap register state
-    cmd += ["-ex", "flushregs"]
+    cmd += ["-ex", "maintenance flush register-cache"]
 
     if (opts.crashlog):
         cmd += ["-ex", "crashlog",
