@@ -706,7 +706,7 @@ class Field(Declaration):
 
   def MangledName(self):
     # single-byte fields are not mangled, neither are non-swappable (explicit endian) reserved fields.
-    if (self.is_reserved and not self.swappable) or (self.type.bit_width == 8 and self.is_natural_width):
+    if (self.is_reserved or self.type.is_array) and (not self.swappable or (self.type.bit_width == 8 and self.is_natural_width)):
       return self.name
 
     if self.minmangle:
