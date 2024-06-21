@@ -341,6 +341,9 @@ The body of the header.
 #define _MANGLE(x) x
 #endif /* HCI_MANGLE */
 
+/* hci-specific operators for mangling */
+#define hci_sizeof(x)       sizeof(_MANGLE(x))
+
 #define _HCI_AMBIGUOUS_ASSIGN_UNK(struct, member, expr0, acc0, expr1, acc1) \
   expr0 acc0 member = expr1 acc1 _MANGLE(member);
 
@@ -349,10 +352,16 @@ The body of the header.
 /* to disable brokenness */
 #define HCI_MANGLE
 
+/* hci-specific operators for mangling */
+#define hci_sizeof(x)       sizeof(x ## _{{ mangle_suffix }})
+
 #define _HCI_AMBIGUOUS_ASSIGN_UNK(struct, member, expr0, acc0, expr1, acc1) \
   expr0 ## acc0 ## member = expr1 ## acc1 ## member ## _{{ mangle_suffix }};
 
 {% else  %}
+
+/* hci-operators are just native for mangling */
+#define hci_sizeof(x)        sizeof(x)
 
 #define _HCI_AMBIGUOUS_ASSIGN_UNK(struct, member, expr0, acc0, expr1, acc1) \
   expr0 acc0 member = expr1 acc1 member;
@@ -360,7 +369,6 @@ The body of the header.
 {% endif %}
 
 /* hci-operators are just native for mangling */
-#define hci_sizeof(x)        sizeof(x)
 #define hci_offsetof(x)      offsetof(x)
 #define hci_addressof(x)     (&(x))
 #define hci_array_access(x)  (x)
