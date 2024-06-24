@@ -377,7 +377,7 @@ class FileCorpse:
                 return self.decode_dispatch_stack_addr(addr)
 
             ## WU stack
-            addr = self.decode_wustack_addr_to_phys(addr)
+            addr = self.decode_guard_va_addr_to_phys(addr)
             # turn back into a 64-bit VA with the knowledge that
             # WU stacks are coherent xkphys
             addr |= 0xa800000000000000
@@ -394,16 +394,19 @@ class FileCorpse:
 
         return addr
 
-    def decode_wustack_addr_to_phys(self, addr):
-        """ Returns a 48b physical address for a wustack address """
+    def decode_guard_va_addr_to_phys(self, addr):
+        """ Returns a 48b physical address for a guard va mapped address """
         ## guard page
         # magic expander section
         # (bit 47 indicates whether this has a double guard, so remove it)
         if (addr & (1<<47)):
-            addr &= ~(1<<47);
+            addr &= ~(1<<47)
+            mask = 0x1fff
+        else:
+            mask = 0xfff
 
-        offset = addr & 0xfff
-        addr &= 0xfffffffff000
+        offset = addr & mask
+        addr &= 0xffff_ffff_ffff_ffff_ffff_ffff & ~mask
         addr >>= 1
         addr |= offset
 
@@ -419,7 +422,7 @@ class FileCorpse:
                 va = self.decode_dispatch_stack_addr(addr)
                 return self.va_clean(va)
 
-            addr = self.decode_wustack_addr_to_phys(addr)
+            addr = self.decode_guard_va_addr_to_phys(addr)
 
         elif (kseg == 0xff):
             addr = addr & 0x1fffffff
