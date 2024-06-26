@@ -1999,7 +1999,8 @@ def main():
                            "most recent/add images on the Flash")
     flash_grp.add_argument("--full-rewrite", metavar="NOR_IMAGE_FILE",
                            help="use specified NOR image to completely rewrite "\
-                           "a set of images on the Flash")
+                           "a set of images on the Flash. Only a single copy of the "\
+                           "images will be updated, the other will be erased")
     flash_grp.add_argument("--override", metavar="IMAGE_FILE", action="append",
                            help="use specified Image Files as source "
                            "instead of the ones on the NOR IMAGE FILE "\
