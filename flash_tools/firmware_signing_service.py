@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3 -u
 
 '''
 Copyright (c) 2017-2020 Fungible, inc.
@@ -43,9 +43,22 @@ CERT_LEN = 1096
 MAGIC_NUMBER_CERTIFICATE = 0xB1005EA5
 MAGIC_NUMBER_ENROLL_CERT = 0xB1005C1E
 
+## resolve which signing server the user is talking about
+SIGNING_SERVERS = {
+        "fungible": ("https://f1reg.fungible.com:4443", None),
+        "corpnet": ("https://dpuhub.corp.microsoft.com:4443", "dpuhub.pem"),
 
-DEFAULT_SIGNING_SERVER = "https://f1reg.fungible.com:4443"
-SIGNING_SERVER_URL = os.environ.get('DPU_SIGNING_SERVER', DEFAULT_SIGNING_SERVER)
+        ## ADO is on a private network for build VMs, but uses the same
+        ## domain name as the corpnet server for simplicity
+        "ado": ("https://dpuhub.corp.microsoft.com:4443", "dpuhub.pem"),
+}
+
+DEFAULT_SIGNING_SERVER = "fungible"
+SIGNING_SERVER = os.environ.get('DPU_SIGNING_SERVER', DEFAULT_SIGNING_SERVER)
+
+# do a direct lookup
+url = SIGNING_SERVERS.get(SIGNING_SERVER, SIGNING_SERVERS[DEFAULT_SIGNING_SERVER])[0]
+SIGNING_SERVER_URL = url
 
 # look for possible override ~/.config/signing.ini
 try:
@@ -64,6 +77,14 @@ except:
     pass
 
 
+# check if we need to load a self-signed cert
+cert_verif = True
+for (url, v) in SIGNING_SERVERS.values():
+    if (url != SIGNING_SERVER_URL):
+        continue
+    if (v is not None):
+        cert_verif = os.path.join(os.path.dirname(__file__), v)
+    break
 
 
 SIGNING_SERVICE_URL = SIGNING_SERVER_URL + "/cgi-bin/signing_server.cgi"
@@ -179,11 +200,11 @@ def connection_retry_handler(func):
 
 @connection_retry_handler
 def try_get(*args, **kwargs):
-    return requests.get(*args, **kwargs)
+    return requests.get(*args, verify=cert_verif, **kwargs)
 
 @connection_retry_handler
 def try_post(*args, **kwargs):
-    return requests.post(*args, **kwargs)
+    return requests.post(*args, verify=cert_verif, **kwargs)
 
 
 
