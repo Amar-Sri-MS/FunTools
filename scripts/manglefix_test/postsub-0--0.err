@@ -1,0 +1,1 @@
+{TESTDIR}/postsub-0--0.in:1: error: ‘struct fun_roce_dev_attr’ has no member named ‘max_qp’; did you mean ‘max_qp_l’?

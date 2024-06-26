@@ -1,0 +1,1 @@
+	fun_crypto_aes_req_set_flags(host_req, fun_crypto_aes_req_get_flags(host_req) | FUN_CRYPTO_FLAG_VERIF_DONE);

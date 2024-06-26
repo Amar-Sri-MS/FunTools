@@ -1,0 +1,1 @@
+				uint8_t *ftep = (uint8_t *) &(entry[i].dst_ftep0);

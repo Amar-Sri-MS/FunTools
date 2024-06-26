@@ -1,0 +1,1 @@
+	if ((fun_xform_params_get_alg(params) == FUN_CRYPTO_ALG_INVALID) ||

@@ -1,0 +1,1 @@
+{TESTDIR}/get-ptr-2--2.in:1:36: error: ‘struct fun_subop_sgl’ has no member named ‘sgl_data’; did you mean ‘sgl_data_l’?

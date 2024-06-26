@@ -1,0 +1,1 @@
+	input_key  = (uint8_t *)pc_req->sgl[0].sgl_data;

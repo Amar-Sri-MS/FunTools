@@ -1,0 +1,1 @@
+	pg_len  = pc_req->pke_setkey_req.pke_dsa_req.pg_len;

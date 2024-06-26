@@ -1,0 +1,1 @@
+			ptr = ((uint8_t *)fun_subop_sgl_get_sgl_data(sgl)) + offset;

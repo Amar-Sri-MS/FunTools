@@ -73,17 +73,17 @@ Macros for hiding which size macro to use.
 #}
 {% if generate_be %}
 {% macro toDpuWrapper(field, var) %}
-{% if generate_swap and field.type.IsSwappable() %}cpu_to_be{{field.type.bit_width}}({{var}}){% else %}{{var}}{% endif %}
+{% if generate_swap and field.IsSwappable() %}cpu_to_be{{field.type.bit_width}}({{var}}){% else %}{{var}}{% endif %}
 {%- endmacro %}
 {% macro fromDpuWrapper(field, var) %}
-{% if generate_swap and field.type.IsSwappable() %}be{{field.type.bit_width}}_to_cpu({{var}}){% else %}{{var}}{% endif %}
+{% if generate_swap and field.IsSwappable() %}be{{field.type.bit_width}}_to_cpu({{var}}){% else %}{{var}}{% endif %}
 {%- endmacro %}
 {% elif generate_le %}
 {% macro toDpuWrapper(field, var) %}
-{% if generate_swap and field.type.IsSwappable() %}cpu_to_le{{field.type.bit_width}}({{var}}){% else %}{{var}}{% endif %}
+{% if generate_swap and field.IsSwappable() %}cpu_to_le{{field.type.bit_width}}({{var}}){% else %}{{var}}{% endif %}
 {%- endmacro %}
 {% macro fromDpuWrapper(field, var) %}
-{% if generate_swap and field.type.IsSwappable() %}le{{field.type.bit_width}}_to_cpu({{var}}){% else %}{{var}}{% endif %}
+{% if generate_swap and field.IsSwappable() %}le{{field.type.bit_width}}_to_cpu({{var}}){% else %}{{var}}{% endif %}
 {%- endmacro %}
 {% else %}
 {% macro toDpuWrapper(field, var) %}
@@ -214,13 +214,14 @@ static inline {{subfield | type_only}} {{struct.name}}_get_{{subfield.name}}(con
 	return {{bitfieldMacro(subfield, 'G')}}({{fromDpuWrapper(field, structField('s', field))}});
 }
 
-static inline void {{struct.name}}_set_{{subfield.name}}(struct {{struct.init_struct().name}} *s, {{subfield | as_declaration }})
+static inline {{subfield | type_only}} {{struct.name}}_set_{{subfield.name}}(struct {{struct.init_struct().name}} *s, {{subfield | as_declaration }})
 {
 	{{field | as_declaration}} = {{fromDpuWrapper(field, structField('s', field))}};
 
 	{{field.name}} &= {{bitfieldMacro(subfield, 'Z')}};
 	{{field.name}} |= {{bitfieldMacro(subfield, 'P_NOSWAP')}}({{subfield.name}});
 	{{structField('s', field)}} = {{toDpuWrapper(field, field.name)}};
+  return {{subfield.name}};
 }
 
 {% endfor %}
@@ -234,11 +235,19 @@ static inline {{field | type_only}} {{struct.name}}_get_{{field.name}}(const str
   {% endif %}
 }
 
-static inline void {{struct.name}}_set_{{field.name}}(struct {{struct.init_struct().name}} *s, {{field | as_declaration }})
+static inline {{field | type_only}} {{struct.name}}_set_{{field.name}}(struct {{struct.init_struct().name}} *s, {{field | as_declaration }})
 {
 	{{structField('s', field)}} = {{toDpuWrapper(field, field.name)}};
+  return {{field.name}};
 }
 
+{% endif %}
+
+{% if field.is_natural_width %}
+static inline {{field.type.DeclarationName()}}* {{struct.name}}_addressof_{{field.name}}(struct {{struct.init_struct().name}} *s)
+{
+	return &{{structField('s', field)}};
+}
 {% endif %}
 {% endfor %}
 
@@ -323,6 +332,58 @@ The body of the header.
 
 #include <FunOS/utils/threaded/fun_json.h>
 {% endif %}
+
+{% if generate_flexmangle %}
+/* Flexible Mangling define "HCI_MANGLE" to get mangled field names */
+#ifdef HCI_MANGLE
+#define _MANGLE(x) x ## _l
+#else
+#define _MANGLE(x) x
+#endif /* HCI_MANGLE */
+
+/* hci-specific operators for mangling */
+#define hci_sizeof(x)       sizeof(_MANGLE(x))
+
+#define _HCI_AMBIGUOUS_ASSIGN_UNK(struct, member, expr0, acc0, expr1, acc1) \
+  expr0 acc0 member = expr1 acc1 _MANGLE(member);
+
+{% elif generate_mangle %}
+
+/* to disable brokenness */
+#define HCI_MANGLE
+
+/* hci-specific operators for mangling */
+#define hci_sizeof(x)       sizeof(x ## _{{ mangle_suffix }})
+
+#define _HCI_AMBIGUOUS_ASSIGN_UNK(struct, member, expr0, acc0, expr1, acc1) \
+  expr0 ## acc0 ## member = expr1 ## acc1 ## member ## _{{ mangle_suffix }};
+
+{% else  %}
+
+/* hci-operators are just native for mangling */
+#define hci_sizeof(x)        sizeof(x)
+
+#define _HCI_AMBIGUOUS_ASSIGN_UNK(struct, member, expr0, acc0, expr1, acc1) \
+  expr0 acc0 member = expr1 acc1 member;
+
+{% endif %}
+
+/* hci-operators are just native for mangling */
+#define hci_offsetof(x)      offsetof(x)
+#define hci_addressof(x)     (&(x))
+#define hci_array_access(x)  (x)
+
+
+#define _HCI_AMBIGUOUS_ASSIGN_SET(struct, member, expr0, acc0, expr1, acc1) \
+  struct ## _get_ ## member(expr0, expr1 ## member);
+
+#define _HCI_AMBIGUOUS_ASSIGN_GET(struct, member, expr0, acc0, expr1, acc1) \
+  expr0 ## member = struct ## _get_ ## member(expr1);
+
+
+#define HCI_AMBIGUOUS_ASSIGN(hint, struct, member, expr0, acc0, expr1, acc1) \
+  _HCI_AMBIGUOUS_ASSIGN_ ## hint(struct, member, expr0, acc0, expr1, acc1)
+
 
 {% for decl in declarations %}
 {% if decl.is_enum %}

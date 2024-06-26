@@ -1,0 +1,1 @@
+		entry->key_pack |= FUN_NU_FFE_ENTRY_TMP_TCAM_KEY_P(key);

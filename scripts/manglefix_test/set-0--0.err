@@ -1,0 +1,1 @@
+{TESTDIR}/set-0--0.in:1:11: error: ‘struct fun_crypto_sha_req’ has no member named ‘outlen’; did you mean ‘outlen_l’?

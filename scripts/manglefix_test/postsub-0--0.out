@@ -1,0 +1,1 @@
+		fun_roce_dev_attr_set_max_qp(attr, fun_roce_dev_attr_get_max_qp(attr) - 1);

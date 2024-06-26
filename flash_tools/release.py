@@ -823,6 +823,7 @@ def main():
         elif args.chip == 's2':
             mfgxdata['ccfg-ds400_1x16_pcie'] = ('mmc', 'ccfg-ds400_adapter.signed.bin')
             mfgxdata['ccfg-ds400_4x4_e1s'] = ('mmc', 'ccfg-ds400_storage.signed.bin')
+            mfgxdata['ccfg-a2061'] = ('mmc', 'ccfg-a2061_default.signed.bin')
 
 
         mfgxdata_without_fv = mfgxdata

@@ -18,6 +18,8 @@ import hashlib
 import os
 import subprocess
 import sys
+import random
+import string
 
 import htmlgen
 import parser
@@ -558,7 +560,11 @@ def GenerateFromTemplate(doc, template_filename, generator_file, output_base,
     }
 
   for var in extra_vars:
-    jinja_docs[var] = True
+    if type(var) is not tuple:
+      jinja_docs[var] = True
+    else:
+      # print(f"Processing tuple variable {var}")
+      jinja_docs[var[0]] = var[1]
 
   template = env.get_template(template_filename)
   return template.render(jinja_docs, env=env)
@@ -591,16 +597,33 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
   # Process a single .gen file and create the appropriate header/docs.
   doc = None
   errors = None
+  mangle_suffix = None
 
   if input_filename.endswith('.gen') or input_filename.endswith('.pgen'):
     use_linux_types = (output_style == OutputStyleLinux)
-    mangle_fields = 'mangle' in options
+
+    # resolve minmangle first 
+    minmangle = False
+    if ('minmangle' in options):
+      minmangle = True
+
+    # resolve actual mangling strategy
+    if ('flexmangle' in options):
+      mangle_fields = "flexmangle"
+    elif ('mangle' in options):
+      mangle_fields = "mangle"
+      mangle_suffix = random.choice(string.ascii_letters)
+    else:
+      if (minmangle):
+        raise RuntimeError("minmangle requires mangle or flexmangle")
+      mangle_fields = ""
+
     dpu_endianness = 'Any'
     if 'be' in options:
         dpu_endianness = 'BE'
     elif 'le' in options:
         dpu_endianness = 'LE'
-    gen_parser = parser.GenParser(use_linux_types, dpu_endianness, mangle_fields)
+    gen_parser = parser.GenParser(use_linux_types, dpu_endianness, mangle_fields, mangle_suffix, minmangle)
     errors = gen_parser.Parse(input_filename, input_stream)
     doc = gen_parser.current_document
   else:
@@ -639,6 +662,7 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
   # Convert list of extra codegen features into variables named
   #  generate_{{codegen-style}} that will be in the template.
   extra_vars = ['generate_' + o for o in options]
+  extra_vars.append(("mangle_suffix", mangle_suffix))
   if output_style is OutputStyleHTML:
     html_generator = htmlgen.HTMLGenerator()
     source = html_generator.VisitDocument(doc)
@@ -758,8 +782,8 @@ def ShowDeps(style):
 
 def main():
   try:
-    opts, args = getopt.getopt(sys.argv[1:], 'hc:g:o:d',
-                               ['help', 'output=', 'codegen=', 'deps'])
+    opts, args = getopt.getopt(sys.argv[1:], 'hc:g:o:s:d',
+                               ['help', 'output=', 'codegen=', 'seed=', 'deps'])
   except getopt.GetoptError as err:
     print(str(err))
     Usage()
@@ -794,6 +818,9 @@ def main():
         sys.exit(2)
     elif o in ('-d', '--deps'):
       show_deps = True
+    elif o in ('-s', '--seed'):
+      # seed random based on the arg
+      random.seed(a)
     else:
       assert False, 'Unhandled option %s' % o
 
@@ -812,6 +839,8 @@ def main():
   codegen_le = SetFromArgs('le', codegen_args, False)
   codegen_init_macros = SetFromArgs('init_macros', codegen_args, False)
   codegen_mangle = SetFromArgs('mangle', codegen_args, False)
+  codegen_flexmangle = SetFromArgs('flexmangle', codegen_args, False)
+  codegen_minmangle = SetFromArgs('minmangle', codegen_args, False)
 
   if codegen_be and codegen_le:
     sys.stderr.write('\'be\' and \'le\' codegen options are mutually exclusive\n')
@@ -839,6 +868,10 @@ def main():
     codegen_options.append('init_macros')
   if codegen_mangle:
     codegen_options.append('mangle')
+  if codegen_flexmangle:
+    codegen_options.append('flexmangle')
+  if codegen_minmangle:
+    codegen_options.append('minmangle')
 
   if len(args) == 0:
       sys.stderr.write('No genfile named.\n')

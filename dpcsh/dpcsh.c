@@ -27,7 +27,6 @@
 
 #include "dpcsh.h"
 #include "dpcsh_log.h"
-#include "dpcsh_nvme.h"
 #include "csr_command.h"
 #include "file_commands.h"
 
@@ -86,16 +85,19 @@ static bool _nocli_script_mode = false;
 
 struct dpc_thread {
 	pthread_t thread;
-	void *args[3];
+	void *args[4];
+};
+
+struct dpc_connections_status {
+	bool open;
+	pthread_mutex_t close_lock;
 };
 
 struct dpc_worker {
 	struct dpc_thread in, out; // in and out of FunOS
+	struct dpc_connections_status connections;
 	bool used;
 };
-
-/* cmd timeout, use driver default timeout */
-#define DEFAULT_NVME_CMD_TIMEOUT_MS "0"
 
 #define SOCKET_WRITE_TIMEOUT_SEC (60)
 
@@ -1056,7 +1058,6 @@ struct dpcsock_connection *dpcsocket_new(struct dpcsock *sock)
 	}
 
 	if (pthread_cond_init(&connection->data_available, NULL) != 0 ||
-		  pthread_mutex_init(&connection->nvme_lock, NULL) != 0  ||
 		  pthread_mutex_init(&connection->funq_queue_lock, NULL) != 0) {
 		log_error("pthread cond and lock error");
 		free(connection);
@@ -1075,8 +1076,6 @@ bool switch_to_binary(int fd)
 
 bool dpcsocket_open(struct dpcsock_connection *connection)
 {
-	static size_t nvme_session_counter = 0;
-
 	if (connection == NULL) return false;
 
 	struct dpcsock *sock = connection->socket;
@@ -1087,14 +1086,6 @@ bool dpcsocket_open(struct dpcsock_connection *connection)
 		connection->fd = accept(sock->listen_fd, NULL, NULL);
 		connection->encoding = PARSE_JSON;
 		set_nonblocking_fd(connection->fd);
-		return true;
-	}
-
-	if (sock->mode == SOCKMODE_NVME) {
-		connection->nvme_seq_num = 0;
-		connection->nvme_write_done = true;
-		connection->nvme_session_id = (0xFFFF & (nvme_session_counter++)) + ((0xFFFF & getpid()) << 16);
-		log_debug(_debug_log, "NVMe session id = %" PRIu32 "\n", connection->nvme_session_id);
 		return true;
 	}
 
@@ -1156,22 +1147,16 @@ void dpcsocket_close(struct dpcsock_connection *connection)
 
 	connection->closing = true;
 
-	if (connection->socket->mode != SOCKMODE_NVME && connection->socket->mode != SOCKMODE_FUNQ) {
-		close(connection->fd);
-	}
-
 #ifdef WITH_LIBFUNQ
 	if (connection->socket->mode == SOCKMODE_FUNQ) {
 		if (!bin_ctl_close_connection(connection->funq_connection)) {
 			perror("bin_ctl_close_connection");
 		}
 		pthread_cond_signal(&connection->data_available);
+		return;
 	}
 #endif
-
-	if (connection->socket->mode == SOCKMODE_NVME) {
-		pthread_cond_signal(&connection->data_available);
-	}
+	close(connection->fd);
 }
 
 void dpcsocket_delete(struct dpcsock_connection *connection)
@@ -1191,25 +1176,9 @@ static bool _read_enqueue(struct dpcsock_connection *connection)
 		return true;
 	}
 
-	if (connection->socket->mode != SOCKMODE_NVME) {
-		if (!_read_all_available_data_from_fd(connection)) return false;
+	if (!_read_all_available_data_from_fd(connection)) return false;
 
-		return _decode_jsons_from_buffer(connection);
-	}
-
-	pthread_mutex_lock(&connection->nvme_lock);
-	log_debug(_debug_log, "NVME read\n");
-
-	struct fun_ptr_and_size data = {};
-	uint8_t *deallocate_ptr = NULL;
-	data.size = _read_from_nvme(&data.ptr, &deallocate_ptr, connection);
-
-	connection->nvme_data_written = false;
-	pthread_mutex_unlock(&connection->nvme_lock);
-
-	dpcsh_ptr_queue_enqueue(connection->binary_json_queue, data, deallocate_ptr);
-
-	return true;
+	return _decode_jsons_from_buffer(connection);
 }
 
 // ===============  PRETTY PRINTERS ===============
@@ -1266,34 +1235,6 @@ static bool _write_dequeue_funq(struct dpcsock_connection *dest,
 	return true;
 }
 #endif
-
-static bool _write_dequeue_nvme(struct dpcsock_connection *dest,
-			 struct dpcsock_connection *source)
-{
-	while (true) {
-		size_t queue_size = dpcsh_ptr_queue_size(source->binary_json_queue);
-
-		if (!queue_size) break;
-
-		struct fun_ptr_and_size *head = dpcsh_ptr_queue_first(source->binary_json_queue);
-		pthread_mutex_lock(&dest->nvme_lock);
-		log_debug(_debug_log, "NVME write\n");
-		dest->nvme_seq_num++;
-		if (!_write_to_nvme(*head, dest)) {
-			log_error("NVME write failed");
-			pthread_mutex_unlock(&dest->nvme_lock);
-			return false;
-		}
-		dest->nvme_data_written = true;
-		pthread_cond_signal(&dest->data_available);
-		pthread_mutex_unlock(&dest->nvme_lock);
-		if (!dpcsh_ptr_queue_dequeue(source->binary_json_queue, 1)) {
-			log_error("unable to dequeue\n");
-			return false;
-		}
-	}
-	return true;
-}
 
 static void _lock_queue_if_needed(struct dpcsock_connection *connection)
 {
@@ -1357,7 +1298,6 @@ static bool _write_dequeue(struct dpcsock_connection *dest,
 #ifdef WITH_LIBFUNQ
 	if (dest->socket->mode == SOCKMODE_FUNQ) return _write_dequeue_funq(dest, source);
 #endif
-	if (dest->socket->mode == SOCKMODE_NVME) return _write_dequeue_nvme(dest, source);
 
 	_lock_queue_if_needed(source);
 
@@ -1453,15 +1393,6 @@ static bool _wait_read(struct dpcsock_connection *source)
 
 	if (source->socket->mode == SOCKMODE_TERMINAL) return true;
 
-	if (source->socket->mode == SOCKMODE_NVME) {
-		pthread_mutex_lock(&source->nvme_lock);
-		if (source->nvme_data_written) {
-			pthread_mutex_unlock(&source->nvme_lock);
-			return true;
-		}
-		return _wait_cond_unlock(&source->data_available, &source->nvme_lock);
-	}
-
 	if (source->socket->mode == SOCKMODE_FUNQ) {
 		pthread_mutex_lock(&source->funq_queue_lock);
 		if (dpcsh_ptr_queue_size(source->binary_json_queue)) {
@@ -1524,24 +1455,39 @@ static void _do_session(struct dpcsock_connection *dest,
 	}
 }
 
-static void *_run_thread(void *args)
-{
-	void **connections = args;
-	_do_session(connections[0], connections[1]);
-	connections[2] = args; // setting this to a non-NULL
-	return NULL;
-}
-
-static void close_connections(struct dpcsock_connection *funos, struct dpcsock_connection *cmd)
+static void close_connections_unsafe(struct dpcsock_connection *funos, struct dpcsock_connection *cmd)
 {
 	dpcsocket_close(funos);
 	dpcsocket_close(cmd);
+}
+
+static void close_connections(struct dpc_connections_status *connections, struct dpcsock_connection *c1, struct dpcsock_connection *c2)
+{
+	if (!connections->open) return;
+	pthread_mutex_lock(&connections->close_lock);
+
+	if (!connections->open) goto unlock;
+
+	close_connections_unsafe(c1, c2);
+	connections->open = false;
+
+unlock:
+	pthread_mutex_unlock(&connections->close_lock);
 }
 
 static void delete_connections(struct dpcsock_connection *funos, struct dpcsock_connection *cmd)
 {
 	dpcsocket_delete(funos);
 	dpcsocket_delete(cmd);
+}
+
+static void *_run_thread(void *args)
+{
+	void **connections = args;
+	_do_session(connections[0], connections[1]);
+	connections[2] = args; // setting this to a non-NULL
+	close_connections(connections[3], connections[0], connections[1]);
+	return NULL;
 }
 
 static void open_new_connections(struct dpcsock *funos_socket,
@@ -1569,23 +1515,24 @@ static void _finalize_worker(struct dpc_worker *worker, bool force_terminate)
 	worker->used = false;
 
 	if (force_terminate)
-		close_connections(worker->in.args[0], worker->in.args[1]);
+		close_connections(&worker->connections, worker->in.args[0], worker->in.args[1]);
 
 	pthread_join(worker->in.thread, NULL);
 	pthread_join(worker->out.thread, NULL);
 
 	if (!force_terminate)
-		close_connections(worker->in.args[0], worker->in.args[1]);
+		close_connections(&worker->connections, worker->in.args[0], worker->in.args[1]);
 
 	delete_connections(worker->in.args[0], worker->in.args[1]);
 }
 
-static void _start_thread(struct dpc_thread *t,
+static void _start_thread(struct dpc_thread *t, struct dpc_connections_status *connections,
 	struct dpcsock_connection *source, struct dpcsock_connection *dest)
 {
 	t->args[0] = source;
 	t->args[1] = dest;
 	t->args[2] = 0;
+	t->args[3] = connections;
 	pthread_create(&t->thread, NULL, _run_thread, t->args);
 }
 
@@ -1603,14 +1550,16 @@ static void _add_worker(struct dpc_worker *workers, size_t max_workers,
 		}
 		if (!workers[i].used) {
 			workers[i].used = true;
-			_start_thread(&workers[i].in, funos, cmd);
-			_start_thread(&workers[i].out, cmd, funos);
+			workers[i].connections.open = true;
+			workers[i].connections.close_lock = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
+			_start_thread(&workers[i].in, &workers[i].connections, funos, cmd);
+			_start_thread(&workers[i].out, &workers[i].connections, cmd, funos);
 			log_debug(_debug_log, "added thread #%zu\n", i);
 			return;
 		}
 	}
 	log_error("out of connections\n");
-	close_connections(funos, cmd);
+	close_connections_unsafe(funos, cmd);
 	delete_connections(funos, cmd);
 }
 
@@ -1632,7 +1581,7 @@ static void _do_interactive(struct dpcsock *funos_socket,
 	do {
 		open_new_connections(funos_socket, cmd_socket, &funos, &cmd);
 		if (!funos || !cmd || cmd->fd < 0) {
-			close_connections(funos, cmd);
+			close_connections_unsafe(funos, cmd);
 			delete_connections(funos, cmd);
 			break;
 		}
@@ -1728,7 +1677,7 @@ static bool _do_cli(char *buf,
 	}
 
 connect_fail:
-	close_connections(funos, cmd);
+	close_connections_unsafe(funos, cmd);
 	delete_connections(funos, cmd);
 
 	return ok;
@@ -1769,10 +1718,6 @@ static struct option longopts[] = {
 	{ "inet_sock",       optional_argument, NULL, 'i' },
 	{ "connect_dpc",     required_argument, NULL, 'c' },
 	{ "unix_sock",       optional_argument, NULL, 'u' },
-// DPC over NVMe is needed only in Linux
-#ifdef __linux__
-	{ "pcie_nvme_sock",  optional_argument, NULL, 'p' },
-#endif //__linux__
 #ifdef WITH_LIBFUNQ
 	{ "libfunq_sock",    optional_argument, NULL, 'q' },
 #endif
@@ -1798,10 +1743,6 @@ static struct option longopts[] = {
 	{ "log",             required_argument, NULL, 'l' },
 	{ "version",         no_argument,       NULL, 'V' },
 	{ "retry",           optional_argument, NULL, 'Y' },
-#ifdef __linux__
-	{ "nvme_cmd_timeout", required_argument, NULL, 'W' },
-#endif //__linux__
-
 	/* end */
 	{ NULL, 0, NULL, 0 },
 };
@@ -1819,10 +1760,6 @@ static void usage(const char *argv0)
 	printf("       -i, --inet_sock[=port]        connect as a client port over IP\n");
 	printf("       -c, --connect_dpc[=host:port|=sockname] connect as a client to another dpcsh\n");
 	printf("       -u, --unix_sock[=sockname]    connect as a client port over unix sockets\n");
-// DPC over NVMe is needed only in Linux
-#ifdef __linux__
-	printf("       -p, --pcie_nvme_sock[=sockname] connect as a client port over nvme pcie device\n");
-#endif //__linux__
 #ifdef WITH_LIBFUNQ
 	printf("       -q, --libfunq_sock[=sockname] connect as a client port over libfunq pcie device, put \"auto\" for auto-discover\n");
 #endif
@@ -1846,10 +1783,6 @@ static void usage(const char *argv0)
 	printf("       -l, --log[=filename]          log to a file\n");
 	printf("       -Y, --retry[=N]               retry every seconds for N seconds for first socket connection\n");
 	printf("       -V, --version                 display version info and exit\n");
-#ifdef __linux__
-	printf("       --nvme_cmd_timeout=timeout specify cmd timeout in ms (default=" DEFAULT_NVME_CMD_TIMEOUT_MS ")\n");
-#endif //__linux__
-
 }
 
 enum mode {
@@ -1868,8 +1801,6 @@ int main(int argc, char *argv[])
 	struct dpcsock funos_sock = {0}; /* connection to FunOS */
 	struct dpcsock cmd_sock = {0};   /* connection to commanding agent */
 	bool autodetect_input_device = true;
-	bool cmd_timeout_is_set = false;
-	char detected_nvme_device_name[64]; /* when no input device is specified */
 	int log_fd = -1;
 
 	// otherwise it will be killed on unsuccessful write to a pipe
@@ -1910,7 +1841,7 @@ int main(int argc, char *argv[])
 
 	while ((ch = getopt_long(argc, argv,
 #ifdef __linux__
-				 "hB::b::s:D:i::c:u::p::q::T::t::I:nQSNXFR:LvdVYW",
+				 "hB::b::s:D:i::c:u::q::T::t::I:nQSNXFR:LvdVY",
 #else
 				 "hB::b::s:D:i::c:u::T::t::nQSNXFR:LvdVY",
 #endif
@@ -1979,16 +1910,6 @@ int main(int argc, char *argv[])
 							      FUNOS_SOCKET);
 			autodetect_input_device = false;
 			break;
-// DPC over NVMe is needed only in Linux
-#ifdef __linux__
-		case 'p':
-			funos_sock.mode = SOCKMODE_NVME;
-			funos_sock.server = false;
-			funos_sock.socket_name = opt_sockname(optarg,
-							      NVME_DEV_NAME);
-			autodetect_input_device = false;
-			break;
-#endif //__linux__
 #ifdef WITH_LIBFUNQ
 		case 'q':
 			funos_sock.mode = SOCKMODE_FUNQ;
@@ -2092,18 +2013,6 @@ int main(int argc, char *argv[])
 			connect_retries = opt_num(optarg, RETRY_NOARG);
 
 			break;
-#ifdef __linux__
-		case 'W':  /* "timeout" -- set timeout for cmd */
-			funos_sock.cmd_timeout = atoi(optarg);
-			if (funos_sock.cmd_timeout <= 0) {
-				printf("timeout must be a positive decimal integer\n");
-				usage(argv[0]);
-				exit(1);
-			}
-			cmd_timeout_is_set = true;
-			break;
-#endif //__linux__
-
 		default:
 			usage(argv[0]);
 			exit(1);
@@ -2117,8 +2026,7 @@ int main(int argc, char *argv[])
 		/*
 			Autodetection order:
 			1. system-wide dpc proxy it is availabe if PROXY_SOCKET exists
-			2. NVMe transport, only on Linux
-			3. posix simulator port
+			2. posix simulator port
 		*/
 
 		if( access( PROXY_SOCKET, F_OK ) == 0 ) {
@@ -2126,16 +2034,6 @@ int main(int argc, char *argv[])
 			funos_sock.mode = SOCKMODE_UNIX;
 			funos_sock.server = false;
 			funos_sock.socket_name = PROXY_SOCKET;
-		} else
-		if (find_nvme_dpu_device(detected_nvme_device_name,
-							sizeof(detected_nvme_device_name))) {
-			funos_sock.mode = SOCKMODE_NVME;
-			funos_sock.socket_name = detected_nvme_device_name;
-			funos_sock.server = false;
-			funos_sock.retries = UINT32_MAX;
-			if (!cmd_timeout_is_set) {
-				funos_sock.cmd_timeout = atoi(DEFAULT_NVME_CMD_TIMEOUT_MS);
-			}
 		} else {
 			/* default connection to FunOS posix simulator dpcsock */
 			funos_sock.mode = SOCKMODE_IP;

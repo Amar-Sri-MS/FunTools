@@ -1,0 +1,1 @@
+		LOG_INFO("fun_crypto_ctx_init_push: invalid alg %d", params->alg);

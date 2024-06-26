@@ -564,8 +564,12 @@ class Field(Declaration):
   # The StartOffset and EndOffset use the high bit = 0 system;
   # the StartBit and EndBit use high bit = 63.
 
-  # When name mangling is enabled names are modified by appending this suffix.
-  mangle_suffix = ''
+  # When name mangling is enabled names are modified by applying a lambda.
+  mangle_func = lambda self, x: x
+
+  # whether to only mangle structs marked "_MANGLE"
+  minmangle: bool = False
+
 
   def __init__(self, name, type, offset_start, bit_width):
     """Creates a new field in a struct.
@@ -578,7 +582,7 @@ class Field(Declaration):
     Declaration.__init__(self)
     # name of the field declaration.
     self.name = name
-    self.mangled_name = name + self.mangle_suffix
+    self.mangled_name = self.mangle_func(name)
     # String name of the C type, or a generic type for signed-ness.
     self.type = type
 
@@ -660,8 +664,14 @@ class Field(Declaration):
                                         self.EndFlit(), self.EndBit()))
 
   @classmethod
-  def SetMangling(cls, suffix):
-      cls.mangle_suffix = suffix
+  def SetMangling(cls, func):
+    # lambdas on classes weirdly demand a self argument whereas
+    # lambdas on instances do not.
+    cls.mangle_func = lambda self, x: func(x)
+
+  @classmethod
+  def SetMinMangle(cls, minmangle):
+    cls.minmangle = minmangle
 
   def fields_to_set(self):
     """Returns a list of packed fields (fields actually holding multiple
@@ -670,12 +680,49 @@ class Field(Declaration):
     This method determines which fields get packed accessors.
     """
     return [x for x in self.packed_fields if not x.is_reserved]
+  
+  def IsSwappable(self):
+    """Returns True if the type is subject to byte-swapping.
+    This is the case for scalar multi-byte fields that do not specify
+    their endianness.
+    """
+    if self.minmangle:
+      # walk the tree to find if a parent is marked for mangle
+      p = self.parent_struct
+      while p is not None:
+        if p.always_mangle:
+          return self.swappable
+
+        p = p.parent_struct
+
+      # don't swap.
+      return False
+    else:
+      # Default swap behavior
+      return self.swappable
 
   def Name(self):
     return self.name
 
   def MangledName(self):
-    return self.mangled_name
+    # single-byte fields are not mangled, neither are non-swappable (explicit endian) reserved fields.
+    if (self.is_reserved or self.type.is_array) and (not self.swappable or (self.type.bit_width == 8 and self.is_natural_width)):
+      return self.name
+
+    if self.minmangle:
+      # walk the tree to find if a parent is marked for mangle
+      p = self.parent_struct
+      while p is not None:
+        if p.always_mangle:
+          return self.mangled_name
+
+        p = p.parent_struct
+
+      # use an unmangled name otherwise
+      return self.name
+    else:
+      # mangle all the names (or none if not mangling)
+      return self.mangled_name
 
   def Type(self):
     return self.type
@@ -839,9 +886,24 @@ class Field(Declaration):
     """Pretty-print a field in a structure or union.  Returns string."""
     str = ''
     field_type = self.Type()
-    type_name = field_type.DeclarationName(linux_type, dpu_endian);
 
-    name = self.mangled_name if mangled and not field_type.IsRecord() else self.name
+    # Only use endian types in structures that are always mangled if minmangle is set.
+    use_endian = False
+    if self.minmangle:
+      # walk the tree to find if a parent is marked for mangle
+      p = self.parent_struct
+      while p is not None:
+        if p.always_mangle:
+          use_endian = True
+          break
+
+        p = p.parent_struct
+    else:
+      use_endian = dpu_endian
+
+    type_name = field_type.DeclarationName(linux_type, dpu_endian and use_endian)
+
+    name = self.MangledName() if mangled and not field_type.IsRecord() else self.name
 
     if field_type.IsRecord():
       struct = field_type.base_type.node
@@ -1048,6 +1110,7 @@ class Struct(Declaration):
     self.inline = False
     self.parent_struct = None
     self.is_struct = True
+    self.always_mangle = False
 
   def FieldWithBaseType(self, base_type):
     """Returns first field with the given type.
@@ -1481,7 +1544,7 @@ class GenParser:
   # Parses a generated header document and creates the internal data structure
   # describing the file.
 
-  def __init__(self, linux_type=False, dpu_endianness = 'Any', mangle_fields = False):
+  def __init__(self, linux_type=False, dpu_endianness = 'Any', mangle_fields = "", mangle_suffix = "x", minmangle = False):
     # Create a GenParser.
     # current_document is the top level object.
     self.current_document = Document()
@@ -1502,8 +1565,14 @@ class GenParser:
     # Current line being parsed.
     self.current_line = 0
 
-    if mangle_fields:
-        Field.SetMangling('_' + random.choice(string.ascii_letters))
+    if mangle_fields == "mangle":
+      Field.SetMangling(lambda name: name + '_' + mangle_suffix)
+    elif mangle_fields == "flexmangle":
+      Field.SetMangling(lambda name: f"_MANGLE({name})")
+    else:
+      Field.SetMangling(lambda name: name)
+
+    Field.SetMinMangle(minmangle)
 
     self.base_types = {}
     type_map = DefaultTypeMap(linux_type)
@@ -1529,15 +1598,16 @@ class GenParser:
       return None
 
     # Struct syntax is STRUCT struct-identifier var-name comment
-    match = re.match('STRUCT\s+(\w+)(\s+\w+|)(\s*.*)$', line)
+    match = re.match('STRUCT(_MANGLED)?\s+(\w+)(\s+\w+|)(\s*.*)$', line)
 
     if not match:
       self.AddError('Invalid STRUCT line: "%s"' % line)
       return None
 
-    identifier = match.group(1)
-    variable_name = match.group(2)
-    key_comment = match.group(3)
+    mangled = match.group(1) == "_MANGLED"
+    identifier = match.group(2)
+    variable_name = match.group(3)
+    key_comment = match.group(4)
     variable_name = utils.RemoveWhitespace(variable_name)
 
     if not utils.IsValidCIdentifier(identifier):
@@ -1561,6 +1631,7 @@ class GenParser:
     current_struct.filename = self.current_document.filename
     current_struct.line_number = self.current_line
     current_struct.key_comment = self.StripKeyComment(key_comment)
+    current_struct.always_mangle = mangled
 
     if len(self.current_comment) > 0:
       current_struct.body_comment = self.current_comment
@@ -1582,6 +1653,10 @@ class GenParser:
       containing_object.AddField(new_field)
       current_struct.inline = True
       current_struct.parent_struct = containing_object
+
+      # inherit parent mangling
+      if (containing_object.always_mangle):
+        current_struct.always_mangle = True
 
     # TODO(bowdidge): Instantiate field with struct if necessary.
     # Need to pass variable.

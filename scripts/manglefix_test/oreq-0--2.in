@@ -1,0 +1,1 @@
+	host_req->flags |= FUN_CRYPTO_FLAG_VERIF_DONE;

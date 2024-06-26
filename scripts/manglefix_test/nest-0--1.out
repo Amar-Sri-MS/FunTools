@@ -1,0 +1,1 @@
+	key_len = fun_crypto_pke_dsa_req_get_key_len(pc_req);

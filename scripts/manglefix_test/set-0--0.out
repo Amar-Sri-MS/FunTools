@@ -1,0 +1,1 @@
+		fun_crypto_sha_req_set_outlen(pc_req, crypto_sha_hash_size(ctx->alg));

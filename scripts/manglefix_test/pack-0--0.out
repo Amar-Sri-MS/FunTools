@@ -1,0 +1,1 @@
+		fun_nu_ffe_entry_tmp_tcam_set_key(entry, fun_nu_ffe_entry_tmp_tcam_get_key(entry) | FUN_NU_FFE_ENTRY_TMP_TCAM_KEY_P(key));

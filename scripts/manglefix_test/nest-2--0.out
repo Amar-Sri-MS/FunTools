@@ -1,0 +1,1 @@
+	if (fun_admin_rdma_create_req_get_qp_type(req) == FUN_RDMA_QP_TYPE_GSI) {
