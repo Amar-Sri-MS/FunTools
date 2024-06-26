@@ -1507,7 +1507,7 @@ def do_full_update(nor_image, src_image, override_files, dry_run, install_missin
                       img_type_str)
             else:
                 versions_str = ''.join(["0x%08x: %s " %
-                                        (a, bytes2str(v) if v else 'None')
+                                        (a, v if v else 'None')
                                         for a,v in versions.items()])
                 print("%s : 0x%08x  (versions: %s)" %
                       (img_type_str, target_address, versions_str))
