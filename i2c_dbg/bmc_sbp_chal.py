@@ -529,7 +529,7 @@ class i2c_dbg(object):
         self.i2c_dbg_write_flash = libi2c_dbg.i2c_dbg_write_flash
         self.i2c_dbg_write_flash.restype = c_int
         self.i2c_dbg_write_flash.argtypes = [c_int, c_int,
-					     c_char_p, c_int]
+                         c_char_p, c_int]
 
         # specialized read flash
         self.i2c_dbg_read_flash_ex = libi2c_dbg.i2c_dbg_read_flash_ex
@@ -551,20 +551,19 @@ class i2c_dbg(object):
 
 
     def chal_cmd(self, cmd, chip_inst, data=None,
-		 reply_delay_sec=0):
+         reply_delay_sec=0):
         reslen = c_int()
         res = self.i2c_dbg_chal_cmd(cmd, chip_inst,
-                                    bytes(data) if data else None,
-				    len(data) if data else 0,
-				    int(reply_delay_sec * 1000000),
-				    byref(reslen))
+                    bytes(data) if data else None,
+                    len(data) if data else 0,
+                    int(reply_delay_sec * 1000000),
+                    byref(reslen))
         return bytearray(ctypes.string_at(res, reslen.value))
 
     def write_flash(self, chip_inst, nor_addr, input_data):
         if input_data:
             err = self.i2c_dbg_write_flash(chip_inst, nor_addr,
-				           bytes(input_data),
-                                           len(input_data))
+                        bytes(input_data), len(input_data))
             if err:
                 raise ChallengeError(err, "Error writing flash: %d" % err)
 
