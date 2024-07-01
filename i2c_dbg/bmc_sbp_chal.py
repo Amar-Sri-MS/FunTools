@@ -926,7 +926,7 @@ class DBG_Chal(DBG_FlashOp):
     def inject_cert(self, dbg_grants):
 
         start_cert = self.dbg_info.start_certificate(dbg_grants, self.get_serial_number())
-        self.challenge_cmd(INJECT_CERTIFICATE, start_cert)
+        self.challenge_cmd(INJECT_CERTIFICATE, start_cert, 5)
         print('Injected certificate')
 
 
