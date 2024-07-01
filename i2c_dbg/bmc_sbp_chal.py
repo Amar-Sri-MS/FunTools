@@ -301,20 +301,22 @@ class NorImageError(Exception):
 class CryptoUtils(object):
 
     MAX_RSA_KEY_SIZE = 512
-    # the unusual location of these libraries on the BMC
-    BMC_C_LIB = '/lib/arm-linux-gnueabi/libc.so.6'
-    BMC_OSSL_LIB = '/usr/lib/arm-linux-gnueabi/libcrypto.so'
 
     def __init__(self):
-
         if 'ami' in platform.release():
             # use the special location on this Fungible BMC platform
-            self.libcrypto = ctypes.cdll.LoadLibrary(CryptoUtils.BMC_OSSL_LIB)
-            self.libc = ctypes.cdll.LoadLibrary(CryptoUtils.BMC_C_LIB)
+            self.libcrypto = ctypes.cdll.LoadLibrary('/usr/lib/arm-linux-gnueabi/libcrypto.so')
+            self.libc = ctypes.cdll.LoadLibrary('/lib/arm-linux-gnueabi/libc.so.6')
         else:
-            # let find_library find the proper location on other platforms
-            self.libcrypto = ctypes.cdll.LoadLibrary(ctypes.util.find_library('crypto'))
-            self.libc = ctypes.cdll.LoadLibrary(ctypes.util.find_library('c'))
+            libcrypto = ctypes.util.find_library('crypto')
+            if libcrypto is None:
+                libcrypto = '/usr/lib/libcrypto.so'
+            self.libcrypto = ctypes.cdll.LoadLibrary(libcrypto)
+
+            libc = ctypes.util.find_library('c')
+            if libc is None:
+                libc = '/lib/libc.so.6'
+            self.libc = ctypes.cdll.LoadLibrary(libc)
 
         self.fopen = self.libc.fopen
         self.fopen.argtypes = [c_char_p, c_char_p]
