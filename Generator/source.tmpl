@@ -10,15 +10,15 @@ Macros for hiding which size macro to use.
 #}
 {% if generate_be %}
 {% macro toDpuWrapper(field, var) %}
-{% if (generate_swap and field.type.IsSwappable()) or field.endian %}cpu_to_be{{field.type.bit_width}}({{var}}){% else %}{{var}}{% endif %}
+{% if ((generate_swap or field.IsAlwaysBe()) and field.type.IsSwappable()) or field.endian  %}cpu_to_be{{field.type.bit_width}}({{var}}){% else %}{{var}}{% endif %}
 {%- endmacro %}
 {% elif generate_le %}
 {% macro toDpuWrapper(field, var) %}
-{% if (generate_swap and field.type.IsSwappable()) or field.endian %}cpu_to_le{{field.type.bit_width}}({{var}}){% else %}{{var}}{% endif %}
+{% if ((generate_swap or field.IsAlwaysBe()) and field.type.IsSwappable()) or field.endian %}cpu_to_{% if field.IsAlwaysBe() %}be{% else %}le{% endif %}{{field.type.bit_width}}({{var}}){% else %}{{var}}{% endif %}
 {%- endmacro %}
 {% else %}
 {% macro toDpuWrapper(field, var) %}
-{% if field.endian %}cpu_to_{{field.endian}}({{var}}){% else %}{{var}}{% endif %}
+{% if (field.IsAlwaysBe() and field.type.IsSwappable()) or field.endian %}cpu_to_be{{field.type.bit_width}}({{var}}){% else %}{{var}}{% endif %}
 {%- endmacro %}
 {% endif %}
 
@@ -82,7 +82,7 @@ bool {{struct.name}}_json_init(struct fun_json *j,
 		   return false;
 		}
 		for (size_t i = 0; i < count; i++) {
-			s->{{field | as_mangled}}[i] = fun_json_to_int64(fun_json_array_at({{field.name}}_j, i), 0);
+			s->{{field | as_mangled}}[i] = {{toDpuWrapper(field, 'fun_json_to_int64(fun_json_array_at(' + field.name + '_j, i), 0)')}};
 		}
 	}
     {% endif %}

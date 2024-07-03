@@ -389,13 +389,16 @@ class Type:
       This is the case for scalar multi-byte fields that do not specify
       their endianness.
       """
-      return self.bit_width > 8 and self.IsScalar() and not self.IsNoSwap()
+      if self.IsArray():
+        return self.base_type.node is None and self.base_type.BitWidth() > 8 and not self.base_type.has_endianness
+      else:
+        return self.bit_width > 8 and self.IsScalar() and not self.IsNoSwap()
 
   def BaseName(self):
     """Returns base type name without array and other modifiers."""
     return self.base_type.Name()
 
-  def DeclarationName(self, linux_type=False, dpu_endian=False):
+  def DeclarationName(self, linux_type=False, dpu_endian=False, force_be=False):
     """Returns a string for the declaration.
 
     If linux_type is true, use Linux's preferred type names.
@@ -408,6 +411,11 @@ class Type:
     if self.IsNoSwap():
       # Already have an endianness?  Use the existing type name.
       return self.base_type.name
+    elif force_be is True:
+      if linux_type is True:
+        return linux_be_endian_map[self.base_type.name]
+      elif self.base_type.name in dpu_be_endian_map:
+        return dpu_be_endian_map[self.base_type.name]
     elif dpu_endian is False:
       if linux_type is True:
         return no_endian_map[self.base_type.name]
@@ -681,25 +689,33 @@ class Field(Declaration):
     """
     return [x for x in self.packed_fields if not x.is_reserved]
   
-  def IsSwappable(self):
-    """Returns True if the type is subject to byte-swapping.
-    This is the case for scalar multi-byte fields that do not specify
-    their endianness.
+  def IsAlwaysMangled(self):
+    """Returns True if the field is part of a structure whose members'
+    names are mangled, forcing use of accessors.
     """
-    if self.minmangle:
-      # walk the tree to find if a parent is marked for mangle
-      p = self.parent_struct
-      while p is not None:
-        if p.always_mangle:
-          return self.swappable
+    # walk the tree to find if a parent is marked for mangle
+    p = self.parent_struct
+    while p is not None:
+      if p.always_mangle:
+        return True
 
-        p = p.parent_struct
+      p = p.parent_struct
 
-      # don't swap.
-      return False
-    else:
-      # Default swap behavior
-      return self.swappable
+    return False
+
+  def IsAlwaysBe(self):
+    """Returns True if the field is part of a structure whose multi-byte members
+    are always BE.
+    """
+    # walk the tree to find if a parent is marked for BE
+    p = self.parent_struct
+    while p is not None:
+      if p.always_be:
+        return True
+
+      p = p.parent_struct
+
+    return False
 
   def Name(self):
     return self.name
@@ -709,17 +725,9 @@ class Field(Declaration):
     if (self.is_reserved or self.type.is_array) and (not self.swappable or (self.type.bit_width == 8 and self.is_natural_width)):
       return self.name
 
-    if self.minmangle:
-      # walk the tree to find if a parent is marked for mangle
-      p = self.parent_struct
-      while p is not None:
-        if p.always_mangle:
-          return self.mangled_name
-
-        p = p.parent_struct
-
-      # use an unmangled name otherwise
-      return self.name
+    if self.minmangle and not self.IsAlwaysMangled():
+        # use an unmangled name
+        return self.name
     else:
       # mangle all the names (or none if not mangling)
       return self.mangled_name
@@ -887,21 +895,8 @@ class Field(Declaration):
     str = ''
     field_type = self.Type()
 
-    # Only use endian types in structures that are always mangled if minmangle is set.
-    use_endian = False
-    if self.minmangle:
-      # walk the tree to find if a parent is marked for mangle
-      p = self.parent_struct
-      while p is not None:
-        if p.always_mangle:
-          use_endian = True
-          break
-
-        p = p.parent_struct
-    else:
-      use_endian = dpu_endian
-
-    type_name = field_type.DeclarationName(linux_type, dpu_endian and use_endian)
+    # Only use big-endian types in structures that are always mangled if minmangle is set.
+    type_name = field_type.DeclarationName(linux_type, dpu_endian, self.IsAlwaysBe())
 
     name = self.MangledName() if mangled and not field_type.IsRecord() else self.name
 
@@ -1111,6 +1106,7 @@ class Struct(Declaration):
     self.parent_struct = None
     self.is_struct = True
     self.always_mangle = False
+    self.always_be = False
 
   def FieldWithBaseType(self, base_type):
     """Returns first field with the given type.
@@ -1632,6 +1628,7 @@ class GenParser:
     current_struct.line_number = self.current_line
     current_struct.key_comment = self.StripKeyComment(key_comment)
     current_struct.always_mangle = mangled
+    current_struct.always_be = mangled and Field.minmangle
 
     if len(self.current_comment) > 0:
       current_struct.body_comment = self.current_comment
@@ -1657,6 +1654,10 @@ class GenParser:
       # inherit parent mangling
       if (containing_object.always_mangle):
         current_struct.always_mangle = True
+
+      # inherit parent endianness
+      if (containing_object.always_be):
+        current_struct.always_be = True
 
     # TODO(bowdidge): Instantiate field with struct if necessary.
     # Need to pass variable.
