@@ -33,6 +33,22 @@ HOST_FIRMWARE_CONFIG_OVERRIDE="""
 }
 """
 
+SBPF_FIRMWARE_SIZE_OVERRIDE="""
+{{ "output_sections": {{
+    "FIRMWARE": {{
+      "minsize": "{sbp_ram_size}"
+      }}
+    }}
+}}
+"""
+SBPF_FIRMWARE_SIZE_VALUES = {
+    'f1' : 0x40000,
+    's1' : 0x40000,
+    'f1d1' : 0x40000,
+    's2' : 0x60000,
+    'f2' : 0x60000,
+}
+
 #TODO (make configurable for S1 and other)
 EEPROM_CONFIG_OVERRIDE="""
 { "signed_images": {
@@ -264,6 +280,7 @@ def main():
         gf.merge_configs(config, json.loads(BOARD_CFG_LIST_CONFIG_OVERRIDE.format(board_cfg_list=board_cfg_list)), only_if_present=True)
         gf.merge_configs(config, json.loads(BOARD_CONFIG_OVERRIDE.format(chip=args.chip, sku_name=default_board)), only_if_present=True)
         gf.merge_configs(config, json.loads(ACUFW_CONFIG_OVERRIDE.format(chip=args.chip)), only_if_present=True)
+        gf.merge_configs(config, json.loads(SBPF_FIRMWARE_SIZE_OVERRIDE.format(sbp_ram_size=SBPF_FIRMWARE_SIZE_VALUES[args.chip])))
 
         if not args.with_csrreplay:
             try:
