@@ -29,6 +29,7 @@ import subprocess
 import argparse
 import logging
 import traceback
+from urllib.parse import urlencode
 from enum import Enum
 
 #conditional imports to allow running on simple local BMC python installations
@@ -801,7 +802,13 @@ def get_cert_of_serial_number(serial_no):
 
     sn_64 = binascii.b2a_base64(serial_no).rstrip()
 
-    url = SERVER_URL_PRE + b"enrollment_server.cgi?cmd=cert&sn=" + sn_64
+    args = { 'cmd': 'cert',
+             'sn': sn_64 }
+
+    url = SERVER_URL_PRE + b"enrollment_server.cgi?" + urlencode(args).encode()
+
+    logging.debug("get cert URI: %s", url)
+
     response = requests.get(url, timeout=10)
 
     if response.status_code == requests.codes.not_found: # pylint: disable=no-member
