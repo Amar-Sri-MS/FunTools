@@ -142,7 +142,7 @@ def update_coverage_for_sdk_api(
     """
 
     api_func_name = df_api["proto_name"].tolist()
-    cov_func_name = df_cov["Function"].tolist()
+    cov_func_name = df_cov["Function (File:Line)"].tolist()
 
     # add column to df_api
     df_api["coverage"] = False
@@ -156,7 +156,9 @@ def update_coverage_for_sdk_api(
         if func_name in cov_func_name:
             # check if df_cov "Call count" is "not called", then update coverage column
             if (
-                df_cov.loc[df_cov["Function"] == func_name, "Call count"].values[0]
+                df_cov.loc[
+                    df_cov["Function (File:Line)"] == func_name, "Call count"
+                ].values[0]
                 != "not called"
             ):
 
