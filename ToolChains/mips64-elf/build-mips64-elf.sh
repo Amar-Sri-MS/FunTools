@@ -30,7 +30,7 @@ done
 # as of Mar 21st 2023 latest versions available on respective sites
 binutils_version=binutils-2.40
 gcc_version=gcc-12.2.0
-gdb_version=gdb-13.1
+gdb_version=gdb-11.2
 # David Daney's comment in PR-2061
 ## We need to be careful with binutils version and test that tools like addr2line work in finite time on large FunOS release images.
 # Not sure if anyone is writing the test for add2line. But documenting there just in case.
