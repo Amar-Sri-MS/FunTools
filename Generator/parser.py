@@ -379,6 +379,9 @@ class Type:
   def IsUnion(self):
     return self.base_type.node is not None and self.base_type.node.is_union
 
+  def IsStruct(self):
+    return self.base_type.node is not None and self.base_type.node.is_struct
+
   def IsScalar(self):
     """Returns true if the type is a scalar, builtin type."""
     # TODO(bowdidge): Should uint128_t count as scalar or not?
@@ -2028,11 +2031,18 @@ class GenParser:
             match.group(5)))
     key_comment = match.group(6)
 
+    type = None
+    if is_array:
+      type = self.MakeType(type_name, array_size)
+    else:
+      type = self.MakeType(type_name)
+
     if containing_struct.is_union:
-      self.AddError('Field "%s" not allowed at location: '
-                    'fields cannot occur directly in a union. '
-                    'Wrap each in a struct.' % name)
-      return True
+      if type is not None and not type.IsStruct():
+        self.AddError('Field "%s" not allowed at location: '
+                      'fields cannot occur directly in a union. '
+                      'Wrap each in a struct.' % name)
+        return True
 
     if not utils.IsValidCIdentifier(name):
       self.AddError(
