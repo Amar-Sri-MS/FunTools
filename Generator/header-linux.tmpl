@@ -301,7 +301,14 @@ The body of the header.
 #include <stdio.h>
 {% endif %}
 #elif defined(_WIN32) || defined(_WIN64)
+#ifndef __KERNEL__
 #include <stdint.h>
+#else
+typedef UINT8 uint8_t;
+typedef UINT16 uint16_t;
+typedef UINT32 uint32_t;
+typedef UINT64 uint64_t;
+#endif
 
 typedef uint8_t __u8;
 typedef uint16_t __u16, __le16, __be16;
