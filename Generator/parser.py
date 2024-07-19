@@ -107,6 +107,7 @@ builtin_endian_type_widths = {
 builtin_type_widths = {
   # width of type in bits.
   'unsigned' : 32,
+  'unsigned int' : 32,
   'signed' : 32,
 
   'char': 8,
@@ -138,6 +139,7 @@ builtin_linux_type_widths = {
 # Used for function arguments.
 # Endian-specific type names will remain unchanged.
 no_endian_map = {
+  'unsigned int' : 'unsigned int',
   'uint8_t' : '__u8',
   'uint16_t' : '__u16',
   'uint32_t' : '__u32',
@@ -1010,6 +1012,7 @@ class FlagSet(Declaration):
     self.variables = []
     self.is_flagset = True
     self.max_value = 0
+    self.type = TypeForName("unsigned int")
 
   def AddVariable(self, var):
     """Adds a new flagset variable to the flagset."""
@@ -1696,13 +1699,13 @@ class GenParser:
   def ParseFlagSetStart(self, line):
     # Handle an FLAGS directive opening a new type represeting bit flags.
     state, containing_struct = self.stack[len(self.stack)-1]
-    match = re.match('FLAGS\s+(\w+)(.*)$', line)
+    match = re.match('FLAGS\s+(\w+)(:.*)?(.*)$', line)
     if match is None:
       self.AddError('Invalid flags start line: "%s"' % line)
       return
 
     name = match.group(1)
-    key_comment = match.group(2)
+    key_comment = match.group(3)
 
     if not utils.IsValidCIdentifier(name):
       self.AddError('"%s" is not a valid identifier name.' % name)
@@ -1712,6 +1715,8 @@ class GenParser:
     current_flags.filename = self.current_document.filename
     current_flags.line_number = self.current_line
     current_flags.key_comment = self.StripKeyComment(key_comment)
+    if (match.group(2) is not None):
+      current_flags.type = TypeForName(utils.RemoveWhitespace(match.group(2)[1:]))
 
     if len(self.current_comment) > 0:
       current_flags.body_comment = self.current_comment

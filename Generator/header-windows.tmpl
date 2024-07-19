@@ -32,7 +32,7 @@ How to render each flagset.
   {% if flagset.body_comment %}{{flagset.body_comment|as_comment}}{% endif %}
   {% for var in flagset.variables %}
     {% if var.body_comment %}{{var.body_comment|as_comment}}{% endif %}
-static const unsigned int {{var.name}} = {{var.value|as_hex}};{{var.key_comment|as_comment}}
+static const {{flagset.type | type_name}} {{var.name}} = {{var.value|as_hex}};{{var.key_comment|as_comment}}
   {% endfor %}
 
 /* String names for all power-of-two flags in {{flagset.name}}. */

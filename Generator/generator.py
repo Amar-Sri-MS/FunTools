@@ -539,6 +539,7 @@ def GenerateFromTemplate(doc, template_filename, generator_file, output_base,
   env.filters['as_cast'] = lambda type : type.CastString(linux)
   env.filters['as_mangled'] = lambda field : field.MangledName()
   env.filters['type_only'] = lambda field : field.type.DeclarationName(linux)
+  env.filters['type_name'] = lambda type : type.DeclarationName(linux)
 
   if output_base:
     output_base = os.path.basename(output_base)
