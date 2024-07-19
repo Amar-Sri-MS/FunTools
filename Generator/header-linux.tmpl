@@ -301,7 +301,7 @@ The body of the header.
 #include <stdio.h>
 {% endif %}
 #elif defined(_WIN32) || defined(_WIN64)
-#ifndef __KERNEL__
+#ifndef _DDK_DRIVER_
 #include <stdint.h>
 #else
 typedef UINT8 uint8_t;
