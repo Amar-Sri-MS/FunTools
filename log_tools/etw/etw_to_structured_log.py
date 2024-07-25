@@ -89,11 +89,12 @@ class LogGen:
     def generate(self, event):
         event_tid = event.template_id
         event_tmpl = None
-        if event_tid:
+        if event_tid and event_tid in self.templates_by_id:
             event_tmpl = self.templates_by_id[event_tid]
         tmpl_dict = {
             "evt": event,
             "evt_tmpl": event_tmpl,
+            "evt_tmpl_size_empty": True if event_tmpl is None else False,
             "type_map": self.type_map,
             "keyword_map": self.mask_by_keywords,
             "level_map": self.level_map,
@@ -158,14 +159,15 @@ def build_templates_by_id(provider, namespace):
     templates_elem = provider.find("evt:templates", namespace)
     for template_elem in templates_elem.findall("evt:template", namespace):
         attrs = template_elem.attrib
-        tid = attrs["tid"]
-        template = Template(tid)
-        templates_by_id[tid] = template
+        if "tid" in attrs:
+            tid = attrs["tid"]
+            template = Template(tid)
+            templates_by_id[tid] = template
 
-        for data_elem in template_elem.findall("evt:data", namespace):
-            d_attrs = data_elem.attrib
-            data = Data(d_attrs["name"], d_attrs["inType"], d_attrs.get("outType"))
-            template.add_data(data)
+            for data_elem in template_elem.findall("evt:data", namespace):
+                d_attrs = data_elem.attrib
+                data = Data(d_attrs["name"], d_attrs["inType"], d_attrs.get("outType"))
+                template.add_data(data)
 
     return templates_by_id
 

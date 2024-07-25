@@ -5,7 +5,7 @@ void log_{{evt.symbol}}(
 		const struct flow *flow,
 		const struct module *module,
 		fun_uuid_t activity_id,
-{%- if evt_tmpl %}
+{%- if evt_tmpl and evt_tmpl_size_empty %}
 		uint8_t dest,
 {% else %}
 		uint8_t dest
