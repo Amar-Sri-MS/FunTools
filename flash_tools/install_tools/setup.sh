@@ -317,12 +317,24 @@ if [[ $ccfg_only == 'true' ]]; then
 fi
 
 update_uboot_boot_debug_flag() {
-	dpc_uboot_env.py --dpc-socket /tmp/dpc.sock get
-	local current=$(fw_printenv -n boot_debug_fw 2>/dev/null)
-	if [ "$current" != "$1" ]; then
-		echo "Updating boot_debug flag to $1"
-		fw_setenv boot_debug_fw $1
-		dpc_uboot_env.py --dpc-socket /tmp/dpc.sock set
+	local current_env=$(dpcsh -Q uboot env_read | jq -Mr .result)
+	if [ "$current_env" = "null" ]; then
+		# legacy method for old funos that doesn't support env edit DPC
+		dpc_uboot_env.py --dpc-socket /tmp/dpc.sock get
+		local current=$(fw_printenv -n boot_debug_fw 2>/dev/null)
+		if [ "$current" != "$1" ]; then
+			echo "Updating boot_debug flag to $1"
+			fw_setenv boot_debug_fw $1
+			dpc_uboot_env.py --dpc-socket /tmp/dpc.sock set
+		fi
+	else
+		# new DPC-based env edit interface
+		local current=$(echo $current_env | jq -Mr .boot_debug_fw)
+		if [ "$current" != "$1" ]; then
+			echo "Updating boot_debug flag to $1"
+			dpcsh -Q uboot env_set boot_debug_fw \"$1\" > /dev/null
+			dpcsh -Q uboot env_write > /dev/null
+		fi
 	fi
 }
 
