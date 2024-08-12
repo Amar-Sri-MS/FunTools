@@ -254,7 +254,7 @@ static inline void {{struct.name}}_init(struct {{struct.init_struct().name}} *s{
 
 {% endif %}
 {% if generate_dump %}
-#ifndef __KERNEL__
+#if !defined(__KERNEL__) && !defined(_KERNEL_MODE)
 
 /* Dump out the structure as a sequence of hex bytes, in big-endian order.
  * For structures in union, the active structure is printed, padded to the
@@ -263,7 +263,7 @@ static inline void {{struct.name}}_init(struct {{struct.init_struct().name}} *s{
  */
 extern void {{struct.name}}_dump(FILE *file_des, {{struct.DeclarationString()}} *s);
 
-#endif  /* __KERNEL__ */
+#endif /* !__KERNEL__ && !_KERNEL_MODE */
 
 {% endif %}
 /* End of helper macros for structure {{struct.name}} */
@@ -333,7 +333,7 @@ Windows is always LE.
 #define cpu_to_be16(x) _byteswap_ushort(x)
 #define cpu_to_be32(x) _byteswap_ulong(x)
 #define cpu_to_be64(x) _byteswap_uint64(x)
-#endif /* _WIN32 || _WIN64 */
+#endif /* __linux__ */
 
 #ifdef _MSC_VER
 #pragma warning(push)
