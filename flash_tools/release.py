@@ -280,7 +280,7 @@ def main():
         gf.merge_configs(config, json.loads(BOARD_CFG_LIST_CONFIG_OVERRIDE.format(board_cfg_list=board_cfg_list)), only_if_present=True)
         gf.merge_configs(config, json.loads(BOARD_CONFIG_OVERRIDE.format(chip=args.chip, sku_name=default_board)), only_if_present=True)
         gf.merge_configs(config, json.loads(ACUFW_CONFIG_OVERRIDE.format(chip=args.chip)), only_if_present=True)
-        gf.merge_configs(config, json.loads(SBPF_FIRMWARE_SIZE_OVERRIDE.format(sbp_ram_size=SBPF_FIRMWARE_SIZE_VALUES[args.chip])))
+        gf.merge_configs(config, json.loads(SBPF_FIRMWARE_SIZE_OVERRIDE.format(sbp_ram_size=SBPF_FIRMWARE_SIZE_VALUES[args.chip])), only_if_present=True)
 
         if not args.with_csrreplay:
             try:
