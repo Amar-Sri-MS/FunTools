@@ -362,11 +362,13 @@ def main():
                 "FunSDK/sbpfw/firmware/chip_{chip}_emu_0",
                 "FunSDK/sbpfw/pufrom/chip_{chip}_emu_0",
                 "feature_sets/boardcfg/{chip}",
-                "FunSDK/ATF/{atf_release_dir}"
+                "FunSDK/ATF/{atf_release_dir}",
+                "FunSDK/ATF/BLD_{uefi_release_dir}"
                 ]
         paths_variable_subs = {
             'chip' : args.chip,
-            'atf_release_dir': 'release' if args.release else 'debug'
+            'atf_release_dir': 'release' if args.release else 'debug',
+            'uefi_release_dir': args.chip.upper()+'_'+('RELEASE' if args.release else 'DEBUG')
         }
         sdkpaths.extend(
             [os.path.join(args.sdkdir, path.format(**paths_variable_subs)) for path in paths_variable])
