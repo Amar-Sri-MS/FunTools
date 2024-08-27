@@ -143,10 +143,7 @@ ALL_ROOTFS_FILES = {
     # bundle types
     "f1" : [ ('fs1600-rootfs-ro.squashfs', 'f1') ],
     "s1" : [ ('s1-rootfs-ro.squashfs', 's1') ],
-    "f1d1" : [ ('fs1600-rootfs-ro.squashfs', 'f1d1') ],
-    # Currently bundle generation logic requires that a rootfs entry is present,
-    # even if no rootfs is actually specified (this needs a better fix in the bundle_gen logic)
-    "s2" : [ (None, 's2')]
+    "f1d1" : [ ('fs1600-rootfs-ro.squashfs', 'f1d1') ]
 }
 
 CHIP_SPECIFIC_FILES = {
@@ -296,18 +293,21 @@ def main():
             except:
                 pass
 
-        fvht_config = {}
+        # create the file unconditionally - it might be unused, but it keeps the script logic cleaner
+        # to have the file available always
         fvht_list_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
-        for rootfs, _ in rootfs_files:
-            fvht_config[rootfs] = {
-                'filename' : _rootfs('fvht.unsigned', rootfs),
-                'target' : _rootfs('fvht.signed', rootfs)
-            }
-        json.dump(fvht_config, fvht_list_file)
-        fvht_list_file.flush()
-        fvht_override = json.loads(FVHT_LIST_CONFIG_OVERRIDE.format(fvht_list=fvht_list_file.name))
-        if config['signed_images'].get(list(fvht_override['signed_images'].keys())[0]):
-            gf.merge_configs(config, fvht_override)
+        if _want_funvisor(args):
+            fvht_config = {}
+            for rootfs, _ in rootfs_files:
+                fvht_config[rootfs] = {
+                    'filename' : _rootfs('fvht.unsigned', rootfs),
+                    'target' : _rootfs('fvht.signed', rootfs)
+                }
+            json.dump(fvht_config, fvht_list_file)
+            fvht_list_file.flush()
+            fvht_override = json.loads(FVHT_LIST_CONFIG_OVERRIDE.format(fvht_list=fvht_list_file.name))
+            if config['signed_images'].get(list(fvht_override['signed_images'].keys())[0]):
+                gf.merge_configs(config, fvht_override)
 
         for k in list(config['signed_images'].keys()):
             el = config['signed_images'][k]
