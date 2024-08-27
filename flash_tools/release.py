@@ -392,9 +392,11 @@ def main():
                   "bin/flash_tools/os_utils.py",
                   "bin/flash_tools/" + os.path.basename(__file__),
                   "bin/Linux/x86_64/mkimage",
-                  "bin/scripts/gen_fgpt.py",
                   "bin/scripts/xdata.py" ]
         utils.append(os.path.join('FunSDK/dpu_eepr', eeprom_list))
+
+        if _want_funvisor(args):
+            utils.append("bin/scripts/gen_fgpt.py")
 
         for app in utils:
             shutil.copy2(os.path.join(args.sdkdir, app), os.path.basename(app))
