@@ -211,6 +211,7 @@ def main():
     parser.add_argument('--extra-funos-suffix', action='append', help='Extra funos elf suffix to use')
     parser.add_argument('--funos-type', help='FunOS build type (storage, core etc.)')
     parser.add_argument('--with-csrreplay', action='store_true', help='Include csr-replay blob')
+    parser.add_argument('--with-funvisor', choices=['yes', 'no', 'default'], default='default', help='Include funvisor in bundles')
 
     args = parser.parse_args()
 
@@ -226,7 +227,12 @@ def main():
     if args.extra_funos_suffix:
         funos_suffixes.extend(args.extra_funos_suffix)
 
-    args.funvisor = args.chip in CHIP_WITH_FUNVISOR
+    if args.chip in CHIP_WITH_FUNVISOR:
+        args.funvisor = (args.with_funvisor != 'no')
+    elif args.with_funvisor == 'yes':
+        parser.error(f"Funvisor build not supported on {args.chip}")
+    else:
+        args.funvisor = False
 
     args.sdkdir = os.path.abspath(args.sdkdir) # later processing fails if relative path is given
     funos_appname = "funos{}.stripped".format('-'.join(funos_suffixes))
@@ -852,7 +858,7 @@ def main():
         mfgxdata_with_fv.update(mfgxdata_fv)
 
         # standard mfginstall images
-        if args.chip in CHIP_WITH_FUNVISOR:
+        if args.chip in CHIP_WITH_FUNVISOR and args.funvisor:
             _gen_xdata_funos(_mfg, mfgxdata_with_fv)
         _gen_xdata_funos(_mfgnofv, mfgxdata_without_fv)
         _gen_xdata_funos(_nor, mfgxdata_without_fv, 'nor')
@@ -867,7 +873,7 @@ def main():
             _sku_mfgxdata_with_fv = _sku_mfgxdata_without_fv.copy()
             _sku_mfgxdata_with_fv.update(mfgxdata_fv)
 
-            if args.chip in CHIP_WITH_FUNVISOR:
+            if args.chip in CHIP_WITH_FUNVISOR and args.funvisor:
                 suffix = "{}.{}".format(_target[1], _mfg(None))
                 namegen = lambda f,signed=False: _mfgfilename(f, suffix, signed)
                 _gen_xdata_funos(namegen, _sku_mfgxdata_with_fv)
@@ -882,7 +888,7 @@ def main():
         os.chdir(args.destdir)
         tarfiles = []
 
-        mod = _mfg if args.chip in CHIP_WITH_FUNVISOR else _mfgnofv
+        mod = _mfg if args.chip in CHIP_WITH_FUNVISOR  and args.funvisor else _mfgnofv
         tarfiles.extend(glob.glob('qspi_image_hw.bin.*'))
         tarfiles.append(mod(funos_appname, signed=True))
 
