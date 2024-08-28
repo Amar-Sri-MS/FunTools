@@ -91,10 +91,12 @@ class LogGen:
         event_tmpl = None
         if event_tid and event_tid in self.templates_by_id:
             event_tmpl = self.templates_by_id[event_tid]
+            event_tmpl_size = len(event_tmpl.items)
+
         tmpl_dict = {
             "evt": event,
             "evt_tmpl": event_tmpl,
-            "evt_tmpl_size_empty": True if event_tmpl is None else False,
+            "evt_tmpl_size": event_tmpl_size,
             "type_map": self.type_map,
             "keyword_map": self.mask_by_keywords,
             "level_map": self.level_map,
