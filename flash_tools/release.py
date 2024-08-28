@@ -143,10 +143,7 @@ ALL_ROOTFS_FILES = {
     # bundle types
     "f1" : [ ('fs1600-rootfs-ro.squashfs', 'f1') ],
     "s1" : [ ('s1-rootfs-ro.squashfs', 's1') ],
-    "f1d1" : [ ('fs1600-rootfs-ro.squashfs', 'f1d1') ],
-    # Currently bundle generation logic requires that a rootfs entry is present,
-    # even if no rootfs is actually specified (this needs a better fix in the bundle_gen logic)
-    "s2" : [ (None, 's2')]
+    "f1d1" : [ ('fs1600-rootfs-ro.squashfs', 'f1d1') ]
 }
 
 CHIP_SPECIFIC_FILES = {
@@ -214,6 +211,7 @@ def main():
     parser.add_argument('--extra-funos-suffix', action='append', help='Extra funos elf suffix to use')
     parser.add_argument('--funos-type', help='FunOS build type (storage, core etc.)')
     parser.add_argument('--with-csrreplay', action='store_true', help='Include csr-replay blob')
+    parser.add_argument('--with-funvisor', choices=['yes', 'no', 'default'], default='default', help='Include funvisor in bundles')
 
     args = parser.parse_args()
 
@@ -229,7 +227,12 @@ def main():
     if args.extra_funos_suffix:
         funos_suffixes.extend(args.extra_funos_suffix)
 
-    args.funvisor = args.chip in CHIP_WITH_FUNVISOR
+    if args.chip in CHIP_WITH_FUNVISOR:
+        args.funvisor = (args.with_funvisor != 'no')
+    elif args.with_funvisor == 'yes':
+        parser.error(f"Funvisor build not supported on {args.chip}")
+    else:
+        args.funvisor = False
 
     args.sdkdir = os.path.abspath(args.sdkdir) # later processing fails if relative path is given
     funos_appname = "funos{}.stripped".format('-'.join(funos_suffixes))
@@ -296,18 +299,21 @@ def main():
             except:
                 pass
 
-        fvht_config = {}
+        # create the file unconditionally - it might be unused, but it keeps the script logic cleaner
+        # to have the file available always
         fvht_list_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
-        for rootfs, _ in rootfs_files:
-            fvht_config[rootfs] = {
-                'filename' : _rootfs('fvht.unsigned', rootfs),
-                'target' : _rootfs('fvht.signed', rootfs)
-            }
-        json.dump(fvht_config, fvht_list_file)
-        fvht_list_file.flush()
-        fvht_override = json.loads(FVHT_LIST_CONFIG_OVERRIDE.format(fvht_list=fvht_list_file.name))
-        if config['signed_images'].get(list(fvht_override['signed_images'].keys())[0]):
-            gf.merge_configs(config, fvht_override)
+        if _want_funvisor(args):
+            fvht_config = {}
+            for rootfs, _ in rootfs_files:
+                fvht_config[rootfs] = {
+                    'filename' : _rootfs('fvht.unsigned', rootfs),
+                    'target' : _rootfs('fvht.signed', rootfs)
+                }
+            json.dump(fvht_config, fvht_list_file)
+            fvht_list_file.flush()
+            fvht_override = json.loads(FVHT_LIST_CONFIG_OVERRIDE.format(fvht_list=fvht_list_file.name))
+            if config['signed_images'].get(list(fvht_override['signed_images'].keys())[0]):
+                gf.merge_configs(config, fvht_override)
 
         for k in list(config['signed_images'].keys()):
             el = config['signed_images'][k]
@@ -392,9 +398,11 @@ def main():
                   "bin/flash_tools/os_utils.py",
                   "bin/flash_tools/" + os.path.basename(__file__),
                   "bin/Linux/x86_64/mkimage",
-                  "bin/scripts/gen_fgpt.py",
                   "bin/scripts/xdata.py" ]
         utils.append(os.path.join('FunSDK/dpu_eepr', eeprom_list))
+
+        if _want_funvisor(args):
+            utils.append("bin/scripts/gen_fgpt.py")
 
         for app in utils:
             shutil.copy2(os.path.join(args.sdkdir, app), os.path.basename(app))
@@ -850,7 +858,7 @@ def main():
         mfgxdata_with_fv.update(mfgxdata_fv)
 
         # standard mfginstall images
-        if args.chip in CHIP_WITH_FUNVISOR:
+        if args.chip in CHIP_WITH_FUNVISOR and args.funvisor:
             _gen_xdata_funos(_mfg, mfgxdata_with_fv)
         _gen_xdata_funos(_mfgnofv, mfgxdata_without_fv)
         _gen_xdata_funos(_nor, mfgxdata_without_fv, 'nor')
@@ -865,7 +873,7 @@ def main():
             _sku_mfgxdata_with_fv = _sku_mfgxdata_without_fv.copy()
             _sku_mfgxdata_with_fv.update(mfgxdata_fv)
 
-            if args.chip in CHIP_WITH_FUNVISOR:
+            if args.chip in CHIP_WITH_FUNVISOR and args.funvisor:
                 suffix = "{}.{}".format(_target[1], _mfg(None))
                 namegen = lambda f,signed=False: _mfgfilename(f, suffix, signed)
                 _gen_xdata_funos(namegen, _sku_mfgxdata_with_fv)
@@ -880,7 +888,7 @@ def main():
         os.chdir(args.destdir)
         tarfiles = []
 
-        mod = _mfg if args.chip in CHIP_WITH_FUNVISOR else _mfgnofv
+        mod = _mfg if args.chip in CHIP_WITH_FUNVISOR  and args.funvisor else _mfgnofv
         tarfiles.extend(glob.glob('qspi_image_hw.bin.*'))
         tarfiles.append(mod(funos_appname, signed=True))
 
