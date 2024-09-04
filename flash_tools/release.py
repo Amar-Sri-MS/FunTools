@@ -545,6 +545,18 @@ def main():
             cmd.extend(['--blob', 'acufw.blob.signed'])
         subprocess.check_call(cmd)
 
+        with open('emmc_image.bin', 'br') as emmc_file:
+            # check if the generated emmc image file appears
+            # to have a valid MBR entry. This does not do much correctness
+            # checking, but we have observed some images generated
+            # without any MBR entry at all (root cause currently unknown),
+            # so this should be enough to catch that during build time
+            # and raise the error instead of quietly generating invalid images
+            header = emmc_file.read(512)
+            if (header[510] != 0x55) or (header[511] != 0xaa):
+                raise Exception('Invalid emmc_image.bin contents')
+
+
         if _want_funvisor(args):
             for rootfs, _ in rootfs_files:
                 cmd = [ localdir('gen_hash_tree.py'),
