@@ -20,7 +20,7 @@ def path_fixup(app):
         return app
     except:
         if platform.system() == 'Linux':
-            raise 'App {} not found'
+            raise Exception(f'App {app} not found') from None
 
     try:
         path = subprocess.check_output(['brew', '--prefix', known_apps[app]['brew_package']])
@@ -28,5 +28,5 @@ def path_fixup(app):
         subprocess.check_call([ full_app, known_apps[app]['check_args'] ])
         return full_app
     except:
-        raise 'App {} not found. Install it with "brew install {}"'
+        raise Exception(f'App {app} not found. Install it with "brew install {known_apps[app]["brew_package"]}"') from None
 
