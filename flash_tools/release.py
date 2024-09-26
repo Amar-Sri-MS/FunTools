@@ -236,7 +236,7 @@ def main():
 
     args.sdkdir = os.path.abspath(args.sdkdir) # later processing fails if relative path is given
     funos_appname = "funos{}.stripped".format('-'.join(funos_suffixes))
-    rootfs_files = ALL_ROOTFS_FILES.get(args.chip, [])
+    rootfs_files = ALL_ROOTFS_FILES.get(args.chip, [(None, args.chip)])
 
     def wanted(action):
         if args.action == 'all':
