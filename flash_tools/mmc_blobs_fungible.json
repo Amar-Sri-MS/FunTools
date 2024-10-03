@@ -25,7 +25,7 @@
         },
 
         "FungibleDxe.huop.signed.bin": {
-            "chip": [ "f1", "f1d1" ],
+            "chip": [ "f1", "f1d1", "f2" ],
             "source": "FungibleDxe.bin",
             "version": 1,
             "fourcc": "huop",
