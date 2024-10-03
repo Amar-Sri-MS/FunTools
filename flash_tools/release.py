@@ -64,7 +64,8 @@ BOARD_CFG_PER_CHIP_SKU_DEFAULT = {
 	"f1": "f1_dev_board",
 	"f1d1": "fs800v2",
 	"s1": "fc50",
-	"s2": "ds400_1x16_pcie"
+	"s2": "ds400_1x16_pcie",
+	"f2": "s21f2_xio",
 }
 
 BOARD_CONFIG_OVERRIDE="""
@@ -154,11 +155,14 @@ SKU_SPECIFIC_MFGINSTALL = {
     ('f1d1', 's21f1') : { 'huop' : ('mmc', 'FungibleDxe.huop.signed.bin' ),
                           'ccfg-s21f1_xio' : ('mmc', 'ccfg-s21f1_xio.signed.bin'),
                           'ccfg-s21f1_xstore' : ('mmc', 'ccfg-s21f1_xstore.signed.bin') },
+    ('f2', 's21f2') :   { 'huop' : ('mmc', 'FungibleDxe.huop.signed.bin' ),
+                          'ccfg-s21f2_xio' : ('mmc', 'ccfg-s21f2_xio.signed.bin'),
+                          'ccfg-s21f2_xstore' : ('mmc', 'ccfg-s21f2_xstore.signed.bin') },
 }
 
 
 CHIP_WITH_FUNVISOR = [ 'f1', 'f1d1', 's1' ]
-CHIP_WITH_ACU = [ 's2' ]
+CHIP_WITH_ACU = [ 's2', 'f2' ]
 
 
 def _rootfs(f, rootfs):
@@ -204,7 +208,7 @@ def main():
     parser.add_argument('--destdir', default='RELEASE', help='Destination directory for output')
     parser.add_argument('--force-version', type=_int_from_any, help='Override firmware versions')
     parser.add_argument('--force-description', help='Override firmware description strings')
-    parser.add_argument('--chip', choices=['f1', 's1', 'f1d1', 's2'], default='f1', help='Target chip')
+    parser.add_argument('--chip', choices=['f1', 's1', 'f1d1', 's2', 'f2'], default='f1', help='Target chip')
     parser.add_argument('--debug-build', dest='release', action='store_false', help='Use debug application binary')
     parser.add_argument('--default-config-files', dest='default_cfg', action='store_true')
     parser.add_argument('--dev-image', action='store_true', help='Create a development image installer')
