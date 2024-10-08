@@ -96,7 +96,7 @@ def compress_file(src_path):
         with gzip.open(src_path + '.gz', 'wb') as f_out:
             shutil.copyfileobj(f_in, f_out)
 
-def generate_dynamic_config(chip, eeprom, board_cfg):
+def generate_dynamic_config(chip, eeprom, board_cfg, emu):
     ''' generate on the fly a config string specifying the eeprom and the host '''
     uboot_rel_dir = "FunSDK/FunSDK/u-boot/" + chip + "/u-boot.bin"
     host_location = os.path.join(os.environ["WORKSPACE"], uboot_rel_dir)
@@ -106,6 +106,19 @@ def generate_dynamic_config(chip, eeprom, board_cfg):
     signed_images = {"eeprom_packed.bin" : eeprom_source, "board_cfg.bin" : board_cfg_source}
     host_source = {"source" : host_location}
     signed_images["host_firmware_packed.bin"] = host_source
+    if chip in ['f1', 's1', 'f1d1', 's2']:
+        hbm_sbus_file = "sbus_master.hbm.conv.rom"
+    elif chip == 'f2':
+        # TODO: REPLACE WITH NON-EMU IMAGE WHEN AVAILABLE
+        hbm_sbus_file = "f2-hbm.emu.rom" if emu else "f2-hbm.emu.rom"
+    else:
+        raise Exception("Invalid chip type")
+
+    hbm_sbus_source = {
+        "source": hbm_sbus_file,
+        "description": f"@file:{hbm_sbus_file}.version"
+    }
+    signed_images["hbm_sbus.bin"] = hbm_sbus_source
     top_dir = {"signed_images" : signed_images}
 
     return json.dumps(top_dir, indent=4).encode('ascii')
@@ -145,7 +158,7 @@ def generate_nor_image(args, script_directory, images_directory, *dirs):
     run_args.append("-")
 
     # generate a config string on the fly: host for the chip, eeprom
-    extra_config = generate_dynamic_config(args.chip, args.eeprom, args.board_profile)
+    extra_config = generate_dynamic_config(args.chip, args.eeprom, args.board_profile, args.emulation)
 
     subprocess.run(run_args, input=extra_config, cwd=images_directory,
                    check=True, stdout=sys.stdout, stderr=sys.stderr)

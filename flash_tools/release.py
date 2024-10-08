@@ -131,6 +131,23 @@ ACUFW_CONFIG_OVERRIDE="""
 }}
 """
 
+HBSB_CONFIG_OVERRIDE="""
+{{ "signed_images": {{
+     "hbm_sbus.bin": {{
+       "source": "{hbsb_file}",
+       "description": "@file:{hbsb_file}.version"
+        }}
+    }}
+}}
+"""
+
+HBSB_FILES = {
+    "f1": "sbus_master.hbm.conv.rom",
+    "s1": "sbus_master.hbm.conv.rom", # not really used but kept for compatibility
+    "f1d1": "sbus_master.hbm.conv.rom",
+    "s2": "sbus_master.hbm.conv.rom", # not really used but kept for compatibility
+    "f2": "f2-hbm.emu.rom" # TODO: REPLACE WITH NON-EMU IMAGE WHEN AVAILABLE
+}
 
 def localdir(fname):
     return "./" + fname
@@ -288,6 +305,7 @@ def main():
         gf.merge_configs(config, json.loads(BOARD_CONFIG_OVERRIDE.format(chip=args.chip, sku_name=default_board)), only_if_present=True)
         gf.merge_configs(config, json.loads(ACUFW_CONFIG_OVERRIDE.format(chip=args.chip)), only_if_present=True)
         gf.merge_configs(config, json.loads(SBPF_FIRMWARE_SIZE_OVERRIDE.format(sbp_ram_size=SBPF_FIRMWARE_SIZE_VALUES[args.chip])), only_if_present=True)
+        gf.merge_configs(config, json.loads(HBSB_CONFIG_OVERRIDE.format(hbsb_file=HBSB_FILES[args.chip])), only_if_present=True)
 
         if not args.with_csrreplay:
             try:
