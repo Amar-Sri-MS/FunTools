@@ -279,6 +279,11 @@ class SKUCfgGen():
                 if asic_count > 1:
                     sku_name = board_name + '_{}'.format(asic)
                 sku_id = (0x1 << 16) + (board_id_offset << 8) + asic
+
+                if sku_name in sku_id_list and \
+                   sku_id_list[sku_name] != sku_id:
+                    raise ValueError('Duplicate board id value: {}'.format(board_name))
+
                 sku_id_list[sku_name] =  sku_id
 
         return sku_id_list
