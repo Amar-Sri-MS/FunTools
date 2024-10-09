@@ -1758,15 +1758,15 @@ static void usage(const char *argv0)
 	printf("       -B, --base64_srv[=port]       listen as a server port on IP using base64 (dpcuart to qemu)\n");
 	printf("       -b, --base64_sock[=port]      connect as a client port on IP using base64 (dpcuart to qemu)\n");
 	printf("       -i, --inet_sock[=port]        connect as a client port over IP\n");
-	printf("       -c, --connect_dpc[=host:port|=sockname] connect as a client to another dpcsh\n");
-	printf("       -u, --unix_sock[=sockname]    connect as a client port over unix sockets\n");
+	printf("       -c, --connect_dpc[=host:port|=filename] connect as a client to another dpcsh\n");
+	printf("       -u, --unix_sock[=filename]    connect as a client port over unix sockets\n");
 #ifdef WITH_LIBFUNQ
-	printf("       -q, --libfunq_sock[=sockname] connect as a client port over libfunq pcie device, put \"auto\" for auto-discover\n");
+	printf("       -q, --libfunq_sock[=device]   connect as a client port over libfunq pcie device, put \"auto\" for auto-discover\n");
 #endif
 	printf("       -H, --http_proxy[=port]       listen as an http proxy\n");
 	printf("       -T, --tcp_proxy[=port]        listen as a tcp proxy\n");
 	printf("       -T, --text_proxy[=port]       same as \"--tcp_proxy\"\n");
-	printf("       -t, --unix_proxy[=port]       listen as a unix proxy\n");
+	printf("       -t, --unix_proxy[=filename]   listen as a unix proxy\n");
 #ifdef __linux__
 	printf("       -I, --inet_interface=name     listen only on <name> interface\n");
 #endif // __linux__
