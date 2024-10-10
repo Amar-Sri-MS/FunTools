@@ -78,13 +78,13 @@
             "description": "@file:sbm_serdes.hu.conv.rom.version"
         },
         "hbm_sbus.bin": {
-            "source": "sbus_master.hbm.conv.rom",
+            "source": "",
             "version": 1,
             "fourcc": "hbsb",
             "cert": "",
             "customer_cert": "",
             "key": "fpk5",
-            "description": "@file:sbus_master.hbm.conv.rom.version"
+            "description": ""
         },
         "esecure_puf_rom_packed.bin": {
             "source": "puf_rom_m5150.keys.bin",

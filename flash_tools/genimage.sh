@@ -195,6 +195,26 @@ BOARD_CFG_DEF=$(cat <<-JSON
 JSON
 )
 
+case "$CHIP" in
+	f1|s1|f1d1|s2)
+	hbsb_file=sbus_master.hbm.conv.rom
+	;;
+	f2)
+	hbsb_file="f2-hbm.emu.rom"
+	;;
+esac
+
+HBM_SBUS_CFG_DEF=$(cat <<-JSON
+{ "signed_images": {
+     "hbm_sbus.bin": {
+       "source": "${hbsb_file}",
+       "description": "@file:${hbsb_file}.version"
+        }
+    }
+}
+JSON
+)
+
 if [ $EMULATION == 0 ]; then
 	# generate flash image for real chip
 	python3 $WORKSPACE/FunSDK/bin/flash_tools/generate_flash.py --config-type json \
@@ -209,7 +229,8 @@ if [ $EMULATION == 0 ]; then
 		$CUSTOMER_CONFIG_JSON \
 		<(echo $HOST_FIRMWARE_DEF) \
 		<(echo $EEPROM_DEF) \
-		<(echo $BOARD_CFG_DEF)
+		<(echo $BOARD_CFG_DEF) \
+		<(echo $HBM_SBUS_CFG_DEF)
 	# Flash images for real hardware
 	cp qspi_image_hw.byte ${WORKSPACE}/sbpimage/flash_image_hw.byte
 	cp qspi_image_hw.bin ${WORKSPACE}/sbpimage/flash_image_hw.bin
@@ -235,7 +256,8 @@ else
 		<(echo $HOST_FIRMWARE_DEF) \
 		<(echo $EEPROM_DEF) \
 		<(echo $QSPI_EMULATION) \
-		<(echo $BOARD_CFG_DEF)
+		<(echo $BOARD_CFG_DEF) \
+		<(echo $HBM_SBUS_CFG_DEF)
 	# Flash images for Palladium emulation (limited to 2MB)
 	cp qspi_image_emu.byte ${WORKSPACE}/sbpimage/flash_image.byte
 	cp qspi_image_emu.bin ${WORKSPACE}/sbpimage/flash_image.bin
