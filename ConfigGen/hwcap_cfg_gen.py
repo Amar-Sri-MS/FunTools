@@ -154,22 +154,30 @@ class HWCAPCodeGen():
                         hw_block_name, entry, list(sub_blocks.keys())))
             entry_size = sub_blocks.get(entry, 0)
             entry_max_plus_1 = 0
-            if entry_size:
-                entry_max_plus_1 = 0x1 << entry_size
-            if entry == 'status':
-                if value not in hw_block_status_list:
-                    raise argparse.ArgumentTypeError(
-                        'hw block: {} entry: {} value:{} is not valid!'.format(
-                            hw_block_name, entry, value))
+
+            if type(value) is list:
+                for values in value:
+                    if not type(values) is int:
+                        raise argparse.ArgumentTypeError(
+                            'hw block: {} entry: {} value:{} is not valid!'.format(
+                                hw_block_name, entry, values))
             else:
-                if not type(value) is int:
-                    raise argparse.ArgumentTypeError(
-                        'hw block: {} entry: {} value:{} is not valid!'.format(
-                            hw_block_name, entry, value))
-                if value >= entry_max_plus_1:
-                    raise argparse.ArgumentTypeError(
-                        'hw block: {} entry: {} value:{} is out of range!'.format(
-                            hw_block_name, entry, value))
+                if entry_size:
+                    entry_max_plus_1 = 0x1 << entry_size
+                if entry == 'status':
+                    if value not in hw_block_status_list:
+                        raise argparse.ArgumentTypeError(
+                            'hw block: {} entry: {} value:{} is not valid!'.format(
+                                hw_block_name, entry, value))
+                else:
+                    if not type(value) is int:
+                        raise argparse.ArgumentTypeError(
+                            'hw block: {} entry: {} value:{} is not valid!'.format(
+                                hw_block_name, entry, value))
+                    if value >= entry_max_plus_1:
+                        raise argparse.ArgumentTypeError(
+                            'hw block: {} entry: {} value:{} is out of range!'.format(
+                                hw_block_name, entry, value))
 
     # Check the config data consistancy
     def _per_sku_cfg_finalise(self, sku_name, per_sku_data):
