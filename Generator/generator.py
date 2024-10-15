@@ -615,8 +615,6 @@ def GenerateFile(output_style, output_base, input_stream, input_filename,
       mangle_fields = "mangle"
       mangle_suffix = random.choice(string.ascii_letters)
     else:
-      if (minmangle):
-        raise RuntimeError("minmangle requires mangle or flexmangle")
       mangle_fields = ""
 
     dpu_endianness = 'Any'
