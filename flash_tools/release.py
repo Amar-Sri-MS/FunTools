@@ -180,7 +180,7 @@ SKU_SPECIFIC_MFGINSTALL = {
 
 CHIP_WITH_FUNVISOR = [ 'f1', 'f1d1', 's1' ]
 CHIP_WITH_ACU = [ 's2', 'f2' ]
-
+CHIP_WITH_NVDIMM = [ 'f1', 'f1d1' ]
 
 def _rootfs(f, rootfs):
     return '{}.{}'.format(rootfs, f)
@@ -275,8 +275,9 @@ def main():
                 'bin/flash_tools/qspi_config_fungible.json',
                 'bin/flash_tools/mmc_config_fungible.json',
                 'bin/flash_tools/mmc_blobs_fungible.json',
-                'bin/flash_tools/key_bag_config.json',
-                'FunSDK/nvdimm_fw/nvdimm_fw_config.json' ]
+                'bin/flash_tools/key_bag_config.json' ]
+            if args.chip in CHIP_WITH_NVDIMM:
+                args.config.append('FunSDK/nvdimm_fw/nvdimm_fw_config.json')
         else:
             args.config = [ 'image.json' ]
 
