@@ -71,6 +71,7 @@ def main():
     )
     args = parser.parse_args()
     set_global_tool_locations(args.tools_dir)
+    os.makedirs(args.output_dir, exist_ok=True)
 
     if args.parse_mode == "perf_emu":
         run_perf_parser(args)
