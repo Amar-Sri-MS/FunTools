@@ -53,7 +53,7 @@ def get_defatult_sdk_dir() -> str:
 
 def get_default_api_doc_gen_dir(sdk_dir: str) -> str:
     assert sdk_dir, "Missing sdk_dir"
-    return os.path.join(sdk_dir, "FunDoc/html/FunOS")
+    return os.path.join(sdk_dir, "FunDoc/html/FunOS/headers")
 
 
 def get_default_sdk_api(sdk_dir: str) -> str:

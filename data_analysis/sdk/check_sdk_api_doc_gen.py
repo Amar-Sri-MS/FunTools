@@ -227,7 +227,7 @@ def _trim_filename(filename: str, n_path: int) -> str:
     -------
     str: trimmed filename
     """
-    filename = "FunOS/" + "/".join(filename.split("/")[n_path:])[:-5]
+    filename = "" + "/".join(filename.split("/")[n_path:])[:-5]
     return filename
 
 
@@ -330,7 +330,7 @@ def load_sdk_file_summary_counting_sdk_headers(
         # remove index.html
         if "index.html" in file:
             continue
-        # rearrange file path to be relative to FunOS so that it can be eaily compared with the SDK file list
+        # rearrange file path to be relative to FunOS so that it can be easily compared with the SDK file list
         file_name = "FunOS/" + "/".join(file.split("/")[n_path:])
         file_names.append(file_name)
     return pd.DataFrame(file_names, columns=["filename"])
@@ -375,7 +375,7 @@ def load_sdk_api_doc_gen_summary(
         if "index.html" in file:
             continue
         # rearrange file path to be relative to FunOS so that it can be easily compared with the SDK file list
-        file_name = "FunOS/" + "/".join(file.split("/")[n_path:])
+        file_name =  ""+"/".join(file.split("/")[n_path:])
         file_names.append(file_name[:-5])  # -5 to remove '.html'
 
     return pd.DataFrame(file_names, columns=["filename"])
@@ -508,6 +508,7 @@ def main() -> None:
     print("API HTML search path: {}".format(api_doc_gen_dir))
     print("Output json file: {}".format(output_json))
     print("API df file: {}".format(api_doc_gen_df))
+    print("Input sdk api: {}".format(sdk_api))
     print()
 
     (
