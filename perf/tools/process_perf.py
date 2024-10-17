@@ -57,7 +57,7 @@ def main():
         "--tools-dir",
         type=str,
         help="directory for tools (FunTools)",
-        default=os.path.join(os.getenv("WORKSPACE"), "FunTools"),
+        default=os.path.join(os.getenv("WORKSPACE", "/tmp"), "FunTools"),
     )
     parser.add_argument(
         "--funos-image",
