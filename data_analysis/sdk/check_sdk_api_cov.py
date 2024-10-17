@@ -311,7 +311,6 @@ def main() -> None:
     # read csv
     df_api = pd.read_csv(sdk_api)
     df_cov = pd.read_csv(cov)
-
     df_api, cov_percent = update_coverage_for_sdk_api(df_api, df_cov)
 
     # only keep the last dir names from FunOS
