@@ -227,7 +227,7 @@ def _trim_filename(filename: str, n_path: int) -> str:
     -------
     str: trimmed filename
     """
-    filename = "" + "/".join(filename.split("/")[n_path:])[:-5]
+    filename = "/".join(filename.split("/")[n_path:])[:-5]
     return filename
 
 
@@ -375,7 +375,7 @@ def load_sdk_api_doc_gen_summary(
         if "index.html" in file:
             continue
         # rearrange file path to be relative to FunOS so that it can be easily compared with the SDK file list
-        file_name =  ""+"/".join(file.split("/")[n_path:])
+        file_name =  "/".join(file.split("/")[n_path:])
         file_names.append(file_name[:-5])  # -5 to remove '.html'
 
     return pd.DataFrame(file_names, columns=["filename"])
