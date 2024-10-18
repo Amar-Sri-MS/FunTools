@@ -1,0 +1,10 @@
+This directory contains TCF files for the MIPS dequeuer.
+
+TCF files are documented in the MIPS dequeuer documentation on Box:
+https://fungible.box.com/s/8rc978p9xkzzb9jj38cgzlgwcl55m09q
+
+cc_trace.tcf contains trace configuration for the control cluster.
+pc_trace.tcf contains trace configuration for a processing cluster.
+
+If the pdtrace configuration for FunOS is changed, the values in these files
+need to be modified as well.
