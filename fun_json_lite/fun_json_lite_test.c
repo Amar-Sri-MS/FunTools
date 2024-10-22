@@ -70,6 +70,11 @@ static void blob_test(void) {
         exit(1);
     }
 
+    if (fun_json_container_get_free_mem(container) != 0) {
+        printf("fun_json_container_get_free_mem is incorrect\n");
+        exit(1);
+    }
+
     uint8_t binary_array_out[sizeof(binary_array)];
     if (!fun_json_blob_fill_memory(json, binary_array_out, sizeof(binary_array_out))) {
         printf("fun_json_fill_blob failed\n");
