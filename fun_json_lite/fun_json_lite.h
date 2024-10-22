@@ -47,6 +47,7 @@ bool fun_json_is_string(const struct fun_json *);
 bool fun_json_is_array(const struct fun_json *);
 bool fun_json_is_dict(const struct fun_json *);
 bool fun_json_is_binary_array(const struct fun_json *);
+bool fun_json_is_blob(const struct fun_json *);
 
 size_t fun_json_array_count(const struct fun_json *);
 size_t fun_json_dict_count(const struct fun_json *);

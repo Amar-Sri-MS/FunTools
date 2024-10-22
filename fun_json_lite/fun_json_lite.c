@@ -301,6 +301,16 @@ bool fun_json_is_binary_array(const struct fun_json *j)
 	return true;
 }
 
+bool fun_json_is_blob(const struct fun_json *j)
+{
+	if (!fun_json_is_array(j)) return false;
+	const struct fun_json_array *a = (void *)j;
+	for (size_t i = 0; i < a->used; i++) {
+		if (!fun_json_is_binary_array(a->elements[i])) return false;
+	}
+	return true;
+}
+
 bool fun_json_is_dict(const struct fun_json *j)
 {
 	return j->type == fun_json_dict_type;
