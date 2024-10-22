@@ -61,8 +61,9 @@ static void blob_test(void) {
         binary_array[i] = rand() % 256;
     }
 
-    void *json_memory = malloc(BIG_CONTAINER_SIZE);
-    struct fun_json_container *container = fun_json_create_container(json_memory, BIG_CONTAINER_SIZE);
+    size_t container_size = fun_json_container_size_blob(sizeof(binary_array)) + fun_json_container_overhead();
+    void *json_memory = malloc(container_size);
+    struct fun_json_container *container = fun_json_create_container(json_memory, container_size);
     struct fun_json *json = fun_json_create_blob(container, binary_array, sizeof(binary_array));
     if (json == NULL) {
         printf("fun_json_create_blob failed\n");

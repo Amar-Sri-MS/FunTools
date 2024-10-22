@@ -744,6 +744,17 @@ err:
 	return NULL;
 }
 
+size_t fun_json_container_size_blob(size_t size)
+{
+	size_t num_full_bas = size >> BLOB_BYTE_ARRAY_LOG_SIZE;
+	size_t leftovers = size - (num_full_bas << BLOB_BYTE_ARRAY_LOG_SIZE);
+	size_t num_bas = num_full_bas + (leftovers ? 1 : 0);
+
+	return fun_json_container_size_array(num_bas) +
+		num_full_bas * fun_json_container_size_binary_array(BLOB_BYTE_ARRAY_SIZE) +
+		(leftovers ? fun_json_container_size_binary_array(leftovers) : 0);
+}
+
 // It is assumed that all the byte-arrays have the BLOB_BYTE_ARRAY_SIZE items, except the last
 // (this is important to quickly compute the byte count)
 // If 0 is returned the blob is malformed
