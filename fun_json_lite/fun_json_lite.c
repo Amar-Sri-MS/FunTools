@@ -301,6 +301,16 @@ bool fun_json_is_binary_array(const struct fun_json *j)
 	return true;
 }
 
+bool fun_json_is_blob(const struct fun_json *j)
+{
+	if (!fun_json_is_array(j)) return false;
+	const struct fun_json_array *a = (void *)j;
+	for (size_t i = 0; i < a->used; i++) {
+		if (!fun_json_is_binary_array(a->elements[i])) return false;
+	}
+	return true;
+}
+
 bool fun_json_is_dict(const struct fun_json *j)
 {
 	return j->type == fun_json_dict_type;
@@ -742,6 +752,17 @@ struct fun_json *fun_json_create_blob(struct fun_json_container *container, cons
 err:
 	// TODO: deallocate space in container: will leak on failure otherwise
 	return NULL;
+}
+
+size_t fun_json_container_size_blob(size_t size)
+{
+	size_t num_full_bas = size >> BLOB_BYTE_ARRAY_LOG_SIZE;
+	size_t leftovers = size - (num_full_bas << BLOB_BYTE_ARRAY_LOG_SIZE);
+	size_t num_bas = num_full_bas + (leftovers ? 1 : 0);
+
+	return fun_json_container_size_array(num_bas) +
+		num_full_bas * fun_json_container_size_binary_array(BLOB_BYTE_ARRAY_SIZE) +
+		(leftovers ? fun_json_container_size_binary_array(leftovers) : 0);
 }
 
 // It is assumed that all the byte-arrays have the BLOB_BYTE_ARRAY_SIZE items, except the last
