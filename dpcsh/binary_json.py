@@ -50,82 +50,6 @@ bjsonUint7 = 0x80
 maxUint7   = 0x7f
 
 
-class BinaryJsonArray:
-    def __init__(self, raw_data=None):
-        self.data = []
-        self.raw_data = raw_data
-        self.decoded = False
-        self.size = decodeUint32LittleEndian(raw_data[5:])
-
-    def __getitem__(self, key):
-        if not self.decoded:
-            self._decode()
-        return self.data[key]
-
-    def __setitem__(self, key, value):
-        if not self.decoded:
-            self._decode()
-        self.data[key] = value
-
-    def __len__(self):
-        if not self.decoded:
-            return self.size
-        return len(self.data)
-    
-    def _decode(self):
-        offset = 1 + 8
-        self.data = []
-        for _ in range(0, self.size):
-          self.data.append(decode(self.raw_data[offset:]))
-          offset += serialization_size(self.raw_data[offset:])
-        self.decoded = True
-
-    def encode(self):
-        if not self.decoded:
-            return self.raw_data
-        return encodeList(self.data)
-
-
-class BinaryJsonDict:
-    def __init__(self, raw_data=None):
-        self.data = {}
-        self.raw_data = raw_data
-        self.decoded = False
-        self.size = decodeUint32LittleEndian(raw_data[5:])
-
-    def __getitem__(self, key):
-        if not self.decoded:
-            self._decode()
-        return self.data[key]
-
-    def __setitem__(self, key, value):
-        if not self.decoded:
-            self._decode()
-        self.data[key] = value
-
-    def __len__(self):
-        if not self.decoded:
-            return self.size
-        return len(self.data)
-    
-    def _decode(self):
-        offset = 1 + 8
-        self.data = {}
-        for _ in range(0, self.size):
-          key = decode(b[offset:])
-          offset += serialization_size(self.raw_data[offset:])
-          value = decode(b[offset:])
-          offset += serialization_size(self.raw_data[offset:])
-          self.data[key] = value
-
-        self.decoded = True
-
-    def encode(self):
-        if not self.decoded:
-            return self.raw_data
-        return encodeDict(self.data)
-
-
 def uInt64LittleEndian(u: int) -> bytes:
   return struct.pack('<Q', u)
 
@@ -270,12 +194,6 @@ def encodeDict(d: dict) -> bytes:
 def encode(d: Any) -> bytes:
   if d is None:
     return encodeNone()
-  
-  if isinstance(d, BinaryJsonArray):
-    return d.encode()
-
-  if isinstance(d, BinaryJsonDict):
-    return d.encode()
 
   if isinstance(d, bool):
     return encodeBool(d)
@@ -390,10 +308,25 @@ def decode(b: bytes) -> Any:
     return b[5:size+5].decode("utf-8")
 
   if b.startswith(bjsonArray):
-    return BinaryJsonArray(b[:serialization_size(b)])
+    size = decodeUint32LittleEndian(b[5:])
+    offset = 1 + 8
+    result = []
+    for _ in range(0, size):
+      result.append(decode(b[offset:]))
+      offset += serialization_size(b[offset:])
+    return result
 
   if b.startswith(bjsonDict):
-    return BinaryJsonDict(b[:serialization_size(b)])
+    size = decodeUint32LittleEndian(b[5:])
+    offset = 1 + 8
+    result = {}
+    for _ in range(0, size):
+      key = decode(b[offset:])
+      offset += serialization_size(b[offset:])
+      value = decode(b[offset:])
+      offset += serialization_size(b[offset:])
+      result[key] = value
+    return result
 
   if b.startswith(bjsonByteArray):
     size = decodeUint16LittleEndian(b[1:])
